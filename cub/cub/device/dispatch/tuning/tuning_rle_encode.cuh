@@ -245,12 +245,12 @@ struct policy_hub
         : ::cuda::std::clamp(
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
     using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<128,
-                             items,
-                             BLOCK_LOAD_DIRECT,
-                             LoadModifier,
-                             BLOCK_SCAN_WARP_SCANS,
-                             default_reduce_by_key_delay_constructor_t<LengthT, int>>;
+      agent_reduce_by_key_policy<128,
+                                 items,
+                                 BLOCK_LOAD_DIRECT,
+                                 LoadModifier,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 default_reduce_by_key_delay_constructor_t<LengthT, int>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
@@ -264,12 +264,12 @@ struct policy_hub
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
   static auto select_agent_policy(int)
-    -> AgentReduceByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              LOAD_DEFAULT,
-                              BLOCK_SCAN_WARP_SCANS,
-                              typename Tuning::delay_constructor>;
+    -> agent_reduce_by_key_policy<Tuning::threads,
+                                  Tuning::items,
+                                  Tuning::load_algorithm,
+                                  LOAD_DEFAULT,
+                                  BLOCK_SCAN_WARP_SCANS,
+                                  typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
@@ -296,12 +296,12 @@ struct policy_hub
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     static auto select_agent_policy100(int)
-      -> AgentReduceByKeyPolicy<Tuning::threads,
-                                Tuning::items,
-                                Tuning::load_algorithm,
-                                Tuning::load_modifier,
-                                BLOCK_SCAN_WARP_SCANS,
-                                typename Tuning::delay_constructor>;
+      -> agent_reduce_by_key_policy<Tuning::threads,
+                                    Tuning::items,
+                                    Tuning::load_algorithm,
+                                    Tuning::load_modifier,
+                                    BLOCK_SCAN_WARP_SCANS,
+                                    typename Tuning::delay_constructor>;
     template <typename Tuning>
     static auto select_agent_policy100(long) -> typename Policy900::ReduceByKeyPolicyT;
 
@@ -312,7 +312,7 @@ struct policy_hub
 };
 
 // DeviceRunLengthEncode::Encode delegates to reduce by key
-using rle_encode_policy = reduce_by_key::reduce_by_key_policy;
+using rle_encode_policy = ReduceByKeyPolicy;
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
