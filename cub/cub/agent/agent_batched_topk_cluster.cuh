@@ -11,7 +11,8 @@
 //! Histogram strategy (Pattern C):
 //!   1. Every block lays out `hist[num_buckets]` at the same offset in its own
 //!      shared memory. Each block accumulates a block-private histogram using
-//!      block-scope atomicAdd_block (cheap, SMEM-local).
+//!      shared-space `red` reductions (cheap, SMEM-local): cta scope for
+//!      non-leaders, cluster scope for the leader (see `hist_inc`).
 //!   2. After a cluster-wide barrier, every non-leader block walks its
 //!      histogram and folds its bucket counts into the leader block's `hist`
 //!      via cluster-scope DSMEM atomics. The leader's `hist` therefore plays
@@ -52,12 +53,14 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__ptx/instructions/cp_async_bulk.h>
+#include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#include <cuda/__ptx/instructions/mbarrier_init.h>
+#include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/inplace_vector>
 #include <cuda/std/limits>
-#include <cuda/std/optional>
 #include <cuda/std/span>
 #include <cuda/std/utility>
 
@@ -181,13 +184,14 @@ struct agent_batched_topk_cluster
   static_assert(LoadAlignBytes > 0);
   static_assert(ChunkBytes % LoadAlignBytes == 0);
   static_assert(LoadAlignBytes % int{sizeof(key_t)} == 0);
-  // The hybrid load relies on the aligned CopyAsync path being exact (no scalar guard), which requires the load
+  // The hybrid load relies on the aligned bulk-copy path being exact (no scalar guard), which requires the load
   // alignment to be at least the bulk-copy minimum alignment.
   static_assert(LoadAlignBytes >= detail::bulk_copy_min_align, "LoadAlignBytes must be >= bulk_copy_min_align");
   static_assert(chunk_items > 0);
 
   using decomposer_t = detail::identity_decomposer_t;
-  using block_load_t = BlockLoadToShared<threads_per_block>;
+  // Resident/streamed chunks are pulled into the block_tile with elected-thread `cp.async.bulk`/TMA copies against
+  // raw per-stage mbarriers; see the async bulk-copy pipeline helpers below.
 
   static constexpr bool use_block_load_to_shared =
     THRUST_NS_QUALIFIER::is_trivially_relocatable_v<key_t> && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<key_it_t>;
@@ -220,7 +224,9 @@ struct agent_batched_topk_cluster
     key_prefix_t broadcast_kth;
     ::cuda::std::uint32_t broadcast_early_stop;
     typename block_scan_t::TempStorage scan_storage;
-    typename block_load_t::TempStorage load_storage[PipelineStages];
+    // One mbarrier handle per pipeline stage, shared by the resident load and the overflow streamer and reused
+    // (ping-ponged) across radix passes; initialized once by `init_load_barriers`.
+    ::cuda::std::uint64_t load_mbar[PipelineStages];
   };
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char> block_tile_buffer() const
@@ -414,10 +420,8 @@ struct agent_batched_topk_cluster
     });
   }
 
-  // A resident/streamed bulk in the block_tile, described by its 32-bit shared-window address plus length instead of
-  // a 64-bit generic pointer. Pipeline arrays of these are read across long loops and spill to local memory; a
-  // spilled generic pointer reloads as generic (`LDL.64`) and demotes the key reads from `LDS` to a generic `LD`,
-  // whereas a spilled 32-bit shared address rebuilt with `__cvta_shared_to_generic` keeps the reads `LDS`.
+  // A bulk in the block_tile as a 32-bit shared address + length. A spilled 32-bit shared address (rebuilt with
+  // `__cvta_shared_to_generic`) keeps the key reads `LDS`; a spilled 64-bit generic pointer would demote them to `LD`.
   struct shared_bulk
   {
     ::cuda::std::uint32_t smem32;
@@ -428,6 +432,79 @@ struct agent_batched_topk_cluster
   [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<key_t> bulk_span(shared_bulk b)
   {
     return {reinterpret_cast<key_t*>(__cvta_shared_to_generic(b.smem32)), static_cast<::cuda::std::size_t>(b.len)};
+  }
+
+  // ---------------------------------------------------------------------------
+  // Async bulk-copy pipeline helpers (raw mbarrier + cp.async.bulk via cuda::ptx)
+  // ---------------------------------------------------------------------------
+  // Inlines BlockLoadToShared's internals (one mbarrier per stage, a single elected thread issuing the TMA copy +
+  // transaction arrival) without its reference member or per-call CommitToken: the only per-stage wait state is one
+  // bit of the per-thread `load_phase` mask, so the pipeline loops spill nothing per stage. SM 9.0+ only (the agent is
+  // gated behind `NV_PROVIDES_SM_90` in `Process`).
+
+  // Init each stage mbarrier with arrival count 1: only the elected thread arrives (registering the tx byte count) and
+  // the `cp.async.bulk` delivers the matching count, so the phase completes. Call once, followed by a block sync.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void init_load_barriers()
+  {
+    if (threadIdx.x == 0)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int s = 0; s < PipelineStages; ++s)
+      {
+        ::cuda::ptx::mbarrier_init(&temp_storage.load_mbar[s], 1u);
+      }
+    }
+  }
+
+  // Issue one aligned global->shared (TMA) bulk copy into `dst` on stage `stage`'s mbarrier from the elected thread,
+  // which also arrives with the transaction byte count (an empty copy arrives with zero so the phase still completes).
+  // Each call must be paired, in issue order per stage, with a matching `wait_stage(stage)`.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void issue_bulk_copy(int stage, char* dst, ::cuda::std::span<const key_t> src)
+  {
+    if (threadIdx.x != 0)
+    {
+      return;
+    }
+    const int num_bytes = static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
+    if (num_bytes > 0)
+    {
+      // The TMA path requires `bulk_copy_min_align` (>= 16); the cursor carries the stronger `load_align_bytes`.
+      _CCCL_ASSERT(::cuda::is_aligned(dst, detail::bulk_copy_min_align),
+                   "block_tile destination must satisfy the shared-memory bulk-copy alignment");
+#if __cccl_ptx_isa >= 860
+      ::cuda::ptx::cp_async_bulk(
+        ::cuda::ptx::space_shared,
+        ::cuda::ptx::space_global,
+        dst,
+        ::cuda::std::data(src),
+        num_bytes,
+        &temp_storage.load_mbar[stage]);
+#else // __cccl_ptx_isa < 860
+      ::cuda::ptx::cp_async_bulk(
+        ::cuda::ptx::space_cluster,
+        ::cuda::ptx::space_global,
+        dst,
+        ::cuda::std::data(src),
+        num_bytes,
+        &temp_storage.load_mbar[stage]);
+#endif // __cccl_ptx_isa >= 860
+    }
+    ::cuda::ptx::mbarrier_arrive_expect_tx(
+      ::cuda::ptx::sem_release,
+      ::cuda::ptx::scope_cta,
+      ::cuda::ptx::space_shared,
+      &temp_storage.load_mbar[stage],
+      static_cast<::cuda::std::uint32_t>(num_bytes));
+  }
+
+  // Wait for stage `stage`'s copy to land (all threads spin on its current parity), then flip that stage's parity bit.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void wait_stage(int stage)
+  {
+    const ::cuda::std::uint32_t parity = (load_phase >> stage) & 1u;
+    while (!::cuda::ptx::mbarrier_try_wait_parity(&temp_storage.load_mbar[stage], parity))
+    {
+    }
+    load_phase ^= (::cuda::std::uint32_t{1} << stage);
   }
 
   struct TempStorage : Uninitialized<_TempStorage>
@@ -445,6 +522,9 @@ struct agent_batched_topk_cluster
   NumSegmentsParameterT num_segments;
   char* key_slots;
   offset_t block_tile_capacity;
+  // Per-thread mbarrier phase parity, one bit per pipeline stage (see `wait_stage`); the resident load and the
+  // overflow streamer keep their per-stage issue/wait calls balanced so each bit tracks its mbarrier's phase.
+  ::cuda::std::uint32_t load_phase{};
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_batched_topk_cluster(
     TempStorage& temp_storage_,
@@ -487,6 +567,48 @@ private:
     {
       temp_storage.hist[i] = 0;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Block-private histogram atomics (shared-space `red` via cuda::ptx-style inline PTX)
+  // ---------------------------------------------------------------------------
+  // A builtin `atomicAdd(&temp_storage.hist[bucket], 1)` compiles to a generic atomic (`ATOM.E`) whose 64-bit base is
+  // spilled and reloaded (`LDL.64`) at every update across this huge agent. A shared-space `red` instead addresses with
+  // the 32-bit shared address (no base to spill). Shared atomics only allow cta/cluster scope, which is exactly right:
+  // every writer of a given `hist` is in the same cluster. `red` (no return) matches the discarded `atomicAdd` result.
+
+  // The 32-bit shared address of `hist[0]`. Hoisted once per histogram region so the per-key address math is a pure
+  // 32-bit add; recomputing it per key would reload the 64-bit generic base of `temp_storage` from the stack.
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t hist_base32() const
+  {
+    return static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(temp_storage.hist));
+  }
+
+  // Increment this block's own histogram bucket by one via its 32-bit shared address. The leader (rank 0) also receives
+  // remote folds from the other cluster blocks (Step 2, `hist_fold_remote`), so its add must be cluster-scoped to be
+  // mutually atomic with them; non-leaders only touch their own `hist` before the fold, so cta scope suffices.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void hist_inc(::cuda::std::uint32_t base32, int bucket, bool leader)
+  {
+    const ::cuda::std::uint32_t addr = base32 + static_cast<::cuda::std::uint32_t>(bucket) * sizeof(offset_t);
+    if (leader)
+    {
+      asm volatile("red.relaxed.cluster.shared::cta.add.u32 [%0], 1;" : : "r"(addr) : "memory");
+    }
+    else
+    {
+      asm volatile("red.relaxed.cta.shared::cta.add.u32 [%0], 1;" : : "r"(addr) : "memory");
+    }
+  }
+
+  // Step 2: a non-leader folds one bucket into the leader's histogram through DSMEM. `own_bucket_addr32` is the
+  // bucket's address in this block's own window; since every CTA's shared window is laid out identically, `mapa` remaps
+  // it to rank 0 to form the leader's `shared::cluster` address (no 64-bit pointer, no memory descriptor). Cluster
+  // scope makes it mutually atomic with the leader's `hist_inc` adds.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void hist_fold_remote(::cuda::std::uint32_t own_bucket_addr32, offset_t v)
+  {
+    ::cuda::std::uint32_t remote;
+    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote) : "r"(own_bucket_addr32), "n"(0));
+    asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;" : : "r"(remote), "r"(v) : "memory");
   }
 
   // Parallel prefix sum (cub::BlockScan) over the leader's merged histogram
@@ -570,19 +692,12 @@ private:
     bool forward = true;
     bool primed  = false;
 
-    // Loaders are shared with the first-pass resident load: that load constructs
-    // them here (via `ensure_loaders`) and the streamer keeps reusing the very
-    // same objects for the overflow passes, continuing their Commit/Wait pipeline
-    // rather than tearing them down and re-initializing the shared `load_storage`
-    // mbarriers. During streaming, `loaders[stage]` targets the streaming slot
-    // `stream_slot_base + stage`. A `tokens` entry is engaged only while a copy is
-    // in flight (committed, not yet waited); after a wait the slot's data settles
-    // in SMEM and `pending`/`slot_chunk` keep describing it so the next ping-pong
-    // pass can reuse it without a reload.
-    ::cuda::std::inplace_vector<block_load_t, PipelineStages> loaders;
-    ::cuda::std::optional<typename block_load_t::CommitToken> tokens[PipelineStages];
-    shared_bulk pending[PipelineStages];
-    offset_t slot_chunk[PipelineStages];
+    // Stage mbarriers are shared with the resident load (`agent.temp_storage.load_mbar`); stage `stage` targets slot
+    // `stream_slot_base + stage`. `inflight_mask` bit `stage` is set only while a copy is in flight (issued, not yet
+    // waited). The slot/stage mapping is fixed, so the read span is recomputed on demand by `stage_span` rather than
+    // held in a spillable per-stage array; the only per-stage state is one bit each of `inflight_mask` and
+    // `load_phase`.
+    ::cuda::std::uint32_t inflight_mask = 0;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE overflow_streamer(
       agent_batched_topk_cluster& agent_,
@@ -617,37 +732,28 @@ private:
       return cluster_rank + (overflow_base + overflow_idx) * static_cast<offset_t>(cluster_size);
     }
 
-    // Grow the loader set to `count` entries (idempotent). The first-pass resident
-    // load calls this to construct the loaders, then keeps using them; the
-    // streamer reuses those same objects for the overflow passes. Each new loader
-    // binds to a distinct, previously-unused `load_storage` slot, so a live
-    // mbarrier is never re-initialized (which is why no `Invalidate()` is needed).
-    _CCCL_DEVICE _CCCL_FORCEINLINE void ensure_loaders(int count)
-    {
-      while (static_cast<int>(loaders.size()) < count)
-      {
-        loaders.emplace_back(agent.temp_storage.load_storage[loaders.size()]);
-      }
-    }
-
     _CCCL_DEVICE _CCCL_FORCEINLINE void issue_load(int stage, offset_t overflow_idx)
     {
       const offset_t chunk_idx = chunk_index_of(overflow_idx);
       const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
       // The boundary chunks (unaligned head and tail) are kept resident, so every streamed chunk is fully aligned
-      // and uses the guard-free aligned path.
+      // and uses the guard-free aligned (TMA bulk) path.
       _CCCL_ASSERT(agent.is_aligned_chunk(block_keys_base, chunk), "overflow streamer received an unaligned chunk");
       char* const dst = agent.key_slots + (stream_slot_base + stage) * slot_stride_bytes;
       const ::cuda::std::span<const key_t> src{
         block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(chunk.count)};
-      // The returned span aliases `dst`, but its shared address-space provenance is not preserved across the spill of
-      // `pending[]`; record the rooted 32-bit shared address and rebuild the span via `bulk_span` at the read.
-      [[maybe_unused]] const auto loaded =
-        loaders[stage].template CopyAsync<key_t, load_align_bytes>(agent.available_block_tile_buffer(dst), src);
-      pending[stage] = {static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(dst)),
-                        static_cast<int>(chunk.count)};
-      tokens[stage].emplace(loaders[stage].Commit());
-      slot_chunk[stage] = overflow_idx;
+      agent.issue_bulk_copy(stage, dst, src);
+      inflight_mask |= (::cuda::std::uint32_t{1} << stage);
+    }
+
+    // Rebuild the shared span for the chunk currently resident in `stage`'s slot without storing per-stage state: the
+    // slot address is a pure function of `stage` and the length is recomputed from chunk index `o`, so there is no
+    // spillable `pending[]` array (see `bulk_span`).
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<key_t> stage_span(int stage, offset_t o) const
+    {
+      char* const dst  = agent.key_slots + (stream_slot_base + stage) * slot_stride_bytes;
+      const auto chunk = agent.get_chunk(chunk_index_of(o), segment_size, head_items);
+      return agent.bulk_span({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(dst)), chunk.count});
     }
 
     // Apply `f` to every overflow key once, in the current ping-pong direction.
@@ -663,9 +769,6 @@ private:
 
       if constexpr (use_block_load_to_shared)
       {
-        // Normally a no-op: the resident load already built `PipelineStages >= p_eff`
-        // loaders. Only the (asserted-against) tiny-config edge would grow here.
-        ensure_loaders(p_eff);
         const offset_t pe = static_cast<offset_t>(p_eff);
 
         // First ever call: prime the streaming slots. Subsequent calls inherit
@@ -685,13 +788,12 @@ private:
         {
           const offset_t o = forward ? i : (m - 1 - i);
           const int stage  = static_cast<int>(o % pe);
-          if (tokens[stage].has_value())
+          if (inflight_mask & (::cuda::std::uint32_t{1} << stage))
           {
-            loaders[stage].Wait(::cuda::std::move(*tokens[stage]));
-            tokens[stage].reset();
+            agent.wait_stage(stage);
+            inflight_mask &= ~(::cuda::std::uint32_t{1} << stage);
           }
-          _CCCL_ASSERT(slot_chunk[stage] == o, "overflow streamer slot/chunk mapping diverged");
-          agent.for_each_chunk_key(agent.bulk_span(pending[stage]), f);
+          agent.for_each_chunk_key(stage_span(stage, o), f);
 
           // Prefetch the chunk `p_eff` visits ahead in this direction. It maps
           // to the slot we just finished, so a barrier is required before the
@@ -756,8 +858,8 @@ private:
     const auto segment_size_u32     = static_cast<offset_t>(segment_size);
     const unsigned int cluster_size = cluster.num_blocks();
 
-    // DSMEM pointers into the leader block's shared memory.
-    offset_t* leader_hist = cluster.map_shared_rank(temp_storage.hist, 0);
+    // DSMEM pointer into the leader block's shared memory. The Step 2 histogram fold reaches the leader's `hist`
+    // through a `mapa`-formed `shared::cluster` address instead (see `hist_fold_remote`).
     state_t* leader_state = cluster.map_shared_rank(&temp_storage.state, 0);
 
     // Per-block local copy of `kth_key_bits` so each key check hits the
@@ -855,38 +957,33 @@ private:
     ::cuda::std::uint32_t resident_smem32 = 0;
 
     reset_hist();
+    if constexpr (use_block_load_to_shared)
+    {
+      // Arm the stage barriers once; reused (ping-ponged) by the resident load and the overflow streamer across passes.
+      init_load_barriers();
+    }
     __syncthreads();
 
     {
       extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
-      auto add_first_pass = [&](const key_t& key) {
+      const ::cuda::std::uint32_t hist_smem32 = hist_base32();
+      const bool is_leader_block              = cluster_rank == 0;
+      auto add_first_pass                     = [&](const key_t& key) {
         const int bucket = extract_op(key);
-        if (cluster_rank == 0)
-        {
-          atomicAdd(&temp_storage.hist[bucket], offset_t{1});
-        }
-        else
-        {
-          atomicAdd_block(&temp_storage.hist[bucket], offset_t{1});
-        }
+        hist_inc(hist_smem32, bucket, is_leader_block);
       };
 
       if constexpr (use_block_load_to_shared)
       {
         if (my_resident_chunks > 0)
         {
-          // BlockLoadToShared is non-copyable and non-movable. The loaders are owned by `streamer` and constructed
-          // here; the streamer then reuses these very objects for the overflow passes (continuing their Commit/Wait
-          // pipeline) instead of tearing them down and re-initializing the shared `load_storage`. The per-chunk tokens
-          // and pending (bulk) spans, however, are only needed for this resident load, so they stay local. Each
-          // resident chunk is loaded as its aligned bulk only; the two boundary edges are filled afterwards.
-          ::cuda::std::inplace_vector<typename block_load_t::CommitToken, PipelineStages> tokens;
-          // Per-stage resident bulk, carried as a 32-bit shared address + length rather than a 64-bit pointer (see
-          // `shared_bulk`): the pipeline array spills to local memory, and a spilled generic pointer would demote the
-          // first-pass key reads from `LDS` to a generic `LD`.
-          ::cuda::std::inplace_vector<shared_bulk, PipelineStages> pending_spans;
+          // Stage mbarriers and the `load_phase` parity are shared with the streamer (no per-chunk token array needed).
+          // Chunks are written densely in slot order and read back in the same order, so the read cursor (`read_off`)
+          // mirrors the write cursor (`next_off`) as a running prefix sum, avoiding a dynamically-indexed
+          // `pending_spans` array that would anchor surrounding state to local memory. Each chunk loads its aligned
+          // bulk only (boundary edges are filled afterwards); the read span is rebuilt from a rooted 32-bit shared
+          // address (see `bulk_span`) so a spilled cursor cannot demote the first-pass reads from `LDS` to `LD`.
           const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_resident_chunks));
-          streamer.ensure_loaders(prologue);
 
           // Resident slot -> rank-local chunk index. Identity, except the last slot holds the forced-resident tail.
           const auto resident_local = [&](offset_t slot) -> offset_t {
@@ -916,11 +1013,8 @@ private:
           const int sba           = detail::LoadToSharedBufferAlignBytes<key_t>();
           const int front_bytes   = front_edge * int{sizeof(key_t)};
           const int head_bulk_off = ::cuda::round_up(front_bytes, sba);
-          // Write cursor as a byte offset from `key_slots`. The destination is always formed as `key_slots + offset`
-          // (rooted at the extern-shared base) rather than by chaining the pointers returned by `CopyAsync`: those
-          // returned pointers do not preserve their shared address-space provenance, so a chained cursor would be
-          // rejected by BlockLoadToShared's "destination must be shared memory" check even though it is numerically
-          // inside the block_tile.
+          // Write cursor as a byte offset from `key_slots`; the destination is always `key_slots + offset` (rooted at
+          // the extern-shared base) so it keeps shared address-space provenance.
           const int resident_begin_off = head_bulk_off - front_bytes;
           int next_off                 = head_bulk_off;
 
@@ -928,35 +1022,30 @@ private:
           // bulk in the forced case) ends the packed region and its suffix can be appended right after it.
           for (int stage = 0; stage < prologue; ++stage)
           {
-            auto& loader   = streamer.loaders[stage];
             const auto src = bulk_src(static_cast<offset_t>(stage));
-            // The returned span aliases `key_slots + next_off`, but its shared address-space provenance is not
-            // preserved; we record the rooted shared address and rebuild the read span via `bulk_span` below.
-            [[maybe_unused]] const auto loaded = loader.template CopyAsync<key_t, load_align_bytes>(
-              available_block_tile_buffer(key_slots + next_off), src);
-            pending_spans.push_back({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + next_off)),
-                                     static_cast<int>(::cuda::std::size(src))});
+            issue_bulk_copy(stage, key_slots + next_off, src);
             next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
-            tokens.emplace_back(loader.Commit());
           }
 
+          // Read cursor trailing the write cursor: chunk `p`'s bulk was written at `read_off` (packed and consumed in
+          // the same order), and `bulk_src(p)` recomputes its length, so the read span needs no stored per-stage state.
+          int read_off = head_bulk_off;
           for (offset_t p = 0; p < my_resident_chunks; ++p)
           {
             const int stage = static_cast<int>(p % static_cast<offset_t>(prologue));
-            streamer.loaders[stage].Wait(::cuda::std::move(tokens[stage]));
-            for_each_chunk_key(bulk_span(pending_spans[stage]), add_first_pass);
+            wait_stage(stage);
+            const int read_len = static_cast<int>(::cuda::std::size(bulk_src(p)));
+            for_each_chunk_key(
+              bulk_span({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + read_off)), read_len}),
+              add_first_pass);
+            read_off += read_len * int{sizeof(key_t)};
 
             const offset_t next_p = p + static_cast<offset_t>(prologue);
             if (next_p < my_resident_chunks)
             {
-              const auto src                     = bulk_src(next_p);
-              [[maybe_unused]] const auto loaded = streamer.loaders[stage].template CopyAsync<key_t, load_align_bytes>(
-                available_block_tile_buffer(key_slots + next_off), src);
-              pending_spans[stage] = {
-                static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + next_off)),
-                static_cast<int>(::cuda::std::size(src))};
+              const auto src = bulk_src(next_p);
+              issue_bulk_copy(stage, key_slots + next_off, src);
               next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
-              tokens[stage] = streamer.loaders[stage].Commit();
             }
           }
 
@@ -1013,9 +1102,9 @@ private:
         }
       }
 
-      // Fold the overflow chunks into the first-pass histogram. Forward direction; primes the streaming slots.
-      // The streamer reuses the resident loaders (no re-init), so this just continues their Commit/Wait pipeline;
-      // `Commit()`'s own block barrier provides the necessary synchronization.
+      // Fold the overflow chunks into the first-pass histogram. Forward direction; primes the streaming slots. The
+      // streamer reuses the resident load's stage barriers (no re-init); `wait_stage` provides the producer/consumer
+      // sync.
       streamer.process_pass(add_first_pass);
 
       const int resident_count = span_size(resident_keys);
@@ -1067,26 +1156,15 @@ private:
         identify_candidates_op_t identify_op(&kth_key_bits_local, pass, total_bits, decomposer_t{});
         extract_bin_op_t extract_op(pass, total_bits, decomposer_t{});
 
-        // Step 1: block-private histogram. The leader uses device-scope
-        // `atomicAdd` so it is mutually atomic per the PTX ISA with the
-        // remote device-scope `atomicAdd`s that non-leaders issue against
-        // the same SMEM through DSMEM in Step 2. Non-leaders only write to
-        // their own `hist[]` and keep the cheaper `atomicAdd_block`.
-        // TODO(https://github.com/NVIDIA/cccl/issues/73): collapse both
-        // branches onto cluster-scope atomics once
-        // `cuda::thread_scope_cluster` is exposed in libcudacxx.
-        auto add_hist = [&](const key_t& key) {
+        // Step 1: block-private histogram via shared-space `red` (see `hist_inc`): leader uses cluster scope to be
+        // mutually atomic with the non-leaders' Step 2 DSMEM folds, non-leaders use the cheaper cta scope.
+        const ::cuda::std::uint32_t hist_smem32 = hist_base32();
+        const bool is_leader_block              = cluster_rank == 0;
+        auto add_hist                           = [&](const key_t& key) {
           if (identify_op(key) == detail::topk::candidate_class::candidate)
           {
             const int bucket = extract_op(key);
-            if (cluster_rank == 0)
-            {
-              atomicAdd(&temp_storage.hist[bucket], offset_t{1});
-            }
-            else
-            {
-              atomicAdd_block(&temp_storage.hist[bucket], offset_t{1});
-            }
+            hist_inc(hist_smem32, bucket, is_leader_block);
           }
         };
 
@@ -1122,20 +1200,17 @@ private:
       // Step 2: non-leader blocks fold their per-bucket values
       // (raw counts in the reduce-then-scan path, block-local inclusive
       // scans in the scan-then-reduce path) into the leader's `hist`
-      // via DSMEM atomics. The leader skips this to avoid double-counting
-      // its own contribution. `atomicAdd` matches the leader's
-      // device-scope Step 1 atomic (see comment there).
-      // TODO(https://github.com/NVIDIA/cccl/issues/73): use a
-      // cluster-scope atomic once `cuda::thread_scope_cluster` is
-      // exposed in libcudacxx.
+      // via cluster-scope DSMEM atomics (see `hist_fold_remote`). The
+      // leader skips this to avoid double-counting its own contribution.
       if (cluster_rank != 0)
       {
+        const ::cuda::std::uint32_t hist_smem32 = hist_base32();
         for (int i = static_cast<int>(threadIdx.x); i < num_buckets; i += threads_per_block)
         {
           const offset_t v = temp_storage.hist[i];
           if (v != 0)
           {
-            atomicAdd(leader_hist + i, v);
+            hist_fold_remote(hist_smem32 + static_cast<::cuda::std::uint32_t>(i) * sizeof(offset_t), v);
           }
         }
       }
