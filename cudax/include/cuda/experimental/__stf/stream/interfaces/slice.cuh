@@ -281,10 +281,7 @@ public:
 
   ::std::optional<cudaMemoryType> get_memory_type(instance_id_t instance_id) override
   {
-    auto s = this->instance(instance_id);
-
-    const auto attributes = cuda_try<cudaPointerGetAttributes>(s.data_handle());
-
+    const auto attributes = cuda_try<cudaPointerGetAttributes>(this->instance(instance_id).data_handle());
     // Implicitly converted to an optional
     return attributes.type;
   }

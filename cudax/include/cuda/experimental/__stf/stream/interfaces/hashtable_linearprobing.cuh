@@ -80,7 +80,7 @@ public:
     // NAIVE method !
     // cudaMemcpyAsync is an overload set (cuda_runtime.h alternate-spelling wrapper),
     // so it keeps the runtime-status cuda_try form.
-    cuda_try(cudaMemcpyAsync((void*) dst, (void*) src, sz, kind, s));
+    cuda_try<cudaMemcpyAsync<void*, void*>>(dst, src, sz, kind, s);
   }
 
   void stream_data_allocate(
@@ -101,7 +101,7 @@ public:
       // Fallback to a synchronous method. cudaHostAlloc is an overload set
       // (cuda_runtime.h templated wrapper), so it keeps the runtime-status form.
       cuda_try<cudaStreamSynchronize>(stream);
-      cuda_try(cudaHostAlloc(&base_ptr, s, cudaHostAllocMapped));
+      base_ptr = cuda_try<cudaHostAlloc<reserved::KeyValue>>(s, cudaHostAllocMapped);
       memset(base_ptr, 0xff, s);
     }
     else
@@ -131,16 +131,19 @@ public:
     cudaStream_t stream) override
   {
     hashtable& local_desc = this->instance(instance_id);
+
     if (memory_node.is_host())
     {
       // Fallback to a synchronous method
-      cuda_try<cudaStreamSynchronize>(stream);
+      auto cudaStreamSynchronizeResult = cudaStreamSynchronize(stream);
       cuda_try<cudaFreeHost>(local_desc.addr);
+      cuda_try(cudaStreamSynchronizeResult);
     }
     else
     {
       cuda_try<cudaFreeAsync>(local_desc.addr, stream);
     }
+
     local_desc.addr = nullptr; // not strictly necessary, but helps debugging
   }
 };
