@@ -105,6 +105,7 @@ struct AgentHistogramPolicy
 
   /// Vector size for samples loading (1, 2, 4)
   static constexpr int VEC_SIZE = VecSize;
+  static_assert(VEC_SIZE == 1 || VEC_SIZE == 2 || VEC_SIZE == 4);
 
   ///< The BlockLoad algorithm to use
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
