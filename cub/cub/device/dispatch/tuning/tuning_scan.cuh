@@ -127,7 +127,7 @@ struct ScanLookaheadPolicy
     return items_per_thread * reduce_and_scan_warps * cub::detail::warp_threads;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const ScanLookaheadPolicy& lhs, const ScanLookaheadPolicy& rhs) noexcept
   {
     return lhs.reduce_and_scan_warps == rhs.reduce_and_scan_warps && lhs.items_per_thread == rhs.items_per_thread
@@ -135,7 +135,7 @@ struct ScanLookaheadPolicy
         && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const ScanLookaheadPolicy& lhs, const ScanLookaheadPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
