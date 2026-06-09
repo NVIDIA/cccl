@@ -22,9 +22,9 @@
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/temporary_storage.cuh>
+#include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
-#include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
@@ -177,10 +177,10 @@ private:
     else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
     {
       using default_policy_selector =
-        detail::reduce_nondeterministic::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+        detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, /* StableReductionOrder */ false>;
       return detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-          return detail::reduce_nondeterministic::dispatch<accum_t>(
+          return detail::reduce::dispatch<accum_t, /* StableReductionOrder */ false>(
             storage,
             bytes,
             d_in,
@@ -195,7 +195,8 @@ private:
     }
     else
     {
-      using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+      using default_policy_selector =
+        detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, /* StableReductionOrder */ true>;
       return detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::reduce::dispatch<accum_t>(
