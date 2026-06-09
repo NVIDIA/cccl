@@ -26,7 +26,7 @@ struct bench_scan_by_key_policy_selector
             TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
             TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
             cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+            lookback_delay_policy};
   }
 };
 #endif // !TUNE_BASE

@@ -496,7 +496,7 @@ public:
       OffsetT num_items,
       int pass_radix_bits,
       detail::radix_sort::radix_sort_upsweep_policy upsweep_policy,
-      detail::radix_sort::scan_policy scan_policy,
+      ScanPolicy scan_policy,
       detail::radix_sort::radix_sort_downsweep_policy downsweep_policy,
       KernelLauncherFactory launcher_factory)
     {

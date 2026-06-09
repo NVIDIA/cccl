@@ -257,8 +257,8 @@ using device_radix_sort_policy = {5};
 using namespace cub;
 using namespace cub::detail;
 using namespace cub::detail::radix_sort;
-using cub::detail::delay_constructor_policy;
-using cub::detail::delay_constructor_kind;
+using cub::LookbackDelayPolicy;
+using cub::LookbackDelayAlgorithm;
 static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_keys_it.value_type.size, // 0
