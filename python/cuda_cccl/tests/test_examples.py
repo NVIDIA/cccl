@@ -81,6 +81,16 @@ def run_example_module(module_name, display_name):
                 print(f"  {display_name} skipped (sys.exit({exit_exc.code}))")
                 return True
             raise
+        except ImportError as import_exc:
+            # Some STF examples require optional nvmath-python dependencies that
+            # are not installed in all CI example test environments.
+            if (
+                module_name in {"stf.examples.cholesky", "stf.examples.potri"}
+                and "requires nvmath-python" in str(import_exc)
+            ):
+                print(f"  {display_name} skipped ({import_exc})")
+                return True
+            raise
 
         # Check if module has a main function - if so, run it
         if hasattr(module, "__main__") or hasattr(module, "main"):
