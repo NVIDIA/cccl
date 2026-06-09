@@ -64,7 +64,6 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   // by the driver between launches. Without this flag, re-launching such a
   // graph aborts with `cudaErrorInvalidValue` ("Attempting to launch a graph
   // with unfreed allocation"). Available since CTK 11.4.
-  cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch));
   *res = cuda_try<cudaGraphInstantiateWithFlags>(g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
   return res;
