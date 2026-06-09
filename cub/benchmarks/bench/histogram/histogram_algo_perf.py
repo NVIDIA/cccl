@@ -79,17 +79,24 @@ BINARY_META = {
 # per series in draw_perf so coincident points fan out instead of stacking.
 # (color, marker, label, linestyle, linewidth)
 ALGO_STYLE = {
-    "default": ("#000000", "*", "selector default (ships)", "-", 3.4),
-    "main": ("#e6194B", "X", "UPSTREAM main (default)", "-.", 3.4),
-    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv gather (no cache)", "-", 1.7),
-    "gmem_privatized_cuckoo": ("#1f77b4", "o", "gmem-priv + cuckoo", "--", 1.7),
-    "gmem_privatized_single_probe": ("#17becf", "s", "gmem-priv + single-probe", ":", 1.7),
-    "direct_cuckoo": ("#2ca02c", "D", "direct-atomic + cuckoo", "--", 1.7),
-    "direct_single_probe": ("#8c8c00", "P", "direct-atomic + single-probe", ":", 1.7),
-    "direct_nocache": ("#ff7f0e", "v", "direct atomics (no cache)", "-", 1.7),
+    "default": ("#000000", "*", "selector default (ships)", "-", 2.2),
+    "main": ("#e6194B", "X", "UPSTREAM main (default)", "-.", 2.2),
+    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv gather (no cache)", "-", 1.1),
+    "gmem_privatized_cuckoo": ("#1f77b4", "o", "gmem-priv + cuckoo", "--", 1.1),
+    "gmem_privatized_single_probe": ("#17becf", "s", "gmem-priv + single-probe", ":", 1.1),
+    "direct_cuckoo": ("#2ca02c", "D", "direct-atomic + cuckoo", "--", 1.1),
+    "direct_single_probe": ("#8c8c00", "P", "direct-atomic + single-probe", ":", 1.1),
+    "direct_nocache": ("#ff7f0e", "v", "direct atomics (no cache)", "-", 1.1),
+    # On-chip privatized-SMEM kernel. The CUB_HISTO_FORCE_ALGO hook does not force it
+    # (and gates forcing to the high-bin tier), but it IS what the selector runs at
+    # bins <= ON_CHIP_MAX_BINS -- so the plotter synthesizes this series from the
+    # `default` values over that range (see perf_series). Drawn so the low-bin region
+    # is a named algorithm, not two unlabeled reference lines.
+    "smem_privatized": ("#8c564b", "h", "smem privatized (on-chip)", "-", 1.3),
 }
 # Draw order: reference series last (on top). gmem/direct candidates first.
 ALGO_ORDER = [
+    "smem_privatized",
     "gmem_privatized_nocache",
     "gmem_privatized_cuckoo",
     "gmem_privatized_single_probe",
@@ -105,6 +112,13 @@ ALGO_ORDER = [
 # forced run is launch-validated, so each algorithm -- including hybrid -- is
 # genuinely measured down to the smallest swept bin count.
 MIN_PLOT_BINS = 0
+
+# At or below this bin count the whole histogram fits on-chip, so the selector
+# always runs the privatized-SMEM kernel (`smem_privatized`) and the high-bin
+# CUB_HISTO_FORCE_ALGO override is a no-op -- the forced gmem-priv / direct-atomic
+# series therefore have NO distinct data here (only `default` and `main` are drawn,
+# and `default` IS smem_privatized). cub/.../dispatch_histogram.cuh: max_dynamic_smem_bins.
+ON_CHIP_MAX_BINS = 16384
 
 
 def fmt_elements(e: int) -> str:
@@ -138,6 +152,17 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
         pts.sort()
         if pts:
             out[algo] = (np.array([p[0] for p in pts]), np.array([p[1] for p in pts]))
+    # Synthesize the `smem_privatized` series: it is never measured under that name
+    # (the force hook neither accepts nor needs it), but it IS exactly what the
+    # selector `default` runs for bins <= ON_CHIP_MAX_BINS -- so derive it from the
+    # default points over the on-chip range. Makes the low-bin region a named
+    # algorithm instead of an unexplained `default`/`main`-only stretch. (Only added
+    # when not already an explicit series, so a future real measurement would win.)
+    if "smem_privatized" in algos and "smem_privatized" not in out and "default" in out:
+        db, dv = out["default"]
+        mask = [j for j, b in enumerate(db) if int(b) <= ON_CHIP_MAX_BINS]
+        if mask:
+            out["smem_privatized"] = (np.array([db[j] for j in mask]), np.array([dv[j] for j in mask]))
     return out
 
 
@@ -164,10 +189,6 @@ def draw_perf(ax, series, title):
         ax.set_ylabel("speedup vs upstream main (×, log2)")
         # Every algorithm EXCEPT main, divided by main at the shared bin points.
         drawn = [a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])]
-        # Per-series horizontal marker dodge: the x-axis is log2, so a small
-        # MULTIPLICATIVE nudge spaces markers evenly. Lines stay at true x (no data
-        # distortion); only the markers fan out so coincident points are separable.
-        n_drawn = len(drawn)
         for i, algo in enumerate(drawn):
             color, marker, label, ls, lw = ALGO_STYLE[algo]
             xb, yv = series[algo]
@@ -178,13 +199,16 @@ def draw_perf(ax, series, title):
             xs = np.array([p[0] for p in pts], dtype=float)
             sp = np.array([p[1] for p in pts])
             is_ref = (algo == "default")
-            dodge = 1.0 + 0.045 * (i - (n_drawn - 1) / 2.0)  # centered, ~±10% across the cluster
-            # Line at true x (markers off), then markers at dodged x (line off).
+            # Lines drawn first (lower zorder); markers all sit ON TOP (zorder 30+)
+            # at the TRUE x, semi-transparent so overlapping points blend visibly
+            # (two coincident markers read darker / show both colors) rather than one
+            # opaque marker hiding another. Distinct marker shapes + dash patterns
+            # still tell coincident series apart; no x-dodge (true data positions).
             ax.plot(xs, sp, color=color, lw=lw, linestyle=ls, marker="",
                     alpha=1.0 if is_ref else 0.85, label=label, zorder=(20 if is_ref else 3 + i))
-            ax.plot(xs * dodge, sp, color=color, marker=marker, markersize=11 if is_ref else 6.5,
-                    linestyle="none", markeredgecolor="white", markeredgewidth=0.5,
-                    alpha=1.0 if is_ref else 0.9, zorder=(21 if is_ref else 10 + i))
+            ax.plot(xs, sp, color=color, marker=marker, markersize=8 if is_ref else 5.5,
+                    linestyle="none", alpha=0.6,
+                    zorder=(32 if is_ref else 30 + i))
         # Baseline reference: main is 1x by definition. Draw it as the styled main line.
         b_color, _, _, b_ls, b_lw = ALGO_STYLE["main"]
         ax.axhline(1.0, color=b_color, linestyle=b_ls, lw=b_lw, alpha=1.0,
@@ -359,7 +383,9 @@ def main():
         # (in canonical ALGO_ORDER). `main` appears only for the generator-identical
         # shapes (the sweep driver omits it elsewhere); a forced algo absent at a
         # given (transform, channels) simply has no points and is dropped per panel.
-        algos = [a for a in ALGO_ORDER if a in per_algo_cells]
+        # `smem_privatized` is synthesized from `default` in perf_series (not a data
+        # key), so include it whenever `default` is present.
+        algos = [a for a in ALGO_ORDER if a in per_algo_cells or a == "smem_privatized"]
 
         samples, elements = set(), set()
         for cells in per_algo_cells.values():
