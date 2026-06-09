@@ -18,9 +18,9 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ScanPolicy
   {
 #  if USES_WARPSPEED()
-    return {cub::ScanAlgorithm::warpspeed,
+    return {cub::ScanAlgorithm::lookahead,
             cub::ScanLookbackPolicy{},
-            cub::ScanWarpspeedPolicy{
+            cub::ScanLookaheadPolicy{
               TUNE_NUM_REDUCE_SCAN_WARPS,
               TUNE_ITEMS_PLUS_ONE - 1,
               TUNE_NUM_LOOKBACK_ITEMS,

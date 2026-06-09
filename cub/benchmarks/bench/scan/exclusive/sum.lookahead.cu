@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// This tunes the warpspeed implementation of scan, which is only available on SM100+. It has entirely different tuning
+// This tunes the lookahead implementation of scan, which is only available on SM100+. It has entirely different tuning
 // parameters and is agnostic of the offset type. It is thus in a separate file, so we can continue to tune the old scan
 // implementation on older hardware architectures.
 

@@ -807,12 +807,12 @@ void TestInclusiveScanForInvalidValues()
   using value_t = unsigned;
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-  // for the CUDA backend, only the warpspeed implementation does not call the scan operator on out-of-bounds data
+  // for the CUDA backend, only the lookahead implementation does not call the scan operator on out-of-bounds data
   cuda::compute_capability cc;
   ASSERT_EQUAL(cub::detail::ptx_compute_cap(cc), cudaSuccess);
   using policy_selector_t = cub::detail::scan::
     policy_selector_from_types<const value_t*, value_t*, value_t, unsigned long long, checking_identity>;
-  if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::warpspeed)
+  if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::lookahead)
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   {
     for (int n : {1, 100, 10'000})

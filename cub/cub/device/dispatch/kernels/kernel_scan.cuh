@@ -32,7 +32,7 @@ namespace detail::scan
 template <typename ScanTileState, typename AccumT>
 union tile_state_kernel_arg_t
 {
-  warpspeed::tile_state_t<AccumT>* warpspeed;
+  warpspeed::tile_state_t<AccumT>* lookahead;
   ScanTileState lookback;
 
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
@@ -67,9 +67,9 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   constexpr ScanPolicy policy = current_policy<PolicySelectorT>();
-  if constexpr (policy.algorithm == ScanAlgorithm::warpspeed)
+  if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
+    device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -118,9 +118,9 @@ template <typename PolicySelector>
 {
   constexpr ScanPolicy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.algorithm == ScanAlgorithm::warpspeed)
+  if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    return num_total_threads(policy.warpspeed);
+    return num_total_threads(policy.lookahead);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   return policy.lookback.threads_per_block;
@@ -202,18 +202,18 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const int num_stages)
 {
   static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
-  if constexpr (active_policy.algorithm == ScanAlgorithm::warpspeed)
+  if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
       NV_PROVIDES_SM_100, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-          d_in, d_out, tile_state.warpspeed, num_items, num_stages};
+          d_in, d_out, tile_state.lookahead, num_items, num_stages};
         device_scan_warpspeed_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
       }));
 #else
     static_assert(sizeof(d_in) == 0,
-                  "Implementation bug: Tuning policy selected warpspeed, but CUDA compiler does not support it");
+                  "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   }
   else
