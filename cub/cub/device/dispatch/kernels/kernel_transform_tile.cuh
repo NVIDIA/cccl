@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Tile DSL kernels backing cub::DeviceTransform's tile path. The kernels
-// assume 16-byte alignment on every pointer and 16-byte divisibility on
-// num_items so the compiler can pick LDG.E.128. Callers in the dispatch
-// header are responsible for honoring those preconditions.
-
 #pragma once
 
 #include <cub/config.cuh>
@@ -29,6 +24,9 @@ CUB_NAMESPACE_BEGIN
 namespace detail::transform::tile
 {
 
+// Tile DSL kernels backing cub::DeviceTransform's tile path. The kernels assume 16-byte alignment on
+// every pointer and 16-byte divisibility on num_items so the compiler can pick LDG.E.128. Callers in
+// the dispatch header are responsible for honoring those preconditions.
 template <int TileSize, typename Fn, typename Out, typename... Ins>
 __tile_global__ void
 transform_kernel(int64_t num_items_, Out* __restrict__ out_, const Ins* __restrict__... ins_)
