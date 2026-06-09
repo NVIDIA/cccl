@@ -34,7 +34,7 @@
 // %RANGE% TUNE_LOOKBACK_STAGES lbs -2:2:1
 // %RANGE% TUNE_BLOCK_IDX_STAGES bis -2:2:1
 
-#      define USES_WARPSPEED() 1
+#      define USES_LOOKAHEAD() 1
 using op_t              = ::cuda::std::plus<>;
 using scan_offset_types = nvbench::type_list<int64_t>;
 #      include "base.cuh"

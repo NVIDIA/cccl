@@ -16,7 +16,7 @@
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
 // %RANGE% TUNE_LOAD ld 0:1:1
 
-#define USES_WARPSPEED() 0
+#define USES_LOOKAHEAD() 0
 using op_t              = ::cuda::std::plus<>;
 using scan_offset_types = offset_types;
 #include "base.cuh"

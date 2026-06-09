@@ -3,21 +3,21 @@
 
 #include <cub/device/device_scan.cuh>
 
-#ifndef USES_WARPSPEED
-#  define USES_WARPSPEED() 0
+#ifndef USES_LOOKAHEAD
+#  define USES_LOOKAHEAD() 0
 #endif
 
 #if !TUNE_BASE
-#  if !USES_WARPSPEED()
+#  if !USES_LOOKAHEAD()
 #    include <look_back_helper.cuh>
-#  endif // !USES_WARPSPEED()
+#  endif // !USES_LOOKAHEAD()
 
 template <typename AccumT>
 struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ScanPolicy
   {
-#  if USES_WARPSPEED()
+#  if USES_LOOKAHEAD()
     return {cub::ScanAlgorithm::lookahead,
             cub::ScanLookbackPolicy{},
             cub::ScanLookaheadPolicy{
