@@ -71,15 +71,22 @@ BINARY_META = {
 # dash-dot with big X markers (the upstream baseline we beat). They are drawn LAST
 # (highest zorder) so they sit on top of the candidate-algorithm cluster instead of
 # being buried under it.
+# Every series has a UNIQUE (color, marker, linestyle) so overlapping curves stay
+# distinguishable: the candidate algorithms often collapse onto nearly the same
+# curve (e.g. cuckoo vs single-probe), so they must differ in BOTH marker shape and
+# dash pattern -- where two lines coincide you then see a dashed line riding over a
+# solid one rather than one hiding the other. Markers are also dodged horizontally
+# per series in draw_perf so coincident points fan out instead of stacking.
+# (color, marker, label, linestyle, linewidth)
 ALGO_STYLE = {
     "default": ("#000000", "*", "selector default (ships)", "-", 3.4),
     "main": ("#e6194B", "X", "UPSTREAM main (default)", "-.", 3.4),
-    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv gather (no cache)", "-", 1.6),
-    "gmem_privatized_cuckoo": ("#1f77b4", "o", "gmem-priv + cuckoo", "-", 1.6),
-    "gmem_privatized_single_probe": ("#17becf", "s", "gmem-priv + single-probe", "-", 1.6),
-    "direct_cuckoo": ("#2ca02c", "o", "direct-atomic + cuckoo", "-", 1.6),
-    "direct_single_probe": ("#8c8c00", "s", "direct-atomic + single-probe", "-", 1.6),
-    "direct_nocache": ("#ff7f0e", "v", "direct atomics (no cache)", "-", 1.6),
+    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv gather (no cache)", "-", 1.7),
+    "gmem_privatized_cuckoo": ("#1f77b4", "o", "gmem-priv + cuckoo", "--", 1.7),
+    "gmem_privatized_single_probe": ("#17becf", "s", "gmem-priv + single-probe", ":", 1.7),
+    "direct_cuckoo": ("#2ca02c", "D", "direct-atomic + cuckoo", "--", 1.7),
+    "direct_single_probe": ("#8c8c00", "P", "direct-atomic + single-probe", ":", 1.7),
+    "direct_nocache": ("#ff7f0e", "v", "direct atomics (no cache)", "-", 1.7),
 }
 # Draw order: reference series last (on top). gmem/direct candidates first.
 ALGO_ORDER = [
@@ -157,6 +164,10 @@ def draw_perf(ax, series, title):
         ax.set_ylabel("speedup vs upstream main (×, log2)")
         # Every algorithm EXCEPT main, divided by main at the shared bin points.
         drawn = [a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])]
+        # Per-series horizontal marker dodge: the x-axis is log2, so a small
+        # MULTIPLICATIVE nudge spaces markers evenly. Lines stay at true x (no data
+        # distortion); only the markers fan out so coincident points are separable.
+        n_drawn = len(drawn)
         for i, algo in enumerate(drawn):
             color, marker, label, ls, lw = ALGO_STYLE[algo]
             xb, yv = series[algo]
@@ -164,12 +175,16 @@ def draw_perf(ax, series, title):
             if not pts:
                 continue
             any_pts = True
-            xs = np.array([p[0] for p in pts])
+            xs = np.array([p[0] for p in pts], dtype=float)
             sp = np.array([p[1] for p in pts])
             is_ref = (algo == "default")
-            ax.plot(xs, sp, color=color, marker=marker, markersize=10 if is_ref else 6,
-                    lw=lw, linestyle=ls, alpha=1.0 if is_ref else 0.8,
-                    label=label, zorder=(20 if is_ref else 3 + i))
+            dodge = 1.0 + 0.045 * (i - (n_drawn - 1) / 2.0)  # centered, ~±10% across the cluster
+            # Line at true x (markers off), then markers at dodged x (line off).
+            ax.plot(xs, sp, color=color, lw=lw, linestyle=ls, marker="",
+                    alpha=1.0 if is_ref else 0.85, label=label, zorder=(20 if is_ref else 3 + i))
+            ax.plot(xs * dodge, sp, color=color, marker=marker, markersize=11 if is_ref else 6.5,
+                    linestyle="none", markeredgecolor="white", markeredgewidth=0.5,
+                    alpha=1.0 if is_ref else 0.9, zorder=(21 if is_ref else 10 + i))
         # Baseline reference: main is 1x by definition. Draw it as the styled main line.
         b_color, _, _, b_ls, b_lw = ALGO_STYLE["main"]
         ax.axhline(1.0, color=b_color, linestyle=b_ls, lw=b_lw, alpha=1.0,
