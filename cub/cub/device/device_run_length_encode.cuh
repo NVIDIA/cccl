@@ -64,7 +64,7 @@ struct DeviceRunLengthEncode
   // to adapt the policy selector to convert the tuning policy
   template <typename PolicySelector>
 #  if _CCCL_HAS_CONCEPTS()
-    requires detail::rle::rle_encode_policy_selector<PolicySelector>
+    requires detail::rle::encode::rle_encode_policy_selector<PolicySelector>
 #  endif // _CCCL_HAS_CONCEPTS()
   struct __policy_selector_adapter
   {
