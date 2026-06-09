@@ -31,7 +31,39 @@
 CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for all non-three-way algorithms of @ref DevicePartition
-using PartitionPolicy = SelectPolicy;
+struct PartitionPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
+  LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const PartitionPolicy& p)
+  {
+    return os
+        << "PartitionPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
 
 //! @rst
 //! DevicePartition provides device-wide, parallel operations for
@@ -74,6 +106,29 @@ using PartitionPolicy = SelectPolicy;
 //! @endrst
 struct DevicePartition
 {
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // Several algorithms dispatch to DeviceSelect, but we want to have a dedicated PartitionPolicy, so we need to adapt
+  // the policy selector to convert the tuning policy
+  template <typename PolicySelector>
+  struct __policy_selector_adapter
+  {
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
+    {
+      // the user-provided policy selector returns a PartitionPolicy, the default one a SelectPolicy
+      const auto policy = PolicySelector{}(cc);
+      static_assert(::cuda::std::is_same_v<decltype(policy), PartitionPolicy>
+                    || ::cuda::std::is_same_v<decltype(policy), SelectPolicy>);
+      return SelectPolicy{
+        policy.threads_per_block,
+        policy.items_per_thread,
+        policy.load_algorithm,
+        policy.load_modifier,
+        policy.scan_algorithm,
+        policy.lookback_delay};
+    }
+  };
+#endif // _CCCL_DOXYGEN_INVOKED
+
   //! @rst
   //! Uses the ``d_flags`` sequence to split the corresponding items from
   //! ``d_in`` into a partitioned sequence ``d_out``.
@@ -310,7 +365,7 @@ struct DevicePartition
     }
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+      env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
@@ -322,7 +377,7 @@ struct DevicePartition
           NullType{},
           static_cast<offset_t>(num_items),
           stream,
-          policy_selector);
+          __policy_selector_adapter<decltype(policy_selector)>{});
       });
   }
 
@@ -571,7 +626,7 @@ struct DevicePartition
     }
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+      env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
@@ -583,7 +638,7 @@ struct DevicePartition
           NullType{},
           static_cast<offset_t>(num_items),
           stream,
-          policy_selector);
+          __policy_selector_adapter<decltype(policy_selector)>{});
       });
   }
 
