@@ -1,10 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Tile port of cub::DeviceTransform. The public surface mirrors
-// cub::DeviceTransform::{Transform, Fill}; the kernels are written against the
-// tile DSL (cuda::tiles). This header requires CTK 13.3 or newer and nvcc
-// invoked with --enable-tile.
+// Internal dispatch helpers for cub::DeviceTransform's tile path:
+//   tile_dispatch_eligible_v  -- compile-time predicate the hook consults
+//   runtime_preconditions_ok  -- runtime alignment + divisibility predicate
+//   dispatch                  -- bridge that launches the tile kernel with
+//                                the trait's substitute functor
+//   DeviceTransform           -- internal tile-local Transform/Fill wrappers
+//                                used by `dispatch`
+// User-facing extension points (tile_eligible / tile_mufu_heavy) live in
+// dispatch_transform_tile_traits.cuh under cub::transform.
+// Requires CTK 13.3 or newer and nvcc invoked with --enable-tile.
 
 #pragma once
 
@@ -102,9 +108,10 @@ using __unwrapped_value_t =
 
 // Combined compile-time predicate used by cub::DeviceTransform's __transform_internal
 // to decide whether to route a given (Op, OutIter, InIters...) to the tile path.
-// The call site lifts this into an `if constexpr` so the standard CUB dispatch
-// is not instantiated when tile takes over (under --enable-tile the standard
-// path fails to compile for many functor/type combinations).
+// The call site lifts this into an `if constexpr`: when this is true the hook
+// tries the tile kernel first and, on runtime alignment / divisibility
+// failure, falls through to the standard CUB dispatch below. When false, the
+// tile branch is discarded and only CUB's standard path is emitted.
 template <typename Op, typename OutIter, typename... InIters>
 inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
@@ -116,7 +123,7 @@ inline constexpr bool tile_dispatch_eligible_v =
 // it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
 // guards the vectorized kernel. The tile kernels use ct::assume_aligned<16>
 // and ct::assume_divisible<16>, so violating these at runtime is UB.
-// Returns false to tell the hook to surface cudaErrorInvalidValue.
+// Returns false to tell the hook to fall back to the standard CUB dispatch.
 template <typename OutIter, typename... InIters, typename OffsetT>
 CUB_RUNTIME_FUNCTION bool
 runtime_preconditions_ok(::cuda::std::tuple<InIters...> const& inputs, OutIter output, OffsetT num_items)

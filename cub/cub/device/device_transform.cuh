@@ -105,11 +105,11 @@ struct DeviceTransform
 
 #if _CCCL_CTK_AT_LEAST(13, 3) && defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
     // Opt-in tile path. When the (Op, T, NIn) combo is trait-eligible AND
-    // the runtime alignment / divisibility / size preconditions hold, route
-    // to the tile kernel. Otherwise fall through to the standard CUB
-    // dispatch below -- CUB's existing kernels handle the unaligned tail
-    // case via their own internal logic, so misalignment is a graceful
-    // fallback, not an error.
+    // the runtime alignment + divisibility preconditions hold, route to the
+    // tile kernel. Otherwise fall through to the standard CUB dispatch
+    // below -- CUB's existing kernels handle the unaligned tail case via
+    // their own internal logic, so misalignment is a graceful fallback,
+    // not an error.
     if constexpr (StableAddress == detail::transform::requires_stable_address::no
                   && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                   && detail::transform::tile::tile_dispatch_eligible_v<
