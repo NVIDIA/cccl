@@ -44,10 +44,10 @@ namespace detail::scan
 namespace __cub_detail  = CUB_NS_QUALIFIER::detail;
 namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 
-_CCCL_HOST_DEVICE_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
+_CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanWarpspeedPolicy& policy)
 {
-  const auto num_total_warps = 2 * policy.num_reduce_and_scan_warps + 1 /*num_load_warps*/
-                             + 1 /*num_sched_warps*/ + 1 /*num_look_ahead_warps*/;
+  const auto num_total_warps = 2 * policy.reduce_and_scan_warps + 1 /*num_load_warps*/
+                             + 1 /*num_sched_warps*/ + 1 /*num_lookahead_warps*/;
   return num_total_warps * warp_threads;
 }
 
@@ -65,7 +65,7 @@ struct scanKernelParams
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
+  static constexpr ScanWarpspeedPolicy policy = current_policy<PolicySelector>().warpspeed;
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
   struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
@@ -262,8 +262,7 @@ template <typename PolicySelector,
           bool ForceInclusive>
 struct warpspeed_scan_closure
 {
-  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
-
+  static constexpr ScanWarpspeedPolicy policy          = current_policy<PolicySelector>().warpspeed;
   static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
   static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
   static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
@@ -278,8 +277,8 @@ struct warpspeed_scan_closure
     squad_lookahead(policy),
   };
 
-  static constexpr int tile_size                   = policy.tile_size();
-  static constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
+  static constexpr int tile_size                  = policy.tile_size();
+  static constexpr int lookahead_items_per_thread = policy.lookahead_items_per_thread;
 
   // We might try to instantiate the kernel with huge types which would lead to a small tile size. Ensure its never 0
   static constexpr int elemPerThread = policy.items_per_thread;
@@ -327,7 +326,7 @@ struct warpspeed_scan_closure
 
     if (!is_first_tile)
     {
-      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<look_ahead_items_per_thread>(
+      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
         specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
       if (squad.isLeaderThread())
       {
@@ -837,7 +836,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
   // Cache special registers at the start of kernel, since getting them takes a few cycles
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
-  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
+  static constexpr ScanWarpspeedPolicy policy = current_policy<PolicySelector>().warpspeed;
 
   // Set up the shared memory resources
   auto res = [&] {
@@ -894,7 +893,7 @@ device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, co
 }
 
 template <typename InputT, typename OutputT, typename AccumT>
-_CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(const scan_warpspeed_policy& policy, int num_stages) -> int
+_CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(const ScanWarpspeedPolicy& policy, int num_stages) -> int
 {
   return smem_for_stages(
     policy,

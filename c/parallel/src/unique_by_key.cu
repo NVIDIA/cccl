@@ -256,8 +256,8 @@ struct __align__({5}) num_out_storage_t {{
 using device_unique_by_key_policy = {12};
 using namespace cub;
 using namespace cub::detail::unique_by_key;
-using cub::detail::delay_constructor_policy;
-using cub::detail::delay_constructor_kind;
+using cub::LookbackDelayPolicy;
+using cub::LookbackDelayAlgorithm;
 static_assert(device_unique_by_key_policy()(detail::current_tuning_cc()) == {13}, "Host generated and JIT compiled policy mismatch");
 static_assert(
   cub::detail::unique_by_key::unique_by_key_vsmem_helper_t<
