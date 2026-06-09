@@ -180,9 +180,11 @@ def bicgstab_solver(ctx, lA_val, lX, lB, N, tol=1e-8, max_iter=100):
     with pytorch_task(ctx, lP.write(), lV.write()) as (tP, tV):
         tP.zero_()
         tV.zero_()
-    with pytorch_task(
-        ctx, lrho_prev.write(), lalpha.write(), lomega.write()
-    ) as (tRhoPrev, tAlpha, tOmega):
+    with pytorch_task(ctx, lrho_prev.write(), lalpha.write(), lomega.write()) as (
+        tRhoPrev,
+        tAlpha,
+        tOmega,
+    ):
         tRhoPrev[:] = 1.0
         tAlpha[:] = 1.0
         tOmega[:] = 1.0

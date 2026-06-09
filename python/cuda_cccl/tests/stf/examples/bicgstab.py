@@ -63,9 +63,11 @@ def bicgstab_solver(ctx, lA, lX, lB, N, tol=1e-10, maxiter=400):
     with pytorch_task(ctx, lP.write(), lV.write()) as (tP, tV):
         tP.zero_()
         tV.zero_()
-    with pytorch_task(
-        ctx, lrho_prev.write(), lalpha.write(), lomega.write()
-    ) as (tRhoPrev, tAlpha, tOmega):
+    with pytorch_task(ctx, lrho_prev.write(), lalpha.write(), lomega.write()) as (
+        tRhoPrev,
+        tAlpha,
+        tOmega,
+    ):
         tRhoPrev[:] = 1.0
         tAlpha[:] = 1.0
         tOmega[:] = 1.0
@@ -154,8 +156,10 @@ def bicgstab_solver(ctx, lA, lX, lB, N, tol=1e-10, maxiter=400):
         ):
             tIter += 1.0
             tCond[:] = (
-                (tRes.squeeze() > tol_sq) & (tIter.squeeze() < float(maxiter))
-            ).to(tCond.dtype).unsqueeze(0)
+                ((tRes.squeeze() > tol_sq) & (tIter.squeeze() < float(maxiter)))
+                .to(tCond.dtype)
+                .unsqueeze(0)
+            )
 
         loop.continue_while(lcond, ">", 0.5)
 

@@ -90,7 +90,10 @@ def _detect_preferred_extra() -> str | None:
     in build-isolation environments where runtime bindings may be absent.
     """
     try:
-        from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_extra
+        from cuda.cccl._cuda_version_utils import (
+            detect_cuda_version,
+            get_recommended_extra,
+        )
     except Exception:
         return None
 
