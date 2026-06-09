@@ -703,19 +703,19 @@ void ValidateDistributionCharacteristic()
     // test Distribution with same range as engine
 
     // test host
-    thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_traits::min(), engine_traits::max())));
+    thrust::generate(h.begin(), h.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution(engine_traits::min(), engine_traits::max())));
+    thrust::generate(d.begin(), d.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
 
     ASSERT_EQUAL(true, d[0]);
 
     // test Distribution with smaller range than engine
 
     // test host
-    typename Distribution::result_type engine_range = engine_traits::max() - engine_traits::min();
+    typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
     thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
 
     ASSERT_EQUAL(true, h[0]);
