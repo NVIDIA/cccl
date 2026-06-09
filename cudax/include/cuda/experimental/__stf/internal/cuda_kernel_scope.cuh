@@ -133,7 +133,9 @@ struct cuda_kernel_desc
 
     if (auto* f = ::std::get_if<const void*>(&func_variant))
     {
-      cuda_safe_call(cudaLaunchKernel(*f, gridDim, blockDim, args_ptr.data(), sharedMem, stream));
+      // cudaLaunchKernel is an overload set (cuda_runtime.h templated wrapper), so it
+      // keeps the runtime-status cuda_try form.
+      cuda_try(cudaLaunchKernel(*f, gridDim, blockDim, args_ptr.data(), sharedMem, stream));
     }
     else
     {
@@ -144,7 +146,7 @@ struct cuda_kernel_desc
         ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
       }
 
-      cuda_safe_call(cuLaunchKernel(
+      cuda_try<cuLaunchKernel>(
         *ker_ptr,
         gridDim.x,
         gridDim.y,
@@ -155,7 +157,7 @@ struct cuda_kernel_desc
         sharedMem,
         stream,
         args_ptr.data(),
-        nullptr));
+        nullptr);
     }
   }
 
@@ -172,7 +174,7 @@ struct cuda_kernel_desc
         .sharedMemBytes = static_cast<unsigned>(sharedMem),
         .kernelParams   = args_ptr.data(),
         .extra          = nullptr};
-      cuda_safe_call(cudaGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+      node = cuda_try<cudaGraphAddKernelNode>(graph, nullptr, 0, &params);
       return;
     }
 
@@ -191,7 +193,7 @@ struct cuda_kernel_desc
         .extra          = nullptr,
         .kern           = nullptr,
         .ctx            = nullptr};
-      cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+      node = cuda_try<cuGraphAddKernelNode>(graph, nullptr, 0, &params);
       return;
     }
 
@@ -212,7 +214,7 @@ struct cuda_kernel_desc
       .kern           = *ker_ptr,
       // ctx=nullptr means current context
       .ctx = nullptr};
-    cuda_safe_call(cuGraphAddKernelNode(&node, graph, nullptr, 0, &params));
+    node = cuda_try<cuGraphAddKernelNode>(graph, nullptr, 0, &params);
   }
 
   // Utility to query the number of registers used by this kernel
@@ -222,8 +224,10 @@ struct cuda_kernel_desc
 
     if (auto* f = ::std::get_if<const void*>(&func_variant))
     {
+      // cudaFuncGetAttributes is an overload set (cuda_runtime.h templated wrapper),
+      // so it keeps the runtime-status cuda_try form.
       cudaFuncAttributes func_attr{};
-      cuda_safe_call(cudaFuncGetAttributes(&func_attr, *f));
+      cuda_try(cudaFuncGetAttributes(&func_attr, *f));
       return func_attr.numRegs;
     }
 
@@ -364,11 +368,13 @@ public:
     {
       if (record_time)
       {
-        cuda_safe_call(cudaGetDevice(&record_time_device)); // We will use this to force it during the next run
-        // Events must be created here to avoid issues with multi-gpu
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+        record_time_device = cuda_try<cudaGetDevice>(); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu.
+        // cudaEventCreate is an overload set, so use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags.
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
       }
     }
 
@@ -386,15 +392,20 @@ public:
     // not clear all its resources yet.
     t.end_uncleared();
 
+    SCOPE(exit)
+    {
+      t.clear();
+      support_task.reset();
+    };
+
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
-        cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-        cuda_safe_call(cudaEventSynchronize(end_event));
+        cuda_try<cudaEventRecord>(end_event, t.get_stream());
+        cuda_try<cudaEventSynchronize>(end_event);
 
-        float milliseconds = 0;
-        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+        const float milliseconds = cuda_try<cudaEventElapsedTime>(start_event, end_event);
 
         auto& dot = *ctx.get_dot();
         if (dot.is_tracing())
@@ -409,12 +420,6 @@ public:
         }
       }
     }
-
-    t.clear();
-
-    // Do release to the task structure as we don't need to reference it when
-    // we have called end()
-    support_task.reset();
 
     return *this;
   }
@@ -527,9 +532,9 @@ private:
           if (i > 0)
           {
 #if _CCCL_CTK_AT_LEAST(13, 0)
-            cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], nullptr, 1));
+            cuda_try<cudaGraphAddDependencies>(g, &chain[i - 1], &chain[i], nullptr, 1);
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-            cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
+            cuda_try<cudaGraphAddDependencies>(g, &chain[i - 1], &chain[i], 1);
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
           }
         }
@@ -568,7 +573,7 @@ private:
   // Are we making some measurements ?
   bool record_time;
   int record_time_device;
-  cudaEvent_t start_event, end_event;
+  cudaEvent_t start_event = nullptr, end_event = nullptr;
 };
 } // end namespace reserved
 } // end namespace cuda::experimental::stf
