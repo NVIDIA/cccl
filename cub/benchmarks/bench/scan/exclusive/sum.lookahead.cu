@@ -14,12 +14,12 @@
 #  if __CUDA_ARCH_LIST__ < 1000
 // We don't care if clang-tidy can't parse this
 #    ifndef _CCCL_CLANG_TIDY_INVOKED
-#      warning "Warpspeed scan requires at least sm_100. Disabling it."
+#      warning "Lookahead scan requires at least sm_100. Disabling it."
 #    endif // !defined _CCCL_CLANG_TIDY_INVOKED
 #  else // __CUDA_ARCH_LIST__ < 1000
 
 #    if __cccl_ptx_isa < 860
-#      warning "Warpspeed scan requires at least PTX ISA 8.6. Disabling it."
+#      warning "Lookahead scan requires at least PTX ISA 8.6. Disabling it."
 #    else // if __cccl_ptx_isa < 860
 
 #      include <nvbench_helper.cuh>
