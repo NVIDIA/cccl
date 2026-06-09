@@ -809,7 +809,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
       }
     };
 
-    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::warpspeed)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter{}().algorithm == ScanAlgorithm::warpspeed)
     {
       return __invoke_warpspeed_algorithm(policy_getter{});
     }
