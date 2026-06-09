@@ -76,7 +76,7 @@ C2H_TEST("stackable: push_graph / pop", "[stackable]")
     REQUIRE(std::fabs(host_data[i] - 2.0 * static_cast<double>(i)) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: pop_prologue relaunch accumulates N times", "[stackable][launchable]")
@@ -129,7 +129,7 @@ C2H_TEST("stackable: pop_prologue relaunch accumulates N times", "[stackable][la
     REQUIRE(std::fabs(host_data[i] - static_cast<double>(relaunchN)) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: pop_prologue with zero launches unfreezes", "[stackable][launchable]")
@@ -193,7 +193,7 @@ C2H_TEST("stackable: pop_prologue with zero launches unfreezes", "[stackable][la
     REQUIRE(std::fabs(host_data[i] - 14.0) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: launchable exec and stream accessors are non-null", "[stackable][launchable]")
@@ -248,7 +248,7 @@ C2H_TEST("stackable: launchable exec and stream accessors are non-null", "[stack
     REQUIRE(std::fabs(host_data[i] - 1.0) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: launchable graph() embed into outer graph", "[stackable][launchable]")
@@ -325,7 +325,7 @@ C2H_TEST("stackable: launchable graph() embed into outer graph", "[stackable][la
     REQUIRE(std::fabs(host_data[i] - 1.0) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: shared pop_prologue dup/free releases only at last free", "[stackable][launchable]")
@@ -419,7 +419,7 @@ C2H_TEST("stackable: shared pop_prologue dup/free releases only at last free", "
     REQUIRE(std::fabs(host_data[i] - expected) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: shared pop_prologue tolerates NULL free", "[stackable][launchable]")
@@ -484,7 +484,7 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
     REQUIRE(std::fabs(host_data[i] - 2.0) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: token + fence", "[stackable]")
@@ -651,8 +651,8 @@ C2H_TEST("stackable: while-body K chained rw tasks sweep", "[stackable][while][c
       total_off_by_one += host_acc[0] - expected;
     }
 
-    cudaFreeHost(host_acc);
-    cudaFreeHost(host_done);
+    REQUIRE(cudaFreeHost(host_acc) == cudaSuccess);
+    REQUIRE(cudaFreeHost(host_done) == cudaSuccess);
   }
 
   REQUIRE(total_mismatches == 0);

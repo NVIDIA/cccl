@@ -68,7 +68,7 @@ C2H_TEST("host_launch with stream context", "[host_launch]")
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -106,7 +106,7 @@ C2H_TEST("host_launch with stream context", "[host_launch]")
 
   REQUIRE(passed);
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("host_launch with graph context", "[host_launch]")
@@ -117,7 +117,7 @@ C2H_TEST("host_launch with graph context", "[host_launch]")
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -157,7 +157,7 @@ C2H_TEST("host_launch with graph context", "[host_launch]")
 
   REQUIRE(passed);
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("host_launch with stackable context", "[host_launch][stackable]")
@@ -168,7 +168,7 @@ C2H_TEST("host_launch with stackable context", "[host_launch][stackable]")
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -204,7 +204,7 @@ C2H_TEST("host_launch with stackable context", "[host_launch][stackable]")
 
   REQUIRE(passed);
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("host_launch inside a stackable nested graph scope", "[host_launch][stackable]")
@@ -215,7 +215,7 @@ C2H_TEST("host_launch inside a stackable nested graph scope", "[host_launch][sta
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -259,5 +259,5 @@ C2H_TEST("host_launch inside a stackable nested graph scope", "[host_launch][sta
 
   REQUIRE(passed);
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }

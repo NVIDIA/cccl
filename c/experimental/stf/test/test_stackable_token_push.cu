@@ -233,5 +233,5 @@ C2H_TEST("stackable: logical_data write/read chain + pop_prologue (workaround)",
   stf_stackable_logical_data_destroy(ld);
   stf_stackable_ctx_finalize(ctx);
 
-  cudaFreeHost(host_dep);
+  REQUIRE(cudaFreeHost(host_dep) == cudaSuccess);
 }
