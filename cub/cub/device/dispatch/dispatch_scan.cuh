@@ -1191,7 +1191,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, dependent_launch)
             .doit(kernel_source.InitKernel(),
-                  kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                  kernel_source.lookahead_make_tile_state_kernel_arg(d_temp_storage),
                   grid_dim)))
     {
       return error;
@@ -1213,7 +1213,6 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
   // Invoke scan kernel
   {
     const int block_dim = detail::scan::num_total_threads(warpspeed_policy);
-
 #  ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
 #  endif // CUB_DEBUG_LOG
@@ -1223,7 +1222,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
             .doit(scan_kernel,
                   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-                  kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                  kernel_source.lookahead_make_tile_state_kernel_arg(d_temp_storage),
                   /* start_tile, unused */ 0,
                   ::cuda::std::move(scan_op),
                   init_value,
