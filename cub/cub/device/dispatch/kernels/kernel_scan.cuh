@@ -221,7 +221,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     static constexpr ScanLookbackPolicy policy = active_policy.lookback;
     static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                   "The memory consistency model does not apply to texture accesses");
-    using ScanPolicyT = AgentScanPolicy<
+    using ScanPolicyT = agent_scan_policy<
       0,
       0,
       void,
