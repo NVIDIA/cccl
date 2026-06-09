@@ -932,7 +932,10 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   KernelLauncherFactory launcher_factory)
 {
   CUB_DETAIL_CONSTEXPR_ISH const ScanLookbackPolicy active_policy = policy_getter().lookback;
-
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    active_policy.threads_per_block >= 1, "Lookback scan policy must have at least 1 thread per block");
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    active_policy.items_per_thread >= 1, "Lookback scan policy must have at least 1 item per thread");
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                "The memory consistency model does not apply to texture accesses");
 
@@ -1091,6 +1094,12 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
   }
 
   CUB_DETAIL_CONSTEXPR_ISH const ScanWarpspeedPolicy warpspeed_policy = policy_getter().warpspeed;
+  CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.reduce_and_scan_warps >= 1,
+                               "Warpspeed scan policy have at least 1 warp for reducing and scanning");
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    warpspeed_policy.items_per_thread >= 1, "Warpspeed scan policy must have at least 1 item per thread");
+  CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.lookahead_items_per_thread >= 1,
+                               "Warpspeed scan policy must look ahead at least 1 item per thread");
 
   const int grid_dim =
     static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
