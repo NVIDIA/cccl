@@ -184,6 +184,7 @@ function(
       "${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$"
       OR "${test_src}" MATCHES "test_device_find_env_api\\.cu$"
       OR "${test_src}" MATCHES "test_device_partition_env_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_select_env_api\\.cu$"
     )
       if (
         "Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
