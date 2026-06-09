@@ -34,7 +34,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for all non-ByKey algorithms in @ref DeviceSelect and @ref DevicePartition (two-way).
+//! The tuning policy for all non-ByKey algorithms in @ref DeviceSelect
 struct SelectPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block

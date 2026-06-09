@@ -134,7 +134,7 @@ C2H_TEST("cub::DevicePartition::If three-way accepts env with stream", "[partiti
 // example-begin partition-if-policy-selector
 struct PartitionPolicySelector
 {
-  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::PartitionPolicy
   {
     return {.threads_per_block = 128,
             .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 10,

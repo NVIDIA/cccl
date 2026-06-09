@@ -30,6 +30,9 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! The tuning policy for all non-three-way algorithms of @ref DevicePartition
+using PartitionPolicy = SelectPolicy;
+
 //! @rst
 //! DevicePartition provides device-wide, parallel operations for
 //! partitioning sequences of data items residing within device-accessible memory.
@@ -53,7 +56,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @par Tuning
 //! All algorithms in DevicePartition, except @p If with three partitions, that accept an environment can be tuned by
-//! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a @ref SelectPolicy, as shown in the
+//! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a @ref PartitionPolicy, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
