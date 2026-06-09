@@ -128,7 +128,7 @@ TEST_FUNC constexpr bool test()
   // __is_single_value_v on unwrapped types
   {
     static_assert(
-      cuda::__argument::__is_single_value_v<cuda::__argument::__traits<cuda::__argument::__immediate<int>>::value_type>);
+      !cuda::__argument::__is_sequence_v<cuda::__argument::__traits<cuda::__argument::__immediate<int>>::value_type>);
     static_assert(
       !cuda::__argument::__traits<cuda::__argument::__immediate_sequence<cuda::std::span<int>>>::is_single_value);
   }
