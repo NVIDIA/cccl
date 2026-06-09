@@ -180,13 +180,13 @@ void test_fill(int64_t n, T value) {
 // User self-registers identity_op and square_op as tile-eligible.
 #if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
 CUB_NAMESPACE_BEGIN
-namespace detail::transform::tile
+namespace transform
 {
 template <> struct tile_eligible<identity_op, int32_t, 1> : ::cuda::std::true_type { using tile_op_type = tile_identity_op; };
 template <> struct tile_eligible<identity_op, float, 1>   : ::cuda::std::true_type { using tile_op_type = tile_identity_op; };
 template <> struct tile_eligible<square_op, int32_t, 1>   : ::cuda::std::true_type { using tile_op_type = tile_square_op; };
 template <> struct tile_eligible<square_op, float, 1>     : ::cuda::std::true_type { using tile_op_type = tile_square_op; };
-} // namespace detail::transform::tile
+} // namespace transform
 CUB_NAMESPACE_END
 #endif
 

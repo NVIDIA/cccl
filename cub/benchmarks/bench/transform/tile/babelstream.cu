@@ -60,13 +60,13 @@ struct tile_nstream_op {
 
 // Self-register each scalar op for all T (partial specialization on T).
 CUB_NAMESPACE_BEGIN
-namespace detail::transform::tile
+namespace transform
 {
 template <class T> struct tile_eligible<mul_op,     T, 1> : ::cuda::std::true_type { using tile_op_type = tile_mul_op; };
 template <class T> struct tile_eligible<add_op,     T, 2> : ::cuda::std::true_type { using tile_op_type = tile_add_op; };
 template <class T> struct tile_eligible<triad_op,   T, 2> : ::cuda::std::true_type { using tile_op_type = tile_triad_op; };
 template <class T> struct tile_eligible<nstream_op, T, 3> : ::cuda::std::true_type { using tile_op_type = tile_nstream_op; };
-} // namespace detail::transform::tile
+} // namespace transform
 CUB_NAMESPACE_END
 #endif
 

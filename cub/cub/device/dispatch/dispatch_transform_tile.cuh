@@ -109,7 +109,8 @@ template <typename Op, typename OutIter, typename... InIters>
 inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
   && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
-  && tile_eligible_v<Op, __detail::__unwrapped_value_t<OutIter>, sizeof...(InIters)>;
+  && CUB_NS_QUALIFIER::transform::tile_eligible_v<
+       Op, __detail::__unwrapped_value_t<OutIter>, sizeof...(InIters)>;
 
 // Runtime predicate consulted by the cub::DeviceTransform tile hook before
 // it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
@@ -160,13 +161,14 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
     },
     inputs);
   using out_value_t = ::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<decltype(out_ptr)>>;
-  using tile_op_t   = typename tile_eligible<TransformOp, out_value_t, sizeof...(InIters)>::tile_op_type;
+  using tile_op_t   =
+    typename CUB_NS_QUALIFIER::transform::tile_eligible<TransformOp, out_value_t, sizeof...(InIters)>::tile_op_type;
   static_assert(::cuda::std::is_empty_v<tile_op_t>,
                 "tile_op_type must be stateless (the tile kernel default-constructs it)");
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_op_type must be trivially default constructible");
 
-  return DeviceTransform::template Transform<0, tile_mufu_heavy_v<TransformOp>, tile_op_t>(
+  return DeviceTransform::template Transform<0, CUB_NS_QUALIFIER::transform::tile_mufu_heavy_v<TransformOp>, tile_op_t>(
     in_ptrs, out_ptr, static_cast<::cuda::std::int64_t>(num_items), tile_op_t{}, stream);
 }
 

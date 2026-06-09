@@ -31,10 +31,10 @@ struct tile_identity {
 };
 
 CUB_NAMESPACE_BEGIN
-namespace detail::transform::tile
+namespace transform
 {
 template <class T> struct tile_eligible<identity, T, 1> : ::cuda::std::true_type { using tile_op_type = tile_identity; };
-} // namespace detail::transform::tile
+} // namespace transform
 CUB_NAMESPACE_END
 #endif
 

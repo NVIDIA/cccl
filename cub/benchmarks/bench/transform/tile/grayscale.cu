@@ -40,10 +40,10 @@ struct tile_rgb_to_y {
 };
 
 CUB_NAMESPACE_BEGIN
-namespace detail::transform::tile
+namespace transform
 {
 template <class T> struct tile_eligible<rgb_to_y, T, 3> : ::cuda::std::true_type { using tile_op_type = tile_rgb_to_y; };
-} // namespace detail::transform::tile
+} // namespace transform
 CUB_NAMESPACE_END
 #endif
 

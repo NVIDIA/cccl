@@ -89,7 +89,7 @@ struct tile_binary_fmin { template <class A, class B> __tile__ auto operator()(A
 struct tile_binary_fmax { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::select(a > b, a, b); } };
 
 CUB_NAMESPACE_BEGIN
-namespace detail::transform::tile
+namespace transform
 {
 // Unary
 template <class T> struct tile_eligible<relu_op,    T, 1> : ::cuda::std::true_type { using tile_op_type = tile_relu;    };
@@ -115,7 +115,7 @@ template <class T> struct tile_eligible<binary_le,   T, 2> : ::cuda::std::true_t
 template <class T> struct tile_eligible<binary_ge,   T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_ge;   };
 template <class T> struct tile_eligible<binary_fmin, T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_fmin; };
 template <class T> struct tile_eligible<binary_fmax, T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_fmax; };
-} // namespace detail::transform::tile
+} // namespace transform
 CUB_NAMESPACE_END
 #endif
 
