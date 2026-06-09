@@ -83,6 +83,39 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @linear_performance{prefix scan}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All non-ByKey algorithms in DeviceScan that accept an environment can be tuned by passing a custom :ref:`policy
+//! selector <cub-policy-selectors>` that returns a @ref ScanPolicy, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-policy-selector
+//!      :end-before: example-end exclusive-sum-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-tuning
+//!      :end-before: example-end exclusive-sum-tuning
+//!
+//! All ByKey algorithms in DeviceScan that accept an environment can be tuned by passing a custom :ref:`policy
+//! selector <cub-policy-selectors>` that returns a @ref ScanByKeyPolicy, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-by-key-policy-selector
+//!      :end-before: example-end exclusive-sum-by-key-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-by-key-tuning
+//!      :end-before: example-end exclusive-sum-by-key-tuning
+//!
 //! @endrst
 struct DeviceScan
 {
@@ -213,8 +246,8 @@ struct DeviceScan
                                                       cub::detail::it_value_t<ValuesInputIteratorT>,
                                                       ScanOpT>;
 
-    using policy_selector_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
 
     // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
     return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(

@@ -28,7 +28,7 @@ struct bench_rle_policy_selector
       TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
       static_cast<bool>(TUNE_TIME_SLICING),
       cub::BLOCK_SCAN_WARP_SCANS,
-      delay_constructor_policy,
+      lookback_delay_policy,
     };
   }
 };
