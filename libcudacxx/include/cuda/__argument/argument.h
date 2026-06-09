@@ -547,7 +547,7 @@ struct __traits_impl
   using element_type                    = __element_type_of_t<_Tp>;
   static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = __is_single_value_v<_Tp>;
+  static constexpr bool is_single_value = true;
   static constexpr element_type lowest  = ::cuda::std::numeric_limits<element_type>::lowest();
   static constexpr element_type highest = (::cuda::std::numeric_limits<element_type>::max)();
 };
