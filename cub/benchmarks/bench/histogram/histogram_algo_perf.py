@@ -136,13 +136,13 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
 
 def draw_perf(ax, series, title):
     """Plot speedup-vs-upstream-`main` for each algorithm: y = (algo GiB/s) / (main
-    GiB/s) at each bin count, log y, with main as the y=1 baseline line and the
-    shipping `default`'s gain shaded above it. If no `main` baseline is present for
-    this cell, fall back to plotting absolute GiB/s (log y)."""
+    GiB/s) at each bin count, on a LINEAR y-axis (a speedup ratio reads directly off
+    a linear axis -- 3 means 3x), with main as the y=1 baseline line and the shipping
+    `default`'s gain shaded. If no `main` baseline is present for this cell, fall back
+    to plotting absolute GiB/s (log y -- a throughput spanning orders of magnitude)."""
     ax.set_title(title, fontsize=9)
     ax.set_xlabel("# bins")
     ax.set_xscale("log", base=2)
-    ax.set_yscale("log")
     any_pts = False
 
     # Baseline = upstream main. Map bin -> main GiB/s for this (sample, elements, shape).
@@ -152,7 +152,7 @@ def draw_perf(ax, series, title):
         baseline = {int(x): y for x, y in zip(mb, mv) if y > 0}
 
     if baseline:
-        ax.set_ylabel("speedup vs upstream main (log)")
+        ax.set_ylabel("speedup vs upstream main (×)")
         # Every algorithm EXCEPT main, divided by main at the shared bin points.
         drawn = [a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])]
         for i, algo in enumerate(drawn):
@@ -183,8 +183,11 @@ def draw_perf(ax, series, title):
                                 zorder=1, label="_nolegend_")
                 ax.fill_between(xs, hi, 1.0, where=(hi < 1.0), color="#d62728", alpha=0.10,
                                 zorder=1, label="_nolegend_")
+        # Linear y from 0; headroom above the max speedup drawn.
+        ax.set_ylim(bottom=0)
     else:
-        # No baseline for this cell -> absolute GiB/s (log y).
+        # No baseline for this cell -> absolute GiB/s (log y -- spans orders of magnitude).
+        ax.set_yscale("log")
         ax.set_ylabel("GiB/s (log)")
         drawn = [a for a in ALGO_ORDER if a in series and len(series[a][0])]
         for i, algo in enumerate(drawn):
@@ -264,8 +267,8 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     fig.suptitle(
         f"{head}\n"
         f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})   "
-        f"middle: speedup vs upstream main (log) vs #bins per input size — one line per algorithm, "
-        f"main = 1x baseline{hr_note}",
+        f"middle: speedup vs upstream main (×, linear) vs #bins per input size — one line per algorithm, "
+        f"main = 1× baseline{hr_note}",
         fontsize=12,
     )
 
