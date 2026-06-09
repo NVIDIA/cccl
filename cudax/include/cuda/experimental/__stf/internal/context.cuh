@@ -321,6 +321,26 @@ public:
       };
     }
 
+    /** Return the task's child CUDA graph for explicit node insertion. Only
+     * valid for tasks running in a graph context that have NOT enabled stream
+     * capture; aborts for stream-context tasks. Mutually exclusive with the
+     * capture path (get_stream()): use one mechanism or the other. */
+    cudaGraph_t get_graph()
+    {
+      return payload->*[&](auto& self) -> cudaGraph_t {
+        using task_t = ::std::decay_t<decltype(self)>;
+        if constexpr (::std::is_same_v<task_t, graph_task<Deps...>>)
+        {
+          return self.get_graph();
+        }
+        else
+        {
+          _CCCL_VERIFY(false, "get_graph() is only valid for tasks in a graph context");
+          return nullptr;
+        }
+      };
+    }
+
     /** When the task's exec place is a grid (size > 1), get the stream for the place at \p place_index
      * (linear index). Returns nullptr for graph_task (no per-place streams), for non-grid exec places, or
      * when \p place_index is out of range. */
