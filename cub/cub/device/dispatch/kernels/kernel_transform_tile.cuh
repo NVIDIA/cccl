@@ -26,32 +26,39 @@ CUB_NAMESPACE_BEGIN
 namespace detail::transform::tile
 {
 
+// Build a tile partition_view for a 1D contiguous buffer. The two annotations are load-bearing:
+//   assume_aligned<16>      -- promises the pointer is 16-byte aligned, so the compiler can pick
+//                              LDG.E.128 vectorized loads/stores.
+//   ct::extents<int64_t,..> -- explicit element type on the extent; CTAD would deduce uint32_t and
+//                              wrap at 2^32. int64_t lets us cover the full num_items range.
+// The caller is responsible for honoring assume_aligned<16>; the dispatch header's
+// runtime_preconditions_ok enforces this before launching either kernel.
+template <int TileSize, typename T, typename N>
+__tile__ auto make_partition_view(T* ptr, N n)
+{
+  namespace ct        = ::cuda::tiles;
+  const auto ptr_align = ct::assume_aligned<16>(ptr);
+  auto span            = ct::tensor_span{ptr_align, ct::extents<::cuda::std::int64_t, ct::dynamic_extent>{n}};
+  return ct::partition_view{span, ct::shape<TileSize>{}};
+}
+
 // Tile DSL kernels backing cub::DeviceTransform's tile path. The kernels assume 16-byte alignment on
 // every pointer and 16-byte divisibility on num_items so the compiler can pick LDG.E.128. Callers in
 // the dispatch header are responsible for honoring those preconditions.
+//
+// assume_divisible<16>      -- promises num_items % 16 == 0, so the tile DSL can elide tail handling.
+// assume_bounded_below<0>   -- promises num_items >= 0; enables sign-comparison simplifications.
 template <int TileSize, typename Fn, typename Out, typename... Ins>
 __tile_global__ void
 transform_kernel(::cuda::std::int64_t num_items, Out* __restrict__ out, const Ins* __restrict__... ins)
 {
-  namespace ct = ::cuda::tiles;
-
+  namespace ct  = ::cuda::tiles;
   const auto bx = ct::bid().x;
   Fn fn{};
 
-  const auto n         = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-  const auto out_align = ct::assume_aligned<16>(out);
-
-  // Explicit int64_t element type on the extent; CTAD would deduce uint32_t and wrap at 2^32. Using
-  // int64_t lets us drop the 2^31 runtime cap.
-  auto out_span = ct::tensor_span{out_align, ct::extents<::cuda::std::int64_t, ct::dynamic_extent>{n}};
-  auto out_view = ct::partition_view{out_span, ct::shape<TileSize>{}};
-
-  auto load_one = [bx, n](auto* ptr) {
-    auto ptr_align = ct::assume_aligned<16>(ptr);
-    auto span      = ct::tensor_span{ptr_align, ct::extents<::cuda::std::int64_t, ct::dynamic_extent>{n}};
-    auto view      = ct::partition_view{span, ct::shape<TileSize>{}};
-    return view.load_masked(bx);
-  };
+  const auto n     = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
+  auto out_view    = make_partition_view<TileSize>(out, n);
+  auto load_one    = [bx, n](auto* ptr) { return make_partition_view<TileSize>(ptr, n).load_masked(bx); };
 
   out_view.store_masked(fn(load_one(ins)...), bx);
 }
@@ -62,12 +69,8 @@ __tile_global__ void fill_kernel(::cuda::std::int64_t num_items, T* __restrict__
   namespace ct  = ::cuda::tiles;
   const auto bx = ct::bid().x;
 
-  const auto n         = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-  const auto out_align = ct::assume_aligned<16>(out);
-
-  // Explicit int64_t element type on the extent (see transform_kernel above).
-  auto out_span = ct::tensor_span{out_align, ct::extents<::cuda::std::int64_t, ct::dynamic_extent>{n}};
-  auto out_view = ct::partition_view{out_span, ct::shape<TileSize>{}};
+  const auto n  = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
+  auto out_view = make_partition_view<TileSize>(out, n);
   using tile_t  = ct::tile<T, ct::shape<TileSize>>;
   out_view.store_masked(ct::full<tile_t>(value), bx);
 }
