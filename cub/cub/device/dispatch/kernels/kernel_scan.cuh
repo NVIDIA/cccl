@@ -20,7 +20,7 @@
 #include <cub/util_macro.cuh>
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-#  include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
+#  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
