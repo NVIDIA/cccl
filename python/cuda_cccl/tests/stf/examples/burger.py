@@ -6,7 +6,7 @@
 Full Burger equation solver using stackable context + PyTorch.
 
 Solves the viscous Burger equation using an implicit time-stepping scheme
-with Newton + CG, expressed entirely as PyTorch tensor operations inside
+with Newton + BiCGSTAB, expressed entirely as PyTorch tensor operations inside
 pytorch_task context managers.
 
 Nesting structure (5 levels, fully graph-captured):
@@ -16,8 +16,8 @@ Nesting structure (5 levels, fully graph-captured):
         newton_solver(ctx, ...)
           with ctx.while_loop():          # level 4 (Newton)
             compute_residual / assemble_jacobian / ...
-            cg_solver(ctx, ...)
-              with ctx.while_loop():      # level 5 (CG)
+            bicgstab_solver(ctx, ...)
+              with ctx.while_loop():      # level 5 (BiCGSTAB)
                 spmv / dot / axpy / ...
       pytorch_task: snapshot copy
 
@@ -142,23 +142,30 @@ def assemble_jacobian(ctx, lU, lA_val, N, h, dt, nu):
 
 
 # ---------------------------------------------------------------------------
-# CG solver
+# BiCGSTAB solver
 # ---------------------------------------------------------------------------
 
 
-def cg_solver(ctx, lA_val, lX, lB, N, cg_tol=1e-8, max_cg=100):
+def bicgstab_solver(ctx, lA_val, lX, lB, N, tol=1e-8, max_iter=100):
     """
-    Conjugate-gradient solver:  A * X = B.
+    BiCGSTAB solver: A * X = B for generally non-symmetric Jacobians.
 
     Uses a stackable while_loop for the iteration, with a compound
     condition scalar (convergence AND iteration cap).
     """
     # --- Data created before the while scope ---
     lR = ctx.logical_data_empty((N,), np.float64, name="R")
+    lRhat = ctx.logical_data_empty((N,), np.float64, name="Rhat")
     lP = ctx.logical_data_empty((N,), np.float64, name="P")
-    lAx = ctx.logical_data_empty((N,), np.float64, name="Ax")
-    lrsold = ctx.logical_data_empty((1,), np.float64, name="rsold")
-    lcg_iter = ctx.logical_data_empty((1,), np.float64, name="cg_iter")
+    lV = ctx.logical_data_empty((N,), np.float64, name="V")
+    lS = ctx.logical_data_empty((N,), np.float64, name="S")
+    lT = ctx.logical_data_empty((N,), np.float64, name="T")
+    lrho = ctx.logical_data_empty((1,), np.float64, name="rho")
+    lrho_prev = ctx.logical_data_empty((1,), np.float64, name="rho_prev")
+    lalpha = ctx.logical_data_empty((1,), np.float64, name="alpha")
+    lomega = ctx.logical_data_empty((1,), np.float64, name="omega")
+    liter = ctx.logical_data_empty((1,), np.float64, name="bicg_iter")
+    ltmp = ctx.logical_data_empty((1,), np.float64, name="tmp")
 
     # X = 0
     with pytorch_task(ctx, lX.write()) as (tX,):
@@ -168,88 +175,107 @@ def cg_solver(ctx, lA_val, lX, lB, N, cg_tol=1e-8, max_cg=100):
     with pytorch_task(ctx, lR.write(), lB.read()) as (tR, tB):
         tR[:] = tB
 
-    # Ax = A*X  (X is zero, but keep for structural fidelity)
-    stf_spmv(ctx, lA_val, lX, lAx, N)
-
-    # R -= Ax
-    with pytorch_task(ctx, lR.rw(), lAx.read()) as (tR, tAx):
-        tR -= tAx
-
-    # P = R
-    with pytorch_task(ctx, lP.write(), lR.read()) as (tP, tR):
-        tP[:] = tR
-
-    # rsold = R'*R
-    stf_dot(ctx, lR, lR, lrsold)
-
-    # iter = 0
-    with pytorch_task(ctx, lcg_iter.write()) as (tIter,):
+    with pytorch_task(ctx, lRhat.write(), lR.read()) as (tRhat, tR):
+        tRhat[:] = tR
+    with pytorch_task(ctx, lP.write(), lV.write()) as (tP, tV):
+        tP.zero_()
+        tV.zero_()
+    with pytorch_task(
+        ctx, lrho_prev.write(), lalpha.write(), lomega.write()
+    ) as (tRhoPrev, tAlpha, tOmega):
+        tRhoPrev[:] = 1.0
+        tAlpha[:] = 1.0
+        tOmega[:] = 1.0
+    with pytorch_task(ctx, liter.write()) as (tIter,):
         tIter.fill_(0.0)
 
-    # --- CG while loop ---
-    cg_tol_sq = cg_tol * cg_tol
+    # --- BiCGSTAB while loop ---
+    tol_sq = tol * tol
 
     with ctx.while_loop() as loop:
-        # Data scoped to the while body
-        lAp = ctx.logical_data_empty((N,), np.float64, name="Ap")
-        lpAp = ctx.logical_data_empty((1,), np.float64, name="pAp")
-        lrsnew = ctx.logical_data_empty((1,), np.float64, name="rsnew")
-        lcond = ctx.logical_data_empty((1,), np.float64, name="cg_cond")
+        lcond = ctx.logical_data_empty((1,), np.float64, name="bicg_cond")
 
-        # Ap = A*P
-        stf_spmv(ctx, lA_val, lP, lAp, N)
+        # rho = dot(rhat, r)
+        stf_dot(ctx, lRhat, lR, lrho)
 
-        # pAp = P'*Ap
-        stf_dot(ctx, lP, lAp, lpAp)
+        # p = r + beta * (p - omega * v)
+        with pytorch_task(
+            ctx,
+            lP.rw(),
+            lR.read(),
+            lrho.read(),
+            lrho_prev.read(),
+            lalpha.read(),
+            lomega.read(),
+            lV.read(),
+        ) as (tP, tR, tRho, tRhoPrev, tAlpha, tOmega, tV):
+            beta = (tRho.squeeze() / tRhoPrev.squeeze()) * (
+                tAlpha.squeeze() / tOmega.squeeze()
+            )
+            tP[:] = tR + beta * (tP - tOmega.squeeze() * tV)
 
-        # X += alpha*P  (alpha = rsold / pAp)
-        with pytorch_task(ctx, lX.rw(), lrsold.read(), lpAp.read(), lP.read()) as (
-            tX,
-            tRsold,
-            tPAp,
-            tP,
+        # v = A*p
+        stf_spmv(ctx, lA_val, lP, lV, N)
+
+        # alpha = rho / dot(rhat, v)
+        stf_dot(ctx, lRhat, lV, ltmp)
+        with pytorch_task(ctx, lalpha.write(), lrho.read(), ltmp.read()) as (
+            tAlpha,
+            tRho,
+            tTmp,
         ):
-            alpha = tRsold.squeeze() / tPAp.squeeze()
-            tX += alpha * tP
+            tAlpha[:] = tRho.squeeze() / tTmp.squeeze()
 
-        # R -= alpha*Ap
-        with pytorch_task(ctx, lR.rw(), lrsold.read(), lpAp.read(), lAp.read()) as (
+        # s = r - alpha*v
+        with pytorch_task(ctx, lS.write(), lR.read(), lalpha.read(), lV.read()) as (
+            tS,
             tR,
-            tRsold,
-            tPAp,
-            tAp,
+            tAlpha,
+            tV,
         ):
-            alpha = tRsold.squeeze() / tPAp.squeeze()
-            tR -= alpha * tAp
+            tS[:] = tR - tAlpha.squeeze() * tV
 
-        # rsnew = R'*R
-        stf_dot(ctx, lR, lR, lrsnew)
+        # t = A*s
+        stf_spmv(ctx, lA_val, lS, lT, N)
 
-        # Compound condition: continue if (!converged && iter < max)
-        with pytorch_task(ctx, lrsnew.read(), lcg_iter.rw(), lcond.write()) as (
-            tRsnew,
+        # omega = dot(t,s)/dot(t,t)
+        stf_dot(ctx, lT, lS, lomega)
+        stf_dot(ctx, lT, lT, ltmp)
+        with pytorch_task(ctx, lomega.rw(), ltmp.read()) as (tOmega, tTmp):
+            tOmega[:] = tOmega.squeeze() / tTmp.squeeze()
+
+        # x = x + alpha*p + omega*s
+        with pytorch_task(
+            ctx, lX.rw(), lalpha.read(), lP.read(), lomega.read(), lS.read()
+        ) as (tX, tAlpha, tP, tOmega, tS):
+            tX[:] = tX + tAlpha.squeeze() * tP + tOmega.squeeze() * tS
+
+        # r = s - omega*t
+        with pytorch_task(ctx, lR.rw(), lS.read(), lomega.read(), lT.read()) as (
+            tR,
+            tS,
+            tOmega,
+            tT,
+        ):
+            tR[:] = tS - tOmega.squeeze() * tT
+
+        # rho_prev = rho
+        with pytorch_task(ctx, lrho_prev.write(), lrho.read()) as (tRhoPrev, tRho):
+            tRhoPrev.copy_(tRho)
+
+        # Compound condition: continue if residual > tol and iter < max.
+        stf_dot(ctx, lR, lR, ltmp)
+        with pytorch_task(ctx, ltmp.read(), liter.rw(), lcond.write()) as (
+            tRes,
             tIter,
             tCond,
         ):
             tIter += 1
-            not_converged = (tRsnew.squeeze() > cg_tol_sq).to(torch.float64)
-            not_max = (tIter.squeeze() < max_cg).to(torch.float64)
+            not_converged = (tRes.squeeze() > tol_sq).to(torch.float64)
+            not_max = (tIter.squeeze() < max_iter).to(torch.float64)
             tCond.copy_((not_converged * not_max).unsqueeze(0))
 
         loop.continue_while(lcond, ">", 0.5)
-
-        # P = R + (rsnew/rsold)*P
-        with pytorch_task(ctx, lP.rw(), lR.read(), lrsnew.read(), lrsold.read()) as (
-            tP,
-            tR,
-            tRsnew,
-            tRsold,
-        ):
-            tP[:] = tR + (tRsnew.squeeze() / tRsold.squeeze()) * tP
-
-        # rsold = rsnew
-        with pytorch_task(ctx, lrsold.write(), lrsnew.read()) as (tRsold, tRsnew):
-            tRsold.copy_(tRsnew)
 
 
 # ---------------------------------------------------------------------------
@@ -264,7 +290,7 @@ def newton_solver(
     Newton solver for the implicit Burger time step.
 
     Each iteration: compute residual, assemble Jacobian, solve the
-    linear system J * delta = -F(U) with CG, then U += delta.
+    linear system J * delta = -F(U) with BiCGSTAB, then U += delta.
     Uses a compound condition scalar for the while loop.
     """
     # --- Data created before the while scope ---
@@ -302,8 +328,8 @@ def newton_solver(
         with pytorch_task(ctx, lrhs.write(), lresidual.read()) as (tRhs, tRes):
             tRhs[:] = -tRes
 
-        # Solve J * delta = rhs  with CG
-        cg_solver(ctx, lA_val, ldelta, lrhs, N, cg_tol=1e-8, max_cg=max_cg)
+        # Solve J * delta = rhs  with BiCGSTAB
+        bicgstab_solver(ctx, lA_val, ldelta, lrhs, N, tol=1e-8, max_iter=max_cg)
 
         # U += delta
         with pytorch_task(ctx, lU.rw(), ldelta.read()) as (tU, tDelta):
