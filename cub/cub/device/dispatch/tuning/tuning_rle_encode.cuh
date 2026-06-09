@@ -348,7 +348,7 @@ struct policy_hub
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept rle_encode_policy_selector = reduce_by_key::reduce_by_key_policy_selector<T>;
+concept rle_encode_policy_selector = detail::policy_selector<T, RLEEncodePolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the RLE dispatchers
