@@ -203,16 +203,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
-  static constexpr reduce_by_key_policy policy = current_policy<PolicySelector>();
-  using AgentReduceByKeyPolicyT                = AgentReduceByKeyPolicy<
-                   policy.threads_per_block,
-                   policy.items_per_thread,
-                   policy.load_algorithm,
-                   policy.load_modifier,
-                   policy.scan_algorithm,
-                   delay_constructor_t<policy.delay_constructor.kind,
-                                       policy.delay_constructor.delay,
-                                       policy.delay_constructor.l2_write_latency>>;
+  static constexpr ReduceByKeyPolicy policy = current_policy<PolicySelector>();
+  using AgentReduceByKeyPolicyT             = agent_reduce_by_key_policy<
+                policy.threads_per_block,
+                policy.items_per_thread,
+                policy.load_algorithm,
+                policy.load_modifier,
+                policy.scan_algorithm,
+                delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
     AgentReduceByKeyPolicyT,
@@ -292,7 +290,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
 template <typename KeysInputIteratorT,
           typename UniqueOutputIteratorT,
           typename ValuesInputIteratorT,
@@ -308,7 +305,7 @@ template <typename KeysInputIteratorT,
             ReductionOpT,
             AccumT,
             cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<KeysInputIteratorT>>>>
-struct DispatchReduceByKey
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey") DispatchReduceByKey
 {
   //-------------------------------------------------------------------------
   // Types and constants
@@ -650,16 +647,14 @@ template <typename PolicyGetter, typename... Args>
 _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_getter)
 {
   // TODO(bgruber): refactor this in the future
-  constexpr reduce_by_key_policy policy = policy_getter();
-  using Policy                          = AgentReduceByKeyPolicy<
-                             policy.threads_per_block,
-                             policy.items_per_thread,
-                             policy.load_algorithm,
-                             policy.load_modifier,
-                             policy.scan_algorithm,
-                             delay_constructor_t<policy.delay_constructor.kind,
-                                                 policy.delay_constructor.delay,
-                                                 policy.delay_constructor.l2_write_latency>>;
+  constexpr ReduceByKeyPolicy policy = policy_getter();
+  using Policy                       = agent_reduce_by_key_policy<
+                          policy.threads_per_block,
+                          policy.items_per_thread,
+                          policy.load_algorithm,
+                          policy.load_modifier,
+                          policy.scan_algorithm,
+                          delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
   return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,
