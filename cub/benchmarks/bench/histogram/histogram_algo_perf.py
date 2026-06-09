@@ -136,10 +136,11 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
 
 def draw_perf(ax, series, title):
     """Plot speedup-vs-upstream-`main` for each algorithm: y = (algo GiB/s) / (main
-    GiB/s) at each bin count, on a LINEAR y-axis (a speedup ratio reads directly off
-    a linear axis -- 3 means 3x), with main as the y=1 baseline line and the shipping
-    `default`'s gain shaded. If no `main` baseline is present for this cell, fall back
-    to plotting absolute GiB/s (log y -- a throughput spanning orders of magnitude)."""
+    GiB/s) at each bin count, on a LOG2 y-axis (so 0.5x and 2x sit symmetrically
+    about the 1x baseline and a wide speedup range stays legible), tick-labelled in
+    plain multiples (1x, 2x, 4x, ...). main is the y=1 baseline line and the shipping
+    `default`'s gain is shaded. If no `main` baseline is present for this cell, fall
+    back to absolute GiB/s (log y)."""
     ax.set_title(title, fontsize=9)
     ax.set_xlabel("# bins")
     ax.set_xscale("log", base=2)
@@ -152,7 +153,8 @@ def draw_perf(ax, series, title):
         baseline = {int(x): y for x, y in zip(mb, mv) if y > 0}
 
     if baseline:
-        ax.set_ylabel("speedup vs upstream main (×)")
+        ax.set_yscale("log", base=2)
+        ax.set_ylabel("speedup vs upstream main (×, log2)")
         # Every algorithm EXCEPT main, divided by main at the shared bin points.
         drawn = [a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])]
         for i, algo in enumerate(drawn):
@@ -183,8 +185,13 @@ def draw_perf(ax, series, title):
                                 zorder=1, label="_nolegend_")
                 ax.fill_between(xs, hi, 1.0, where=(hi < 1.0), color="#d62728", alpha=0.10,
                                 zorder=1, label="_nolegend_")
-        # Linear y from 0; headroom above the max speedup drawn.
-        ax.set_ylim(bottom=0)
+        # Label the log2 axis in plain multiples (..., 0.5×, 1×, 2×, 4×, ...) rather
+        # than 2^n or powers of 10.
+        def _mult(v, _):
+            if v >= 1:
+                return f"{int(round(v))}×" if abs(v - round(v)) < 1e-6 else f"{v:g}×"
+            return f"{v:g}×"
+        ax.get_yaxis().set_major_formatter(plt.FuncFormatter(_mult))
     else:
         # No baseline for this cell -> absolute GiB/s (log y -- spans orders of magnitude).
         ax.set_yscale("log")
@@ -267,7 +274,7 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     fig.suptitle(
         f"{head}\n"
         f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})   "
-        f"middle: speedup vs upstream main (×, linear) vs #bins per input size — one line per algorithm, "
+        f"middle: speedup vs upstream main (×, log2) vs #bins per input size — one line per algorithm, "
         f"main = 1× baseline{hr_note}",
         fontsize=12,
     )
