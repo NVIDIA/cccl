@@ -112,8 +112,6 @@ runs:
         # Never fallback to building locally, fail instead
         SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
         SCCACHE_IDLE_TIMEOUT: 0
-        GH_RUN_NUMBER: ${{github.run_number}}
-        GH_RUN_ATTEMPT: ${{github.run_attempt}}
       run: |
         set -eo pipefail
 
@@ -210,7 +208,7 @@ runs:
         source ci/util/workflow/common.sh
 
         # Temporary: only use the build cluster for every 1 out of 20 runs
-        if test $(((GH_RUN_NUMBER + GH_RUN_ATTEMPT) % 20)) -eq 0; then
+        if test $((RANDOM % 20)) -eq 0; then
           SCCACHE_DIST_URL="https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com"
 
           SCCACHE_DIST_AUTH_TOKEN="$(
