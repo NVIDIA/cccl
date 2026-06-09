@@ -50,7 +50,7 @@ __tile__ auto make_partition_view(T* ptr, N n)
 // assume_bounded_below<0>   -- promises num_items >= 0; enables sign-comparison simplifications.
 template <int TileSize, typename Fn, typename Out, typename... Ins>
 __tile_global__ void
-transform_kernel(::cuda::std::int64_t num_items, Out* __restrict__ out, const Ins* __restrict__... ins)
+transform_kernel(const ::cuda::std::int64_t num_items, Out* __restrict__ out, const Ins* __restrict__... ins)
 {
   namespace ct  = ::cuda::tiles;
   const auto bx = ct::bid().x;
@@ -64,7 +64,7 @@ transform_kernel(::cuda::std::int64_t num_items, Out* __restrict__ out, const In
 }
 
 template <int TileSize, typename T>
-__tile_global__ void fill_kernel(::cuda::std::int64_t num_items, T* __restrict__ out, T value)
+__tile_global__ void fill_kernel(const ::cuda::std::int64_t num_items, T* __restrict__ out, const T value)
 {
   namespace ct  = ::cuda::tiles;
   const auto bx = ct::bid().x;
