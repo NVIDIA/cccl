@@ -810,6 +810,7 @@ C2H_TEST("Scan works with no init value", "[scan]")
   }
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("Scan build result has AoT metadata populated", "[scan][aot]")
 {
   using T = int32_t;
@@ -1000,3 +1001,4 @@ C2H_TEST("Scan link_ltoir round-trip", "[scan][aot]")
 
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
 }
+#endif // CCCL_C_PARALLEL_V2

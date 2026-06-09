@@ -192,6 +192,7 @@ C2H_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", integr
   test_vectorized<BinarySearch_IntegralTypes_UpperBound_Fixture_Tag, value_type>(upper_bound{}, std_upper_bound);
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("BinarySearch build result has AoT metadata populated", "[binary_search][aot]")
 {
   using T = int32_t;
@@ -292,3 +293,4 @@ C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][aot]")
 
   REQUIRE(CUDA_SUCCESS == cccl_device_binary_search_cleanup(&build));
 }
+#endif // CCCL_C_PARALLEL_V2

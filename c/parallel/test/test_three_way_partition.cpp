@@ -523,6 +523,7 @@ C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
   REQUIRE(num_items - static_cast<std::size_t>(num_selected[0] + num_selected[1]) == std_result.num_unselected_items);
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("ThreeWayPartition build result has AoT metadata populated", "[three_way_partition][aot]")
 {
   using T = int32_t;
@@ -674,3 +675,4 @@ C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][aot
 
   REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_cleanup(&build));
 }
+#endif // CCCL_C_PARALLEL_V2

@@ -580,6 +580,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("Reduce build result has AoT metadata populated", "[reduce][aot]")
 {
   using T = int32_t;
@@ -802,3 +803,4 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][aot]")
 
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }
+#endif // CCCL_C_PARALLEL_V2

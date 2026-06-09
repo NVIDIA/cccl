@@ -819,6 +819,7 @@ extern "C" __device__ void op(void* state_ptr, void* x_ptr, void* out_ptr) {
   }
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("Transform build result has AoT metadata populated", "[transform][aot]")
 {
   using T = int32_t;
@@ -909,3 +910,4 @@ C2H_TEST("Transform compile/load round-trip", "[transform][aot]")
 
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
+#endif // CCCL_C_PARALLEL_V2

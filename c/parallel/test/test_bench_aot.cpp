@@ -36,6 +36,8 @@
 #include <cccl/c/reduce.h>
 #include <cccl/c/scan.h>
 
+#ifndef CCCL_C_PARALLEL_V2
+
 using clk = std::chrono::steady_clock;
 
 static double ms_since(clk::time_point t0)
@@ -69,23 +71,23 @@ static void print_row(const char* algo, double jit_ms, double link_ms, double fu
 
 // Runs execute(nullptr, &size) to query temp storage, allocates, then runs execute(ptr, &size).
 // Includes cudaDeviceSynchronize(). Suitable for use inside a timed block.
-#define WITH_TEMP(execute)                                     \
-  do                                                           \
-  {                                                            \
-    size_t _tmp_bytes = 0;                                     \
-    REQUIRE(CUDA_SUCCESS == (execute) (nullptr, &_tmp_bytes)); \
-    void* _d_tmp = nullptr;                                    \
-    if (_tmp_bytes > 0)                                        \
-    {                                                          \
-      REQUIRE(cudaSuccess == cudaMalloc(&_d_tmp, _tmp_bytes)); \
-    }                                                          \
-    REQUIRE(CUDA_SUCCESS == (execute) (_d_tmp, &_tmp_bytes));  \
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());           \
-    if (_d_tmp)                                                \
-    {                                                          \
-      REQUIRE(cudaSuccess == cudaFree(_d_tmp));                \
-    }                                                          \
-  } while (false)
+#  define WITH_TEMP(execute)                                     \
+    do                                                           \
+    {                                                            \
+      size_t _tmp_bytes = 0;                                     \
+      REQUIRE(CUDA_SUCCESS == (execute) (nullptr, &_tmp_bytes)); \
+      void* _d_tmp = nullptr;                                    \
+      if (_tmp_bytes > 0)                                        \
+      {                                                          \
+        REQUIRE(cudaSuccess == cudaMalloc(&_d_tmp, _tmp_bytes)); \
+      }                                                          \
+      REQUIRE(CUDA_SUCCESS == (execute) (_d_tmp, &_tmp_bytes));  \
+      REQUIRE(cudaSuccess == cudaDeviceSynchronize());           \
+      if (_d_tmp)                                                \
+      {                                                          \
+        REQUIRE(cudaSuccess == cudaFree(_d_tmp));                \
+      }                                                          \
+    } while (false)
 
 C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 {
@@ -467,3 +469,5 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
   std::printf("  %s\n\n", std::string(92, '-').c_str());
 }
+
+#endif // CCCL_C_PARALLEL_V2

@@ -724,6 +724,7 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   REQUIRE(expected_values == std::vector<item_t>(output_vals));
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("SegmentedSort build result has AoT metadata populated", "[segmented_sort][aot]")
 {
   using T = int32_t;
@@ -877,3 +878,4 @@ C2H_TEST("SegmentedSort compile/load round-trip", "[segmented_sort][aot]")
 
   REQUIRE(CUDA_SUCCESS == cccl_device_segmented_sort_cleanup(&build));
 }
+#endif // CCCL_C_PARALLEL_V2

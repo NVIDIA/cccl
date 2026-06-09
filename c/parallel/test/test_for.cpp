@@ -300,6 +300,7 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("For build result has AoT metadata populated", "[for][aot]")
 {
   using T = int32_t;
@@ -447,6 +448,7 @@ C2H_TEST("For link_ltoir round-trip", "[for][aot]")
 
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
 }
+#endif // CCCL_C_PARALLEL_V2
 
 // TODO:
 /*

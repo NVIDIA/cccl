@@ -328,6 +328,7 @@ C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
   REQUIRE(expected_items == std::vector<ItemT>(output_items));
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 C2H_TEST("RadixSort build result has AoT metadata populated", "[radix_sort][aot]")
 {
   using T = int32_t;
@@ -467,3 +468,4 @@ C2H_TEST("RadixSort compile/load round-trip", "[radix_sort][aot]")
 
   REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
 }
+#endif // CCCL_C_PARALLEL_V2
