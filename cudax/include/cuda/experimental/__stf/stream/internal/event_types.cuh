@@ -147,13 +147,10 @@ public:
   void insert_dep(async_resources_handle& async_resources, const stream_and_event& from)
   {
     // Otherwise streams will enforce dependencies
-    if (dstream.stream != from.dstream.stream)
+    if (dstream.stream != from.dstream.stream
+        && !async_resources.validate_sync_and_update(dstream.id, from.dstream.id, int(from.unique_prereq_id)))
     {
-      bool skip = async_resources.validate_sync_and_update(dstream.id, from.dstream.id, int(from.unique_prereq_id));
-      if (!skip)
-      {
-        cuda_try<cudaStreamWaitEvent>(dstream.stream, from.cudaEvent, 0);
-      }
+      cuda_try<cudaStreamWaitEvent>(dstream.stream, from.cudaEvent, 0);
     }
   }
 
@@ -373,14 +370,10 @@ private:
       assert(dynamic_cast<stream_and_event*>(e.operator->()));
       auto se = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
 
-      if (dstream.stream != se->get_stream())
+      if (dstream.stream != se->get_stream()
+          && !bctx.async_resources().validate_sync_and_update(dstream.id, se->get_stream_id(), se->unique_prereq_id))
       {
-        bool skip =
-          bctx.async_resources().validate_sync_and_update(dstream.id, se->get_stream_id(), se->unique_prereq_id);
-        if (!skip)
-        {
-          cuda_try<cudaStreamWaitEvent>(dstream.stream, se->get_cuda_event(), 0);
-        }
+        cuda_try<cudaStreamWaitEvent>(dstream.stream, se->get_cuda_event(), 0);
       }
       se->outbound_deps++;
 
