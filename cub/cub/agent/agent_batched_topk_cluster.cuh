@@ -97,12 +97,19 @@ struct alignas(16) cluster_topk_state
 template <typename KeyT, int ChunkBytes, int LoadAlignBytes>
 struct smem_block_tile_layout
 {
-  static constexpr int chunk_items = ChunkBytes / int{sizeof(KeyT)};
+  static constexpr int chunk_items      = ChunkBytes / int{sizeof(KeyT)};
+  static constexpr int load_align_items = LoadAlignBytes / int{sizeof(KeyT)};
   static constexpr int slot_alignment =
     (::cuda::std::max) (LoadAlignBytes, detail::LoadToSharedBufferAlignBytes<KeyT>());
-  static constexpr int slot_stride_bytes =
-    ::cuda::round_up(detail::LoadToSharedBufferSizeBytes<KeyT>(chunk_items) + slot_alignment, slot_alignment);
+  // Each chunk maps to exactly one slot of ChunkBytes: boundary chunks are loaded as an aligned bulk plus a small
+  // hand-rolled edge, so no chunk ever needs the scalar-load guard headroom.
+  static constexpr int slot_stride_bytes  = ::cuda::round_up(ChunkBytes, slot_alignment); // == ChunkBytes normally
   static constexpr int base_padding_bytes = (alignof(KeyT) > 16) ? slot_alignment : 0;
+  static_assert(chunk_items >= load_align_items, "ChunkBytes must hold at least one load_align unit");
+  // The aligned full-chunk buffer (no guard, since LoadAlignBytes >= bulk_copy_min_align) is exactly its byte count
+  // and must fit one slot.
+  static_assert(detail::LoadToSharedBufferSizeBytes<KeyT, LoadAlignBytes>(chunk_items) <= slot_stride_bytes,
+                "An aligned full chunk must fit one slot");
 
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint32_t
   block_tile_capacity(int dynamic_smem_bytes) noexcept
@@ -165,6 +172,7 @@ struct agent_batched_topk_cluster
   static constexpr int num_buckets       = 1 << bits_per_pass;
   using smem_layout_t                    = smem_block_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
   static constexpr int chunk_items       = smem_layout_t::chunk_items;
+  static constexpr int load_align_items  = smem_layout_t::load_align_items;
   static constexpr int slot_alignment    = smem_layout_t::slot_alignment;
   static constexpr int slot_stride_bytes = smem_layout_t::slot_stride_bytes;
 
@@ -173,6 +181,9 @@ struct agent_batched_topk_cluster
   static_assert(LoadAlignBytes > 0);
   static_assert(ChunkBytes % LoadAlignBytes == 0);
   static_assert(LoadAlignBytes % int{sizeof(key_t)} == 0);
+  // The hybrid load relies on the aligned CopyAsync path being exact (no scalar guard), which requires the load
+  // alignment to be at least the bulk-copy minimum alignment.
+  static_assert(LoadAlignBytes >= detail::bulk_copy_min_align, "LoadAlignBytes must be >= bulk_copy_min_align");
   static_assert(chunk_items > 0);
 
   using decomposer_t = detail::identity_decomposer_t;
@@ -267,11 +278,6 @@ struct agent_batched_topk_cluster
     return count;
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE char* span_end(::cuda::std::span<key_t> keys) const
-  {
-    return reinterpret_cast<char*>(::cuda::std::data(keys) + span_size(keys));
-  }
-
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
   aligned_head_items(const key_t* base, offset_t segment_size) const
   {
@@ -283,11 +289,25 @@ struct agent_batched_topk_cluster
     return (::cuda::std::min) (items, segment_size);
   }
 
+  // Item count of the near-full head chunk (chunk 0) for an unaligned base. The unaligned prefix (`head_items`) plus
+  // an aligned bulk filling the rest of the slot up to a `load_align` boundary, so chunk 0 ends aligned and every
+  // later chunk begins aligned. Clamped to the segment for tiny segments.
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
+  head_chunk_items(offset_t segment_size, offset_t head_items) const
+  {
+    const offset_t bulk0 = offset_t{chunk_items} - offset_t{load_align_items};
+    return (::cuda::std::min) (segment_size, head_items + bulk0);
+  }
+
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t num_chunks(offset_t segment_size, offset_t head_items) const
   {
-    const offset_t remaining = segment_size - head_items;
-    return ((head_items != 0) ? offset_t{1} : offset_t{0})
-         + static_cast<offset_t>(::cuda::ceil_div(remaining, offset_t{chunk_items}));
+    if (head_items == 0)
+    {
+      return static_cast<offset_t>(::cuda::ceil_div(segment_size, offset_t{chunk_items}));
+    }
+    const offset_t head0     = head_chunk_items(segment_size, head_items);
+    const offset_t remaining = segment_size - head0;
+    return offset_t{1} + static_cast<offset_t>(::cuda::ceil_div(remaining, offset_t{chunk_items}));
   }
 
   struct chunk_desc
@@ -299,26 +319,61 @@ struct agent_batched_topk_cluster
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_desc
   get_chunk(offset_t chunk_idx, offset_t segment_size, offset_t head_items) const
   {
-    offset_t offset = chunk_idx * offset_t{chunk_items};
+    offset_t offset;
     if (head_items != 0)
     {
+      const offset_t head0 = head_chunk_items(segment_size, head_items);
       if (chunk_idx == 0)
       {
-        return {offset_t{0}, static_cast<int>(head_items)};
+        return {offset_t{0}, static_cast<int>(head0)};
       }
-      offset = head_items + (chunk_idx - 1) * offset_t{chunk_items};
+      offset = head0 + (chunk_idx - 1) * offset_t{chunk_items};
+    }
+    else
+    {
+      offset = chunk_idx * offset_t{chunk_items};
     }
     const offset_t remaining = segment_size - offset;
     return {offset, static_cast<int>((::cuda::std::min) (remaining, offset_t{chunk_items}))};
   }
 
+  // Splits a chunk into its unaligned front edge, aligned interior (bulk), and unaligned back edge, relative to the
+  // gmem base. The interior begins and ends on a `load_align` boundary so it can be loaded with the aligned,
+  // guard-free BlockLoadToShared path; the edges (each `< load_align_items` items) are loaded with `copy_edge`. Only
+  // chunk 0 (head) can have a nonzero prefix and only the last chunk (tail) a nonzero suffix.
+  struct chunk_split
+  {
+    offset_t prefix;
+    offset_t bulk;
+    offset_t suffix;
+  };
+
+  template <typename PtrT>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_split split_chunk(PtrT base, const chunk_desc chunk) const
+  {
+    const auto la            = static_cast<::cuda::std::uintptr_t>(load_align_bytes);
+    const auto begin         = reinterpret_cast<::cuda::std::uintptr_t>(base + chunk.offset);
+    const auto end           = begin + static_cast<::cuda::std::uintptr_t>(chunk.count) * sizeof(key_t);
+    const auto aligned_begin = ::cuda::round_up(begin, la);
+    const auto aligned_end   = (end / la) * la;
+    if (aligned_begin > aligned_end)
+    {
+      // The chunk lies strictly between two load_align boundaries (no aligned point inside): the whole chunk is an
+      // unaligned edge. This only happens for a tiny chunk with an unaligned begin (the head or a single-chunk
+      // segment), so attributing it entirely to the front edge is correct. A tail always begins on a boundary, so it
+      // takes the `aligned_begin <= aligned_end` path below and its unaligned remainder becomes the suffix.
+      return {static_cast<offset_t>(chunk.count), offset_t{0}, offset_t{0}};
+    }
+    const offset_t prefix = static_cast<offset_t>((aligned_begin - begin) / sizeof(key_t));
+    const offset_t bulk   = static_cast<offset_t>((aligned_end - aligned_begin) / sizeof(key_t));
+    return {prefix, bulk, static_cast<offset_t>(chunk.count) - prefix - bulk};
+  }
+
   template <typename PtrT>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_chunk(PtrT base, const chunk_desc chunk) const
   {
-    const auto begin = reinterpret_cast<::cuda::std::uintptr_t>(base + chunk.offset);
-    const auto end   = begin + static_cast<::cuda::std::uintptr_t>(chunk.count) * sizeof(key_t);
-    return (begin % static_cast<::cuda::std::uintptr_t>(load_align_bytes) == 0)
-        && (end % static_cast<::cuda::std::uintptr_t>(load_align_bytes) == 0);
+    const auto s = split_chunk(base, chunk);
+    return s.prefix == 0 && s.suffix == 0;
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
@@ -327,6 +382,22 @@ struct agent_batched_topk_cluster
     return (cluster_rank < chunks)
            ? static_cast<offset_t>((chunks - 1 - cluster_rank) / cluster_blocks + 1)
            : offset_t{0};
+  }
+
+  // Hand-rolled per-thread copy of a small (`< load_align_items` items) unaligned edge from gmem to smem. Used for
+  // the head prefix and tail suffix, which cannot go through the aligned (16-byte-aligned dst, guard-free)
+  // BlockLoadToShared path. Each thread copies the same indices it later reads in the first-pass histogram, so no
+  // extra synchronization is needed for the edge's own pass.
+  //
+  // TODO(cccl): an asymmetric-alignment BlockLoadToShared API (independent begin/end alignment, e.g. an aligned begin
+  // with an arbitrary end) would let a boundary chunk be loaded with a single aligned-bulk + in-place edge call and
+  // remove these hand-rolled copies entirely.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void copy_edge(key_t* dst, const key_t* src, int count) const
+  {
+    for (int local = static_cast<int>(threadIdx.x); local < count; local += threads_per_block)
+    {
+      dst[local] = src[local];
+    }
   }
 
   template <typename F>
@@ -341,6 +412,22 @@ struct agent_batched_topk_cluster
         f(::cuda::std::data(chunk_keys)[local]);
       }
     });
+  }
+
+  // A resident/streamed bulk in the block_tile, described by its 32-bit shared-window address plus length instead of
+  // a 64-bit generic pointer. Pipeline arrays of these are read across long loops and spill to local memory; a
+  // spilled generic pointer reloads as generic (`LDL.64`) and demotes the key reads from `LDS` to a generic `LD`,
+  // whereas a spilled 32-bit shared address rebuilt with `__cvta_shared_to_generic` keeps the reads `LDS`.
+  struct shared_bulk
+  {
+    ::cuda::std::uint32_t smem32;
+    int len;
+  };
+
+  // Rebuild a bulk's span from its 32-bit shared address at the point of use (spill-proof `LDS`).
+  [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<key_t> bulk_span(shared_bulk b)
+  {
+    return {reinterpret_cast<key_t*>(__cvta_shared_to_generic(b.smem32)), static_cast<::cuda::std::size_t>(b.len)};
   }
 
   struct TempStorage : Uninitialized<_TempStorage>
@@ -475,7 +562,8 @@ private:
     offset_t head_items;
     unsigned int cluster_rank;
     unsigned int cluster_size;
-    offset_t resident_chunks; // rank-local chunk index at which the overflow begins
+    offset_t resident_chunks; // number of rank-local chunks kept resident
+    offset_t overflow_base; // rank-local chunk index of the first overflow (streamed) chunk
     int stream_slot_base; // SMEM slot index at which the streaming region begins
     offset_t overflow_chunks; // number of overflow chunks for this rank (M)
     int p_eff; // active streaming depth = min(PipelineStages, M) (>= 1)
@@ -493,7 +581,7 @@ private:
     // pass can reuse it without a reload.
     ::cuda::std::inplace_vector<block_load_t, PipelineStages> loaders;
     ::cuda::std::optional<typename block_load_t::CommitToken> tokens[PipelineStages];
-    ::cuda::std::span<key_t> pending[PipelineStages];
+    shared_bulk pending[PipelineStages];
     offset_t slot_chunk[PipelineStages];
 
     _CCCL_DEVICE _CCCL_FORCEINLINE overflow_streamer(
@@ -505,6 +593,7 @@ private:
       unsigned int cluster_rank_,
       unsigned int cluster_size_,
       offset_t resident_chunks_,
+      offset_t overflow_base_,
       int stream_slot_base_,
       offset_t my_chunks_)
         : agent(agent_)
@@ -515,6 +604,7 @@ private:
         , cluster_rank(cluster_rank_)
         , cluster_size(cluster_size_)
         , resident_chunks(resident_chunks_)
+        , overflow_base(overflow_base_)
         , stream_slot_base(stream_slot_base_)
         , overflow_chunks((my_chunks_ > resident_chunks_) ? (my_chunks_ - resident_chunks_) : offset_t{0})
     {
@@ -524,7 +614,7 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE offset_t chunk_index_of(offset_t overflow_idx) const
     {
-      return cluster_rank + (resident_chunks + overflow_idx) * static_cast<offset_t>(cluster_size);
+      return cluster_rank + (overflow_base + overflow_idx) * static_cast<offset_t>(cluster_size);
     }
 
     // Grow the loader set to `count` entries (idempotent). The first-pass resident
@@ -544,19 +634,18 @@ private:
     {
       const offset_t chunk_idx = chunk_index_of(overflow_idx);
       const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
-      const bool aligned_chunk = agent.is_aligned_chunk(block_keys_base, chunk);
-      char* const dst          = agent.key_slots + (stream_slot_base + stage) * slot_stride_bytes;
+      // The boundary chunks (unaligned head and tail) are kept resident, so every streamed chunk is fully aligned
+      // and uses the guard-free aligned path.
+      _CCCL_ASSERT(agent.is_aligned_chunk(block_keys_base, chunk), "overflow streamer received an unaligned chunk");
+      char* const dst = agent.key_slots + (stream_slot_base + stage) * slot_stride_bytes;
       const ::cuda::std::span<const key_t> src{
         block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(chunk.count)};
-      if (aligned_chunk)
-      {
-        pending[stage] =
-          loaders[stage].template CopyAsync<key_t, load_align_bytes>(agent.available_block_tile_buffer(dst), src);
-      }
-      else
-      {
-        pending[stage] = loaders[stage].template CopyAsync<key_t>(agent.available_block_tile_buffer(dst), src);
-      }
+      // The returned span aliases `dst`, but its shared address-space provenance is not preserved across the spill of
+      // `pending[]`; record the rooted 32-bit shared address and rebuild the span via `bulk_span` at the read.
+      [[maybe_unused]] const auto loaded =
+        loaders[stage].template CopyAsync<key_t, load_align_bytes>(agent.available_block_tile_buffer(dst), src);
+      pending[stage] = {static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(dst)),
+                        static_cast<int>(chunk.count)};
       tokens[stage].emplace(loaders[stage].Commit());
       slot_chunk[stage] = overflow_idx;
     }
@@ -602,7 +691,7 @@ private:
             tokens[stage].reset();
           }
           _CCCL_ASSERT(slot_chunk[stage] == o, "overflow streamer slot/chunk mapping diverged");
-          agent.for_each_chunk_key(pending[stage], f);
+          agent.for_each_chunk_key(agent.bulk_span(pending[stage]), f);
 
           // Prefetch the chunk `p_eff` visits ahead in this direction. It maps
           // to the slot we just finished, so a barrier is required before the
@@ -717,6 +806,31 @@ private:
     _CCCL_ASSERT(my_resident_chunks * offset_t{chunk_items} <= resident_slots_cap * offset_t{chunk_items},
                  "Dynamic shared memory block_tile is too small");
 
+    // Boundary chunks (the unaligned head = chunk 0 and the unaligned tail = chunk chunks-1) carry hand-rolled edges
+    // and are kept resident so the overflow streamer only ever sees fully-aligned middle chunks. The head is already
+    // resident (local index 0 of its owning rank). The tail is forced into its owner's resident set - occupying the
+    // last resident slot - when this rank owns it, it has an unaligned end, and it would otherwise stream. The
+    // overflow then begins at `overflow_base`, shifted back by one in the forced case so the tail is skipped while the
+    // middle chunk it displaces is streamed instead.
+    const offset_t overflow_count = (my_chunks > my_resident_chunks) ? (my_chunks - my_resident_chunks) : offset_t{0};
+    offset_t tail_local           = offset_t{0};
+    bool force_tail_resident      = false;
+    if constexpr (use_block_load_to_shared)
+    {
+      if (overflow_count > 0
+          && (chunks - offset_t{1}) % static_cast<offset_t>(cluster_size) == static_cast<offset_t>(cluster_rank))
+      {
+        tail_local                 = (chunks - offset_t{1}) / static_cast<offset_t>(cluster_size);
+        const auto tail_chunk      = get_chunk(chunks - offset_t{1}, segment_size_u32, head_items);
+        const bool tail_has_suffix = split_chunk(block_keys_base, tail_chunk).suffix != offset_t{0};
+        force_tail_resident        = tail_has_suffix && (tail_local >= my_resident_chunks);
+      }
+    }
+    const offset_t overflow_base = force_tail_resident ? (my_resident_chunks - offset_t{1}) : my_resident_chunks;
+    // A rank that owns both boundary chunks (the head on rank 0 and a forced tail) needs two distinct resident slots.
+    _CCCL_ASSERT(!(force_tail_resident && head_items != 0 && cluster_rank == 0) || my_resident_chunks >= offset_t{2},
+                 "streaming needs >= 2 resident slots to keep both head and tail resident");
+
     // Persistent streamer for the overflow chunks; a no-op (constructs nothing) when this rank has no overflow.
     overflow_streamer streamer(
       *this,
@@ -727,10 +841,18 @@ private:
       cluster_rank,
       cluster_size,
       my_resident_chunks,
+      overflow_base,
       static_cast<int>(resident_slots_cap),
       my_chunks);
 
     ::cuda::std::span<key_t> resident_keys;
+    // 32-bit shared-window address of `resident_keys.data()`. The resident span is read once per radix pass and in
+    // the final filter; a 64-bit generic pointer kept live across that loop spills and reloads as a *generic*
+    // pointer (`LDL.64`), which demotes every key read from `LDS` to a generic `LD`. Carrying the base as a 32-bit
+    // shared address and rebuilding the pointer with `__cvta_shared_to_generic` at each use keeps the reads `LDS`
+    // even when the value spills (the cvta intrinsic re-confers shared provenance; a spilled 64-bit generic pointer
+    // cannot be re-anchored after the fact).
+    ::cuda::std::uint32_t resident_smem32 = 0;
 
     reset_hist();
     __syncthreads();
@@ -751,67 +873,123 @@ private:
 
       if constexpr (use_block_load_to_shared)
       {
-        // BlockLoadToShared is non-copyable and non-movable. The loaders are owned by `streamer` and constructed
-        // here; the streamer then reuses these very objects for the overflow passes (continuing their Commit/Wait
-        // pipeline) instead of tearing them down and re-initializing the shared `load_storage`. The per-chunk tokens
-        // and pending spans, however, are only needed for this resident load, so they stay local.
-        ::cuda::std::inplace_vector<typename block_load_t::CommitToken, PipelineStages> tokens;
-        ::cuda::std::inplace_vector<::cuda::std::span<key_t>, PipelineStages> pending_spans;
-        const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_resident_chunks));
-        char* next_dst     = key_slots;
-        streamer.ensure_loaders(prologue);
-
-        for (int stage = 0; stage < prologue; ++stage)
+        if (my_resident_chunks > 0)
         {
-          const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + static_cast<offset_t>(stage * cluster_size);
-          const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
-          const bool aligned_chunk = is_aligned_chunk(block_keys_base, chunk);
-          auto& loader             = streamer.loaders[stage];
-          const ::cuda::std::span<const key_t> src{
-            block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(chunk.count)};
-          if (aligned_chunk)
-          {
-            pending_spans.emplace_back(
-              loader.template CopyAsync<key_t, load_align_bytes>(available_block_tile_buffer(next_dst), src));
-          }
-          else
-          {
-            pending_spans.emplace_back(loader.template CopyAsync<key_t>(available_block_tile_buffer(next_dst), src));
-          }
-          next_dst = span_end(pending_spans[stage]);
-          tokens.emplace_back(loader.Commit());
-        }
+          // BlockLoadToShared is non-copyable and non-movable. The loaders are owned by `streamer` and constructed
+          // here; the streamer then reuses these very objects for the overflow passes (continuing their Commit/Wait
+          // pipeline) instead of tearing them down and re-initializing the shared `load_storage`. The per-chunk tokens
+          // and pending (bulk) spans, however, are only needed for this resident load, so they stay local. Each
+          // resident chunk is loaded as its aligned bulk only; the two boundary edges are filled afterwards.
+          ::cuda::std::inplace_vector<typename block_load_t::CommitToken, PipelineStages> tokens;
+          // Per-stage resident bulk, carried as a 32-bit shared address + length rather than a 64-bit pointer (see
+          // `shared_bulk`): the pipeline array spills to local memory, and a spilled generic pointer would demote the
+          // first-pass key reads from `LDS` to a generic `LD`.
+          ::cuda::std::inplace_vector<shared_bulk, PipelineStages> pending_spans;
+          const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_resident_chunks));
+          streamer.ensure_loaders(prologue);
 
-        for (offset_t p = 0; p < my_resident_chunks; ++p)
-        {
-          const int stage          = static_cast<int>(p % static_cast<offset_t>(prologue));
-          const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
-          const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
-          streamer.loaders[stage].Wait(::cuda::std::move(tokens[stage]));
-          append_contiguous_span(resident_keys, pending_spans[stage]);
-          for_each_chunk_key(pending_spans[stage], add_first_pass);
+          // Resident slot -> rank-local chunk index. Identity, except the last slot holds the forced-resident tail.
+          const auto resident_local = [&](offset_t slot) -> offset_t {
+            return (force_tail_resident && slot == my_resident_chunks - offset_t{1}) ? tail_local : slot;
+          };
+          // Aligned bulk of the resident chunk in `slot`; empty when the chunk has no aligned interior.
+          const auto bulk_src = [&](offset_t slot) -> ::cuda::std::span<const key_t> {
+            const offset_t chunk_idx =
+              static_cast<offset_t>(cluster_rank) + resident_local(slot) * static_cast<offset_t>(cluster_size);
+            const auto chunk = get_chunk(chunk_idx, segment_size_u32, head_items);
+            const auto split = split_chunk(block_keys_base, chunk);
+            if (split.bulk == 0)
+            {
+              return {};
+            }
+            return {block_keys_base + chunk.offset + split.prefix, static_cast<::cuda::std::size_t>(split.bulk)};
+          };
 
-          if (p + static_cast<offset_t>(prologue) < my_resident_chunks)
+          // First resident slot's unaligned front edge (the head prefix on rank 0). Reserve an aligned-up gap in
+          // front of its bulk so the bulk stays 16-aligned and the edge sits contiguously right before it.
+          const auto first_chunk = get_chunk(
+            static_cast<offset_t>(cluster_rank) + resident_local(offset_t{0}) * static_cast<offset_t>(cluster_size),
+            segment_size_u32,
+            head_items);
+          const auto first_split  = split_chunk(block_keys_base, first_chunk);
+          const int front_edge    = static_cast<int>(first_split.prefix);
+          const int sba           = detail::LoadToSharedBufferAlignBytes<key_t>();
+          const int front_bytes   = front_edge * int{sizeof(key_t)};
+          const int head_bulk_off = ::cuda::round_up(front_bytes, sba);
+          // Write cursor as a byte offset from `key_slots`. The destination is always formed as `key_slots + offset`
+          // (rooted at the extern-shared base) rather than by chaining the pointers returned by `CopyAsync`: those
+          // returned pointers do not preserve their shared address-space provenance, so a chained cursor would be
+          // rejected by BlockLoadToShared's "destination must be shared memory" check even though it is numerically
+          // inside the block_tile.
+          const int resident_begin_off = head_bulk_off - front_bytes;
+          int next_off                 = head_bulk_off;
+
+          // Load every resident chunk's aligned bulk, densely packed in slot order, so the last slot's bulk (the tail
+          // bulk in the forced case) ends the packed region and its suffix can be appended right after it.
+          for (int stage = 0; stage < prologue; ++stage)
           {
-            const offset_t next_chunk_idx = static_cast<offset_t>(cluster_rank)
-                                          + (p + static_cast<offset_t>(prologue)) * static_cast<offset_t>(cluster_size);
-            const auto next_chunk         = get_chunk(next_chunk_idx, segment_size_u32, head_items);
-            const bool next_aligned_chunk = is_aligned_chunk(block_keys_base, next_chunk);
-            const ::cuda::std::span<const key_t> src{
-              block_keys_base + next_chunk.offset, static_cast<::cuda::std::size_t>(next_chunk.count)};
-            if (next_aligned_chunk)
-            {
-              pending_spans[stage] = streamer.loaders[stage].template CopyAsync<key_t, load_align_bytes>(
-                available_block_tile_buffer(next_dst), src);
-            }
-            else
-            {
-              pending_spans[stage] =
-                streamer.loaders[stage].template CopyAsync<key_t>(available_block_tile_buffer(next_dst), src);
-            }
-            next_dst      = span_end(pending_spans[stage]);
-            tokens[stage] = streamer.loaders[stage].Commit();
+            auto& loader   = streamer.loaders[stage];
+            const auto src = bulk_src(static_cast<offset_t>(stage));
+            // The returned span aliases `key_slots + next_off`, but its shared address-space provenance is not
+            // preserved; we record the rooted shared address and rebuild the read span via `bulk_span` below.
+            [[maybe_unused]] const auto loaded = loader.template CopyAsync<key_t, load_align_bytes>(
+              available_block_tile_buffer(key_slots + next_off), src);
+            pending_spans.push_back({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + next_off)),
+                                     static_cast<int>(::cuda::std::size(src))});
+            next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
+            tokens.emplace_back(loader.Commit());
           }
+
+          for (offset_t p = 0; p < my_resident_chunks; ++p)
+          {
+            const int stage = static_cast<int>(p % static_cast<offset_t>(prologue));
+            streamer.loaders[stage].Wait(::cuda::std::move(tokens[stage]));
+            for_each_chunk_key(bulk_span(pending_spans[stage]), add_first_pass);
+
+            const offset_t next_p = p + static_cast<offset_t>(prologue);
+            if (next_p < my_resident_chunks)
+            {
+              const auto src                     = bulk_src(next_p);
+              [[maybe_unused]] const auto loaded = streamer.loaders[stage].template CopyAsync<key_t, load_align_bytes>(
+                available_block_tile_buffer(key_slots + next_off), src);
+              pending_spans[stage] = {
+                static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + next_off)),
+                static_cast<int>(::cuda::std::size(src))};
+              next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
+              tokens[stage] = streamer.loaders[stage].Commit();
+            }
+          }
+
+          // Head prefix: copy into the reserved front gap, contiguous right before the first bulk.
+          if (front_edge > 0)
+          {
+            key_t* const edge_dst = reinterpret_cast<key_t*>(key_slots + resident_begin_off);
+            copy_edge(edge_dst, block_keys_base + first_chunk.offset, front_edge);
+            for_each_chunk_key({edge_dst, static_cast<::cuda::std::size_t>(front_edge)}, add_first_pass);
+          }
+
+          // Tail suffix: append right after the last (tail) bulk. Nothing follows, so its non-16 length is harmless.
+          const offset_t last_slot = my_resident_chunks - offset_t{1};
+          const auto last_chunk    = get_chunk(
+            static_cast<offset_t>(cluster_rank) + resident_local(last_slot) * static_cast<offset_t>(cluster_size),
+            segment_size_u32,
+            head_items);
+          const auto last_split = split_chunk(block_keys_base, last_chunk);
+          if (last_split.suffix > 0)
+          {
+            key_t* const edge_dst = reinterpret_cast<key_t*>(key_slots + next_off);
+            copy_edge(edge_dst,
+                      block_keys_base + last_chunk.offset + last_split.prefix + last_split.bulk,
+                      static_cast<int>(last_split.suffix));
+            for_each_chunk_key({edge_dst, static_cast<::cuda::std::size_t>(last_split.suffix)}, add_first_pass);
+            next_off += static_cast<int>(last_split.suffix) * int{sizeof(key_t)};
+          }
+
+          // The resident region is one contiguous span [head edge | bulks | tail edge] for the later passes.
+          resident_keys = {reinterpret_cast<key_t*>(key_slots + resident_begin_off),
+                           static_cast<::cuda::std::size_t>((next_off - resident_begin_off) / int{sizeof(key_t)})};
+          resident_smem32 =
+            static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + resident_begin_off));
         }
       }
       else
@@ -914,7 +1092,10 @@ private:
 
         if constexpr (use_block_load_to_shared)
         {
-          for_each_chunk_key(resident_keys, add_hist);
+          // Rebuild the resident pointer from its 32-bit shared address so the reads stay `LDS` even if the value
+          // spilled across the pass loop (see `resident_smem32`).
+          key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+          for_each_chunk_key({rk, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, add_hist);
         }
         else
         {
@@ -1014,7 +1195,8 @@ private:
     };
     if constexpr (use_block_load_to_shared)
     {
-      for_each_chunk_key(resident_keys, write_selected);
+      key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+      for_each_chunk_key({rk, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, write_selected);
     }
     else
     {
