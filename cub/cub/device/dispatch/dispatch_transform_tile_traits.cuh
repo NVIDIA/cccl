@@ -29,6 +29,8 @@
 
 #include <cub/config.cuh>
 
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -37,17 +39,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CTK_AT_LEAST(13, 3)
+#if _CCCL_CUB_HAS_TILE_TRANSFORM()
+
+#  include <cuda_tile.h>
 
 #  include <cuda/std/__cccl/extended_data_types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 
 #  include <cstddef>
-
-#  if _CCCL_TILE_COMPILATION()
-#    include <cuda_tile.h>
-#  endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -75,7 +75,6 @@ inline constexpr bool tile_mufu_heavy_v = tile_mufu_heavy<Op>::value;
 namespace detail::transform::tile
 {
 
-#  if _CCCL_TILE_COMPILATION()
 // Tile-friendly mirrors of common cuda::std ops. Each has a __tile__
 // templated operator() so it can be invoked from inside transform_kernel
 // where the arguments are ct::tile<T, ...> rather than scalar T.
@@ -96,16 +95,14 @@ struct tile_multiplies
     return a * b;
   }
 };
-#  endif // _CCCL_TILE_COMPILATION()
 
 } // namespace detail::transform::tile
 
 // Built-in trait specializations live in the public namespace alongside the
 // trait, but reference the internal substitute functors.
-#  if _CCCL_TILE_COMPILATION()
 namespace transform
 {
-#    if _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVFP16()
 template <>
 struct tile_eligible<::cuda::std::plus<::__half>, ::__half, 2> : ::cuda::std::true_type
 {
@@ -116,9 +113,9 @@ struct tile_eligible<::cuda::std::multiplies<::__half>, ::__half, 2> : ::cuda::s
 {
   using tile_op_type = CUB_NS_QUALIFIER::detail::transform::tile::tile_multiplies;
 };
-#    endif // _CCCL_HAS_NVFP16()
+#  endif // _CCCL_HAS_NVFP16()
 
-#    if _CCCL_HAS_NVBF16()
+#  if _CCCL_HAS_NVBF16()
 template <>
 struct tile_eligible<::cuda::std::plus<::__nv_bfloat16>, ::__nv_bfloat16, 2> : ::cuda::std::true_type
 {
@@ -129,10 +126,9 @@ struct tile_eligible<::cuda::std::multiplies<::__nv_bfloat16>, ::__nv_bfloat16, 
 {
   using tile_op_type = CUB_NS_QUALIFIER::detail::transform::tile::tile_multiplies;
 };
-#    endif // _CCCL_HAS_NVBF16()
+#  endif // _CCCL_HAS_NVBF16()
 } // namespace transform
-#  endif // _CCCL_TILE_COMPILATION()
 
 CUB_NAMESPACE_END
 
-#endif // _CCCL_CTK_AT_LEAST(13, 3)
+#endif // _CCCL_CUB_HAS_TILE_TRANSFORM()

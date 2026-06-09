@@ -12,7 +12,7 @@
 #include <cuda/std/tuple>
 #include <vector>
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cuda_tile.h>
 #endif
 
@@ -28,7 +28,7 @@ struct rgb_to_y {
     }
 };
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 struct tile_rgb_to_y {
     template <class R, class G, class B>
     __tile__ auto operator()(R r, G g, B b) const {

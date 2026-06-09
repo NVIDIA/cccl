@@ -15,7 +15,7 @@
 #include <vector>
 #include <cstdint>
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cuda_tile.h>
 #endif
 
@@ -25,7 +25,7 @@ struct identity {
     template <class T> __host__ __device__ auto operator()(T v) const { return v; }
 };
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 struct tile_identity {
     template <class T> __tile__ auto operator()(T v) const { return v; }
 };

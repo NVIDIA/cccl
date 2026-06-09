@@ -15,9 +15,10 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 #include <cub/util_namespace.cuh>
 
-#if _CCCL_CTK_AT_LEAST(13, 3) && defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cub/device/dispatch/dispatch_transform_tile.cuh>
 #endif
 
@@ -103,7 +104,7 @@ struct DeviceTransform
 
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 
-#if _CCCL_CTK_AT_LEAST(13, 3) && defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
     // Opt-in tile path. When the (Op, T, NIn) combo is trait-eligible AND
     // the runtime alignment + divisibility preconditions hold, route to the
     // tile kernel. Otherwise fall through to the standard CUB dispatch
@@ -123,7 +124,7 @@ struct DeviceTransform
           inputs, output, static_cast<offset_t>(num_items), stream);
       }
     }
-#endif // _CCCL_CTK_AT_LEAST(13, 3) && CCCL_ENABLE_TILE_TRANSFORM_DISPATCH && _CCCL_TILE_COMPILATION()
+#endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 
     using tuning_env =
       ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;

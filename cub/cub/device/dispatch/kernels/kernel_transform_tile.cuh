@@ -5,6 +5,8 @@
 
 #include <cub/config.cuh>
 
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -13,7 +15,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CTK_AT_LEAST(13, 3)
+#if _CCCL_CUB_HAS_TILE_TRANSFORM()
 
 #  include <cuda_tile.h>
 
@@ -74,4 +76,4 @@ __tile_global__ void fill_kernel(int64_t num_items_, T* __restrict__ out_, T val
 
 CUB_NAMESPACE_END
 
-#endif // _CCCL_CTK_AT_LEAST(13, 3)
+#endif // _CCCL_CUB_HAS_TILE_TRANSFORM()

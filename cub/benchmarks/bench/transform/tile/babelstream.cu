@@ -15,7 +15,7 @@
 #include <vector>
 #include <cstdint>
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cuda_tile.h>
 #endif
 
@@ -39,7 +39,7 @@ struct nstream_op {
     __host__ __device__ auto operator()(A a, B b, C c) const { return a + b - c - c; }
 };
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 // Tile-friendly substitutes (must be stateless + trivially default constructible).
 struct tile_mul_op {
     template <class B>

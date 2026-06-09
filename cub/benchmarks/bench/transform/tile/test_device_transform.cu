@@ -25,7 +25,7 @@
 #include <cmath>
 #include <vector>
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cuda_tile.h>
 #endif
 
@@ -83,7 +83,7 @@ struct square_op {
     template <class T> __host__ __device__ T operator()(T a) const { return a * a; }
 };
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 namespace ct = ::cuda::tiles;
 
 // Tile-friendly substitutes (must be stateless + trivially default constructible).
@@ -178,7 +178,7 @@ void test_fill(int64_t n, T value) {
 } // namespace
 
 // User self-registers identity_op and square_op as tile-eligible.
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 CUB_NAMESPACE_BEGIN
 namespace transform
 {

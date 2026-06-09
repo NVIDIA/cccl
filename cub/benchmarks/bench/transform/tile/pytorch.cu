@@ -19,7 +19,7 @@
 #include <cuda/std/tuple>
 #include <vector>
 
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cuda_tile.h>
 #endif
 
@@ -60,7 +60,7 @@ struct binary_fmax { template <class A, class B> __host__ __device__ auto operat
 // ========================================================================
 // Tile substitutes + trait registration. Only compiled under tile mode.
 // ========================================================================
-#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 namespace ct = ::cuda::tiles;
 
 template <class T> __tile__ auto as_float(T v) { return ct::element_cast<float>(v); }
