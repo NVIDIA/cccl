@@ -71,7 +71,7 @@ struct DeviceRunLengthEncode
     [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
       -> ReduceByKeyPolicy
     {
-      const RLEEncodePolicy policy = PolicySelector{}(cc);
+      const RleEncodePolicy policy = PolicySelector{}(cc);
       return ReduceByKeyPolicy{
         policy.threads_per_block,
         policy.items_per_thread,

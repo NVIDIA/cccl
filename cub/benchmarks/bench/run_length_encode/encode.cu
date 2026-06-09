@@ -17,7 +17,7 @@
 #if !TUNE_BASE
 struct bench_encode_policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::RLEEncodePolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::RleEncodePolicy
   {
     return {
       TUNE_THREADS,
