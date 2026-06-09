@@ -57,7 +57,6 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
                                            cuda_safe_call(cudaGraphExecDestroy(*p));
                                          }};
 
-<<<<<<< stf_c_api
   // Use cudaGraphInstantiateFlagAutoFreeOnLaunch so that any cudaMallocAsync /
   // cudaMemAllocNode allocations captured into `g` that lack a matching free
   // node (e.g. allocations whose deallocation lives in a sibling captured
@@ -66,9 +65,7 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   // graph aborts with `cudaErrorInvalidValue` ("Attempting to launch a graph
   // with unfreed allocation"). Available since CTK 11.4.
   cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch));
-=======
-  *res = cuda_try<cudaGraphInstantiateWithFlags>(g, 0);
->>>>>>> main
+  *res = cuda_try<cudaGraphInstantiateWithFlags>(g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
   return res;
 }
