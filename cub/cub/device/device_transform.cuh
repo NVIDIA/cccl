@@ -118,7 +118,7 @@ struct DeviceTransform
                        RandomAccessIteratorOut,
                        RandomAccessIteratorsIn...>)
     {
-      if (detail::transform::tile::runtime_preconditions_ok(inputs, output, static_cast<offset_t>(num_items)))
+      if (detail::transform::tile::runtime_preconditions_valid(inputs, output, static_cast<offset_t>(num_items)))
       {
         return detail::transform::tile::dispatch<TransformOp>(
           inputs, output, static_cast<offset_t>(num_items), stream);

@@ -3,7 +3,7 @@
 
 // Internal dispatch helpers for cub::DeviceTransform's tile path:
 //   tile_dispatch_eligible_v  -- compile-time predicate the hook consults
-//   runtime_preconditions_ok  -- runtime alignment + divisibility predicate
+//   runtime_preconditions_valid  -- runtime alignment + divisibility predicate
 //   dispatch                  -- bridge that launches the tile kernel with
 //                                the trait's substitute functor
 //   DeviceTransform           -- internal tile-local Transform/Fill wrappers
@@ -128,7 +128,7 @@ inline constexpr bool tile_dispatch_eligible_v =
 // Returns false to tell the hook to fall back to the standard CUB dispatch.
 template <typename OutIter, typename... InIters, typename OffsetT>
 CUB_RUNTIME_FUNCTION bool
-runtime_preconditions_ok(::cuda::std::tuple<InIters...> const& inputs, OutIter output, OffsetT num_items)
+runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIter output, OffsetT num_items)
 {
   // Pointer alignment is in bytes (for LDG.E.128); the kernel's
   // ct::assume_divisible<N> applies to num_items as an element count. These
@@ -151,10 +151,10 @@ runtime_preconditions_ok(::cuda::std::tuple<InIters...> const& inputs, OutIter o
 
 // Bridge between cub::DeviceTransform::__transform_internal and the tile
 // DeviceTransform above. Precondition: tile_dispatch_eligible_v<Op, OutIter,
-// InIters...> is true AND runtime_preconditions_ok returned true. The kernel
+// InIters...> is true AND runtime_preconditions_valid returned true. The kernel
 // itself assumes 16-byte pointer alignment and num_items divisibility; the
 // caller (the hook in device_transform.cuh) is responsible for checking
-// runtime_preconditions_ok first.
+// runtime_preconditions_valid first.
 //
 // The tile kernel is launched with the trait's tile_op_type (a tile-friendly
 // mirror of Op with __tile__ operator), NOT the user's Op instance -- the

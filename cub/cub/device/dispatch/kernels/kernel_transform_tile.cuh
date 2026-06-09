@@ -32,7 +32,7 @@ namespace detail::transform::tile
 //   ct::extents<int64_t,..> -- explicit element type on the extent; CTAD would deduce uint32_t and
 //                              wrap at 2^32. int64_t lets us cover the full num_items range.
 // The caller is responsible for honoring assume_aligned<16>; the dispatch header's
-// runtime_preconditions_ok enforces this before launching either kernel.
+// runtime_preconditions_valid enforces this before launching either kernel.
 template <int TileSize, typename T, typename N>
 __tile__ auto make_partition_view(T* ptr, N n)
 {
