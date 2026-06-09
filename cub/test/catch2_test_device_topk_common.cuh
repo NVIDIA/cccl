@@ -62,16 +62,24 @@ struct get_output_size_op
 {
   OffsetItT offset_it;
   KSizesItT k_it;
+  cuda::std::int64_t num_segments;
 
   __device__ __forceinline__ cuda::std::int64_t operator()(cuda::std::int64_t segment_id) const
   {
+    // Building the `num_segments + 1` compacted offsets via an exclusive scan invokes this functor once past the last
+    // segment (segment_id == num_segments). Return 0 there to avoid reading `offset_it[num_segments + 1]` and
+    // `k_it[num_segments]` out of bounds; that extra element never contributes to an exclusive-scan output.
+    if (segment_id >= num_segments)
+    {
+      return 0;
+    }
     const auto segment_size = offset_it[segment_id + 1] - offset_it[segment_id];
     return (cuda::std::min) (static_cast<cuda::std::int64_t>(k_it[segment_id]), segment_size);
   }
 };
 
 template <typename OffsetItT, typename KSizesItT>
-get_output_size_op(OffsetItT, KSizesItT) -> get_output_size_op<OffsetItT, KSizesItT>;
+get_output_size_op(OffsetItT, KSizesItT, cuda::std::int64_t) -> get_output_size_op<OffsetItT, KSizesItT>;
 
 template <typename IteratorT, typename OffsetItT>
 struct offset_iterator_op
@@ -302,8 +310,9 @@ c2h::device_vector<KeyT> compact_to_topk_batched(
     cuda::make_counting_iterator(0), offset_iterator_op{d_keys_in.cbegin(), d_offsets.cbegin()});
 
   // Calculates the output sizes (if segment size is smaller than k, then output size is segment size, otherwise k)
-  auto copy_sizes_it =
-    cuda::make_transform_iterator(cuda::make_counting_iterator(0), get_output_size_op{d_offsets.cbegin(), k_it});
+  auto copy_sizes_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(0),
+    get_output_size_op{d_offsets.cbegin(), k_it, static_cast<cuda::std::int64_t>(num_segments)});
 
   // Calculate destination offsets via prefix sum
   c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1, thrust::no_init);

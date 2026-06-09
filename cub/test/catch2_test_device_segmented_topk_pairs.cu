@@ -347,7 +347,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   // Each output segment holds exactly min(k, segment_size[i]) items, tightly packed.
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
     cuda::make_counting_iterator(segment_index_t{0}),
-    get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k)});
+    get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k), num_segments});
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
@@ -466,7 +466,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
 
   // Compute compacted output offsets: each output segment holds exactly min(k[i], segment_size) items, tightly packed.
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(segment_index_t{0}), get_output_size_op{segment_offsets.cbegin(), segment_k.cbegin()});
+    cuda::make_counting_iterator(segment_index_t{0}),
+    get_output_size_op{segment_offsets.cbegin(), segment_k.cbegin(), num_segments});
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
@@ -584,7 +585,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
   // Compute compacted output offsets:
   // Each output segment holds exactly min(k[i], segment_size[i]) items, tightly packed.
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(segment_index_t{0}), get_output_size_op{segment_offsets.cbegin(), segment_k.cbegin()});
+    cuda::make_counting_iterator(segment_index_t{0}),
+    get_output_size_op{segment_offsets.cbegin(), segment_k.cbegin(), num_segments});
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
