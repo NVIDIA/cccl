@@ -65,10 +65,17 @@ FORCED_ALGOS = [
 ]
 ALGO_KEY = {"": "default"}  # env value -> JSON key; others map to themselves.
 
-# Bins below this are the on-chip privatized-SMEM tier: forcing is a no-op there,
-# so the forced algos collapse onto `default`. We still sweep them (one default
-# run) so the plot's low-bin region is populated.
-HIGH_BIN_THRESHOLD = 4096
+# At or below this bin count the whole histogram fits on-chip and the selector
+# ALWAYS runs smem_privatized; the CUB_HISTO_FORCE_ALGO override is gated OFF there
+# (dispatch: `force_legal_here = max_num_output_bins > max_dynamic_smem_bins`, and
+# max_dynamic_smem_bins == 16384). So forcing a high-bin algo at bins <= 16384 is a
+# silent no-op -- every "forced" run just re-executes smem_privatized and reports the
+# same number as `default`. We therefore record ONLY `default` at bins <= 16384
+# (running the forced variants there would log bogus duplicate columns -- the bug
+# that made every algorithm look identical at 16384). The forced algos are recorded
+# only where they actually take effect, bins > 16384 (32768, 65536, ...).
+# MUST stay in sync with cub/.../dispatch_histogram.cuh:max_dynamic_smem_bins.
+HIGH_BIN_THRESHOLD = 16384
 
 # Default sweep grid. Bin counts straddle the SMEM tier (<=4096), the gather tier
 # (8192..65535), and the direct-atomic tiers (>=65536 cuckoo, >=262144 noprobe2).
