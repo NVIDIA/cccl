@@ -454,6 +454,18 @@ struct Transforms
     // the RANGE (SearchTransform) classify, e.g. the per-thread bracket cache.
     static constexpr bool is_range_transform = true;
 
+    // Below this bin count, BinSelect skips the interpolated-first-guess machinery
+    // (and PrecomputeOnDevice stays disabled) and uses the lean UpperBound binary
+    // search instead. The interpolation path carries ~7 extra per-thread registers
+    // (endpoints + slopes + 3-point split state) plus a device precompute prologue;
+    // on the small-bin tiers -- especially the static 256-bin privatized-SMEM kernel,
+    // which is occupancy/register-bound -- that overhead is a net LOSS. Measured on
+    // B200: at 256 bins interpolation runs ~0.67x of plain binary search, but by
+    // 1024 bins it already wins ~2.3x and keeps growing, so the cutoff sits between.
+    // (Was hard-coded `< 4`, which only skipped the degenerate tiny case and let the
+    // 256-bin RANGE/I32 tier regress vs upstream.)
+    static constexpr int kInterpolationMinBins = 512;
+
     //! @brief Per-thread most-recently-used (MRU) bin-bracket cache.
     //!
     //! Carries the last successfully-resolved bin and its two boundary level
@@ -533,7 +545,7 @@ struct Transforms
     _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice()
     {
       const int num_bins = num_output_levels - 1;
-      if (num_bins < 4)
+      if (num_bins < kInterpolationMinBins)
       {
         m_have_precompute = false;
         return;
@@ -604,7 +616,7 @@ struct Transforms
 
       // For very small bin counts, the interpolation overhead is not worth
       // it; fall back to the original binary search.
-      if (num_bins < 4)
+      if (num_bins < kInterpolationMinBins)
       {
         bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
         if (bin >= num_bins)
@@ -805,7 +817,7 @@ struct Transforms
       }
 
       // Tiny bin counts: the interpolation/bracket machinery is not worth it.
-      if (num_bins < 4)
+      if (num_bins < kInterpolationMinBins)
       {
         WrappedLevelIteratorT wrapped_levels(d_levels);
         bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
