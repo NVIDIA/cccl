@@ -618,7 +618,7 @@ public:
   {
     typename owning_container_of<T>::type out;
 
-    task(exec_place::host(), ldata.read())->set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
       cuda_try<cudaStreamSynchronize>(stream);
       out = owning_container_of<T>::get_value(data);
     };
