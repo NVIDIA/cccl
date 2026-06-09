@@ -34,6 +34,41 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! The tuning policy for all non-ByKey algorithms in @ref DeviceSelect and @ref DevicePartition (two-way).
+struct SelectPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
+  LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const SelectPolicy& lhs, const SelectPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const SelectPolicy& p)
+  {
+    return os
+        << "SelectPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 namespace detail::select
 {
 // TODO(bgruber): drop in CCCL 4.0
@@ -1505,12 +1540,12 @@ struct policy_hub
     static constexpr int items_per_thread =
       ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(InputT)}, 1, nominal_4B_items_per_thread);
     using SelectIfPolicyT =
-      AgentSelectIfPolicy<128,
-                          items_per_thread,
-                          BLOCK_LOAD_DIRECT,
-                          LoadModifier,
-                          BLOCK_SCAN_WARP_SCANS,
-                          detail::fixed_delay_constructor_t<350, 450>>;
+      agent_select_if_policy<128,
+                             items_per_thread,
+                             BLOCK_LOAD_DIRECT,
+                             LoadModifier,
+                             BLOCK_SCAN_WARP_SCANS,
+                             detail::fixed_delay_constructor_t<350, 450>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
@@ -1524,12 +1559,12 @@ struct policy_hub
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
   static auto select_agent_policy(int)
-    -> AgentSelectIfPolicy<Tuning::threads,
-                           Tuning::items,
-                           Tuning::load_algorithm,
-                           LOAD_DEFAULT,
-                           BLOCK_SCAN_WARP_SCANS,
-                           typename Tuning::delay_constructor>;
+    -> agent_select_if_policy<Tuning::threads,
+                              Tuning::items,
+                              Tuning::load_algorithm,
+                              LOAD_DEFAULT,
+                              BLOCK_SCAN_WARP_SCANS,
+                              typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::SelectIfPolicyT;
 
@@ -1568,12 +1603,12 @@ struct policy_hub
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     static auto select_agent_policy100(int)
-      -> AgentSelectIfPolicy<Tuning::threads,
-                             Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
-                             Tuning::load_algorithm,
-                             Tuning::load_modifier,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename Tuning::delay_constructor>;
+      -> agent_select_if_policy<Tuning::threads,
+                                Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
+                                Tuning::load_algorithm,
+                                Tuning::load_modifier,
+                                BLOCK_SCAN_WARP_SCANS,
+                                typename Tuning::delay_constructor>;
     template <typename Tuning>
     static auto select_agent_policy100(long) -> typename Policy900::SelectIfPolicyT;
 
@@ -1591,43 +1626,9 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-struct select_if_policy
-{
-  int threads_per_block;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockScanAlgorithm scan_algorithm;
-  LookbackDelayPolicy delay_constructor;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const select_if_policy& lhs, const select_if_policy& rhs)
-  {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const select_if_policy& lhs, const select_if_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const select_if_policy& p)
-  {
-    return os
-        << "select_if_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
-  }
-#endif // _CCCL_HOSTED()
-};
-
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept select_if_policy_selector = policy_selector<T, select_if_policy>;
+concept select_if_policy_selector = policy_selector<T, SelectPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
@@ -1642,12 +1643,12 @@ struct policy_selector
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_policy(CacheLoadModifier load_modifier) const
-    -> select_if_policy
+    -> SelectPolicy
   {
     constexpr int nominal_4B_items_per_thread = 10;
     const int items_per_thread =
       ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / input_size_bytes, 1, nominal_4B_items_per_thread);
-    return select_if_policy{
+    return SelectPolicy{
       128,
       items_per_thread,
       BLOCK_LOAD_DIRECT,
@@ -1661,14 +1662,14 @@ private:
     int nominal_4b_items,
     BlockLoadAlgorithm load_alg,
     CacheLoadModifier load_mod,
-    LookbackDelayPolicy delay) const -> select_if_policy
+    LookbackDelayPolicy delay) const -> SelectPolicy
   {
     const int items_per_thread = nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
-    return select_if_policy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
+    return SelectPolicy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm80_tuning(bool has_flags, bool keep_rejects) const
-    -> select_if_policy
+    -> SelectPolicy
   {
     // before SM100, we only tuned for int32, but we always take these tunings independently of the offset type size
 
@@ -1676,7 +1677,7 @@ private:
     {
       if (not has_flags && not keep_rejects)
       {
-        return select_if_policy{
+        return SelectPolicy{
           384,
           4,
           BLOCK_LOAD_DIRECT,
@@ -1686,7 +1687,7 @@ private:
       }
       if (has_flags && not keep_rejects)
       {
-        return select_if_policy{
+        return SelectPolicy{
           256,
           5,
           BLOCK_LOAD_DIRECT,
@@ -1696,7 +1697,7 @@ private:
       }
       if (not has_flags && keep_rejects)
       {
-        return select_if_policy{
+        return SelectPolicy{
           256,
           5,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1706,7 +1707,7 @@ private:
       }
       if (has_flags && keep_rejects)
       {
-        return select_if_policy{
+        return SelectPolicy{
           256,
           5,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1726,7 +1727,7 @@ private:
       switch (input_size_bytes)
       {
         case 1:
-          return select_if_policy{
+          return SelectPolicy{
             992,
             20,
             BLOCK_LOAD_DIRECT,
@@ -1734,7 +1735,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 395}};
         case 2:
-          return select_if_policy{
+          return SelectPolicy{
             576,
             14,
             BLOCK_LOAD_DIRECT,
@@ -1742,7 +1743,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 870}};
         case 4:
-          return select_if_policy{
+          return SelectPolicy{
             256,
             18,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1750,7 +1751,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1130}};
         case 8:
-          return select_if_policy{
+          return SelectPolicy{
             192,
             10,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1766,7 +1767,7 @@ private:
       switch (input_size_bytes)
       {
         case 1:
-          return select_if_policy{
+          return SelectPolicy{
             224,
             20,
             BLOCK_LOAD_DIRECT,
@@ -1774,7 +1775,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 735}};
         case 2:
-          return select_if_policy{
+          return SelectPolicy{
             256,
             20,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1782,7 +1783,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1155}};
         case 4:
-          return select_if_policy{
+          return SelectPolicy{
             320,
             10,
             BLOCK_LOAD_DIRECT,
@@ -1790,7 +1791,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 124, 1115}};
         case 8:
-          return select_if_policy{
+          return SelectPolicy{
             384,
             6,
             BLOCK_LOAD_DIRECT,
@@ -1806,7 +1807,7 @@ private:
       switch (input_size_bytes)
       {
         case 1:
-          return select_if_policy{
+          return SelectPolicy{
             512,
             20,
             BLOCK_LOAD_DIRECT,
@@ -1814,7 +1815,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 510}};
         case 2:
-          return select_if_policy{
+          return SelectPolicy{
             224,
             18,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1822,7 +1823,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1045}};
         case 4:
-          return select_if_policy{
+          return SelectPolicy{
             192,
             15,
             BLOCK_LOAD_DIRECT,
@@ -1830,7 +1831,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1040}};
         case 8:
-          return select_if_policy{
+          return SelectPolicy{
             192,
             10,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1846,7 +1847,7 @@ private:
       switch (input_size_bytes)
       {
         case 1:
-          return select_if_policy{
+          return SelectPolicy{
             512,
             20,
             BLOCK_LOAD_DIRECT,
@@ -1854,7 +1855,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 595}};
         case 2:
-          return select_if_policy{
+          return SelectPolicy{
             224,
             18,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1862,7 +1863,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1105}};
         case 4:
-          return select_if_policy{
+          return SelectPolicy{
             192,
             12,
             BLOCK_LOAD_DIRECT,
@@ -1870,7 +1871,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 912, 1025}};
         case 8:
-          return select_if_policy{
+          return SelectPolicy{
             192,
             12,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1885,7 +1886,7 @@ private:
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm90_tuning(bool has_flags, bool keep_rejects) const
-    -> select_if_policy
+    -> SelectPolicy
   {
     // before SM100, we only tuned for int32, but we always take these tunings independently of the offset type size
 
@@ -1893,7 +1894,7 @@ private:
     {
       if (not has_flags && not keep_rejects)
       {
-        return select_if_policy{
+        return SelectPolicy{
           512,
           5,
           BLOCK_LOAD_DIRECT,
@@ -1903,7 +1904,7 @@ private:
       }
       if (has_flags && not keep_rejects)
       {
-        return select_if_policy{
+        return SelectPolicy{
           512,
           3,
           BLOCK_LOAD_DIRECT,
@@ -1913,7 +1914,7 @@ private:
       }
       if (not has_flags && keep_rejects)
       {
-        return select_if_policy{
+        return SelectPolicy{
           192,
           5,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1923,7 +1924,7 @@ private:
       }
       if (has_flags && keep_rejects)
       {
-        return select_if_policy{
+        return SelectPolicy{
           160,
           5,
           BLOCK_LOAD_DIRECT,
@@ -1943,7 +1944,7 @@ private:
       switch (input_size_bytes)
       {
         case 1:
-          return select_if_policy{
+          return SelectPolicy{
             256,
             22,
             BLOCK_LOAD_DIRECT,
@@ -1951,7 +1952,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 580}};
         case 2:
-          return select_if_policy{
+          return SelectPolicy{
             256,
             22,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1959,7 +1960,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 320, 605}};
         case 4:
-          return select_if_policy{
+          return SelectPolicy{
             384,
             17,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1967,7 +1968,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 76, 1150}};
         case 8:
-          return select_if_policy{
+          return SelectPolicy{
             384,
             11,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1983,7 +1984,7 @@ private:
       switch (input_size_bytes)
       {
         case 1:
-          return select_if_policy{
+          return SelectPolicy{
             448,
             20,
             BLOCK_LOAD_DIRECT,
@@ -1991,7 +1992,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 715}};
         case 2:
-          return select_if_policy{
+          return SelectPolicy{
             448,
             20,
             BLOCK_LOAD_DIRECT,
@@ -1999,7 +2000,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 504, 765}};
         case 4:
-          return select_if_policy{
+          return SelectPolicy{
             384,
             15,
             BLOCK_LOAD_DIRECT,
@@ -2007,7 +2008,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 415, 1125}};
         case 8:
-          return select_if_policy{
+          return SelectPolicy{
             384,
             11,
             BLOCK_LOAD_DIRECT,
@@ -2023,7 +2024,7 @@ private:
       switch (input_size_bytes)
       {
         case 1:
-          return select_if_policy{
+          return SelectPolicy{
             384,
             20,
             BLOCK_LOAD_DIRECT,
@@ -2031,7 +2032,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 908, 995}};
         case 2:
-          return select_if_policy{
+          return SelectPolicy{
             320,
             14,
             BLOCK_LOAD_DIRECT,
@@ -2039,7 +2040,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 500, 560}};
         case 4:
-          return select_if_policy{
+          return SelectPolicy{
             256,
             14,
             BLOCK_LOAD_DIRECT,
@@ -2047,7 +2048,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 536, 1055}};
         case 8:
-          return select_if_policy{
+          return SelectPolicy{
             128,
             12,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -2063,7 +2064,7 @@ private:
       switch (input_size_bytes)
       {
         case 1:
-          return select_if_policy{
+          return SelectPolicy{
             256,
             20,
             BLOCK_LOAD_DIRECT,
@@ -2071,7 +2072,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 580, 850}};
         case 2:
-          return select_if_policy{
+          return SelectPolicy{
             512,
             20,
             BLOCK_LOAD_DIRECT,
@@ -2079,7 +2080,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 388, 1055}};
         case 4:
-          return select_if_policy{
+          return SelectPolicy{
             256,
             20,
             BLOCK_LOAD_DIRECT,
@@ -2087,7 +2088,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 72, 1165}};
         case 8:
-          return select_if_policy{
+          return SelectPolicy{
             224,
             6,
             BLOCK_LOAD_DIRECT,
@@ -2102,7 +2103,7 @@ private:
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  get_sm100_tuning(bool has_flags, bool keep_rejects, bool may_alias) const -> ::cuda::std::optional<select_if_policy>
+  get_sm100_tuning(bool has_flags, bool keep_rejects, bool may_alias) const -> ::cuda::std::optional<SelectPolicy>
   {
     if (not input_is_primitive)
     {
@@ -2516,7 +2517,7 @@ private:
   }
 
 public:
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
   {
     const bool has_flags    = flag_size_bytes != 0;
     const bool keep_rejects = selection_impl == SelectImpl::Partition;
@@ -2557,7 +2558,7 @@ template <typename InputIteratorT,
           SelectImpl SelectionOpt>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
   {
     using input_t = it_value_t<InputIteratorT>;
     using flag_t  = it_value_t<FlagsInputIteratorT>;
