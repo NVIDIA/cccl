@@ -156,7 +156,9 @@ class stf_kernel_decorator:
     def __call__(self, *args, **kwargs):
         if self._launch_cfg is None:
             raise RuntimeError(
-                "launch configuration missing -- use kernel[grid, block, ctx](...)"
+                "launch configuration missing -- use kernel[grid, block], "
+                "kernel[grid, block, exec_place], or "
+                "kernel[grid, block, exec_place, ctx](...)"
             )
 
         gridDim, blockDim, ctx, exec_pl = self._launch_cfg

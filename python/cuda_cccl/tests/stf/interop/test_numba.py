@@ -308,6 +308,12 @@ def test_numba_exec_place():
         dZ = get_arg_numba(t, 1)
         axpy[32, 64, nb_stream](2.0, dY, dZ)
 
+    ctx.finalize()
+    # Same expected values as test_numba (X=2, Y=5, Z=15)
+    assert np.allclose(X, 2.0)
+    assert np.allclose(Y, 5.0)
+    assert np.allclose(Z, 15.0)
+
 
 def test_jit_requires_context_or_dep_args():
     def noop(_x):
