@@ -79,6 +79,7 @@ inline constexpr bool is_non_deterministic_v =
 //! ====================================
 //!
 //! @cdp_class{DeviceReduce}
+//! @determinism{run_to_run}
 //!
 //! Performance
 //! ====================================

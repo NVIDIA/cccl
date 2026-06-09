@@ -68,6 +68,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceSegmentedReduce}
+//! @determinism{run_to_run}
 //!
 //! @endrst
 struct DeviceSegmentedReduce

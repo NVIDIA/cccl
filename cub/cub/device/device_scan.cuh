@@ -77,6 +77,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceScan}
+//! @determinism{not_guaranteed}
 //!
 //! Performance
 //! +++++++++++++++++++++++++++++++++++++++++++++
