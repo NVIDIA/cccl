@@ -338,7 +338,7 @@ struct rle_non_trivial_runs_policy
   CacheLoadModifier load_modifier;
   bool store_with_time_slicing;
   BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450};
+  LookbackDelayPolicy delay_constructor = {LookbackDelayAlgorithm::fixed_delay, 350, 450};
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const rle_non_trivial_runs_policy& lhs, const rle_non_trivial_runs_policy& rhs)
@@ -416,7 +416,7 @@ struct policy_selector
             LOAD_CA,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::exponential_backoff, 64, 315}};
+            {LookbackDelayAlgorithm::exponential_backoff, 64, 315}};
         }
         if (key_size == 2)
         {
@@ -428,7 +428,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::exponential_backon, 116, 340}};
+            {LookbackDelayAlgorithm::exponential_backon, 116, 340}};
         }
         if (key_size == 4)
         {
@@ -440,7 +440,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::exponential_backoff, 252, 470}};
+            {LookbackDelayAlgorithm::exponential_backoff, 252, 470}};
         }
         if (key_size == 8 && key_type != type_t::float64) // fall back to SM90 for double
         {
@@ -452,7 +452,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::exponential_backoff, 28, 520}};
+            {LookbackDelayAlgorithm::exponential_backoff, 28, 520}};
         }
       }
 
@@ -472,7 +472,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 385}};
+            {LookbackDelayAlgorithm::no_delay, 0, 385}};
         }
         if (key_is_primitive && key_size == 2)
         {
@@ -483,7 +483,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 675}};
+            {LookbackDelayAlgorithm::no_delay, 0, 675}};
         }
         if (key_is_primitive && key_size == 4)
         {
@@ -494,7 +494,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 695}};
+            {LookbackDelayAlgorithm::no_delay, 0, 695}};
         }
         if (key_is_primitive && key_size == 8)
         {
@@ -505,7 +505,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 840}};
+            {LookbackDelayAlgorithm::no_delay, 0, 840}};
         }
         if (key_type == type_t::int128 || key_type == type_t::uint128)
         {
@@ -516,7 +516,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::fixed_delay, 484, 1150}};
+            {LookbackDelayAlgorithm::fixed_delay, 484, 1150}};
         }
       }
 
@@ -543,7 +543,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 630}};
+            {LookbackDelayAlgorithm::no_delay, 0, 630}};
         }
         if (key_is_primitive && key_size == 2)
         {
@@ -554,7 +554,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 1015}};
+            {LookbackDelayAlgorithm::no_delay, 0, 1015}};
         }
         if (key_is_primitive && key_size == 4)
         {
@@ -565,7 +565,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 915}};
+            {LookbackDelayAlgorithm::no_delay, 0, 915}};
         }
         if (key_is_primitive && key_size == 8)
         {
@@ -576,7 +576,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 1065}};
+            {LookbackDelayAlgorithm::no_delay, 0, 1065}};
         }
         if (key_type == type_t::int128 || key_type == type_t::uint128)
         {
@@ -587,7 +587,7 @@ struct policy_selector
             LOAD_DEFAULT,
             false,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 1050}};
+            {LookbackDelayAlgorithm::no_delay, 0, 1050}};
         }
       }
       // no tuning for SM80, use a default policy

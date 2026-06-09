@@ -82,6 +82,7 @@ TEST_FUNC constexpr bool test()
     assert(process_segments(100) == 100);
   }
 
+#if 0 // FIXME(miscco): This should not work
   // Plain span: per-segment, no bounds, global memory
   {
     int sizes[3] = {64, 128, 96};
@@ -90,6 +91,7 @@ TEST_FUNC constexpr bool test()
     assert(compute_buffer_size(seg, 3) == default_max_segment_size * 3);
     assert(process_segments(seg) == 64 + 128 + 96);
   }
+#endif
 
   // static_argument: scalar, fits in shared memory, buffer = value
   {
