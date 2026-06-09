@@ -1448,6 +1448,11 @@ cdef class task:
         """
         if not isinstance(d, dep):
             raise TypeError("add_dep expects read(ld), write(ld) or rw(ld)")
+        if not isinstance(d.ld, logical_data):
+            raise TypeError(
+                "dep payload must be a logical_data for context.task(); "
+                "did you mix stackable and non-stackable deps?"
+            )
 
         cdef logical_data ldata = <logical_data> d.ld
         cdef int           mode_int  = int(d.mode)
@@ -1457,6 +1462,8 @@ cdef class task:
         if d.dplace is None:
             stf_task_add_dep(self._t, ldata._ld, mode_ce)
         else:
+            if not isinstance(d.dplace, data_place):
+                raise TypeError("dep data_place override must be a data_place")
             dp = <data_place> d.dplace
             stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, dp._h)
 
@@ -1620,6 +1627,11 @@ cdef class cuda_kernel:
     def add_dep(self, object d):
         if not isinstance(d, dep):
             raise TypeError("add_dep expects read(ld), write(ld) or rw(ld)")
+        if not isinstance(d.ld, logical_data):
+            raise TypeError(
+                "dep payload must be a logical_data for context.cuda_kernel(); "
+                "did you mix stackable and non-stackable deps?"
+            )
         cdef logical_data ldata = <logical_data>d.ld
         cdef int mode_int = int(d.mode)
         cdef stf_access_mode mode_ce = <stf_access_mode>mode_int
@@ -2311,6 +2323,11 @@ cdef class context:
                 raise TypeError(
                     "Positional arguments must be dep objects "
                     "(use ld.read(), ld.write(), or ld.rw())")
+            if not isinstance(d.ld, logical_data):
+                raise TypeError(
+                    "host_launch deps must come from logical_data "
+                    "(non-stackable context)"
+                )
             ldata = <logical_data>d.ld
             dep_meta.append((ldata._shape, ldata._dtype))
 
@@ -2502,6 +2519,11 @@ cdef class stackable_task:
     def add_dep(self, object d):
         if not isinstance(d, dep):
             raise TypeError("add_dep expects read(ld), write(ld) or rw(ld)")
+        if not isinstance(d.ld, stackable_logical_data):
+            raise TypeError(
+                "dep payload must be a stackable_logical_data for stackable_context.task(); "
+                "did you mix stackable and non-stackable deps?"
+            )
 
         cdef stackable_logical_data ldata = <stackable_logical_data> d.ld
         cdef int mode_int = int(d.mode)
@@ -2511,6 +2533,8 @@ cdef class stackable_task:
         if d.dplace is None:
             stf_stackable_task_add_dep(self._ctx, self._t, ldata._ld, mode_ce)
         else:
+            if not isinstance(d.dplace, data_place):
+                raise TypeError("dep data_place override must be a data_place")
             dp = <data_place> d.dplace
             stf_stackable_task_add_dep_with_dplace(
                 self._ctx, self._t, ldata._ld, mode_ce, dp._h)
@@ -3272,6 +3296,11 @@ cdef class stackable_context:
                 raise TypeError(
                     "Positional arguments must be dep objects "
                     "(use ld.read(), ld.write(), or ld.rw())")
+            if not isinstance(d.ld, stackable_logical_data):
+                raise TypeError(
+                    "host_launch deps must come from stackable_logical_data "
+                    "(stackable_context)"
+                )
             sldata = <stackable_logical_data>d.ld
             dep_meta.append((sldata._shape, sldata._dtype))
 

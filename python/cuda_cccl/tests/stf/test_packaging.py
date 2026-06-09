@@ -12,6 +12,7 @@ cheap path-discovery route that does not load the STF extension.
 
 import pytest
 
+import cuda.stf._experimental.paths as stf_paths
 from cuda.stf._experimental.paths import (
     get_include_paths,
     get_library_dir,
@@ -49,3 +50,13 @@ def test_library_path_resolves():
     lib_path = get_library_path()
     assert lib_path.exists()
     assert lib_path.parent == get_library_dir()
+
+
+def test_library_dir_resolves_without_cuda_bindings(monkeypatch):
+    monkeypatch.setattr(stf_paths, "_detect_preferred_extra", lambda: None)
+    stf_paths.get_library_dir.cache_clear()
+    try:
+        lib_dir = stf_paths.get_library_dir()
+    finally:
+        stf_paths.get_library_dir.cache_clear()
+    assert lib_dir.is_dir()
