@@ -285,8 +285,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   AccumT aggrExclusiveCtaCur = aggrExclusiveCtaPrev;
 
   using warp_reduce_t = WarpReduce<AccumT>;
-  static_assert(sizeof(typename warp_reduce_t::TempStorage) <= 4,
-                "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+                "WarpReduce for a full warp must not require temporary storage");
   [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
 
   while (idxTileCur < idxTileNext)
