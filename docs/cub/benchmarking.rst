@@ -125,6 +125,32 @@ Multiple benchmarks are selected by repeating the `-b` option.
     PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_plot_bwutil.py \
         -b base -a Elements{io}[pow2]=28 base.json
 
+
+Device-side primitive benchmarks
+--------------------------------------------------------------------------------
+
+CUB benchmarks should measure the behavior implied by the API under test. For
+device-level algorithms, global input and output traffic is usually part of the
+algorithm contract and should be represented in the benchmark. For thread, warp,
+and block primitive microbenchmarks, global memory traffic can easily dominate the
+measurement and hide the cost of the primitive itself.
+
+When benchmarking thread-, warp-, or block-level primitives:
+
+* Prefer device-side benchmarking with the helper included as
+  ``<device_side_benchmark.cuh>``.
+* Use an existing device-side benchmark, such as
+  ``cub/benchmarks/bench/reduce/warp_reduce_base.cuh``, as the reference pattern.
+* Generate input data on the device, or keep setup outside the measured path.
+* Use shared memory for primitive-local state when that matches the primitive usage.
+* If the helper kernel unrolls the measured operation, include that unroll factor in
+  the reported element count.
+
+If a benchmark changes from a global-memory-driven method to a device-side method,
+record that change when reporting results. The two methodologies answer different
+questions and their throughput numbers are not directly comparable.
+
+
 .. _cub-benchmarking-comparing:
 
 Comparing benchmark results

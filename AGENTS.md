@@ -35,6 +35,54 @@ For a given task, you should:
 
 ---
 
+## CCCL C++ and CUB Conventions
+
+For C++/CUDA library work, do not rely on nearby formatting alone. Before drafting code, read the
+CCCL C++ coding guidelines and the relevant component developer guide from `CONTRIBUTING.md`. For
+CUB work this usually means at least:
+
+* `docs/cub/developer_overview.rst`
+* `docs/cub/test_overview.rst` when adding or changing tests
+* `docs/cub/benchmarking.rst` when adding or changing benchmarks
+
+When implementing CUB headers, tests, or benchmarks:
+
+* Inspect sibling files in the same subsystem before choosing structure, names, comments, and helper APIs.
+* Prefer `cuda::std` facilities and headers where libcu++ provides the needed facility. Keep host-only
+  standard-library facilities only where there is no suitable `cuda::std` equivalent or the code is
+  intentionally host-only.
+* Match CCCL/CUB documentation and declaration style, including `//!` documentation comments, SPDX
+  license identifiers for new files, and PascalCase template parameters where the coding guidelines require
+  them.
+* Fully qualify nonmember library/header references where the guidelines or local style require it, but do
+  not add unnecessary `this->` or namespace qualification to member calls once the call is unambiguous.
+* Follow the CUB Catch2 typed-test pattern from nearby tests. Prefer `C2H_TEST`, `params_t<TestType>`,
+  `c2h::host_vector`, `c2h::device_vector`, and the compile-time parameter-list style described in
+  `docs/cub/test_overview.rst`.
+* Let `clang-format` format code, then manually scan documentation comments and prose for readable wrapping
+  consistent with surrounding files and reviewer expectations. Avoid artificial narrow wrapping in comments.
+
+For CUB benchmarks, first identify whether the benchmark should measure a device-level algorithm or a
+thread/warp/block primitive:
+
+* Device-level algorithm benchmarks may naturally include global input/output traffic if that traffic is part
+  of the algorithm contract.
+* Thread, warp, and block primitive microbenchmarks should measure the primitive itself. Avoid measured-path
+  global input/output traffic unless the primitive requires it. Prefer device-side benchmarking with
+  `nvbench_helper/nvbench_helper/device_side_benchmark.cuh`; use
+  `cub/benchmarks/bench/reduce/warp_reduce_base.cuh` as a reference pattern.
+* Generate benchmark inputs in-device or keep setup outside the measured path. If using the device-side
+  benchmark helper, account for the helper's unroll factor in reported element counts.
+* When posting benchmark results, include the exact device, command, benchmark axes, and an honest
+  interpretation of what the benchmark measures. If a revised benchmark changes methodology, state that older
+  numbers are not comparable.
+
+If review feedback reveals a convention that was missed, update the local task notes or postmortem and, when
+the convention is general, update `AGENTS.md` or the relevant developer guide instead of only fixing the line
+that was reviewed.
+
+---
+
 ## Known Agent Limitations
 
 ### OpenAI Codex
