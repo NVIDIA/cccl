@@ -34,14 +34,14 @@ struct find_bound_sorted_values_policy
   int items_per_thread;
   CacheLoadModifier load_modifier;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const find_bound_sorted_values_policy& lhs, const find_bound_sorted_values_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const find_bound_sorted_values_policy& lhs, const find_bound_sorted_values_policy& rhs)
   {
     return !(lhs == rhs);
@@ -66,11 +66,11 @@ struct policy_selector
   int range_type_size;
   int values_type_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> find_bound_sorted_values_policy
   {
     const int combined_size = range_type_size + values_type_size;
-    const int ipt           = detail::nominal_4B_items_to_items(15, combined_size);
+    const int ipt           = cub::detail::nominal_4B_items_to_items(15, combined_size);
 
     if (cc >= ::cuda::compute_capability{8, 0})
     {
@@ -94,7 +94,7 @@ static_assert(find_bound_sorted_values_policy_selector<policy_selector>);
 template <typename RangeT, typename ValuesT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> find_bound_sorted_values_policy
   {
     return policy_selector{int{sizeof(RangeT)}, int{sizeof(ValuesT)}}(cc);

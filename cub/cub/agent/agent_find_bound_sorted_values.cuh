@@ -42,7 +42,7 @@ struct lower_bound_mode
   };
 
   template <typename CompareOp>
-  _CCCL_API static partition_comp_t<CompareOp> make_partition_comp(CompareOp compare_op)
+  _CCCL_HOST_DEVICE_API static partition_comp_t<CompareOp> make_partition_comp(CompareOp compare_op)
   {
     return partition_comp_t<CompareOp>{compare_op};
   }
@@ -61,7 +61,7 @@ struct upper_bound_mode
   using partition_comp_t = CompareOp;
 
   template <typename CompareOp>
-  _CCCL_API static CompareOp make_partition_comp(CompareOp compare_op)
+  _CCCL_HOST_DEVICE_API static CompareOp make_partition_comp(CompareOp compare_op)
   {
     return compare_op;
   }
@@ -121,7 +121,7 @@ struct agent_t
     const int needles_count  = total_in_tile - haystack_count;
 
     {
-      const auto d_range_cm = detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
+      const auto d_range_cm = cub::detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
@@ -134,7 +134,7 @@ struct agent_t
     }
 
     {
-      auto d_values_cm = detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
+      auto d_values_cm = cub::detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
@@ -166,7 +166,7 @@ struct agent_t
     int d0_thread = ItemsPerThread * static_cast<int>(threadIdx.x);
     if constexpr (!IsFullTile)
     {
-      d0_thread = (::cuda::std::min) (d0_thread, total_in_tile);
+      d0_thread = ::cuda::std::min(d0_thread, total_in_tile);
     }
 
     const int i0 =

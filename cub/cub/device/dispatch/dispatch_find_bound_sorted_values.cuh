@@ -28,6 +28,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/limits>
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 #  include <sstream>
@@ -133,7 +134,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
        "Dispatching find_bound_sorted_values (merge-path) to arch %d with tuning: %s\n", cc.get(), ss.str().c_str());))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const Offset tile_size     = static_cast<Offset>(active_policy.block_threads * active_policy.items_per_thread);
+  const Offset tile_size = static_cast<Offset>(active_policy.block_threads * active_policy.items_per_thread);
+  _CCCL_ASSERT(range_count <= ::cuda::std::numeric_limits<Offset>::max() - values_count,
+               "range_count + values_count overflows Offset");
   const Offset total_items   = range_count + values_count;
   const Offset num_tiles     = ::cuda::ceil_div(total_items, tile_size);
   const Offset num_diagonals = num_tiles + 1;
@@ -141,7 +144,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* allocations[1]             = {nullptr};
   const size_t allocation_sizes[1] = {static_cast<size_t>(num_diagonals) * sizeof(Offset)};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -179,7 +182,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(cub::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -201,7 +204,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(cub::detail::DebugSyncStream(stream)))
     {
       return error;
     }
