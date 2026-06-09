@@ -1059,7 +1059,7 @@ struct policy_selector_from_hub
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept scan_by_key_policy_selector = ::cub::detail::policy_selector<T, ScanByKeyPolicy>;
+concept scan_by_key_policy_selector = detail::policy_selector<T, ScanByKeyPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
