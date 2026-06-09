@@ -88,19 +88,20 @@ template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
   _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
 
+//! @brief Determines whether a constructor is valid and whether it is implicit or explicit
 enum class __select_constructor
 {
-  __none,
-  __implicit,
-  __explicit,
+  __none, //!< The constructor is not valid
+  __implicit, //!< The constructor is valid and implicit
+  __explicit, //!< The constructor is valid and explicit
 };
 
 template <__select_constructor _Trait>
-inline constexpr bool __select_implicit = _Trait == __select_constructor::__implicit;
+inline constexpr bool __can_construct_implicitly = _Trait == __select_constructor::__implicit;
 template <__select_constructor _Trait>
-inline constexpr bool __select_explicit = _Trait == __select_constructor::__explicit;
+inline constexpr bool __can_construct_explicitly = _Trait == __select_constructor::__explicit;
 template <__select_constructor _Trait>
-inline constexpr bool __select_constructible = _Trait != __select_constructor::__none;
+inline constexpr bool __can_construct = _Trait != __select_constructor::__none;
 
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
@@ -185,8 +186,8 @@ __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_U
     { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
       if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
       {
-        constexpr bool __select_implicit = (is_convertible_v<_UTypes, _Types> && ...);
-        return __select_implicit ? __select_constructor::__implicit : __select_constructor::__explicit;
+        constexpr bool __can_construct_implicitly = (is_convertible_v<_UTypes, _Types> && ...);
+        return __can_construct_implicitly ? __select_constructor::__implicit : __select_constructor::__explicit;
       }
       else
       {
@@ -200,8 +201,8 @@ __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_U
   }
   else if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
   { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-    constexpr bool __select_implicit = (is_convertible_v<_UTypes, _Types> && ...);
-    return __select_implicit ? __select_constructor::__implicit : __select_constructor::__explicit;
+    constexpr bool __can_construct_implicitly = (is_convertible_v<_UTypes, _Types> && ...);
+    return __can_construct_implicitly ? __select_constructor::__implicit : __select_constructor::__explicit;
   }
   else
   {
@@ -426,17 +427,18 @@ _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(__tuple_types<_Types...>, _
 template <class>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(...) noexcept -> _InvalidTupleComparison;
 
+//! @brief Determines whether an assignment is valid and also whether it does not throw
 enum class __select_assignment
 {
-  __none,
-  __is_nothrow,
-  __may_throw,
+  __none, //!< No assignment possible
+  __is_nothrow, //!< Assignment possible, is nothrow
+  __may_throw, //!< Assignment possible, may throw
 };
 
 template <__select_assignment _Trait>
-inline constexpr bool __select_assignable = _Trait != __select_assignment::__none;
+inline constexpr bool __can_assign = _Trait != __select_assignment::__none;
 template <__select_assignment _Trait>
-inline constexpr bool __select_nothrow = _Trait == __select_assignment::__is_nothrow;
+inline constexpr bool __can_nothrow_assign = _Trait == __select_assignment::__is_nothrow;
 
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment

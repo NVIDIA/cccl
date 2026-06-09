@@ -54,6 +54,14 @@ TEST_FUNC constexpr bool test()
     t2 = cuda::std::move(t1);
     assert(cuda::std::get<0>(t2) == 1);
     assert(cuda::std::get<1>(t2) == 2);
+    assert(j1 == 1);
+    assert(j2 == 2);
+
+    // Ensure the original references have not changed
+    assert(cuda::std::addressof(cuda::std::get<0>(t1)) == cuda::std::addressof(i1));
+    assert(cuda::std::addressof(cuda::std::get<1>(t1)) == cuda::std::addressof(i2));
+    assert(cuda::std::addressof(cuda::std::get<0>(t2)) == cuda::std::addressof(j1));
+    assert(cuda::std::addressof(cuda::std::get<1>(t2)) == cuda::std::addressof(j2));
   }
 
   // user defined const copy assignment
