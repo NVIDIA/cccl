@@ -31,6 +31,14 @@
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 
+#  if _CCCL_HOSTED()
+#    include <cuda/__device/all_devices.h>
+#    include <cuda/std/optional>
+
+#    include <mutex>
+#    include <vector>
+#  endif // _CCCL_HOSTED()
+
 #  include <cuda/std/__cccl/prologue.h>
 
 //! @file
@@ -89,11 +97,28 @@ public:
 //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
 //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
 //! @returns The default memory pool of the specified device.
-[[nodiscard]] inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
+[[nodiscard]] _CCCL_HOST_API inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
 {
-  static device_memory_pool_ref __pool{::cuda::__get_default_memory_pool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED)};
-  return __pool;
+#  if _CCCL_HOSTED()
+  // TODO: Move this per-device storage into __physical_device once that can be done without pulling memory pool
+  // definitions into device headers.
+  static ::std::mutex __mutex;
+  static ::std::vector<::cuda::std::optional<device_memory_pool_ref>> __pools(::cuda::devices.size());
+
+  const ::std::lock_guard<::std::mutex> __guard(__mutex);
+  const auto __device_id = static_cast<::cuda::std::size_t>(__device.get());
+  auto& __pool = __pools[__device_id];
+  if (!__pool.has_value())
+  {
+    __pool.emplace(::cuda::__get_default_memory_pool(
+      ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED));
+  }
+  return *__pool;
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
+  (void) __device;
+  _CCCL_ASSERT(false, "device_default_memory_pool is not supported in freestanding");
+  _CCCL_UNREACHABLE();
+#  endif // _CCCL_FREESTANDING()
 }
 
 //! @rst
