@@ -43,11 +43,9 @@
 
 #  include <cuda_tile.h>
 
-#  include <cuda/std/__cccl/extended_data_types.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-
-#  include <cstddef>
 
 CUB_NAMESPACE_BEGIN
 
