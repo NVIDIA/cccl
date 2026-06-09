@@ -844,7 +844,6 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
    *
    * @param[in] num_items
    *   Total number of input items (i.e., the length of `d_in`)
-   *   Total number of input items (i.e., the length of `d_in`)
    *
    * @param[in] stream
    *   **[optional]** CUDA stream to launch kernels within.
