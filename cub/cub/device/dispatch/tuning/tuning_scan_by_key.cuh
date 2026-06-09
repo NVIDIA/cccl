@@ -32,7 +32,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for all algorithms in @ref DeviceScan scan-by-key.
+//! The tuning policy for all ByKey algorithms in @ref DeviceScan.
 struct ScanByKeyPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
