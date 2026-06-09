@@ -1614,10 +1614,17 @@ stf_ctx_handle stf_stackable_ctx_create(void);
 
 //! \brief Finalize a stackable context and release all associated resources.
 //!
-//! Blocks until every pending task in every still-open scope completes.
+//! All nested scopes must already have been popped so the context stack is back
+//! at the root (every \c stf_stackable_push_graph() / \c stf_stackable_push_while()
+//! / \c stf_stackable_push_repeat() must have a matching pop). Calling this while
+//! a scope is still open is not supported and aborts in debug builds. Once at the
+//! root, it blocks until all pending root-level work has completed and releases
+//! the root resources.
+//!
 //! \param ctx Stackable context handle (must have been popped back to the root).
 //!
 //! \see stf_stackable_ctx_create()
+//! \see stf_stackable_pop()
 void stf_stackable_ctx_finalize(stf_ctx_handle ctx);
 
 //! \brief Get a fence stream for a stackable context (must be at root level).
