@@ -3,13 +3,16 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/device_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/scan.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
+#include <cuda/__execution/require.h>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
 
@@ -27,7 +30,7 @@ struct is_minus_zero
   }
 };
 
-template <cub::detail::topk::select Direction,
+template <cub::detail::topk::select SelectDirection,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
@@ -45,25 +48,40 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = nullptr)
 {
-  auto values_it = static_cast<cub::NullType**>(nullptr);
-  return cub::detail::batched_topk::dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_key_segments_it,
-    d_key_segments_out_it,
-    values_it,
-    values_it,
-    segment_sizes,
-    k,
-    cuda::args::constant<Direction>{},
-    num_segments,
-    total_num_items_guarantee,
-    stream);
+  auto env = cuda::std::execution::env{
+    cuda::stream_ref{stream},
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted)};
+  if constexpr (SelectDirection == cub::detail::topk::select::max)
+  {
+    return cub::DeviceBatchedTopK::MaxKeys(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      segment_sizes,
+      k,
+      num_segments,
+      total_num_items_guarantee,
+      env);
+  }
+  else
+  {
+    return cub::DeviceBatchedTopK::MinKeys(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      segment_sizes,
+      k,
+      num_segments,
+      total_num_items_guarantee,
+      env);
+  }
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 DECLARE_TMPL_LAUNCH_WRAPPER(
-  dispatch_batched_topk_keys, batched_topk_keys, cub::detail::topk::select Direction, Direction);
+  dispatch_batched_topk_keys, batched_topk_keys, cub::detail::topk::select SelectDirection, SelectDirection);
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
