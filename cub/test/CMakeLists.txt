@@ -180,7 +180,10 @@ function(
       )
     endif()
 
-    if ("${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$")
+    if (
+      "${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_find_env_api\\.cu$"
+    )
       if (
         "Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
         AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13

@@ -8,6 +8,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -168,3 +169,36 @@ C2H_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]")
   REQUIRE(error == cudaSuccess);
   REQUIRE(count == expected_count);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin bulk-policy-selector
+struct ForPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ForPolicy
+  {
+    return {.threads_per_block = cc > cuda::compute_capability{9, 0} ? 512 : 256, .items_per_thread = 4};
+  }
+};
+// example-end bulk-policy-selector
+
+C2H_TEST("cub::DeviceFor::Bulk env-based API with tuning", "[for][env]")
+{
+  // example-begin bulk-tuning
+  auto vec = thrust::device_vector<int>{1, 2, 3, 4};
+  square_t op{thrust::raw_pointer_cast(vec.data())};
+
+  const auto error = cub::DeviceFor::Bulk(static_cast<int>(vec.size()), op, cuda::execution::tune(ForPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFor::Bulk failed: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{1, 4, 9, 16};
+  // example-end bulk-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(vec == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

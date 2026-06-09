@@ -137,7 +137,7 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
     active_policy.items_per_thread,
     active_policy.load_algorithm,
     active_policy.load_modifier,
-    active_policy.block_scan_algorithm,
+    active_policy.scan_algorithm,
     delay_constructor_t<active_policy.delay_constructor.kind,
                         active_policy.delay_constructor.delay,
                         active_policy.delay_constructor.l2_write_latency>>;

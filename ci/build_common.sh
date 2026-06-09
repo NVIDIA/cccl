@@ -52,7 +52,7 @@ function check_required_dependencies() {
     local missing_deps=()
 
     # Check for essential tools
-    local required_tools=("cmake" "git" "ninja" "nproc")
+    local required_tools=("cmake" "git" "jq" "ninja" "nproc")
     for tool in "${required_tools[@]}"; do
         command -v "$tool" &>/dev/null || missing_deps+=("$tool")
     done
