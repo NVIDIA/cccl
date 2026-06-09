@@ -207,8 +207,8 @@ runs:
         source ci/util/artifacts/common.sh
         source ci/util/workflow/common.sh
 
-        # Temporary: only use the build cluster for every 1 out of 20 runs
-        if test $((RANDOM % 20)) -eq 0; then
+        # Temporary: only use the build cluster for every 1 out of 10 runs
+        if test $((RANDOM % 10)) -eq 0; then
           SCCACHE_DIST_URL="https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com"
 
           SCCACHE_DIST_AUTH_TOKEN="$(
