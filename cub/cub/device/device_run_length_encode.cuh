@@ -327,7 +327,7 @@ struct DeviceRunLengthEncode
     using default_policy_selector = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+      env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return detail::reduce_by_key::dispatch_streaming(
           storage,
           bytes,
@@ -340,7 +340,7 @@ struct DeviceRunLengthEncode
           reduction_op{},
           static_cast<offset_t>(num_items),
           stream,
-          policy_selector);
+          __policy_selector_adapter<decltype(policy_selector)>{});
       });
   }
 
