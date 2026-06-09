@@ -52,7 +52,7 @@ template <class Sndr>
 struct protect : private Sndr
 {
   using sender_concept = ex::sender_t;
-  _CCCL_API explicit protect(Sndr sndr)
+  _CCCL_HOST_DEVICE_API explicit protect(Sndr sndr)
       : Sndr{cuda::std::move(sndr)}
   {}
   using Sndr::connect;
@@ -64,7 +64,7 @@ struct test_domain
 {
   _CCCL_TEMPLATE(class Sndr, class Env)
   _CCCL_REQUIRES(ex::sender_for<Sndr, ex::bulk_chunked_t>)
-  _CCCL_API auto transform_sender(ex::set_value_t, Sndr sndr, const Env&) const
+  _CCCL_HOST_DEVICE_API auto transform_sender(ex::set_value_t, Sndr sndr, const Env&) const
   {
     return ex::then(protect{cuda::std::move(sndr)}, []() noexcept {
       g_called = true;

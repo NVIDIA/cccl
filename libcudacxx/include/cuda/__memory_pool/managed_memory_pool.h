@@ -24,9 +24,10 @@
 #if _CCCL_CTK_AT_LEAST(13, 0)
 
 #  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/throw_error.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -34,6 +35,10 @@
 //! The \c managed_memory_resource class provides a memory resource that
 //! allocates managed memory.
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
@@ -55,7 +60,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!    exceeds the lifetime of the ``managed_memory_pool_ref``.
 //!
 //! @endrst
-class managed_memory_pool_ref : public __memory_pool_base
+class managed_memory_pool_ref
+    : public __memory_pool_base
+    , public ::cuda::mr::memory_resource_base<managed_memory_pool_ref>
 {
 public:
   //! @brief  Constructs the managed_memory_pool_ref from a \c cudaMemPool_t.
@@ -78,11 +85,11 @@ public:
 //! @brief Returns the default managed memory pool.
 //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
 //! @returns The default managed memory pool.
-[[nodiscard]] inline managed_memory_pool_ref managed_default_memory_pool()
+[[nodiscard]] inline managed_memory_pool_ref& managed_default_memory_pool()
 {
-  static ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
-  return managed_memory_pool_ref(__pool);
+  static managed_memory_pool_ref __pool{::cuda::__get_default_memory_pool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED)};
+  return __pool;
 }
 
 //! @rst
@@ -103,6 +110,11 @@ struct managed_memory_pool : managed_memory_pool_ref
 {
   using reference_type = managed_memory_pool_ref;
 
+  //! @brief Constructs an empty \c managed_memory_pool without an underlying pool.
+  _CCCL_HOST_API explicit managed_memory_pool(no_init_t) noexcept
+      : managed_memory_pool_ref(::cudaMemPool_t{})
+  {}
+
   //! @brief Constructs a \c managed_memory_pool with optional properties.
   //! Properties include the initial pool size and the release threshold. If the
   //! pool size grows beyond the release threshold, unused memory held by the
@@ -121,7 +133,7 @@ struct managed_memory_pool : managed_memory_pool_ref
   {
     if (__pool_ != nullptr)
     {
-      ::cuda::__driver::__mempoolDestroy(__pool_);
+      _CCCL_ASSERT_CUDA_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool_);
     }
   }
 
@@ -130,11 +142,21 @@ struct managed_memory_pool : managed_memory_pool_ref
     return managed_memory_pool(__pool);
   }
 
-  //! @brief Returns a \c managed_memory_pool_ref for this \c managed_memory_pool.
-  //! The result is the same as if this object was cast to a \c managed_memory_pool_ref.
-  [[nodiscard]] _CCCL_HOST_API managed_memory_pool_ref as_ref() noexcept
+  //! @brief Retrieve the native `cudaMemPool_t` handle and give up ownership.
+  //!
+  //! @return cudaMemPool_t The native handle being held by this object.
+  //!
+  //! @post The memory pool object is in a moved-from state.
+  _CCCL_HOST_API constexpr ::cudaMemPool_t release() noexcept
   {
-    return managed_memory_pool_ref(__pool_);
+    return ::cuda::std::exchange(__pool_, nullptr);
+  }
+
+  //! @brief Returns a \c managed_memory_pool_ref for this \c managed_memory_pool.
+  //! We return by reference to ensure that we can subsequently convert to a resource_ref
+  [[nodiscard]] _CCCL_HOST_API managed_memory_pool_ref& as_ref() noexcept
+  {
+    return static_cast<managed_memory_pool_ref&>(*this);
   }
 
   managed_memory_pool(const managed_memory_pool&)            = delete;
@@ -146,11 +168,13 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::host_accessible>);
 
-static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>);
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 

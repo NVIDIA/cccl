@@ -16,11 +16,14 @@
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+
+#include <test_resources.h>
 
 #include "testing.cuh"
 
@@ -55,9 +58,9 @@ C2H_TEST_LIST(
   "__uninitialized_async_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
   using __uninitialized_async_buffer = cuda::__uninitialized_async_buffer<TestType, cuda::mr::device_accessible>;
-  static_assert(!cuda::std::is_default_constructible<__uninitialized_async_buffer>::value, "");
-  static_assert(!cuda::std::is_copy_constructible<__uninitialized_async_buffer>::value, "");
-  static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value, "");
+  static_assert(!cuda::std::is_default_constructible<__uninitialized_async_buffer>::value);
+  static_assert(!cuda::std::is_copy_constructible<__uninitialized_async_buffer>::value);
+  static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value);
 
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
   cuda::stream stream{cuda::device_ref{0}};
@@ -68,6 +71,14 @@ C2H_TEST_LIST(
       __uninitialized_async_buffer from_stream_count{resource, stream, 42};
       CCCLRT_CHECK(from_stream_count.data() != nullptr);
       CCCLRT_CHECK(from_stream_count.size() == 42);
+    }
+
+    {
+      const ::cuda::std::size_t alignment = 64;
+      offset_by_alignment_resource aligned_resource{resource};
+      __uninitialized_async_buffer from_stream_count{aligned_resource, stream, 42, alignment};
+      CCCLRT_CHECK(is_pointer_aligned(from_stream_count.data(), alignment));
+      CCCLRT_CHECK(from_stream_count.alignment() == alignment);
     }
 
     {
@@ -104,7 +115,7 @@ C2H_TEST_LIST(
 
   SECTION("assignment")
   {
-    static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value);
 
     {
       cuda::stream other_stream{cuda::device_ref{0}};
@@ -140,9 +151,9 @@ C2H_TEST_LIST(
   SECTION("access")
   {
     __uninitialized_async_buffer buf{resource, stream, 42};
-    static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value, "");
-    static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value, "");
-    static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value);
+    static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value);
+    static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value);
     CCCLRT_CHECK(buf.data() != nullptr);
     CCCLRT_CHECK(buf.size() == 42);
     CCCLRT_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
@@ -151,9 +162,9 @@ C2H_TEST_LIST(
     CCCLRT_CHECK(buf.stream() == stream);
     CCCLRT_CHECK(buf.memory_resource() == resource);
 
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value, "");
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value, "");
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).data()), TestType const*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value);
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value);
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).data()), TestType const*>::value);
     CCCLRT_CHECK(cuda::std::as_const(buf).data() != nullptr);
     CCCLRT_CHECK(cuda::std::as_const(buf).size() == 42);
     CCCLRT_CHECK(cuda::std::as_const(buf).size_bytes() == 42 * sizeof(TestType));
@@ -166,11 +177,9 @@ C2H_TEST_LIST(
   SECTION("properties")
   {
     static_assert(cuda::has_property<cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible>,
-                                     cuda::mr::device_accessible>,
-                  "");
-    static_assert(
-      cuda::has_property<cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible, my_property>, my_property>,
-      "");
+                                     cuda::mr::device_accessible>);
+    static_assert(cuda::has_property<cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible, my_property>,
+                                     my_property>);
   }
 
   SECTION("conversion to span")

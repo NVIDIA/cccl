@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -12,8 +12,8 @@
 #include <thrust/execution_policy.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/std/execution>
+#include <cuda/stream>
 
 #include <nvbench_helper.cuh>
 
@@ -63,13 +63,12 @@ static void fib(nvbench::state& state, nvbench::type_list<T>)
   fib_t<T, nvbench::uint32_t> op{};
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
-  state.exec(
-    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      cuda::std::transform(
-        policy.with_stream(launch.get_stream().get_stream()), input.cbegin(), input.cend(), output.begin(), op);
-    });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(
+                 cuda::std::transform(cuda_policy(alloc, launch), input.cbegin(), input.cend(), output.begin(), op));
+             });
 }
 
 using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;

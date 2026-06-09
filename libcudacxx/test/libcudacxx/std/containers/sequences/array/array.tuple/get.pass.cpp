@@ -17,12 +17,12 @@
 #include "test_macros.h"
 
 template <typename... T>
-__host__ __device__ constexpr cuda::std::array<int, sizeof...(T)> tempArray(T... args)
+TEST_FUNC constexpr cuda::std::array<int, sizeof...(T)> tempArray(T... args)
 {
   return {args...};
 }
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     cuda::std::array<double, 1> array = {3.3};
@@ -51,7 +51,7 @@ __host__ __device__ constexpr bool tests()
   }
   {
     cuda::std::array<double, 1> array = {3.3};
-    static_assert(cuda::std::is_same<double&, decltype(cuda::std::get<0>(array))>::value, "");
+    static_assert(cuda::std::is_same<double&, decltype(cuda::std::get<0>(array))>::value);
     unused(array);
   }
   {
@@ -66,6 +66,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

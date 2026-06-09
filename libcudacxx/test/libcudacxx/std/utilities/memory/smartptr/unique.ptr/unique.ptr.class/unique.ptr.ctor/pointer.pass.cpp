@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -38,7 +42,7 @@
 // unique_ptr(pointer) ctor should only require default Deleter ctor
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_pointer()
 {
   using ValueT           = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   const int expect_alive = IsArray ? 5 : 1;
@@ -47,12 +51,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer()
     using U2 = cuda::std::unique_ptr<ValueT, Deleter<ValueT>>;
 
     // Test for noexcept
-    static_assert(cuda::std::is_nothrow_constructible<U1, A*>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U2, A*>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U1, A*>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U2, A*>::value);
 
     // Test for explicit
-    static_assert(!cuda::std::is_convertible<A*, U1>::value, "");
-    static_assert(!cuda::std::is_convertible<A*, U2>::value, "");
+    static_assert(!cuda::std::is_convertible<A*, U1>::value);
+    static_assert(!cuda::std::is_convertible<A*, U2>::value);
   }
   {
     A* p = newValue<ValueT>(expect_alive);
@@ -100,7 +104,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_derived()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_derived()
 {
   {
     B* p = new B;
@@ -137,22 +141,22 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_derived()
 
 struct NonDefaultDeleter
 {
-  __host__ __device__ NonDefaultDeleter() = delete;
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC NonDefaultDeleter() = delete;
+  TEST_FUNC void operator()(void*) const {}
 };
 
 struct GenericDeleter
 {
-  __host__ __device__ void operator()(void*) const;
+  TEST_FUNC void operator()(void*) const;
 };
 
 template <class T>
-__host__ __device__ void TEST_CONSTEXPR_CXX23 test_sfinae()
+TEST_FUNC void TEST_CONSTEXPR_CXX23 test_sfinae()
 {
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
     using U = cuda::std::unique_ptr<T, void (*)(void*)>;
-    static_assert(!cuda::std::is_constructible<U, T*>::value, "");
+    static_assert(!cuda::std::is_constructible<U, T*>::value);
   }
   { // the constructor does not participate in overload resolution when
     // the deleter is not default constructible
@@ -160,13 +164,13 @@ __host__ __device__ void TEST_CONSTEXPR_CXX23 test_sfinae()
     using U1  = cuda::std::unique_ptr<T, NonDefaultDeleter>;
     using U2  = cuda::std::unique_ptr<T, Del&>;
     using U3  = cuda::std::unique_ptr<T, Del const&>;
-    static_assert(!cuda::std::is_constructible<U1, T*>::value, "");
-    static_assert(!cuda::std::is_constructible<U2, T*>::value, "");
-    static_assert(!cuda::std::is_constructible<U3, T*>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, T*>::value);
+    static_assert(!cuda::std::is_constructible<U2, T*>::value);
+    static_assert(!cuda::std::is_constructible<U3, T*>::value);
   }
 }
 
-__host__ __device__ static TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
+TEST_FUNC static TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
 {
   { // the constructor does not participate in overload resolution when
     // a base <-> derived conversion would occur.
@@ -177,12 +181,12 @@ __host__ __device__ static TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
     using UBD = cuda::std::unique_ptr<B[], GenericDeleter>;
     using UBC = cuda::std::unique_ptr<const B[]>;
 
-    static_assert(!cuda::std::is_constructible<UA, B*>::value, "");
-    static_assert(!cuda::std::is_constructible<UB, A*>::value, "");
-    static_assert(!cuda::std::is_constructible<UAD, B*>::value, "");
-    static_assert(!cuda::std::is_constructible<UBD, A*>::value, "");
-    static_assert(!cuda::std::is_constructible<UAC, const B*>::value, "");
-    static_assert(!cuda::std::is_constructible<UBC, const A*>::value, "");
+    static_assert(!cuda::std::is_constructible<UA, B*>::value);
+    static_assert(!cuda::std::is_constructible<UB, A*>::value);
+    static_assert(!cuda::std::is_constructible<UAD, B*>::value);
+    static_assert(!cuda::std::is_constructible<UBD, A*>::value);
+    static_assert(!cuda::std::is_constructible<UAC, const B*>::value);
+    static_assert(!cuda::std::is_constructible<UBC, const A*>::value);
   }
 }
 
@@ -199,7 +203,7 @@ DEFINE_AND_RUN_IS_INCOMPLETE_TEST({
 })
 #endif // !_CCCL_CUDA_COMPILATION()
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_pointer</*IsArray*/ false>();

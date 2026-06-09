@@ -48,7 +48,7 @@
  *         <tt>THRUST_VERSION / 100 % 1000</tt> is the minor version.
  *         <tt>THRUST_VERSION / 100000</tt> is the major version.
  */
-#define THRUST_VERSION 300300 // macro expansion with ## requires this to be a single value
+#define THRUST_VERSION 300500 // macro expansion with ## requires this to be a single value
 
 /*! \def THRUST_MAJOR_VERSION
  *  \brief The preprocessor macro \p THRUST_MAJOR_VERSION encodes the
@@ -75,6 +75,6 @@
  */
 #define THRUST_PATCH_NUMBER 0
 
-static_assert(THRUST_MAJOR_VERSION == CCCL_MAJOR_VERSION, "");
-static_assert(THRUST_MINOR_VERSION == CCCL_MINOR_VERSION, "");
-static_assert(THRUST_SUBMINOR_VERSION == CCCL_PATCH_VERSION, "");
+static_assert(THRUST_MAJOR_VERSION == CCCL_MAJOR_VERSION);
+static_assert(THRUST_MINOR_VERSION == CCCL_MINOR_VERSION);
+static_assert(THRUST_SUBMINOR_VERSION == CCCL_PATCH_VERSION);

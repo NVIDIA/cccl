@@ -29,11 +29,13 @@
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 
+#include <memory>
 #include <type_traits>
 
 namespace cuda::experimental::stf
@@ -43,6 +45,70 @@ class stream_ctx;
 
 namespace reserved
 {
+/**
+ * @brief Opaque handle passed to untyped host_launch callbacks.
+ *
+ * Provides indexed access to dependency data and optional user data.
+ * Used by the C/Python bindings and the C++ untyped dispatch path
+ * (lambdas taking `host_launch_deps&`).
+ */
+class host_launch_deps
+{
+public:
+  host_launch_deps()                                   = default;
+  host_launch_deps(const host_launch_deps&)            = delete;
+  host_launch_deps& operator=(const host_launch_deps&) = delete;
+  host_launch_deps(host_launch_deps&&)                 = default;
+  host_launch_deps& operator=(host_launch_deps&&)      = default;
+
+  // If user data was attached with a custom destructor, invoke it before freeing the buffer
+  ~host_launch_deps()
+  {
+    if (dtor_ && !user_data_buf_.empty())
+    {
+      dtor_(user_data_buf_.data());
+    }
+  }
+
+  /// Retrieve the concrete data instance for dependency at @p index
+  template <typename T>
+  decltype(auto) get(size_t index)
+  {
+    _CCCL_ASSERT(index < lds_.size(), "host_launch_deps: index out of range");
+    return lds_[index].template instance<T>(ids_[index]);
+  }
+
+  size_t size() const
+  {
+    return lds_.size();
+  }
+
+  /// Returns a pointer to the opaque user data blob, or nullptr if none was set
+  void* user_data()
+  {
+    return user_data_buf_.empty() ? nullptr : user_data_buf_.data();
+  }
+
+  const void* user_data() const
+  {
+    return user_data_buf_.empty() ? nullptr : user_data_buf_.data();
+  }
+
+  size_t user_data_size() const
+  {
+    return user_data_buf_.size();
+  }
+
+private:
+  template <typename, bool, typename...>
+  friend class host_launch_scope;
+
+  ::std::vector<logical_data_untyped> lds_;
+  ::std::vector<instance_id_t> ids_;
+  ::std::vector<char> user_data_buf_; // byte-copied snapshot of the user data attached to the scope
+  void (*dtor_)(void*) = nullptr; // optional destructor for user_data_buf_ contents
+};
+
 //! \brief Resource wrapper for managing host callback arguments
 //!
 //! This manages the memory allocated for host callback arguments using the
@@ -85,6 +151,14 @@ public:
       , deps(mv(deps)...)
   {}
 
+  ~host_launch_scope()
+  {
+    if (user_data_dtor_ && !user_data_buf_.empty())
+    {
+      user_data_dtor_(user_data_buf_.data());
+    }
+  }
+
   host_launch_scope(const host_launch_scope&)            = delete;
   host_launch_scope& operator=(const host_launch_scope&) = delete;
   // move-constructible
@@ -106,7 +180,39 @@ public:
   }
 
   /**
+   * @brief Add an untyped dependency after construction.
+   *
+   * This allows C/Python bindings to build dependencies incrementally
+   * without requiring compile-time type information.
+   */
+  auto& add_deps(task_dep_untyped dep)
+  {
+    deps.push_back(mv(dep));
+    return *this;
+  }
+
+  /**
+   * @brief Copy user-provided data into this scope.
+   *
+   * The data is later moved into the `host_launch_deps` handle that is
+   * passed to untyped callbacks.  An optional destructor is called on
+   * the copied buffer when the `host_launch_deps` is destroyed.
+   */
+  auto& set_user_data(const void* data, size_t sz, void (*dtor)(void*) = nullptr)
+  {
+    auto* p = static_cast<const char*>(data);
+    user_data_buf_.assign(p, p + sz);
+    user_data_dtor_ = dtor;
+    return *this;
+  }
+
+  /**
    * @brief Takes a lambda function and executes it on the host in a graph callback node.
+   *
+   * Two dispatch paths are supported:
+   *   - **Typed** (existing): `Fun` is invocable with the typed dep instances.
+   *   - **Untyped** (new): `Fun` accepts a single `host_launch_deps&`.
+   *     Note: dynamically added dependencies (with `add_deps`) are especially useful in C/Python bindings.
    *
    * @tparam Fun type of lambda function
    * @param f Lambda function to execute
@@ -114,6 +220,15 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
+    // The untyped dispatch path is used by C/Python bindings where deps
+    // are added dynamically via add_deps() (Deps... is empty).  We use
+    // std::conjunction so that is_invocable is only instantiated when
+    // Deps is empty — nvcc eagerly instantiates generic-lambda bodies
+    // during is_invocable_v checks, which would cause hard errors for
+    // typed lambdas like [](auto da){ da.data_handle(); }.
+    constexpr bool fun_invocable_untyped =
+      ::std::conjunction_v<::std::bool_constant<sizeof...(Deps) == 0>, ::std::is_invocable<Fun, host_launch_deps&>>;
+
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
@@ -124,28 +239,24 @@ public:
       t.set_symbol(symbol);
     }
 
-    cudaEvent_t start_event, end_event;
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
     const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+    // Set only once both timing events exist and the start event has been recorded.
+    // The timing setup is done below, after the SCOPE(exit) guard is installed, so a
+    // throw from those cuda_try calls cannot skip t.end_uncleared()/t.clear().
+    bool timing_active = false;
 
     t.start();
-
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-    {
-      if (record_time)
-      {
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
-      }
-    }
 
     SCOPE(exit)
     {
       t.end_uncleared();
       if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
-        if (record_time)
+        if (timing_active)
         {
+          // Inside the noexcept SCOPE(exit) body; keep cuda_safe_call so a CUDA
+          // error aborts rather than throwing through the guard.
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
 
@@ -166,65 +277,130 @@ public:
       t.clear();
     };
 
-    auto payload = [&]() {
-      if constexpr (called_from_launch)
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
       {
-        return tuple_prepend(thread_hierarchy<>(), deps.instance(t));
+        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
+        // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags (equivalent to cudaEventCreate).
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
+        timing_active = true;
+      }
+    }
+
+    if constexpr (fun_invocable_untyped)
+    {
+      // --- Untyped dispatch path ---
+      auto resolved =
+        ::std::make_unique<::std::pair<Fun, host_launch_deps>>(::std::forward<Fun>(f), host_launch_deps{});
+
+      auto& hld = resolved->second;
+
+      const size_t ndeps = deps.size();
+      hld.lds_.resize(ndeps);
+      hld.ids_.resize(ndeps);
+      for (size_t i = 0; i < ndeps; ++i)
+      {
+        hld.lds_[i] = deps[i].get_data();
+        hld.ids_[i] = t.find_data_instance_id(hld.lds_[i]);
+      }
+      hld.user_data_buf_ = mv(user_data_buf_);
+      hld.dtor_          = user_data_dtor_;
+      user_data_dtor_    = nullptr;
+
+      auto callback = [](void* raw) {
+        auto* w = static_cast<decltype(resolved.get())>(raw);
+        SCOPE(exit)
+        {
+          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+          {
+            delete w;
+          }
+        };
+        w->first(w->second);
+      };
+
+      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+      {
+        cudaHostNodeParams params = {.fn = callback, .userData = resolved.get()};
+        auto lock                 = t.lock_ctx_graph();
+        t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
+        // The node now references the args; hand ownership to a ctx resource
+        // that deletes them (in release_in_callback) when the ctx is released.
+        using wrapper_type = ::std::remove_reference_t<decltype(*resolved)>;
+        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(resolved.get()));
       }
       else
       {
-        return deps.instance(t);
+        // For a stream the callback owns the args once the launch succeeds.
+        cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, resolved.get());
       }
-    }();
-    auto* wrapper = new ::std::pair<Fun, decltype(payload)>{::std::forward<Fun>(f), mv(payload)};
-
-    // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
-    // For stream contexts, delete immediately in callback (better memory efficiency)
-    if constexpr (::std::is_same_v<Ctx, graph_ctx>)
-    {
-      using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
-      auto resource      = ::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper);
-      ctx.add_resource(mv(resource));
-    }
-
-    auto callback = [](void* untyped_wrapper) {
-      auto w = static_cast<decltype(wrapper)>(untyped_wrapper);
-
-      constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
-      constexpr bool fun_invocable_task_non_void_deps =
-        reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
-
-      static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
-                    "Incorrect lambda function signature in host_launch.");
-
-      if constexpr (fun_invocable_task_deps)
-      {
-        ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
-      }
-      else if constexpr (fun_invocable_task_non_void_deps)
-      {
-        ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
-      }
-
-      // For stream contexts, delete immediately (no replay risk)
-      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-      if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
-      {
-        delete w;
-      }
-    };
-
-    if constexpr (::std::is_same_v<Ctx, graph_ctx>)
-    {
-      cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
-
-      // Put this host node into the child graph that implements the graph_task<>
-      auto lock = t.lock_ctx_graph();
-      cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
+      // Ownership has transferred (to the ctx resource for graph, or to the
+      // callback for stream). These enqueues are asynchronous, so on a throw
+      // above the callback has not run and the unique_ptr still owns the args;
+      // release it now that ownership has moved on.
+      resolved.release();
     }
     else
     {
-      cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), callback, wrapper));
+      // --- Typed dispatch path (existing behaviour, unchanged) ---
+      auto payload = [&]() {
+        if constexpr (called_from_launch)
+        {
+          return tuple_prepend(thread_hierarchy<>(), deps.instance(t));
+        }
+        else
+        {
+          return deps.instance(t);
+        }
+      }();
+      auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::std::forward<Fun>(f), mv(payload));
+
+      auto callback = [](void* untyped_wrapper) {
+        auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
+        SCOPE(exit)
+        {
+          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+          {
+            delete w;
+          }
+        };
+
+        constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
+        constexpr bool fun_invocable_task_non_void_deps =
+          reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
+
+        static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                      "Incorrect lambda function signature in host_launch.");
+
+        if constexpr (fun_invocable_task_deps)
+        {
+          ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+        }
+        else if constexpr (fun_invocable_task_non_void_deps)
+        {
+          ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
+        }
+      };
+
+      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+      {
+        cudaHostNodeParams params = {.fn = callback, .userData = wrapper.get()};
+        auto lock                 = t.lock_ctx_graph();
+        t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
+        // Transfer ownership only after the node references the args, so a throw
+        // from cudaGraphAddHostNode leaves the unique_ptr as the sole owner.
+        using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
+        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper.get()));
+      }
+      else
+      {
+        cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, wrapper.get());
+      }
+      wrapper.release();
     }
   }
 
@@ -232,6 +408,8 @@ private:
   ::std::string symbol;
   Ctx& ctx;
   task_dep_vector<Deps...> deps;
+  ::std::vector<char> user_data_buf_;
+  void (*user_data_dtor_)(void*) = nullptr;
 };
 } // end namespace reserved
 } // end namespace cuda::experimental::stf

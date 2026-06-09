@@ -8,10 +8,10 @@ Provided functionalities
 
 Random number engines:
 
-- `std::minstd_rand0 <https://en.cppreference.com/w/cpp/numeric/random/minstd_rand0>`_
-- `std::minstd_rand <https://en.cppreference.com/w/cpp/numeric/random/minstd_rand>`_
-- C++26 `std::philox4x32 <https://en.cppreference.com/w/cpp/numeric/random/philox_engine.html>`_ - available from C++17 onwards
-- C++26 `std::philox4x64 <https://en.cppreference.com/w/cpp/numeric/random/philox_engine.html>`_ - available from C++17 onwards
+- `cuda::std::minstd_rand0 <https://en.cppreference.com/w/cpp/numeric/random/minstd_rand0>`_
+- `cuda::std::minstd_rand <https://en.cppreference.com/w/cpp/numeric/random/minstd_rand>`_
+- C++26 `cuda::std::philox4x32 <https://en.cppreference.com/w/cpp/numeric/random/philox_engine.html>`_ - available from C++17 onwards
+- C++26 `cuda::std::philox4x64 <https://en.cppreference.com/w/cpp/numeric/random/philox_engine.html>`_ - available from C++17 onwards
 
 .. note::
 
@@ -20,28 +20,28 @@ Random number engines:
 
 Random number distributions:
 
-- `std::bernoulli_distribution <https://en.cppreference.com/w/cpp/numeric/random/bernoulli_distribution>`_
-- `std::binomial_distribution <https://en.cppreference.com/w/cpp/numeric/random/binomial_distribution>`_
-- `std::cauchy_distribution <https://en.cppreference.com/w/cpp/numeric/random/cauchy_distribution>`_
-- `std::chi_squared_distribution <https://en.cppreference.com/w/cpp/numeric/random/chi_squared_distribution>`_
-- `std::exponential_distribution <https://en.cppreference.com/w/cpp/numeric/random/exponential_distribution>`_
-- `std::extreme_value_distribution <https://en.cppreference.com/w/cpp/numeric/random/extreme_value_distribution>`_
-- `std::fisher_f_distribution <https://en.cppreference.com/w/cpp/numeric/random/fisher_f_distribution>`_
-- `std::gamma_distribution <https://en.cppreference.com/w/cpp/numeric/random/gamma_distribution>`_
-- `std::geometric_distribution <https://en.cppreference.com/w/cpp/numeric/random/geometric_distribution>`_
-- `std::lognormal_distribution <https://en.cppreference.com/w/cpp/numeric/random/lognormal_distribution>`_
-- `std::negative_binomial_distribution <https://en.cppreference.com/w/cpp/numeric/random/negative_binomial_distribution>`_
-- `std::normal_distribution <https://en.cppreference.com/w/cpp/numeric/random/normal_distribution>`_
-- `std::poisson_distribution <https://en.cppreference.com/w/cpp/numeric/random/poisson_distribution>`_
-- `std::student_t_distribution <https://en.cppreference.com/w/cpp/numeric/random/student_t_distribution>`_
-- `std::uniform_int_distribution <https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution>`_
-- `std::uniform_real_distribution <https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution>`_
-- `std::weibull_distribution <https://en.cppreference.com/w/cpp/numeric/random/weibull_distribution>`_
+- `cuda::std::bernoulli_distribution <https://en.cppreference.com/w/cpp/numeric/random/bernoulli_distribution>`_
+- `cuda::std::binomial_distribution <https://en.cppreference.com/w/cpp/numeric/random/binomial_distribution>`_
+- `cuda::std::cauchy_distribution <https://en.cppreference.com/w/cpp/numeric/random/cauchy_distribution>`_
+- `cuda::std::chi_squared_distribution <https://en.cppreference.com/w/cpp/numeric/random/chi_squared_distribution>`_
+- `cuda::std::exponential_distribution <https://en.cppreference.com/w/cpp/numeric/random/exponential_distribution>`_
+- `cuda::std::extreme_value_distribution <https://en.cppreference.com/w/cpp/numeric/random/extreme_value_distribution>`_
+- `cuda::std::fisher_f_distribution <https://en.cppreference.com/w/cpp/numeric/random/fisher_f_distribution>`_
+- `cuda::std::gamma_distribution <https://en.cppreference.com/w/cpp/numeric/random/gamma_distribution>`_
+- `cuda::std::geometric_distribution <https://en.cppreference.com/w/cpp/numeric/random/geometric_distribution>`_
+- `cuda::std::lognormal_distribution <https://en.cppreference.com/w/cpp/numeric/random/lognormal_distribution>`_
+- `cuda::std::negative_binomial_distribution <https://en.cppreference.com/w/cpp/numeric/random/negative_binomial_distribution>`_
+- `cuda::std::normal_distribution <https://en.cppreference.com/w/cpp/numeric/random/normal_distribution>`_
+- `cuda::std::poisson_distribution <https://en.cppreference.com/w/cpp/numeric/random/poisson_distribution>`_
+- `cuda::std::student_t_distribution <https://en.cppreference.com/w/cpp/numeric/random/student_t_distribution>`_
+- `cuda::std::uniform_int_distribution <https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution>`_
+- `cuda::std::uniform_real_distribution <https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution>`_
+- `cuda::std::weibull_distribution <https://en.cppreference.com/w/cpp/numeric/random/weibull_distribution>`_
 
 Utilities:
 
-- `std::seed_seq <https://en.cppreference.com/w/cpp/numeric/random/seed_seq>`_
-- `std::generate_canonical <https://en.cppreference.com/w/cpp/numeric/random/generate_canonical>`_
+- `cuda::std::seed_seq <https://en.cppreference.com/w/cpp/numeric/random/seed_seq>`_
+- `cuda::std::generate_canonical <https://en.cppreference.com/w/cpp/numeric/random/generate_canonical>`_
 
 
 .. note::

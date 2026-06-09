@@ -24,7 +24,7 @@ struct BigType
   char buffer[64] = {10};
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     BigType bt{};

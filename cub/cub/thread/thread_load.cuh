@@ -22,14 +22,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -49,7 +46,7 @@ enum CacheLoadModifier
   LOAD_VOLATILE, ///< Volatile (any memory space)
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier)
 {
   switch (modifier)
@@ -72,7 +69,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier
       return os << "<unknown CacheLoadModifier: " << static_cast<int>(modifier) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @name Thread I/O (cache modified)
 //! @{

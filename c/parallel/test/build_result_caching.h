@@ -54,7 +54,7 @@ public:
   }
   catch (const std::exception& e)
   {
-    std::cerr << "~result_wrapper_t ignores exception: " << e.what() << std::endl;
+    std::cerr << "~result_wrapper_t ignores exception: " << e.what() << '\n';
   }
 
   ResultT& get()
@@ -66,11 +66,10 @@ public:
 template <typename KeyT, typename ValueT>
 class build_cache_t
 {
-  std::unordered_map<KeyT, ValueT> m_map;
+  std::unordered_map<KeyT, ValueT> m_map{};
 
 public:
-  build_cache_t()
-      : m_map{} {};
+  build_cache_t() = default;
 
   bool contains(const KeyT& key) const
   {

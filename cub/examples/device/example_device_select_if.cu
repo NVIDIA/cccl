@@ -21,7 +21,7 @@
 
 #include <cuda/std/limits>
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "../../test/test_util.h"
 

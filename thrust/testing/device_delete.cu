@@ -9,9 +9,7 @@
 
 struct Foo
 {
-  _CCCL_DEVICE Foo()
-      : destroyed{nullptr}
-  {}
+  Foo() = default;
 
   Foo(const Foo&)            = delete;
   Foo& operator=(const Foo&) = delete;

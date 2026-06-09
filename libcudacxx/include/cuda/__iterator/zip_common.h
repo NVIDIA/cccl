@@ -20,15 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/__fwd/iterator.h>
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iter_move.h>
 #include <cuda/std/__iterator/iter_swap.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -53,7 +57,7 @@ struct __zip_iter_constraints
     (::cuda::std::sized_sentinel_for<_Iterators, _Iterators> && ...) || __all_random_access;
 
   static constexpr bool __all_nothrow_iter_movable =
-    (noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iterators&>())) && ...)
+    (noexcept(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<const _Iterators&>())) && ...)
     && (::cuda::std::is_nothrow_move_constructible_v<::cuda::std::iter_rvalue_reference_t<_Iterators>> && ...);
 
   static constexpr bool __all_indirectly_swappable = (::cuda::std::indirectly_swappable<_Iterators> && ...);
@@ -134,11 +138,31 @@ struct __zip_iter_move
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>
   [[nodiscard]] _CCCL_API constexpr __iter_move_ret<_Iterators...> operator()(const _Iterators&... __iters) const
-    noexcept(noexcept(__iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...}))
+    noexcept(noexcept(__iter_move_ret<_Iterators...>{::cuda::std::ranges::__iter_move_cpo{}(__iters)...}))
   {
-    return __iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...};
+    return __iter_move_ret<_Iterators...>{::cuda::std::ranges::__iter_move_cpo{}(__iters)...};
   }
 };
+
+// We need this to make proxy iterators work because those might not have a working `iter_value_t`
+template <class _Iter, class = void>
+struct __zip_maybe_proxy_helper
+{
+  using reference  = decltype(*::cuda::std::declval<_Iter>());
+  using value_type = ::cuda::std::remove_reference_t<reference>;
+};
+
+template <class _Iter>
+struct __zip_maybe_proxy_helper<_Iter, ::cuda::std::void_t<::cuda::std::iter_value_t<_Iter>>>
+{
+  using reference  = ::cuda::std::iter_reference_t<_Iter>;
+  using value_type = ::cuda::std::iter_value_t<_Iter>;
+};
+
+template <class _Iter>
+using __zip_maybe_proxy_reference_t = typename __zip_maybe_proxy_helper<_Iter>::reference;
+template <class _Iter>
+using __zip_maybe_proxy_value_type_t = typename __zip_maybe_proxy_helper<_Iter>::value_type;
 
 _CCCL_END_NAMESPACE_CUDA
 

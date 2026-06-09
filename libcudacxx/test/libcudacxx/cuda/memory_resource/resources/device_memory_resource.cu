@@ -20,14 +20,14 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-static_assert(!cuda::std::is_trivial<cuda::device_memory_pool_ref>::value, "");
-static_assert(!cuda::std::is_trivially_default_constructible<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_copy_constructible<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_move_constructible<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_copy_assignable<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_move_assignable<cuda::device_memory_pool_ref>::value, "");
-static_assert(cuda::std::is_trivially_destructible<cuda::device_memory_pool_ref>::value, "");
-static_assert(!cuda::std::is_empty<cuda::device_memory_pool_ref>::value, "");
+static_assert(!cuda::std::is_trivial<cuda::device_memory_pool_ref>::value);
+static_assert(!cuda::std::is_trivially_default_constructible<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_copy_constructible<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_move_constructible<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_copy_assignable<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_move_assignable<cuda::device_memory_pool_ref>::value);
+static_assert(cuda::std::is_trivially_destructible<cuda::device_memory_pool_ref>::value);
+static_assert(!cuda::std::is_empty<cuda::device_memory_pool_ref>::value);
 
 static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
@@ -65,7 +65,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 {
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
@@ -99,11 +99,14 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
       &ptr,
       42,
       current_default_pool,
-      ::cudaStream_t{0});
+      ::cudaStream_t{nullptr});
     CHECK(ptr != nullptr);
 
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, ::cudaStream_t{0});
+      ::cudaFreeAsync,
+      "Failed to deallocate with pool passed to cuda::device_memory_pool_ref",
+      ptr,
+      ::cudaStream_t{nullptr});
   }
 
   SECTION("Construct from mempool handle")
@@ -130,11 +133,14 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
       &ptr,
       42,
       current_default_pool,
-      ::cudaStream_t{0});
+      ::cudaStream_t{nullptr});
     CHECK(ptr != nullptr);
 
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, ::cudaStream_t{0});
+      ::cudaFreeAsync,
+      "Failed to deallocate with pool passed to cuda::device_memory_pool_ref",
+      ptr,
+      ::cudaStream_t{nullptr});
   }
 
   SECTION("Construct with initial pool size")
@@ -217,7 +223,7 @@ static void ensure_device_ptr(void* ptr)
   CHECK(attributes.type == cudaMemoryTypeDevice);
 }
 
-C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 {
   cudaStream_t raw_stream;
   {
@@ -228,7 +234,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_device_ptr(ptr);
 
     res.deallocate_sync(ptr, 42);
@@ -236,7 +242,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
 
   { // allocate_sync / deallocate_sync with alignment
     auto* ptr = res.allocate_sync(42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_device_ptr(ptr);
 
     res.deallocate_sync(ptr, 42, 4);
@@ -246,7 +252,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
     cuda::stream_ref stream{raw_stream};
 
     auto* ptr = res.allocate(stream, 42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
     stream.sync();
     ensure_device_ptr(ptr);
@@ -258,7 +264,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
     cuda::stream_ref stream{raw_stream};
 
     auto* ptr = res.allocate(stream, 42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
     stream.sync();
     ensure_device_ptr(ptr);
@@ -332,7 +338,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
   }
 }
 
-C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
 {
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};

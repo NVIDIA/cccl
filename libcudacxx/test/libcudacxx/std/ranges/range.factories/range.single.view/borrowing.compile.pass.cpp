@@ -12,6 +12,7 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
 #include "test_range.h"
 
 static_assert(!cuda::std::ranges::borrowed_range<cuda::std::ranges::single_view<int>>);

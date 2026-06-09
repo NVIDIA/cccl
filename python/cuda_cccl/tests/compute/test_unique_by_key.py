@@ -66,14 +66,14 @@ def unique_by_key_device(
 ):
     # Call single-phase API directly with all parameters including num_items
     cuda.compute.unique_by_key(
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        op,
-        num_items,
-        stream,
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
+        num_items=num_items,
+        stream=stream,
     )
 
 
@@ -328,14 +328,14 @@ def test_unique_by_key_struct_types():
     h_in_items["a"] = a_items
     h_in_items["b"] = b_items
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_keys = cp.asarray(d_in_keys).view(key_pair.dtype)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_in_items = cp.asarray(d_in_items).view(item_pair.dtype)
+    d_in_keys = cp.empty_like(h_in_keys)
+    d_in_items = cp.empty_like(h_in_items)
+    d_in_keys.set(h_in_keys)
+    d_in_items.set(h_in_items)
 
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_items = cp.empty_like(d_in_items)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_out_num_selected = cp.empty_like(h_out_num_selected)
 
     unique_by_key_device(
         d_in_keys,
@@ -347,7 +347,7 @@ def test_unique_by_key_struct_types():
         num_items,
     )
 
-    h_out_num_selected = d_out_num_selected.copy_to_host()
+    h_out_num_selected = d_out_num_selected.get()
     num_selected = h_out_num_selected[0]
     h_out_keys = d_out_keys.get()[:num_selected]
     h_out_items = d_out_items.get()[:num_selected]
@@ -441,13 +441,13 @@ def test_unique_by_key_well_known_equal_to(monkeypatch):
 
     # Run unique by key with well-known EQUAL_TO operation
     cuda.compute.unique_by_key(
-        d_in_keys,
-        d_in_values,
-        d_out_keys,
-        d_out_values,
-        d_num_selected,
-        OpKind.EQUAL_TO,
-        len(d_in_keys),
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_values,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_values,
+        d_out_num_selected=d_num_selected,
+        op=OpKind.EQUAL_TO,
+        num_items=len(d_in_keys),
     )
 
     # Check the result is correct

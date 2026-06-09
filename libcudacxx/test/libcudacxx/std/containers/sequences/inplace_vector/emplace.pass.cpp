@@ -7,11 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 #include <cuda/std/inplace_vector>
+#include <cuda/std/optional>
 #include <cuda/std/type_traits>
 
 #include "test_iterators.h"
@@ -23,16 +27,16 @@
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
-  constexpr size_t max_capacity         = 6ull;
-  using inplace_vector                  = cuda::std::inplace_vector<T, max_capacity>;
-  const cuda::std::array<T, 6> expected = {T(0), T(1), T(2), T(3), T(4), T(5)};
+  [[maybe_unused]] constexpr size_t max_capacity = 6ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
+  const cuda::std::array<T, 6> expected          = {T(0), T(1), T(2), T(3), T(4), T(5)};
 
   { // inplace_vector<T, N>::emplace(iter, args...)
     inplace_vector vec = {T(0), T(1), T(2), T(4), T(5)};
     const auto res     = vec.emplace(vec.begin() + 3, 3);
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, expected));
     assert(res == vec.begin() + 3);
   }
@@ -40,7 +44,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::emplace(const_iter, args...)
     inplace_vector vec = {T(0), T(1), T(2), T(4), T(5)};
     const auto res     = vec.emplace(vec.cbegin() + 3, 3);
-    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), const typename inplace_vector::iterator>::value);
     assert(equal_range(vec, expected));
     assert(res == vec.cbegin() + 3);
   }
@@ -48,7 +52,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::emplace_back(args...)
     inplace_vector vec = {T(0), T(1), T(2), T(3), T(4)};
     auto&& res         = vec.emplace_back(5);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value);
     assert(equal_range(vec, expected));
     assert(res == T(5));
     res = T(6);
@@ -59,7 +63,7 @@ __host__ __device__ constexpr void test()
     const T to_be_pushed = 5;
     inplace_vector vec   = {T(0), T(1), T(2), T(3), T(4)};
     auto&& res           = vec.push_back(to_be_pushed);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value);
     assert(equal_range(vec, expected));
     assert(res == T(5));
     res = T(6);
@@ -69,7 +73,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::push_back(T&&)
     inplace_vector vec = {T(0), T(1), T(2), T(3), T(4)};
     auto&& res         = vec.push_back(T(5));
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value);
     assert(equal_range(vec, expected));
     assert(res == T(5));
     res = T(6);
@@ -79,88 +83,88 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, 0>::try_emplace_back(args...)
     cuda::std::inplace_vector<T, 0> vec{};
     auto res = vec.try_emplace_back(5);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(vec.empty());
-    assert(res == nullptr);
+    assert(!res);
   }
 
   { // inplace_vector<T, N>::try_emplace_back(args...)
     inplace_vector vec = {T(0), T(1), T(2), T(3), T(4)};
     auto res           = vec.try_emplace_back(5);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(equal_range(vec, expected));
-    assert(*res == T(5));
-    *res = T(6);
-    assert(*res == T(6));
+    assert(res.value() == T(5));
+    res.value() = T(6);
+    assert(res.value() == T(6));
   }
 
   { // inplace_vector<T, N>::try_emplace_back(args...), at capacity
     inplace_vector vec = {T(0), T(1), T(2), T(3), T(4), T(5)};
     auto res           = vec.try_emplace_back(6);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(equal_range(vec, expected));
-    assert(res == nullptr);
+    assert(!res);
   }
 
   { // inplace_vector<T, 0>::try_push_back(const T&)
     const T to_be_pushed = 5;
     cuda::std::inplace_vector<T, 0> vec{};
     auto res = vec.try_push_back(to_be_pushed);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(vec.empty());
-    assert(res == nullptr);
+    assert(!res);
   }
 
   { // inplace_vector<T, N>::try_push_back(const T&)
     const T to_be_pushed = 5;
     inplace_vector vec   = {T(0), T(1), T(2), T(3), T(4)};
     auto res             = vec.try_push_back(to_be_pushed);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(equal_range(vec, expected));
-    assert(*res == T(5));
-    *res = T(6);
-    assert(*res == T(6));
+    assert(res.value() == T(5));
+    res.value() = T(6);
+    assert(res.value() == T(6));
   }
 
   { // inplace_vector<T, N>::try_push_back(const T&), at capacity
     const T to_be_pushed = 6;
     inplace_vector vec   = {T(0), T(1), T(2), T(3), T(4), T(5)};
     auto res             = vec.try_push_back(to_be_pushed);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(equal_range(vec, expected));
-    assert(res == nullptr);
+    assert(!res);
   }
 
   { // inplace_vector<T, 0>::try_push_back(T&&)
     cuda::std::inplace_vector<T, 0> vec{};
     auto res = vec.try_push_back(5);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(vec.empty());
-    assert(res == nullptr);
+    assert(!res);
   }
 
   { // inplace_vector<T, N>::try_push_back(T&&)
     inplace_vector vec = {T(0), T(1), T(2), T(3), T(4)};
     auto res           = vec.try_push_back(T(5));
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(equal_range(vec, expected));
-    assert(*res == T(5));
-    *res = T(6);
-    assert(*res == T(6));
+    assert(res.value() == T(5));
+    res.value() = T(6);
+    assert(res.value() == T(6));
   }
 
   { // inplace_vector<T, N>::try_push_back(T&&), at capacity
     inplace_vector vec = {T(0), T(1), T(2), T(3), T(4), T(5)};
     auto res           = vec.try_push_back(T(6));
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::pointer>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), cuda::std::optional<typename inplace_vector::reference>>::value);
     assert(equal_range(vec, expected));
-    assert(res == nullptr);
+    assert(!res);
   }
 
   { // inplace_vector<T, N>::unchecked_emplace_back(args...)
     inplace_vector vec = {T(0), T(1), T(2), T(3), T(4)};
     auto&& res         = vec.unchecked_emplace_back(5);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value);
     assert(equal_range(vec, expected));
     assert(res == T(5));
     res = T(6);
@@ -171,7 +175,7 @@ __host__ __device__ constexpr void test()
     const T to_be_pushed = 5;
     inplace_vector vec   = {T(0), T(1), T(2), T(3), T(4)};
     auto&& res           = vec.unchecked_push_back(to_be_pushed);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value);
     assert(equal_range(vec, expected));
     assert(res == T(5));
     res = T(6);
@@ -181,7 +185,7 @@ __host__ __device__ constexpr void test()
   { // inplace_vector<T, N>::unchecked_push_back(T&&)
     inplace_vector vec = {T(0), T(1), T(2), T(3), T(4)};
     auto&& res         = vec.unchecked_push_back(T(5));
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::reference>::value);
     assert(equal_range(vec, expected));
     assert(res == T(5));
     res = T(6);
@@ -189,7 +193,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -301,7 +305,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

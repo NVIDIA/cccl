@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // #include <memory>
 
 // void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
@@ -24,7 +27,7 @@ struct MyStruct
   int v;
 };
 
-__device__ int global_var;
+TEST_GLOBAL_VARIABLE int global_var;
 __constant__ int constant_var;
 
 __global__ void test_kernel(const _CCCL_GRID_CONSTANT MyStruct grid_constant_var)

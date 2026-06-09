@@ -22,175 +22,104 @@
 // %RANGE% TUNE_M_TRANSPOSE mtrp 0:1:1
 
 #if !TUNE_BASE
-
-#  define TUNE_SW_THREADS (1 << TUNE_SW_THREADS_POW2)
-#  define TUNE_MW_THREADS (1 << TUNE_MW_THREADS_POW2)
-
-#  define SMALL_SEGMENT_SIZE  TUNE_S_ITEMS* TUNE_SW_THREADS
-#  define MEDIUM_SEGMENT_SIZE TUNE_M_ITEMS* TUNE_MW_THREADS
-#  define LARGE_SEGMENT_SIZE  TUNE_L_ITEMS* TUNE_THREADS
-
-#  if (LARGE_SEGMENT_SIZE <= SMALL_SEGMENT_SIZE) || (LARGE_SEGMENT_SIZE <= MEDIUM_SEGMENT_SIZE)
-#    error Large segment size must be larger than small and medium segment sizes
-#  endif
-
-#  if (MEDIUM_SEGMENT_SIZE <= SMALL_SEGMENT_SIZE)
-#    error Medium segment size must be larger than small one
-#  endif
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_LOAD == 2
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
-#  if TUNE_S_LOAD == 0
-#    define TUNE_S_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_S_LOAD == 1
-#    define TUNE_S_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_S_LOAD == 2
-#    define TUNE_S_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_S_LOAD
-
-#  if TUNE_M_LOAD == 0
-#    define TUNE_M_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_M_LOAD == 1
-#    define TUNE_M_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_M_LOAD == 2
-#    define TUNE_M_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_M_LOAD
-
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_S_TRANSPOSE == 0
-#    define TUNE_S_LOAD_ALGORITHM cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT
-#  else // TUNE_S_TRANSPOSE == 1
-#    define TUNE_S_LOAD_ALGORITHM cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE
-#  endif // TUNE_S_TRANSPOSE
-
-#  if TUNE_M_TRANSPOSE == 0
-#    define TUNE_M_LOAD_ALGORITHM cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT
-#  else // TUNE_M_TRANSPOSE == 1
-#    define TUNE_M_LOAD_ALGORITHM cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE
-#  endif // TUNE_M_TRANSPOSE
-
-template <class KeyT>
-struct device_seg_sort_policy_hub
+struct policy_selector
 {
-  using DominantT = KeyT;
-
-  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
   {
-    static constexpr int BLOCK_THREADS          = TUNE_THREADS;
-    static constexpr int RADIX_BITS             = TUNE_RADIX_BITS;
-    static constexpr int PARTITIONING_THRESHOLD = TUNE_PARTITIONING_THRESHOLD;
+    constexpr int tune_sw_threads     = 1 << TUNE_SW_THREADS_POW2;
+    constexpr int tune_mw_threads     = 1 << TUNE_MW_THREADS_POW2;
+    constexpr int small_segment_size  = TUNE_S_ITEMS * tune_sw_threads;
+    constexpr int medium_segment_size = TUNE_M_ITEMS * tune_mw_threads;
+    constexpr int large_segment_size  = TUNE_L_ITEMS * TUNE_THREADS;
 
-    using LargeSegmentPolicy = cub::AgentRadixSortDownsweepPolicy<
-      BLOCK_THREADS,
-      TUNE_L_ITEMS,
-      DominantT,
-      TUNE_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
-      static_cast<cub::RadixRankAlgorithm>(TUNE_RANK_ALGORITHM),
-      cub::BLOCK_SCAN_WARP_SCANS,
-      RADIX_BITS>;
+    static_assert((large_segment_size > small_segment_size) && (large_segment_size > medium_segment_size),
+                  "Large segment size must be larger than small and medium segment sizes");
+    static_assert(medium_segment_size > small_segment_size, "Medium segment size must be larger than small one");
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = TUNE_S_ITEMS;
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = TUNE_M_ITEMS;
+    using namespace cub::detail::segmented_sort;
 
-    using SmallSegmentPolicy = cub::
-      AgentSubWarpMergeSortPolicy<TUNE_SW_THREADS, ITEMS_PER_SMALL_THREAD, TUNE_S_LOAD_ALGORITHM, TUNE_S_LOAD_MODIFIER>;
-    using MediumSegmentPolicy = cub::
-      AgentSubWarpMergeSortPolicy<TUNE_MW_THREADS, ITEMS_PER_MEDIUM_THREAD, TUNE_M_LOAD_ALGORITHM, TUNE_M_LOAD_MODIFIER>;
-  };
-
-  using MaxPolicy = Policy500;
+    return segmented_sort_policy{
+      segmented_radix_sort_policy{
+        TUNE_THREADS,
+        TUNE_L_ITEMS,
+        (TUNE_TRANSPOSE == 0) ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+        (TUNE_LOAD == 0)   ? cub::LOAD_DEFAULT
+        : (TUNE_LOAD == 1) ? cub::LOAD_LDG
+                           : cub::LOAD_CA,
+        static_cast<cub::RadixRankAlgorithm>(TUNE_RANK_ALGORITHM),
+        cub::BLOCK_SCAN_WARP_SCANS,
+        TUNE_RADIX_BITS,
+      },
+      sub_warp_merge_sort_policy{
+        TUNE_THREADS,
+        tune_sw_threads,
+        TUNE_S_ITEMS,
+        (TUNE_S_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
+        (TUNE_S_LOAD == 0)   ? cub::LOAD_DEFAULT
+        : (TUNE_S_LOAD == 1) ? cub::LOAD_LDG
+                             : cub::LOAD_CA,
+        cub::WARP_STORE_DIRECT,
+      },
+      sub_warp_merge_sort_policy{
+        TUNE_THREADS,
+        tune_mw_threads,
+        TUNE_M_ITEMS,
+        (TUNE_M_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
+        (TUNE_M_LOAD == 0)   ? cub::LOAD_DEFAULT
+        : (TUNE_M_LOAD == 1) ? cub::LOAD_LDG
+                             : cub::LOAD_CA,
+        cub::WARP_STORE_DIRECT,
+      },
+      TUNE_PARTITIONING_THRESHOLD,
+    };
+  }
 };
 #endif // !TUNE_BASE
 
 template <class T, typename OffsetT>
 void seg_sort(nvbench::state& state,
-              nvbench::type_list<T, OffsetT> ts,
+              nvbench::type_list<T, OffsetT>,
               const thrust::device_vector<OffsetT>& offsets,
               bit_entropy entropy)
 {
-  constexpr cub::SortOrder sort_order = cub::SortOrder::Ascending;
-  constexpr bool is_overwrite_ok      = false;
-
-  using offset_t          = OffsetT;
-  using begin_offset_it_t = const offset_t*;
-  using end_offset_it_t   = const offset_t*;
-  using key_t             = T;
-  using value_t           = cub::NullType;
-
-#if !TUNE_BASE
-  using policy_t   = device_seg_sort_policy_hub<key_t>;
-  using dispatch_t = //
-    cub::DispatchSegmentedSort<sort_order, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t, policy_t>;
-#else
-  using dispatch_t = //
-    cub::DispatchSegmentedSort<sort_order, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t>;
-#endif
-
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto segments = offsets.size() - 1;
 
-  thrust::device_vector<key_t> buffer_1 = generate(elements, entropy);
-  thrust::device_vector<key_t> buffer_2(elements);
+  thrust::device_vector<T> buffer_1 = generate(elements, entropy);
+  thrust::device_vector<T> buffer_2(elements, thrust::no_init);
 
-  key_t* d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
-  key_t* d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
+  T* d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
+  T* d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
 
-  cub::DoubleBuffer<key_t> d_keys(d_buffer_1, d_buffer_2);
-  cub::DoubleBuffer<value_t> d_values;
-
-  begin_offset_it_t d_begin_offsets = thrust::raw_pointer_cast(offsets.data());
-  end_offset_it_t d_end_offsets     = d_begin_offsets + 1;
+  const OffsetT* d_begin_offsets = thrust::raw_pointer_cast(offsets.data());
+  const OffsetT* d_end_offsets   = d_begin_offsets + 1;
 
   state.add_element_count(elements);
-  state.add_global_memory_reads<key_t>(elements);
-  state.add_global_memory_writes<key_t>(elements);
-  state.add_global_memory_reads<offset_t>(segments + 1);
+  state.add_global_memory_reads<T>(elements);
+  state.add_global_memory_writes<T>(elements);
+  state.add_global_memory_reads<OffsetT>(segments + 1);
 
-  std::size_t temp_storage_bytes{};
-  std::uint8_t* d_temp_storage{};
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_keys,
-    d_values,
-    elements,
-    segments,
-    d_begin_offsets,
-    d_end_offsets,
-    is_overwrite_ok,
-    0);
-
-  thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cub::DoubleBuffer<key_t> keys     = d_keys;
-               cub::DoubleBuffer<value_t> values = d_values;
-
-               dispatch_t::Dispatch(
-                 d_temp_storage,
-                 temp_storage_bytes,
-                 keys,
-                 values,
-                 elements,
-                 segments,
+               auto env = cub_bench_env(
+                 alloc,
+                 launch
+#if !TUNE_BASE
+                 ,
+                 cuda::execution::tune(policy_selector{})
+#endif // !TUNE_BASE
+               );
+               _CCCL_TRY_CUDA_API(
+                 cub::DeviceSegmentedSort::SortKeys,
+                 "SortKeys failed",
+                 d_buffer_1,
+                 d_buffer_2,
+                 static_cast<cuda::std::int64_t>(elements),
+                 static_cast<cuda::std::int64_t>(segments),
                  d_begin_offsets,
                  d_end_offsets,
-                 is_overwrite_ok,
-                 launch.get_stream());
+                 env);
              });
 }
 

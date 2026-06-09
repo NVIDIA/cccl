@@ -179,6 +179,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
     test_key);
 
   std::vector<std::pair<key_t, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -196,6 +197,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
   std::vector<key_t> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_t, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -291,6 +293,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_b
     test_key);
 
   std::vector<std::pair<key_t, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -308,6 +311,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_b
   std::vector<key_t> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_t, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -349,6 +353,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with well-known operations", "[unique_
     test_key);
 
   std::vector<std::pair<key_t, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -366,6 +371,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with well-known operations", "[unique_
   std::vector<key_t> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_t, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -500,6 +506,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
     test_key);
 
   std::vector<std::pair<key_pair, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -518,6 +525,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   std::vector<key_pair> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_pair, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -573,6 +581,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
     test_key);
 
   std::vector<std::pair<key_pair, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -591,6 +600,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   std::vector<key_pair> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_pair, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -600,7 +610,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
 }
 
 struct UniqueByKey_Iterators_Fixture_Tag;
-C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[merge_sort]")
+C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[unique_by_key]")
 {
   using T = int;
 
@@ -650,6 +660,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[m
     test_key);
 
   std::vector<std::pair<T, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     // Multiplying by 6 since we multiply by 2 and 3 in the input and output value iterators
@@ -668,6 +679,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[m
   std::vector<T> host_output_keys(output_keys_ptr);
   std::vector<item_t> host_output_values(output_values_ptr);
   std::vector<std::pair<T, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -687,6 +699,8 @@ struct large_key_pair
   }
 };
 
+#ifndef CCCL_C_PARALLEL_V2
+// v1 has no vsmem path for large keys, so the build is expected to fail.
 C2H_TEST("DeviceSelect::UniqueByKey fails to build for large types due to no vsmem", "[device][select_unique_by_key]")
 {
   const int num_items = 1;
@@ -738,6 +752,75 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
       libcudacxx_path,
       ctk_path));
 }
+#else
+// v2 routes large keys through a different memory path, so the build succeeds
+// and the algorithm produces correct results.
+struct UniqueByKey_LargeKeys_Fixture_Tag;
+C2H_TEST("UniqueByKey works with large key types", "[unique_by_key]")
+{
+  const int num_items = GENERATE(42, 1337);
+
+  operation_t op = make_operation("op",
+                                  R"(struct large_key_pair { int a; char c[500]; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
+  large_key_pair* lhs = static_cast<large_key_pair*>(lhs_ptr);
+  large_key_pair* rhs = static_cast<large_key_pair*>(rhs_ptr);
+  *out_ptr = (lhs->a == rhs->a);
+})");
+
+  std::vector<large_key_pair> input_keys(num_items);
+  std::vector<item_t> input_values(num_items);
+  for (int i = 0; i < num_items; ++i)
+  {
+    input_keys[i]   = large_key_pair{i % (num_items / 10 + 1), {}};
+    input_values[i] = static_cast<item_t>(i);
+  }
+
+  pointer_t<large_key_pair> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it(input_values);
+  pointer_t<large_key_pair> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it(num_items);
+  pointer_t<int> output_num_selected_it(1);
+
+  auto& build_cache    = get_cache<UniqueByKey_LargeKeys_Fixture_Tag>();
+  const auto& test_key = make_key<large_key_pair, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
+
+  const int num_selected                  = output_num_selected_it[0];
+  std::vector<large_key_pair> output_keys = output_keys_it;
+  std::vector<item_t> output_values       = output_values_it;
+
+  std::vector<large_key_pair> expected_keys;
+  std::vector<item_t> expected_values;
+  expected_keys.push_back(input_keys[0]);
+  expected_values.push_back(input_values[0]);
+  for (int i = 1; i < num_items; ++i)
+  {
+    if (!(input_keys[i] == input_keys[i - 1]))
+    {
+      expected_keys.push_back(input_keys[i]);
+      expected_values.push_back(input_values[i]);
+    }
+  }
+
+  REQUIRE(num_selected == static_cast<int>(expected_keys.size()));
+  for (int i = 0; i < num_selected; ++i)
+  {
+    REQUIRE(output_keys[i] == expected_keys[i]);
+    REQUIRE(output_values[i] == expected_values[i]);
+  }
+}
+#endif // CCCL_C_PARALLEL_V2
 
 C2H_TEST("UniqueByKey works with C++ source operations", "[unique_by_key]")
 {
@@ -859,13 +942,9 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   pointer_t<std::size_t> output_num_selected_ptr(1);
 
   // Test _ex version with custom build configuration
-  cccl_build_config config;
-  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
-  config.extra_compile_flags     = extra_flags;
-  config.num_extra_compile_flags = 1;
-  config.extra_include_dirs      = extra_dirs;
-  config.num_extra_include_dirs  = 1;
+  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
+  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
   cccl_device_unique_by_key_build_result_t build;
@@ -925,8 +1004,29 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   // Verify results
   size_t num_selected;
   cudaMemcpy(&num_selected, static_cast<void*>(output_num_selected_ptr.ptr), sizeof(size_t), cudaMemcpyDeviceToHost);
-  REQUIRE(num_selected > 0);
-  REQUIRE(num_selected <= num_items);
+
+  std::vector<key_t> expected_keys;
+  std::vector<value_t> expected_values;
+  expected_keys.push_back(input_keys[0]);
+  expected_values.push_back(input_values[0]);
+  for (std::size_t i = 1; i < num_items; ++i)
+  {
+    if (input_keys[i] != input_keys[i - 1])
+    {
+      expected_keys.push_back(input_keys[i]);
+      expected_values.push_back(input_values[i]);
+    }
+  }
+
+  REQUIRE(num_selected == expected_keys.size());
+
+  std::vector<key_t> output_keys     = output_keys_ptr;
+  std::vector<value_t> output_values = output_values_ptr;
+  for (size_t i = 0; i < num_selected; ++i)
+  {
+    REQUIRE(output_keys[i] == expected_keys[i]);
+    REQUIRE(output_values[i] == expected_values[i]);
+  }
 
   // Cleanup
   REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_cleanup(&build));

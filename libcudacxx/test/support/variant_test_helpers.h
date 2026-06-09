@@ -104,7 +104,7 @@ struct MakeEmptyT
     --alive;
   }
 };
-static_assert(cuda::std::is_swappable_v<MakeEmptyT>, ""); // required for test
+static_assert(cuda::std::is_swappable_v<MakeEmptyT>); // required for test
 
 int MakeEmptyT::alive = 0;
 
@@ -133,7 +133,7 @@ enum CallType : unsigned
   CT_RValue   = 8
 };
 
-__host__ __device__ inline constexpr CallType operator|(CallType LHS, CallType RHS)
+TEST_FUNC inline constexpr CallType operator|(CallType LHS, CallType RHS)
 {
   return static_cast<CallType>(static_cast<unsigned>(LHS) | static_cast<unsigned>(RHS));
 }
@@ -141,65 +141,73 @@ __host__ __device__ inline constexpr CallType operator|(CallType LHS, CallType R
 struct ForwardingCallObject
 {
   template <class... Args>
-  __host__ __device__ ForwardingCallObject& operator()(Args&&...) &
+  TEST_FUNC ForwardingCallObject& operator()(Args&&...) &
   {
     set_call<Args&&...>(CT_NonConst | CT_LValue);
     return *this;
   }
 
   template <class... Args>
-  __host__ __device__ const ForwardingCallObject& operator()(Args&&...) const&
+  TEST_FUNC const ForwardingCallObject& operator()(Args&&...) const&
   {
     set_call<Args&&...>(CT_Const | CT_LValue);
     return *this;
   }
 
   template <class... Args>
-  __host__ __device__ ForwardingCallObject&& operator()(Args&&...) &&
+  TEST_FUNC ForwardingCallObject&& operator()(Args&&...) &&
   {
     set_call<Args&&...>(CT_NonConst | CT_RValue);
     return cuda::std::move(*this);
   }
 
   template <class... Args>
-  __host__ __device__ const ForwardingCallObject&& operator()(Args&&...) const&&
+  TEST_FUNC const ForwardingCallObject&& operator()(Args&&...) const&&
   {
     set_call<Args&&...>(CT_Const | CT_RValue);
     return cuda::std::move(*this);
   }
 
   template <class... Args>
-  __host__ __device__ static void set_call(CallType type)
+  TEST_FUNC static void set_call(CallType type)
   {
+#if !_CCCL_TILE_COMPILATION() // Pointer types are not supported in tile mode
     assert(last_call_type() == CT_None);
     assert(last_call_args() == nullptr);
     last_call_type() = type;
     last_call_args() = cuda::std::addressof(makeArgumentID<Args...>());
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
   template <class... Args>
-  __host__ __device__ static bool check_call(CallType type)
+  TEST_FUNC static bool check_call(CallType type)
   {
+#if _CCCL_TILE_COMPILATION() // Pointer types are not supported in tile mode
+    return true;
+#else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
     bool result      = last_call_type() == type && last_call_args() && *last_call_args() == makeArgumentID<Args...>();
     last_call_type() = CT_None;
     last_call_args() = nullptr;
     return result;
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
   // To check explicit return type for visit<R>
-  __host__ __device__ constexpr operator int() const
+  TEST_FUNC constexpr operator int() const
   {
     return 0;
   }
 
+#if !_CCCL_TILE_COMPILATION() // Pointer types are not supported in tile mode
   STATIC_MEMBER_VAR(last_call_type, CallType)
   STATIC_MEMBER_VAR(last_call_args, const TypeID*)
+#endif // !_CCCL_TILE_COMPILATION()
 };
 
 struct ReturnFirst
 {
   template <class... Args>
-  __host__ __device__ constexpr int operator()(int f, Args&&...) const
+  TEST_FUNC constexpr int operator()(int f, Args&&...) const
   {
     return f;
   }
@@ -208,7 +216,7 @@ struct ReturnFirst
 struct ReturnArity
 {
   template <class... Args>
-  __host__ __device__ constexpr int operator()(Args&&...) const
+  TEST_FUNC constexpr int operator()(Args&&...) const
   {
     return sizeof...(Args);
   }

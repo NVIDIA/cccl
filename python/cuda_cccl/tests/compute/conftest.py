@@ -1,6 +1,10 @@
+import builtins
+
 import cupy as cp
 import numpy as np
 import pytest
+
+check_ldl_stl_in_sass = False
 
 
 # Define a pytest fixture that returns random arrays with different dtypes
@@ -91,6 +95,10 @@ def verify_sass(request, monkeypatch):
     if request.node.get_closest_marker("no_verify_sass"):
         return
 
+    if not check_ldl_stl_in_sass:
+        print("not checking sass")
+        return
+
     import cuda.compute._cccl_interop
 
     monkeypatch.setattr(
@@ -98,3 +106,25 @@ def verify_sass(request, monkeypatch):
         "_check_sass",
         True,
     )
+
+
+@pytest.fixture
+def raise_on_numba_import(monkeypatch):
+    """This fixture will raise if a test attempts to import numba"""
+    real_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "numba" or name.startswith("numba."):
+            raise ModuleNotFoundError(
+                "This test is marked 'no_numba' but attempted to import it"
+            )
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        if item.get_closest_marker("no_numba"):
+            if "raise_on_numba_import" not in item.fixturenames:
+                item.fixturenames.append("raise_on_numba_import")

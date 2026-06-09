@@ -22,13 +22,14 @@
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__fwd/string.h>
 #include <cuda/std/__fwd/string_view.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__iterator/bounded_iter.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -50,8 +51,8 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_standard_layout.h>
-#include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/ctad_support.h>
@@ -60,12 +61,12 @@
 #include <cuda/std/version>
 
 // todo: find a way to get rid of these includes
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <string> // for std::basic_string operator<<
 #  if __cpp_lib_string_view >= 201606L
 #    include <string_view> // for std::basic_string_view operator<<
 #  endif // __cpp_lib_string_view >= 201606L
-#endif // __cpp_lib_string_view >= 201606L
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -85,16 +86,16 @@ _CCCL_CONCEPT __cccl_basic_sv_compatible_range_check_traits = _CCCL_REQUIRES_EXP
 
 template <class _Range, class _CharT, class _Traits>
 _CCCL_CONCEPT __cccl_basic_sv_compatible_range_check_traits_std_ext =
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits)) //
   ( //
     typename(typename _Range::traits_type), //
     requires(is_same_v<typename _Range::traits_type, ::std::char_traits<_CharT>>), //
     requires(is_same_v<_Traits, ::cuda::std::char_traits<_CharT>>) //
   );
-#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
   true;
-#endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
+#endif // ^^^ _CCCL_FREESTANDING() ^^^
 
 template <class _Range, class _CharT, class _Traits>
 _CCCL_CONCEPT __cccl_basic_sv_compatible_range = _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits)) //
@@ -187,7 +188,7 @@ public:
     _CCCL_ASSERT((__end - __begin) >= 0, "string_view::string_view(iterator, sentinel) received invalid range");
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   _CCCL_TEMPLATE(class _Traits2, class _Alloc)
   _CCCL_REQUIRES(__cccl_basic_sv_is_std_to_cuda_std_char_traits<_Traits, _Traits2>)
   _CCCL_HOST_API constexpr basic_string_view(const ::std::basic_string<_CharT, _Traits2, _Alloc>& __sv) noexcept
@@ -201,7 +202,7 @@ public:
       : __data_{__sv.data()}
       , __size_{__sv.size()}
   {}
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #if __cpp_lib_string_view >= 201606L
   _CCCL_TEMPLATE(class _Traits2)
@@ -222,8 +223,8 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__cccl_basic_sv_compatible_range<_Range, _CharT, _Traits>)
   _CCCL_API explicit constexpr basic_string_view(_Range&& __r)
-      : __data_{::cuda::std::ranges::data(__r)}
-      , __size_{::cuda::std::ranges::size(__r)}
+      : __data_{::cuda::std::ranges::__data_cpo{}(__r)}
+      , __size_{::cuda::std::ranges::__size_cpo{}(__r)}
   {}
 
   // msvc has problems with constructing a string view from another string view using the from ranges constructor,
@@ -307,7 +308,7 @@ public:
   {
     if (__pos >= __size_)
     {
-      ::cuda::std::__throw_out_of_range("string_view::at");
+      _CCCL_THROW(::std::out_of_range, "string_view::at");
     }
     return __data_[__pos];
   }
@@ -357,7 +358,7 @@ public:
   {
     if (__pos > __size_)
     {
-      ::cuda::std::__throw_out_of_range("string_view::copy");
+      _CCCL_THROW(::std::out_of_range, "string_view::copy");
     }
     const auto __rlen = ::cuda::std::min(__n, __size_ - __pos);
     _Traits::copy(__s, __data_ + __pos, __rlen);
@@ -371,7 +372,7 @@ public:
     // new size is also smaller. See also https://github.com/llvm/llvm-project/issues/91634.
     if (__pos > __size_)
     {
-      ::cuda::std::__throw_out_of_range("string_view::substr");
+      _CCCL_THROW(::std::out_of_range, "string_view::substr");
     }
     return basic_string_view{__assume_valid{}, __data_ + __pos, ::cuda::std::min(__n, __size_ - __pos)};
   }
@@ -813,32 +814,32 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(basic_string_view);
 
 _CCCL_TEMPLATE(class _It, class _End)
 _CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It>)
-_CCCL_HOST_DEVICE basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
-_CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<::cuda::std::ranges::range_value_t<_Range>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES basic_string_view(_Range&&)
+  -> basic_string_view<::cuda::std::ranges::range_value_t<_Range>>;
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _CharT, class _Alloc>
-_CCCL_HOST basic_string_view(::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>)
-  -> basic_string_view<_CharT>;
+basic_string_view(::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>) -> basic_string_view<_CharT>;
 
 template <class _CharT, class _Traits, class _Alloc>
-_CCCL_HOST basic_string_view(::std::basic_string<_CharT, _Traits, _Alloc>) -> basic_string_view<_CharT, _Traits>;
-#endif // !_CCCL_COMPILER(NVRTC)
+basic_string_view(::std::basic_string<_CharT, _Traits, _Alloc>) -> basic_string_view<_CharT, _Traits>;
+#endif // _CCCL_HOSTED()
 
 #if __cpp_lib_string_view >= 201606L
 template <class _CharT>
-_CCCL_HOST basic_string_view(::std::basic_string_view<_CharT>) -> basic_string_view<_CharT>;
+basic_string_view(::std::basic_string_view<_CharT>) -> basic_string_view<_CharT>;
 
 template <class _CharT, class _Traits>
-_CCCL_HOST basic_string_view(::std::basic_string_view<_CharT, _Traits>) -> basic_string_view<_CharT, _Traits>;
+basic_string_view(::std::basic_string_view<_CharT, _Traits>) -> basic_string_view<_CharT, _Traits>;
 #endif // __cpp_lib_string_view >= 201606L
 
 // operator <<
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _CharT>
 _CCCL_HOST_API ::std::basic_ostream<_CharT>&
 operator<<(::std::basic_ostream<_CharT>& __os, basic_string_view<_CharT> __str)
@@ -861,7 +862,7 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, basic_string_view<_CharT
   return __os << ::std::basic_string<_CharT, _Traits, ::std::allocator<_CharT>>{__str.data(), __str.size()};
 #  endif // ^^^ __cpp_lib_string_view < 201606L ^^^
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 // literals
 

@@ -55,16 +55,16 @@ template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ, bool IsDeterm
 struct BlockReduceWarpReductions
 {
   /// The thread block size in threads
-  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int threads_per_block = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Number of active warps
-  static constexpr int warps = ::cuda::ceil_div(block_threads, warp_threads);
+  static constexpr int warps = ::cuda::ceil_div(threads_per_block, warp_threads);
 
   /// The logical warp size for warp reductions
-  static constexpr int logical_warp_size = ::cuda::std::min(block_threads, warp_threads);
+  static constexpr int logical_warp_size = ::cuda::std::min(threads_per_block, warp_threads);
 
   /// Whether or not the logical warp size evenly divides the thread block size
-  static constexpr bool even_warp_multiple = (block_threads % logical_warp_size == 0);
+  static constexpr bool even_warp_multiple = (threads_per_block % logical_warp_size == 0);
 
   using WarpReduceInternal = typename WarpReduce<T, logical_warp_size>::InternalWarpReduce;
 
@@ -122,10 +122,13 @@ struct BlockReduceWarpReductions
     if (lane_id == 0 && warp_id != 0)
     {
       // TODO: replace this with other atomic operations when specified
-      NV_IF_TARGET(NV_PROVIDES_SM_60,
-                   (::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
-                    atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);),
-                   (atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate);));
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_60,
+        ({
+          ::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
+          atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);
+        }),
+        (atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate);));
     }
 
     __syncthreads();
@@ -182,7 +185,7 @@ struct BlockReduceWarpReductions
   //!   Calling thread's input partial reductions
   //!
   //! @param[in] num_valid
-  //!   Number of valid elements (may be less than block_threads)
+  //!   Number of valid elements (may be less than threads_per_block)
   template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
@@ -224,7 +227,7 @@ struct BlockReduceWarpReductions
   //!   Calling thread's input partial reductions
   //!
   //! @param[in] num_valid
-  //!   Number of valid elements (may be less than block_threads)
+  //!   Number of valid elements (may be less than threads_per_block)
   //!
   //! @param[in] reduction_op
   //!   Binary reduction operator

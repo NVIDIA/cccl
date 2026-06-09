@@ -25,7 +25,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   cuda::std::allocator<int> a1;
   cuda::std::allocator<int> a2;

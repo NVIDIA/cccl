@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -22,12 +26,12 @@ struct A
 {
   int i_;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
       : i_(7)
   {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::unique_ptr<A> p(new A);
   assert(p->i_ == 7);

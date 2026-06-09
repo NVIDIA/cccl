@@ -26,14 +26,14 @@
 template <typename Resource>
 void resource_static_asserts()
 {
-  static_assert(!cuda::std::is_trivial<Resource>::value, "");
-  static_assert(!cuda::std::is_trivially_default_constructible<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_copy_constructible<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_move_constructible<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_copy_assignable<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_move_assignable<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<Resource>::value, "");
-  static_assert(!cuda::std::is_empty<Resource>::value, "");
+  static_assert(!cuda::std::is_trivial<Resource>::value);
+  static_assert(!cuda::std::is_trivially_default_constructible<Resource>::value);
+  static_assert(cuda::std::is_trivially_copy_constructible<Resource>::value);
+  static_assert(cuda::std::is_trivially_move_constructible<Resource>::value);
+  static_assert(cuda::std::is_trivially_copy_assignable<Resource>::value);
+  static_assert(cuda::std::is_trivially_move_assignable<Resource>::value);
+  static_assert(cuda::std::is_trivially_destructible<Resource>::value);
+  static_assert(!cuda::std::is_empty<Resource>::value);
 }
 
 template void resource_static_asserts<cuda::mr::legacy_managed_memory_resource>();
@@ -101,7 +101,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_managed_ptr(ptr);
 
     res.deallocate_sync(ptr, 42);
@@ -109,7 +109,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
 
   { // allocate_sync / deallocate_sync with alignment
     auto* ptr = res.allocate_sync(42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_managed_ptr(ptr);
 
     res.deallocate_sync(ptr, 42, 4);
@@ -119,7 +119,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
   {
     { // allocate / deallocate
       auto* ptr = res.allocate(stream, 42);
-      static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+      static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
       stream.sync();
       ensure_managed_ptr(ptr);
@@ -129,7 +129,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
 
     { // allocate / deallocate with alignment
       auto* ptr = res.allocate(stream, 42, 4);
-      static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+      static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
       stream.sync();
       ensure_managed_ptr(ptr);
@@ -176,7 +176,7 @@ struct derived_managed_resource : cuda::mr::legacy_managed_memory_resource
 {
   using cuda::mr::legacy_managed_memory_resource::legacy_managed_memory_resource;
 };
-static_assert(cuda::mr::synchronous_resource<derived_managed_resource>, "");
+static_assert(cuda::mr::synchronous_resource<derived_managed_resource>);
 
 C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {

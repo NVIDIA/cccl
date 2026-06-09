@@ -23,14 +23,21 @@
 
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
@@ -38,12 +45,12 @@
 
 // Compatibility helpers for thrust to convert between `std::complex` and `cuda::std::complex`
 // todo: find a way to get rid of this include
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <complex> // for std::complex stream operators
 
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up(&)[2]>(__c)[0]
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -76,10 +83,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_COMPLEX_ALIGNAS complex
 public:
   using value_type = _Tp;
 
-  _CCCL_API constexpr complex(const value_type& __re = value_type(), const value_type& __im = value_type())
+  _CCCL_API constexpr complex(const value_type& __re = value_type(),
+                              const value_type& __im = value_type()) noexcept(is_nothrow_default_constructible_v<_Tp>)
       : __re_(__re)
       , __im_(__im)
   {}
+
+  _CCCL_HIDE_FROM_ABI constexpr complex(const complex&) noexcept(is_nothrow_copy_constructible_v<_Tp>) = default;
+  _CCCL_HIDE_FROM_ABI constexpr complex(complex&&) noexcept(is_nothrow_move_constructible_v<_Tp>)      = default;
+
+  _CCCL_HIDE_FROM_ABI constexpr complex& operator=(const complex&) noexcept(is_nothrow_copy_assignable_v<_Tp>) = default;
+  _CCCL_HIDE_FROM_ABI constexpr complex& operator=(complex&&) noexcept(is_nothrow_move_assignable_v<_Tp>) = default;
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
   _CCCL_API constexpr complex(const complex<_Up>& __c)
@@ -110,7 +124,7 @@ public:
     return *this;
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _Up>
   _CCCL_API inline complex(const ::std::complex<_Up>& __other)
       : __re_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other))
@@ -125,11 +139,11 @@ public:
     return *this;
   }
 
-  _CCCL_HOST constexpr operator ::std::complex<_Tp>() const
+  _CCCL_HOST_API constexpr operator ::std::complex<_Tp>() const
   {
     return {__re_, __im_};
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   [[nodiscard]] _CCCL_API constexpr value_type real() const
   {
@@ -214,7 +228,7 @@ _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, 
   return __lhs;
 }
 template <class _Tp, class _Up>
-_CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
@@ -398,7 +412,8 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp> operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>
+operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
   int __ilogbw = 0;
   _Tp __a      = __z.real();
@@ -502,7 +517,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr complex<_Tp> operator/(const _Tp& __x, const complex<_Tp>& __y)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr complex<_Tp> operator/(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__x);
   __t /= __y;
@@ -559,7 +574,7 @@ template <class _Tp>
 }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
@@ -587,7 +602,7 @@ template <class _Tp, class _Up>
   return !(__x == __y);
 }
 #  endif // _CCCL_STD_VER <= 2017
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 // real
 
@@ -645,7 +660,7 @@ template <class _Tp>
   return 0;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _Tp, class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
@@ -660,9 +675,52 @@ template <class _Tp, class _CharT, class _Traits>
 {
   return __os << static_cast<::std::complex<_Tp>>(__x);
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
+
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for both std::complex and cuda::std::complex
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::complex<_Tp>> : integral_constant<size_t, 2>
+{};
+
+template <size_t _Ip, class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::complex<_Tp>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::complex<_Tp>>");
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
+};
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<complex<_Tp>> : integral_constant<size_t, 2>
+{};
+
+template <size_t _Ip, class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, complex<_Tp>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<cuda::std::complex<_Tp>>");
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
+};
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+// tuple protocol for cuda::std::complex
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _Tp>
+struct tuple_size<::cuda::std::complex<_Tp>> : ::cuda::std::integral_constant<::cuda::std::size_t, 2>
+{};
+
+template <::cuda::std::size_t _Ip, class _Tp>
+struct tuple_element<_Ip, ::cuda::std::complex<_Tp>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<cuda::std::complex<_Tp>>");
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
+};
+
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

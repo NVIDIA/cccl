@@ -93,7 +93,7 @@ struct get_stream_t
   _CCCL_REQUIRES(__has_query_get_stream<_Env>)
   [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Env& __env) const noexcept
   {
-    static_assert(noexcept(__env.query(*this)), "");
+    static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
 

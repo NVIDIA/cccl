@@ -1,7 +1,10 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
+#include <cub/device/device_reduce.cuh>
+
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 
 #include <nvbench_helper.cuh>
 
@@ -13,18 +16,21 @@
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
 
 #if !TUNE_BASE
+template <typename AccumT>
 struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::reduce_nondeterministic::reduce_nondeterministic_policy
   {
-    const auto [items, threads] = cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD);
-    const auto policy           = cub::agent_reduce_policy{
+    const auto [items, threads] =
+      cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(AccumT)});
+    const auto policy = cub::detail::reduce::agent_reduce_policy{
       threads,
       items,
       1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
       cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
       cub::LOAD_DEFAULT};
-    return {{}, {}, {}, policy}; // Only reduce_nondeterministic is used
+    return {policy};
   }
 };
 #endif // !TUNE_BASE
@@ -32,9 +38,8 @@ struct policy_selector
 template <typename T, typename OffsetT>
 void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-  using op_t     = cuda::std::plus<>;
-  using init_t   = T;
+  using op_t         = cuda::std::plus<>;
+  using init_value_t = T;
 
   // Retrieve axis parameters
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -50,45 +55,26 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(1);
 
-  auto transform_op = ::cuda::std::identity{};
-
-  // Allocate temporary storage:
-  std::size_t temp_size;
-  cub::detail::reduce::dispatch_nondeterministic</* OverrideAccumT = */ T>(
-    nullptr,
-    temp_size,
-    d_in,
-    d_out,
-    static_cast<offset_t>(elements),
-    op_t{},
-    init_t{},
-    0 /* stream */,
-    transform_op
-#if !TUNE_BASE
-    ,
-    policy_selector{}
-#endif
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::reduce::dispatch_nondeterministic</* OverrideAccumT = */ T>(
-      temp_storage,
-      temp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch,
+      cuda::execution::require(cuda::execution::determinism::not_guaranteed)
+#if !TUNE_BASE
+        ,
+      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<op_t, T, init_value_t>>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceReduce::Reduce,
+      "Reduce failed",
       d_in,
       d_out,
-      static_cast<offset_t>(elements),
+      static_cast<OffsetT>(elements),
       op_t{},
-      init_t{},
-      launch.get_stream(),
-      transform_op
-#if !TUNE_BASE
-      ,
-      policy_selector{}
-#endif
-    );
+      init_value_t{},
+      env);
   });
 }
 

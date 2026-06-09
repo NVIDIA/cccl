@@ -62,7 +62,7 @@ struct for_each_type
     loop(n);
   }
 
-  void operator()(void)
+  void operator()()
   {
     // run the function on type T
     Function<T> f;
@@ -87,7 +87,7 @@ struct for_each_type<TypeList, Function, null_type, i>
     // no-op
   }
 
-  void operator()(void)
+  void operator()()
   {
     // no-op
   }

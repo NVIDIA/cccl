@@ -17,6 +17,8 @@
 #  include <thrust/detail/internal_functional.h>
 #  include <thrust/system/cuda/detail/transform.h>
 
+#  include <cuda/__functional/equal_to_value.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -30,7 +32,7 @@ replace(execution_policy<Derived>& policy, Iterator first, Iterator last, T cons
     last,
     first,
     CUB_NS_QUALIFIER::detail::__return_constant<T>{new_value},
-    thrust::detail::equal_to_value<T>{old_value});
+    ::cuda::equal_to_value<T>{old_value});
 }
 
 template <class Derived, class Iterator, class Predicate, class T>
@@ -91,7 +93,7 @@ OutputIt _CCCL_HOST_DEVICE replace_copy(
   T const& old_value,
   T const& new_value)
 {
-  return cuda_cub::replace_copy_if(policy, first, last, result, thrust::detail::equal_to_value<T>{old_value}, new_value);
+  return cuda_cub::replace_copy_if(policy, first, last, result, ::cuda::equal_to_value<T>{old_value}, new_value);
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

@@ -1,7 +1,9 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from __future__ import annotations
 
 from typing import Callable
 
@@ -16,12 +18,18 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
-from ..iterators._iterators import IteratorBase
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..op import OpAdapter, make_op_adapter
+from ..typing import (
+    DeviceArrayLike,
+    GpuStruct,
+    IteratorBase,
+    IteratorT,
+    Operator,
+    _Struct,
+)
 
 
 class _Reduce:
@@ -37,8 +45,8 @@ class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
         determinism: Determinism,
@@ -70,11 +78,12 @@ class _Reduce:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
         num_items: int,
+        op: Callable | OpAdapter,
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
@@ -83,7 +92,7 @@ class _Reduce:
 
         # Update op state for stateful ops
         op_adapter = make_op_adapter(op)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
@@ -111,9 +120,10 @@ class _Reduce:
 
 @cache_with_registered_key_functions
 def make_reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    *,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
     **kwargs,
 ):
@@ -129,13 +139,41 @@ def make_reduce_into(
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
-        d_out: Device array (of size 1) that will store the result of the reduction
-        op: Callable or OpKind representing the binary operator to apply
+        d_out: Device array (of size 1) or iterator that will store the result of the reduction
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         init: Numpy array storing initial value of the reduction
 
     Returns:
         A callable object that can be used to perform the reduction
     """
+    try:
+        accum_dtype = get_dtype(h_init)
+    except (AttributeError, TypeError) as e:
+        raise TypeError(
+            "Could not determine accumulator dtype from h_init; "
+            "expected numpy array or object with .dtype"
+        ) from e
+
+    # Validate d_in and d_out if they are device arrays (iterators may not expose
+    # dtype reliably here). Additionally, only require equality of dtypes for
+    # struct objects; mixed scalar dtypes (e.g. int8 input with int64 output)
+    # is acceptable
+    if isinstance(h_init, _Struct):
+        for arr, name in ((d_in, "input"), (d_out, "output")):
+            if isinstance(arr, IteratorBase):
+                continue
+
+            dtype = get_dtype(arr)
+            if dtype != accum_dtype:
+                raise TypeError(
+                    f"reduce_into dtype mismatch: {name} dtype {dtype} != "
+                    f"accumulator dtype {accum_dtype}. "
+                    f"Ensure {name} elements and h_init have identical dtype to "
+                    "avoid truncation or misinterpretation."
+                )
+
     op_adapter = make_op_adapter(op)
     return _Reduce(
         d_in,
@@ -147,10 +185,11 @@ def make_reduce_into(
 
 
 def reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    *,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     num_items: int,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
     stream=None,
     **kwargs,
@@ -169,13 +208,31 @@ def reduce_into(
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
-        d_out: Device array to store the result of the reduction
-        op: Binary reduction operator
+        d_out: Device array or iterator to store the result of the reduction
         num_items: Number of items to reduce
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         h_init: Initial value for the reduction
         stream: CUDA stream for the operation (optional)
     """
-    reducer = make_reduce_into(d_in, d_out, op, h_init, **kwargs)
-    tmp_storage_bytes = reducer(None, d_in, d_out, op, num_items, h_init, stream)
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init, **kwargs)
+    tmp_storage_bytes = reducer(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+        stream=stream,
+    )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(tmp_storage, d_in, d_out, op, num_items, h_init, stream)
+    reducer(
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+        stream=stream,
+    )

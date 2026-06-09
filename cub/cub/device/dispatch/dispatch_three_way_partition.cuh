@@ -25,6 +25,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -35,7 +36,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::three_way_partition
 {
-template <typename MaxPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename FirstOutputIteratorT,
           typename SecondOutputIteratorT,
@@ -55,7 +56,7 @@ struct DeviceThreeWayPartitionKernelSource
   CUB_DEFINE_KERNEL_GETTER(
     ThreeWayPartitionKernel,
     DeviceThreeWayPartitionKernel<
-      MaxPolicyT,
+      PolicySelector,
       InputIteratorT,
       FirstOutputIteratorT,
       SecondOutputIteratorT,
@@ -67,12 +68,31 @@ struct DeviceThreeWayPartitionKernelSource
       per_partition_offset_t,
       streaming_context_t>);
 };
+
+// TODO(bgruber): remove in CCCL 4.0
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const
+    -> three_way_partition_policy
+  {
+    using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
+    return three_way_partition_policy{
+      active_policy::BLOCK_THREADS,
+      active_policy::ITEMS_PER_THREAD,
+      active_policy::LOAD_ALGORITHM,
+      active_policy::LOAD_MODIFIER,
+      active_policy::SCAN_ALGORITHM,
+      lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+  }
+};
 } // namespace detail::three_way_partition
 
 /******************************************************************************
  * Dispatch
  ******************************************************************************/
 
+// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
 template <
   typename InputIteratorT,
   typename FirstOutputIteratorT,
@@ -85,7 +105,7 @@ template <
   typename PolicyHub    = detail::three_way_partition::policy_hub<cub::detail::it_value_t<InputIteratorT>,
                                                                   detail::three_way_partition::per_partition_offset_t>,
   typename KernelSource = detail::three_way_partition::DeviceThreeWayPartitionKernelSource<
-    typename PolicyHub::MaxPolicy,
+    detail::three_way_partition::policy_selector_from_hub<PolicyHub>,
     InputIteratorT,
     FirstOutputIteratorT,
     SecondOutputIteratorT,
@@ -134,17 +154,14 @@ struct DispatchThreeWayPartitionIf
    * Dispatch entrypoints
    ****************************************************************************/
 
-  template <typename ActivePolicyT, typename ScanInitKernelPtrT, typename SelectIfKernelPtrT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  Invoke(ActivePolicyT policy,
-         ScanInitKernelPtrT three_way_partition_init_kernel,
-         SelectIfKernelPtrT three_way_partition_kernel)
+  template <typename ScanInitKernelPtrT, typename SelectIfKernelPtrT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(
+    int threads_per_block,
+    int items_per_thread,
+    ScanInitKernelPtrT three_way_partition_init_kernel,
+    SelectIfKernelPtrT three_way_partition_kernel)
   {
-    cudaError error = cudaSuccess;
-
-    const int block_threads    = policy.ThreeWayPartition().BlockThreads();
-    const int items_per_thread = policy.ThreeWayPartition().ItemsPerThread();
-    const int tile_size        = block_threads * items_per_thread;
+    const int tile_size = threads_per_block * items_per_thread;
 
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
     auto const max_partition_size = static_cast<OffsetT>(
@@ -166,9 +183,8 @@ struct DispatchThreeWayPartitionIf
     // Specify temporary storage allocation requirements
     size_t allocation_sizes[2] = {0ULL, streaming_selection_storage_bytes};
 
-    error =
-      CubDebug(ScanTileStateT::AllocationSize(static_cast<int>(max_num_tiles_per_invocation), allocation_sizes[0]));
-    if (cudaSuccess != error)
+    if (const auto error =
+          CubDebug(ScanTileStateT::AllocationSize(static_cast<int>(max_num_tiles_per_invocation), allocation_sizes[0])))
     {
       return error;
     }
@@ -176,8 +192,8 @@ struct DispatchThreeWayPartitionIf
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[2] = {};
 
-    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-    if (cudaSuccess != error)
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -207,8 +223,7 @@ struct DispatchThreeWayPartitionIf
 
       // Construct the tile status interface
       ScanTileStateT tile_status;
-      error = CubDebug(tile_status.Init(current_num_tiles, allocations[0], allocation_sizes[0]));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(tile_status.Init(current_num_tiles, allocations[0], allocation_sizes[0])))
       {
         return error;
       }
@@ -224,19 +239,21 @@ struct DispatchThreeWayPartitionIf
 #endif // CUB_DEBUG_LOG
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
-      launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-        .doit(three_way_partition_init_kernel, tile_status, current_num_tiles, d_num_selected_out);
+      if (const auto error = CubDebug(
+            launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+              .doit(three_way_partition_init_kernel, tile_status, current_num_tiles, d_num_selected_out)))
+      {
+        return error;
+      }
 
       // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -253,11 +270,10 @@ struct DispatchThreeWayPartitionIf
       {
         // Get SM occupancy for select_if_kernel
         int range_select_sm_occupancy;
-        error = CubDebug(launcher_factory.MaxSmOccupancy(
-          range_select_sm_occupancy, // out
-          three_way_partition_kernel,
-          block_threads));
-        if (cudaSuccess != error)
+        if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+              range_select_sm_occupancy, // out
+              three_way_partition_kernel,
+              threads_per_block)))
         {
           return error;
         }
@@ -265,7 +281,7 @@ struct DispatchThreeWayPartitionIf
         _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
                 "items per thread, %d SM occupancy\n",
                 current_num_tiles,
-                block_threads,
+                threads_per_block,
                 reinterpret_cast<long long>(stream),
                 items_per_thread,
                 range_select_sm_occupancy);
@@ -273,30 +289,32 @@ struct DispatchThreeWayPartitionIf
 #endif // CUB_DEBUG_LOG
 
       // Invoke select_if_kernel
-      launcher_factory(current_num_tiles, block_threads, 0, stream)
-        .doit(three_way_partition_kernel,
-              d_in,
-              d_first_part_out,
-              d_second_part_out,
-              d_unselected_out,
-              d_num_selected_out,
-              tile_status,
-              select_first_part_op,
-              select_second_part_op,
-              static_cast<per_partition_offset_t>(current_num_items),
-              current_num_tiles,
-              streaming_context);
+      if (const auto error = CubDebug(
+            launcher_factory(current_num_tiles, threads_per_block, 0, stream)
+              .doit(three_way_partition_kernel,
+                    d_in,
+                    d_first_part_out,
+                    d_second_part_out,
+                    d_unselected_out,
+                    d_num_selected_out,
+                    tile_status,
+                    select_first_part_op,
+                    select_second_part_op,
+                    static_cast<per_partition_offset_t>(current_num_items),
+                    current_num_tiles,
+                    streaming_context)))
+      {
+        return error;
+      }
 
       // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -305,7 +323,18 @@ struct DispatchThreeWayPartitionIf
       streaming_context.advance(current_num_items, (partition_idx + OffsetT{2} == num_partitions));
     }
 
-    return error;
+    return cudaSuccess;
+  }
+
+  template <typename ActivePolicyT, typename ScanInitKernelPtrT, typename SelectIfKernelPtrT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+  Invoke(ActivePolicyT policy,
+         ScanInitKernelPtrT three_way_partition_init_kernel,
+         SelectIfKernelPtrT three_way_partition_kernel)
+  {
+    const int threads_per_block = policy.ThreeWayPartition().ThreadsPerBlock();
+    const int items_per_thread  = policy.ThreeWayPartition().ItemsPerThread();
+    return __invoke(threads_per_block, items_per_thread, three_way_partition_init_kernel, three_way_partition_kernel);
   }
 
   template <typename ActivePolicyT>
@@ -360,5 +389,107 @@ struct DispatchThreeWayPartitionIf
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
+
+namespace detail::three_way_partition
+{
+template <typename InputIteratorT,
+          typename FirstOutputIteratorT,
+          typename SecondOutputIteratorT,
+          typename UnselectedOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename SelectFirstPartOp,
+          typename SelectSecondPartOp,
+          typename OffsetT,
+          typename PolicySelector = policy_selector_from_types<it_value_t<InputIteratorT>, per_partition_offset_t>,
+          typename KernelSource   = DeviceThreeWayPartitionKernelSource<
+              PolicySelector,
+              InputIteratorT,
+              FirstOutputIteratorT,
+              SecondOutputIteratorT,
+              UnselectedOutputIteratorT,
+              NumSelectedIteratorT,
+              ScanTileStateT,
+              SelectFirstPartOp,
+              SelectSecondPartOp,
+              per_partition_offset_t,
+              streaming_context_t<OffsetT>,
+              OffsetT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+#if _CCCL_HAS_CONCEPTS()
+  requires three_way_partition_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  FirstOutputIteratorT d_first_part_out,
+  SecondOutputIteratorT d_second_part_out,
+  UnselectedOutputIteratorT d_unselected_out,
+  NumSelectedIteratorT d_num_selected_out,
+  SelectFirstPartOp select_first_part_op,
+  SelectSecondPartOp select_second_part_op,
+  OffsetT num_items,
+  cudaStream_t stream,
+  PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  const three_way_partition_policy active_policy = policy_selector(cc);
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceThreeWayPartition to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+
+  struct fake_hub
+  {
+    using MaxPolicy = void;
+  };
+
+  using dispatch_t = DispatchThreeWayPartitionIf<
+    InputIteratorT,
+    FirstOutputIteratorT,
+    SecondOutputIteratorT,
+    UnselectedOutputIteratorT,
+    NumSelectedIteratorT,
+    SelectFirstPartOp,
+    SelectSecondPartOp,
+    OffsetT,
+    fake_hub,
+    KernelSource,
+    KernelLauncherFactory>;
+  auto dispatch = dispatch_t{
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_first_part_out,
+    d_second_part_out,
+    d_unselected_out,
+    d_num_selected_out,
+    select_first_part_op,
+    select_second_part_op,
+    num_items,
+    stream,
+    kernel_source,
+    launcher_factory};
+  return dispatch.__invoke(
+    active_policy.threads_per_block,
+    active_policy.items_per_thread,
+    kernel_source.ThreeWayPartitionInitKernel(),
+    kernel_source.ThreeWayPartitionKernel());
+}
+} // namespace detail::three_way_partition
 
 CUB_NAMESPACE_END

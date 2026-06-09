@@ -15,6 +15,7 @@
 #include <thrust/detail/alignment.h>
 #include <thrust/detail/execute_with_allocator_fwd.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__utility/move.h>
@@ -35,9 +36,8 @@ struct allocator_aware_execution_policy
   template <typename MemoryResource>
   struct execute_with_memory_resource_type
   {
-    using type =
-      thrust::detail::execute_with_allocator<thrust::mr::allocator<thrust::detail::max_align_t, MemoryResource>,
-                                             ExecutionPolicyCRTPBase>;
+    using type = thrust::detail::execute_with_allocator<thrust::mr::allocator<::cuda::std::max_align_t, MemoryResource>,
+                                                        ExecutionPolicyCRTPBase>;
   };
 
   template <typename Allocator>

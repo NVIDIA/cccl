@@ -14,15 +14,17 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 struct NonBorrowedRange
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 static_assert(!cuda::std::ranges::enable_borrowed_range<NonBorrowedRange>);
 
 // Verify that if the expression is an rvalue and `enable_borrowed_range` is false, `ranges::data` is ill-formed.
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   cuda::std::ranges::data(NonBorrowedRange());
   // expected-error-re@-1 {{{{no matching function for call to object of type 'const (std::ranges::)?__data::__fn'}}}}

@@ -15,21 +15,24 @@
 
 #pragma once
 
+#include <cuda/std/__exception/exception_macros.h>
+
+#include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/allocators/adapters.cuh>
 #include <cuda/experimental/__stf/allocators/buddy_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/uncached_allocator.cuh>
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/internal/inner_shape.cuh>
 #include <cuda/experimental/__stf/internal/reducer.cuh>
 #include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
-#include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
-#include <cuda/experimental/__stf/places/inner_shape.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 #include <map>
+#include <stdexcept>
 #include <variant>
 
 namespace cuda::experimental::stf
@@ -74,6 +77,11 @@ decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
  */
 class context
 {
+public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::logical_data<T>;
+
+private:
   template <typename T1, typename T2>
   class unified_scope
   {
@@ -133,6 +141,15 @@ class context
       };
     }
 
+    // Attach opaque user data to the scope; an optional destructor is called when the scope is destroyed
+    auto& set_user_data(const void* data, size_t sz, void (*dtor)(void*) = nullptr)
+    {
+      payload->*[&](auto& self) {
+        self.set_user_data(data, sz, dtor);
+      };
+      return *this;
+    }
+
     template <typename... Args>
     auto& add_deps(Args&&... args)
     {
@@ -180,6 +197,14 @@ class context
   };
 
 public:
+  /// Builder types returned by `cuda_kernel()` / `host_launch()` with no dependencies; exposed so the STF C API
+  /// and other code can name them without `decltype` on `context` (which would otherwise pull in private
+  /// `unified_scope`).
+  using cuda_kernel_builder =
+    unified_scope<reserved::cuda_kernel_scope<stream_ctx, false>, reserved::cuda_kernel_scope<graph_ctx, false>>;
+  using host_launch_builder =
+    unified_scope<reserved::host_launch_scope<stream_ctx, false>, reserved::host_launch_scope<graph_ctx, false>>;
+
   /*
    * A task that can be either a stream task or a graph task.
    */
@@ -270,7 +295,7 @@ public:
      * index in a task.
      *
      * @tparam T
-     * @param submitted index
+     * @param submitted_index
      * @return slice<T>
      */
     template <typename T>
@@ -293,6 +318,66 @@ public:
     {
       return payload->*[&](auto& self) {
         return self.get_stream();
+      };
+    }
+
+    /** When the task's exec place is a grid (size > 1), get the stream for the place at \p place_index
+     * (linear index). Returns nullptr for graph_task (no per-place streams), for non-grid exec places, or
+     * when \p place_index is out of range. */
+    cudaStream_t get_stream(size_t place_index) const
+    {
+      return payload->*[&](auto& self) -> cudaStream_t {
+        if constexpr (::std::is_same_v<stream_task<Deps...>, ::std::decay_t<decltype(self)>>)
+        {
+          // Per-place streams only exist for grid exec places. stream_task::get_stream(size_t) indexes the
+          // stream grid without bounds checking, so guard the linear index here before forwarding.
+          const exec_place& e = self.get_exec_place();
+          if (e.size() <= 1 || place_index >= e.size())
+          {
+            return nullptr;
+          }
+          return self.get_stream(place_index);
+        }
+        else
+        {
+          (void) place_index;
+          return nullptr;
+        }
+      };
+    }
+
+    /** When the task's exec place is a grid (size > 1), write its shape to \p out_dims and return true; else return
+     * false. */
+    bool get_grid_dims(dim4* out_dims) const
+    {
+      if (out_dims == nullptr)
+      {
+        return false;
+      }
+      return payload->*[&](auto& self) -> bool {
+        const exec_place& e = self.get_exec_place();
+        if (e.size() <= 1)
+        {
+          return false;
+        }
+        *out_dims = e.get_dims();
+        return true;
+      };
+    }
+
+    // Get the underlying task base class - both stream_task and graph_task inherit from task. This is convenient when
+    // we do not need the "typed" task, for example when using the "low-level" add_deps method.
+    ::cuda::experimental::stf::task& get_base_task()
+    {
+      return payload->*[](auto& self) -> ::cuda::experimental::stf::task& {
+        return self.get_base_task();
+      };
+    }
+
+    const ::cuda::experimental::stf::task& get_base_task() const
+    {
+      return payload->*[](auto& self) -> const ::cuda::experimental::stf::task& {
+        return self.get_base_task();
       };
     }
 
@@ -404,6 +489,22 @@ public:
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.graph_get_cache_stat();
+    };
+  }
+
+  cudaGraph_t graph() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.graph();
+    };
+  }
+
+  size_t stage() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.stage();
     };
   }
 
@@ -699,20 +800,6 @@ public:
     };
   }
 
-  //! Release context resources using the provided stream.
-  //!
-  //! Normally this is called automatically during finalize(), but when using
-  //! finalize_as_graph() to create a CUDA graph that can be launched multiple
-  //! times, resources must be released manually once the graph will no longer
-  //! be used, since the same resources may be accessed repeatedly during graph replay.
-  void release_resources(cudaStream_t stream)
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    payload->*[stream](auto& self) {
-      self.release_resources(stream);
-    };
-  }
-
   //! Add a resource to be managed by this context
   void add_resource(::std::shared_ptr<ctx_resource> resource)
   {
@@ -722,6 +809,43 @@ public:
     };
   }
 
+  //! Release context resources using the provided stream.
+  //! Normally called automatically during finalize(); when using finalize_as_graph()
+  //! for replayable graphs, call once the graph will no longer be used.
+  void release_resources(cudaStream_t stream)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[stream](auto& self) {
+      self.release_resources(stream);
+    };
+  }
+
+  //! Take all resources from \p other (e.g. a nested context) and merge them into this context.
+  //! \p other will have no resources after this call.
+  void import_resources_from(context& other)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    import_resources(other.export_resources());
+  }
+
+private:
+  ctx_resource_set export_resources()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[](auto& self) {
+      return self.export_resources();
+    };
+  }
+
+  void import_resources(ctx_resource_set&& other)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[&other](auto& self) {
+      self.import_resources(mv(other));
+    };
+  }
+
+public:
   void submit()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
@@ -812,7 +936,9 @@ public:
   bool is_graph_ctx() const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return (payload.index() == 1);
+    return payload->*[&](auto& self) {
+      return self.is_graph_ctx();
+    };
   }
 
   async_resources_handle& async_resources() const
@@ -879,7 +1005,7 @@ public:
     }
     else
     {
-      ::cuda::std::__throw_runtime_error("Payload does not hold graph_ctx");
+      _CCCL_THROW(::std::runtime_error, "Payload does not hold graph_ctx");
     }
   }
 
@@ -896,6 +1022,31 @@ public:
     return payload->*[](auto& self) {
       return self.pick_stream();
     };
+  }
+
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class from the variant payload
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](auto& ctx) -> backend_ctx_untyped& {
+        return static_cast<backend_ctx_untyped&>(ctx);
+      },
+      payload);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](const auto& ctx) -> const backend_ctx_untyped& {
+        return static_cast<const backend_ctx_untyped&>(ctx);
+      },
+      payload);
   }
 
 public:
@@ -960,6 +1111,116 @@ UNITTEST("context is_graph_ctx")
 
   context ctx2 = graph_ctx();
   EXPECT(ctx2.is_graph_ctx());
+  ctx2.finalize();
+};
+
+UNITTEST("context resources released on finalize")
+{
+  // Dummy resource that sets a flag when released (callback path)
+  struct dummy_released_resource : ctx_resource
+  {
+    bool* released_ = nullptr;
+    explicit dummy_released_resource(bool* released)
+        : released_(released)
+    {}
+    bool can_release_in_callback() const override
+    {
+      return true;
+    }
+    void release_in_callback() override
+    {
+      if (released_)
+      {
+        *released_ = true;
+      }
+    }
+  };
+
+  bool released = false;
+  context ctx;
+  ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  // This is a blocking call, resources should have been released when it returns
+  ctx.finalize();
+  EXPECT(released);
+};
+
+UNITTEST("context resources released on finalize non blocking")
+{
+  struct dummy_released_resource : ctx_resource
+  {
+    bool* released_ = nullptr;
+    explicit dummy_released_resource(bool* released)
+        : released_(released)
+    {}
+    bool can_release_in_callback() const override
+    {
+      return true;
+    }
+    void release_in_callback() override
+    {
+      if (released_)
+      {
+        *released_ = true;
+      }
+    }
+  };
+
+  cudaStream_t stream;
+  cuda_safe_call(cudaStreamCreate(&stream));
+
+  bool released = false;
+  context ctx(stream, async_resources_handle());
+  ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  ctx.finalize(); // non-blocking: context was created with user stream
+  EXPECT(!released); // not yet, callback not run
+  cuda_safe_call(cudaStreamSynchronize(stream));
+  EXPECT(released);
+
+  cuda_safe_call(cudaStreamDestroy(stream));
+};
+
+UNITTEST("context import_resources_from")
+{
+  struct dummy_released_resource : ctx_resource
+  {
+    bool* released_ = nullptr;
+    explicit dummy_released_resource(bool* released)
+        : released_(released)
+    {}
+    bool can_release_in_callback() const override
+    {
+      return true;
+    }
+    void release_in_callback() override
+    {
+      if (released_)
+      {
+        *released_ = true;
+      }
+    }
+  };
+
+  bool released = false;
+  context child_ctx;
+  child_ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  context parent_ctx;
+  parent_ctx.import_resources_from(child_ctx);
+  // This is a blocking call, resources should have been released when it returns
+  parent_ctx.finalize();
+  EXPECT(released);
+};
+
+UNITTEST("context graph and stage")
+{
+  // stream_ctx: graph() is nullptr, stage() is size_t(-1)
+  context ctx;
+  EXPECT(ctx.graph() == nullptr);
+  ctx.finalize();
+
+  // graph_ctx: graph() and stage() delegate to backend
+  context ctx2 = graph_ctx();
+  ctx2.logical_data(1); // ensure context has been used so graph may be created
+  EXPECT(ctx2.graph() != nullptr);
   ctx2.finalize();
 };
 

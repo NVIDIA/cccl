@@ -21,13 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK()
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__hierarchy/block_level.h>
-#  include <cuda/__hierarchy/cluster_level.h>
-#  include <cuda/__hierarchy/grid_level.h>
-#  include <cuda/__hierarchy/thread_level.h>
-#  include <cuda/__hierarchy/traits.h>
+#  include <cuda/__hierarchy/hierarchy_levels.h>
 #  include <cuda/std/tuple>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -65,11 +61,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * @endcode
  * @par
  *
- * @param hierarchy
+ * @param __hierarchy
  *  Hierarchy that the launch dimensions are requested for
  */
 template <class _BottomLevel, class... _LevelDescs>
-constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy<_BottomLevel, _LevelDescs...>& __hierarchy)
+[[nodiscard]] _CCCL_HOST_API constexpr auto
+get_launch_dimensions(const hierarchy<_BottomLevel, _LevelDescs...>& __hierarchy)
 {
   if constexpr (hierarchy<_BottomLevel, _LevelDescs...>::has_level(cluster))
   {
@@ -88,6 +85,6 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK()
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA___HIERARCHY_GET_LAUNCH_DIMENSIONS_H

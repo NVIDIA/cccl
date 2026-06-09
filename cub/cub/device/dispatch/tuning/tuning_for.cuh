@@ -16,10 +16,54 @@
 #include <cub/agent/agent_for.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/std/__host_stdlib/ostream>
+
 CUB_NAMESPACE_BEGIN
+
+//! The tuning policy for all algorithms in @ref DeviceFor.
+struct ForPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block. If smaller than 1, this number will be determined at
+                         //!< runtime based on the maximum occupancy of the kernel.
+  int items_per_thread; //!< Number of items processed per thread
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const ForPolicy& lhs, const ForPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const ForPolicy& lhs, const ForPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ForPolicy& policy)
+  {
+    return os << "ForPolicy { .threads_per_block = " << policy.threads_per_block
+              << ", .items_per_thread = " << policy.items_per_thread << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
 
 namespace detail::for_each
 {
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept for_policy_selector = policy_selector<T, ForPolicy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> ForPolicy
+  {
+    return ForPolicy{256, 2};
+  }
+};
+
+// TODO(bgruber): remove once we publish the tuning API
 struct policy_hub_t
 {
   struct policy_500_t : ChainedPolicy<500, policy_500_t, policy_500_t>

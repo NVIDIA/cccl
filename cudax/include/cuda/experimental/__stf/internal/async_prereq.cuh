@@ -126,6 +126,7 @@ public:
 
   /**
    * @brief Sets a symbolic name for the event, useful for debugging or tracing.
+   * @param dot The per-context DOT graph helper used for tracing.
    * @param s The symbolic name to associate with this event.
    */
   void set_symbol_with_dot(reserved::per_ctx_dot& dot, ::std::string s)
@@ -139,6 +140,7 @@ public:
 
   /**
    * @brief Sets a symbolic name for the event, useful for debugging or tracing.
+   * @param ctx The context providing access to the DOT graph helper.
    * @param s The symbolic name to associate with this event.
    */
   template <typename context_t>
@@ -149,17 +151,18 @@ public:
 
   /**
    * @brief Optionally simplifies the event vector to remove redundant entries.
-   * @param unused A vector of events potentially containing redundant entries.
+   * @param ctx Backend context.
+   * @param events A vector of events potentially containing redundant entries.
    * @return True if redundant entries were removed and further uniqueness processing is unnecessary, false otherwise.
    * @note This function provides a hook for derived classes to implement optimization strategies.
    */
-  virtual bool factorize(backend_ctx_untyped&, reserved::event_vector&)
+  virtual bool factorize(const backend_ctx_untyped& ctx, reserved::event_vector& events)
   {
     return false;
   }
 
   // stream then depends on the list of events
-  virtual void sync_with_stream(backend_ctx_untyped&, event_list&, cudaStream_t) const
+  virtual void sync_with_stream(const backend_ctx_untyped&, event_list&, cudaStream_t) const
   {
     fprintf(stderr, "Unsupported synchronization with stream.\n");
     abort();
@@ -227,7 +230,7 @@ public:
   /// Optimize the list to remove redundant entries which are either
   /// identical events, or events which are implicit from other events in the
   /// list.
-  void optimize(backend_ctx_untyped& bctx)
+  void optimize(const backend_ctx_untyped& bctx)
   {
     // No need to remove duplicates on a list that was already sanitized,
     // and that has not been modified since
@@ -387,6 +390,12 @@ public:
   size_t size() const
   {
     return payload.size();
+  }
+
+  /// Check whether the list has no events
+  bool empty() const
+  {
+    return payload.empty();
   }
 
   // Display the content of the event list as a string

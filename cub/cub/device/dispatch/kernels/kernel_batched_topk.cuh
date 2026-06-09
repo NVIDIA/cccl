@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved. SPDX-License-Identifier:
-// Apache-2.0 WITH LLVM-exception
-//!
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 //! @file
 //! Kernel entry point for device-wide batched top-k.
 
@@ -17,96 +17,88 @@
 #endif // no system header
 
 #include <cub/agent/agent_batched_topk.cuh>
-#include <cub/detail/segmented_params.cuh>
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/std/cstdint>
-#include <cuda/std/tuple>
-#include <cuda/std/type_traits>
+#include <cuda/__argument_>
+#include <cuda/__device/compute_capability.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
-// -----------------------------------------------------------------------------
-// One-worker-per-segment policy selection
-// -----------------------------------------------------------------------------
-template <typename PoliciesT,
-          ::cuda::std::int64_t Index,
-          ::cuda::std::int64_t Count,
-          template <typename...> class WorkerPerSegmentAgentT,
-          typename... AgentParamsT>
-struct find_valid_policy_impl;
-
-// Base case: End of policy chain reached: If we reach Index == Count, it means we checked all with no match
-template <typename PoliciesT,
-          ::cuda::std::int64_t Count,
-          template <typename...> class WorkerPerSegmentAgentT,
-          typename... AgentParamsT>
-struct find_valid_policy_impl<PoliciesT, Count, Count, WorkerPerSegmentAgentT, AgentParamsT...>
+// Given a policy_selector and a segment-size parameter, resolves the agent type to be instantiated by the kernel.
+// Selects the smallest policy whose tile size still covers the upper bound on segment size AND whose instantiated
+// agent's shared memory usage fits within the static shared memory limit (max_smem_per_block).
+template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
+struct find_smallest_covering_policy
 {
-  using policy_t                         = void;
-  static constexpr bool has_valid_policy = false;
-};
+private:
+  struct policy_t
+  {
+    worker_policy worker_per_segment_policy;
+    multi_worker_policy multi_worker_per_segment_policy;
+  };
+  static constexpr ::cuda::std::int64_t max_segment_size = ::cuda::__argument::__traits<SegmentSizeParameterT>::highest;
+  static constexpr batched_topk_policy active_policy     = current_policy<PolicySelector>();
 
-template <typename PoliciesT,
-          ::cuda::std::int64_t Index,
-          ::cuda::std::int64_t Count,
-          template <typename...> class WorkerPerSegmentAgentT,
-          typename... AgentParamsT>
-struct find_valid_policy_impl
-{
-  // Inspect the current policy
-  using current_policy_t = ::cuda::std::tuple_element_t<Index, PoliciesT>;
+  template <int Index>
+  [[nodiscard]] static constexpr int find_index()
+  {
+    if constexpr (Index >= active_policy.worker_per_segment_policies.size())
+    {
+      return -1;
+    }
+    else
+    {
+      constexpr worker_policy wp = active_policy.worker_per_segment_policies[Index];
+      constexpr auto tile_size   = ::cuda::std::int64_t{wp.threads_per_block} * wp.items_per_thread;
 
-  // Instantiate agent to check temporary storage size
-  using current_agent_t      = WorkerPerSegmentAgentT<current_policy_t, AgentParamsT...>;
-  static constexpr bool fits = (sizeof(typename current_agent_t::TempStorage) <= max_smem_per_block);
+      struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
+      {
+        _CCCL_HOST_DEVICE_API constexpr auto operator()() const
+        {
+          return policy_t{active_policy.worker_per_segment_policies[Index],
+                          active_policy.multi_worker_per_segment_policy};
+        }
+      };
+      using candidate_agent_t  = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
+      constexpr bool covers    = tile_size >= max_segment_size;
+      constexpr bool fits_smem = sizeof(typename candidate_agent_t::TempStorage) <= max_smem_per_block;
+      constexpr int next       = find_index<Index + 1>();
+      if constexpr (covers && fits_smem)
+      {
+        return next >= 0 ? next : Index;
+      }
+      else
+      {
+        return next;
+      }
+    }
+  }
 
-  // The 'next' policy in the chain
-  using next_step = find_valid_policy_impl<PoliciesT, Index + 1, Count, WorkerPerSegmentAgentT, AgentParamsT...>;
+  static constexpr int selected_index = find_index<0>();
 
-  // Select result:
-  // If 'fits' is true, we stop here.
-  // If 'fits' is false, we take the result from 'next_step'.
-  using policy_t = ::cuda::std::conditional_t<fits, current_policy_t, typename next_step::policy_t>;
+public:
+  // TODO (elstehle): extend support for variable-size segments
+  static_assert(selected_index >= 0, "No valid policy found for one-worker-per-segment approach");
+  static constexpr policy_t policy = {
+    active_policy.worker_per_segment_policies[selected_index], active_policy.multi_worker_per_segment_policy};
 
-  // Whether there's a valid policy that we can instantiate the agent with such that the agent's shared memory doesn't
-  // exceed the static shared memory limimt
-  static constexpr bool has_valid_policy = fits ? true : next_step::has_valid_policy;
-};
-
-template <typename SegmentedTopKPolicy, template <typename...> class WorkerPerSegmentAgentT, typename... AgentParamsT>
-struct find_valid_policy
-{
-  // The list of policies for the one-worker-per-segment approach
-  using worker_per_segment_policies = typename SegmentedTopKPolicy::worker_per_segment_policies;
-
-  // Helper to find a valid policy that we can successfully instantiate the agent with
-  using find_valid_policy_impl_t =
-    find_valid_policy_impl<worker_per_segment_policies,
-                           0,
-                           ::cuda::std::tuple_size<worker_per_segment_policies>::value,
-                           WorkerPerSegmentAgentT,
-                           AgentParamsT...>;
-
-  // Whether there's a valid policy for one-worker-per-segment approach
-  static constexpr bool supports_one_worker_per_segment = find_valid_policy_impl_t::has_valid_policy;
-
-  // Policy selected for one-worker-per-segment approach, if there is a valid policy
-  using worker_per_segment_policy_t = typename find_valid_policy_impl_t::policy_t;
-
-  // Agent for the one-worker-per-segment approach, if there is a valid policy
-  using worker_per_segment_agent_t =
-    ::cuda::std::conditional_t<supports_one_worker_per_segment,
-                               WorkerPerSegmentAgentT<worker_per_segment_policy_t, AgentParamsT...>,
-                               void>;
+  struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
+  {
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
+    {
+      return policy;
+    }
+  };
+  using agent_t = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
 };
 
 // -----------------------------------------------------------------------------
 // Global Kernel Entry Point
 // -----------------------------------------------------------------------------
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -114,33 +106,15 @@ template <typename ChainedPolicyT,
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename SelectDirectionParameterT,
-          typename NumSegmentsParameterT>
+          typename NumSegmentsParameterT,
+          typename LargeSegmentTileOffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires batched_topk_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(
-  find_valid_policy<typename ChainedPolicyT::ActivePolicy,
-                    agent_batched_topk_worker_per_segment,
-                    KeyInputItItT,
-                    KeyOutputItItT,
-                    ValueInputItItT,
-                    ValueOutputItItT,
-                    SegmentSizeParameterT,
-                    KParameterT,
-                    SelectDirectionParameterT,
-                    NumSegmentsParameterT>::worker_per_segment_policy_t::block_threads)) __global__
-  void device_segmented_topk_kernel(
-    KeyInputItItT d_key_segments_it,
-    KeyOutputItItT d_key_segments_out_it,
-    ValueInputItItT d_value_segments_it,
-    ValueOutputItItT d_value_segments_out_it,
-    SegmentSizeParameterT segment_sizes,
-    KParameterT k,
-    SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments)
-{
-  using active_policy_t = typename ChainedPolicyT::ActivePolicy;
-
-  using find_valid_policy_t = find_valid_policy<
-    active_policy_t,
-    agent_batched_topk_worker_per_segment,
+  find_smallest_covering_policy<
+    PolicySelector,
+    SegmentSizeParameterT,
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -148,13 +122,36 @@ __launch_bounds__(int(
     SegmentSizeParameterT,
     KParameterT,
     SelectDirectionParameterT,
-    NumSegmentsParameterT>;
-
-  using agent_t = typename find_valid_policy_t::worker_per_segment_agent_t;
-  static_assert(!::cuda::std::is_same_v<agent_t, void>, "No valid policy found for one-worker-per-segment approach");
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_kernel(
+    KeyInputItItT d_key_segments_it,
+    KeyOutputItItT d_key_segments_out_it,
+    ValueInputItItT d_value_segments_it,
+    ValueOutputItItT d_value_segments_out_it,
+    SegmentSizeParameterT segment_sizes,
+    KParameterT k,
+    SelectDirectionParameterT select_directions,
+    NumSegmentsParameterT num_segments,
+    batched_topk_counters<typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type>* d_counters,
+    typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type* d_large_segments_ids,
+    LargeSegmentTileOffsetT* d_large_segments_tile_offsets)
+{
+  using agent_t = typename find_smallest_covering_policy<
+    PolicySelector,
+    SegmentSizeParameterT,
+    KeyInputItItT,
+    KeyOutputItItT,
+    ValueInputItItT,
+    ValueOutputItItT,
+    SegmentSizeParameterT,
+    KParameterT,
+    SelectDirectionParameterT,
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>::agent_t;
 
   // Static Assertions (Constraints)
-  static_assert(agent_t::tile_size >= params::static_max_value_v<SegmentSizeParameterT>,
+  static_assert(agent_t::tile_size >= ::cuda::__argument::__traits<SegmentSizeParameterT>::highest,
                 "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
   static_assert(sizeof(typename agent_t::TempStorage) <= max_smem_per_block,
                 "Static shared memory per block must not exceed 48KB limit.");
@@ -172,7 +169,10 @@ __launch_bounds__(int(
     segment_sizes,
     k,
     select_directions,
-    num_segments);
+    num_segments,
+    d_counters,
+    d_large_segments_ids,
+    d_large_segments_tile_offsets);
 
   // Process segments
   agent.Process();

@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -24,11 +28,11 @@ namespace properties_test
 struct someStruct
 {};
 
-static_assert(cuda::property_with_value<property_with_value<int>>, "");
-static_assert(cuda::property_with_value<property_with_value<someStruct>>, "");
+static_assert(cuda::property_with_value<property_with_value<int>>);
+static_assert(cuda::property_with_value<property_with_value<someStruct>>);
 
-static_assert(!cuda::property_with_value<property_without_value<int>>, "");
-static_assert(!cuda::property_with_value<property_without_value<someStruct>>, "");
+static_assert(!cuda::property_with_value<property_without_value<int>>);
+static_assert(!cuda::property_with_value<property_without_value<someStruct>>);
 } // namespace properties_test
 
 namespace resource_test
@@ -37,23 +41,19 @@ namespace resource_test
 static_assert(
   sizeof(
     cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>)
-    == (2 * sizeof(void*)),
-  "");
+  == (2 * sizeof(void*)));
 static_assert(
   sizeof(cuda::mr::
            synchronous_resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_without_value<int>>)
-    == (2 * sizeof(void*)),
-  "");
+  == (2 * sizeof(void*)));
 static_assert(
   sizeof(cuda::mr::
            synchronous_resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_with_value<int>>)
-    == (2 * sizeof(void*)),
-  "");
+  == (2 * sizeof(void*)));
 static_assert(sizeof(cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible,
                                                         property_without_value<short>,
                                                         property_without_value<int>>)
-                == (2 * sizeof(void*)),
-              "");
+              == (2 * sizeof(void*)));
 
 _CCCL_TEMPLATE(class Property, class Ref)
 _CCCL_REQUIRES((!cuda::property_with_value<Property>) ) //
@@ -125,14 +125,12 @@ void test_property_forwarding()
 
   static_assert(
     cuda::mr::
-      synchronous_resource_with<res, cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>,
-    "");
+      synchronous_resource_with<res, cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>);
   static_assert(
     !cuda::mr::
-      synchronous_resource_with<ref, cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>,
-    "");
+      synchronous_resource_with<ref, cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>);
 
-  static_assert(cuda::mr::synchronous_resource_with<res, cuda::mr::host_accessible, property_with_value<short>>, "");
+  static_assert(cuda::mr::synchronous_resource_with<res, cuda::mr::host_accessible, property_with_value<short>>);
 }
 
 void test_empty_property_set()

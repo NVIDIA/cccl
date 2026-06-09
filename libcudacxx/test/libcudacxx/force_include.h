@@ -45,12 +45,22 @@ void list_devices()
   }
 }
 
-__host__ __device__ int fake_main(int, char**);
+#ifdef __CUDACC_TILE__
+__tile__
+#endif // __CUDACC_TILE__
+  __host__ __device__ int
+  fake_main(int, char**);
 
 int cuda_thread_count = 1;
 int cuda_cluster_size = 1;
 
-__global__ void fake_main_kernel(int* ret)
+#ifdef __CUDACC_TILE__
+__tile_global__
+#else // ^^^ __CUDACC_TILE__ ^^^ / vvv !__CUDACC_TILE__ vvv
+__global__
+#endif // !__CUDACC_TILE__
+  void
+  fake_main_kernel(int* ret)
 {
   *ret = fake_main(0, nullptr);
 }
@@ -77,9 +87,12 @@ int main(int argc, char** argv)
   int ret = fake_main(argc, argv);
   if (ret != 0)
   {
+    printf("Host testing returned failure\n");
     return ret;
   }
 
+  printf("Testing on device:\n");
+  fflush(stdout);
   list_devices();
   int* cuda_ret = 0;
   CUDA_CALL(err, cudaMalloc(&cuda_ret, sizeof(int)));
@@ -111,10 +124,19 @@ int main(int argc, char** argv)
   CUDA_CALL(err, cudaDeviceSynchronize());
   CUDA_CALL(err, cudaMemcpy(&ret, cuda_ret, sizeof(int), cudaMemcpyDeviceToHost));
   CUDA_CALL(err, cudaFree(cuda_ret));
+  fflush(stdout);
 
+  if (ret != 0)
+  {
+    printf("Device testing returned failure\n");
+  }
   return ret;
 }
 
-#define main(...) __host__ __device__ fake_main(__VA_ARGS__)
+#ifdef __CUDACC_TILE__
+#  define main(...) __tile__ __host__ __device__ fake_main(__VA_ARGS__)
+#else // ^^^ __CUDACC_TILE__ ^^^ / vvv !__CUDACC_TILE__ vvv
+#  define main(...) __host__ __device__ fake_main(__VA_ARGS__)
+#endif // !__CUDACC_TILE__
 
 #endif

@@ -13,6 +13,12 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm and numeric_limits::has_denorm_loss have been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
+
 /*
 <limits>:
     numeric_limits
@@ -42,11 +48,11 @@
 */
 
 template <class T>
-__host__ __device__ void test(T)
+TEST_FUNC void test(T)
 {}
 
 template <class T>
-__host__ __device__ void test_type_helper()
+TEST_FUNC void test_type_helper()
 {
   test(cuda::std::numeric_limits<T>::is_specialized);
   test(cuda::std::numeric_limits<T>::digits);
@@ -74,7 +80,7 @@ __host__ __device__ void test_type_helper()
 }
 
 template <class T>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test_type_helper<T>();
   test_type_helper<const T>();

@@ -19,6 +19,7 @@
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -57,10 +58,10 @@ public:
   using const_iterator = thrust::detail::normal_iterator<const_pointer>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit contiguous_storage(const allocator_type& alloc = allocator_type());
+  _CCCL_HOST_DEVICE explicit contiguous_storage(allocator_type alloc = allocator_type());
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit contiguous_storage(size_type n, const allocator_type& alloc = allocator_type());
+  _CCCL_HOST_DEVICE explicit contiguous_storage(size_type n, allocator_type alloc = allocator_type());
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE explicit contiguous_storage(copy_allocator_t, const contiguous_storage& other);
@@ -100,8 +101,27 @@ public:
 
   _CCCL_HOST_DEVICE void deallocate() noexcept;
 
+private:
+  static constexpr bool is_swap_noexcept()
+  {
+    if (!::cuda::std::is_nothrow_swappable_v<iterator>)
+    {
+      return false;
+    }
+    if (!::cuda::std::is_nothrow_swappable_v<size_type>)
+    {
+      return false;
+    }
+    if (::cuda::std::allocator_traits<Alloc>::propagate_on_container_swap::value)
+    {
+      return ::cuda::std::is_nothrow_swappable_v<allocator_type>;
+    }
+    return ::cuda::std::allocator_traits<Alloc>::is_always_equal::value;
+  }
+
+public:
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void swap(contiguous_storage& other)
+  _CCCL_HOST_DEVICE void swap(contiguous_storage& other) noexcept(is_swap_noexcept())
   {
     using ::cuda::std::swap;
     swap(m_begin, other.m_begin);
@@ -190,7 +210,7 @@ public:
   }
 
   // allow move assignment for a sane implementation of allocator propagation
-  _CCCL_HOST_DEVICE contiguous_storage& operator=(contiguous_storage&& other);
+  _CCCL_HOST_DEVICE contiguous_storage& operator=(contiguous_storage&& other) noexcept;
 
   _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(contiguous_storage, const_iterator)
 

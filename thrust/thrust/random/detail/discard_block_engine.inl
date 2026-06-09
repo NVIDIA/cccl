@@ -53,7 +53,7 @@ _CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::seed(result_type s)
 
 template <typename Engine, size_t p, size_t r>
 _CCCL_HOST_DEVICE typename discard_block_engine<Engine, p, r>::result_type
-discard_block_engine<Engine, p, r>::operator()(void)
+discard_block_engine<Engine, p, r>::operator()()
 {
   if (m_n >= used_block)
   {

@@ -3,13 +3,13 @@
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
 #include <cuda/functional>
+#include <cuda/iterator>
 #include <cuda/std/array>
 
 #include <numeric>
@@ -600,8 +600,8 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
@@ -631,8 +631,8 @@ DECLARE_UNITTEST(TestInclusiveScanWithBigIndexes);
 
 void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
@@ -734,7 +734,9 @@ struct composition_op_t
     permutation_t result;
     for (std::size_t i = 0; i < lhs.size(); i++)
     {
-      result[i] = rhs[lhs[i]];
+      const int sub = lhs[i];
+      _CCCL_ASSERT(sub >= 0 && sub < 5, "Permutation index out of range. Reading invalid data?");
+      result[i] = rhs[sub];
     }
     return result;
   }
@@ -787,6 +789,47 @@ void TestInclusiveScanWithNonCommutativeOp()
       {4, 0, 2, 1, 3}}));
 }
 DECLARE_UNITTEST(TestInclusiveScanWithNonCommutativeOp);
+
+struct checking_identity
+{
+  static constexpr unsigned sentinel = 0x12345678;
+
+  _CCCL_HOST_DEVICE unsigned operator()([[maybe_unused]] unsigned a, [[maybe_unused]] unsigned b) const
+  {
+    _CCCL_ASSERT(a == sentinel, "Unexpected value in scan operator. Reading invalid data?");
+    _CCCL_ASSERT(b == sentinel, "Unexpected value in scan operator. Reading invalid data?");
+    return sentinel;
+  }
+};
+
+void TestInclusiveScanForInvalidValues()
+{
+  using value_t = unsigned;
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  // for the CUDA backend, only the warpspeed implementation does not call the scan operator on out-of-bounds data
+  cuda::compute_capability cc;
+  ASSERT_EQUAL(cub::detail::ptx_compute_cap(cc), cudaSuccess);
+  using policy_selector_t = cub::detail::scan::
+    policy_selector_from_types<const value_t*, value_t*, value_t, unsigned long long, checking_identity>;
+  if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::warpspeed)
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  {
+    for (int n : {1, 100, 10'000})
+    {
+      const thrust::device_vector<value_t> input(n, checking_identity::sentinel);
+      thrust::device_vector<value_t> output(n, thrust::no_init);
+
+      thrust::inclusive_scan(input.begin(), input.end(), output.begin(), checking_identity{});
+      ASSERT_EQUAL(input, output);
+
+      thrust::exclusive_scan(
+        input.begin(), input.end(), output.begin(), checking_identity::sentinel, checking_identity{});
+      ASSERT_EQUAL(input, output);
+    }
+  }
+}
+DECLARE_UNITTEST(TestInclusiveScanForInvalidValues);
 
 // Adapted from issue: https://github.com/NVIDIA/cccl/issues/6317
 void TestScanBug6317()

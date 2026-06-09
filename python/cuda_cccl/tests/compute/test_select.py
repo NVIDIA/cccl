@@ -5,7 +5,6 @@
 import cupy as cp
 import numpy as np
 import pytest
-from numba.np.numpy_support import carray  # noqa: F401
 
 import cuda.compute
 from cuda.compute import CacheModifiedInputIterator, ZipIterator, gpu_struct
@@ -73,11 +72,11 @@ def test_select_basic(dtype, num_items):
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.select(
-        d_in,
-        d_out,
-        d_num_selected,
-        even_op,
-        num_items,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=even_op,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -101,11 +100,11 @@ def test_select_greater_than(dtype, num_items):
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.select(
-        d_in,
-        d_out,
-        d_num_selected,
-        greater_than_42,
-        num_items,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=greater_than_42,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -130,11 +129,11 @@ def test_select_all_pass(dtype):
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.select(
-        d_in,
-        d_out,
-        d_num_selected,
-        always_true,
-        num_items,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=always_true,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -157,11 +156,11 @@ def test_select_none_pass(monkeypatch, dtype):
     d_num_selected = cp.empty(2, dtype=np.int32)
 
     cuda.compute.select(
-        d_in,
-        d_out,
-        d_num_selected,
-        always_false,
-        num_items,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=always_false,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -182,11 +181,11 @@ def test_select_empty():
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.select(
-        d_in,
-        d_out,
-        d_num_selected,
-        even_op,
-        num_items,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=even_op,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -208,11 +207,11 @@ def test_select_with_iterator(dtype):
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.select(
-        d_in_iter,
-        d_out,
-        d_num_selected,
-        less_than_50,
-        num_items,
+        d_in=d_in_iter,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=less_than_50,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -238,20 +237,20 @@ def test_select_object_api(dtype):
 
     # Create select object
     selector = cuda.compute.make_select(
-        d_in,
-        d_out,
-        d_num_selected,
-        divisible_by_3,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=divisible_by_3,
     )
 
     # Get temp storage size
     temp_storage_bytes = selector(
-        None,
-        d_in,
-        d_out,
-        d_num_selected,
-        divisible_by_3,
-        num_items,
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=divisible_by_3,
+        num_items=num_items,
     )
 
     # Allocate temp storage
@@ -259,12 +258,12 @@ def test_select_object_api(dtype):
 
     # Execute select
     selector(
-        d_temp_storage,
-        d_in,
-        d_out,
-        d_num_selected,
-        divisible_by_3,
-        num_items,
+        temp_storage=d_temp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=divisible_by_3,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -291,18 +290,30 @@ def test_select_reuse_object(dtype):
     h_in1 = random_array(num_items, dtype, max_value=100) - 50
     d_in1 = cp.asarray(h_in1)
     selector = cuda.compute.make_select(
-        d_in1,
-        d_out,
-        d_num_selected,
-        positive_op,
+        d_in=d_in1,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=positive_op,
     )
 
     # First execution
     temp_storage_bytes = selector(
-        None, d_in1, d_out, d_num_selected, positive_op, num_items
+        temp_storage=None,
+        d_in=d_in1,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=positive_op,
+        num_items=num_items,
     )
     d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    selector(d_temp_storage, d_in1, d_out, d_num_selected, positive_op, num_items)
+    selector(
+        temp_storage=d_temp_storage,
+        d_in=d_in1,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=positive_op,
+        num_items=num_items,
+    )
 
     num_selected1 = int(d_num_selected[0].get())
     got1 = d_out.get()[:num_selected1]
@@ -315,7 +326,14 @@ def test_select_reuse_object(dtype):
     h_in2 = random_array(num_items, dtype, max_value=100) - 50
     d_in2 = cp.asarray(h_in2)
 
-    selector(d_temp_storage, d_in2, d_out, d_num_selected, positive_op, num_items)
+    selector(
+        temp_storage=d_temp_storage,
+        d_in=d_in2,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=positive_op,
+        num_items=num_items,
+    )
 
     num_selected2 = int(d_num_selected[0].get())
     got2 = d_out.get()[:num_selected2]
@@ -351,11 +369,11 @@ def test_select_with_struct(dtype):
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.select(
-        d_in,
-        d_out,
-        d_num_selected,
-        in_first_quadrant,
-        num_items,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=in_first_quadrant,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -402,11 +420,11 @@ def test_select_with_zip_iterator(monkeypatch):
     d_num_selected = cp.empty(1, dtype=np.int32)
 
     cuda.compute.select(
-        zip_in,
-        zip_out,
-        d_num_selected,
-        condition,
-        num_items,
+        d_in=zip_in,
+        d_out=zip_out,
+        d_num_selected_out=d_num_selected,
+        cond=condition,
+        num_items=num_items,
     )
 
     num_selected = int(d_num_selected[0].get())
@@ -444,11 +462,11 @@ def test_select_stateful_threshold():
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.select(
-        d_in,
-        d_out,
-        d_num_selected,
-        threshold_select,
-        num_items,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=threshold_select,
+        num_items=num_items,
     )
 
     # Check selected output
@@ -491,11 +509,11 @@ def test_select_stateful_atomic():
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.select(
-        d_in,
-        d_out,
-        d_num_selected,
-        count_rejects,
-        num_items,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=count_rejects,
+        num_items=num_items,
     )
 
     # Check selected output
@@ -540,7 +558,13 @@ def test_select_with_side_effect_counting_rejects():
             numba_cuda.atomic.add(reject_count, 0, 1)
             return False
 
-    cuda.compute.select(d_in, d_out, d_num_selected, count_rejects, len(d_in))
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=count_rejects,
+        num_items=len(d_in),
+    )
 
     num_selected = int(d_num_selected.get()[0])
     num_rejected = int(reject_count.get()[0])
@@ -559,7 +583,13 @@ def test_select_with_lambda():
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     # Use a lambda function directly as the predicate
-    cuda.compute.select(d_in, d_out, d_num_selected, lambda x: x % 2 == 0, num_items)
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=lambda x: x % 2 == 0,
+        num_items=num_items,
+    )
 
     num_selected = int(d_num_selected.get()[0])
     expected_selected = [x for x in h_in if x % 2 == 0]
@@ -583,7 +613,13 @@ def test_select_stateful_state_updates():
     def select_gt_5(x):
         return x > threshold_5[0]
 
-    cuda.compute.select(d_in, d_out, d_count, select_gt_5, num_items)
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_count,
+        cond=select_gt_5,
+        num_items=num_items,
+    )
     count1 = int(d_count[0].get())
     assert count1 == 14
     expected_1 = list(range(6, 20))
@@ -594,7 +630,13 @@ def test_select_stateful_state_updates():
         return x > threshold_15[0]
 
     d_count.fill(0)
-    cuda.compute.select(d_in, d_out, d_count, select_gt_15, num_items)
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_count,
+        cond=select_gt_15,
+        num_items=num_items,
+    )
     count2 = int(d_count[0].get())
     assert count2 == 4
     expected_2 = list(range(16, 20))
@@ -602,7 +644,13 @@ def test_select_stateful_state_updates():
 
     # Call 3: Back to first threshold (test cache reuse with updated state)
     d_count.fill(0)
-    cuda.compute.select(d_in, d_out, d_count, select_gt_5, num_items)
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_count,
+        cond=select_gt_5,
+        num_items=num_items,
+    )
     count3 = int(d_count[0].get())
     assert count3 == 14
     np.testing.assert_array_equal(d_out.get()[:count3], expected_1)
@@ -635,13 +683,25 @@ def test_select_stateful_same_bytecode_different_state():
     select_15 = make_selector(threshold_15)
 
     # Call 1: threshold > 5
-    cuda.compute.select(d_in, d_out, d_count, select_5, num_items)
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_count,
+        cond=select_5,
+        num_items=num_items,
+    )
     count1 = int(d_count[0].get())
     assert count1 == 14
 
     # Call 2: threshold > 15 (different state, same bytecode)
     d_count.fill(0)
-    cuda.compute.select(d_in, d_out, d_count, select_15, num_items)
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_count,
+        cond=select_15,
+        num_items=num_items,
+    )
     count2 = int(d_count[0].get())
     assert count2 == 4  # If this fails, cache collision bug is present
 
@@ -670,7 +730,13 @@ def test_stateful_caching_same_dtype_different_values():
     def select_gt_30(x):
         return x > threshold_30[0]
 
-    cuda.compute.select(d_in, d_out, d_count, select_gt_30, num_items)
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_count,
+        cond=select_gt_30,
+        num_items=num_items,
+    )
     count_30 = int(d_count[0].get())
 
     # Test with threshold_70
@@ -679,7 +745,13 @@ def test_stateful_caching_same_dtype_different_values():
 
     d_out.fill(0)
     d_count.fill(0)
-    cuda.compute.select(d_in, d_out, d_count, select_gt_70, num_items)
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_count,
+        cond=select_gt_70,
+        num_items=num_items,
+    )
     count_70 = int(d_count[0].get())
 
     # Verify correct results (not cache collision)

@@ -26,7 +26,7 @@ The ``<cuda/experimental/memory_resource.cuh>`` header provides:
       *stream-ordered* memory allocation tailored to the needs of CUDA C++ developers. This design builds off of the
       success of the `RAPIDS Memory Manager (RMM) <https://github.com/rapidsai/rmm>`__ project and evolves the design
       based on lessons learned.
-   -  :ref:`shared_resource <libcudacxx-memory-resource-shared-resource>` a type erased reference counted memory resource.
+   -  :ref:`shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>` a type erased reference counted memory resource.
       In contrast to :ref:`any_resource <libcudacxx-memory-resource-any-resource>` it additionally provides shared ownership
       semantics.
 

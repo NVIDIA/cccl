@@ -4,20 +4,15 @@
 # .inl files are not globbed for, because they are not supposed to be used as public
 # entrypoints.
 
+if (NOT CUB_ENABLE_LAUNCH_NO_LAUNCHER)
+  # Header tests are treated as core-only artifacts.
+  return()
+endif()
+
 function(cub_add_header_test label definitions)
   set(headertest_target cub.headers.${label})
 
-  cccl_generate_header_tests(
-    ${headertest_target}
-    cub
-    GLOBS "cub/*.cuh"
-    # These headers have additional dependencies and strict compiler reqs.
-    # They're effectively an implementation detail of cccl.c.parallel and
-    # have their own testing.
-    EXCLUDES #
-      "cub/detail/*ptx-json*"
-      "cub/detail/ptx-json/*.cuh"
-  )
+  cccl_generate_header_tests(${headertest_target} cub GLOBS "cub/*.cuh")
   cub_configure_cuda_target(${headertest_target} RDC ${CUB_FORCE_RDC})
   target_link_libraries(${headertest_target} PUBLIC cub.compiler_interface)
   target_compile_definitions(${headertest_target} PRIVATE ${definitions})

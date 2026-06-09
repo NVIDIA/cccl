@@ -20,16 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_indices.h>
-#include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/add_const.h>
-#include <cuda/std/__type_traits/add_cv.h>
-#include <cuda/std/__type_traits/add_volatile.h>
-#include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// cuda::std::tuple_element
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -57,20 +52,36 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const volatile _Tp>
   using type _CCCL_NODEBUG_ALIAS = const volatile tuple_element_t<_Ip, _Tp>;
 };
 
-template <size_t _Ip, class... _Types>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, __tuple_types<_Types...>>
-{
-  static_assert(_Ip < sizeof...(_Types), "tuple_element index out of range");
-  using type _CCCL_NODEBUG_ALIAS = __type_index_c<_Ip, _Types...>;
-};
-
-template <size_t _Ip, class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
-{
-  using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
-};
-
 _CCCL_END_NAMESPACE_CUDA_STD
+
+// std::tuple_element
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <size_t _Ip, class _Tp>
+struct tuple_element;
+
+#if _CCCL_FREESTANDING()
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, const _Tp>
+{
+  using type _CCCL_NODEBUG_ALIAS = const typename tuple_element<_Ip, _Tp>::type;
+};
+
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, volatile _Tp>
+{
+  using type _CCCL_NODEBUG_ALIAS = volatile typename tuple_element<_Ip, _Tp>::type;
+};
+
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, const volatile _Tp>
+{
+  using type _CCCL_NODEBUG_ALIAS = const volatile typename tuple_element<_Ip, _Tp>::type;
+};
+#endif // _CCCL_FREESTANDING()
+
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

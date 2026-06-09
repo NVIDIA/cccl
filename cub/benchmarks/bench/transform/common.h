@@ -19,6 +19,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__numeric/narrow.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 #include <stdexcept>
@@ -28,41 +29,42 @@
 #if !TUNE_BASE
 struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const -> cub::TransformPolicy
   {
-    const int min_bytes_in_flight =
-      cub::detail::transform::arch_to_min_bytes_in_flight(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10}) + TUNE_BIF_BIAS;
-#  if TUNE_ALGORITHM == 0
-    constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
-    constexpr auto policy    = cub::detail::transform::prefetch_policy{
-      TUNE_THREADS
+    const int min_bytes_in_flight = cub::detail::transform::cc_to_min_bytes_in_flight(cc) + TUNE_BIF_BIAS;
+#  if TUNE_ALGORITHM == 0 || TUNE_ALGORITHM == 1
+    // setup prefetch, since it's either used directly or the fallback to vectorized
+    auto algorithm                = cub::TransformAlgorithm::prefetch;
+    auto pref_policy              = cub::TransformPrefetchPolicy{};
+    pref_policy.threads_per_block = TUNE_THREADS;
+    pref_policy.unroll_factor     = TUNE_UNROLL_FACTOR;
+#    ifdef TUNE_PREFETCH_MULT
+    pref_policy.prefetch_byte_stride = 32 * TUNE_PREFETCH_MULT;
+#    endif //  TUNE_PREFETCH_MULT
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
-      ,
-      TUNE_ITEMS_PER_THREAD_NO_INPUT
+    pref_policy.items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
 #    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-    };
-    return {min_bytes_in_flight, algorithm, policy, {}, {}};
-#  elif TUNE_ALGORITHM == 1
-    constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
-    constexpr auto policy    = cub::detail::transform::vectorized_policy{
-      TUNE_THREADS,
-      (1 << TUNE_VEC_SIZE_POW2) * TUNE_VECTORS_PER_THREAD,
-      (1 << TUNE_VEC_SIZE_POW2)
-#    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
-        ,
-      TUNE_ITEMS_PER_THREAD_NO_INPUT
-#    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-    };
-    return {min_bytes_in_flight, algorithm, {}, policy, {}};
+
+    // setup vectorized if requested
+    auto vec_policy = cub::TransformVectorizedPolicy{};
+#    if TUNE_ALGORITHM == 1
+    algorithm                    = cub::TransformAlgorithm::vectorized;
+    vec_policy.threads_per_block = TUNE_THREADS;
+    vec_policy.vec_size          = (1 << TUNE_VEC_SIZE_POW2);
+    vec_policy.items_per_thread  = vec_policy.vec_size * TUNE_UNROLL_FACTOR;
+#    endif
+    return {min_bytes_in_flight, algorithm, pref_policy, vec_policy, {}};
 #  elif TUNE_ALGORITHM == 2
-    constexpr auto algorithm = cub::detail::transform::Algorithm::memcpy_async;
-    constexpr auto policy =
-      cub::detail::transform::async_copy_policy{TUNE_THREADS, cub::detail::transform::ldgsts_size_and_align};
+    constexpr auto algorithm = cub::TransformAlgorithm::ldgsts;
+    auto policy              = cub::TransformAsyncCopyPolicy{};
+    policy.threads_per_block = TUNE_THREADS;
+    policy.unroll_factor     = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  elif TUNE_ALGORITHM == 3
-    constexpr auto algorithm = cub::detail::transform::Algorithm::ublkcp;
-    constexpr auto policy    = cub::detail::transform::async_copy_policy{
-      TUNE_THREADS, cub::detail::transform::bulk_copy_alignment(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10})};
+    constexpr auto algorithm = cub::TransformAlgorithm::ublkcp;
+    auto policy              = cub::TransformAsyncCopyPolicy{};
+    policy.threads_per_block = TUNE_THREADS;
+    policy.unroll_factor     = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  else // TUNE_ALGORITHM
 #    error Policy hub does not yet implement the specified value for algorithm
@@ -71,25 +73,24 @@ struct policy_selector
 };
 #endif // !TUNE_BASE
 
-template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
+template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
 void bench_transform(nvbench::state& state,
-                     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+                     cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
                      RandomAccessIteratorOut output,
-                     OffsetT num_items,
+                     ::cuda::std::int64_t num_items,
                      TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
-    cub::detail::transform::dispatch<cub::detail::transform::requires_stable_address::no>(
+    cub::DeviceTransform::Transform(
       inputs,
       output,
       num_items,
-      cub::detail::transform::always_true_predicate{},
       transform_op,
-      launch.get_stream()
+      cuda::std::execution::env{::cuda::stream_ref{launch.get_stream().get_stream()}
 #if !TUNE_BASE
-        ,
-      policy_selector{}
+                                ,
+                                cuda::execution::tune(policy_selector{})
 #endif // !TUNE_BASE
-    );
+      });
   });
 }

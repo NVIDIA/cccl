@@ -303,7 +303,7 @@ red_async(::cuda::ptx::op_and_op_t, _B32* __dest, const _B32& __value, ::cuda::s
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
       :
@@ -338,7 +338,7 @@ red_async(::cuda::ptx::op_or_op_t, _B32* __dest, const _B32& __value, ::cuda::st
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
       :
@@ -373,7 +373,7 @@ red_async(::cuda::ptx::op_xor_op_t, _B32* __dest, const _B32& __value, ::cuda::s
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
       :

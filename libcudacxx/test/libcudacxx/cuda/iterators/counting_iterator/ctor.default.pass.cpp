@@ -16,7 +16,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::counting_iterator<int> iter;
@@ -24,7 +24,17 @@ __host__ __device__ constexpr bool test()
   }
 
   {
+    cuda::counting_iterator<int, int> iter;
+    assert(*iter == 0);
+  }
+
+  {
     cuda::counting_iterator<Int42<DefaultTo42>> iter;
+    assert((*iter).value_ == 42);
+  }
+
+  {
+    cuda::counting_iterator<Int42<DefaultTo42>, short> iter;
     assert((*iter).value_ == 42);
   }
 
@@ -38,7 +48,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

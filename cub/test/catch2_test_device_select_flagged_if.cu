@@ -9,6 +9,8 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 
+#include <cuda/functional>
+
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
@@ -68,33 +70,6 @@ struct is_even_t<custom_t>
   }
 };
 
-struct equal_to_default_t
-{
-  template <typename T>
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a == T{};
-  }
-};
-
-struct always_false_t
-{
-  template <typename T>
-  __device__ bool operator()(const T&) const
-  {
-    return false;
-  }
-};
-
-struct always_true_t
-{
-  template <typename T>
-  __device__ bool operator()(const T&) const
-  {
-    return true;
-  }
-};
-
 using all_types =
   c2h::type_list<std::uint8_t,
                  std::uint16_t,
@@ -141,7 +116,7 @@ C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_fl
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, always_true_t{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -160,7 +135,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, always_true_t{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(out == in);
@@ -181,7 +156,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, always_false_t{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::always_false{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -220,7 +195,7 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
 
   // Ensure that we did not overwrite other elements
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{input_type{}}));
 
   out.resize(num_selected_out[0]);
   REQUIRE(reference_out == out);

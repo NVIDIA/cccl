@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -18,17 +19,16 @@
 #include <stdint.h>
 
 #include <cccl/c/extern_c.h>
+#include <cccl/c/transform.h>
 #include <cccl/c/types.h>
 
 CCCL_C_EXTERN_C_BEGIN
 
 typedef struct cccl_device_binary_search_build_result_t
 {
-  int cc;
-  void* cubin;
-  size_t cubin_size;
-  CUlibrary library;
-  CUkernel kernel;
+  cccl_device_transform_build_result_t transform;
+  size_t op_state_size;
+  size_t op_state_alignment;
 } cccl_device_binary_search_build_result_t;
 
 CCCL_C_API CUresult cccl_device_binary_search_build(
@@ -74,3 +74,4 @@ CCCL_C_API CUresult cccl_device_binary_search(
 CCCL_C_API CUresult cccl_device_binary_search_cleanup(cccl_device_binary_search_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

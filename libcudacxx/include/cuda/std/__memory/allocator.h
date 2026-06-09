@@ -22,7 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__host_stdlib/new>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocate_at_least.h>
 #include <cuda/std/__memory/allocator_traits.h>
@@ -40,10 +42,12 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 #if _CCCL_STD_VER <= 2017
 // These specializations shouldn't be marked CCCL_DEPRECATED.
@@ -129,7 +133,7 @@ public:
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
-      __throw_bad_array_new_length();
+      _CCCL_THROW(::std::bad_array_new_length);
     }
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
     _CCCL_IF_CONSTEVAL
@@ -143,7 +147,7 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  [[nodiscard]] _CCCL_API constexpr allocation_result<_Tp*> allocate_at_least(size_t __n)
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20_ALLOCATION allocation_result<_Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }
@@ -186,7 +190,7 @@ public:
     return ::cuda::std::addressof(__x);
   }
 
-  [[nodiscard]] _CCCL_API inline CCCL_DEPRECATED _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] CCCL_DEPRECATED _CCCL_API inline _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
@@ -232,7 +236,7 @@ public:
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
-      __throw_bad_array_new_length();
+      _CCCL_THROW(::std::bad_array_new_length);
     }
     _CCCL_IF_CONSTEVAL
     {
@@ -281,7 +285,7 @@ public:
     return ::cuda::std::addressof(__x);
   }
 
-  [[nodiscard]] _CCCL_API inline CCCL_DEPRECATED const _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] CCCL_DEPRECATED _CCCL_API inline const _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }

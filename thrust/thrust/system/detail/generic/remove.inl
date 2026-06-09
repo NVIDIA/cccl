@@ -19,6 +19,8 @@
 #include <thrust/remove.h>
 #include <thrust/system/detail/generic/remove.h>
 
+#include <cuda/__functional/equal_to_value.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
@@ -26,7 +28,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 remove(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& value)
 {
-  thrust::detail::equal_to_value<T> pred{value};
+  ::cuda::equal_to_value<T> pred{value};
 
   // XXX consider using a placeholder here
   return thrust::remove_if(exec, first, last, pred);
@@ -40,7 +42,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy(
   OutputIterator result,
   const T& value)
 {
-  thrust::detail::equal_to_value<T> pred{value};
+  ::cuda::equal_to_value<T> pred{value};
 
   // XXX consider using a placeholder here
   return thrust::remove_copy_if(exec, first, last, result, pred);

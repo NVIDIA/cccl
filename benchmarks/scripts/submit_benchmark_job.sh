@@ -1,16 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script schedules a SLURM job via crun on computelab to run all CCCL benchmarks and produce a benchmark database
 # TODO: set those accordingly
 scratch=/home/scratch."$USER"_sw
 node_selector="cpu.arch=x86_64 and gpu.product_name='*B200*'"
-container_image="rapidsai/devcontainers:26.02-cpp-gcc14-cuda13.0"
+container_image="rapidsai/devcontainers:26.06-cpp-gcc14-cuda13.2"
 jobtime="4:00:00"
-benchmark_preset="cub-benchmark"
+benchmark_preset="benchmark"
 
 batch_script=$scratch/batch.sh
-cat << BATCH_SCRIPT > $batch_script
-#!/bin/bash
+cat << BATCH_SCRIPT > "$batch_script"
+#!/usr/bin/env bash
 
 pip install --break-system-packages fpzip pandas scipy
 
@@ -37,11 +37,11 @@ export PYTHONPATH=../benchmarks/scripts/
 
 echo "Benchmark done. Results in $scratch/\$host/cccl/build_perf/cccl_meta_bench.db"
 BATCH_SCRIPT
-chmod +x $batch_script
+chmod +x "$batch_script"
 
 # schedule SLURM job
 echo "Scheduling script $batch_script"
 echo "#################################################################################"
-cat $batch_script
+cat "$batch_script"
 echo "#################################################################################"
-crun -q "$node_selector" -ex -t $jobtime -img $container_image -b $batch_script
+crun -q "$node_selector" -ex -t "$jobtime" -img "$container_image" -b "$batch_script"

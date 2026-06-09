@@ -44,16 +44,16 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT complex;
 
 template <class _Tp>
 inline constexpr bool __is_std_complex_v = false;
+#if _CCCL_HAS_HOST_STD_LIB()
 template <class _Tp>
 inline constexpr bool __is_std_complex_v<const _Tp> = __is_std_complex_v<_Tp>;
 template <class _Tp>
 inline constexpr bool __is_std_complex_v<volatile _Tp> = __is_std_complex_v<_Tp>;
 template <class _Tp>
 inline constexpr bool __is_std_complex_v<const volatile _Tp> = __is_std_complex_v<_Tp>;
-#if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
 inline constexpr bool __is_std_complex_v<::std::complex<_Tp>> = true;
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 // __is_cuda_std_complex_v
 

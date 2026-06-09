@@ -31,6 +31,10 @@
 #  error CUB requires a definition of CUB_NS_QUALIFIER when CUB_NS_PREFIX/POSTFIX are defined.
 #endif
 
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define THRUST_CUB_WRAPPED_NAMESPACE
+#endif
+
 /**
  * \def THRUST_CUB_WRAPPED_NAMESPACE
  * If defined, this value will be used as the name of a namespace that wraps the
@@ -39,6 +43,10 @@
  */
 #ifdef THRUST_CUB_WRAPPED_NAMESPACE
 #  define CUB_WRAPPED_NAMESPACE THRUST_CUB_WRAPPED_NAMESPACE
+#endif
+
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_WRAPPED_NAMESPACE
 #endif
 
 /**
@@ -57,6 +65,10 @@
 #  define CUB_NS_QUALIFIER ::CUB_WRAPPED_NAMESPACE::cub
 #endif
 
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_NS_PREFIX
+#endif
+
 /**
  * \def CUB_NS_PREFIX
  * This macro is inserted prior to all `namespace cub { ... }` blocks. It is
@@ -66,6 +78,10 @@
  */
 #ifndef CUB_NS_PREFIX
 #  define CUB_NS_PREFIX
+#endif
+
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_NS_POSTFIX
 #endif
 
 /**
@@ -78,6 +94,10 @@
  */
 #ifndef CUB_NS_POSTFIX
 #  define CUB_NS_POSTFIX
+#endif
+
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_NS_QUALIFIER
 #endif
 
 /**

@@ -25,7 +25,7 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   //  Test deduced type.
   {
@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool tests()
     const long l1 = 42;
     auto arr      = cuda::std::to_array({1L, 4L, 9L, l1});
     static_assert(cuda::std::is_same_v<decltype(arr)::value_type, long>);
-    static_assert(arr.size() == 4, "");
+    static_assert(arr.size() == 4);
     assert(arr[0] == 1);
     assert(arr[1] == 4);
     assert(arr[2] == 9);
@@ -124,6 +124,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

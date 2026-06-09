@@ -53,6 +53,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   template <class _Tp>                                       \
   inline constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
 
+// Allocator::pointer is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 // __pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer)
 template <class _Tp, class _Alloc, class _RawAlloc = remove_reference_t<_Alloc>, bool = __has_pointer_v<_RawAlloc>>
@@ -65,7 +68,11 @@ struct __pointer<_Tp, _Alloc, _RawAlloc, false>
 {
   using type _CCCL_NODEBUG_ALIAS = _Tp*;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
+// Allocator::const_pointer is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 // __const_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_pointer, const_pointer)
 template <class _Tp, class _Ptr, class _Alloc, bool = __has_const_pointer_v<_Alloc>>
@@ -78,6 +85,7 @@ struct __const_pointer<_Tp, _Ptr, _Alloc, false>
 {
   using type _CCCL_NODEBUG_ALIAS = typename pointer_traits<_Ptr>::template rebind<const _Tp>;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 // __void_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_void_pointer, void_pointer)
@@ -164,10 +172,13 @@ struct __propagate_on_container_swap<_Alloc, true>
   using type _CCCL_NODEBUG_ALIAS = typename _Alloc::propagate_on_container_swap;
 };
 
-// __is_always_equal
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal, is_always_equal)
-template <class _Alloc, bool = __has_is_always_equal_v<_Alloc>>
-struct __is_always_equal : is_empty<_Alloc>
+_CCCL_SUPPRESS_DEPRECATED_PUSH // std::allocator::is_always_equal has been deprecated
+  _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+
+  // __is_always_equal
+  _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal,
+                                       is_always_equal) template <class _Alloc, bool = __has_is_always_equal_v<_Alloc>>
+  struct __is_always_equal : is_empty<_Alloc>
 {};
 template <class _Alloc>
 struct __is_always_equal<_Alloc, true>
@@ -175,12 +186,17 @@ struct __is_always_equal<_Alloc, true>
   using type _CCCL_NODEBUG_ALIAS = typename _Alloc::is_always_equal;
 };
 
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+// Allocator::rebind is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+
 // __allocator_traits_rebind
 template <class _Tp, class _Up>
 _CCCL_CONCEPT __has_member_rebind_other =
   _CCCL_REQUIRES_EXPR((_Tp, _Up))(typename(typename _Tp::template rebind<_Up>::other));
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _Up, bool = __has_member_rebind_other<_Tp, _Up>>
 struct __allocator_traits_rebind
 {

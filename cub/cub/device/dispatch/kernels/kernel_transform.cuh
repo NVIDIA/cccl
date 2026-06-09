@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
@@ -23,9 +24,12 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__memcpy_async/elect_one.h>
+#include <cuda/__memory/align_down.h>
 #include <cuda/__memory/aligned_size.h>
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -36,8 +40,6 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/transform.h>
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -55,19 +57,12 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
-template <typename T>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
-{
-  _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
-  return reinterpret_cast<const char*>(
-    reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
-}
-
 // Prefetches (at least on Hopper) a 128 byte cache line. Prefetching out-of-bounds addresses has no side effects
 // TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
 // as we need to create less instructions to prefetch the same amount of data.
@@ -78,21 +73,44 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
   asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
 }
 
-template <int BlockDim, typename It>
+template <int BlockDim, int PrefetchStride, typename It>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 {
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>)
   {
-    constexpr int prefetch_byte_stride = 128; // TODO(bgruber): should correspond to cache line size. Does this need to
-                                              // be architecture dependent?
     const int items_bytes = items * sizeof(it_value_t<It>);
 
     // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
     _CCCL_PRAGMA_NOUNROLL()
-    for (int offset = threadIdx.x * prefetch_byte_stride; offset < items_bytes;
-         offset += BlockDim * prefetch_byte_stride)
+    for (int offset = threadIdx.x * PrefetchStride; offset < items_bytes; offset += BlockDim * PrefetchStride)
     {
       prefetch(reinterpret_cast<const char*>(::cuda::std::to_address(begin)) + offset);
+    }
+  }
+}
+
+// TODO(bgruber): I would love if we could make _CCCL_PRAGMA_UNROLL(UnrollFactor) portably accept some sentinel value
+// that would disable the pragma and leave it to the compiler to choose whether to unroll or not. nvcc supports
+// _CCCL_PRAGMA_UNROLL(-1), but issues a warning though. Trying to suppress this warning inside the _CCCL_PRAGMA_UNROLL
+// macro kills MSVC. Also clang in CUDA mode does not support a non-positive unroll factor.
+template <int UnrollFactor, typename F>
+_CCCL_DEVICE _CCCL_FORCEINLINE void unrolled_for(int count, F&& body)
+{
+  static_assert(UnrollFactor >= 0,
+                "unroll_factor must be zero (ignore unroll hint) or positive (unroll with the given factor)");
+  if constexpr (UnrollFactor > 0)
+  {
+    _CCCL_PRAGMA_UNROLL(UnrollFactor)
+    for (int i = 0; i < count; ++i)
+    {
+      body(i);
+    }
+  }
+  else
+  {
+    for (int i = 0; i < count; ++i)
+    {
+      body(i);
     }
   }
 }
@@ -100,7 +118,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 // This kernel guarantees that objects passed as arguments to the user-provided transformation function f reside in
 // global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
 // parameter yields a global memory address.
-template <int BlockThreads,
+template <int ThreadsPerBlock,
+          int PrefetchByteStride,
+          int UnrollFactor,
           typename Offset,
           typename Predicate,
           typename F,
@@ -114,27 +134,22 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
-  constexpr int block_threads = BlockThreads;
-  const int tile_size         = block_threads * num_elem_per_thread;
-  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items       = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
+  const int tile_size   = ThreadsPerBlock * num_elem_per_thread;
+  const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int valid_items = static_cast<int>((::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size)));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
-    (..., (ins += offset));
+    (..., (void) (ins += offset));
     out += offset;
   }
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  (..., prefetch_tile<block_threads>(ins, valid_items));
+  (..., prefetch_tile<ThreadsPerBlock, PrefetchByteStride>(ins, valid_items));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
-    // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
-    // bgruber: but A6000 and H100 show small gains without pragma
-    // _CCCL_PRAGMA_NOUNROLL()
-    for (int j = 0; j < num_elem_per_thread; ++j)
-    {
-      const int idx = j * block_threads + threadIdx.x;
+    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+      const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         if (pred(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...))
@@ -143,7 +158,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
           out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...);
         }
       }
-    }
+    });
   };
   if (tile_size == valid_items)
   {
@@ -205,18 +220,16 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-// FIXME(bgruber): nvcc 12.0 - 13.1 crash with `error: Internal Compiler Error (codegen): "unexpected error in codegen
-// for function: found previous definition of same function!"` when we pass a const& as template parameter (and the
-// function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
-// TODO(bgruber): In C++20, we should just pass transform_policy by value.
-template < // const transform_policy& Policy,
-  int block_threads,
-  int items_per_thread,
-  int vec_size,
-  typename Offset,
-  typename F,
-  typename RandomAccessIteratorOut,
-  typename... RandomAccessIteratorsIn>
+// TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
+template <int threads_per_block,
+          int items_per_thread,
+          int vec_size,
+          int PrefetchByteStride,
+          int PrefetchUnrollFactor,
+          typename Offset,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... RandomAccessIteratorsIn>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
   int num_elem_per_thread_prefetch,
@@ -225,21 +238,21 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   RandomAccessIteratorOut out,
   RandomAccessIteratorsIn... ins)
 {
-  // constexpr int block_threads    = Policy.vectorized.block_threads;
+  // constexpr int threads_per_block    = Policy.vectorized.threads_per_block;
   // constexpr int items_per_thread = Policy.vectorized.items_per_thread;
   // constexpr int vec_size         = Policy.vectorized.vec_size;
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
-  constexpr int tile_size = block_threads * items_per_thread;
+  constexpr int tile_size = threads_per_block * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
+  const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size)));
 
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<block_threads>(
+    transform_kernel_prefetch<threads_per_block, PrefetchByteStride, PrefetchUnrollFactor>(
       num_items,
       num_elem_per_thread_prefetch,
-      always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(f),
       ::cuda::std::move(out),
       ins...);
@@ -248,7 +261,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
-    (..., (ins += offset));
+    (..., (void) (ins += offset));
     out += offset;
   }
 
@@ -261,10 +274,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
                                     && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
-  using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
   constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * vec_size : alignof(result_t);
-  uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
+  ::cuda::__uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
@@ -281,7 +293,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
-          input_vec[i] = in_vec[i * block_threads];
+          input_vec[i] = in_vec[i * threads_per_block];
         }
       }
       else
@@ -293,7 +305,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int j = 0; j < vec_size; ++j)
           {
-            input[i * vec_size + j] = in[i * vec_size * block_threads + j];
+            input[i * vec_size + j] = in[i * vec_size * threads_per_block + j];
           }
         }
       }
@@ -311,9 +323,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
-                                    items_per_thread,
-                                    sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
+  provide_array(::cuda::__uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
+                                              items_per_thread,
+                                              sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
 
   // write output
   if constexpr (can_vectorize_store)
@@ -325,7 +337,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
-      out_vec[i * block_threads] = output_vec[i];
+      out_vec[i * threads_per_block] = output_vec[i];
     }
   }
   else
@@ -338,7 +350,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < vec_size; ++j)
       {
-        out[i * vec_size * block_threads + j] = output[i * vec_size + j];
+        out[i * vec_size * threads_per_block + j] = output[i * vec_size + j];
       }
     }
   }
@@ -401,21 +413,22 @@ struct aligned_base_ptr
 template <typename T>
 _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> aligned_base_ptr<T>
 {
-  const char* base_ptr = round_down_ptr(ptr, alignment);
-  return aligned_base_ptr<T>{base_ptr, static_cast<int>(reinterpret_cast<const char*>(ptr) - base_ptr)};
+  const auto raw_ptr  = reinterpret_cast<const char*>(ptr);
+  const auto base_ptr = ::cuda::align_down(raw_ptr, alignment);
+  return aligned_base_ptr<T>{base_ptr, static_cast<int>(raw_ptr - base_ptr)};
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int bytes_to_copy)
 {
-  _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % ldgsts_size_and_align == 0, "");
-  _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % ldgsts_size_and_align == 0, "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src), "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst), "");
   _CCCL_ASSERT(bytes_to_copy % ldgsts_size_and_align == 0, "");
 
   // allowing unrolling generates a LOT more instructions and is usually slower (confirmed by benchmark)
   _CCCL_PRAGMA_NOUNROLL()
   for (unsigned int offset = threadIdx.x * ldgsts_size_and_align; offset < bytes_to_copy;
-       offset += BlockThreads * ldgsts_size_and_align)
+       offset += ThreadsPerBlock * ldgsts_size_and_align)
   {
     asm volatile(
       "cp.async.cg.shared.global [%0], [%1], %2, %3;"
@@ -432,7 +445,7 @@ _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int 
   asm volatile("cp.async.commit_group;"); // same as: __pipeline_commit();
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_copy, int head_padding)
 {
   // early exiting if (head_padding == 0 && bytes_to_copy % ldgsts_size_and_align == 0) does not yield a benefit
@@ -458,10 +471,10 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
   const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
   if (aligned_bytes_to_copy > 0)
   {
-    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst_ptr + head_bytes) % ldgsts_size_and_align == 0, "");
-    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src_ptr + head_bytes) % ldgsts_size_and_align == 0, "");
+    _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst_ptr + head_bytes), "");
+    _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src_ptr + head_bytes), "");
     _CCCL_ASSERT(aligned_bytes_to_copy % ldgsts_size_and_align == 0, "");
-    memcpy_async_aligned<BlockThreads>(dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
+    memcpy_async_aligned<ThreadsPerBlock>(dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
   }
 
   // TODO(bgruber): ahendriksen suggested to copy elements instead of bytes, but it generates about 20 instructions more
@@ -487,7 +500,7 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
 
 // Turning this function into a lambda will make nvcc generate it once for each iterator instead of for each distinct
 // value type (which may be less).
-template <int BlockThreads, typename AlignedPtr, typename Offset>
+template <int ThreadsPerBlock, typename AlignedPtr, typename Offset>
 _CCCL_DEVICE auto
 copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items)
 {
@@ -499,10 +512,10 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   {
     smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
   }
-  const char* const src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
+  const char* const src = aligned_ptr.ptr + offset * sizeof(T);
   char* const dst       = smem + smem_offset;
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % ldgsts_size_and_align == 0, "");
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % ldgsts_size_and_align == 0, "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src), "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst), "");
 
   int bytes_to_copy;
   if constexpr (alignof(T) < ldgsts_size_and_align)
@@ -516,13 +529,13 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   }
 
   smem_offset += bytes_to_copy; // leaves aligned address for follow-up copy
-  memcpy_async_aligned<BlockThreads>(dst, src, bytes_to_copy);
+  memcpy_async_aligned<ThreadsPerBlock>(dst, src, bytes_to_copy);
   const char* const dst_start_of_data = dst + (alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0);
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
   return reinterpret_cast<const T*>(dst_start_of_data);
 }
 
-template <int BlockThreads, typename AlignedPtr, typename Offset>
+template <int ThreadsPerBlock, typename AlignedPtr, typename Offset>
 _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items, int tile_size)
 {
@@ -540,13 +553,12 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   _CCCL_ASSERT(alignof(T) < ldgsts_size_and_align || aligned_ptr.head_padding == 0, "");
   const int head_padding = alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0;
 
-  const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)} + head_padding; // compute expression in U32 if
-                                                                                   // Offset==I32
-  char* dst = smem + smem_offset + head_padding;
-  _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % alignof(T) == 0, "");
-  _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % alignof(T) == 0, "");
+  const char* src = aligned_ptr.ptr + offset * sizeof(T) + head_padding;
+  char* dst       = smem + smem_offset + head_padding;
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
   const int bytes_to_copy = int{sizeof(T)} * valid_items;
-  memcpy_async_maybe_unaligned<BlockThreads>(dst, src, bytes_to_copy, head_padding);
+  memcpy_async_maybe_unaligned<ThreadsPerBlock>(dst, src, bytes_to_copy, head_padding);
 
   // add ldgsts_size_and_align to account for this tile's head padding
   smem_offset += ldgsts_size_and_align + int{sizeof(T)} * tile_size;
@@ -554,18 +566,15 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return reinterpret_cast<T*>(dst);
 }
 
-// FIXME(bgruber): nvcc 12.0 - 13.1 crash with `error: Internal Compiler Error (codegen): "unexpected error in codegen
-// for function: found previous definition of same function!"` when we pass a const& as template parameter (and the
-// function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
-// TODO(bgruber): In C++20, we should just pass transform_policy by value.
+// TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
-template < // const transform_policy& Policy,
-  int block_threads,
-  typename Offset,
-  typename Predicate,
-  typename F,
-  typename RandomAccessIteratorOut,
-  typename... InTs>
+template <int threads_per_block,
+          int UnrollFactor,
+          typename Offset,
+          typename Predicate,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... InTs>
 _CCCL_DEVICE void transform_kernel_ldgsts(
   Offset num_items,
   int num_elem_per_thread,
@@ -577,12 +586,12 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // SMEM is 16-byte aligned by default
   extern __shared__ char smem[];
   static_assert(ldgsts_size_and_align <= 16);
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(smem) % ldgsts_size_and_align == 0, "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(smem), "");
 
-  // constexpr int block_threads = Policy.async_copy.block_threads;
-  const int tile_size   = block_threads * num_elem_per_thread;
+  // constexpr int threads_per_block = Policy.async_copy.threads_per_block;
+  const int tile_size   = threads_per_block * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
+  const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, static_cast<Offset>(tile_size)));
 
   [[maybe_unused]] int smem_offset = 0;
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
@@ -590,8 +599,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
-    (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
-                  : copy_and_return_smem_dst_fallback<block_threads>(
+    (inner_blocks ? copy_and_return_smem_dst<threads_per_block>(aligned_ptrs, smem_offset, offset, smem, valid_items)
+                  : copy_and_return_smem_dst_fallback<threads_per_block>(
                       aligned_ptrs, smem_offset, offset, smem, valid_items, tile_size))...};
 
   asm volatile("cp.async.wait_group %0;" : : "n"(0)); // same as: __pipeline_wait_prior(0);
@@ -603,11 +612,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // TODO(bgruber): fbusato suggests to move the valid_items and smem_base_ptrs by threadIdx.x before the loop below
 
   auto process_tile = [&](auto full_tile) {
-    // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
-    _CCCL_PRAGMA_NOUNROLL()
-    for (int j = 0; j < num_elem_per_thread; ++j)
-    {
-      const int idx = j * block_threads + threadIdx.x;
+    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+      const int idx = j * threads_per_block + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         ::cuda::std::apply(
@@ -619,7 +625,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
           },
           smem_ptrs);
       }
-    }
+    });
   };
 
   // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
@@ -666,8 +672,8 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
     const unsigned int aligned_bytes_to_copy = bytes_to_copy - head_bytes - tail_bytes;
     if (aligned_bytes_to_copy > 0)
     {
-      _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst_ptr + head_bytes) % BulkCopyAlignment == 0, "");
-      _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src_ptr + head_bytes) % BulkCopyAlignment == 0, "");
+      _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<BulkCopyAlignment>(dst_ptr + head_bytes), "");
+      _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<BulkCopyAlignment>(src_ptr + head_bytes), "");
       _CCCL_ASSERT(aligned_bytes_to_copy % bulk_copy_size_multiple == 0, "");
 
       ::cuda::ptx::cp_async_bulk(
@@ -700,26 +706,18 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
     dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = tail_byte;
   }
 }
-// FIXME(bgruber): nvcc 12.0 - 13.1 error with `function "void
-// cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::transform_kernel_ublkcp< ::policy, int,
-// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::always_true_predicate,
-// ::cuda::std::__4::logical_and<int> , bool *, int, int > (T2, int, T3, T4, T5,
-// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::aligned_base_ptr<T6> ...)::[lambda(T1) (instance
-// 3)]::operator ()< ::cuda::std::__4::integral_constant<bool, (bool)1> >  const" has already been defined` when we pass
-// a const& as template parameter (and the function template body contains a lambda). As a workaround, we pass the parts
-// of the policy by value.
-// TODO(bgruber): In C++20, we should just pass transform_policy by value.
+
+// TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
 // Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
 // https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
-template < // const transform_policy& Policy,
-  int block_threads,
-  int bulk_copy_alignment,
-  typename Offset,
-  typename Predicate,
-  typename F,
-  typename RandomAccessIteratorOut,
-  typename... InTs>
+template <int threads_per_block,
+          int UnrollFactor,
+          typename Offset,
+          typename Predicate,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items,
   int num_elem_per_thread,
@@ -728,8 +726,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  // constexpr int block_threads       = Policy.async_copy.block_threads;
-  // constexpr int bulk_copy_alignment = Policy.async_copy.bulk_copy_alignment;
+  // constexpr int threads_per_block       = Policy.async_copy.threads_per_block;
+  constexpr int bulk_copy_alignment = transform::bulk_copy_alignment(current_tuning_cc());
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
   constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
@@ -777,9 +775,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   namespace ptx = ::cuda::ptx;
 
-  const int tile_size   = block_threads * num_elem_per_thread;
+  const int tile_size   = threads_per_block * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items = (::cuda::std::min) (num_items - offset, Offset{tile_size});
+  const int valid_items = (::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size));
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -797,10 +795,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // turning this lambda into a function does not change SASS
       auto bulk_copy_tile = [&](auto aligned_ptr) {
         using T         = typename decltype(aligned_ptr)::value_type;
-        const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
+        const char* src = aligned_ptr.ptr + offset * sizeof(T);
         char* dst       = smem;
-        _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
-        _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
+        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(src), "");
+        _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(dst), "");
 
         // TODO(bgruber): we could precompute bytes_to_copy on the host
         int bytes_to_copy;
@@ -864,11 +862,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
       const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
 
-      const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)} + head_padding; // compute expression in U32 if
-                                                                                       // Offset==I32
-      char* dst = smem + head_padding;
-      _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
-      _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
+      const char* src = aligned_ptr.ptr + offset * sizeof(T) + head_padding;
+      char* dst       = smem + head_padding;
+      _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
+      _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
       const int bytes_to_copy = int{sizeof(T)} * valid_items;
       bulk_copy_maybe_unaligned<bulk_copy_alignment>(
         dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
@@ -899,12 +896,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   out += offset;
 
   auto process_tile = [&](auto full_tile) {
-    // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
-    _CCCL_PRAGMA_NOUNROLL()
-    for (int j = 0; j < num_elem_per_thread; ++j)
-    {
+    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
-      const int idx = j * block_threads + threadIdx.x;
+      const int idx = j * threads_per_block + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         char* smem         = smem_base;
@@ -926,7 +920,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           },
           ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
       }
-    }
+    });
   };
   // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
   if (tile_size == valid_items)
@@ -943,7 +937,7 @@ template <typename It>
 union kernel_arg
 {
   aligned_base_ptr<it_value_t<It>> aligned_ptr; // first member is trivial
-  static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");
+  static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>);
   It iterator; // may not be trivially [default|copy]-constructible
 
   // Sometimes It is not trivially [default|copy]-constructible (e.g.
@@ -980,28 +974,29 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
   return arg;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
-_CCCL_API constexpr int get_block_threads_helper()
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_threads_per_block_helper() noexcept
 {
-  constexpr transform_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-  if constexpr (policy.algorithm == Algorithm::prefetch)
+  constexpr TransformPolicy policy = current_policy<PolicySelector>();
+  if constexpr (policy.algorithm == TransformAlgorithm::prefetch)
   {
-    return policy.prefetch.block_threads;
+    return policy.prefetch.threads_per_block;
   }
-  else if constexpr (policy.algorithm == Algorithm::vectorized)
+  else if constexpr (policy.algorithm == TransformAlgorithm::vectorized)
   {
-    return policy.vectorized.block_threads;
+    return policy.vectorized.threads_per_block;
   }
   else
   {
-    return policy.async_copy.block_threads;
+    return policy.async_copy.threads_per_block;
   }
 }
 
-// need a variable template to force constant evaluation of get_block_threads_helper(), otherwise nvcc will give us a
-// "bad attribute argument substitution" error
+// need a variable template to force constant evaluation of get_threads_per_block_helper(), otherwise nvcc will give us
+// a "bad attribute argument substitution" error
 template <typename PolicySelector>
-inline constexpr int get_block_threads = get_block_threads_helper<PolicySelector>();
+inline constexpr int get_threads_per_block = get_threads_per_block_helper<PolicySelector>();
 
 // There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
 // with the same arguments for each algorithm. Only the device compiler will then select the implementation. This
@@ -1015,22 +1010,24 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires transform_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
-  Offset num_items,
-  int num_elem_per_thread,
-  [[maybe_unused]] bool can_vectorize,
-  Predicate pred,
-  F f,
-  RandomAccessIteratorOut out,
+__launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES void transform_kernel(
+  _CCCL_GRID_CONSTANT const Offset num_items,
+  _CCCL_GRID_CONSTANT const int num_elem_per_thread,
+  [[maybe_unused]] _CCCL_GRID_CONSTANT const bool can_vectorize,
+  _CCCL_GRID_CONSTANT const Predicate pred,
+  _CCCL_GRID_CONSTANT const F f,
+  _CCCL_GRID_CONSTANT const RandomAccessIteratorOut out,
   kernel_arg<RandomAccessIteratorsIn>... ins)
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
 
-  static constexpr transform_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr TransformPolicy policy = current_policy<PolicySelector>();
 
-  if constexpr (policy.algorithm == Algorithm::prefetch)
+  if constexpr (policy.algorithm == TransformAlgorithm::prefetch)
   {
-    transform_kernel_prefetch<policy.prefetch.block_threads>(
+    transform_kernel_prefetch<policy.prefetch.threads_per_block,
+                              policy.prefetch.prefetch_byte_stride,
+                              policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),
@@ -1038,14 +1035,16 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
       ::cuda::std::move(out),
       ::cuda::std::move(ins.iterator)...);
   }
-  else if constexpr (policy.algorithm == Algorithm::vectorized)
+  else if constexpr (policy.algorithm == TransformAlgorithm::vectorized)
   {
-    static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
+    static_assert(::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
                   "Cannot vectorize transform with a predicate");
 
-    transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,
+    transform_kernel_vectorized</*policy*/ policy.vectorized.threads_per_block,
                                 policy.vectorized.items_per_thread,
-                                policy.vectorized.vec_size>(
+                                policy.vectorized.vec_size,
+                                policy.prefetch.prefetch_byte_stride,
+                                policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
@@ -1053,11 +1052,11 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
       ::cuda::std::move(out),
       ::cuda::std::move(ins.iterator)...);
   }
-  else if constexpr (policy.algorithm == Algorithm::memcpy_async)
+  else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts</*policy*/ policy.async_copy.block_threads>(
+      (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1065,11 +1064,11 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
          ::cuda::std::move(out),
          ::cuda::std::move(ins.aligned_ptr)...);));
   }
-  else if constexpr (policy.algorithm == Algorithm::ublkcp)
+  else if constexpr (policy.algorithm == TransformAlgorithm::ublkcp)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp</*policy*/ policy.async_copy.block_threads, policy.async_copy.bulk_copy_alignment>(
+      (transform_kernel_ublkcp</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

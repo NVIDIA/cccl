@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
+
+from __future__ import annotations
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
@@ -14,9 +15,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..op import OpAdapter, make_op_adapter
+from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _UniqueByKey:
@@ -32,10 +32,10 @@ class _UniqueByKey:
 
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase,
-        d_out_keys: DeviceArrayLike | IteratorBase,
-        d_out_items: DeviceArrayLike | IteratorBase,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
         op: OpAdapter,
     ):
@@ -61,13 +61,14 @@ class _UniqueByKey:
 
     def __call__(
         self,
+        *,
         temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase,
-        d_out_keys: DeviceArrayLike | IteratorBase,
-        d_out_items: DeviceArrayLike | IteratorBase,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
-        op: Callable | OpKind | OpAdapter,
+        op: Operator,
         num_items: int,
         stream=None,
     ):
@@ -79,7 +80,7 @@ class _UniqueByKey:
 
         # Update op state for stateful ops
         op_adapter = make_op_adapter(op)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -108,12 +109,13 @@ class _UniqueByKey:
 
 @cache_with_registered_key_functions
 def make_unique_by_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase,
-    d_out_items: DeviceArrayLike | IteratorBase,
+    *,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT,
+    d_out_keys: DeviceArrayLike | IteratorT,
+    d_out_items: DeviceArrayLike | IteratorT,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable | OpKind,
+    op: Operator,
 ):
     """Implements a device-wide unique by key operation using ``d_in_keys`` and the comparison operator ``op``. Only the first key and its value from each run is selected and the total number of items selected is also reported.
 
@@ -143,12 +145,13 @@ def make_unique_by_key(
 
 
 def unique_by_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase,
-    d_out_items: DeviceArrayLike | IteratorBase,
+    *,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT,
+    d_out_keys: DeviceArrayLike | IteratorT,
+    d_out_items: DeviceArrayLike | IteratorT,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable | OpKind,
+    op: Operator,
     num_items: int,
     stream=None,
 ):
@@ -176,28 +179,33 @@ def unique_by_key(
         stream: CUDA stream for the operation (optional)
     """
     uniquer = make_unique_by_key(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
     )
     tmp_storage_bytes = uniquer(
-        None,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        op,
-        num_items,
-        stream,
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
+        num_items=num_items,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     uniquer(
-        tmp_storage,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        op,
-        num_items,
-        stream,
+        temp_storage=tmp_storage,
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
+        num_items=num_items,
+        stream=stream,
     )

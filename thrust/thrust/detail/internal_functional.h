@@ -24,6 +24,7 @@
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/equal_to_value.h>
 #include <cuda/__iterator/discard_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_input_output_iterator.h>
@@ -53,25 +54,6 @@ struct predicate_to_integral
   _CCCL_HOST_DEVICE IntegralType operator()(const T& x)
   {
     return pred(x) ? IntegralType(1) : IntegralType(0);
-  }
-};
-
-// note that equal_to_value does not force conversion from T2 -> T1 as equal_to does
-template <typename T2>
-struct equal_to_value
-{
-  T2 rhs;
-
-  // need this ctor for nvcc 12.0 + clang14 to make copy ctor of not_fn_t<equal_to_value> work. Check test:
-  // thrust.cpp.cuda.cpp20.test.remove.
-  _CCCL_HOST_DEVICE equal_to_value(const T2& rhs)
-      : rhs(rhs)
-  {}
-
-  template <typename T1>
-  _CCCL_HOST_DEVICE bool operator()(const T1& lhs) const
-  {
-    return lhs == rhs;
   }
 };
 

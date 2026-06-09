@@ -9,7 +9,7 @@ using namespace unittest;
 template <typename T>
 struct TestTupleConstructor
 {
-  void operator()(void)
+  void operator()()
   {
     using namespace thrust;
 
@@ -97,7 +97,7 @@ SimpleUnitTest<TestTupleConstructor, BuiltinNumericTypes> TestTupleConstructorIn
 template <typename T>
 struct TestMakeTuple
 {
-  void operator()(void)
+  void operator()()
   {
     using namespace thrust;
 
@@ -187,7 +187,7 @@ SimpleUnitTest<TestMakeTuple, BuiltinNumericTypes> TestMakeTupleInstance;
 template <typename T>
 struct TestTupleGet
 {
-  void operator()(void)
+  void operator()()
   {
     using namespace thrust;
     host_vector<T> data = random_integers<T>(10);
@@ -276,7 +276,7 @@ SimpleUnitTest<TestTupleGet, BuiltinNumericTypes> TestTupleGetInstance;
 template <typename T>
 struct TestTupleComparison
 {
-  void operator()(void)
+  void operator()()
   {
     using namespace thrust;
 
@@ -444,7 +444,7 @@ struct TestTupleTieFunctor
 template <typename T>
 struct TestTupleTie
 {
-  void operator()(void)
+  void operator()()
   {
     thrust::host_vector<bool> h_result(1);
     thrust::generate(h_result.begin(), h_result.end(), TestTupleTieFunctor<T>());
@@ -512,7 +512,7 @@ void TestTupleStructuredBindings()
 }
 DECLARE_UNITTEST(TestTupleStructuredBindings);
 
-void TestTupleCTAD(void)
+void TestTupleCTAD()
 {
   const int a   = 0;
   const char b  = 42;

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -36,8 +36,8 @@
 #include <util/build_utils.h>
 
 struct device_reduce_policy;
-using TransformOpT = ::cuda::std::identity;
-using OffsetT      = unsigned long long;
+struct device_reduce_nd_policy;
+using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
 namespace reduce
@@ -116,7 +116,7 @@ std::string get_device_reduce_nondeterministic_kernel_name(
   cccl_value_t init)
 {
   std::string chained_policy_t;
-  check(cccl_type_name_from_nvrtc<device_reduce_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_reduce_nd_policy>(&chained_policy_t));
 
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
@@ -215,54 +215,37 @@ try
   const auto [output_iterator_name, output_iterator_src] =
     get_specialization<reduce_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
 
-  const auto [op_name, op_src] =
-    get_specialization<reduction_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
+  const auto [op_name, op_src] = get_specialization<reduction_operation_tag>(
+    template_id<binary_user_operation_traits>(), op, accum_t, accum_t, accum_t);
 
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
   const auto policy_sel = [&] {
     using namespace cub::detail;
-
-    auto accum_type = type_t::other;
-    if (accum_t.type == CCCL_FLOAT32)
-    {
-      accum_type = type_t::float32;
-    }
-    else if (accum_t.type == CCCL_FLOAT64)
-    {
-      accum_type = type_t::float64;
-    }
-
-    auto operation_t = op_kind_t::other;
-    switch (op.type)
-    {
-      case CCCL_PLUS:
-        operation_t = op_kind_t::plus;
-        break;
-      case CCCL_MINIMUM:
-        operation_t = op_kind_t::min;
-        break;
-      case CCCL_MAXIMUM:
-        operation_t = op_kind_t::max;
-        break;
-      default:
-        break;
-    }
-
-    const int offset_size = int{sizeof(OffsetT)};
+    const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
+    const auto operation_t = cccl_op_kind_to_cub_op(op.type);
+    const int offset_size  = int{sizeof(OffsetT)};
     return cub::detail::reduce::policy_selector{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
+  }();
+  const auto policy_sel_nd = [&] {
+    using namespace cub::detail;
+    const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
+    const auto operation_t = cccl_op_kind_to_cub_op(op.type);
+    const int offset_size  = int{sizeof(OffsetT)};
+    return reduce_nondeterministic::policy_selector{
+      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
   }();
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
-
-  auto policy_hub_expr =
-    std::format("cub::detail::reduce::policy_selector_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
+  std::stringstream policy_sel_nd_str;
+  policy_sel_nd_str << policy_sel_nd(cuda::compute_capability{cc_major, cc_minor});
 
   std::string final_src = std::format(
     R"XXX(
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_nondeterministic.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 {0}
 struct __align__({2}) storage_t {{
@@ -271,10 +254,16 @@ struct __align__({2}) storage_t {{
 {3}
 {4}
 {5}
-using device_reduce_policy = {6};
+using device_reduce_policy = cub::detail::reduce::policy_selector_from_types<{6}, {7}, {8}>;
 using namespace cub;
 using namespace cub::detail::reduce;
-static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {9},
+              "Host generated and JIT compiled reduce policy mismatch");
+using device_reduce_nd_policy = cub::detail::reduce_nondeterministic::policy_selector_from_types<{6}, {7}, {8}>;
+using namespace cub;
+using namespace cub::detail::reduce_nondeterministic;
+static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
+              "Host generated and JIT compiled reduce nondeterministic policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1
@@ -282,8 +271,11 @@ static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7
     input_iterator_src, // 3
     output_iterator_src, // 4
     op_src, // 5
-    policy_hub_expr, // 6
-    policy_sel_str.view()); // 7
+    accum_cpp, // 6
+    offset_t, // 7
+    op_name, // 8
+    policy_sel_str.view(), // 9
+    policy_sel_nd_str.view()); // 10
 
 #if false // CCCL_DEBUGGING_SWITCH
   fflush(stderr);
@@ -364,13 +356,24 @@ static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7
     check(cuLibraryGetKernel(
       &build->nondeterministic_atomic_kernel, build->library, nondeterministic_kernel_lowered_name.c_str()));
   }
+  else
+  {
+    build->nondeterministic_atomic_kernel = nullptr;
+  }
 
   build->cc               = cc_major * 10 + cc_minor;
   build->cubin            = (void*) result.data.release();
   build->cubin_size       = result.size;
   build->accumulator_size = accum_t.size;
   build->determinism      = determinism;
-  build->runtime_policy   = new cub::detail::reduce::policy_selector{policy_sel};
+  if (build_nondeterministic)
+  {
+    build->runtime_policy = new cub::detail::reduce_nondeterministic::policy_selector{policy_sel_nd};
+  }
+  else
+  {
+    build->runtime_policy = new cub::detail::reduce::policy_selector{policy_sel};
+  }
 
   return CUDA_SUCCESS;
 }
@@ -467,7 +470,7 @@ CUresult cccl_device_reduce_nondeterministic(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::detail::reduce::dispatch_nondeterministic<void>(
+    auto exec_status = cub::detail::reduce_nondeterministic::dispatch<void>(
       d_temp_storage,
       *temp_storage_bytes,
       indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
@@ -477,7 +480,7 @@ CUresult cccl_device_reduce_nondeterministic(
       indirect_arg_t{init},
       stream,
       ::cuda::std::identity{},
-      *static_cast<cub::detail::reduce::policy_selector*>(build.runtime_policy),
+      *static_cast<cub::detail::reduce_nondeterministic::policy_selector*>(build.runtime_policy),
       reduce::reduce_kernel_source{build},
       cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
@@ -508,9 +511,17 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cub::detail::reduce;
   std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<policy_selector> policy(static_cast<policy_selector*>(build_ptr->runtime_policy));
+  std::unique_ptr<cub::detail::reduce::policy_selector> policy;
+  std::unique_ptr<cub::detail::reduce_nondeterministic::policy_selector> policy_nd;
+  if (build_ptr->determinism == CCCL_NOT_GUARANTEED)
+  {
+    policy_nd.reset(static_cast<cub::detail::reduce_nondeterministic::policy_selector*>(build_ptr->runtime_policy));
+  }
+  else
+  {
+    policy.reset(static_cast<cub::detail::reduce::policy_selector*>(build_ptr->runtime_policy));
+  }
   check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;

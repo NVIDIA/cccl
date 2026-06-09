@@ -28,6 +28,7 @@
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
 namespace cuda::experimental::stf
@@ -282,9 +283,10 @@ public:
     return static_cast<char*>(m.base) + offset;
   }
 
-  void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
+    (void) ctx;
     // There should be exactly one entry in the map
     assert(map.count(memory_node) == 1);
     auto& m = map.find(memory_node)->second;
@@ -339,25 +341,25 @@ UNITTEST("buddy allocator meta data")
 
   reserved::buddy_allocator_metadata allocator(1024, prereqs);
 
-  // ::std::cout << "Initial state:" << ::std::endl;
+  // ::std::cout << "Initial state:" << ::'\n';
   // allocator.debug_print();
 
   event_list dummy;
 
   ::std::ptrdiff_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
-  // ::std::cout << "\nAfter allocating 200 bytes:" << ::std::endl;
+  // ::std::cout << "\nAfter allocating 200 bytes:" << ::'\n';
   // allocator.debug_print();
 
   ::std::ptrdiff_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
-  // ::std::cout << "\nAfter allocating 300 bytes:" << ::std::endl;
+  // ::std::cout << "\nAfter allocating 300 bytes:" << ::'\n';
   // allocator.debug_print();
 
   allocator.deallocate(ptr1, 200, dummy); // Free the 200 bytes
-  // ::std::cout << "\nAfter freeing 200 bytes:" << ::std::endl;
+  // ::std::cout << "\nAfter freeing 200 bytes:" << ::'\n';
   // allocator.debug_print();
 
   allocator.deallocate(ptr2, 300, dummy); // Free the 300 bytes
-  // ::std::cout << "\nAfter freeing 300 bytes:" << ::std::endl;
+  // ::std::cout << "\nAfter freeing 300 bytes:" << ::'\n';
   // allocator.debug_print();
 };
 

@@ -1,7 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
 
 #include <look_back_helper.cuh>
@@ -16,67 +15,28 @@
 // %RANGE% TUNE_LOAD ld 0:1:1
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
-struct policy_hub_t
+struct bench_scan_by_key_policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::scan_by_key::scan_by_key_policy
   {
-    using ScanByKeyPolicyT = cub::AgentScanByKeyPolicy<
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      // TODO Tune
-      TUNE_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      TUNE_STORE_ALGORITHM,
-      delay_constructor_t>;
-  };
-
-  using MaxPolicy = policy_t;
+    return {TUNE_THREADS,
+            TUNE_ITEMS,
+            TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+            TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+            TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
+            cub::BLOCK_SCAN_WARP_SCANS,
+            lookback_delay_policy};
+  }
 };
 #endif // !TUNE_BASE
 
 template <typename KeyT, typename ValueT, typename OffsetT>
 static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using init_value_t    = ValueT;
-  using op_t            = ::cuda::std::plus<>;
-  using accum_t         = ::cuda::std::__accumulator_t<op_t, ValueT, init_value_t>;
-  using key_input_it_t  = const KeyT*;
-  using val_input_it_t  = const ValueT*;
-  using val_output_it_t = ValueT*;
-  using equality_op_t   = ::cuda::std::equal_to<>;
-  using offset_t        = cub::detail::choose_offset_t<OffsetT>;
-
-#if !TUNE_BASE
-  using policy_t   = policy_hub_t;
-  using dispatch_t = cub::DispatchScanByKey<
-    key_input_it_t,
-    val_input_it_t,
-    val_output_it_t,
-    equality_op_t,
-    op_t,
-    init_value_t,
-    offset_t,
-    accum_t,
-    policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::
-    DispatchScanByKey<key_input_it_t, val_input_it_t, val_output_it_t, equality_op_t, op_t, init_value_t, offset_t, accum_t>;
-#endif // TUNE_BASE
+  using init_value_t  = ValueT;
+  using op_t          = ::cuda::std::plus<>;
+  using equality_op_t = ::cuda::std::equal_to<>;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
@@ -84,43 +44,36 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
   thrust::device_vector<ValueT> out_vals(elements);
   thrust::device_vector<KeyT> keys = generate.uniform.key_segments(elements, 0, 5200);
 
-  KeyT* d_keys       = thrust::raw_pointer_cast(keys.data());
-  ValueT* d_in_vals  = thrust::raw_pointer_cast(in_vals.data());
-  ValueT* d_out_vals = thrust::raw_pointer_cast(out_vals.data());
+  const KeyT* d_keys      = thrust::raw_pointer_cast(keys.data());
+  const ValueT* d_in_vals = thrust::raw_pointer_cast(in_vals.data());
+  ValueT* d_out_vals      = thrust::raw_pointer_cast(out_vals.data());
 
   state.add_element_count(elements);
   state.add_global_memory_reads<KeyT>(elements);
   state.add_global_memory_reads<ValueT>(elements);
   state.add_global_memory_writes<ValueT>(elements);
 
-  size_t tmp_size;
-  dispatch_t::Dispatch(
-    nullptr,
-    tmp_size,
-    d_keys,
-    d_in_vals,
-    d_out_vals,
-    equality_op_t{},
-    op_t{},
-    init_value_t{},
-    static_cast<int>(elements),
-    0 /* stream */);
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_tmp,
-      tmp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_scan_by_key_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceScan::ExclusiveScanByKey,
+      "ExclusiveScanByKey failed",
       d_keys,
       d_in_vals,
       d_out_vals,
-      equality_op_t{},
       op_t{},
       init_value_t{},
-      static_cast<int>(elements),
-      launch.get_stream());
+      static_cast<OffsetT>(elements),
+      equality_op_t{},
+      env);
   });
 }
 
@@ -140,7 +93,7 @@ using value_types =
                      int16_t,
                      int32_t,
                      int64_t
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
                      ,
                      int128_t
 #  endif

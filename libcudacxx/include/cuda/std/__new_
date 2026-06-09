@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__new/allocate.h>
-#include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/version>

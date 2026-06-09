@@ -3,25 +3,20 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
-// %//RANGE//% TUNE_RADIX_BITS bits 8:9:1
-#define TUNE_RADIX_BITS 8
-
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
-
 #if !TUNE_BASE
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector
 {
   using DominantT = cuda::std::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::detail::radix_sort::radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> ::cub::detail::radix_sort::radix_sort_policy
   {
     const auto onesweep = [] {
       const auto scaled =
         cub::detail::scale_reg_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, sizeof(DominantT));
       return radix_sort_onesweep_policy{
-        scaled.block_threads,
+        scaled.threads_per_block,
         scaled.items_per_thread,
         1,
         ONESWEEP_RADIX_BITS,
@@ -37,7 +32,7 @@ struct policy_selector
 
     const auto scan = [] {
       const auto scaled = cub::detail::scale_mem_bound(512, 23, sizeof(OffsetT));
-      return scan{scaled.block_threads,
+      return scan{scaled.threads_per_block,
                   scaled.items_per_thread,
                   cub::BLOCK_LOAD_WARP_TRANSPOSE,
                   cub::LOAD_DEFAULT,
@@ -52,7 +47,7 @@ struct policy_selector
     const auto single_tile = [] {
       const auto scaled = cub::detail::scale_reg_bound(256, 19, sizeof(DominantT));
       return cub::detail::radix_sort::radix_sort_downsweep_policy{
-        scaled.block_threads,
+        scaled.threads_per_block,
         scaled.items_per_thread,
         single_tile_radix_bits,
         cub::BLOCK_LOAD_DIRECT,
@@ -82,13 +77,33 @@ struct policy_selector
 template <typename KeyT, typename ValueT, typename OffsetT, cub::SortOrder SortOrder>
 constexpr std::size_t max_onesweep_temp_storage_size()
 {
-  using portion_offset  = int;
-  using onesweep_policy = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t::OnesweepPolicy;
-  using agent_radix_sort_onesweep_t =
-    cub::AgentRadixSortOnesweep<onesweep_policy, SortOrder, KeyT, ValueT, OffsetT, portion_offset>;
+  using portion_offset = int;
 
-  using hist_policy = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t::HistogramPolicy;
-  using hist_agent  = cub::AgentRadixSortHistogram<hist_policy, SortOrder, KeyT, OffsetT>;
+  constexpr auto active_policy = policy_selector<KeyT, ValueT, OffsetT>{}(cuda::compute_capability{});
+
+  constexpr auto onesweep = active_policy.onesweep;
+  using onesweep_policy_t = AgentRadixSortOnesweepPolicy<
+    0,
+    0,
+    void,
+    onesweep.rank_num_parts,
+    onesweep.rank_algorith,
+    onesweep.scan_algorithm,
+    onesweep.store_algorithm,
+    onesweep.radix_bits,
+    NoScaling<onesweep.block_threads, onesweep.items_per_thread>>;
+
+  using agent_radix_sort_onesweep_t =
+    cub::AgentRadixSortOnesweep<onesweep_policy_t, SortOrder, KeyT, ValueT, OffsetT, portion_offset>;
+
+  constexpr auto histogram = active_policy.histogram;
+  using histogram_policy_t =
+    AgentRadixSortHistogramPolicy<histogram.block_threads,
+                                  histogram.items_per_thread,
+                                  histogram.num_parts,
+                                  void,
+                                  histogram.radix_bits>;
+  using hist_agent = cub::AgentRadixSortHistogram<histogram_policy_t, SortOrder, KeyT, OffsetT>;
 
   return cuda::std::max(sizeof(typename agent_radix_sort_onesweep_t::TempStorage),
                         sizeof(typename hist_agent::TempStorage));
@@ -97,10 +112,10 @@ constexpr std::size_t max_onesweep_temp_storage_size()
 template <typename KeyT, typename ValueT, typename OffsetT, cub::SortOrder SortOrder>
 constexpr std::size_t max_temp_storage_size()
 {
-  using policy_t = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t;
-
-  static_assert(policy_t::ONESWEEP);
-  return max_onesweep_temp_storage_size<KeyT, ValueT, OffsetT, SortOrder>();
+  using offset_t               = cub::detail::choose_offset_t<OffsetT>;
+  constexpr auto active_policy = policy_selector<KeyT, ValueT, offset_t>{}(cuda::compute_capability{});
+  static_assert(active_policy.use_onesweep);
+  return max_onesweep_temp_storage_size<KeyT, ValueT, offset_t, SortOrder>();
 }
 
 template <typename KeyT, typename ValueT, typename OffsetT, cub::SortOrder SortOrder>

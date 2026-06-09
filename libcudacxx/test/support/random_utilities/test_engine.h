@@ -7,19 +7,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#if !_CCCL_COMPILER(NVRTC)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/random>
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include "test_macros.h"
 
 template <typename Engine>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_ctor()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_ctor()
 {
   Engine e1;
   Engine e2(Engine::default_seed);
@@ -36,7 +33,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_ctor()
 }
 
 template <typename Engine>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_copy()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_copy()
 {
   Engine e1;
   Engine e2 = e1;
@@ -53,7 +50,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_copy()
 }
 
 template <typename Engine>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_seed()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_seed()
 {
   Engine e1(23);
   Engine e2;
@@ -72,7 +69,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_seed()
 }
 
 template <typename Engine>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_operator()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_operator()
 {
   Engine e1;
   static_assert(cuda::std::is_same_v<decltype(e1()), typename Engine::result_type>);
@@ -85,7 +82,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_operator()
 }
 
 template <typename Engine, typename Engine::result_type value_10000>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_discard()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_discard()
 {
   Engine e;
   for (int i = 0; i < 100; ++i)
@@ -107,7 +104,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_discard()
 }
 
 template <typename Engine>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_equality()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_equality()
 {
   Engine e;
   assert(e == e);
@@ -127,7 +124,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_equality()
 }
 
 template <typename Engine>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_min_max()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_min_max()
 {
   const auto seeds = {0, 29332, 9000};
   for (auto seed : seeds)
@@ -152,8 +149,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_min_max()
   return true;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <sstream>
+#if _CCCL_HOSTED()
 template <typename Engine>
 void test_save_restore()
 {
@@ -168,10 +164,10 @@ void test_save_restore()
   e1.discard(10000);
   assert(e0() == e1());
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <typename Engine, typename Engine::result_type value_10000>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_engine()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_engine()
 {
   test_ctor<Engine>();
   test_seed<Engine>();

@@ -68,7 +68,7 @@ using device_t = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t
 //! template<typename Iterator, typename Function>
 //! Iterator for_each(my_policy, Iterator first, Iterator last, Function f)
 //! {
-//!   std::cout << "Hello, world from for_each(my_policy)!" << std::endl;
+//!   std::cout << "Hello, world from for_each(my_policy)!" << '\n';
 //!
 //!   for(; first < last; ++first)
 //!   {
@@ -125,7 +125,7 @@ struct host_execution_policy : thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::e
 //! template<typename Iterator, typename Function>
 //! Iterator for_each(my_policy, Iterator first, Iterator last, Function f)
 //! {
-//!   std::cout << "Hello, world from for_each(my_policy)!" << std::endl;
+//!   std::cout << "Hello, world from for_each(my_policy)!" << '\n';
 //!
 //!   for(; first < last; ++first)
 //!   {

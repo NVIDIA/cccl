@@ -23,7 +23,9 @@
 
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__fwd/format.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__utility/to_underlying.h>
+#include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -32,15 +34,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Type representing the CUDA compute capability.
 class compute_capability
 {
+public:
   int __cc_{}; //!< The stored compute capability in format 10 * major + minor.
 
-public:
   _CCCL_HIDE_FROM_ABI constexpr compute_capability() noexcept = default;
 
   //! @brief Constructs the object from compute capability \c __cc. The expected format is 10 * major + minor.
   //!
   //! @param __cc Compute capability.
-  _CCCL_API explicit constexpr compute_capability(int __cc) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr compute_capability(int __cc) noexcept
       : __cc_{__cc}
   {}
 
@@ -48,7 +50,7 @@ public:
   //!
   //! @param __major The major compute capability.
   //! @param __minor The minor compute capability. Must be less than 10.
-  _CCCL_API constexpr compute_capability(int __major, int __minor) noexcept
+  _CCCL_HOST_DEVICE_API constexpr compute_capability(int __major, int __minor) noexcept
       : __cc_{10 * __major + __minor}
   {
     _CCCL_ASSERT(__minor < 10, "invalid minor compute capability");
@@ -57,7 +59,7 @@ public:
   //! @brief Constructs the object from the architecture id.
   //!
   //! @param __arch_id The architecture id.
-  _CCCL_API explicit constexpr compute_capability(arch_id __arch_id) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr compute_capability(arch_id __arch_id) noexcept
   {
     const auto __val = ::cuda::std::to_underlying(__arch_id);
     if (__val > __arch_specific_id_multiplier)
@@ -77,7 +79,7 @@ public:
   //! @brief Gets the stored compute capability.
   //!
   //! @return The stored compute capability in format 10 * major + minor.
-  [[nodiscard]] _CCCL_API constexpr int get() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int get() const noexcept
   {
     return __cc_;
   }
@@ -91,7 +93,7 @@ public:
   [[nodiscard]]
   CCCL_DEPRECATED_BECAUSE("This symbol is deprecated because it collides with major(...) macro defined in "
                           "<sys/sysmacros.h> and will be removed in next major release. Use cc.major_cap() instead.")
-  _CCCL_API constexpr int major() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr int major() const noexcept
   {
     return major_cap();
   }
@@ -99,7 +101,7 @@ public:
   //! @brief Gets the major compute capability.
   //!
   //! @return Major compute capability.
-  [[nodiscard]] _CCCL_API constexpr int major_cap() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int major_cap() const noexcept
   {
     return __cc_ / 10;
   }
@@ -113,7 +115,7 @@ public:
   [[nodiscard]]
   CCCL_DEPRECATED_BECAUSE("This symbol is deprecated because it collides with minor(...) macro defined in "
                           "<sys/sysmacros.h> and will be removed in next major release. Use cc.minor_cap() instead.")
-  _CCCL_API constexpr int minor() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr int minor() const noexcept
   {
     return minor_cap();
   }
@@ -121,7 +123,7 @@ public:
   //! @brief Gets the minor compute capability.
   //!
   //! @return Minor compute capability. The value is always less than 10.
-  [[nodiscard]] _CCCL_API constexpr int minor_cap() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int minor_cap() const noexcept
   {
     return __cc_ % 10;
   }
@@ -129,47 +131,92 @@ public:
   //! @brief Conversion operator to \c int.
   //!
   //! @return The stored compute capability in format 10 * major + minor.
-  _CCCL_API explicit constexpr operator int() const noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr operator int() const noexcept
   {
     return __cc_;
   }
 
   //! @brief Equality operator.
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ == __rhs.__cc_;
   }
 
   //! @brief Inequality operator.
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ != __rhs.__cc_;
   }
 
   //! @brief Less than operator.
-  [[nodiscard]] _CCCL_API friend constexpr bool operator<(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator<(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ < __rhs.__cc_;
   }
 
   //! @brief Less than or equal to operator.
-  [[nodiscard]] _CCCL_API friend constexpr bool operator<=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator<=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ <= __rhs.__cc_;
   }
 
   //! @brief Greater than operator.
-  [[nodiscard]] _CCCL_API friend constexpr bool operator>(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator>(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ > __rhs.__cc_;
   }
 
   //! @brief Greater than or equal to operator.
-  [[nodiscard]] _CCCL_API friend constexpr bool operator>=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator>=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ >= __rhs.__cc_;
   }
 };
+
+template <int... _Vs>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __make_all_compute_capabilities() noexcept
+{
+  return ::cuda::std::array{compute_capability{_Vs}...};
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __all_compute_capabilities() noexcept
+{
+  return ::cuda::__make_all_compute_capabilities<_CCCL_KNOWN_CUDA_ARCH_LIST>();
+}
+
+#if _CCCL_CUDA_COMPILATION()
+template <int... _Vs>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __make_cc_list() noexcept
+{
+#  if defined(__CUDA_ARCH_LIST__)
+  return ::cuda::std::array{compute_capability{_Vs / 10}...};
+#  elif defined(NV_TARGET_SM_INTEGER_LIST)
+  return ::cuda::std::array{compute_capability{_Vs}...};
+#  else // ^^^ has arch list ^^^ / vvv no arch list vvv
+  static_assert(::cuda::std::__always_false_v<decltype(sizeof...(_Vs))>,
+                "This function can be instantiated only when __CUDA_ARCH_LIST__ or NV_TARGET_SM_INTEGER_LIST are "
+                "defined");
+#  endif // ^^^ no arch list ^^^
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __target_compute_capabilities() noexcept
+{
+#  if defined(__CUDA_ARCH_LIST__)
+  return ::cuda::__make_cc_list<__CUDA_ARCH_LIST__>();
+#  elif defined(NV_TARGET_SM_INTEGER_LIST)
+  return ::cuda::__make_cc_list<NV_TARGET_SM_INTEGER_LIST>();
+#  else // ^^^ has arch list ^^^ / vvv no arch list vvv
+  // Fallback to a list of all compute capabilities.
+  return ::cuda::__all_compute_capabilities();
+#  endif // ^^^ no arch list ^^^
+}
+#endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_END_NAMESPACE_CUDA
 

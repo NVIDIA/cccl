@@ -1,3 +1,8 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 # distutils: language = c++
 # cython: language_level=3
 # cython: linetrace=True
@@ -8,6 +13,7 @@
 
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
+from libc.stdlib cimport malloc, free
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 from cpython.buffer cimport (
@@ -29,6 +35,13 @@ cdef extern from "<cuda.h>":
     ctypedef OpaqueCUstream_st *CUstream
     ctypedef OpaqueCUkernel_st *CUkernel
     ctypedef OpaqueCUlibrary_st *CUlibrary
+
+
+# Backend-conditional cccl_op_code_type enum + _parse_code_type helper.
+# CMake configures the v1 or v2 variant of `_bindings_op_code_type.pxi` into
+# the build dir. v2 declares the extra CCCL_OP_LLVM_IR value that v1's
+# types.h does not define.
+include "_bindings_op_code_type.pxi"
 
 
 cdef extern from "cccl/c/types.h":
@@ -82,10 +95,6 @@ cdef extern from "cccl/c/types.h":
         size_t alignment
         cccl_type_enum type
 
-    cdef enum cccl_op_code_type:
-        CCCL_OP_LTOIR
-        CCCL_OP_CPP_SOURCE
-
     cdef struct cccl_op_t:
         cccl_op_kind_t type
         const char* name
@@ -95,6 +104,10 @@ cdef extern from "cccl/c/types.h":
         size_t size
         size_t alignment
         void *state
+        const char** extra_ltoirs
+        size_t* extra_ltoir_sizes
+        size_t num_extra_ltoirs
+        cccl_op_code_type* extra_code_types
 
     cdef struct cccl_value_t:
         cccl_type_info type
@@ -187,32 +200,68 @@ cdef class Op:
             State for the stateful operation.
         state_alignment (int, optional):
             Alignment of the state struct. Default: `1`.
+        extra_ltoirs (list of bytes, optional):
+            Additional LTOIR modules to link with this operation.
     """
     # need Python owner of memory used for operator name
     cdef bytes op_encoded_name
     cdef bytes code_bytes
     cdef bytes state_bytes
+    cdef list extra_ltoirs_list  # Python list to keep bytes alive
+    cdef list extra_code_types_list  # Python list of code_type strings; kept alive in parallel with extra_ltoirs_list
+    cdef const char** extra_ltoirs_ptrs
+    cdef size_t* extra_ltoir_sizes_arr
+    cdef cccl_op_code_type* extra_code_types_arr
     cdef cccl_op_t op_data
 
 
-    cdef void _set_members(self, cccl_op_kind_t op_type, str name, bytes lto_ir, bytes state, int state_alignment):
+    cdef void _set_members(self, cccl_op_kind_t op_type, str name, bytes code_bytes, str code_kind, bytes state, int state_alignment, list extra_bytes, list extra_kinds):
         memset(&self.op_data, 0, sizeof(cccl_op_t))
-        # Reference Python objects in the class to ensure lifetime
+        # Reference Python objects in the class to ensure lifetime.
         self.op_encoded_name = name.encode("utf-8")
-        self.code_bytes = lto_ir
+        self.code_bytes = code_bytes
         self.state_bytes = state
+        self.extra_ltoirs_list = extra_bytes
+        self.extra_code_types_list = extra_kinds
         # set fields of op_data struct
         self.op_data.type = op_type
         self.op_data.name = <const char *>self.op_encoded_name
-        self.op_data.code = <const char *>lto_ir
-        self.op_data.code_size = len(lto_ir)
-        self.op_data.code_type = cccl_op_code_type.CCCL_OP_LTOIR
+        self.op_data.code = <const char *>code_bytes
+        self.op_data.code_size = len(code_bytes)
+        self.op_data.code_type = _parse_code_type(code_kind)
         self.op_data.size = len(state)
         self.op_data.alignment = state_alignment
         self.op_data.state = <void *><const char *>state
 
+        # Handle extras (parallel arrays on the C side).
+        cdef size_t num_extra = len(extra_bytes)
+        if num_extra > 0:
+            self.extra_ltoirs_ptrs = <const char**>malloc(num_extra * sizeof(const char*))
+            self.extra_ltoir_sizes_arr = <size_t*>malloc(num_extra * sizeof(size_t))
+            self.extra_code_types_arr = <cccl_op_code_type*>malloc(num_extra * sizeof(cccl_op_code_type))
+            for i in range(num_extra):
+                eb = <bytes>extra_bytes[i]
+                self.extra_ltoirs_ptrs[i] = <const char*>eb
+                self.extra_ltoir_sizes_arr[i] = len(eb)
+                self.extra_code_types_arr[i] = _parse_code_type(extra_kinds[i])
+            self.op_data.extra_ltoirs = self.extra_ltoirs_ptrs
+            self.op_data.extra_ltoir_sizes = self.extra_ltoir_sizes_arr
+            self.op_data.extra_code_types = self.extra_code_types_arr
+            self.op_data.num_extra_ltoirs = num_extra
+        else:
+            self.extra_ltoirs_ptrs = NULL
+            self.extra_ltoir_sizes_arr = NULL
+            self.extra_code_types_arr = NULL
+            self.op_data.extra_ltoirs = NULL
+            self.op_data.extra_ltoir_sizes = NULL
+            self.op_data.extra_code_types = NULL
+            self.op_data.num_extra_ltoirs = 0
 
-    def __cinit__(self, /, *, name = None, operator_type = None, ltoir = None, state = None, state_alignment = 1):
+
+    def __cinit__(self, /, *, name = None, operator_type = None, ltoir = None, state = None, state_alignment = 1, extra_ltoirs = None):
+        # ltoir accepts either raw `bytes` (legacy — treated as LTO-IR) or a
+        # DeviceCode instance (carries its own format tag via .kind / .op_bytes).
+        # extra_ltoirs accepts a list of either form, mixable.
         if name is None and ltoir is None:
             name = ""
             ltoir = b""
@@ -220,23 +269,80 @@ cdef class Op:
             state = b""
         if operator_type is None:
             operator_type = OpKind.STATELESS
+        if extra_ltoirs is None:
+            extra_ltoirs = []
         arg_type_check(arg_name="name", expected_type=str, arg=name)
-        arg_type_check(arg_name="ltoir", expected_type=bytes, arg=ltoir)
         arg_type_check(arg_name="state", expected_type=bytes, arg=state)
         arg_type_check(arg_name="state_alignment", expected_type=int, arg=state_alignment)
+        arg_type_check(arg_name="extra_ltoirs", expected_type=list, arg=extra_ltoirs)
         if not isinstance(operator_type, OpKind):
             raise TypeError(
                 f"The operator_type argument should be an enumerator of operator kinds"
             )
+
+        # Unpack ltoir → (bytes, kind). DeviceCode duck-typed via attributes
+        # to avoid importing it here.
+        cdef bytes code_bytes
+        cdef str code_kind
+        if isinstance(ltoir, bytes):
+            code_bytes = <bytes>ltoir
+            code_kind = "ltoir"
+        elif hasattr(ltoir, "op_bytes") and hasattr(ltoir, "kind"):
+            if not isinstance(ltoir.op_bytes, bytes) or not isinstance(ltoir.kind, str):
+                raise TypeError(
+                    f"DeviceCode.op_bytes must be bytes and .kind must be str; "
+                    f"got {type(ltoir.op_bytes)} and {type(ltoir.kind)}"
+                )
+            code_bytes = <bytes>ltoir.op_bytes
+            code_kind = <str>ltoir.kind
+        else:
+            raise TypeError(
+                f"ltoir must be bytes or DeviceCode-like (with op_bytes and kind "
+                f"attributes); got {type(ltoir)}"
+            )
+
+        # Unpack each extra entry the same way.
+        extra_bytes = []
+        extra_kinds = []
+        for i, el in enumerate(extra_ltoirs):
+            if isinstance(el, bytes):
+                extra_bytes.append(el)
+                extra_kinds.append("ltoir")
+            elif hasattr(el, "op_bytes") and hasattr(el, "kind"):
+                if not isinstance(el.op_bytes, bytes) or not isinstance(el.kind, str):
+                    raise TypeError(
+                        f"extra_ltoirs[{i}].op_bytes must be bytes and .kind must be str; "
+                        f"got {type(el.op_bytes)} and {type(el.kind)}"
+                    )
+                extra_bytes.append(el.op_bytes)
+                extra_kinds.append(el.kind)
+            else:
+                raise TypeError(
+                    f"extra_ltoirs[{i}] must be bytes or DeviceCode-like; got {type(el)}"
+                )
+
         _validate_alignment(state_alignment)
         self._set_members(
             <cccl_op_kind_t> operator_type.value,
             <str> name,
-            <bytes> ltoir,
+            code_bytes,
+            code_kind,
             <bytes> state,
-            <int> state_alignment
+            <int> state_alignment,
+            <list> extra_bytes,
+            <list> extra_kinds,
         )
 
+    def __dealloc__(self):
+        if self.extra_ltoirs_ptrs != NULL:
+            free(self.extra_ltoirs_ptrs)
+            self.extra_ltoirs_ptrs = NULL
+        if self.extra_ltoir_sizes_arr != NULL:
+            free(self.extra_ltoir_sizes_arr)
+            self.extra_ltoir_sizes_arr = NULL
+        if self.extra_code_types_arr != NULL:
+            free(self.extra_code_types_arr)
+            self.extra_code_types_arr = NULL
 
     cdef void set_state(self, bytes state):
         self.state_bytes = state
@@ -260,22 +366,37 @@ cdef class Op:
         return self.code_bytes
 
     @property
-    def code(self):
-        return self.code_bytes
-
-    @property
     def state_alignment(self):
         return self.op_data.alignment
 
     @property
-    def state_typenum(self):
-        return self.op_data.type
+    def code(self):
+        """Return a DeviceCode wrapping this op's main code blob + its kind."""
+        from cuda.compute._device_code import DeviceCode
+        return DeviceCode(op_bytes=self.code_bytes, kind=self._code_kind())
 
-    def as_bytes(self):
-        "Debugging utility to view memory content of library struct"
-        cdef uint8_t[:] mem_view = bytearray(sizeof(self.op_data))
-        memcpy(&mem_view[0], &self.op_data, sizeof(self.op_data))
-        return bytes(mem_view)
+    @property
+    def extra_code(self):
+        """Return DeviceCode instances for each extra blob."""
+        from cuda.compute._device_code import DeviceCode
+        return [
+            DeviceCode(op_bytes=b, kind=k)
+            for b, k in zip(self.extra_ltoirs_list, self.extra_code_types_list)
+        ]
+
+    cdef str _code_kind(self):
+        cdef cccl_op_code_type t = self.op_data.code_type
+        if t == CCCL_OP_LTOIR:
+            return "ltoir"
+        if t == CCCL_OP_CPP_SOURCE:
+            return "cpp_source"
+        # CCCL_OP_LLVM_IR is only defined on the v2 build; _parse_code_type
+        # maps "llvm_ir" to CCCL_OP_LTOIR on v1, so we must test CCCL_OP_LTOIR
+        # first (above) before reaching here.
+        if t == _parse_code_type("llvm_ir"):
+            return "llvm_ir"
+        return "ltoir"
+
 
 
 cdef class TypeInfo:
@@ -926,7 +1047,7 @@ cdef class DeviceReduceBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during reduce result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -960,7 +1081,7 @@ cdef class DeviceReduceBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_nondeterministic(
+    cpdef size_t compute_nondeterministic(
         DeviceReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1135,7 +1256,7 @@ cdef class DeviceScanBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during scan result cleanup")
 
-    cpdef int compute_inclusive(
+    cpdef size_t compute_inclusive(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1169,7 +1290,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_exclusive(
+    cpdef size_t compute_exclusive(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1203,7 +1324,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_inclusive_future_value(
+    cpdef size_t compute_inclusive_future_value(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1237,7 +1358,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_exclusive_future_value(
+    cpdef size_t compute_exclusive_future_value(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1271,7 +1392,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_inclusive_no_init(
+    cpdef size_t compute_inclusive_no_init(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1331,23 +1452,16 @@ cdef extern from "cccl/c/segmented_reduce.h":
         int, int, const char*, const char*, const char*, const char*
     ) nogil
 
-    cdef CUresult cccl_device_segmented_reduce(
-        cccl_device_segmented_reduce_build_result_t,
-        void *,
-        size_t *,
-        cccl_iterator_t,
-        cccl_iterator_t,
-        uint64_t,
-        cccl_iterator_t,
-        cccl_iterator_t,
-        cccl_op_t,
-        cccl_value_t,
-        CUstream
-    ) nogil
-
     cdef CUresult cccl_device_segmented_reduce_cleanup(
         cccl_device_segmented_reduce_build_result_t* bld_ptr
     ) nogil
+
+
+# v1 and v2 disagree on whether `cccl_device_segmented_reduce` takes a
+# `size_t max_segment_size` argument. The .pxi pulled in here declares the
+# extern and a uniform `_call_segmented_reduce()` helper that hides the
+# difference; CMake configure_file picks the right backend variant.
+include "_bindings_segmented_reduce_backend.pxi"
 
 
 cdef class DeviceSegmentedReduceBuildResult:
@@ -1400,7 +1514,7 @@ cdef class DeviceSegmentedReduceBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during segmented_reduce result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceSegmentedReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1411,7 +1525,8 @@ cdef class DeviceSegmentedReduceBuildResult:
         Iterator end_offsets,
         Op op,
         Value h_init,
-        stream
+        size_t max_segment_size=0,  # accepted for v1 API compat; v2 ignores
+        stream=None
     ):
         cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
@@ -1419,7 +1534,7 @@ cdef class DeviceSegmentedReduceBuildResult:
         cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
-            status = cccl_device_segmented_reduce(
+            status = _call_segmented_reduce(
                 self.build_data,
                 storage_ptr,
                 &storage_sz,
@@ -1430,7 +1545,8 @@ cdef class DeviceSegmentedReduceBuildResult:
                 end_offsets.iter_data,
                 op.op_data,
                 h_init.value_data,
-                c_stream
+                max_segment_size,
+                c_stream,
             )
         if status != 0:
             raise RuntimeError(
@@ -1530,7 +1646,7 @@ cdef class DeviceMergeSortBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during merge_sort result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceMergeSortBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1663,7 +1779,7 @@ cdef class DeviceUniqueByKeyBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during unique_by_key result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceUniqueByKeyBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -2145,7 +2261,7 @@ cdef class DeviceHistogramBuildResult:
                 f"Failed building histogram, error code: {status}"
             )
 
-    cpdef int compute_even(
+    cpdef size_t compute_even(
         DeviceHistogramBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -2196,13 +2312,10 @@ cdef class DeviceHistogramBuildResult:
 # -------------------
 #   DeviceBinarySearch
 # -------------------
+# Backend-specific struct decl + cubin-extract helper.
+include "_bindings_binary_search_backend.pxi"
+
 cdef extern from "cccl/c/binary_search.h":
-    cdef struct cccl_device_binary_search_build_result_t 'cccl_device_binary_search_build_result_t':
-        int cc
-        void* cubin
-        size_t cubin_size
-        CUlibrary library
-        CUkernel kernel
 
     cdef CUresult cccl_device_binary_search_build(
         cccl_device_binary_search_build_result_t*,
@@ -2308,10 +2421,7 @@ cdef class DeviceBinarySearchBuildResult:
             )
 
     def _get_cubin(self):
-        return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
-        )
+        return _binary_search_cubin_bytes(&self.build_data)
 
 
 # ----------------------------------
@@ -2407,7 +2517,7 @@ cdef class DeviceThreeWayPartitionBuildResult:
                 f"Failed building three_way_partition, error code: {status}"
             )
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceThreeWayPartitionBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,

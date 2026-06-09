@@ -29,10 +29,10 @@ class tagged_allocator<void, Tag, Pointer>
 {
 public:
   using value_type      = void;
-  using pointer         = typename thrust::detail::pointer_traits<Pointer>::template rebind<void>::other;
-  using const_pointer   = typename thrust::detail::pointer_traits<Pointer>::template rebind<const void>::other;
+  using pointer         = typename ::cuda::std::pointer_traits<Pointer>::template rebind<void>;
+  using const_pointer   = typename ::cuda::std::pointer_traits<Pointer>::template rebind<const void>;
   using size_type       = std::size_t;
-  using difference_type = typename thrust::detail::pointer_traits<Pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<Pointer>::difference_type;
   using system_type     = Tag;
 
   template <typename U>
@@ -47,12 +47,12 @@ class tagged_allocator
 {
 public:
   using value_type      = T;
-  using pointer         = typename thrust::detail::pointer_traits<Pointer>::template rebind<T>::other;
-  using const_pointer   = typename thrust::detail::pointer_traits<Pointer>::template rebind<const T>::other;
+  using pointer         = typename ::cuda::std::pointer_traits<Pointer>::template rebind<T>;
+  using const_pointer   = typename ::cuda::std::pointer_traits<Pointer>::template rebind<const T>;
   using reference       = thrust::detail::it_reference_t<pointer>;
   using const_reference = thrust::detail::it_reference_t<const_pointer>;
   using size_type       = std::size_t;
-  using difference_type = typename thrust::detail::pointer_traits<pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
   using system_type     = Tag;
 
   template <typename U>

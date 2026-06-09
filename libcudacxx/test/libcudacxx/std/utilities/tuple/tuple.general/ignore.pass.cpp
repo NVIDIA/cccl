@@ -17,16 +17,15 @@
 #include "test_macros.h"
 
 static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::ignore)>::value
-                && cuda::std::is_empty<decltype(cuda::std::ignore)>::value,
-              "");
+              && cuda::std::is_empty<decltype(cuda::std::ignore)>::value);
 
 // constexpr variables are unavailable before 11.3
-[[nodiscard]] __host__ __device__ constexpr int test_nodiscard()
+[[nodiscard]] TEST_FUNC constexpr int test_nodiscard()
 {
   return 8294;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     auto& ignore_v = cuda::std::ignore;
@@ -35,9 +34,10 @@ __host__ __device__ constexpr bool test()
 
   { // Test that cuda::std::ignore provides converting assignment.
     auto& res = (cuda::std::ignore = 42);
-    static_assert(noexcept(res = (cuda::std::ignore = 42)), "");
+    static_assert(noexcept(res = (cuda::std::ignore = 42)));
     assert(&res == &cuda::std::ignore);
   }
+#if !_CCCL_TILE_COMPILATION() // bit field read/write is unsupported in tile code
   { // Test bit-field binding.
     struct S
     {
@@ -47,6 +47,7 @@ __host__ __device__ constexpr bool test()
     auto& res = (cuda::std::ignore = s.bf);
     assert(&res == &cuda::std::ignore);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // Test that cuda::std::ignore provides constexpr copy/move constructors
     auto copy  = cuda::std::ignore;
     auto moved = cuda::std::move(copy);
@@ -70,7 +71,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

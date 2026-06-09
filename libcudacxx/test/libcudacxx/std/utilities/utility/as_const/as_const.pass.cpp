@@ -19,32 +19,28 @@ struct S
 {
   int i;
 };
-__host__ __device__ bool operator==(const S& x, const S& y)
+TEST_FUNC bool operator==(const S& x, const S& y)
 {
   return x.i == y.i;
 }
-__host__ __device__ bool operator==(const volatile S& x, const volatile S& y)
+TEST_FUNC bool operator==(const volatile S& x, const volatile S& y)
 {
   return x.i == y.i;
 }
 
 template <typename T>
-__host__ __device__ void test(T& t)
+TEST_FUNC void test(T& t)
 {
   static_assert(
-    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const(t))>::type>::value, "");
+    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const(t))>::type>::value);
   static_assert(
-    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<T>(t))>::type>::value, "");
+    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<T>(t))>::type>::value);
   static_assert(
-    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<const T>(t))>::type>::value,
-    "");
+    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<const T>(t))>::type>::value);
   static_assert(
-    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<volatile T>(t))>::type>::value,
-    "");
-  static_assert(
-    cuda::std::is_const<
-      typename cuda::std::remove_reference<decltype(cuda::std::as_const<const volatile T>(t))>::type>::value,
-    "");
+    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<volatile T>(t))>::type>::value);
+  static_assert(cuda::std::is_const<
+                typename cuda::std::remove_reference<decltype(cuda::std::as_const<const volatile T>(t))>::type>::value);
 
   assert(cuda::std::as_const(t) == t);
   assert(cuda::std::as_const<T>(t) == t);

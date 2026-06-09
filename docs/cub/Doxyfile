@@ -18,7 +18,7 @@ INPUT                  = ../../cub/cub \
                          ../../cub/cub/iterator
 
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */detail/* */test/* */examples/*
+EXCLUDE_PATTERNS       = */detail/* */dispatch/* */kernels/* */test/* */examples/*
 EXCLUDE_SYMBOLS        = *detail* CUB_DETAIL*
 
 FILE_PATTERNS          = *.cuh *.h
@@ -137,6 +137,7 @@ PREDEFINED             = __device__= \
                         _CCCL_TYPE_VISIBILITY_DEFAULT= \
                         _CCCL_TYPE_VISIBILITY_HIDDEN= \
                         _CCCL_API=inline \
+                        _CCCL_HOST_DEVICE_API=inline \
                         _CCCL_DEVICE_API=inline \
                         _CCCL_HOST_API=inline \
                         _CCCL_NODEBUG_API=inline \
@@ -170,7 +171,9 @@ PREDEFINED             = __device__= \
 
 # Quiet mode
 QUIET                  = YES
-WARNINGS               = NO
+WARNINGS               = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
 WARN_IF_UNDOCUMENTED   = NO
 WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = NO
 WARN_NO_PARAMDOC       = NO

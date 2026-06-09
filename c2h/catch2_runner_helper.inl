@@ -15,13 +15,13 @@ int device_guard(int device_id)
   int device_count{};
   if (cudaGetDeviceCount(&device_count) != cudaSuccess)
   {
-    std::cerr << "Failed getting number of devices" << std::endl;
+    std::cerr << "Failed getting number of devices" << '\n';
     std::exit(-1);
   }
 
   if (device_id >= device_count || device_id < 0)
   {
-    std::cerr << "Invalid device ID: " << device_id << std::endl;
+    std::cerr << "Invalid device ID: " << device_id << '\n';
     std::exit(-1);
   }
 
@@ -32,7 +32,7 @@ void set_device(int device_id)
 {
   if (cudaSetDevice(device_guard(device_id)) != cudaSuccess)
   {
-    std::cerr << "Failed to set device ID: " << device_id << std::endl;
+    std::cerr << "Failed to set device ID: " << device_id << '\n';
     std::exit(-1);
   }
 }

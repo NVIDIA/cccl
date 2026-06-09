@@ -25,12 +25,12 @@ upper_level = np.float32(12)
 
 # Perform the histogram even.
 cuda.compute.histogram_even(
-    d_samples,
-    d_histogram,
-    num_levels,
-    lower_level,
-    upper_level,
-    num_samples,
+    d_samples=d_samples,
+    d_histogram=d_histogram,
+    num_output_levels=num_levels,
+    lower_level=lower_level,
+    upper_level=upper_level,
+    num_samples=num_samples,
 )
 
 # Verify the result.

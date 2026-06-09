@@ -1,6 +1,8 @@
 #include <thrust/extrema.h>
 #include <thrust/iterator/retag.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <class Vector>
@@ -124,3 +126,11 @@ void TestMinMaxElementWithBigIndexes()
 #endif
 }
 DECLARE_UNITTEST(TestMinMaxElementWithBigIndexes);
+
+void TestMinElementCudaIterator()
+{
+  auto result = thrust::minmax_element(thrust::device, cuda::counting_iterator{0}, cuda::counting_iterator{0} + 100);
+  ASSERT_EQUAL(*result.first, 0);
+  ASSERT_EQUAL(*result.second, 99);
+}
+DECLARE_UNITTEST(TestMinElementCudaIterator);

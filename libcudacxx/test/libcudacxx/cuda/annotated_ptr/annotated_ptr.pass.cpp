@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include "utils.h"
 
 static_assert(sizeof(cuda::annotated_ptr<int, cuda::access_property::global>) == sizeof(uintptr_t),
@@ -54,7 +57,7 @@ static_assert(alignof(cuda::annotated_ptr<int, cuda::access_property::shared>) =
 struct S
 {
   int x;
-  __host__ __device__ S& operator=(int o)
+  TEST_FUNC S& operator=(int o)
   {
     this->x = o;
     return *this;
@@ -62,7 +65,7 @@ struct S
 };
 
 template <typename In, typename T>
-__device__ __host__ __noinline__ void test_read_access(In i, T* r)
+TEST_FUNC __noinline__ void test_read_access(In i, T* r)
 {
   assert(i);
   assert(i - i == 0);
@@ -83,7 +86,7 @@ __device__ __host__ __noinline__ void test_read_access(In i, T* r)
 }
 
 template <typename In>
-__device__ __host__ __noinline__ void test_write_access(In i)
+TEST_FUNC __noinline__ void test_write_access(In i)
 {
   assert(i);
   assert((bool) i);
@@ -103,7 +106,7 @@ __device__ __host__ __noinline__ void test_write_access(In i)
   }
 }
 
-__device__ __host__ __noinline__ void all_tests()
+TEST_FUNC __noinline__ void all_tests()
 {
   S* arr = global_alloc<S, N>();
 

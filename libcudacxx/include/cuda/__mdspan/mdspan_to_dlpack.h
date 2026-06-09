@@ -28,6 +28,7 @@
 #  include <cuda/__type_traits/is_floating_point.h>
 #  include <cuda/__type_traits/is_vector_type.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__fwd/complex.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
@@ -189,11 +190,11 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
     {
       if (::cuda::std::cmp_greater(__mdspan.extent(__i), __max_extent))
       {
-        _CCCL_THROW(std::invalid_argument, "Extent is too large");
+        _CCCL_THROW(::std::invalid_argument, "Extent is too large");
       }
       if (::cuda::std::cmp_greater(__mdspan.stride(__i), __max_extent))
       {
-        _CCCL_THROW(std::invalid_argument, "Stride is too large");
+        _CCCL_THROW(::std::invalid_argument, "Stride is too large");
       }
       __wrapper.__shape[__i]   = static_cast<::cuda::std::int64_t>(__mdspan.extent(__i));
       __wrapper.__strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
@@ -226,7 +227,7 @@ to_dlpack_tensor(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _A
   const auto __status = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __mdspan.data_handle());
   if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "Failed to get device ordinal of a pointer");
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to get device ordinal of a pointer");
   }
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __ptr_dev_id);
 }

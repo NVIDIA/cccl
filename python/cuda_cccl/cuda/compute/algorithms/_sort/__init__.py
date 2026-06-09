@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 from ._merge_sort import make_merge_sort as make_merge_sort
 from ._merge_sort import merge_sort as merge_sort
 from ._radix_sort import make_radix_sort as make_radix_sort

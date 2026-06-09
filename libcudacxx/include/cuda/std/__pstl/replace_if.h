@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/replace_if.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -57,22 +58,24 @@ _CCCL_HOST_API void replace_if(
   static_assert(indirect_unary_predicate<_UnaryPred, _InputIterator>,
                 "cuda::std::replace_if: UnaryPred must satisfy indirect_unary_predicate<InputIterator>");
 
-  if (__first == __last)
-  {
-    return;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__transform, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::replace_if");
+
+    if (__first == __last)
+    {
+      return;
+    }
+
     (void) __dispatch(
       __policy,
       __first,
       ::cuda::std::move(__last),
-      ::cuda::std::move(__first),
+      __first,
       __replace_return_value{__new_value},
-      __pred);
+      ::cuda::std::move(__pred));
   }
   else
   {
@@ -88,6 +91,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_REPLACE_IF_H

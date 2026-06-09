@@ -53,14 +53,11 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
 // Instantiate a CUDA graph
 inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 {
-  // Custom deleter specifically for cudaGraphExec_t
-  auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-    cudaGraphExecDestroy(*pGraphExec);
-  };
+  ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+                                           cuda_safe_call(cudaGraphExecDestroy(*p));
+                                         }};
 
-  ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
-
-  cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
+  *res = cuda_try<cudaGraphInstantiateWithFlags>(g, 0);
 
   return res;
 }
@@ -100,8 +97,7 @@ public:
       cache_size_limit = atol(str) * 1024 * 1024;
     }
 
-    int ndevices;
-    cuda_safe_call(cudaGetDeviceCount(&ndevices));
+    const int ndevices = cuda_try<cudaGetDeviceCount>();
 
     // One individual cache per device (TODO per execution place at some point
     // if we consider green contexts or multi-gpu graphs ?)
@@ -150,8 +146,8 @@ public:
 
   // Check if there is a matching entry (and update it if necessary)
   // the returned bool indicate is this is a cache hit (true = cache hit, false = cache miss)
-  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
-  query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
+  // The graph g is only used during this call (for update or instantiate); it is never stored.
+  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> query(size_t nnodes, size_t nedges, cudaGraph_t g)
   {
     int dev_id = cuda_try<cudaGetDevice>();
     _CCCL_ASSERT(dev_id < int(cached_graphs.size()), "invalid device id value");
@@ -160,7 +156,7 @@ public:
     for (auto it = range.first; it != range.second; ++it)
     {
       auto& e = it->second;
-      if (reserved::try_updating_executable_graph(*e.exec_g, *g))
+      if (reserved::try_updating_executable_graph(*e.exec_g, g))
       {
         // update the last use index for the LRU algorithm
         e.lru_refresh();
@@ -181,7 +177,7 @@ public:
       reclaim(dev_id, total_cache_footprint[dev_id] + footprint - cache_size_limit);
     }
 
-    auto exec_g = reserved::graph_instantiate(*g);
+    auto exec_g = reserved::graph_instantiate(g);
 
     // If we maintain a cache, store the executable graph
     if (cache_size_limit != 0)

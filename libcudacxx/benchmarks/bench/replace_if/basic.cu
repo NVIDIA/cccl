@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -11,8 +11,8 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/std/execution>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
 
@@ -37,12 +37,10 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::replace_if(
-                 policy.with_stream(launch.get_stream().get_stream()), in.begin(), in.end(), equal_to_42{}, 1337);
+               cuda::std::replace_if(cuda_policy(alloc, launch), in.begin(), in.end(), equal_to_42{}, 1337);
              });
 }
 

@@ -8,7 +8,6 @@
 #include <thrust/fill.h>
 #include <thrust/for_each.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -16,6 +15,7 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/functional>
+#include <cuda/iterator>
 #include <cuda/std/bit>
 
 #include <cstdint>
@@ -27,7 +27,7 @@
 
 #include "thrust/device_vector.h"
 
-namespace
+namespace detail
 {
 constexpr double lognormal_mean  = 3.0;
 constexpr double lognormal_sigma = 1.2;
@@ -191,30 +191,29 @@ struct and_t
     return cuda::std::bit_cast<double>(result);
   }
 
-  __host__ __device__ complex operator()(complex a, complex b) const
+  template <typename T>
+  __host__ __device__ cuda::std::complex<T> operator()(cuda::std::complex<T> a, cuda::std::complex<T> b) const
   {
-    double a_real = a.real();
-    double a_imag = a.imag();
+    const T a_real = a.real();
+    const T a_imag = a.imag();
 
-    double b_real = b.real();
-    double b_imag = b.imag();
+    const T b_real = b.real();
+    const T b_imag = b.imag();
 
-    const std::uint64_t result_real =
-      cuda::std::bit_cast<std::uint64_t>(a_real) & cuda::std::bit_cast<std::uint64_t>(b_real);
+    using uint_t           = std::conditional_t<sizeof(T) == 4, std::uint32_t, std::uint64_t>;
+    const auto result_real = cuda::std::bit_cast<uint_t>(a_real) & cuda::std::bit_cast<uint_t>(b_real);
+    const auto result_imag = cuda::std::bit_cast<uint_t>(a_imag) & cuda::std::bit_cast<uint_t>(b_imag);
 
-    const std::uint64_t result_imag =
-      cuda::std::bit_cast<std::uint64_t>(a_imag) & cuda::std::bit_cast<std::uint64_t>(b_imag);
-
-    return {static_cast<float>(cuda::std::bit_cast<double>(result_real)),
-            static_cast<float>(cuda::std::bit_cast<double>(result_imag))};
+    return {cuda::std::bit_cast<T>(result_real), cuda::std::bit_cast<T>(result_imag)};
   }
 };
 
+template <typename T>
 struct set_real_t
 {
-  complex m_min{};
-  complex m_max{};
-  complex* m_d_in{};
+  cuda::std::complex<T> m_min{};
+  cuda::std::complex<T> m_max{};
+  cuda::std::complex<T>* m_d_in{};
   const double* m_d_tmp{};
 
   __host__ __device__ void operator()(std::size_t i) const
@@ -223,11 +222,12 @@ struct set_real_t
   }
 };
 
+template <typename T>
 struct set_imag_t
 {
-  complex m_min{};
-  complex m_max{};
-  complex* m_d_in{};
+  cuda::std::complex<T> m_min{};
+  cuda::std::complex<T> m_max{};
+  cuda::std::complex<T>* m_d_in{};
   const double* m_d_tmp{};
 
   __host__ __device__ void operator()(std::size_t i) const
@@ -303,14 +303,14 @@ private:
   template <typename ExecT, typename DistT, typename T>
   void generate(const ExecT& exec, DistT& dist, seed_t seed, cuda::std::span<T> span, bit_entropy entropy, T min, T max);
 
-  template <typename ExecT, typename DistT>
+  template <typename ExecT, typename DistT, typename T>
   void generate(const ExecT& exec,
                 DistT& dist,
                 seed_t seed,
-                cuda::std::span<complex> span,
+                cuda::std::span<cuda::std::complex<T>> span,
                 bit_entropy entropy,
-                complex min,
-                complex max);
+                cuda::std::complex<T> min,
+                cuda::std::complex<T> max);
 
   template <typename ExecT, typename DistT>
   void generate(
@@ -384,15 +384,15 @@ void generator_t::generate(
   };
 }
 
-template <typename ExecT, typename DistT>
+template <typename ExecT, typename DistT, typename T>
 void generator_t::generate(
   const ExecT& exec,
   DistT& dist,
   seed_t seed,
-  cuda::std::span<complex> span,
+  cuda::std::span<cuda::std::complex<T>> span,
   bit_entropy entropy,
-  complex min,
-  complex max)
+  cuda::std::complex<T> min,
+  cuda::std::complex<T> max)
 {
   switch (entropy)
   {
@@ -401,14 +401,14 @@ void generator_t::generate(
       thrust::for_each_n(exec,
                          thrust::make_counting_iterator(std::size_t{0}),
                          span.size(),
-                         set_real_t{min, max, span.data(), uniform_distribution});
+                         set_real_t<T>{min, max, span.data(), uniform_distribution});
       ++seed;
 
       uniform_distribution = dist.new_uniform_distribution(seed, span.size());
       thrust::for_each_n(exec,
                          thrust::make_counting_iterator(std::size_t{0}),
                          span.size(),
-                         set_imag_t{min, max, span.data(), uniform_distribution});
+                         set_imag_t<T>{min, max, span.data(), uniform_distribution});
       ++seed;
       return;
     }
@@ -418,7 +418,7 @@ void generator_t::generate(
       std::uniform_real_distribution<double> dist(0.0f, 1.0f);
       const float random_imag = random_to_item_t<double>(min.imag(), max.imag())(dist(rng));
       const float random_real = random_to_item_t<double>(min.imag(), max.imag())(dist(rng));
-      thrust::fill(exec, span.data(), span.data() + span.size(), complex{random_real, random_imag});
+      thrust::fill(exec, span.data(), span.data() + span.size(), cuda::std::complex<T>{random_real, random_imag});
       return;
     }
     default: {
@@ -426,23 +426,25 @@ void generator_t::generate(
       thrust::for_each_n(exec,
                          thrust::make_counting_iterator(std::size_t{0}),
                          span.size(),
-                         set_real_t{min, max, span.data(), uniform_distribution});
+                         set_real_t<T>{min, max, span.data(), uniform_distribution});
       ++seed;
 
       uniform_distribution = dist.new_uniform_distribution(seed, span.size());
       thrust::for_each_n(exec,
                          thrust::make_counting_iterator(std::size_t{0}),
                          span.size(),
-                         set_imag_t{min, max, span.data(), uniform_distribution});
+                         set_imag_t<T>{min, max, span.data(), uniform_distribution});
       ++seed;
 
       const int number_of_steps = static_cast<int>(entropy);
 
       constexpr bool is_device = std::is_same_v<DistT, device_generator_t>;
-      using vec_t = std::conditional_t<is_device, thrust::device_vector<complex>, thrust::host_vector<complex>>;
+      using vec_t              = std::conditional_t<is_device,
+                                                    thrust::device_vector<cuda::std::complex<T>>,
+                                                    thrust::host_vector<cuda::std::complex<T>>>;
 
       vec_t tmp_vec(span.size());
-      cuda::std::span<complex> tmp(thrust::raw_pointer_cast(tmp_vec.data()), tmp_vec.size());
+      cuda::std::span<cuda::std::complex<T>> tmp(thrust::raw_pointer_cast(tmp_vec.data()), tmp_vec.size());
 
       for (int i = 0; i < number_of_steps; i++, ++seed)
       {
@@ -559,10 +561,7 @@ void gen(executor exec, seed_t seed, cuda::std::span<T> span, bit_entropy entrop
 {
   generator_t{}.generate(exec, seed, span, entropy, min, max);
 }
-} // namespace
 
-namespace detail
-{
 template <typename T>
 void gen_host(seed_t seed, cuda::std::span<T> span, bit_entropy entropy, T min, T max)
 {
@@ -589,9 +588,9 @@ struct offset_to_iterator_t
 template <class T>
 struct repeat_index_t
 {
-  __host__ __device__ __forceinline__ thrust::constant_iterator<T> operator()(std::size_t i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<T> operator()(std::size_t i)
   {
-    return thrust::constant_iterator<T>(static_cast<T>(i));
+    return cuda::constant_iterator<T>(static_cast<T>(i));
   }
 };
 
@@ -686,10 +685,7 @@ std::size_t gen_uniform_offsets(
 
   return tail(thrust::host);
 }
-} // namespace detail
 
-namespace detail
-{
 /**
  * @brief Generates a vector of random key segments.
  *
@@ -800,12 +796,13 @@ INSTANTIATE(int16_t);
 INSTANTIATE(int32_t);
 INSTANTIATE(int64_t);
 
-#if NVBENCH_HELPER_HAS_I128
+#if _CCCL_HAS_INT128()
 INSTANTIATE(int128_t);
 INSTANTIATE(uint128_t);
 #endif
 
 INSTANTIATE(float);
 INSTANTIATE(double);
-INSTANTIATE(complex);
+INSTANTIATE(complex32);
+INSTANTIATE(complex64);
 #undef INSTANTIATE

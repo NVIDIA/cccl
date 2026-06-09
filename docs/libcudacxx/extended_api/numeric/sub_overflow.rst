@@ -37,7 +37,7 @@ The function ``cuda::sub_overflow`` performs subtraction of two values ``lhs`` a
 
 **Constraints**
 
-- ``Result``, ``Lhs``, and ``Rhs`` must be integer types.
+- ``Result``, ``Lhs``, and ``Rhs`` must be `integer types <https://eel.is/c++draft/basic.fundamental#1>`_.
 
 **Performance considerations**
 

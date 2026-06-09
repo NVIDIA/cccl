@@ -3,9 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/detail/rfa.cuh>
-#include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
-#include <cub/util_type.cuh>
+#include <cub/device/device_reduce.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
@@ -23,38 +21,14 @@
 
 using float_type_list = c2h::type_list<float, double>;
 
-template <int NOMINAL_BLOCK_THREADS_4B, int NOMINAL_ITEMS_PER_THREAD_4B>
-struct AgentReducePolicy
-{
-  /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = 4;
-
-  /// Cooperative block-wide reduction algorithm to use
-  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING;
-
-  /// Cache load modifier for reading input elements
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::CacheLoadModifier::LOAD_DEFAULT;
-  constexpr static int ITEMS_PER_THREAD                 = NOMINAL_ITEMS_PER_THREAD_4B;
-  constexpr static int BLOCK_THREADS                    = NOMINAL_BLOCK_THREADS_4B;
-};
-
 template <int ItemsPerThread, int BlockSize>
-struct hub_t
+struct custom_policy_selector
 {
-  struct Policy : cub::ChainedPolicy<300, Policy, Policy>
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::detail::rfa::rfa_policy
   {
-    constexpr static int ITEMS_PER_THREAD = ItemsPerThread;
-
-    using ReducePolicy = AgentReducePolicy<BlockSize, ItemsPerThread>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-
-    // SegmentedReducePolicy
-    using SegmentedReducePolicy = ReducePolicy;
-  };
-
-  using MaxPolicy = Policy;
+    return {{BlockSize, ItemsPerThread, cub::BLOCK_REDUCE_RAKING},
+            {BlockSize, ItemsPerThread, cub::BLOCK_REDUCE_RAKING}};
+  }
 };
 
 C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
@@ -172,11 +146,11 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   c2h::device_vector<type> d_output_p1(1);
   c2h::device_vector<type> d_output_p2(1);
 
-  auto env1 = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::__tune(hub_t<1, 128>{})};
+  auto env1 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::gpu_to_gpu),
+                                        cuda::execution::tune(custom_policy_selector<1, 128>{})};
 
-  auto env2 = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::__tune(hub_t<2, 256>{})};
+  auto env2 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::gpu_to_gpu),
+                                        cuda::execution::tune(custom_policy_selector<2, 256>{})};
 
   auto error1 =
     cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, cuda::std::plus<type>{}, type{}, env1);
@@ -265,27 +239,14 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   const int num_items = 1 << 10;
 
-  using input_it_t = cuda::counting_iterator<int>;
-  auto input       = input_it_t(1);
-  c2h::device_vector<type> d_output(1);
-
-  using output_it_t = decltype(d_output.begin());
-  using init_t      = type;
-  using accum_t     = type;
   using transform_t = square_t<type>;
 
-  using deterministic_dispatch_t =
-    cub::detail::rfa::dispatch_t<input_it_t, output_it_t, int, init_t, transform_t, accum_t>;
+  const auto input = cuda::counting_iterator<int>(1);
+  c2h::device_vector<type> d_output(1);
 
-  std::size_t temp_storage_bytes{};
-
-  auto error = deterministic_dispatch_t::Dispatch(nullptr, temp_storage_bytes, input, d_output.begin(), num_items);
-  REQUIRE(error == cudaSuccess);
-
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-
-  error = deterministic_dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, input, d_output.begin(), num_items);
+  const auto env   = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
+  const auto error = cub::DeviceReduce::TransformReduce(
+    input, d_output.begin(), num_items, cuda::std::plus<type>{}, transform_t{}, type{}, env);
   REQUIRE(error == cudaSuccess);
 
   auto h_input = cuda::transform_iterator(input, transform_t{});
@@ -345,8 +306,8 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
          "[reduce][deterministic]",
          test_types)
 {
-  using type   = typename c2h::get<0, TestType>;
-  using init_t = type;
+  using type         = typename c2h::get<0, TestType>;
+  using init_value_t = type;
 
   const auto env          = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
   constexpr int num_items = 1 << 10;
@@ -365,8 +326,8 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
     {
       c2h::device_vector<type> d_output(1);
 
-      auto error =
-        cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_t{}, env);
+      auto error = cub::DeviceReduce::Reduce(
+        d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_value_t{}, env);
       REQUIRE(error == cudaSuccess);
 
       c2h::host_vector<type> h_input = d_input;
@@ -375,7 +336,7 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
       // Requires `std::accumulate` to produce deterministic result which is required for comparison
       // with the device RFA result.
       // NOTE: `std::reduce` is not equivalent
-      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), init_t{}, cuda::std::plus<type>{});
+      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), init_value_t{}, cuda::std::plus<type>{});
 
       c2h::host_vector<type> h_output = d_output;
       REQUIRE(h_expected == h_output);
@@ -385,7 +346,7 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
     {
       c2h::device_vector<type> d_output(1);
 
-      init_t init_value{};
+      init_value_t init_value{};
 
       auto error = cub::DeviceReduce::Reduce(
         d_input.begin(), d_output.begin(), num_items, cuda::std::bit_xor<>{}, init_value, env);
@@ -403,7 +364,7 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
     {
       c2h::device_vector<type> d_output(1);
 
-      init_t init_value{};
+      init_value_t init_value{};
 
       auto error = cub::DeviceReduce::Reduce(
         d_input.begin(), d_output.begin(), num_items, cuda::std::logical_or<>{}, init_value, env);
@@ -422,10 +383,10 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
   {
     c2h::device_vector<type> d_output(1);
 
-    init_t init_value{cuda::std::numeric_limits<init_t>::max()};
+    init_value_t init_value{cuda::std::numeric_limits<init_value_t>::max()};
 
-    auto error =
-      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::minimum<init_t>{}, init_value, env);
+    auto error = cub::DeviceReduce::Reduce(
+      d_input.begin(), d_output.begin(), num_items, cuda::minimum<init_value_t>{}, init_value, env);
     REQUIRE(error == cudaSuccess);
 
     c2h::host_vector<type> h_input = d_input;
@@ -440,10 +401,10 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
   {
     c2h::device_vector<type> d_output(1);
 
-    init_t init_value{cuda::std::numeric_limits<init_t>::min()};
+    init_value_t init_value{cuda::std::numeric_limits<init_value_t>::min()};
 
-    auto error =
-      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::maximum<init_t>{}, init_value, env);
+    auto error = cub::DeviceReduce::Reduce(
+      d_input.begin(), d_output.begin(), num_items, cuda::maximum<init_value_t>{}, init_value, env);
     REQUIRE(error == cudaSuccess);
 
     c2h::host_vector<type> h_input = d_input;

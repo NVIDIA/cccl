@@ -21,13 +21,10 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_nondeterministic.cuh>
 #include <cub/grid/grid_even_share.cuh>
-#include <cub/thread/thread_operators.cuh>
-#include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
 #include <cuda/std/__algorithm/max.h>
@@ -37,33 +34,33 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::reduce
+namespace detail::reduce_nondeterministic
 {
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename AccumT,
           typename TransformOpT>
 struct DeviceReduceNondeterministicKernelSource
 {
   CUB_DEFINE_KERNEL_GETTER(
     NondeterministicAtomicKernel,
-    NondeterministicDeviceReduceAtomicKernel<
+    reduce::NondeterministicDeviceReduceAtomicKernel<
       MaxPolicyT,
       InputIteratorT,
       OutputIteratorT,
       OffsetT,
       ReductionOpT,
       AccumT,
-      InitT,
+      InitValueT,
       TransformOpT>);
 
   CUB_RUNTIME_FUNCTION static constexpr size_t InitSize()
   {
-    return sizeof(InitT);
+    return sizeof(InitValueT);
   }
 };
 
@@ -81,19 +78,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE void* get_device_ptr(void* ptr)
 struct nondeterministic_no_override
 {};
 
-template <typename InputIteratorT, typename InitT, typename ReductionOpT, typename TransformOpT>
-_CCCL_API auto select_nondeterministic_accum_t(nondeterministic_no_override*)
+template <typename InputIteratorT, typename InitValueT, typename ReductionOpT, typename TransformOpT>
+_CCCL_HOST_DEVICE_API auto select_nondeterministic_accum_t(nondeterministic_no_override*)
   -> ::cuda::std::__accumulator_t<ReductionOpT,
                                   ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
-                                  InitT>;
+                                  InitValueT>;
 
 template <typename InputIteratorT,
-          typename InitT,
+          typename InitValueT,
           typename ReductionOpT,
           typename TransformOpT,
           typename OverrideAccumT,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, nondeterministic_no_override>, int> = 0>
-_CCCL_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> OverrideAccumT;
+_CCCL_HOST_DEVICE_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 //! @brief Free function dispatch for nondeterministic device-wide reduction
 //!
@@ -112,7 +109,7 @@ _CCCL_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> OverrideAccum
 //! @tparam ReductionOpT
 //!   Binary reduction functor type having member `auto operator()(const T &a, const U &b)`
 //!
-//! @tparam InitT
+//! @tparam InitValueT
 //!   Initial value type
 //!
 //! @param[in] d_temp_storage
@@ -139,57 +136,62 @@ _CCCL_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> OverrideAccum
 //!
 //! @param[in] stream
 //!   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-template <typename OverrideAccumT = nondeterministic_no_override,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitT        = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-          typename TransformOpT = ::cuda::std::identity,
-          typename AccumT = decltype(select_nondeterministic_accum_t<InputIteratorT, InitT, ReductionOpT, TransformOpT>(
-            static_cast<OverrideAccumT*>(nullptr))),
-          typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource   = DeviceReduceNondeterministicKernelSource<
-              PolicySelector,
-              InputIteratorT,
-              OutputIteratorT,
-              OffsetT,
-              ReductionOpT,
-              InitT,
-              AccumT,
-              TransformOpT>,
-          typename KernelLauncherFactory = TripleChevronFactory>
+template <
+  typename OverrideAccumT = nondeterministic_no_override,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename InitValueT   = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+  typename TransformOpT = ::cuda::std::identity,
+  typename AccumT = decltype(select_nondeterministic_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
+    static_cast<OverrideAccumT*>(nullptr))),
+  typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
+  typename KernelSource   = DeviceReduceNondeterministicKernelSource<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      OffsetT,
+      ReductionOpT,
+      InitValueT,
+      AccumT,
+      TransformOpT>,
+  typename KernelLauncherFactory = TripleChevronFactory>
 #if _CCCL_HAS_CONCEPTS()
-  requires reduce_policy_selector<PolicySelector>
+  requires reduce_nondeterministic_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
   OutputIteratorT d_out,
   OffsetT num_items,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op              = {},
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  // Get arch ID
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  // Get CC
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const reduce_policy active_policy = policy_selector(arch_id);
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (std::stringstream ss; ss << active_policy; _CubLog(
-       "Dispatching DeviceReduceNondeterministic to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  const reduce_nondeterministic_policy active_policy = policy_selector(cc);
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceReduceNondeterministic to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   // No temp storage needed but keep API consistent
   if (d_temp_storage == nullptr)
@@ -199,13 +201,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   }
 
   // Init kernel configuration
-  const int tile_size =
-    active_policy.reduce_nondeterministic.block_threads * active_policy.reduce_nondeterministic.items_per_thread;
+  const int tile_size = active_policy.reduce.threads_per_block * active_policy.reduce.items_per_thread;
   int sm_occupancy;
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        sm_occupancy,
-        kernel_source.NondeterministicAtomicKernel(),
-        active_policy.reduce_nondeterministic.block_threads)))
+        sm_occupancy, kernel_source.NondeterministicAtomicKernel(), active_policy.reduce.threads_per_block)))
   {
     return error;
   }
@@ -232,14 +231,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
           "per thread, %d SM occupancy\n",
           (unsigned long long) reduce_grid_size,
-          active_policy.reduce_nondeterministic.block_threads,
+          active_policy.reduce.threads_per_block,
           (void*) stream,
-          active_policy.reduce_nondeterministic.items_per_thread,
+          active_policy.reduce.items_per_thread,
           sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
   // Invoke NondeterministicDeviceReduceAtomicKernel
-  launcher_factory(reduce_grid_size, active_policy.reduce_nondeterministic.block_threads, 0, stream)
+  launcher_factory(reduce_grid_size, active_policy.reduce.threads_per_block, 0, stream)
     .doit(
       kernel_source.NondeterministicAtomicKernel(), d_in, d_out, num_items, even_share, reduction_op, init, transform_op);
 
@@ -251,6 +250,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   // Sync the stream if specified to flush runtime errors
   return CubDebug(detail::DebugSyncStream(stream));
 }
-} // namespace detail::reduce
+} // namespace detail::reduce_nondeterministic
 
 CUB_NAMESPACE_END

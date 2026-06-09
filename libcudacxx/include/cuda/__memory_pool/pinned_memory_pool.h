@@ -25,9 +25,10 @@
 
 #  include <cuda/__device/all_devices.h>
 #  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/throw_error.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -36,13 +37,11 @@
 //! allocates pinned memory.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-#  if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 9)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 // clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
-
-static ::cudaMemPool_t __get_default_host_pinned_pool();
 
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
@@ -65,7 +64,9 @@ static ::cudaMemPool_t __get_default_host_pinned_pool();
 //!    exceeds the lifetime of the ``pinned_memory_pool_ref``.
 //!
 //! @endrst
-class pinned_memory_pool_ref : public __memory_pool_base
+class pinned_memory_pool_ref
+    : public __memory_pool_base
+    , public ::cuda::mr::memory_resource_base<pinned_memory_pool_ref>
 {
 public:
   //! @brief  Constructs the pinned_memory_pool_ref from a \c cudaMemPool_t.
@@ -85,14 +86,6 @@ public:
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 };
 
-//! @brief Returns the default pinned memory pool.
-//! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-//! @returns The default pinned memory pool.
-[[nodiscard]] inline pinned_memory_pool_ref pinned_default_memory_pool()
-{
-  return pinned_memory_pool_ref{::cuda::__get_default_host_pinned_pool()};
-}
-
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
 //!
@@ -110,6 +103,11 @@ public:
 struct pinned_memory_pool : pinned_memory_pool_ref
 {
   using reference_type = pinned_memory_pool_ref;
+
+  //! @brief Constructs an empty \c pinned_memory_pool without an underlying pool.
+  _CCCL_HOST_API explicit pinned_memory_pool(no_init_t) noexcept
+      : pinned_memory_pool_ref(::cudaMemPool_t{})
+  {}
 
 #    if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Constructs a \c pinned_memory_pool with optional properties.
@@ -145,7 +143,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   //!
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed
   //! on.
-  //! @param __pool_properties Optional, additional properties of the pool to be
+  //! @param __properties Optional, additional properties of the pool to be
   //! created.
   _CCCL_HOST_API pinned_memory_pool(int __numa_id, memory_pool_properties __properties = {})
       : pinned_memory_pool_ref(__create_cuda_mempool(
@@ -158,7 +156,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   {
     if (__pool_ != nullptr)
     {
-      ::cuda::__driver::__mempoolDestroy(__pool_);
+      _CCCL_ASSERT_CUDA_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool_);
     }
   }
 
@@ -167,11 +165,21 @@ struct pinned_memory_pool : pinned_memory_pool_ref
     return pinned_memory_pool(__pool);
   }
 
-  //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.
-  //! The result is the same as if this object was cast to a \c pinned_memory_pool_ref.
-  _CCCL_HOST_API pinned_memory_pool_ref as_ref() noexcept
+  //! @brief Retrieve the native `cudaMemPool_t` handle and give up ownership.
+  //!
+  //! @return cudaMemPool_t The native handle being held by this object.
+  //!
+  //! @post The memory pool object is in a moved-from state.
+  _CCCL_HOST_API constexpr ::cudaMemPool_t release() noexcept
   {
-    return pinned_memory_pool_ref(__pool_);
+    return ::cuda::std::exchange(__pool_, nullptr);
+  }
+
+  //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.
+  //! We return by reference to ensure that we can subsequently convert to a resource_ref
+  _CCCL_HOST_API pinned_memory_pool_ref& as_ref() noexcept
+  {
+    return static_cast<pinned_memory_pool_ref&>(*this);
   }
 
   pinned_memory_pool(const pinned_memory_pool&)            = delete;
@@ -183,36 +191,39 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::host_accessible>);
 
-static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>);
 
-[[nodiscard]] static ::cudaMemPool_t __get_default_host_pinned_pool()
+//! @brief Returns the default pinned memory pool.
+//! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
+//! @returns The default pinned memory pool.
+[[nodiscard]] inline pinned_memory_pool_ref& pinned_default_memory_pool()
 {
 #    if _CCCL_CTK_AT_LEAST(13, 0)
-  static ::cudaMemPool_t __default_pool = []() {
+  static pinned_memory_pool_ref __default_pool{[]() {
     ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
       ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
     // TODO should we be more careful with setting access from all devices?
     // Maybe only if it was not set for any device?
     ::cuda::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
     return __pool;
-  }();
+  }()};
 
 #    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  static ::cudaMemPool_t __default_pool = []() {
+  static pinned_memory_pool_ref __default_pool{[]() {
     cuda::pinned_memory_pool __pool(0);
     return __pool.release();
-  }();
+  }()};
 #    endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
   return __default_pool;
 }
 
 _CCCL_DIAG_POP
 
-#  endif // _CCCL_CTK_AT_LEAST(12, 6)
+#  endif // _CCCL_CTK_AT_LEAST(12, 9)
 
 _CCCL_END_NAMESPACE_CUDA
 

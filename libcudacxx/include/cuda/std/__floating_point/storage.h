@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/always_false.h>
@@ -72,19 +71,13 @@ using __fp_storage_t = decltype(__fp_storage_type_impl<_Fmt>());
 template <class _Tp>
 using __fp_storage_of_t = __fp_storage_t<__fp_format_of_v<_Tp>>;
 
-#if _CCCL_HAS_NVFP16()
-struct __cccl_nvfp16_manip_helper : __half
+#if !_CCCL_TILE_COMPILATION()
+template <class _Tp>
+struct __cccl_nvfp_manip_helper : _Tp
 {
-  using __half::__x;
+  using _Tp::__x;
 };
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-struct __cccl_nvbf16_manip_helper : __nv_bfloat16
-{
-  using __nv_bfloat16::__x;
-};
-#endif // _CCCL_HAS_NVBF16()
+#endif // _CCCL_TILE_COMPILATION()
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept
@@ -102,23 +95,31 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP16()
   else if constexpr (is_same_v<_Tp, __half>)
   {
-    __cccl_nvfp16_manip_helper __helper{};
+#  if _CCCL_TILE_COMPILATION()
+    return ::cuda::std::bit_cast<_Tp>(__v);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
+    __cccl_nvfp_manip_helper<_Tp> __helper{};
     __helper.__x = __v;
     return __helper;
+#  endif // !_CCCL_TILE_COMPILATION()
   }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
   else if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
-    __cccl_nvbf16_manip_helper __helper{};
+#  if _CCCL_TILE_COMPILATION()
+    return ::cuda::std::bit_cast<_Tp>(__v);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
+    __cccl_nvfp_manip_helper<_Tp> __helper{};
     __helper.__x = __v;
     return __helper;
+#  endif // !_CCCL_TILE_COMPILATION()
   }
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   else if constexpr (is_same_v<_Tp, __nv_fp8_e4m3>)
   {
-    __nv_fp8_e4m3 __ret{};
+    _Tp __ret{};
     __ret.__x = __v;
     return __ret;
   }
@@ -126,7 +127,7 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP8_E5M2()
   else if constexpr (is_same_v<_Tp, __nv_fp8_e5m2>)
   {
-    __nv_fp8_e5m2 __ret{};
+    _Tp __ret{};
     __ret.__x = __v;
     return __ret;
   }
@@ -134,7 +135,7 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {
-    __nv_fp8_e8m0 __ret{};
+    _Tp __ret{};
     __ret.__x = __v;
     return __ret;
   }
@@ -143,7 +144,7 @@ template <class _Tp>
   else if constexpr (is_same_v<_Tp, __nv_fp6_e2m3>)
   {
     _CCCL_ASSERT((__v & 0xc0u) == 0u, "Invalid __nv_fp6_e2m3 storage value");
-    __nv_fp6_e2m3 __ret{};
+    _Tp __ret{};
     __ret.__x = __v;
     return __ret;
   }
@@ -152,7 +153,7 @@ template <class _Tp>
   else if constexpr (is_same_v<_Tp, __nv_fp6_e3m2>)
   {
     _CCCL_ASSERT((__v & 0xc0u) == 0u, "Invalid __nv_fp6_e3m2 storage value");
-    __nv_fp6_e3m2 __ret{};
+    _Tp __ret{};
     __ret.__x = __v;
     return __ret;
   }
@@ -161,7 +162,7 @@ template <class _Tp>
   else if constexpr (is_same_v<_Tp, __nv_fp4_e2m1>)
   {
     _CCCL_ASSERT((__v & 0xf0u) == 0u, "Invalid __nv_fp4_e2m1 storage value");
-    __nv_fp4_e2m1 __ret{};
+    _Tp __ret{};
     __ret.__x = __v;
     return __ret;
   }
@@ -190,13 +191,21 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP16()
   else if constexpr (is_same_v<_Tp, __half>)
   {
-    return __cccl_nvfp16_manip_helper{__v}.__x;
+#  if _CCCL_TILE_COMPILATION()
+    return ::cuda::std::bit_cast<__fp_storage_of_t<_Tp>>(__v);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
+    return __cccl_nvfp_manip_helper<_Tp>{__v}.__x;
+#  endif // !_CCCL_TILE_COMPILATION()
   }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
   else if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
-    return __cccl_nvbf16_manip_helper{__v}.__x;
+#  if _CCCL_TILE_COMPILATION()
+    return ::cuda::std::bit_cast<__fp_storage_of_t<_Tp>>(__v);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
+    return __cccl_nvfp_manip_helper<_Tp>{__v}.__x;
+#  endif // !_CCCL_TILE_COMPILATION()
   }
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()

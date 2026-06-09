@@ -37,82 +37,80 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! capability. For example, sm_90 and sm_90a have the same compute capability, but the identifier is different.
 enum class arch_id : int
 {
-  sm_60   = 60,
-  sm_61   = 61,
-  sm_62   = 62,
-  sm_70   = 70,
-  sm_75   = 75,
-  sm_80   = 80,
-  sm_86   = 86,
-  sm_87   = 87,
-  sm_88   = 88,
-  sm_89   = 89,
-  sm_90   = 90,
-  sm_100  = 100,
-  sm_103  = 103,
-  sm_110  = 110,
-  sm_120  = 120,
-  sm_121  = 121,
-  sm_90a  = 90 * __arch_specific_id_multiplier,
-  sm_100a = 100 * __arch_specific_id_multiplier,
-  sm_103a = 103 * __arch_specific_id_multiplier,
-  sm_110a = 110 * __arch_specific_id_multiplier,
-  sm_120a = 120 * __arch_specific_id_multiplier,
-  sm_121a = 121 * __arch_specific_id_multiplier,
+#define _CCCL_DEFINE_ARCH_ID(_CC)          sm_##_CC = _CC,
+#define _CCCL_DEFINE_ARCH_SPECIFIC_ID(_CC) sm_##_CC##a = _CC * __arch_specific_id_multiplier,
+  _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_ID, _CCCL_KNOWN_CUDA_ARCH_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+#undef _CCCL_DEFINE_ARCH_ID
+#undef _CCCL_DEFINE_ARCH_SPECIFIC_ID
 };
 
-[[nodiscard]] _CCCL_API constexpr auto __all_arch_ids() noexcept
+// todo: = delete these in 4.0.
+#define _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(_OP)                                                                   \
+  CCCL_DEPRECATED_BECAUSE("Comparing cuda::arch_id using operator" _CCCL_TO_STRING(                                 \
+    _OP) " is deprecated and will be deleted in the next major release. Compare cuda::compute_capabilities of the " \
+         "given "                                                                                                   \
+         "cuda::arch_id instead.")
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<) _CCCL_HOST_DEVICE_API constexpr bool
+operator<(arch_id __lhs, arch_id __rhs) noexcept
+{
+  return ::cuda::std::to_underlying(__lhs) < ::cuda::std::to_underlying(__rhs);
+}
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<=) _CCCL_HOST_DEVICE_API constexpr bool
+operator<=(arch_id __lhs, arch_id __rhs) noexcept
+{
+  return ::cuda::std::to_underlying(__lhs) <= ::cuda::std::to_underlying(__rhs);
+}
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(>) _CCCL_HOST_DEVICE_API constexpr bool
+operator>(arch_id __lhs, arch_id __rhs) noexcept
+{
+  return ::cuda::std::to_underlying(__lhs) > ::cuda::std::to_underlying(__rhs);
+}
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(>=) _CCCL_HOST_DEVICE_API constexpr bool
+operator>=(arch_id __lhs, arch_id __rhs) noexcept
+{
+  return ::cuda::std::to_underlying(__lhs) >= ::cuda::std::to_underlying(__rhs);
+}
+#undef _CCCL_DEPRECATED_ARCH_ID_COMPARISONS
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __all_arch_ids() noexcept
 {
   return ::cuda::std::array{
-    arch_id::sm_60,   arch_id::sm_61,   arch_id::sm_62,   arch_id::sm_70,   arch_id::sm_75,  arch_id::sm_80,
-    arch_id::sm_86,   arch_id::sm_87,   arch_id::sm_88,   arch_id::sm_89,   arch_id::sm_90,  arch_id::sm_100,
-    arch_id::sm_103,  arch_id::sm_110,  arch_id::sm_120,  arch_id::sm_121,  arch_id::sm_90a, arch_id::sm_100a,
-    arch_id::sm_103a, arch_id::sm_110a, arch_id::sm_120a, arch_id::sm_121a,
+#define _CCCL_MAKE_ARCH_ID(_CC)          arch_id::sm_##_CC,
+#define _CCCL_MAKE_ARCH_SPECIFIC_ID(_CC) arch_id::sm_##_CC##a,
+    _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_ID, _CCCL_KNOWN_CUDA_ARCH_LIST)
+      _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+#undef _CCCL_MAKE_ARCH_ID
+#undef _CCCL_MAKE_ARCH_SPECIFIC_ID
   };
 }
 
-[[nodiscard]] _CCCL_API constexpr bool __is_specific_arch(arch_id __arch) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __is_specific_arch(arch_id __arch) noexcept
 {
   return ::cuda::std::to_underlying(__arch) > __arch_specific_id_multiplier;
 }
 
-[[nodiscard]] _CCCL_API constexpr bool __has_known_arch(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __has_known_arch(compute_capability __cc) noexcept
 {
   switch (__cc.get())
   {
-    case ::cuda::std::to_underlying(arch_id::sm_60):
-    case ::cuda::std::to_underlying(arch_id::sm_61):
-    case ::cuda::std::to_underlying(arch_id::sm_62):
-    case ::cuda::std::to_underlying(arch_id::sm_70):
-    case ::cuda::std::to_underlying(arch_id::sm_75):
-    case ::cuda::std::to_underlying(arch_id::sm_80):
-    case ::cuda::std::to_underlying(arch_id::sm_86):
-    case ::cuda::std::to_underlying(arch_id::sm_87):
-    case ::cuda::std::to_underlying(arch_id::sm_88):
-    case ::cuda::std::to_underlying(arch_id::sm_89):
-    case ::cuda::std::to_underlying(arch_id::sm_90):
-    case ::cuda::std::to_underlying(arch_id::sm_100):
-    case ::cuda::std::to_underlying(arch_id::sm_103):
-    case ::cuda::std::to_underlying(arch_id::sm_110):
-    case ::cuda::std::to_underlying(arch_id::sm_120):
-    case ::cuda::std::to_underlying(arch_id::sm_121):
-      return true;
+#define _CCCL_HAS_KNOWN_ARCH_CASE(_CC) case _CC:
+    _CCCL_PP_FOR_EACH(_CCCL_HAS_KNOWN_ARCH_CASE, _CCCL_KNOWN_CUDA_ARCH_LIST)
+#undef _CCCL_HAS_KNOWN_ARCH_CASE
+    return true;
     default:
       return false;
   }
 }
 
-[[nodiscard]] _CCCL_API constexpr bool __has_known_specific_arch(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __has_known_specific_arch(compute_capability __cc) noexcept
 {
-  switch (__cc.get() * __arch_specific_id_multiplier)
+  switch (__cc.get())
   {
-    case ::cuda::std::to_underlying(arch_id::sm_90a):
-    case ::cuda::std::to_underlying(arch_id::sm_100a):
-    case ::cuda::std::to_underlying(arch_id::sm_103a):
-    case ::cuda::std::to_underlying(arch_id::sm_110a):
-    case ::cuda::std::to_underlying(arch_id::sm_120a):
-    case ::cuda::std::to_underlying(arch_id::sm_121a):
-      return true;
+#define _CCCL_HAS_KNOWN_SPECFIC_ARCH_CASE(_CC) case _CC:
+    _CCCL_PP_FOR_EACH(_CCCL_HAS_KNOWN_SPECFIC_ARCH_CASE, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+#undef _CCCL_HAS_KNOWN_SPECFIC_ARCH_CASE
+    return true;
     default:
       return false;
   }
@@ -123,7 +121,7 @@ enum class arch_id : int
 //! @param __cc The compute capability. Must have a corresponding architecture id.
 //!
 //! @returns The architecture id.
-[[nodiscard]] _CCCL_API constexpr arch_id to_arch_id(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_id to_arch_id(compute_capability __cc) noexcept
 {
   _CCCL_ASSERT(::cuda::__has_known_arch(__cc), "this compute capability cannot be converted to arch id");
   return static_cast<arch_id>(__cc.get());
@@ -134,7 +132,7 @@ enum class arch_id : int
 //! @param __cc The compute capability. Must have a corresponding architecture specific id.
 //!
 //! @returns The architecture specific id.
-[[nodiscard]] _CCCL_API constexpr arch_id to_arch_specific_id(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_id to_arch_specific_id(compute_capability __cc) noexcept
 {
   _CCCL_ASSERT(::cuda::__has_known_specific_arch(__cc),
                "this compute capability cannot be converted to arch specific id");
@@ -196,7 +194,7 @@ template <class _Dummy = void>
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
   const auto __cc = ::cuda::device::current_compute_capability();
-  if (::cuda::__is_known_arch_of(__cc))
+  if (::cuda::__has_known_arch(__cc))
   {
     return ::cuda::to_arch_id(__cc);
   }

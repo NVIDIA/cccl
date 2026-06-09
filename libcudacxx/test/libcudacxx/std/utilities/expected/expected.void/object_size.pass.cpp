@@ -17,19 +17,19 @@ using cuda::std::expected;
 
 int main(int, char**)
 {
-  static_assert(sizeof(expected<char, char>) == 2 * sizeof(char), "");
-  static_assert(sizeof(expected<short, short>) == 2 * sizeof(short), "");
-  static_assert(sizeof(expected<int, int>) == 2 * sizeof(int), "");
-  static_assert(sizeof(expected<long long, long long>) == 2 * sizeof(long long), "");
+  static_assert(sizeof(expected<char, char>) == 2 * sizeof(char));
+  static_assert(sizeof(expected<short, short>) == 2 * sizeof(short));
+  static_assert(sizeof(expected<int, int>) == 2 * sizeof(int));
+  static_assert(sizeof(expected<long long, long long>) == 2 * sizeof(long long));
 
-  static_assert(sizeof(expected<long long, char>) == 2 * sizeof(long long), "");
-  static_assert(sizeof(expected<long long, short>) == 2 * sizeof(long long), "");
-  static_assert(sizeof(expected<long long, int>) == 2 * sizeof(long long), "");
-  static_assert(sizeof(expected<long long, long long>) == 2 * sizeof(long long), "");
+  static_assert(sizeof(expected<long long, char>) == 2 * sizeof(long long));
+  static_assert(sizeof(expected<long long, short>) == 2 * sizeof(long long));
+  static_assert(sizeof(expected<long long, int>) == 2 * sizeof(long long));
+  static_assert(sizeof(expected<long long, long long>) == 2 * sizeof(long long));
 
-  static_assert(sizeof(expected<void, char>) == 2 * sizeof(char), "");
-  static_assert(sizeof(expected<void, short>) == 2 * sizeof(short), "");
-  static_assert(sizeof(expected<void, int>) == 2 * sizeof(int), "");
-  static_assert(sizeof(expected<void, long long>) == 2 * sizeof(long long), "");
+  static_assert(sizeof(expected<void, char>) == 2 * sizeof(char));
+  static_assert(sizeof(expected<void, short>) == 2 * sizeof(short));
+  static_assert(sizeof(expected<void, int>) == 2 * sizeof(int));
+  static_assert(sizeof(expected<void, long long>) == 2 * sizeof(long long));
   return 0;
 }

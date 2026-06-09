@@ -7,17 +7,22 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/hierarchy>
 #include <cuda/std/cstddef>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Level>
-__device__ void test_query_signatures(const Level& level)
+TEST_DEVICE_FUNC void test_query_signatures(const Level& level)
 {
+  using ProductType =
+    cuda::std::conditional_t<cuda::std::is_same_v<Level, cuda::grid_level>, cuda::std::uint64_t, cuda::std::uint32_t>;
+
   // 1. Test cuda::thread_level::dims(x) signature.
   static_assert(
     cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::thread_level::dims(level))>);
@@ -35,22 +40,26 @@ __device__ void test_query_signatures(const Level& level)
   static_assert(cuda::std::is_same_v<ExtentsRet, decltype(cuda::thread_level::extents(level))>);
   static_assert(noexcept(cuda::thread_level::extents(level)));
 
-  // 4. Test cuda::thread_level::count(x) signature.
-  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::thread_level::count(level))>);
+  // 4. Test cuda::thread_level::static_count(x) signature.
+  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::thread_level::static_count(level))>);
+  static_assert(noexcept(cuda::thread_level::static_count(level)));
+
+  // 5. Test cuda::thread_level::count(x) signature.
+  static_assert(cuda::std::is_same_v<ProductType, decltype(cuda::thread_level::count(level))>);
   static_assert(noexcept(cuda::thread_level::count(level)));
 
-  // 5. Test cuda::thread_level::index(x) signature.
+  // 6. Test cuda::thread_level::index(x) signature.
   static_assert(
     cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::thread_level::index(level))>);
   static_assert(noexcept(cuda::thread_level::index(level)));
 
-  // 6. Test cuda::thread_level::rank(x) signature.
-  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::thread_level::rank(level))>);
+  // 7. Test cuda::thread_level::rank(x) signature.
+  static_assert(cuda::std::is_same_v<ProductType, decltype(cuda::thread_level::rank(level))>);
   static_assert(noexcept(cuda::thread_level::rank(level)));
 }
 
 template <class T, class Level>
-__device__ void test_query_as_signatures(const Level& level)
+TEST_DEVICE_FUNC void test_query_as_signatures(const Level& level)
 {
   // 1. Test cuda::thread_level::dims(x) signature.
   static_assert(cuda::std::is_same_v<cuda::hierarchy_query_result<T>, decltype(cuda::thread_level::dims_as<T>(level))>);
@@ -77,7 +86,7 @@ __device__ void test_query_as_signatures(const Level& level)
 }
 
 template <class InLevel>
-__device__ void test(const InLevel& in_level)
+TEST_DEVICE_FUNC void test(const InLevel& in_level)
 {
   test_query_signatures(in_level);
   test_query_as_signatures<short>(in_level);
@@ -88,7 +97,7 @@ __device__ void test(const InLevel& in_level)
   test_query_as_signatures<unsigned long long>(in_level);
 }
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   test(cuda::warp);
   test(cuda::block);

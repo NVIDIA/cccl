@@ -244,12 +244,14 @@ template <class _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __sub_overflow_uniform_type(_Tp __lhs, _Tp __rhs) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (return ::cuda::__sub_overflow_device(__lhs, __rhs);),
                  (return ::cuda::__sub_overflow_host(__lhs, __rhs);))
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
 }
 
@@ -271,6 +273,8 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 [[nodiscard]]
 _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
+  using ::cuda::std::is_same_v;
+
   // We want to use __builtin_sub_overflow only in host code. When compiling CUDA source file, we cannot use it in
   // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
   // file, we can use it all the time.
@@ -279,16 +283,23 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #  endif // _CCCL_CUDA_COMPILATION()
   {
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   overflow_result<_ActualResult> __result{};
-                   __result.overflow = _CCCL_BUILTIN_SUB_OVERFLOW(__lhs, __rhs, &__result.value);
-                   return __result;
-                 }))
+    // nvc++ doesn't support overflow builtins for 128-bit integers of different signedness.
+#  if _CCCL_COMPILER(NVHPC)
+    if constexpr ((sizeof(_ActualResult) != 16 && sizeof(_Lhs) != 16 && sizeof(_Rhs) != 16)
+                  || (is_same_v<_ActualResult, _Lhs> && is_same_v<_ActualResult, _Rhs>) )
+#  endif // _CCCL_COMPILER(NVHPC)
+    {
+      NV_IF_TARGET(NV_IS_HOST, ({
+                     overflow_result<_ActualResult> __result{};
+                     __result.overflow = _CCCL_BUILTIN_SUB_OVERFLOW(__lhs, __rhs, &__result.value);
+                     return __result;
+                   }))
+    }
   }
 #endif // _CCCL_BUILTIN_SUB_OVERFLOW
 
   // Host fallback + device implementation.
-#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_SUB_OVERFLOW)
+#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_SUB_OVERFLOW) || (_CCCL_COMPILER(NVHPC) && _CCCL_HAS_INT128())
   using ::cuda::std::common_type_t;
   using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
@@ -390,7 +401,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
       return overflow_result<_ActualResult>{__sub_ret, __is_overflow};
     }
   }
-#endif // _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_SUB_OVERFLOW)
+#endif // _CCCL_CUDA_COMPILATION() || !_CCCL_BUILTIN_SUB_OVERFLOW || (_CCCL_COMPILER(NVHPC) && _CCCL_HAS_INT128())
 }
 
 //! @brief Subtracts two numbers \p __lhs and \p __rhs with overflow detection
