@@ -906,7 +906,23 @@ CUstream stf_task_get_custream(stf_task_handle t)
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
   auto* task_ptr = from_opaque(t);
-  return static_cast<CUstream>(task_ptr->get_stream());
+  cudaStream_t s = task_ptr->get_stream();
+  // In a graph context, get_stream() only returns a valid capture stream once
+  // stf_task_enable_capture() has been called. A null stream here means the
+  // caller would launch work on the NULL stream, outside the STF graph -- a
+  // silent correctness bug (the task's graph node stays empty). Use _CCCL_VERIFY
+  // (always on, even in release / NDEBUG builds) so this misuse fails loudly
+  // rather than silently corrupting results; point at the two supported options.
+  _CCCL_VERIFY(s != nullptr,
+               "task has no CUDA stream: in a graph context call stf_task_enable_capture() before stf_task_start() to "
+               "launch kernels on a stream, or use stf_task_get_graph() to add graph nodes explicitly");
+  return static_cast<CUstream>(s);
+}
+
+cudaGraph_t stf_task_get_graph(stf_task_handle t)
+{
+  _CCCL_ASSERT(t != nullptr, "task handle must not be null");
+  return from_opaque(t)->get_graph();
 }
 
 int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
@@ -1471,6 +1487,14 @@ uint64_t stf_while_scope_get_cond_handle(stf_while_scope_handle scope)
 stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t count)
 {
   _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  // The repeat counter is unsigned and decremented on every iteration, so a
+  // count of 0 would underflow and produce a huge / non-terminating loop. The
+  // public contract requires count > 0; reject 0 instead of forwarding it.
+  _CCCL_ASSERT(count > 0, "repeat count must be > 0");
+  if (count == 0)
+  {
+    return nullptr;
+  }
   auto* sctx = from_opaque_sctx(ctx);
   return to_opaque_repeat(stf_try_allocate([sctx, count] {
     return new repeat_graph_scope_guard(*sctx, count);

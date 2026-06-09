@@ -44,7 +44,7 @@ C2H_TEST("stackable: push_graph / pop", "[stackable]")
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = static_cast<double>(i);
@@ -59,6 +59,7 @@ C2H_TEST("stackable: push_graph / pop", "[stackable]")
     stf_task_handle t = stf_stackable_task_create(ctx);
     REQUIRE(t != nullptr);
     stf_stackable_task_add_dep(ctx, t, lA, STF_RW);
+    stf_task_enable_capture(t);
     stf_task_start(t);
     double* d = static_cast<double*>(stf_task_get(t, 0));
     scale_kernel<<<2, 64, 0, (cudaStream_t) stf_task_get_custream(t)>>>(static_cast<int>(N), d, 2.0);
@@ -75,7 +76,7 @@ C2H_TEST("stackable: push_graph / pop", "[stackable]")
     REQUIRE(std::fabs(host_data[i] - 2.0 * static_cast<double>(i)) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: pop_prologue relaunch accumulates N times", "[stackable][launchable]")
@@ -87,7 +88,7 @@ C2H_TEST("stackable: pop_prologue relaunch accumulates N times", "[stackable][la
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -128,7 +129,7 @@ C2H_TEST("stackable: pop_prologue relaunch accumulates N times", "[stackable][la
     REQUIRE(std::fabs(host_data[i] - static_cast<double>(relaunchN)) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: pop_prologue with zero launches unfreezes", "[stackable][launchable]")
@@ -139,7 +140,7 @@ C2H_TEST("stackable: pop_prologue with zero launches unfreezes", "[stackable][la
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 7.0;
@@ -192,7 +193,7 @@ C2H_TEST("stackable: pop_prologue with zero launches unfreezes", "[stackable][la
     REQUIRE(std::fabs(host_data[i] - 14.0) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: launchable exec and stream accessors are non-null", "[stackable][launchable]")
@@ -203,7 +204,7 @@ C2H_TEST("stackable: launchable exec and stream accessors are non-null", "[stack
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -247,7 +248,7 @@ C2H_TEST("stackable: launchable exec and stream accessors are non-null", "[stack
     REQUIRE(std::fabs(host_data[i] - 1.0) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: launchable graph() embed into outer graph", "[stackable][launchable]")
@@ -258,7 +259,7 @@ C2H_TEST("stackable: launchable graph() embed into outer graph", "[stackable][la
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -324,7 +325,7 @@ C2H_TEST("stackable: launchable graph() embed into outer graph", "[stackable][la
     REQUIRE(std::fabs(host_data[i] - 1.0) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: shared pop_prologue dup/free releases only at last free", "[stackable][launchable]")
@@ -336,7 +337,7 @@ C2H_TEST("stackable: shared pop_prologue dup/free releases only at last free", "
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -418,7 +419,7 @@ C2H_TEST("stackable: shared pop_prologue dup/free releases only at last free", "
     REQUIRE(std::fabs(host_data[i] - expected) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: shared pop_prologue tolerates NULL free", "[stackable][launchable]")
@@ -437,7 +438,7 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
   REQUIRE(ctx != nullptr);
 
   double* host_data;
-  cudaMallocHost(&host_data, N * sizeof(double));
+  REQUIRE(cudaMallocHost(&host_data, N * sizeof(double)) == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_data[i] = 0.0;
@@ -452,6 +453,7 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
     stf_task_handle t = stf_stackable_task_create(ctx);
     REQUIRE(t != nullptr);
     stf_stackable_task_add_dep(ctx, t, lA, STF_RW);
+    stf_task_enable_capture(t);
     stf_task_start(t);
     double* d = static_cast<double*>(stf_task_get(t, 0));
     increment_kernel<<<1, 64, 0, (cudaStream_t) stf_task_get_custream(t)>>>(static_cast<int>(N), d);
@@ -463,6 +465,7 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
       stf_task_handle t2 = stf_stackable_task_create(ctx);
       REQUIRE(t2 != nullptr);
       stf_stackable_task_add_dep(ctx, t2, lA, STF_RW);
+      stf_task_enable_capture(t2);
       stf_task_start(t2);
       double* d2 = static_cast<double*>(stf_task_get(t2, 0));
       increment_kernel<<<1, 64, 0, (cudaStream_t) stf_task_get_custream(t2)>>>(static_cast<int>(N), d2);
@@ -481,7 +484,7 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
     REQUIRE(std::fabs(host_data[i] - 2.0) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
 
 C2H_TEST("stackable: token + fence", "[stackable]")
@@ -569,7 +572,7 @@ C2H_TEST("stackable: while-body K chained rw tasks sweep", "[stackable][while][c
 
     // Accumulator: zero-initialized double[Nd].
     double* host_acc;
-    cudaMallocHost(&host_acc, Nd * sizeof(double));
+    REQUIRE(cudaMallocHost(&host_acc, Nd * sizeof(double)) == cudaSuccess);
     for (int i = 0; i < Nd; i++)
     {
       host_acc[i] = 0.0;
@@ -581,7 +584,7 @@ C2H_TEST("stackable: while-body K chained rw tasks sweep", "[stackable][while][c
     // iteration. We use a double scalar to keep it consistent with the kernel
     // family used by the probe.
     double* host_done;
-    cudaMallocHost(&host_done, sizeof(double));
+    REQUIRE(cudaMallocHost(&host_done, sizeof(double)) == cudaSuccess);
     host_done[0]               = 1.0;
     stf_logical_data_handle lD = stf_stackable_logical_data(ctx, host_done, sizeof(double));
     REQUIRE(lD != nullptr);
@@ -648,8 +651,8 @@ C2H_TEST("stackable: while-body K chained rw tasks sweep", "[stackable][while][c
       total_off_by_one += host_acc[0] - expected;
     }
 
-    cudaFreeHost(host_acc);
-    cudaFreeHost(host_done);
+    REQUIRE(cudaFreeHost(host_acc) == cudaSuccess);
+    REQUIRE(cudaFreeHost(host_done) == cudaSuccess);
   }
 
   REQUIRE(total_mismatches == 0);

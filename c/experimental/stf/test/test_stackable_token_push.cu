@@ -59,6 +59,7 @@ C2H_TEST("stackable: token in push_graph scope (no prologue)", "[stackable][toke
     stf_task_handle t = stf_stackable_task_create(ctx);
     REQUIRE(t != nullptr);
     stf_stackable_task_add_dep(ctx, t, tok, STF_WRITE);
+    stf_task_enable_capture(t);
     stf_task_start(t);
     noop_kernel<<<1, 1, 0, (cudaStream_t) stf_task_get_custream(t)>>>();
     stf_task_end(t);
@@ -185,8 +186,9 @@ C2H_TEST("stackable: logical_data write/read chain + pop_prologue (workaround)",
   stf_ctx_handle ctx = stf_stackable_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  uint8_t* host_dep;
-  cudaMallocHost(&host_dep, N * sizeof(uint8_t));
+  uint8_t* host_dep = nullptr;
+  cudaError_t err   = cudaMallocHost(&host_dep, N * sizeof(uint8_t));
+  REQUIRE(err == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_dep[i] = 0;
@@ -231,5 +233,5 @@ C2H_TEST("stackable: logical_data write/read chain + pop_prologue (workaround)",
   stf_stackable_logical_data_destroy(ld);
   stf_stackable_ctx_finalize(ctx);
 
-  cudaFreeHost(host_dep);
+  REQUIRE(cudaFreeHost(host_dep) == cudaSuccess);
 }

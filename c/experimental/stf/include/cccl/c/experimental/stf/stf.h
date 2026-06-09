@@ -1069,11 +1069,20 @@ void stf_task_end(stf_task_handle t);
 //! Returns CUDA stream associated with the task. All CUDA operations
 //! within task must use this stream for proper synchronization.
 //!
+//! \note In a graph context (including a stackable graph scope) the task has no
+//!       stream unless \c stf_task_enable_capture() was called before
+//!       \c stf_task_start(). Calling this function without capture enabled in a
+//!       graph context is a usage error and aborts (in debug builds) rather than
+//!       silently returning a null stream, which would launch work outside the
+//!       STF graph. If you want to populate the task's graph explicitly instead
+//!       of capturing a stream, use \c stf_task_get_graph().
+//!
 //! \param t Task handle
 //! \return CUDA stream for launching operations
 //!
 //! \pre t must be valid task handle
 //! \pre stf_task_start() must have been called
+//! \pre in a graph context, stf_task_enable_capture() must have been called
 //!
 //! \par Example:
 //! \code
@@ -1084,9 +1093,41 @@ void stf_task_end(stf_task_handle t);
 //! my_kernel<<<grid, block, 0, (cudaStream_t)stream>>>(args...);
 //! \endcode
 //!
-//! \see stf_task_start(), stf_task_get()
+//! \see stf_task_start(), stf_task_get(), stf_task_enable_capture(), stf_task_get_graph()
 
 CUstream stf_task_get_custream(stf_task_handle t);
+
+//!
+//! \brief Get the task's child CUDA graph for explicit node insertion.
+//!
+//! Advanced/expert alternative to \c stf_task_get_custream() for tasks running
+//! in a graph context: instead of capturing a stream, the caller adds nodes
+//! directly into the returned \c cudaGraph_t (e.g. via \c cudaGraphAddKernelNode).
+//! STF wires the task's dependencies around this child graph.
+//!
+//! This is mutually exclusive with the capture path: do \b not call
+//! \c stf_task_enable_capture() / \c stf_task_get_custream() on a task for which
+//! you use \c stf_task_get_graph().
+//!
+//! \note This is primarily a C/C++ affordance. In C++ the returned handle can be
+//!       adopted with \c cuda::experimental::graph_builder::from_native_handle()
+//!       to add nodes ergonomically. There is currently \b no equivalent in the
+//!       Python \c cuda.core graph API (its \c GraphBuilder is created only from a
+//!       device/stream and builds via stream capture; it cannot adopt an existing
+//!       \c cudaGraph_t), so this entry point may not be backed by a Python
+//!       interface. From Python, prefer the capture path
+//!       (\c stf_task_enable_capture() + \c stf_task_get_custream()).
+//!
+//! \param t Task handle
+//! \return The task's child \c cudaGraph_t (owned by STF; do not destroy).
+//!
+//! \pre t must be valid task handle
+//! \pre stf_task_start() must have been called
+//! \pre the task must run in a graph context (aborts otherwise in debug builds)
+//!
+//! \see stf_task_get_custream(), stf_task_start()
+
+cudaGraph_t stf_task_get_graph(stf_task_handle t);
 
 //!
 //! \brief Get data pointer for task dependency
@@ -1589,6 +1630,7 @@ void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps);
 //! {
 //!   stf_task_handle t = stf_stackable_task_create(sctx);
 //!   stf_stackable_task_add_dep(sctx, t, lA, STF_RW);
+//!   stf_task_enable_capture(t);                          // Required before launching work in a graph scope
 //!   stf_task_start(t);
 //!   /* launch CUDA work on stf_task_get_custream(t) */
 //!   stf_task_end(t);
@@ -1618,7 +1660,13 @@ stf_ctx_handle stf_stackable_ctx_create(void);
 
 //! \brief Finalize a stackable context and release all associated resources.
 //!
-//! Blocks until every pending task in every still-open scope completes.
+//! All nested scopes must already have been popped so the context stack is back
+//! at the root (every \c stf_stackable_push_graph() / \c stf_stackable_push_while()
+//! / \c stf_stackable_push_repeat() must have a matching pop). Calling this while
+//! a scope is still open is not supported and results in undefined behavior. Once at
+//! the root, it blocks until all pending root-level work has completed and releases
+//! the root resources.
+//!
 //! \param ctx Stackable context handle (must have been popped back to the root).
 //!
 //! \see stf_stackable_ctx_create()
@@ -1668,12 +1716,15 @@ typedef struct stf_launchable_graph_handle_t* stf_launchable_graph_handle;
 
 //! \brief First phase of a two-phase pop of a top-level graph scope.
 //!
-//! Runs the same prologue as \c stf_stackable_pop() (pops any pushed data,
-//! finalises the child graph, instantiates or fetches a \c cudaGraphExec_t
-//! from the cache) but does not launch the graph and does not release
-//! resources. Returns a handle the caller can use to launch the graph one
-//! or more times (via \c stf_launchable_graph_launch()) before finishing
-//! the pop with \c stf_stackable_pop_epilogue().
+//! Runs the same prologue as \c stf_stackable_pop() (pops any pushed data and
+//! finalises the child graph) but does not launch the graph and does not
+//! release resources. Instantiation is lazy: the prologue does \b not build a
+//! \c cudaGraphExec_t -- that happens on demand on the first
+//! \c stf_launchable_graph_launch() / \c stf_launchable_graph_exec() call (the
+//! \c cudaGraph_t exposed by \c stf_launchable_graph_graph() is available
+//! without any instantiation). Returns a handle the caller can use to launch
+//! the graph one or more times (via \c stf_launchable_graph_launch()) before
+//! finishing the pop with \c stf_stackable_pop_epilogue().
 //!
 //! Only legal when the innermost scope is a top-level graph (its parent is
 //! the stream-backed root). Aborts otherwise.
@@ -1700,11 +1751,12 @@ stf_launchable_graph_handle stf_stackable_pop_prologue(stf_ctx_handle ctx);
 //! \see stf_stackable_pop_prologue()
 void stf_stackable_pop_epilogue(stf_ctx_handle ctx);
 
-//! \brief Launch the instantiated graph once.
+//! \brief Launch the graph once.
 //!
-//! On the first call, syncs the context's prerequisite events into the
-//! support stream. Subsequent calls skip the sync and issue the launch
-//! directly. Aborts if the handle has been invalidated by
+//! On the first call, lazily instantiates the \c cudaGraphExec_t (the prologue
+//! does not do it) and syncs the context's prerequisite events into the support
+//! stream. Subsequent calls reuse the executable graph, skip the sync, and
+//! issue the launch directly. Aborts if the handle has been invalidated by
 //! \c stf_stackable_pop_epilogue().
 //!
 //! \param h Launchable graph handle (must not be NULL).
@@ -1713,7 +1765,10 @@ void stf_launchable_graph_launch(stf_launchable_graph_handle h);
 //! \brief Return the underlying \c cudaGraphExec_t for advanced use
 //!        (e.g. launching on a user-supplied stream).
 //!
-//! Aborts if \p h has been invalidated by \c stf_stackable_pop_epilogue().
+//! Triggers lazy instantiation on the first call (the prologue does not build
+//! the executable graph) and orders the support stream behind the nested
+//! context's freeze/get events. Aborts if \p h has been invalidated by
+//! \c stf_stackable_pop_epilogue().
 //!
 //! \param h Launchable graph handle (must not be NULL).
 //! \return \c cudaGraphExec_t owned by the STF graph cache.
@@ -1733,7 +1788,23 @@ cudaStream_t stf_launchable_graph_stream(stf_launchable_graph_handle h);
 //! another graph (via \c cudaGraphAddChildGraphNode) rather than launching
 //! the pre-instantiated executable graph returned by
 //! \c stf_launchable_graph_exec(). Unlike that function, this accessor does
-//! NOT trigger \c cudaGraphInstantiate and performs no synchronization.
+//! NOT trigger \c cudaGraphInstantiate.
+//!
+//! On the first call it does, however, perform the same lazy dependency
+//! synchronization as \c stf_launchable_graph_exec() / \c
+//! stf_launchable_graph_launch(): it orders the support stream returned by
+//! \c stf_launchable_graph_stream() behind the nested context's freeze/get
+//! events. This makes that support stream a valid event source for
+//! ordering an outer launch stream: record an event on
+//! \c stf_launchable_graph_stream() and wait on it from your launch stream
+//! before launching the outer graph that embeds this child.
+//!
+//! Ordering caveat: \c stf_stackable_pop_epilogue() only synchronizes that
+//! support stream; it does NOT wait on whatever stream you launch the
+//! embedding outer graph on. You are therefore responsible for ensuring the
+//! embedded work has completed (e.g. via \c cudaStreamSynchronize on your
+//! launch stream) before calling \c stf_stackable_pop_epilogue(), otherwise
+//! the unfreeze of the pushed data will race the child graph.
 //!
 //! The graph stays valid only until \c stf_stackable_pop_epilogue() is
 //! called. Clone it with \c cudaGraphClone if you need it to outlive the
@@ -1804,6 +1875,15 @@ int stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchabl
 //!
 //! NULL is a no-op, matching the pattern used by other destroy entry points.
 //!
+//! \warning Releasing the last reference is not a pure refcount drop: it runs
+//!          the epilogue, which unfreezes the pushed data and synchronizes only
+//!          the support stream (not the stream you launch any embedding outer
+//!          graph on). If you embedded the graph returned by
+//!          \c stf_launchable_graph_shared_graph() into an outer graph launched
+//!          on your own stream, make sure that launch has completed (e.g. via
+//!          \c cudaStreamSynchronize) before freeing the final reference, or the
+//!          unfreeze will race the still-executing child graph.
+//!
 //! \param h Shared handle (or NULL).
 void stf_launchable_graph_shared_free(stf_launchable_graph_shared h);
 
@@ -1817,8 +1897,9 @@ int stf_launchable_graph_shared_valid(stf_launchable_graph_shared h);
 //! \brief Launch the graph once. Aborts if \p h is NULL or invalid.
 void stf_launchable_graph_shared_launch(stf_launchable_graph_shared h);
 
-//! \brief Return the executable graph. Triggers lazy instantiation + dep-A
-//!        sync on the first call. Aborts if \p h is NULL or invalid.
+//! \brief Return the executable graph. Triggers lazy instantiation on the first
+//!        call and orders the support stream behind the nested context's
+//!        freeze/get events. Aborts if \p h is NULL or invalid.
 cudaGraphExec_t stf_launchable_graph_shared_exec(stf_launchable_graph_shared h);
 
 //! \brief Return the support stream. Purely observational. Aborts if \p h
@@ -1827,6 +1908,44 @@ cudaStream_t stf_launchable_graph_shared_stream(stf_launchable_graph_shared h);
 
 //! \brief Return the underlying \c cudaGraph_t topology (for embedding as a
 //!        child graph). Aborts if \p h is NULL or invalid.
+//!
+//! Like \c stf_launchable_graph_graph(), this does NOT trigger
+//! \c cudaGraphInstantiate but on the first call orders the support stream
+//! behind the nested context's freeze/get events.
+//!
+//! Lifetime caveat (mirror of \c stf_launchable_graph_graph()): on the shared
+//! path the epilogue is not an explicit call -- it runs automatically when the
+//! \b last shared reference is released via
+//! \c stf_launchable_graph_shared_free(). That epilogue unfreezes the pushed
+//! data and only synchronizes the support stream, \b not the stream you
+//! launch the embedding outer graph on. You are therefore responsible for
+//! keeping at least one shared handle alive -- and ensuring the embedded work
+//! has completed (e.g. via \c cudaStreamSynchronize on your launch stream) --
+//! before freeing the final reference, otherwise the unfreeze will race the
+//! child graph.
+//!
+//! \code
+//!   stf_stackable_push_graph(ctx);
+//!   // ... submit tasks ...
+//!   stf_launchable_graph_shared h;
+//!   stf_stackable_pop_prologue_shared(ctx, &h);
+//!
+//!   // Embed the child graph into a user-built outer graph (no instantiation).
+//!   cudaGraph_t body = stf_launchable_graph_shared_graph(h);
+//!   cudaGraphNode_t child{};
+//!   cudaGraphAddChildGraphNode(&child, outer, nullptr, 0, body);
+//!
+//!   // Order the outer launch behind the freeze/get events via the support stream.
+//!   cudaStream_t launch_stream = ...;
+//!   cudaEvent_t dep_a = ...;
+//!   cudaEventRecord(dep_a, stf_launchable_graph_shared_stream(h));
+//!   cudaStreamWaitEvent(launch_stream, dep_a, 0);
+//!   cudaGraphLaunch(outer_exec, launch_stream);
+//!
+//!   // The embedded work must finish before the final free unfreezes data.
+//!   cudaStreamSynchronize(launch_stream);
+//!   stf_launchable_graph_shared_free(h); // last ref -> pop_epilogue (unfreeze)
+//! \endcode
 cudaGraph_t stf_launchable_graph_shared_graph(stf_launchable_graph_shared h);
 
 //! \brief Opaque handle for a while-loop scope (CUDA 12.4+).
@@ -1995,6 +2114,11 @@ void stf_stackable_token_destroy(stf_logical_data_handle ld);
 //! stackable variant — \c stf_task_add_dep() will not auto-push data across
 //! scopes), then call \c stf_task_start() / \c stf_task_end() and use
 //! \c stf_task_get_custream() / \c stf_task_get() as usual.
+//!
+//! \note Inside a nested graph scope (\c stf_stackable_push_graph()), call
+//!       \c stf_task_enable_capture() before \c stf_task_start() if you launch
+//!       work through \c stf_task_get_custream(); otherwise use
+//!       \c stf_task_get_graph() for the explicit-graph path.
 //!
 //! \param ctx Stackable context handle
 //! \return Task handle, or NULL on allocation failure (release with
