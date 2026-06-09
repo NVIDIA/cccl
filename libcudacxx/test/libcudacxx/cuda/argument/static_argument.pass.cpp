@@ -113,7 +113,7 @@ TEST_FUNC void test()
   // Single value: scalar is single, sequence is not
   {
     static_assert(
-      cuda::__argument::__is_single_value_v<cuda::__argument::__traits<cuda::__argument::__constant<42>>::value_type>);
+      !cuda::__argument::__is_sequence_v<cuda::__argument::__traits<cuda::__argument::__constant<42>>::value_type>);
 #if TEST_HAS_CLASS_NTTP
     static_assert(!cuda::__argument::__traits<
                   cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_single_value);

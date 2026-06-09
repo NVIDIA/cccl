@@ -26,12 +26,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-/**
- * All cub::DeviceReduce::* algorithms are using the same implementation. Some of them, however,
- * should use initial value only for empty problems. If this struct is used as initial value with
- * one of the `DeviceReduce` algorithms, the `init` value wrapped by this struct will only be used
- * for empty problems; it will not be incorporated into the aggregate of non-empty problems.
- */
+//! All cub::DeviceReduce::* algorithms are using the same implementation. Some of them, however,
+//! should use the initial value only for empty problems. If this struct is used as initial value with
+//! one of the `DeviceReduce` algorithms, the `init` value wrapped by this struct will only be used
+//! for empty problems; it will not be incorporated into the aggregate of non-empty problems.
 template <class T>
 struct empty_problem_init_t
 {
@@ -43,18 +41,29 @@ struct empty_problem_init_t
   }
 };
 
-template <class InitValueT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitValueT unwrap_empty_problem_init(InitValueT init)
+struct no_init_t
+{};
+
+//! If this value is passed as initial value to a `DeviceReduce` algorithm, no initial value will be incorporated into
+//! the total aggregate.
+inline constexpr auto no_init = no_init_t{};
+
+template <class OutputIteratorT, class InitValueT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&& d_out, InitValueT init)
 {
-  return init;
+  *d_out = init;
 }
 
-template <class InitValueT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitValueT
-unwrap_empty_problem_init(empty_problem_init_t<InitValueT> empty_problem_init)
+template <class OutputIteratorT, class InitValueT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+handle_empty_problem(OutputIteratorT&& d_out, empty_problem_init_t<InitValueT> empty_problem_init)
 {
-  return empty_problem_init.init;
+  *d_out = empty_problem_init.init;
 }
+
+template <class OutputIteratorT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&&, no_init_t)
+{}
 
 /**
  * @brief Applies initial value to the block aggregate and stores the result to the output iterator.
@@ -80,6 +89,13 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, I
 template <class OutputIteratorT, class ReductionOpT, class InitValueT, class AccumT>
 _CCCL_HOST_DEVICE void finalize_and_store_aggregate(
   OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitValueT>, AccumT block_aggregate)
+{
+  *d_out = block_aggregate;
+}
+
+template <class OutputIteratorT, class ReductionOpT, class AccumT>
+_CCCL_HOST_DEVICE void
+finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, no_init_t, AccumT block_aggregate)
 {
   *d_out = block_aggregate;
 }
@@ -260,7 +276,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   {
     if (threadIdx.x == 0)
     {
-      *d_out = detail::reduce::unwrap_empty_problem_init(init);
+      detail::reduce::handle_empty_problem(d_out, init);
     }
 
     return;
@@ -314,7 +330,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   {
     if (threadIdx.x == 0)
     {
-      *d_out = detail::reduce::unwrap_empty_problem_init(init);
+      detail::reduce::handle_empty_problem(d_out, init);
     }
 
     return;
