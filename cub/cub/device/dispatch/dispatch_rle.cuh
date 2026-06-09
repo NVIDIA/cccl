@@ -230,7 +230,7 @@ struct policy_selector_from_hub
       RleSweepPolicyT::LOAD_MODIFIER,
       RleSweepPolicyT::STORE_WARP_TIME_SLICING,
       RleSweepPolicyT::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename RleSweepPolicyT::detail::delay_constructor_t>,
+      lookback_delay_policy_from_type<typename RleSweepPolicyT::detail::delay_constructor_t>,
     };
   }
 };

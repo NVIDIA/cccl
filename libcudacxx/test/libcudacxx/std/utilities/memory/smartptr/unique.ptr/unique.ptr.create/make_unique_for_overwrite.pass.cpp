@@ -24,13 +24,21 @@
 #include <cuda/std/concepts>
 // #include <cuda/std/cstring>
 #include <cuda/std/__memory_>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
 
+template <class T, class Void, class... Args>
+inline constexpr bool HasMakeUniqueForOverwriteImpl = false;
 template <class T, class... Args>
-_CCCL_CONCEPT HasMakeUniqueForOverwrite = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
-  (cuda::std::make_unique_for_overwrite<T>(cuda::std::forward<Args>(args)...)));
+inline constexpr bool HasMakeUniqueForOverwriteImpl<
+  T,
+  cuda::std::void_t<decltype(cuda::std::make_unique_for_overwrite<T>(cuda::std::declval<Args>()...))>,
+  Args...> = true;
+
+template <class T, class... Args>
+inline constexpr bool HasMakeUniqueForOverwrite = HasMakeUniqueForOverwriteImpl<T, void, Args...>;
 
 struct Foo
 {
