@@ -305,7 +305,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 
       const ::cuda::std::uint32_t warp_right_aggregates_count = ::cuda::std::popcount(warp_right_aggregates_mask);
 
-      // Only reduce once a fixed number of contiguous tile aggregates are available, so the reduction order is fixed.
+      // Only reduce once 32 contiguous tile aggregates are available, so the reduction order is fixed.
       const ::cuda::std::uint32_t expected_count =
         static_cast<::cuda::std::uint32_t>(::cuda::std::min(32, idxTileNext - idxTileCur));
       if (warp_right_aggregates_count < expected_count)
@@ -332,6 +332,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
     }
   }
 
+  // Only reached when idxTileNext is a multiple of 32; otherwise the final partial batch full aggregate returns inside
+  // the loop above.
   idxTilePrev          = idxTileNext;
   aggrExclusiveCtaPrev = aggrExclusiveCtaCur;
   return aggrExclusiveCtaCur; // must only be valid in lane_0
