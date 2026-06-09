@@ -23,6 +23,7 @@ enum class block_histogram_algorithm
 enum class sample_pattern
 {
   single_bin,
+  lane_pairs,
   skewed,
   uniform,
 };
@@ -51,6 +52,10 @@ sample_pattern parse_sample_pattern(const std::string& name)
   {
     return sample_pattern::single_bin;
   }
+  if (name == "lane_pairs")
+  {
+    return sample_pattern::lane_pairs;
+  }
   if (name == "skewed")
   {
     return sample_pattern::skewed;
@@ -73,6 +78,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE SampleT make_sample(int item)
   if constexpr (Pattern == sample_pattern::single_bin)
   {
     return SampleT{0};
+  }
+  else if constexpr (Pattern == sample_pattern::lane_pairs)
+  {
+    return static_cast<SampleT>((lane / 2) % Bins);
   }
   else if constexpr (Pattern == sample_pattern::skewed)
   {
@@ -160,6 +169,10 @@ void dispatch_pattern(nvbench::state& state, sample_pattern pattern)
       run_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, Bins, Algorithm, sample_pattern::single_bin>(
         state);
       return;
+    case sample_pattern::lane_pairs:
+      run_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, Bins, Algorithm, sample_pattern::lane_pairs>(
+        state);
+      return;
     case sample_pattern::skewed:
       run_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, Bins, Algorithm, sample_pattern::skewed>(state);
       return;
@@ -195,8 +208,14 @@ void dispatch_bins(nvbench::state& state, block_histogram_algorithm algorithm, s
     case 32:
       dispatch_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, 32>(state, algorithm, pattern);
       return;
+    case 64:
+      dispatch_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, 64>(state, algorithm, pattern);
+      return;
     case 128:
       dispatch_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, 128>(state, algorithm, pattern);
+      return;
+    case 512:
+      dispatch_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, 512>(state, algorithm, pattern);
       return;
     case 2048:
       dispatch_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, 2048>(state, algorithm, pattern);
@@ -227,16 +246,40 @@ void dispatch_items(
 }
 
 template <typename SampleT, typename CounterT>
+void dispatch_block_threads(
+  nvbench::state& state,
+  block_histogram_algorithm algorithm,
+  sample_pattern pattern,
+  int bins,
+  int items_per_thread,
+  int block_threads)
+{
+  switch (block_threads)
+  {
+    case 128:
+      dispatch_items<SampleT, CounterT, 128>(state, algorithm, pattern, bins, items_per_thread);
+      return;
+    case 256:
+      dispatch_items<SampleT, CounterT, 256>(state, algorithm, pattern, bins, items_per_thread);
+      return;
+    case 512:
+      dispatch_items<SampleT, CounterT, 512>(state, algorithm, pattern, bins, items_per_thread);
+      return;
+  }
+
+  throw std::runtime_error("Unsupported BlockThreads axis value");
+}
+
+template <typename SampleT, typename CounterT>
 void block_histogram_algorithms(nvbench::state& state, nvbench::type_list<SampleT, CounterT>)
 {
-  constexpr int block_threads = 256;
-
   const auto algorithm       = parse_algorithm(state.get_string("Algorithm"));
   const auto pattern         = parse_sample_pattern(state.get_string("SamplePattern"));
   const int bins             = static_cast<int>(state.get_int64("Bins"));
   const int items_per_thread = static_cast<int>(state.get_int64("ItemsPerThread{io}"));
+  const int block_threads    = static_cast<int>(state.get_int64("BlockThreads"));
 
-  dispatch_items<SampleT, CounterT, block_threads>(state, algorithm, pattern, bins, items_per_thread);
+  dispatch_block_threads<SampleT, CounterT>(state, algorithm, pattern, bins, items_per_thread, block_threads);
 }
 
 using sample_types  = nvbench::type_list<::cuda::std::int32_t>;
@@ -246,6 +289,7 @@ NVBENCH_BENCH_TYPES(block_histogram_algorithms, NVBENCH_TYPE_AXES(sample_types, 
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}"})
   .add_string_axis("Algorithm", {"atomic", "warp_aggregated", "sort"})
+  .add_int64_axis("BlockThreads", {128, 256, 512})
   .add_int64_axis("ItemsPerThread{io}", {1, 4, 8})
-  .add_int64_axis("Bins", {32, 128, 2048})
-  .add_string_axis("SamplePattern", {"single_bin", "skewed", "uniform"});
+  .add_int64_axis("Bins", {32, 64, 128, 512, 2048})
+  .add_string_axis("SamplePattern", {"single_bin", "lane_pairs", "skewed", "uniform"});
