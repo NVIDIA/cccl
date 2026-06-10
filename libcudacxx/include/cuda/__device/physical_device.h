@@ -23,11 +23,9 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
-#  include <cuda/__memory_pool/attributes.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/cassert>
@@ -41,10 +39,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
-// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
 [[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices();
 
@@ -76,11 +70,6 @@ class __physical_device
 #  endif // _CCCL_HOSTED()
   ::cuda::std::unique_ptr<device_ref[]> __peers_{};
   ::cuda::std::size_t __num_peers_{};
-
-#  if _CCCL_HOSTED()
-  ::std::once_flag __default_pool_once_flag_{};
-#  endif // _CCCL_HOSTED()
-  ::cudaMemPool_t __default_pool_{nullptr};
 
   _CCCL_HOST_API void __set_name()
   {
@@ -181,23 +170,6 @@ public:
 #  endif //  _CCCL_FREESTANDING()
     return ::cuda::std::span<const device_ref>{__peers_.get(), __num_peers_};
   }
-
-  [[nodiscard]] _CCCL_HOST_API ::cudaMemPool_t __get_default_memory_pool()
-  {
-#  if _CCCL_HOSTED()
-    ::std::call_once(__default_pool_once_flag_, [this]() {
-      __default_pool_ = ::cuda::__get_default_memory_pool(
-        ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device_}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
-    });
-#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-    if (!__default_pool_)
-    {
-      __default_pool_ = ::cuda::__get_default_memory_pool(
-        ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device_}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
-    }
-#  endif //  _CCCL_FREESTANDING()
-    return __default_pool_;
-  }
 };
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::unique_ptr<__physical_device[]>
@@ -245,8 +217,6 @@ _CCCL_HOST_API inline void device_ref::init() const
 {
   return ::cuda::__physical_devices()[__id_].__peers();
 }
-
-_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 
