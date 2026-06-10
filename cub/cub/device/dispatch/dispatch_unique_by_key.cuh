@@ -522,9 +522,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       ValueOutputIteratorT,
       EqualityOpT,
       OffsetT>;
-    constexpr UniqueByKeyPolicy active_policy     = vsmem_adapted_agents::policy;
-    const ::cuda::std::size_t vsmem_per_block =
-    vsmem_helper_impl<typename vsmem_adapted_agents::agent_t>::vsmem_per_block;
+    constexpr UniqueByKeyPolicy active_policy = vsmem_adapted_agents::policy;
+    const ::cuda::std::size_t vsmem_per_block = vsmem_helper_impl<typename vsmem_adapted_agents::agent_t>::vsmem_per_block;
 #endif
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
