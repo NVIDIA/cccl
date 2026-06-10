@@ -475,18 +475,15 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   agent.Process();
 }
 
-template <typename PolicySelector, bool TRIGGER_AT_START, bool FENCE_BEFORE_END_TRIGGER, typename InitT0, typename InitT1>
+template <typename PolicySelector, typename InitT0, typename InitT1>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
   _CCCL_GRID_CONSTANT InitT0* const d_items0,
   _CCCL_GRID_CONSTANT const size_t num_items0,
   _CCCL_GRID_CONSTANT InitT1* const d_items1,
   _CCCL_GRID_CONSTANT const size_t num_items1)
 {
-  if constexpr (TRIGGER_AT_START)
-  {
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-  }
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
   const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
@@ -501,17 +498,6 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
     {
       d_items1[idx] = 0;
     }
-  }
-
-  if constexpr (FENCE_BEFORE_END_TRIGGER)
-  {
-    __threadfence();
-  }
-
-  if constexpr (!TRIGGER_AT_START)
-  {
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 }
 

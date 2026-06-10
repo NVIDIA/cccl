@@ -105,20 +105,10 @@ std::string get_exclusive_sum_kernel_name(std::string_view chained_policy_t, std
   return std::format("cub::detail::radix_sort::DeviceRadixSortExclusiveSumKernel<{0}, {1}>", chained_policy_t, offset_t);
 }
 
-std::string get_init_kernel_name(
-  std::string_view chained_policy_t,
-  bool trigger_at_start,
-  bool fence_before_end_trigger,
-  std::string_view init_t0,
-  std::string_view init_t1)
+std::string get_init_kernel_name(std::string_view chained_policy_t, std::string_view init_t0, std::string_view init_t1)
 {
   return std::format(
-    "cub::detail::radix_sort::DeviceRadixSortInitKernel<{0}, {1}, {2}, {3}, {4}>",
-    chained_policy_t,
-    trigger_at_start ? "true" : "false",
-    fence_before_end_trigger ? "true" : "false",
-    init_t0,
-    init_t1);
+    "cub::detail::radix_sort::DeviceRadixSortInitKernel<{0}, {1}, {2}>", chained_policy_t, init_t0, init_t1);
 }
 
 std::string get_onesweep_kernel_name(
@@ -316,8 +306,8 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
     radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_cpp, offset_t);
   std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t, offset_t);
   std::string init_bins_and_counters_kernel_name =
-    radix_sort::get_init_kernel_name(chained_policy_t, true, false, "int", offset_t);
-  std::string init_lookback_kernel_name = radix_sort::get_init_kernel_name(chained_policy_t, false, true, "int", "int");
+    radix_sort::get_init_kernel_name(chained_policy_t, "int", offset_t);
+  std::string init_lookback_kernel_name = radix_sort::get_init_kernel_name(chained_policy_t, "int", "int");
   std::string onesweep_kernel_name =
     radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
   std::string single_tile_kernel_lowered_name;
