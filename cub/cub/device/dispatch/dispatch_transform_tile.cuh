@@ -164,7 +164,7 @@ template <typename TransformOp, typename OutIter, typename... InIters, typename 
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_op_type must be trivially default constructible");
 
-  return DeviceTransform::template Transform<0, CUB_NS_QUALIFIER::transform::tile_mufu_heavy_v<TransformOp>, tile_op_t>(
+  return DeviceTransform::Transform<0, CUB_NS_QUALIFIER::transform::tile_mufu_heavy_v<TransformOp>, tile_op_t>(
     in_ptrs, out_ptr, static_cast<::cuda::std::int64_t>(num_items), tile_op_t{}, stream);
 }
 
