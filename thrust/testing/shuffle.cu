@@ -8,6 +8,8 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/random>
+
 #include <algorithm>
 #include <limits>
 #include <map>
@@ -105,6 +107,35 @@ void TestShuffleCopySimpleIterator()
 }
 DECLARE_VECTOR_UNITTEST(TestShuffleCopySimple);
 DECLARE_VECTOR_UNITTEST(TestShuffleCopySimpleIterator);
+
+template <typename Vector>
+void TestShuffleCudaStdPhilox()
+{
+  Vector data{0, 1, 2, 3, 4};
+  Vector shuffled(data.begin(), data.end());
+  cuda::std::philox4x32 g(2);
+  thrust::shuffle(shuffled.begin(), shuffled.end(), g);
+  thrust::sort(shuffled.begin(), shuffled.end());
+
+  ASSERT_EQUAL(shuffled, data);
+}
+DECLARE_VECTOR_UNITTEST(TestShuffleCudaStdPhilox);
+
+template <typename Vector>
+void TestShuffleCopyCudaStdPhilox()
+{
+  Vector data{0, 1, 2, 3, 4};
+  Vector shuffled(5);
+  Vector in_place(data.begin(), data.end());
+  cuda::std::philox4x32 g(2);
+
+  thrust::shuffle_copy(data.begin(), data.end(), shuffled.begin(), g);
+  g.seed(2);
+  thrust::shuffle(in_place.begin(), in_place.end(), g);
+
+  ASSERT_EQUAL(shuffled, in_place);
+}
+DECLARE_VECTOR_UNITTEST(TestShuffleCopyCudaStdPhilox);
 
 template <typename ShuffleFunc, typename T>
 void TestHostDeviceIdenticalBase(size_t m)

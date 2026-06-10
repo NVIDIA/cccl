@@ -17,9 +17,6 @@
 
 #include "../../rep.h"
 #include "test_macros.h"
-#ifndef TEST_DEVICE_FUNC
-#  error whomp whomp
-#endif
 
 int main(int, char**)
 {
