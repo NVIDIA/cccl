@@ -31,7 +31,17 @@ TEST_FUNC constexpr T expected_rotl(T value, int count)
   {
     count_mod += digits;
   }
-  return count_mod == 0 ? value : static_cast<T>((value << count_mod) | (value >> (digits - count_mod)));
+
+  T result = 0;
+  for (int dst = 0; dst < digits; ++dst)
+  {
+    int src = (dst - count_mod + digits) % digits;
+    if ((value & (T{1} << src)) != T{0})
+    {
+      result = result | (T{1} << dst);
+    }
+  }
+  return result;
 }
 
 template <typename T>
@@ -41,9 +51,9 @@ TEST_FUNC constexpr void test()
   static_assert(noexcept(cuda::std::rotl(T(0), 0)));
 
   T values[] = {
-    T(0),
-    T(1),
-    T(0xB3),
+    T{0},
+    T{1},
+    T{0xB3},
     cuda::std::numeric_limits<T>::max(),
     T{cuda::std::numeric_limits<T>::max() - 1},
   };
@@ -51,7 +61,10 @@ TEST_FUNC constexpr void test()
   {
     for (int count = -34; count <= 34; ++count)
     {
-      assert(cuda::std::rotl(value, count) == expected_rotl(value, count));
+      auto rotated = cuda::std::rotl(value, count);
+      assert(rotated == expected_rotl(value, count));
+      assert(rotated == cuda::std::rotr(value, -count));
+      assert(cuda::std::rotr(rotated, count) == value);
     }
   }
 }
