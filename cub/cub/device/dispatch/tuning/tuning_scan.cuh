@@ -563,19 +563,19 @@ struct policy_hub
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
     using ScanPolicyT =
-      AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
+      agent_scan_policy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
   struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
     using ScanPolicyT =
-      AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
+      agent_scan_policy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct DefaultPolicy
   {
     using ScanPolicyT =
-      AgentScanPolicy<128, 15, AccumT, scan_transposed_load, LOAD_DEFAULT, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
+      agent_scan_policy<128, 15, AccumT, scan_transposed_load, LOAD_DEFAULT, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct Policy600
@@ -586,15 +586,15 @@ struct policy_hub
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
   template <typename Tuning>
   _CCCL_HOST_DEVICE static auto select_agent_policy(int)
-    -> AgentScanPolicy<Tuning::threads,
-                       Tuning::items,
-                       AccumT,
-                       Tuning::load_algorithm,
-                       LOAD_DEFAULT,
-                       Tuning::store_algorithm,
-                       BLOCK_SCAN_WARP_SCANS,
-                       cub::detail::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
-                       typename Tuning::delay_constructor>;
+    -> agent_scan_policy<Tuning::threads,
+                         Tuning::items,
+                         AccumT,
+                         Tuning::load_algorithm,
+                         LOAD_DEFAULT,
+                         Tuning::store_algorithm,
+                         BLOCK_SCAN_WARP_SCANS,
+                         cub::detail::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                         typename Tuning::delay_constructor>;
   template <typename Tuning>
   _CCCL_HOST_DEVICE static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
 
@@ -612,15 +612,15 @@ struct policy_hub
                                          && sizeof(IVT) == sizeof(OutputValueT),
                                        int> = 0>
     _CCCL_HOST_DEVICE static auto select_agent_policy750(int)
-      -> AgentScanPolicy<Tuning::threads,
-                         Tuning::items,
-                         AccumT,
-                         Tuning::load_algorithm,
-                         Tuning::load_modifier,
-                         Tuning::store_algorithm,
-                         BLOCK_SCAN_WARP_SCANS,
-                         MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
-                         typename Tuning::delay_constructor>;
+      -> agent_scan_policy<Tuning::threads,
+                           Tuning::items,
+                           AccumT,
+                           Tuning::load_algorithm,
+                           Tuning::load_modifier,
+                           Tuning::store_algorithm,
+                           BLOCK_SCAN_WARP_SCANS,
+                           MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                           typename Tuning::delay_constructor>;
     template <typename Tuning, typename IVT>
     _CCCL_HOST_DEVICE static auto select_agent_policy750(long) -> typename Policy600::ScanPolicyT;
 
@@ -661,15 +661,15 @@ struct policy_hub
                                          && sizeof(IVT) == sizeof(OutputValueT),
                                        int> = 0>
     _CCCL_HOST_DEVICE static auto select_agent_policy100(int)
-      -> AgentScanPolicy<Tuning::threads,
-                         Tuning::items,
-                         AccumT,
-                         Tuning::load_algorithm,
-                         Tuning::load_modifier,
-                         Tuning::store_algorithm,
-                         BLOCK_SCAN_WARP_SCANS,
-                         MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
-                         typename Tuning::delay_constructor>;
+      -> agent_scan_policy<Tuning::threads,
+                           Tuning::items,
+                           AccumT,
+                           Tuning::load_algorithm,
+                           Tuning::load_modifier,
+                           Tuning::store_algorithm,
+                           BLOCK_SCAN_WARP_SCANS,
+                           MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                           typename Tuning::delay_constructor>;
     template <typename Tuning, typename IVT>
     _CCCL_HOST_DEVICE static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
 
