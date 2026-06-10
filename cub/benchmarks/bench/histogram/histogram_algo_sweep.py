@@ -37,6 +37,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import statistics
 import subprocess
 import sys
@@ -54,8 +55,13 @@ BINARIES = {
 # Forced high-bin algorithms (env values for CUB_HISTO_FORCE_ALGO). "" == the
 # selector's own pick, recorded under the "default" key. `main` is handled
 # separately (a different binary, no force hook).
+# `hybrid` and `gmem_privatized_nocache` both live under the GmemPrivatized<NoCache>
+# kernel (hybrid = smem_split>0 member, gmem_privatized_nocache = pure-gather member);
+# forcing pins one member. hybrid is single-channel only (the driver records nothing
+# for it on multi-channel, where dispatch reports unsupported -> the cell is dropped).
 FORCED_ALGOS = [
     "",  # default (selector)
+    "hybrid",
     "gmem_privatized_nocache",
     "gmem_privatized_cuckoo",
     "gmem_privatized_single_probe",
@@ -64,6 +70,15 @@ FORCED_ALGOS = [
     "direct_single_probe",
 ]
 ALGO_KEY = {"": "default"}  # env value -> JSON key; others map to themselves.
+
+# The exact `[launch] ... ran=X` tag each forced request must produce to count as
+# "actually ran the requested algorithm". Both GmemPrivatized<NoCache> members report
+# ran=gmem_privatized_nocache, distinguished only by the `:hybrid` suffix -- so the
+# two requests validate against different full tags. Everything else maps to itself.
+EXPECTED_RAN = {
+    "hybrid": "gmem_privatized_nocache:hybrid",
+    "gmem_privatized_nocache": "gmem_privatized_nocache",
+}
 
 # At or below this bin count the whole histogram fits on-chip and the selector
 # ALWAYS runs smem_privatized; the CUB_HISTO_FORCE_ALGO override is gated OFF there
@@ -123,12 +138,32 @@ def cell_key(sample: str, elements: int, bins: int, shape: str) -> str:
     return f"{sample}|{elements}|{bins}|{shape}"
 
 
+# Maps the `[launch] ... ran=X` tag the dispatch emits to the canonical algorithm
+# name the sweep forces. The hybrid member reports `gmem_privatized_nocache:hybrid`;
+# it serves the `gmem_privatized_nocache` enum, so it validates that request.
+_LAUNCH_RE = re.compile(r"\[launch\] bins=(\d+) ch=(\d+) ran=([a-z_:]+)")
+
+
+def _ran_algo_from_stderr(stderr: str):
+    """The FULL algorithm tag the dispatch actually launched, parsed from the
+    env-gated `[launch]` tag (e.g. `gmem_privatized_nocache` or its `:hybrid` member
+    variant). Dispatch routing is shape-blind, so every `[launch]` line in one
+    invocation reports the same tag -> return it (None if absent or mixed). The
+    `:hybrid` suffix is KEPT so the hybrid vs pure-gather members are distinguishable."""
+    rans = {m.group(3) for m in _LAUNCH_RE.finditer(stderr)}
+    if len(rans) == 1:
+        return next(iter(rans))
+    return None  # 0 (no tag) or >1 (mixed -- shouldn't happen for a single-bin invocation)
+
+
 def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min_time, timeout):
     """Run one NVBench invocation (all `shapes` in one go) `repeats` times; return
-    {shape: median_gibps}, direct_ran_bool, ok_bool. A single binary call sweeps
-    the InputShape axis, so we pass the whole shape list and split per shape."""
+    {shape: median_gibps}, ran_algo, ok_bool. `ran_algo` is the canonical algorithm
+    the dispatch ACTUALLY launched (from the CUB_HISTO_LOG_LAUNCH tag), so the caller
+    can drop cells where a forced algorithm silently fell back to a different one. A
+    single binary call sweeps the InputShape axis, so we pass the whole shape list."""
     env = dict(os.environ)
-    env["CUB_HISTO_DEBUG_SLOTS"] = "1"
+    env["CUB_HISTO_LOG_LAUNCH"] = "1"  # emit the per-launch "[launch] ... ran=X" tag
     if algo_env:
         env["CUB_HISTO_FORCE_ALGO"] = algo_env
     else:
@@ -146,19 +181,19 @@ def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min
         "--timeout", str(timeout), "--csv", "stdout", "--quiet",
     ]
     per_shape = {}
-    direct_ran = False
+    ran_algo = None
     for _ in range(repeats):
         p = subprocess.run(cmd, env=env, text=True, capture_output=True)
-        direct_ran = direct_ran or ("[CUB_HISTO_DEBUG_SLOTS]" in p.stderr)
+        ran_algo = ran_algo or _ran_algo_from_stderr(p.stderr)
         if p.returncode != 0:
-            return {}, direct_ran, False
+            return {}, ran_algo, False
         for r in csv.DictReader(StringIO(p.stdout)):
             if r.get("Skipped") == "Yes":
                 continue
             bw = r.get("GlobalMem BW (bytes/sec)", "")
             if bw:
                 per_shape.setdefault(r["InputShape"], []).append(float(bw) / 1024**3)
-    return {sh: statistics.median(v) for sh, v in per_shape.items() if v}, direct_ran, True
+    return {sh: statistics.median(v) for sh, v in per_shape.items() if v}, ran_algo, True
 
 
 def main():
@@ -215,6 +250,10 @@ def main():
             print(f"!! missing branch binary {branch_bin}; skipping {blabel}", flush=True)
             continue
         algo_cells: dict[str, dict[str, float]] = {}
+        # Ground-truth record of which algorithm the selector `default` actually
+        # launched at each cell (from the [launch] tag), so the plotter can label the
+        # default series exactly rather than inferring it. Keyed like the perf cells.
+        selected = algo_cells.setdefault("_selected", {})
         for sample in args.samples:
             for elements in args.elements:
                 for bins in args.bins:
@@ -223,26 +262,44 @@ def main():
                     algos = FORCED_ALGOS if high else [""]
                     for algo_env in algos:
                         akey = ALGO_KEY.get(algo_env, algo_env)
-                        med, dr, ok = run_cell(branch_bin, algo_env, sample, elements, bins,
-                                               args.shapes, args.repeats, args.min_time, args.timeout)
+                        med, ran, ok = run_cell(branch_bin, algo_env, sample, elements, bins,
+                                                args.shapes, args.repeats, args.min_time, args.timeout)
                         total_calls += 1
                         if not ok:
                             print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
                                   f"{akey:28} ABORT", flush=True)
                             continue
+                        # DROP a forced cell whose requested algorithm did NOT actually
+                        # run -- the dispatch silently substituted a different one (e.g.
+                        # forced direct_cuckoo below the threshold ran gather, or a
+                        # multi-channel `hybrid` request that is unsupported). Validate
+                        # the [launch] tag against the exact tag the request must emit.
+                        # `default` is exempt (it IS "whatever the selector picks"); its
+                        # actual pick is recorded into `_selected` for the plotter tags.
+                        if algo_env:
+                            expected = EXPECTED_RAN.get(akey, akey)
+                            if ran != expected:
+                                print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                      f"{akey:28} DROP (ran={ran})", flush=True)
+                                continue
+                        else:
+                            if ran is not None:
+                                for sh in med:
+                                    selected[cell_key(sample, elements, bins, sh)] = ran
                         for sh, v in med.items():
                             algo_cells.setdefault(akey, {})[cell_key(sample, elements, bins, sh)] = v
                         line = "  ".join(f"{sh.split(':')[0][:5]}={med[sh]:.0f}" for sh in sorted(med))
+                        tagnote = f" ran={ran}" if not algo_env else ""
                         print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                              f"{akey:28} dr={int(dr)} {line}", flush=True)
+                              f"{akey:28}{tagnote} {line}", flush=True)
                 # main baseline column for this (sample, elements): default dispatch only.
                 if main_dir and main_shapes:
                     main_bin = main_dir / target
                     if main_bin.exists():
                         for elements in args.elements:
                             for bins in args.bins:
-                                med, _, ok = run_cell(main_bin, "", sample, elements, bins,
-                                                      main_shapes, args.repeats, args.min_time, args.timeout)
+                                med, _ran, ok = run_cell(main_bin, "", sample, elements, bins,
+                                                         main_shapes, args.repeats, args.min_time, args.timeout)
                                 total_calls += 1
                                 if not ok:
                                     print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "

@@ -81,7 +81,8 @@ BINARY_META = {
 ALGO_STYLE = {
     "default": ("#000000", "*", "selected default", "-", 2.2),
     "main": ("#e6194B", "X", "baseline (upstream main)", "-.", 2.2),
-    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv + no cache", "-", 1.1),
+    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv + no cache (gather)", "-", 1.1),
+    "hybrid": ("#e377c2", "P", "hybrid (SMEM+GMEM single-pass)", "--", 1.1),
     "gmem_privatized_cuckoo": ("#1f77b4", "o", "gmem-priv + cuckoo", "--", 1.1),
     "gmem_privatized_single_probe": ("#17becf", "s", "gmem-priv + single-probe", ":", 1.1),
     "direct_cuckoo": ("#2ca02c", "D", "direct-atomic + cuckoo", "--", 1.1),
@@ -95,10 +96,15 @@ ALGO_STYLE = {
     "smem_privatized": ("#8c564b", "h", "smem privatized", "-", 1.3),
 }
 # 3-letter tag per algorithm, used to label each point of the `default` series with
-# the algorithm the selector actually picked there.
+# the algorithm the selector actually picked there. `hybrid` is the smem_split>0
+# member of the gmem_privatized_nocache kernel; the dispatch launch tag reports it as
+# `gmem_privatized_nocache:hybrid`, which the sweep stores verbatim, so map both the
+# member-suffixed name and the bare `hybrid` here.
 ALGO_TAG = {
     "smem_privatized": "SMP",
     "gmem_privatized_nocache": "GPN",
+    "gmem_privatized_nocache:hybrid": "HYB",
+    "hybrid": "HYB",
     "gmem_privatized_cuckoo": "GPC",
     "gmem_privatized_single_probe": "GPS",
     "direct_cuckoo": "DAC",
@@ -111,6 +117,7 @@ ALGO_TAG = {
 ALGO_ORDER = [
     "smem_privatized",
     "gmem_privatized_nocache",
+    "hybrid",
     "gmem_privatized_cuckoo",
     "gmem_privatized_single_probe",
     "direct_cuckoo",
@@ -153,19 +160,27 @@ def fmt_bins(b: int) -> str:
 
 
 def selected_algo_tags(per_algo_cells, sample, elements, shape):
-    """Best-effort: which candidate algorithm the selector's `default` matched at
-    each bin, for labeling the default series. Returns {bins: 3-letter tag}.
+    """Which algorithm the selector's `default` actually launched at each bin, for
+    labeling the default series. Returns {bins: 3-letter tag}.
 
-    The sweep does not record the selector's choice directly, so we recover it: at
-    bins <= SMEM_PRIVATIZED_MAX_BINS the selector always runs smem_privatized (SMP); above
-    that, `default`'s measured GiB/s equals whichever forced algo it dispatched, so
-    we match default to the forced series whose value is closest (ties broken by
-    ALGO_ORDER -- the forced variants that tie are perf-equivalent anyway, so the tag
-    is representative). Cells with no usable match are left untagged."""
+    Ground truth: the sweep driver records the selector's pick per cell in the
+    `_selected` map (from the dispatch's CUB_HISTO_LOG_LAUNCH tag) -- we read that
+    directly, no inference. For older sweep JSONs without `_selected`, fall back to
+    matching `default`'s GiB/s to the forced series it equals (smem_privatized below
+    the on-chip bin cap)."""
+    tags = {}
+    selected = per_algo_cells.get("_selected", {})
+    if selected:  # ground-truth path
+        for key, ran in selected.items():
+            s, e, b, sh = key.split("|")
+            if s == sample and int(e) == elements and sh == shape and ran in ALGO_TAG:
+                tags[int(b)] = ALGO_TAG[ran]
+        return tags
+
+    # Fallback for legacy JSON: infer from values.
     deflt = per_algo_cells.get("default", {})
     forced = ["gmem_privatized_nocache", "gmem_privatized_cuckoo", "gmem_privatized_single_probe",
               "direct_cuckoo", "direct_single_probe", "direct_nocache"]
-    tags = {}
     for key, dv in deflt.items():
         s, e, b, sh = key.split("|")
         if s != sample or int(e) != elements or sh != shape or dv <= 0:
@@ -175,7 +190,7 @@ def selected_algo_tags(per_algo_cells, sample, elements, shape):
             tags[bins] = ALGO_TAG["smem_privatized"]
             continue
         best, best_err = None, None
-        for a in forced:  # forced is in ALGO_ORDER order -> deterministic tiebreak
+        for a in forced:
             av = per_algo_cells.get(a, {}).get(key)
             if av is None or av <= 0:
                 continue
@@ -453,8 +468,11 @@ def main():
         # key), so include it whenever `default` is present.
         algos = [a for a in ALGO_ORDER if a in per_algo_cells or a == "smem_privatized"]
 
+        # `_selected` is a meta map (selector's pick per cell), not an algorithm
+        # series -- exclude it from sample/element/shape discovery and from plotting.
+        data_cells = {a: c for a, c in per_algo_cells.items() if a != "_selected"}
         samples, elements = set(), set()
-        for cells in per_algo_cells.values():
+        for cells in data_cells.values():
             for key in cells:
                 s, e, _, _ = key.split("|")
                 samples.add(s)
@@ -465,7 +483,7 @@ def main():
             folder = os.path.join(args.outdir, f"{transform}_{channels}_{sample}")
             os.makedirs(folder, exist_ok=True)
             # Render every shape present in the data for this binary.
-            shapes = sorted({k.split("|")[3] for cells in per_algo_cells.values() for k in cells},
+            shapes = sorted({k.split("|")[3] for cells in data_cells.values() for k in cells},
                             key=lambda s: (C.SHAPES.index(s) if s in C.SHAPES else 999, s))
             hr_for_binary = hitrate.get(binary_label, {})
             for shape in shapes:
