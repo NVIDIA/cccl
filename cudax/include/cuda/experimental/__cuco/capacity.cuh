@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__numeric/mul_overflow.h>
+#include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
@@ -91,13 +92,9 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType make_valid_capacity(_SizeType __requested, double __load_factor)
 {
-  if (__load_factor <= 0.)
+  if (__load_factor <= 0. || !::cuda::in_range(__load_factor, 0., 1.))
   {
-    _CCCL_THROW(::std::logic_error, "Desired load factor must be larger than zero");
-  }
-  if (__load_factor > 1.)
-  {
-    _CCCL_THROW(::std::logic_error, "Desired load factor must be no larger than one");
+    _CCCL_THROW(::std::logic_error, "Desired load factor must be in the range (0, 1]");
   }
   const auto __scaled = ::cuda::std::ceil(static_cast<double>(__requested) / __load_factor);
   if (__scaled > static_cast<double>(::cuda::std::numeric_limits<_SizeType>::max()))
