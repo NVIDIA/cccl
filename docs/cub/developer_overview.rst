@@ -135,3 +135,25 @@ For more detailed descriptions of the respective algorithms levels see the indiv
   - :ref:`device-scope algorithms<cub-developer-guide-device-scope>`
 
 There is additional information for :ref:`nvtx ranges <cub-developer-guide-nvtx>`
+
+Header and helper ownership
+************************************
+
+CUB headers follow the established CUB header shape: SPDX/file comments,
+``#pragma once``, ``<cub/config.cuh>``, and the implicit system-header pragma
+block. Do not apply libcu++'s explicit include guard and
+``<cuda/std/__cccl/prologue.h>`` / ``<cuda/std/__cccl/epilogue.h>`` pattern to
+CUB headers unless the surrounding CUB subsystem has already adopted that shape.
+
+Before adding a low-level CUDA device helper to a CUB utility header, search for
+an existing CUB or libcu++ facility. Prefer existing ``cuda::device`` helpers,
+such as the warp shuffle APIs, over new CUB wrappers. If a generally useful
+helper is missing, add it in a focused PR in the component that should own the
+API, with tests and documentation. If the helper is only needed by one new
+primitive, keep it local until a broader API boundary is clear.
+
+Keep feature PRs scoped to the new primitive or behavior. Independent helper
+extractions, shared trait refactors, utility-header additions, or code motion
+with possible CUDA codegen impact should be split into preparatory PRs. For
+codegen-sensitive refactors, include SASS diffs for the relevant benchmarks so
+reviewers can evaluate whether the refactor is behavior-preserving.
