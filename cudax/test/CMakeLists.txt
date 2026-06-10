@@ -141,6 +141,8 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
+add_subdirectory(multi_gpu)
+
 cudax_add_catch2_test(test_target group.mapping.binary_partition
     group/mapping/binary_partition.cu
 )
