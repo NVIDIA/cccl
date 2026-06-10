@@ -107,7 +107,7 @@ public:
 
   const ::std::lock_guard<::std::mutex> __guard(__mutex);
   const auto __device_id = static_cast<::cuda::std::size_t>(__device.get());
-  auto& __pool = __pools[__device_id];
+  auto& __pool           = __pools[__device_id];
   if (!__pool.has_value())
   {
     __pool.emplace(::cuda::__get_default_memory_pool(
