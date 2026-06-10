@@ -69,6 +69,43 @@ struct SelectPolicy
 #endif // _CCCL_HOSTED()
 };
 
+// We have a dedicated policy for partition, since it's also a dedicated public API. However, we will convert this
+// policy to a SelectPolicy at the device layer so the dispatch and kernel can just use a SelectPolicy.
+//! The tuning policy for all non-three-way algorithms of @ref DevicePartition
+struct PartitionPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
+  LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const PartitionPolicy& lhs, const PartitionPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const PartitionPolicy& p)
+  {
+    return os
+        << "PartitionPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 namespace detail::select
 {
 // TODO(bgruber): drop in CCCL 4.0
