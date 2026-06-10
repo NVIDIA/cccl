@@ -95,13 +95,19 @@ def numba_task(ctx, *args, symbol=None):
     class _NumbaTaskContext:
         def __enter__(self):
             t.start()
-            cais = t.args_cai()
-            stream = t.stream_ptr()
-            if cais is None:
-                return ((), stream)
-            if isinstance(cais, tuple):
-                return (tuple(_to_numba(c) for c in cais), stream)
-            return ((_to_numba(cais),), stream)
+            try:
+                cais = t.args_cai()
+                stream = t.stream_ptr()
+                if cais is None:
+                    numba_args = ()
+                elif isinstance(cais, tuple):
+                    numba_args = tuple(_to_numba(c) for c in cais)
+                else:
+                    numba_args = (_to_numba(cais),)
+            except Exception:
+                t.end()
+                raise
+            return (numba_args, stream)
 
         def __exit__(self, exc_type, exc_val, exc_tb):
             t.end()
