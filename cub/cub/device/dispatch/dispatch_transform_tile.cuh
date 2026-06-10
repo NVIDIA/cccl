@@ -100,13 +100,10 @@ struct DeviceTransform
   }
 };
 
-namespace __detail
-{
 template <typename Iter>
 using __unwrapped_value_t =
   ::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<decltype(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(
     ::cuda::std::declval<Iter>()))>>;
-} // namespace __detail
 
 // Combined compile-time predicate used by cub::DeviceTransform's __transform_internal
 // to decide whether to route a given (Op, OutIter, InIters...) to the tile path.
@@ -119,7 +116,7 @@ inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
   && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
   && CUB_NS_QUALIFIER::transform::tile_eligible_v<
-       Op, __detail::__unwrapped_value_t<OutIter>, sizeof...(InIters)>;
+       Op, __unwrapped_value_t<OutIter>, sizeof...(InIters)>;
 
 // Runtime predicate consulted by the cub::DeviceTransform tile hook before
 // it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
