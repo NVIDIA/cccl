@@ -174,32 +174,29 @@ TEST_FUNC void test_empty_specialization()
   const auto AT = cuda::std::allocator_arg;
   unused(AT);
   { // Testing (1)
-    cuda::std::tuple t1{};
+    [[maybe_unused]] cuda::std::tuple t1{};
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
-    unused(t1);
   }
   { // Testing (2)
-    cuda::std::tuple t1{AT, A};
+    [[maybe_unused]] cuda::std::tuple t1{AT, A};
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
   }
   { // Testing (3)
     const cuda::std::tuple<> t{};
-    cuda::std::tuple t1(t);
+    [[maybe_unused]] cuda::std::tuple t1(t);
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
-    unused(t1);
   }
   { // Testing (4)
-    cuda::std::tuple t1(cuda::std::tuple<>{});
+    [[maybe_unused]] cuda::std::tuple t1(cuda::std::tuple<>{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
-    unused(t1);
   }
   { // Testing (5)
     const cuda::std::tuple<> t{};
-    cuda::std::tuple t1(AT, A, t);
+    [[maybe_unused]] cuda::std::tuple t1(AT, A, t);
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
   }
   { // Testing (6)
-    cuda::std::tuple t1(AT, A, cuda::std::tuple<>{});
+    [[maybe_unused]] cuda::std::tuple t1(AT, A, cuda::std::tuple<>{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
   }
 }

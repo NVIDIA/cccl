@@ -131,8 +131,8 @@ public:
 
   // This is movable, but we don't need to call clear anymore after moving
   stream_adapter(stream_adapter&& other) noexcept
-      : adapter_state(other.adapter_state)
-      , alloc(other.alloc)
+      : adapter_state(mv(other.adapter_state))
+      , alloc(mv(other.alloc))
       , cleared_or_moved(other.cleared_or_moved)
   {
     // No need to clear this now that it was moved

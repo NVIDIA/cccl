@@ -168,8 +168,7 @@ struct block_size_extracting_minus_t
 template <int ThreadsPerBlock>
 struct adj_diff_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::adjacent_difference::adjacent_difference_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::AdjacentDifferencePolicy
   {
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
   }
@@ -241,3 +240,35 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("AdjacentDifferencePolicy", "[adjacent_difference][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::AdjacentDifferencePolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::AdjacentDifferencePolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::AdjacentDifferencePolicy{
+    128,
+    7,
+    cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+    cub::CacheLoadModifier::LOAD_LDG,
+    cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::AdjacentDifferencePolicy{
+    .threads_per_block = 128,
+    .items_per_thread  = 7,
+    .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+    .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -68,12 +68,12 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result))>);
-      static_assert(!noexcept(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result)));
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(!noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
@@ -108,12 +108,12 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result)));
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
@@ -148,12 +148,12 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result))>);
-      static_assert(!noexcept(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result)));
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(!noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
