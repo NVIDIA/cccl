@@ -34,6 +34,32 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+// TODO(bgruber): remove when C++20 is the minimum, since then we can pass policy values as NTTPs
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockStoreAlgorithm StoreAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>,
+          typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
+struct agent_scan_policy : ScalingType
+{
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = ScanAlgorithm;
+
+  struct detail
+  {
+    using delay_constructor_t = DelayConstructorT;
+  };
+};
+} // namespace detail
+
 /******************************************************************************
  * Tuning policy types
  ******************************************************************************/
@@ -75,18 +101,16 @@ template <int NominalThreadsPerBlock4B,
           BlockScanAlgorithm ScanAlgorithm,
           typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>,
           typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
-struct AgentScanPolicy : ScalingType
-{
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
-  static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
-  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = ScanAlgorithm;
-
-  struct detail
-  {
-    using delay_constructor_t = DelayConstructorT;
-  };
-};
+using AgentScanPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") = detail::agent_scan_policy<
+  NominalThreadsPerBlock4B,
+  NominalItemsPerThread4B,
+  ComputeT,
+  LoadAlgorithm,
+  LoadModifier,
+  StoreAlgorithm,
+  ScanAlgorithm,
+  ScalingType,
+  DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions

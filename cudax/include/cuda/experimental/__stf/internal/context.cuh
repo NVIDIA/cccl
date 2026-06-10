@@ -321,6 +321,26 @@ public:
       };
     }
 
+    /** Return the task's child CUDA graph for explicit node insertion. Only
+     * valid for tasks running in a graph context that have NOT enabled stream
+     * capture; aborts for stream-context tasks. Mutually exclusive with the
+     * capture path (get_stream()): use one mechanism or the other. */
+    cudaGraph_t get_graph()
+    {
+      return payload->*[&](auto& self) -> cudaGraph_t {
+        using task_t = ::std::decay_t<decltype(self)>;
+        if constexpr (::std::is_same_v<task_t, graph_task<Deps...>>)
+        {
+          return self.get_graph();
+        }
+        else
+        {
+          _CCCL_VERIFY(false, "get_graph() is only valid for tasks in a graph context");
+          return nullptr;
+        }
+      };
+    }
+
     /** When the task's exec place is a grid (size > 1), get the stream for the place at \p place_index
      * (linear index). Returns nullptr for graph_task (no per-place streams), for non-grid exec places, or
      * when \p place_index is out of range. */
@@ -1123,11 +1143,11 @@ UNITTEST("context resources released on finalize")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
@@ -1152,11 +1172,11 @@ UNITTEST("context resources released on finalize non blocking")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
@@ -1165,18 +1185,19 @@ UNITTEST("context resources released on finalize non blocking")
     }
   };
 
-  cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  const cudaStream_t stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call(cudaStreamDestroy(stream));
+  };
 
   bool released = false;
   context ctx(stream, async_resources_handle());
   ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
   ctx.finalize(); // non-blocking: context was created with user stream
   EXPECT(!released); // not yet, callback not run
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try<cudaStreamSynchronize>(stream);
   EXPECT(released);
-
-  cuda_safe_call(cudaStreamDestroy(stream));
 };
 
 UNITTEST("context import_resources_from")
@@ -1187,11 +1208,11 @@ UNITTEST("context import_resources_from")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
@@ -1226,8 +1247,11 @@ UNITTEST("context graph and stage")
 
 UNITTEST("context with arguments")
 {
-  cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  const cudaStream_t stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call(cudaStreamDestroy(stream));
+  };
 
   async_resources_handle h;
 
@@ -1242,8 +1266,6 @@ UNITTEST("context with arguments")
 
   context ctx4 = graph_ctx(stream, h);
   ctx4.finalize();
-
-  cuda_safe_call(cudaStreamDestroy(stream));
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
@@ -1608,7 +1630,7 @@ UNITTEST("context task")
 
   ctx.task(la.read(), lb.write())->*[](auto s, auto a, auto b) {
     // no-op
-    cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
+    cuda_safe_call(cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s));
   };
 
   ctx.finalize();
@@ -1750,8 +1772,7 @@ UNITTEST("make_tuple_indexwise")
 
 UNITTEST("cuda stream place")
 {
-  cudaStream_t user_stream;
-  cuda_safe_call(cudaStreamCreate(&user_stream));
+  const cudaStream_t user_stream = cuda_try<cudaStreamCreate>();
 
   context ctx;
 
@@ -1770,16 +1791,14 @@ UNITTEST("cuda stream place")
 
 UNITTEST("cuda stream place multi-gpu")
 {
-  cudaStream_t user_stream;
-
   // Create a CUDA stream in a different device (if available)
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   // use the last device
-  int target_dev_id = ndevices - 1;
+  const int target_dev_id = ndevices - 1;
 
-  cuda_safe_call(cudaSetDevice(target_dev_id));
-  cuda_safe_call(cudaStreamCreate(&user_stream));
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try<cudaSetDevice>(target_dev_id);
+  const cudaStream_t user_stream = cuda_try<cudaStreamCreate>();
+  cuda_try<cudaSetDevice>(0);
 
   context ctx;
 
@@ -1870,8 +1889,7 @@ UNITTEST("get_stream graph")
   cudaStream_t s = t.get_stream();
   // We are not capturing so there is no stream associated
   EXPECT(s == nullptr);
-  cudaGraphNode_t n;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
+  ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
   t.end();
 
   auto t2 = ctx.task(token.rw());
