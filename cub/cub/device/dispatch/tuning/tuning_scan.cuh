@@ -934,6 +934,40 @@ struct policy_selector
   {
     if (cc >= ::cuda::compute_capability{12, 0})
     {
+      // tunings from cub/benchmarks/bench/scan/exclusive/sum.warpspeed.cu
+      if (operation_t == op_kind_t::plus && accum_is_primitive_or_trivially_copy_constructible)
+      {
+        switch (input_value_size)
+        {
+          case 1:
+            // wrps_2.lbi_6.ipt_104 ()  1.092963  0.999648  1.103642   1.2
+            return scan_warpspeed_policy{2, 6, 104 - 1};
+          case 2:
+            // wrps_2.lbi_2.ipt_112 ()  1.223837  1.013303  1.244702  1.566667
+            return scan_warpspeed_policy{2, 2, 112 - 1};
+          case 4:
+            if (input_type == type_t::float32)
+            {
+              // wrps_1.lbi_2.ipt_104 ()  1.105203  1.002890  1.128118   1.4
+              return scan_warpspeed_policy{1, 2, 104 - 1};
+            }
+            //  wrps_1.lbi_2.ipt_80 ()  1.101183  1.004120  1.124414   1.4
+            return scan_warpspeed_policy{1, 2, 80 - 1};
+          case 8:
+            if (input_type == type_t::float64)
+            {
+              // wrps_1.lbi_4.ipt_40 ()  1.100034  0.961905  1.122249  1.333333
+              return scan_warpspeed_policy{1, 4, 40 - 1};
+            }
+            // wrps_1.lbi_6.ipt_56 ()  1.163872  1.002935  1.188899  1.466667
+            return scan_warpspeed_policy{1, 6, 56 - 1};
+          case 16:
+            // wrps_1.lbi_6.ipt_56 ()  1.139563  1.006005  1.161235  1.333333
+            return scan_warpspeed_policy{1, 6, 56 - 1};
+          default:
+            break;
+        }
+      }
       return get_sm120_fallback_warpspeed_policy();
     }
     if (cc >= ::cuda::compute_capability{10, 0})
