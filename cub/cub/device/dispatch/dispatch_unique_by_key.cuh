@@ -31,6 +31,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__type_traits/is_empty.h>
 
 CUB_NAMESPACE_BEGIN
 

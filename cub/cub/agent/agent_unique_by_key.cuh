@@ -55,6 +55,7 @@ struct agent_unique_by_key_policy
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int ItemsPerThread                    = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,

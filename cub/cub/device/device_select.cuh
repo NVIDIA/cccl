@@ -1772,7 +1772,7 @@ struct DeviceSelect
   //!
   //! @par Tuning
   //! @rst
-  //! All algorithms in DeviceSelect that operate on key-value pairs and accept an environment can be tuned by passing a
+  //! All *ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a
   //! custom :ref:`policy selector <cub-policy-selectors>` that returns a @ref UniqueByKeyPolicy, as shown in the
   //! example below:
   //!

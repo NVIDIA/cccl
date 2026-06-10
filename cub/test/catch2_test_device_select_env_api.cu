@@ -487,14 +487,16 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts a custom policy selector", "[se
     std::cerr << "cub::DeviceSelect::UniqueByKey failed with status: " << error << '\n';
   }
 
-  const int n = num_selected_out[0];
-  keys_out.resize(n);
-  values_out.resize(n);
+  thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  thrust::device_vector<int> expected_values{0, 1, 3, 4, 7};
   // example-end unique-by-key-tuning
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE(keys_out == thrust::device_vector<int>{0, 2, 9, 5, 8});
-  REQUIRE(values_out == thrust::device_vector<int>{0, 1, 3, 4, 7});
+  const int n = num_selected_out[0];
+  keys_out.resize(n);
+  values_out.resize(n);
+  CHECK(keys_out == expected_keys);
+  CHECK(values_out == expected_values);
 }
 
 #endif // _CCCL_STD_VER >= 2020
