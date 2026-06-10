@@ -49,7 +49,7 @@ __mod_mul(::cuda::std::uint64_t __n1, ::cuda::std::uint64_t __n2, ::cuda::std::u
     __n2 >>= 1;
   }
   return __r;
-#endif
+#endif // _CCCL_HAS_INT128()
 }
 
 //! @brief Modular exponentiation: `(__b ^ __e) % __m` via binary exponentiation.
