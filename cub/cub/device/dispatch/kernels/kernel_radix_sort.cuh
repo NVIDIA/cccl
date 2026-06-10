@@ -151,7 +151,7 @@ __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_blo
   static constexpr ScanPolicy active_policy = current_policy<PolicySelector>().scan;
   static_assert(active_policy.algorithm == ScanAlgorithm::lookback);
   static constexpr ScanLookbackPolicy policy = active_policy.lookback;
-  using ScanPolicy                           = AgentScanPolicy<
+  using ScanPolicy                           = agent_scan_policy<
                               0,
                               0,
                               void,
