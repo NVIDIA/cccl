@@ -198,7 +198,7 @@ struct policy_hub
       decltype(select_agent_policy<
                sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(0));
 
-    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
+    static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
 
   struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
@@ -223,7 +223,7 @@ struct policy_hub
                sm100_tuning<IsEven, SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(
         0));
 
-    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
+    static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
 
   using MaxPolicy = Policy1000;
@@ -239,7 +239,7 @@ struct histogram_policy
   bool rle_compress;
   BlockHistogramMemoryPreference mem_preference;
   bool work_stealing;
-  int pdl_trigger_next_launch_in_init_kernel_max_bin_count;
+  int init_kernel_pdl_trigger_max_bins;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const histogram_policy& lhs, const histogram_policy& rhs)
@@ -248,8 +248,7 @@ struct histogram_policy
         && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
         && lhs.mem_preference == rhs.mem_preference && lhs.work_stealing == rhs.work_stealing
-        && lhs.pdl_trigger_next_launch_in_init_kernel_max_bin_count
-             == rhs.pdl_trigger_next_launch_in_init_kernel_max_bin_count;
+        && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -262,12 +261,11 @@ struct histogram_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const histogram_policy& p)
   {
     return os
-        << "histogram_policy { .threads_per_block = " << p.threads_per_block
-        << ", .pixels_per_thread = " << p.pixels_per_thread << ", .vec_size = " << p.vec_size
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = " << p.mem_preference
-        << ", .work_stealing = " << p.work_stealing << ", .pdl_trigger_next_launch_in_init_kernel_max_bin_count = "
-        << p.pdl_trigger_next_launch_in_init_kernel_max_bin_count << " }";
+        << "histogram_policy { .threads_per_block = " << p.threads_per_block << ", .pixels_per_thread = "
+        << p.pixels_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
+        << ", .mem_preference = " << p.mem_preference << ", .work_stealing = " << p.work_stealing
+        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << " }";
   }
 #endif // _CCCL_HOSTED()
 };

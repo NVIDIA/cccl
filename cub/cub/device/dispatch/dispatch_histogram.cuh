@@ -725,9 +725,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(int)
-  -> decltype(ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count)
+  -> decltype(ActivePolicy::init_kernel_pdl_trigger_max_bins)
 {
-  return ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count;
+  return ActivePolicy::init_kernel_pdl_trigger_max_bins;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
