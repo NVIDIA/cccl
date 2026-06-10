@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,11 +23,11 @@
 
 // We need to define our own macros to not conflict with the host stl.
 // At the same time we want bring in all feature test macros from host
-#if _CCCL_HAS_INCLUDE(<version>) // <version> should be the smallest include possible
+#if __has_include(<version>) // <version> should be the smallest include possible
 #  include <version>
-#elif !_CCCL_COMPILER(NVRTC)
+#elif _CCCL_HOSTED()
 #  include <ciso646> // otherwise go for the smallest possible header
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #define __cccl_lib_bitops                       201907L
 #define __cccl_lib_bool_constant                201505L
@@ -39,7 +39,7 @@
 #define __cccl_lib_forward_like                 202207L
 #define __cccl_lib_gcd_lcm                      201606L
 #define __cccl_lib_integer_comparison_functions 202002L
-#define __cccl_lib_integer_sequence             201304L
+#define __cccl_lib_integer_sequence             202511L
 #define __cccl_lib_integral_constant_callable   201304L
 #define __cccl_lib_is_final                     201402L
 #define __cccl_lib_is_nothrow_convertible       201806L
@@ -51,7 +51,7 @@
 #define __cccl_lib_math_constants               201907L
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY) \
   && defined(_CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY)
-#  define __cpp_lib_reference_from_temporary 202202L
+#  define __cccl_lib_reference_from_temporary 202202L
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY && _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY
 #define __cccl_lib_shift                        201806L
 #define __cccl_lib_to_address                   201711L
@@ -60,7 +60,7 @@
 #define __cccl_lib_transparent_operators        201210L
 #define __cccl_lib_transformation_trait_aliases 201304L
 #define __cccl_lib_tuple_element_t              201402L
-// #define __cpp_lib_tuple_like                    202311L // P2819R2 is implemented, but P2165R4 is not yet
+// #define __cccl_lib_tuple_like                    202311L // P2819R2 is implemented, but P2165R4 is not yet
 #define __cccl_lib_type_identity                 201806L
 #define __cccl_lib_type_trait_variable_templates 201510L
 #define __cccl_lib_unreachable                   202202L
@@ -84,17 +84,13 @@
 // # define __cccl_lib_make_unique                          201304L
 #define __cccl_lib_mdspan         202207L
 #define __cccl_lib_null_iterators 201304L
-#define __cccl_lib_optional       202110L
-#ifdef CCCL_ENABLE_OPTIONAL_REF
-#  define __cpp_lib_optional_ref 202602L
-#endif // CCCL_ENABLE_OPTIONAL_REF
+#define __cccl_lib_optional       202506L
 // # define __cccl_lib_quoted_string_io                     201304L
 #define __cccl_lib_result_of_sfinae            201210L
 #define __cccl_lib_robust_nonmodifying_seq_ops 201304L
 // #   define __cccl_lib_shared_timed_mutex                 201402L
-#define __cccl_lib_source_location       201907L
-#define __cccl_lib_span                  202311L
-#define __cccl_lib_span_initializer_list 202311L
+#define __cccl_lib_source_location 201907L
+#define __cccl_lib_span            202311L
 // # define __cccl_lib_string_udls                          201304L
 #define __cccl_lib_submdspan      202207L
 #define __cccl_lib_tuples_by_type 201304L
@@ -114,10 +110,8 @@
 // # define __cccl_lib_execution                            201603L
 // # define __cccl_lib_filesystem                           201703L
 // #  define __cccl_lib_hardware_interference_size 201703L
-#ifdef _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
-#  define __cccl_lib_has_unique_object_representations 201606L
-#endif // _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
-#define __cccl_lib_hypot 201603L
+#define __cccl_lib_has_unique_object_representations 201606L
+#define __cccl_lib_hypot                             201603L
 // # define __cccl_lib_incomplete_container_elements        201505L
 #ifndef _LIBCUDACXX_HAS_NO_IS_AGGREGATE
 #  define __cccl_lib_is_aggregate 201703L
@@ -143,11 +137,13 @@
 // #   define __cccl_lib_shared_mutex                       201505L
 // # define __cccl_lib_shared_ptr_arrays                    201611L
 // # define __cccl_lib_shared_ptr_weak_type                 201606L
-// # define __cccl_lib_string_view                          201606L
+#define __cccl_lib_string_view 201803L
 // # define __cccl_lib_to_chars                             201611L
 // #  define __cccl_lib_uncaught_exceptions           201411L
 // #  define __cccl_lib_unordered_map_try_emplace     201411L
 #define __cccl_lib_variant 201606L
+
+#define __cccl_lib_saturation_arithmetic 202603L
 
 #if _CCCL_STD_VER >= 2020
 #  undef __cccl_lib_array_constexpr
@@ -173,16 +169,14 @@
 // # define __cccl_lib_constexpr_misc                       201811L
 // # define __cccl_lib_constexpr_numeric                    201911L
 // # define __cccl_lib_constexpr_string                     201907L
-// # define __cccl_lib_constexpr_string_view                201811L
 // # define __cccl_lib_constexpr_swap_algorithms            201806L
 // # define __cccl_lib_constexpr_tuple                      201811L
 // # define __cccl_lib_constexpr_utility                    201811L
 // # define __cccl_lib_constexpr_vector                     201907L
 // # define __cccl_lib_coroutine                            201902L
-#  if defined(__cpp_impl_destroying_delete) && __cpp_impl_destroying_delete >= 201806L \
-    && defined(__cpp_lib_destroying_delete)
+#  if __cpp_impl_destroying_delete >= 201806L && __cpp_lib_destroying_delete >= 201806L
 #    define __cccl_lib_destroying_delete 201806L
-#  endif
+#  endif // __cpp_impl_destroying_delete >= 201806L && __cpp_lib_destroying_delete >= 201806L
 // # define __cccl_lib_erase_if                             201811L
 // # undef  __cccl_lib_execution
 // # define __cccl_lib_execution                            201902L
@@ -206,11 +200,12 @@
 // # define __cccl_lib_source_location                      201907L
 // # define __cccl_lib_ssize                                201902L
 // # define __cccl_lib_starts_ends_with                     201711L
-// # undef  __cccl_lib_string_view
-// # define __cccl_lib_string_view                          201803L
 // # define __cccl_lib_syncbuf                              201803L
 // # define __cccl_lib_three_way_comparison                 201907L
 #  define __cccl_lib_unwrap_ref 201811L
+
+// todo(dabayer): Uncomment this once constant_wrapper is exposed.
+// #  define __cccl_lib_constant_wrapper 202603L
 #endif // _CCCL_STD_VER >= 2020
 
 #if _CCCL_STD_VER >= 2023

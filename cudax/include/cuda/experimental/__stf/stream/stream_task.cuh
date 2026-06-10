@@ -36,7 +36,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class stream_ctx;
 
 template <typename... Data>
@@ -64,11 +63,16 @@ public:
     ctx.increment_task_count();
   }
 
-  stream_task(const stream_task<>&)              = default;
-  stream_task<>& operator=(const stream_task<>&) = default;
-  ~stream_task()                                 = default;
-
-  // movable ??
+  // Tasks are move-only: a task wrapper owns per-instance in-flight state
+  // (capture stream, frontier, done nodes, held mutex during stream capture)
+  // on top of the pimpl `task` base, so copying it has no meaningful semantics.
+  // Contexts (`stream_ctx`, `graph_ctx`, `context`) are pimpl handles and
+  // remain copyable.
+  stream_task(const stream_task&)              = delete;
+  stream_task<>& operator=(const stream_task&) = delete;
+  stream_task(stream_task&&)                   = default;
+  stream_task<>& operator=(stream_task&&)      = default;
+  ~stream_task()                               = default;
 
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
@@ -76,24 +80,21 @@ public:
   cudaStream_t get_stream() const
   {
     const auto& e_place = get_exec_place();
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
-      // Even with a grid, when we have a ctx.task construct we have not
-      // yet selected/activated a specific place. So we take the main
-      // stream associated to the whole task in that case.
-      ::std::ptrdiff_t current_place_id = e_place.as_grid().current_place_id();
-      return (current_place_id < 0 ? dstream.stream : stream_grid[current_place_id].stream);
+      // For grids, use get_stream(idx) to specify which place's stream.
+      // Without an index, return the main task stream.
+      return dstream.stream;
     }
 
     return dstream.stream;
   }
 
-  // TODO use a pos4 and check that we have a grid, of the proper dimension
   cudaStream_t get_stream(size_t pos) const
   {
     const auto& e_place = get_exec_place();
 
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       return stream_grid[pos].stream;
     }
@@ -106,30 +107,27 @@ public:
     // We don't need to find a stream from the pool in this case
     automatic_stream = false;
     // -1 identifies streams which are not from our internal pool
-    dstream = decorated_stream(s);
+    dstream = augmented_stream(s);
     return *this;
   }
 
   stream_task<>& start()
   {
-    const auto& e_place = get_exec_place();
+    auto& e_place = get_exec_place();
 
-    event_list prereqs = acquire(ctx);
+    event_list ready_prereqs = acquire(ctx);
 
     /* Select the stream(s) */
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       // We have currently no way to pass an array of per-place streams
-      assert(automatic_stream);
+      _CCCL_ASSERT(automatic_stream, "automatic stream is not enabled");
 
-      // Note: we store grid in a variable to avoid dangling references
-      // because the compiler does not know we are making a reference to
-      // a vector that remains valid
-      const auto& grid   = e_place.as_grid();
-      const auto& places = grid.get_places();
-      for (const exec_place& p : places)
+      // Get stream for each place in the grid
+      auto& place_res = ctx.async_resources().get_place_resources();
+      for (size_t i = 0; i < e_place.size(); ++i)
       {
-        stream_grid.push_back(get_stream_from_pool(p));
+        stream_grid.push_back(e_place.get_place(i).getStream(place_res, true));
       }
 
       EXPECT(stream_grid.size() > 0UL);
@@ -138,8 +136,9 @@ public:
     {
       if (automatic_stream)
       {
-        bool found = false;
-        auto& pool = e_place.get_stream_pool(ctx.async_resources(), true);
+        bool found      = false;
+        auto& place_res = ctx.async_resources().get_place_resources();
+        auto& pool      = e_place.get_stream_pool(true, place_res);
 
         // To avoid creating inter stream dependencies when this is not
         // necessary, we try to reuse streams which belong to the pool,
@@ -149,17 +148,17 @@ public:
         // multiple streams.
         if (!getenv("CUDASTF_DO_NOT_REUSE_STREAMS"))
         {
-          for (auto& e : prereqs)
+          for (auto& e : ready_prereqs)
           {
             // fprintf(stderr, "outbounds %d (%s)\n", e->outbound_deps.load(), e->get_symbol().c_str());
             if (e->outbound_deps == 0)
             {
               auto se                    = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
-              decorated_stream candidate = se->get_decorated_stream();
+              augmented_stream candidate = se->get_augmented_stream();
 
-              if (candidate.id != -1)
+              if (candidate.id != k_no_stream_id)
               {
-                for (const decorated_stream& pool_s : pool)
+                for (const augmented_stream& pool_s : pool)
                 {
                   if (candidate.id == pool_s.id)
                   {
@@ -181,44 +180,62 @@ public:
 
         if (!found)
         {
-          dstream = get_stream_from_pool(e_place);
+          dstream = e_place.getStream(place_res, true);
           //    fprintf(stderr, "COULD NOT REUSE ... selected stream ID %ld\n", dstream.id);
         }
       }
     }
 
     // Select one stream to sync with all prereqs
-    auto& s0 = e_place.is_grid() ? stream_grid[0] : dstream;
+    auto& s0 = (e_place.size() > 1) ? stream_grid[0] : dstream;
 
     /* Ensure that stream depend(s) on prereqs */
-    submitted_events = stream_async_op(ctx, s0, prereqs);
+    submitted_events = stream_async_op(ctx, s0, ready_prereqs);
     if (ctx.generate_event_symbols())
     {
       submitted_events.set_symbol("Submitted" + get_symbol());
     }
 
-    /* If this is a grid, all other streams must wait on s0 too */
-    if (e_place.is_grid())
+    /* If this is a multi-place grid, all other streams must wait on s0 too */
+    if (e_place.size() > 1)
     {
       insert_dependencies(stream_grid);
     }
 
+    auto& dot = ctx.get_dot();
+    if (dot->is_tracing())
+    {
+      dot->template add_vertex<task, logical_data_untyped>(*this);
+    }
+
+    set_ready_prereqs(mv(ready_prereqs));
+
     return *this;
   }
 
-  void set_current_place(pos4 p)
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * Returns an exec_place_scope RAII guard. The sub-place is automatically
+   * deactivated when the guard is destroyed.
+   *
+   * @param p The position within the grid
+   * @return An exec_place_scope guard managing the activation lifetime
+   */
+  exec_place_scope activate_place(pos4 p)
   {
-    get_exec_place().as_grid().set_current_place(ctx, p);
+    return get_exec_place().activate(get_exec_place().get_dims().get_index(p));
   }
 
-  void unset_current_place()
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * @param idx The linear index within the grid
+   * @return An exec_place_scope guard managing the activation lifetime
+   */
+  exec_place_scope activate_place(size_t idx)
   {
-    return get_exec_place().as_grid().unset_current_place(ctx);
-  }
-
-  const exec_place& get_current_place()
-  {
-    return get_exec_place().as_grid().get_current_place();
+    return get_exec_place().activate(idx);
   }
 
   /* End the task, but do not clear its data structures yet */
@@ -229,9 +246,8 @@ public:
     event_list end_list;
 
     const auto& e_place = get_exec_place();
-    // Create an event with this stream
 
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       // s0 depends on all other streams
       for (size_t i = 1; i < stream_grid.size(); i++)
@@ -308,11 +324,6 @@ public:
       clear();
     };
 
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
-
     // Default for the first argument is a `cudaStream_t`.
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
     {
@@ -373,13 +384,8 @@ public:
   }
 
 private:
-  decorated_stream get_stream_from_pool(const exec_place& e_place)
-  {
-    return e_place.getStream(ctx.async_resources(), true);
-  }
-
   // Make all streams depend on streams[0]
-  static void insert_dependencies(::std::vector<decorated_stream>& streams)
+  static void insert_dependencies(::std::vector<augmented_stream>& streams)
   {
     if (streams.size() < 2)
     {
@@ -437,8 +443,8 @@ private:
   bool automatic_stream = true; // `true` if the stream is automatically fetched from the internal pool
 
   // Stream and their unique id (if applicable)
-  decorated_stream dstream;
-  ::std::vector<decorated_stream> stream_grid;
+  augmented_stream dstream;
+  ::std::vector<augmented_stream> stream_grid;
 
   // TODO rename to submitted_ops
   stream_async_op submitted_events;
@@ -461,11 +467,15 @@ protected:
  * execution place can be set in the constructor and also dynamically. An invocation of `->*` takes place on the last
  * set execution place.
  *
- * It is possible to copy or move this task into a `stream_task<>` by implicit conversion. Subsequently, the
- * obtained object can be used with dynamic dependencies.
+ * It is possible to move this task into a `stream_task<>` by implicit conversion (copying is disabled because
+ * `stream_task<>` is move-only). Subsequently, the obtained object can be used with dynamic dependencies.
  */
 template <typename... Data>
-class stream_task : public stream_task<>
+class stream_task
+// Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
+#ifndef _CCCL_DOXYGEN_INVOKED
+    : public stream_task<>
+#endif
 {
 public:
   /**
@@ -574,11 +584,6 @@ public:
 
       clear();
     };
-
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
 
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
@@ -890,5 +895,4 @@ public:
   }
 };
 #endif // _CCCL_DOXYGEN_INVOKED
-
 } // namespace cuda::experimental::stf

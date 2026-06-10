@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__min)
 
 struct __fn
@@ -60,8 +60,8 @@ struct __fn
                    _CCCL_AND indirectly_copyable_storable<iterator_t<_Rp>, range_value_t<_Rp>*>)
   [[nodiscard]] _CCCL_API constexpr range_value_t<_Rp> operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
   {
-    auto __first = ::cuda::std::ranges::begin(__r);
-    auto __last  = ::cuda::std::ranges::end(__r);
+    auto __first = ::cuda::std::ranges::__begin_cpo{}(__r);
+    auto __last  = ::cuda::std::ranges::__end_cpo{}(__r);
 
     _CCCL_ASSERT(__first != __last, "range must contain at least one element");
 
@@ -81,7 +81,6 @@ struct __fn
       }
       return __result;
     }
-    _CCCL_UNREACHABLE();
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -91,7 +90,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto min = __min::__fn{};
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

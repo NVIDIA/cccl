@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2020 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2020, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/system/cuda/memory.h
  *  \brief Managing memory associated with Thrust's Standard C++ system.
@@ -33,12 +20,11 @@
 #include <thrust/detail/reference.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 /*! \p cuda::pointer stores a pointer to an object allocated in memory
  *  accessible by the \p cuda system. This type provides type safety when
  *  dispatching algorithms on ranges resident in \p cuda memory.
@@ -117,7 +103,6 @@ using universal_host_pinned_pointer = thrust::pointer<T, cpp::tag, ::cuda::std::
  */
 template <typename T>
 using reference = thrust::tagged_reference<T, thrust::cuda_cub::tag>;
-
 } // namespace cuda_cub
 
 /*! \addtogroup system_backends Systems
@@ -133,16 +118,13 @@ using reference = thrust::tagged_reference<T, thrust::cuda_cub::tag>;
  *  aliased in the top-level <tt>thrust::cuda</tt> namespace for easy access.
  *
  */
-namespace system
-{
-namespace cuda
+namespace system::cuda
 {
 using thrust::cuda_cub::pointer;
 using thrust::cuda_cub::reference;
 using thrust::cuda_cub::universal_host_pinned_pointer;
 using thrust::cuda_cub::universal_pointer;
-} // namespace cuda
-} // namespace system
+} // namespace system::cuda
 /*! \}
  */
 

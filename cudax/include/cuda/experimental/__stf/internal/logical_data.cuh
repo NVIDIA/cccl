@@ -38,7 +38,6 @@
 
 namespace cuda::experimental::stf
 {
-
 logical_data_untyped unpack_state(const ::std::shared_ptr<void>&);
 
 class logical_data_untyped_impl;
@@ -102,7 +101,6 @@ private:
 
 namespace reserved
 {
-
 /**
  * @brief This class describes the status of a logical data (e.g. previous writer,
  * readers...) in a specific task context.
@@ -424,11 +422,11 @@ public:
             instance_id_t dst_node = dst_place.memory_node;
 
             // Force initialization
-            auto& machine = reserved::machine::instance();
+            auto& mach = ::cuda::experimental::places::reserved::machine::instance();
 
             // We iterate over nodes, in an order that is could improve locality
             for (int n = 0; n < nnodes(); n++) {
-                int n_aux = machine.get_ith_closest_node(dst_node, n);
+                int n_aux = mach.get_ith_closest_node(dst_node, n);
                 if (get_data_instance(n_aux).get_msir() != reserved::msir_state_id::invalid) {
                     return data_place(n_aux);
                 }
@@ -929,7 +927,6 @@ public:
 private:
   ::std::mutex mutex;
 };
-
 } // namespace reserved
 
 /** @brief Base class of all `logical_data<T>` types. It does not "know" the type of the data, so most of the time it's
@@ -940,8 +937,12 @@ class logical_data_untyped
 public:
   ///@{
   /** @name Constructors */
+
+  /// @brief Default constructor.
   logical_data_untyped() = default;
 
+  /// @brief Constructs a logical_data_untyped from an existing implementation.
+  /// @param p Shared implementation pointer.
   logical_data_untyped(::std::shared_ptr<reserved::logical_data_untyped_impl> p)
       : pimpl(mv(p))
   {}
@@ -1075,7 +1076,6 @@ public:
   /**
    * @brief Allocate memory for this logical data
    *
-   * @param ctx
    * @param memory_node
    * @param instance_id
    * @param s
@@ -1094,7 +1094,6 @@ public:
   /**
    * @brief Deallocate memory previously allocated with `allocate`
    *
-   * @param ctx
    * @param memory_node
    * @param instance_id
    * @param extra_args
@@ -1108,12 +1107,10 @@ public:
   /**
    * @brief Copy data
    *
-   * @param ctx
    * @param dst_node
    * @param dst_instance_id
    * @param src_node
    * @param src_instance_id
-   * @param arg
    * @param prereqs
    */
   void data_copy(const data_place& dst_node,
@@ -1128,7 +1125,6 @@ public:
   /**
    * @brief Writes back data
    *
-   * @param ctx
    * @param src_node
    * @param instance_id
    * @param prereqs
@@ -1218,7 +1214,7 @@ public:
    * @return task_dep_untyped The dependency object corresponding to this logical data
    */
   ///@{
-  task_dep_untyped read(data_place dp = data_place::affine())
+  task_dep_untyped read(data_place dp = data_place::affine()) const
   {
     return task_dep_untyped(*this, access_mode::read, mv(dp));
   }
@@ -1470,8 +1466,7 @@ public:
         continue;
       }
 
-      // TODO THIS MAY BE A BUG: do we care about managed devices or host?
-      const auto memory_node = data_place::device(static_cast<int>(n - 2));
+      const auto memory_node = from_index(n);
       // Skip the target memory node in this step
       if (memory_node == target_memory_node)
       {
@@ -1485,9 +1480,10 @@ public:
       // typically change the current device if needed, or select an
       // appropriate affinity mask.
 
-      exec_place e_place_n = memory_node.get_affine_exec_place();
+      exec_place e_place_n = memory_node.affine_exec_place();
 
-      auto saved_place = e_place_n.activate(pimpl->ctx);
+      // Activate the execution place - automatically restores when active goes out of scope
+      auto active = e_place_n.activate();
 
       // Reduce instances if there are more than one
       if (per_node[n].size() > 1)
@@ -1566,9 +1562,7 @@ public:
         per_node[to_index(target_memory_node)].push_back(copy_instance_id);
       }
 
-      // Restore the execution place to its previous state (e.g. current CUDA device)
-      // fprintf(stderr, "RESET CTX\n");
-      e_place_n.deactivate(pimpl->ctx, saved_place);
+      // Execution place automatically restored when 'active' goes out of scope
     }
 
     if (per_node[to_index(target_memory_node)].size() > 1)
@@ -1735,7 +1729,8 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       data_instance& ref_instance  = get_data_instance(ref_id);
       const data_place& ref_dplace = ref_instance.get_dplace();
-      auto e                       = ref_dplace.get_affine_exec_place();
+      _CCCL_ASSERT(ref_dplace.is_resolved(), "ref_dplace must be resolved before erase");
+      auto e = ref_dplace.affine_exec_place();
       l.reconstruct_after_redux(ctx, ref_id, e, wb_prereqs);
 
       h_state.current_mode = access_mode::none;
@@ -1840,7 +1835,6 @@ inline void reserved::logical_data_untyped_impl::erase()
 
 namespace reserved
 {
-
 /**
  * @brief Implements STF dependencies.
  *
@@ -1906,7 +1900,7 @@ inline event_list enforce_stf_deps_before(
   const bool write = (mode == access_mode::rw || mode == access_mode::write);
 
   // ::std::cout << "Notifying " << (write?"W":"R") << " access on " << get_symbol() << " by task " <<
-  // task->get_symbol() << ::std::endl;
+  // task->get_symbol() << ::'\n';
   if (write)
   {
     if (ctx_.current_mode == access_mode::write)
@@ -1982,7 +1976,7 @@ inline event_list enforce_stf_deps_before(
       }
 
       ctx_.current_mode = access_mode::none;
-      // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
+      // ::std::cout << "CHANGING to FALSE for " << symbol << ::'\n';
     }
     else if (ctx_.previous_writer.has_value())
     {
@@ -2062,7 +2056,6 @@ inline void fetch_data(
   // because we are reclaiming data for instance.
   result.merge(mv(stf_prereq));
 }
-
 }; // namespace reserved
 
 // This implementation is deferred because we need the logical_data_untyped type in it
@@ -2144,7 +2137,7 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
 
 inline void backend_ctx_untyped::impl::print_logical_data_summary() const
 {
-  ::std::lock_guard<::std::mutex> guard(logical_data_ids_mutex);
+  ::std::scoped_lock guard(logical_data_ids_mutex);
 
   fprintf(stderr, "Context current logical data summary\n");
   fprintf(stderr, "====================================\n");
@@ -2317,7 +2310,6 @@ public:
    * @param ctx Backend context
    * @param instance Reference instance used for initializing this logical data
    * @param dp Data place
-   * @param data_prereq
    */
   template <typename U>
   logical_data(backend_ctx_untyped ctx, ::std::shared_ptr<U> instance, data_place dp)
@@ -2482,7 +2474,7 @@ inline void reclaim_memory(
   for (int pass = first_pass; (reclaimed_s < requested_s) && (eligible_data_size < requested_s) && (pass <= 2); pass++)
   {
     // Get the table of all logical data ids used in this context (the parent of the task)
-    ::std::lock_guard<::std::mutex> guard(ctx_state.logical_data_ids_mutex);
+    ::std::scoped_lock guard(ctx_state.logical_data_ids_mutex);
     auto& logical_data_ids = ctx_state.logical_data_ids;
     for (auto& e : logical_data_ids)
     {
@@ -2603,5 +2595,4 @@ inline void reclaim_memory(
     }
   }
 }
-
 } // namespace cuda::experimental::stf

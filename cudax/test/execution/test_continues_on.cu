@@ -52,9 +52,9 @@ C2H_TEST("continues_on can be piped", "[adaptors][continues_on]")
   ex::start(op);
 
   // The value will be available when the scheduler will execute the next operation
-  CUDAX_REQUIRE(!called);
+  REQUIRE(!called);
   sched.start_next();
-  CUDAX_REQUIRE(called);
+  REQUIRE(called);
 }
 
 C2H_TEST("continues_on calls the receiver when the scheduler dictates", "[adaptors][continues_on]")
@@ -68,11 +68,11 @@ C2H_TEST("continues_on calls the receiver when the scheduler dictates", "[adapto
   auto op  = ex::connect(snd, checked_value_receiver{13});
   ex::start(op);
   // Up until this point, the scheduler didn't start any task; no effect expected
-  CUDAX_CHECK(!called);
+  CHECK(!called);
 
   // Tell the scheduler to start executing one task
   sched.start_next();
-  CUDAX_CHECK(called);
+  CHECK(called);
 }
 
 C2H_TEST("continues_on calls the given sender when the scheduler dictates", "[adaptors][continues_on]")
@@ -92,14 +92,14 @@ C2H_TEST("continues_on calls the given sender when the scheduler dictates", "[ad
   auto op  = ex::connect(std::move(snd), checked_value_receiver{19});
   ex::start(op);
   // The sender is started, even if the scheduler hasn't yet triggered
-  CUDAX_CHECK(counter == 1);
+  CHECK(counter == 1);
   // ... but didn't send the value to the receiver yet
 
   // Tell the scheduler to start executing one task
   sched.start_next();
 
   // Now the base sender is called, and a value is sent to the receiver
-  CUDAX_CHECK(counter == 2);
+  CHECK(counter == 2);
 }
 
 C2H_TEST("continues_on works when changing threads", "[adaptors][continues_on]")
@@ -119,7 +119,7 @@ C2H_TEST("continues_on works when changing threads", "[adaptors][continues_on]")
   thread.join();
 
   // the work should be executed
-  CUDAX_REQUIRE(called);
+  REQUIRE(called);
 }
 
 #endif // _CCCL_HOST_COMPILATION()
@@ -202,13 +202,7 @@ C2H_TEST("continues_on sends an exception_ptr if value types are potentially thr
          "[adaptors][continues_on]")
 {
   dummy_scheduler<> sched{};
-
-#if _CCCL_HOST_COMPILATION()
-  check_error_types<std::exception_ptr>(ex::continues_on(ex::just(potentially_throwing{}), sched));
-#else
-  // No exceptions in device code:
-  check_error_types<>(ex::continues_on(ex::just(potentially_throwing{}), sched));
-#endif
+  check_error_types<ex::exception_ptr>(ex::continues_on(ex::just(potentially_throwing{}), sched));
 }
 
 C2H_TEST("continues_on keeps sends_stopped from scheduler's sender", "[adaptors][continues_on]")

@@ -7,15 +7,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17
-
 // <functional>
 //
 // reference_wrapper
 //
 // template <ObjectType T> reference_wrapper<const T> cref(const T& t);
 //
-//  where T is an incomplete type (since C++20)
+//  where T is an incomplete type
 
 // #include <cuda/std/functional>
 #include <cuda/std/cassert>
@@ -25,9 +23,9 @@
 
 struct Foo;
 
-__host__ __device__ __host__ __device__ Foo& get_foo();
+TEST_FUNC TEST_FUNC Foo& get_foo();
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   Foo const& foo                              = get_foo();
   cuda::std::reference_wrapper<Foo const> ref = cuda::std::cref(foo);
@@ -37,7 +35,7 @@ __host__ __device__ void test()
 struct Foo
 {};
 
-__host__ __device__ Foo& get_foo()
+TEST_FUNC Foo& get_foo()
 {
   static Foo foo;
   return foo;

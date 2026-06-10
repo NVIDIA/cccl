@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cfloat>
 #include <cuda/std/climits>
 
@@ -41,7 +42,7 @@ enum float_round_style
   round_toward_neg_infinity = 3
 };
 
-enum _LIBCUDACXX_DEPRECATED_IN_CXX23 float_denorm_style
+enum _CCCL_DEPRECATED_IN_CXX23 float_denorm_style
 {
   denorm_indeterminate = -1,
   denorm_absent        = 0,
@@ -57,7 +58,7 @@ enum class __numeric_limits_type
 };
 
 template <class _Tp>
-_CCCL_API constexpr __numeric_limits_type __make_numeric_limits_type()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __numeric_limits_type __make_numeric_limits_type() noexcept
 {
   if constexpr (is_same_v<_Tp, bool>)
   {
@@ -77,7 +78,16 @@ _CCCL_API constexpr __numeric_limits_type __make_numeric_limits_type()
   }
 }
 
-template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>()>
+// To avoid including nvfp headers, we add the _Up type defaulted to _Tp which makes the specialization still be a
+// template, which won't be instantiated unless the numeric_limits<_Tp> class is instantiated. The specialization should
+// look as:
+//
+// template <class _Tp>
+// class __numeric_limits_impl<__nvfp_type, __numeric_limits_type::__floating_point, _Tp>
+// { ... };
+//
+// and _Tp should be used everywhere instead of __nvfp_type.
+template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>(), class _Up = _Tp>
 class __numeric_limits_impl
 {
 public:
@@ -118,11 +128,11 @@ public:
   static constexpr int max_exponent   = 0;
   static constexpr int max_exponent10 = 0;
 
-  static constexpr bool has_infinity                                             = false;
-  static constexpr bool has_quiet_NaN                                            = false;
-  static constexpr bool has_signaling_NaN                                        = false;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = false;
+  static constexpr bool has_quiet_NaN                                      = false;
+  static constexpr bool has_signaling_NaN                                  = false;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
     return type();
@@ -149,22 +159,6 @@ public:
   static constexpr float_round_style round_style = round_toward_zero;
 };
 
-// MSVC warns about overflowing left shift
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4309)
-template <class _Tp, int __digits, bool _IsSigned>
-struct __int_min
-{
-  static constexpr _Tp value = static_cast<_Tp>(_Tp(1) << __digits);
-};
-_CCCL_DIAG_POP
-
-template <class _Tp, int __digits>
-struct __int_min<_Tp, __digits, false>
-{
-  static constexpr _Tp value = _Tp(0);
-};
-
 template <class _Tp>
 class __numeric_limits_impl<_Tp, __numeric_limits_type::__integral>
 {
@@ -179,11 +173,12 @@ public:
   static constexpr int max_digits10 = 0;
   _CCCL_API static constexpr type min() noexcept
   {
-    return __int_min<type, digits, is_signed>::value;
+    return static_cast<_Tp>(~max());
   }
   _CCCL_API static constexpr type max() noexcept
   {
-    return is_signed ? type(type(~0) ^ min()) : type(~0);
+    using _Up = make_unsigned_t<_Tp>;
+    return static_cast<_Tp>(static_cast<_Up>(~_Up{0}) >> static_cast<int>(is_signed));
   }
   _CCCL_API static constexpr type lowest() noexcept
   {
@@ -207,11 +202,11 @@ public:
   static constexpr int max_exponent   = 0;
   static constexpr int max_exponent10 = 0;
 
-  static constexpr bool has_infinity                                             = false;
-  static constexpr bool has_quiet_NaN                                            = false;
-  static constexpr bool has_signaling_NaN                                        = false;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = false;
+  static constexpr bool has_quiet_NaN                                      = false;
+  static constexpr bool has_signaling_NaN                                  = false;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
     return type(0);
@@ -273,11 +268,11 @@ public:
   static constexpr int radix       = 2;
   _CCCL_API static constexpr type epsilon() noexcept
   {
-    return type(0);
+    return false;
   }
   _CCCL_API static constexpr type round_error() noexcept
   {
-    return type(0);
+    return false;
   }
 
   static constexpr int min_exponent   = 0;
@@ -285,26 +280,26 @@ public:
   static constexpr int max_exponent   = 0;
   static constexpr int max_exponent10 = 0;
 
-  static constexpr bool has_infinity                                             = false;
-  static constexpr bool has_quiet_NaN                                            = false;
-  static constexpr bool has_signaling_NaN                                        = false;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = false;
+  static constexpr bool has_quiet_NaN                                      = false;
+  static constexpr bool has_signaling_NaN                                  = false;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
-    return type(0);
+    return false;
   }
   _CCCL_API static constexpr type quiet_NaN() noexcept
   {
-    return type(0);
+    return false;
   }
   _CCCL_API static constexpr type signaling_NaN() noexcept
   {
-    return type(0);
+    return false;
   }
   _CCCL_API static constexpr type denorm_min() noexcept
   {
-    return type(0);
+    return false;
   }
 
   static constexpr bool is_iec559  = false;
@@ -358,11 +353,11 @@ public:
   static constexpr int max_exponent   = FLT_MAX_EXP;
   static constexpr int max_exponent10 = FLT_MAX_10_EXP;
 
-  static constexpr bool has_infinity                                             = true;
-  static constexpr bool has_quiet_NaN                                            = true;
-  static constexpr bool has_signaling_NaN                                        = true;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = true;
+  static constexpr bool has_quiet_NaN                                      = true;
+  static constexpr bool has_signaling_NaN                                  = true;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
 
 #if defined(_CCCL_BUILTIN_HUGE_VALF)
   _CCCL_API static constexpr type infinity() noexcept
@@ -457,11 +452,11 @@ public:
   static constexpr int max_exponent   = DBL_MAX_EXP;
   static constexpr int max_exponent10 = DBL_MAX_10_EXP;
 
-  static constexpr bool has_infinity                                             = true;
-  static constexpr bool has_quiet_NaN                                            = true;
-  static constexpr bool has_signaling_NaN                                        = true;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = true;
+  static constexpr bool has_quiet_NaN                                      = true;
+  static constexpr bool has_signaling_NaN                                  = true;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
 
 #if defined(_CCCL_BUILTIN_HUGE_VAL)
   _CCCL_API static constexpr type infinity() noexcept
@@ -558,11 +553,11 @@ public:
   static constexpr int max_exponent   = LDBL_MAX_EXP;
   static constexpr int max_exponent10 = LDBL_MAX_10_EXP;
 
-  static constexpr bool has_infinity                                             = true;
-  static constexpr bool has_quiet_NaN                                            = true;
-  static constexpr bool has_signaling_NaN                                        = true;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = true;
+  static constexpr bool has_quiet_NaN                                      = true;
+  static constexpr bool has_signaling_NaN                                  = true;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
     return _CCCL_BUILTIN_HUGE_VALL();

@@ -1,18 +1,6 @@
-/*
- *  Copyright 2008-2016 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2016, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -25,16 +13,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/memory.h> // for get_value()
+
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 // get_iterator_value specialization on iterators
 // --------------------------------------------------
 // it is okay to dereference iterator in the usual way
@@ -51,12 +39,11 @@ _CCCL_HOST_DEVICE it_value_t<Iterator> get_iterator_value(thrust::execution_poli
 // we use get_value(exec,pointer*) function
 // to perform a dereferencing consistent with the execution policy
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer*>::element_type
+_CCCL_HOST_DEVICE typename ::cuda::std::pointer_traits<Pointer*>::element_type
 get_iterator_value(thrust::execution_policy<DerivedPolicy>& exec, Pointer* ptr)
 {
   return get_value(derived_cast(exec), ptr);
 } // get_iterator_value(exec,Pointer*)
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

@@ -2,18 +2,27 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/pair.h>
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
+
+#include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include "catch2_test_helper.h"
 #include "unittest/random.h"
 #include "unittest/special_types.h"
 
-TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
+// There is an unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
+// Adding this attribute suffices that this miscompilation does not appear anymore
+#if _CCCL_COMPILER(GCC, >=, 11)
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
+#else
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
+
+template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_unary_simple()
 {
-  using Vector = TestType;
-  using T      = typename Vector::value_type;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -25,6 +34,11 @@ TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
 
   CHECK(std::size_t(iter - output.begin()) == input.size());
   CHECK(output == result);
+}
+
+TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
+{
+  test_unary_simple<TestType>();
 }
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
@@ -180,16 +194,13 @@ TEST_CASE("UnaryDispatchImplicit", "[transform_if]")
   CHECK(13 == vec.front());
 }
 
-TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
+template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_binary_simple()
 {
-  using Vector = TestType;
-  using T      = typename Vector::value_type;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
-  // There is a strange gcc bug here where it believes we would write out of bounds.
-  // It seems to go away if we add one more element that we leave untouched. Luckily 0 - 0 = 0 so all is fine.
-  // Note that we still write the element, so it does not hide a functional thrust bug
   Vector input1{1, -2, 3};
   Vector input2{-4, 5, 6};
   Vector output(3);
@@ -199,6 +210,11 @@ TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
 
   CHECK(std::size_t(iter - output.begin()) == input1.size());
   CHECK(output == result);
+}
+
+TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
+{
+  test_binary_simple<TestType>();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename UnaryFunction>
@@ -376,9 +392,9 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform]", variable_list)
 struct repeat2
 {
   template <typename T>
-  _CCCL_HOST_DEVICE thrust::pair<T, T> operator()(T x)
+  _CCCL_HOST_DEVICE cuda::std::pair<T, T> operator()(T x)
   {
-    return thrust::make_pair(x, x);
+    return cuda::std::make_pair(x, x);
   }
 };
 
@@ -396,14 +412,14 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIteratorZipped", "[transform]", variable_
     using Iterator1 = typename thrust::host_vector<T>::iterator;
     using Iterator2 = typename thrust::device_vector<T>::iterator;
 
-    using Tuple1 = thrust::tuple<Iterator1, thrust::discard_iterator<>>;
-    using Tuple2 = thrust::tuple<Iterator2, thrust::discard_iterator<>>;
+    using Tuple1 = cuda::std::tuple<Iterator1, thrust::discard_iterator<>>;
+    using Tuple2 = cuda::std::tuple<Iterator2, thrust::discard_iterator<>>;
 
     using ZipIterator1 = thrust::zip_iterator<Tuple1>;
     using ZipIterator2 = thrust::zip_iterator<Tuple2>;
 
-    ZipIterator1 z1(thrust::make_tuple(h_output.begin(), thrust::make_discard_iterator()));
-    ZipIterator2 z2(thrust::make_tuple(d_output.begin(), thrust::make_discard_iterator()));
+    ZipIterator1 z1(cuda::std::tuple(h_output.begin(), thrust::make_discard_iterator()));
+    ZipIterator2 z2(cuda::std::tuple(d_output.begin(), thrust::make_discard_iterator()));
 
     ZipIterator1 h_result = thrust::transform(h_input.begin(), h_input.end(), z1, repeat2());
 
@@ -413,8 +429,8 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIteratorZipped", "[transform]", variable_
 
     CHECK(h_output == d_output);
 
-    CHECK(reference == thrust::get<1>(h_result.get_iterator_tuple()));
-    CHECK(reference == thrust::get<1>(d_result.get_iterator_tuple()));
+    CHECK(reference == cuda::std::get<1>(h_result.get_iterator_tuple()));
+    CHECK(reference == cuda::std::get<1>(d_result.get_iterator_tuple()));
   }
 }
 

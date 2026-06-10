@@ -10,10 +10,11 @@
 #define TEST_SUPPORT_TYPE_CLASSIFICATION_H
 
 #include "copyable.h"
+#include "test_macros.h"
 
 struct no_default_ctor
 {
-  __host__ __device__ no_default_ctor(int);
+  TEST_FUNC no_default_ctor(int);
 };
 struct derived_from_non_default_initializable : no_default_ctor
 {};

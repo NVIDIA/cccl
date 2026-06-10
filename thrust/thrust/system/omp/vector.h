@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/system/omp/vector.h
  *  \brief A dynamically-sizable array of elements which reside in memory available to
@@ -30,17 +17,15 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/vector_base.h>
 #include <thrust/system/omp/memory.h>
 
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::omp
 {
-namespace omp
-{
-
 /*! \p omp::vector is a container that supports random access to elements,
  *  constant time removal of elements at the end, and linear time insertion
  *  and removal of elements at the beginning or in the middle. The number of
@@ -87,8 +72,7 @@ using universal_vector = thrust::detail::vector_base<T, Allocator>;
 //! \see universal_vector
 template <typename T>
 using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
-} // namespace omp
-} // namespace system
+} // namespace system::omp
 
 namespace omp
 {

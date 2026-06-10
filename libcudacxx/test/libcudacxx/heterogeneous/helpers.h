@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "meta.h"
+#include "test_macros.h"
 
 #define DEFINE_ASYNC_TRAIT(...)                                             \
   template <typename T, typename = cuda::std::true_type>                    \
@@ -69,17 +70,18 @@ using threadcount_trait = threadcount_trait_impl<T>;
     if (err != cudaSuccess)                                                           \
     {                                                                                 \
       printf("CUDA ERROR: %s: %s\n", cudaGetErrorName(err), cudaGetErrorString(err)); \
+      fflush(stdout);                                                                 \
       abort();                                                                        \
     }                                                                                 \
   } while (false)
 
-__host__ inline std::vector<std::thread>& host_threads()
+inline std::vector<std::thread>& host_threads()
 {
   static std::vector<std::thread> threads;
   return threads;
 }
 
-__host__ inline void sync_host_threads()
+inline void sync_host_threads()
 {
   for (auto&& thread : host_threads())
   {
@@ -88,13 +90,13 @@ __host__ inline void sync_host_threads()
   host_threads().clear();
 }
 
-__host__ inline std::vector<std::thread>& device_threads()
+inline std::vector<std::thread>& device_threads()
 {
   static std::vector<std::thread> threads;
   return threads;
 }
 
-__host__ inline void sync_device_threads()
+inline void sync_device_threads()
 {
   for (auto&& thread : device_threads())
   {
@@ -103,7 +105,7 @@ __host__ inline void sync_device_threads()
   device_threads().clear();
 }
 
-__host__ void sync_all()
+void sync_all()
 {
   sync_host_threads();
   sync_device_threads();
@@ -112,15 +114,15 @@ __host__ void sync_all()
 struct async_tester_fence
 {
   template <typename T>
-  __host__ __device__ static void initialize(T&)
+  TEST_FUNC static void initialize(T&)
   {}
 
   template <typename T>
-  __host__ __device__ static void validate(T&)
+  TEST_FUNC static void validate(T&)
   {}
 
   template <typename T>
-  __host__ __device__ static void perform(T&)
+  TEST_FUNC static void perform(T&)
   {}
 };
 
@@ -128,23 +130,23 @@ template <typename... Testers>
 using tester_list = type_list<Testers...>;
 
 template <typename Tester, typename T>
-__host__ __device__ void initialize(T& object)
+TEST_FUNC void initialize(T& object)
 {
   Tester::initialize(object);
 }
 
 template <typename Tester, typename T>
-__host__ __device__ auto validate_impl(T& object) -> decltype(Tester::validate(object), void())
+TEST_FUNC auto validate_impl(T& object) -> decltype(Tester::validate(object), void())
 {
   Tester::validate(object);
 }
 
 template <typename, typename... Ts>
-__host__ __device__ void validate_impl(Ts&&...)
+TEST_FUNC void validate_impl(Ts&&...)
 {}
 
 template <typename Tester, typename T>
-__host__ __device__ void validate(T& object)
+TEST_FUNC void validate(T& object)
 {
   validate_impl<Tester>(object);
 }
@@ -427,7 +429,6 @@ void validate_device_dynamic(tester_list<Testers...> testers, Args... args)
   permute_tests(test_harness, initial_launcher_list{});
 }
 
-#if _CCCL_STD_VER >= 2014
 template <typename T>
 struct manual_object
 {
@@ -458,7 +459,7 @@ struct manual_object
 
   union data
   {
-    __host__ __device__ constexpr data() noexcept
+    TEST_FUNC constexpr data() noexcept
         : dummy(){};
     char dummy = {};
     T object;
@@ -469,7 +470,6 @@ struct manual_object
 
 template <typename T>
 __managed__ manual_object<T> managed_variable{};
-#endif
 
 template <typename Creator, typename Destroyer, typename Validator, std::size_t N>
 void validate_in_managed_memory_helper(const Creator& creator, const Destroyer& destroyer, Validator (&performers)[N])
@@ -528,7 +528,7 @@ void validate_managed(tester_list<Testers...>, Args... args)
   validate_in_managed_memory_helper(device_constructor, device_destructor, host_init_device_check);
   validate_in_managed_memory_helper(device_constructor, device_destructor, device_init_host_check);
 
-#if _CCCL_STD_VER >= 2014 && !defined(__clang__)
+#if !defined(__clang__)
   // The managed variable template part of this test is disabled under clang, pending nvbug 2790305 being fixed.
 
   auto host_variable_constructor = [args...]() -> T* {
@@ -572,11 +572,11 @@ bool check_managed_memory_support(bool is_async)
 struct dummy_tester
 {
   template <typename... Ts>
-  __host__ __device__ static void initialize(Ts&&...)
+  TEST_FUNC static void initialize(Ts&&...)
   {}
 
   template <typename... Ts>
-  __host__ __device__ static void validate(Ts&&...)
+  TEST_FUNC static void validate(Ts&&...)
   {}
 };
 
@@ -655,7 +655,7 @@ struct performer_adapter<Performer, performer_side::initialize>
   static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
-  __host__ __device__ static void initialize(T& t)
+  TEST_FUNC static void initialize(T& t)
   {
     Performer::perform(t);
   }
@@ -670,11 +670,11 @@ struct performer_adapter<Performer, performer_side::validate>
   static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
-  __host__ __device__ static void initialize(T&)
+  TEST_FUNC static void initialize(T&)
   {}
 
   template <typename T>
-  __host__ __device__ static void validate(T& t)
+  TEST_FUNC static void validate(T& t)
   {
     Performer::perform(t);
   }

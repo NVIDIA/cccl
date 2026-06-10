@@ -20,19 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/chrono>
+#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/high_resolution_clock.h>
 
-#if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
+#if defined(_CCCL_HAS_THREAD_API_EXTERNAL)
 #  include <cuda/std/__thread/threading_support_external.h>
-#endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+#endif // _CCCL_HAS_THREAD_API_EXTERNAL
 
-#if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#if defined(_CCCL_HAS_THREAD_API_CUDA)
 #  include <cuda/std/__thread/threading_support_cuda.h>
-#elif defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
+#elif defined(_CCCL_HAS_THREAD_API_PTHREAD)
 #  include <cuda/std/__thread/threading_support_pthread.h>
-#elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
+#elif defined(_CCCL_HAS_THREAD_API_WIN32)
 #  include <cuda/std/__thread/threading_support_win32.h>
-#else // ^^^ _LIBCUDACXX_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
+#else // ^^^ _CCCL_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
 #  error "Unknown Thread API"
 #endif // Unknown Thread API
 
@@ -50,13 +51,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define __LIBCUDACXX_ASM_THREAD_YIELD (;)
 #endif // ! _CCCL_ARCH(X86_64)
 
-_CCCL_API inline void __cccl_thread_yield_processor()
+_CCCL_HOST_DEVICE_API inline void __cccl_thread_yield_processor()
 {
   NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
 }
 
 template <class _Fn>
-_CCCL_API inline bool __cccl_thread_poll_with_backoff(
+_CCCL_HOST_DEVICE_API inline bool __cccl_thread_poll_with_backoff(
   _Fn&& __f, ::cuda::std::chrono::nanoseconds __max = ::cuda::std::chrono::nanoseconds::zero())
 {
   ::cuda::std::chrono::high_resolution_clock::time_point const __start =

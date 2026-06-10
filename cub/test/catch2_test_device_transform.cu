@@ -7,10 +7,7 @@
 #include <cub/device/device_transform.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 
@@ -29,17 +26,15 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, transform_many_stable);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Fill, fill);
-
-using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
 
 C2H_TEST("DeviceTransform::Transform BabelStream add",
          "[device][transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>,
-         offset_types)
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = c2h::get<1, TestType>;
+  using offset_t = cuda::std::int64_t;
 
   // test edge cases around 16, 128, page size, and full tile
   const offset_t num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097, 100'000);
@@ -63,14 +58,13 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
 
 // note: because this uses a fancy iterator type, it will only test the fallback kernel
 C2H_TEST("DeviceTransform::Transform works for large number of items",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 {
-  using offset_t = c2h::get<0, TestType>;
+  using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
   const auto num_items = detail::make_large_offset<offset_t>();
 
-  auto in_it              = thrust::make_counting_iterator(offset_t{0});
+  auto in_it              = cuda::counting_iterator(offset_t{0});
   auto expected_result_it = in_it;
 
   // Prepare helper to check results
@@ -83,16 +77,15 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
 }
 
 C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number of items",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 {
-  using offset_t = c2h::get<0, TestType>;
+  using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
   const offset_t num_items = detail::make_large_offset<offset_t>();
 
-  auto a_it               = thrust::make_counting_iterator(offset_t{0});
-  auto b_it               = thrust::make_constant_iterator(offset_t{42});
-  auto expected_result_it = thrust::make_counting_iterator(offset_t{42});
+  auto a_it               = cuda::counting_iterator(offset_t{0});
+  auto b_it               = cuda::constant_iterator(offset_t{42});
+  auto expected_result_it = cuda::counting_iterator(offset_t{42});
 
   // Prepare helper to check results
   auto check_result_helper = detail::large_problem_test_helper(num_items);
@@ -112,17 +105,20 @@ struct times_seven
   }
 };
 
-C2H_TEST("DeviceTransform::Transform with large input",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+// Exercises the 32-bit byte-offset overflow regime in transform_kernel_ublkcp (NVIDIA/cccl#8800).
+// num_items = 2^30 +/- a few thread blocks: combined with sizeof(type) = 4, byte product
+// straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
+// and I64 offset types.
+C2H_TEST("DeviceTransform::Transform works with large input",
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
-  using type     = unsigned short;
-  using offset_t = c2h::get<0, TestType>;
+  using type     = std::uint32_t;
+  using offset_t = cuda::std::int64_t;
 
-  // make size a few thread blocks below/beyond 4GiB. need to make sure I32 num_items stays below 2^31
-  constexpr offset_t num_items = static_cast<offset_t>((1ll << 31) + (sizeof(offset_t) == 4 ? -123456 : 123456));
-  REQUIRE(num_items > 0);
+  const auto delta         = GENERATE(-123456, 123456);
+  const offset_t num_items = static_cast<offset_t>((offset_t{1} << 30) + delta);
+  CAPTURE(c2h::type_name<offset_t>(), num_items);
 
   c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);
   c2h::gen(C2H_SEED(1), input);
@@ -186,8 +182,8 @@ using uncommon_types = c2h::type_list<
   overaligned_t<32>, // exceeds the memcpy_async (Hopper/Blackwell) and bulk copy alignments (only Blackwell)
 #if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
   overaligned_t<256>, // exceeds copy alignment on Hopper
-                      // and exhausts guaranteed shared memory on Hopper (block_threads = 256, req. smem = 64KiB)
-  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (block_threads = 128, req. smem = 64KiB)
+                      // and exhausts guaranteed shared memory on Hopper (threads_per_block = 256, req. smem = 64KiB)
+  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (threads_per_block = 128, req. smem = 64KiB)
 #endif // !_CCCL_COMPILER(MSVC)
   huge_t>;
 
@@ -296,11 +292,10 @@ struct nstream_kernel
 // overwrites one input stream
 C2H_TEST("DeviceTransform::Transform BabelStream nstream",
          "[device][transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
-         offset_types)
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = c2h::get<1, TestType>;
+  using offset_t = cuda::std::int64_t;
 
   const offset_t num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<type> a(num_items, thrust::no_init);
@@ -371,11 +366,22 @@ struct give_me_five
   }
 };
 
+C2H_TEST("DeviceTransform::Generate", "[device][transform]")
+{
+  const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  generate(result.begin(), num_items, give_me_five{});
+
+  // compute reference and verify
+  c2h::device_vector<int> reference(num_items, 5);
+  REQUIRE(reference == result);
+}
+
 C2H_TEST("DeviceTransform::Fill", "[device][transform]")
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<int> result(num_items, thrust::no_init);
-  fill(result.begin(), num_items, give_me_five{});
+  fill(result.begin(), num_items, 5);
 
   // compute reference and verify
   c2h::device_vector<int> reference(num_items, 5);
@@ -386,8 +392,8 @@ C2H_TEST("DeviceTransform::Transform fancy input iterator types", "[device][tran
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  thrust::counting_iterator<type> a{0};
-  thrust::counting_iterator<type> b{10};
+  cuda::counting_iterator<type> a{0};
+  cuda::counting_iterator<type> b{10};
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
   transform_many(cuda::std::make_tuple(a, b), result.begin(), num_items, cuda::std::plus<type>{});
@@ -407,7 +413,7 @@ C2H_TEST("DeviceTransform::Transform fancy output iterator type", "[device][tran
   c2h::device_vector<type> result(num_items, thrust::no_init);
 
   using thrust::placeholders::_1;
-  auto out = thrust::make_transform_output_iterator(result.begin(), _1 + 4);
+  auto out = cuda::transform_output_iterator(result.begin(), _1 + 4);
   transform_many(cuda::std::make_tuple(a.begin(), b.begin()), out, num_items, cuda::std::plus<type>{});
   REQUIRE(result == c2h::device_vector<type>(num_items, (13 + 35) + 4));
 }
@@ -427,22 +433,42 @@ C2H_TEST("DeviceTransform::Transform fancy output iterator type with void value 
   REQUIRE(result == c2h::device_vector<type>(num_items, 3));
 }
 
-C2H_TEST("DeviceTransform::Transform mixed input iterator types", "[device][transform]")
+struct plus_mul_neg
 {
-  using type          = int;
+  template <typename T>
+  __host__ __device__ auto operator()(T a, T b) const
+  {
+    return cuda::std::tuple{a + b, a * b, -a};
+  }
+};
+
+C2H_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][transform]")
+{
+  using type          = unsigned; // overflow is defined
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  thrust::counting_iterator<type> a{0};
+  cuda::counting_iterator<type> a{0};
   c2h::device_vector<type> b(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), b);
 
-  c2h::device_vector<type> result(num_items, thrust::no_init);
-  transform_many(cuda::std::make_tuple(a, b.begin()), result.begin(), num_items, cuda::std::plus<type>{});
+  c2h::device_vector<type> result_a(num_items, thrust::no_init);
+  c2h::device_vector<type> result_b(num_items, thrust::no_init);
+  c2h::device_vector<type> result_c(num_items, thrust::no_init);
+  transform_many(
+    cuda::std::make_tuple(a, b.begin()),
+    cuda::std::make_tuple(
+      result_a.begin(), result_b.begin(), thrust::make_transform_output_iterator(result_c.begin(), cuda::std::negate{})),
+    num_items,
+    plus_mul_neg{});
 
   // compute reference and verify
   c2h::host_vector<type> b_h = b;
-  c2h::host_vector<type> reference_h(num_items);
-  std::transform(a, a + num_items, b_h.begin(), reference_h.begin(), std::plus<type>{});
-  REQUIRE(reference_h == result);
+  c2h::host_vector<type> reference_a_h(num_items, thrust::no_init);
+  std::transform(a, a + num_items, b_h.begin(), reference_a_h.begin(), cuda::std::plus<type>{});
+  c2h::host_vector<type> reference_b_h(num_items, thrust::no_init);
+  std::transform(a, a + num_items, b_h.begin(), reference_b_h.begin(), cuda::std::multiplies<type>{});
+  CHECK(reference_a_h == result_a);
+  CHECK(reference_b_h == result_b);
+  CHECK(thrust::equal(a, a + num_items, result_c.begin()));
 }
 
 struct plus_needs_stable_address
@@ -492,10 +518,12 @@ struct non_trivial
       : data(data)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   __host__ __device__ non_trivial(const non_trivial& nt)
       : data(nt.data)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   __host__ __device__ auto operator=(const non_trivial& nt) -> non_trivial&
   {
     data = nt.data;
@@ -620,7 +648,7 @@ C2H_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform
   c2h::device_vector<std::uint16_t> output(num_items);
   thrust::sequence(input.begin(), input.end());
 
-  auto out_it = thrust::make_transform_output_iterator(output.begin(), _1);
+  auto out_it = cuda::transform_output_iterator(output.begin(), _1);
   transform_many(input.begin(), out_it, num_items, _1 + 1);
 
   c2h::host_vector<std::uint16_t> reference(num_items);
@@ -680,7 +708,7 @@ C2H_TEST("DeviceTransform::Transform function/output_iter return type not conver
   c2h::device_vector<A> input(num_items, A{42});
   c2h::device_vector<C> output(num_items, thrust::no_init);
 
-  auto out_it = thrust::make_transform_output_iterator(output.begin(), BtoC{});
+  auto out_it = cuda::transform_output_iterator(output.begin(), BtoC{});
   transform_many(input.begin(), out_it, num_items, AtoB{});
 
   c2h::device_vector<C> reference(num_items, C{-43});
@@ -704,7 +732,7 @@ C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
 
 #if TEST_LAUNCH == 0
 
-template <int BlockThreads, int ItemsPerPthread, typename T>
+template <int ThreadsPerBlock, int ItemsPerPthread, typename T>
 __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 {
   // we trigger the next kernel's launch very soon and wait a bit for it to spin up before starting to write. this way
@@ -713,7 +741,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   NV_IF_TARGET(NV_PROVIDES_SM_70, __nanosleep(100'000);); // must be enough to cover the next kernel's launch overhead
 
-  const int tile_size = ItemsPerPthread * BlockThreads;
+  const int tile_size = ItemsPerPthread * ThreadsPerBlock;
   const size_t offset = size_t{blockIdx.x} * tile_size;
 
   data += offset;
@@ -721,7 +749,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 
   for (int j = 0; j < ItemsPerPthread; j++)
   {
-    const int i = threadIdx.x + j * BlockThreads;
+    const int i = threadIdx.x + j * ThreadsPerBlock;
     if (i < n)
     {
       data[i] = value;
@@ -732,13 +760,13 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 template <typename T>
 void fill_pdl(T* data, size_t n, T value)
 {
-  constexpr auto block_threads    = 256;
-  constexpr auto items_per_thread = 4;
-  const auto blocks               = static_cast<unsigned>(::cuda::ceil_div(n, block_threads * items_per_thread));
+  constexpr auto threads_per_block = 256;
+  constexpr auto items_per_thread  = 4;
+  const auto blocks                = static_cast<unsigned>(::cuda::ceil_div(n, threads_per_block * items_per_thread));
 
   THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-    blocks, block_threads, /* smem */ 0, /*stream*/ 0, /* pdl */ true)
-    .doit(fill_pdl_kernel<block_threads, items_per_thread, T>, data, n, value);
+    blocks, threads_per_block, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
+    .doit(fill_pdl_kernel<threads_per_block, items_per_thread, T>, data, n, value);
 }
 
 C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")
@@ -756,10 +784,10 @@ C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")
   // completely async work of filling, 2x transforming and 1x reduction. we also avoid using the launch wrapper, since
   // it would synchronize
   fill_pdl(thrust::raw_pointer_cast(data.data()), num_items, 42);
-  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
-  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
+  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
+  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
   thrust::reduce_into(
-    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, ::cuda::std::logical_and{});
+    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, cuda::std::logical_and{});
   REQUIRE(result[0]); // access finally synchronize
 }
 #endif

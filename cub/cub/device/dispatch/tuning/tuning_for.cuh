@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -40,13 +16,54 @@
 #include <cub/agent/agent_for.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/std/__host_stdlib/ostream>
+
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+//! The tuning policy for all algorithms in @ref DeviceFor.
+struct ForPolicy
 {
-namespace for_each
-{
+  int threads_per_block; //!< Number of threads in a CUDA block. If smaller than 1, this number will be determined at
+                         //!< runtime based on the maximum occupancy of the kernel.
+  int items_per_thread; //!< Number of items processed per thread
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const ForPolicy& lhs, const ForPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const ForPolicy& lhs, const ForPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ForPolicy& policy)
+  {
+    return os << "ForPolicy { .threads_per_block = " << policy.threads_per_block
+              << ", .items_per_thread = " << policy.items_per_thread << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+namespace detail::for_each
+{
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept for_policy_selector = policy_selector<T, ForPolicy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> ForPolicy
+  {
+    return ForPolicy{256, 2};
+  }
+};
+
+// TODO(bgruber): remove once we publish the tuning API
 struct policy_hub_t
 {
   struct policy_500_t : ChainedPolicy<500, policy_500_t, policy_500_t>
@@ -56,8 +73,6 @@ struct policy_hub_t
 
   using MaxPolicy = policy_500_t;
 };
-
-} // namespace for_each
-} // namespace detail
+} // namespace detail::for_each
 
 CUB_NAMESPACE_END

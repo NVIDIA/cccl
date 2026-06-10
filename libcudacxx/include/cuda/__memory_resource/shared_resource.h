@@ -1,0 +1,270 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA___MEMORY_RESOURCE_SHARED_RESOURCE_H
+#define _CUDA___MEMORY_RESOURCE_SHARED_RESOURCE_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_HAS_CTK()
+
+#  include <cuda/__memory_resource/memory_resource_base.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/__memory_resource/shared_block_ptr.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/in_place.h>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
+
+//! @rst
+//! .. _libcudacxx-memory-resource-shared-resource:
+//!
+//! Resource wrapper to share ownership of a resource
+//! --------------------------------------------------
+//!
+//! ``shared_resource`` holds a reference counted instance of a memory resource. This allows
+//! the user to pass a resource around with reference semantics while avoiding lifetime issues.
+//! Shared resource works with both synchronous and stream-ordered resources. Depending if the contained resource
+//! satisfies the `cuda::mr::synchronous_resource` concept or the `cuda::mr::resource` concept, the shared resource
+//! will also satisfy the respective concept.
+//!
+//! @tparam _Resource The resource type to hold.
+//! @endrst
+template <class _Resource>
+struct shared_resource
+    : ::cuda::mr::__copy_default_queries<_Resource>
+    , ::cuda::forward_property<shared_resource<_Resource>, _Resource>
+    , ::cuda::mr::memory_resource_base<shared_resource<_Resource>>
+{
+  static_assert(::cuda::mr::synchronous_resource<_Resource>);
+
+  //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
+  //! that has been constructed with arguments \c __args. The \c _Resource object is
+  //! dynamically allocated with \c new.
+  //! @param __args The arguments to be passed to the \c _Resource constructor.
+  template <class... _Args>
+  explicit shared_resource(::cuda::std::in_place_type_t<_Resource>, _Args&&... __args)
+      : __block_(::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...)
+  {}
+
+  //! @brief Copy-constructs a \c shared_resource object resulting in an copy that shares
+  //! ownership of the wrapped resource with \c __other.
+  //! @param __other The \c shared_resource object to copy from.
+  _CCCL_HOST_API shared_resource(const shared_resource& __other) noexcept
+      : __block_(__other.__block_)
+  {}
+
+  //! @brief Move-constructs a \c shared_resource assuming ownership of the resource stored
+  //! in \c __other.
+  //! @param __other The \c shared_resource object to move from.
+  //! @post \c __other is left in a valid but unspecified state.
+  _CCCL_HOST_API shared_resource(shared_resource&& __other) noexcept
+      : __block_(::cuda::std::move(__other.__block_))
+  {}
+
+  //! @brief Copy-assigns from \c __other. The reference held by this \c shared_resource
+  //! object is released and a new reference is acquired to the wrapped resource of \c __other.
+  //! @param __other The \c shared_resource object to copy from.
+  _CCCL_HOST_API shared_resource& operator=(const shared_resource& __other) noexcept
+  {
+    shared_resource(__other).swap(*this);
+    return *this;
+  }
+
+  //! @brief Move-assigns from \c __other. The reference held by this \c shared_resource
+  //! object is released, while the reference held by \c __other is transferred to this object.
+  //! @param __other The \c shared_resource object to move from.
+  //! @post \c __other is left in a valid but unspecified state.
+  _CCCL_HOST_API shared_resource& operator=(shared_resource&& __other) noexcept
+  {
+    shared_resource(::cuda::std::move(__other)).swap(*this);
+    return *this;
+  }
+
+  //! @brief Swaps a \c shared_resource with another one.
+  //! @param __other The other \c shared_resource.
+  _CCCL_HOST_API void swap(shared_resource& __other) noexcept
+  {
+    __block_.swap(__other.__block_);
+  }
+
+  //! @brief Swaps a \c shared_resource with another one.
+  //! @param __left The first \c shared_resource.
+  //! @param __right The second \c shared_resource.
+  _CCCL_HOST_API friend void swap(shared_resource& __left, shared_resource& __right) noexcept
+  {
+    __left.swap(__right);
+  }
+
+  //! @brief Returns a reference to the stored resource.
+  //! @return A reference to the stored resource.
+  [[nodiscard]] _CCCL_HOST_API _Resource& get() noexcept
+  {
+    return __block_.__payload();
+  }
+
+  //! @brief Returns a const reference to the stored resource.
+  //! @return A const reference to the stored resource.
+  [[nodiscard]] _CCCL_HOST_API const _Resource& get() const noexcept
+  {
+    return __block_.__payload();
+  }
+
+  //! @brief Returns a pointer to the stored resource.
+  //! @return A pointer to the stored resource.
+  [[nodiscard]] _CCCL_HOST_API _Resource* operator->() noexcept
+  {
+    return &__block_.__payload();
+  }
+
+  //! @brief Returns a const pointer to the stored resource.
+  //! @return A const pointer to the stored resource.
+  [[nodiscard]] _CCCL_HOST_API const _Resource* operator->() const noexcept
+  {
+    return &__block_.__payload();
+  }
+
+  //! @brief Returns a reference to the stored resource.
+  //! @return A reference to the stored resource.
+  [[nodiscard]] _CCCL_HOST_API _Resource& operator*() noexcept
+  {
+    return __block_.__payload();
+  }
+
+  //! @brief Returns a const reference to the stored resource.
+  //! @return A const reference to the stored resource.
+  [[nodiscard]] _CCCL_HOST_API const _Resource& operator*() const noexcept
+  {
+    return __block_.__payload();
+  }
+
+  //! @brief Allocate memory of size at least \p __bytes using the stored resource.
+  //! @param __bytes The size in bytes of the allocation.
+  //! @param __alignment The requested alignment of the allocation.
+  //! @return Pointer to the newly allocated memory
+  [[nodiscard]] _CCCL_HOST_API void*
+  allocate_sync(size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t))
+  {
+    return __block_.__payload().allocate_sync(__bytes, __alignment);
+  }
+
+  //! @brief Deallocate memory pointed to by \p __ptr using the stored resource.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
+  _CCCL_HOST_API void
+  deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t)) noexcept
+  {
+    __block_.__payload().deallocate_sync(__ptr, __bytes, __alignment);
+  }
+
+  //! @brief Enqueues an allocation of memory of size at least \p __bytes using
+  //! the wrapped resource. The allocation is performed asynchronously on stream \c __stream.
+  //! @pre \c _Resource must satisfy \c resource.
+  //! @param __stream The stream on which the allocation is enqueued.
+  //! @param __bytes The size in bytes of the allocation.
+  //! @param __alignment The requested alignment of the allocation.
+  //! @return Pointer to the newly allocated memory.
+  //! @note The caller is responsible for ensuring that the memory is not accessed until the
+  //! operation has completed.
+  _CCCL_TEMPLATE(class _ThisResource = _Resource)
+  _CCCL_REQUIRES(::cuda::mr::resource<_ThisResource>)
+  [[nodiscard]] _CCCL_HOST_API void* allocate(::cuda::stream_ref __stream, size_t __bytes, size_t __alignment)
+  {
+    return __block_.__payload().allocate(__stream, __bytes, __alignment);
+  }
+
+  //! @brief Enqueues the deallocation of memory pointed to by \c __ptr. The deallocation is
+  //! performed asynchronously on stream \c __stream.
+  //! @pre \c _Resource must satisfy \c resource.
+  //! @param __stream The stream on which the deallocation is enqueued.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
+  //! @note The caller is responsible for ensuring that the memory is not accessed after the
+  //! operation has completed.
+  _CCCL_TEMPLATE(class _ThisResource = _Resource)
+  _CCCL_REQUIRES(::cuda::mr::resource<_ThisResource>)
+  _CCCL_HOST_API void deallocate(::cuda::stream_ref __stream, void* __ptr, size_t __bytes, size_t __alignment) noexcept
+  {
+    __block_.__payload().deallocate(__stream, __ptr, __bytes, __alignment);
+  }
+
+  //! @brief Equality comparison between two \c shared_resource
+  //! @param __lhs The first \c shared_resource
+  //! @param __rhs The other \c shared_resource
+  //! @return Checks whether the objects refer to resources that compare equal.
+  [[nodiscard]] _CCCL_HOST_API friend bool operator==(const shared_resource& __lhs, const shared_resource& __rhs)
+  {
+    if (__lhs.__block_ == __rhs.__block_)
+    {
+      return true;
+    }
+
+    if (!__lhs.__block_ || !__rhs.__block_)
+    {
+      return false;
+    }
+
+    return __lhs.__block_.__payload() == __rhs.__block_.__payload();
+  }
+
+  //! @brief Equality comparison between two \c shared_resource
+  //! @param __lhs The first \c shared_resource
+  //! @param __rhs The other \c shared_resource
+  //! @return Checks whether the objects refer to resources that compare unequal.
+  [[nodiscard]] _CCCL_HOST_API friend bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
+  {
+    return !(__lhs == __rhs);
+  }
+
+private:
+  __shared_block_ptr<_Resource> __block_;
+};
+
+//! @rst
+//! .. _libcudacxx-memory-resource-make-shared-resource:
+//!
+//! Factory function for `shared_resource` objects
+//! -----------------------------------------------
+//!
+//! ``make_any_synchronous_resource`` constructs an :ref:`shared_resource <cudax-memory-resource-shared-resource>`
+//! object that wraps a newly constructed instance of the given resource type. The resource type must satisfy the
+//! ``cuda::mr::resource`` concept and provide all of the properties specified in the template parameter pack.
+//!
+//! @param __args The arguments used to construct the instance of the resource type.
+//!
+//! @endrst
+template <class _Resource, class... _Args>
+auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
+{
+  static_assert(::cuda::mr::synchronous_resource<_Resource>,
+                "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
+  return shared_resource<_Resource>{::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...};
+}
+
+_CCCL_END_NAMESPACE_CUDA_MR
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
+
+#endif // _CUDA___MEMORY_RESOURCE_SHARED_RESOURCE_H

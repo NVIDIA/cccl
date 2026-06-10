@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_run_length_encode.cuh>
 
@@ -40,68 +16,28 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
-struct device_rle_policy_hub
+struct bench_rle_policy_selector
 {
-  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
   {
-    using RleSweepPolicyT =
-      cub::AgentRlePolicy<TUNE_THREADS,
-                          TUNE_ITEMS,
-                          TUNE_LOAD_ALGORITHM,
-                          TUNE_LOAD_MODIFIER,
-                          TUNE_TIME_SLICING,
-                          cub::BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_t>;
-  };
-
-  using MaxPolicy = Policy500;
+    return {
+      TUNE_THREADS,
+      TUNE_ITEMS,
+      TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+      TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+      static_cast<bool>(TUNE_TIME_SLICING),
+      cub::BLOCK_SCAN_WARP_SCANS,
+      lookback_delay_policy,
+    };
+  }
 };
 #endif // !TUNE_BASE
 
 template <class T, class OffsetT, class RunLengthT>
 static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
-  // Offset type large enough to represent any offset into the input sequence
   using offset_t = cub::detail::choose_signed_offset_t<OffsetT>;
-  // Offset type large enough to represent the longest run in the sequence
-  using run_length_t = RunLengthT;
-
-  using keys_input_it_t            = const T*;
-  using offset_output_it_t         = offset_t*;
-  using length_output_it_t         = run_length_t*;
-  using num_runs_output_iterator_t = offset_t*;
-  using equality_op_t              = ::cuda::std::equal_to<>;
-
-#if !TUNE_BASE
-  using dispatch_t =
-    cub::DeviceRleDispatch<keys_input_it_t,
-                           offset_output_it_t,
-                           length_output_it_t,
-                           num_runs_output_iterator_t,
-                           equality_op_t,
-                           offset_t,
-                           device_rle_policy_hub>;
-#else
-  using dispatch_t =
-    cub::DeviceRleDispatch<keys_input_it_t,
-                           offset_output_it_t,
-                           length_output_it_t,
-                           num_runs_output_iterator_t,
-                           equality_op_t,
-                           offset_t>;
-#endif
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
@@ -109,42 +45,32 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
 
   thrust::device_vector<offset_t> num_runs_out(1);
   thrust::device_vector<offset_t> out_offsets(elements);
-  thrust::device_vector<run_length_t> out_lengths(elements);
+  thrust::device_vector<RunLengthT> out_lengths(elements);
   thrust::device_vector<T> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  T* d_in_keys                = thrust::raw_pointer_cast(in_keys.data());
-  offset_t* d_out_offsets     = thrust::raw_pointer_cast(out_offsets.data());
-  run_length_t* d_out_lengths = thrust::raw_pointer_cast(out_lengths.data());
-  offset_t* d_num_runs_out    = thrust::raw_pointer_cast(num_runs_out.data());
+  const T* d_in_keys        = thrust::raw_pointer_cast(in_keys.data());
+  offset_t* d_out_offsets   = thrust::raw_pointer_cast(out_offsets.data());
+  RunLengthT* d_out_lengths = thrust::raw_pointer_cast(out_lengths.data());
+  offset_t* d_num_runs_out  = thrust::raw_pointer_cast(num_runs_out.data());
 
-  std::uint8_t* d_temp_storage{};
-  std::size_t temp_storage_bytes{};
-
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_out_offsets,
-    d_out_lengths,
-    d_num_runs_out,
-    equality_op_t{},
-    elements,
-    0);
-
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_out_offsets,
-    d_out_lengths,
-    d_num_runs_out,
-    equality_op_t{},
-    elements,
-    0);
-  cudaDeviceSynchronize();
+  {
+    // Run once to get num_runs for memory accounting
+    auto memory_env = cuda::std::execution::env{
+#if !TUNE_BASE
+      cuda::execution::tune(bench_rle_policy_selector{})
+#endif // !TUNE_BASE
+    };
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceRunLengthEncode::NonTrivialRuns,
+      "NonTrivialRuns failed",
+      d_in_keys,
+      d_out_offsets,
+      d_out_lengths,
+      d_num_runs_out,
+      static_cast<OffsetT>(elements),
+      memory_env);
+    cudaDeviceSynchronize();
+  }
   const OffsetT num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
@@ -153,17 +79,25 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   state.add_global_memory_writes<OffsetT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_rle_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceRunLengthEncode::NonTrivialRuns,
+      "NonTrivialRuns failed",
       d_in_keys,
       d_out_offsets,
       d_out_lengths,
       d_num_runs_out,
-      equality_op_t{},
-      elements,
-      launch.get_stream());
+      static_cast<OffsetT>(elements),
+      env);
   });
 }
 

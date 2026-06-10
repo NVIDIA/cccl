@@ -1,5 +1,6 @@
 #include <thrust/binary_search.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/remove.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
@@ -34,22 +35,25 @@
  */
 
 // define a 2d float vector
-using vec2 = thrust::tuple<float, float>;
+using vec2 = cuda::std::tuple<float, float>;
 
 int main()
 {
   // allocate memory for input mesh representation
   thrust::device_vector<vec2> input(9);
 
-  input[0] = vec2(0, 0); // First Triangle
-  input[1] = vec2(1, 0);
-  input[2] = vec2(0, 1);
-  input[3] = vec2(1, 0); // Second Triangle
-  input[4] = vec2(1, 1);
-  input[5] = vec2(0, 1);
-  input[6] = vec2(1, 0); // Third Triangle
-  input[7] = vec2(2, 0);
-  input[8] = vec2(1, 1);
+  thrust::host_vector<vec2> h_input{
+    vec2(0, 0),
+    vec2(1, 0),
+    vec2(0, 1), // First Triangle
+    vec2(1, 0),
+    vec2(1, 1),
+    vec2(0, 1), // Second Triangle
+    vec2(1, 0),
+    vec2(2, 0),
+    vec2(1, 1) // Third Triangle
+  };
+  input = h_input;
 
   // allocate space for output mesh representation
   thrust::device_vector<vec2> vertices = input;
@@ -65,15 +69,15 @@ int main()
   thrust::lower_bound(vertices.begin(), vertices.end(), input.begin(), input.end(), indices.begin());
 
   // print output mesh representation
-  std::cout << "Output Representation" << std::endl;
+  std::cout << "Output Representation" << '\n';
   for (size_t i = 0; i < vertices.size(); i++)
   {
     vec2 v = vertices[i];
-    std::cout << " vertices[" << i << "] = (" << thrust::get<0>(v) << "," << thrust::get<1>(v) << ")" << std::endl;
+    std::cout << " vertices[" << i << "] = (" << cuda::std::get<0>(v) << "," << cuda::std::get<1>(v) << ")" << '\n';
   }
   for (size_t i = 0; i < indices.size(); i++)
   {
-    std::cout << " indices[" << i << "] = " << indices[i] << std::endl;
+    std::cout << " indices[" << i << "] = " << indices[i] << '\n';
   }
 
   return 0;

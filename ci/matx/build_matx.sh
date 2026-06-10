@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -18,10 +18,10 @@ log_vars() {
 version_max() {
   local v1="${1}"
   local v2="${2}"
-  if [[ "$(printf "%s\n" "${v1}" "${v2}" | sort -V | head -n1)" == "${v1}" ]]; then
-    echo "${v2}"
+  if ci/util/version_compare.sh "$v1" ge "$v2"; then
+    echo "$v1"
   else
-    echo "${v1}"
+    echo "$v2"
   fi
 }
 
@@ -38,19 +38,23 @@ else
     cccl_sha="$(git -C "${cccl_repo}" rev-parse HEAD)";
 fi
 
-readonly cccl_repo_version="$(git -C "${cccl_repo}" describe ${cccl_sha}| grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+cccl_repo_version="$(git -C "${cccl_repo}" describe "${cccl_sha}"| grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+readonly cccl_repo_version
 
 # Define CCCL_VERSION to override the version used by rapids-cmake to patch CCCL.
 echo "CCCL_VERSION (override): ${CCCL_VERSION-}";
 if test -n "${CCCL_VERSION-}"; then
   readonly cccl_rapids_cmake_version="${CCCL_VERSION}"
 else
-  readonly cccl_rapids_cmake_version="${cccl_repo_version}"
+  cccl_rapids_cmake_version="${cccl_repo_version}"
+  # shellcheck disable=SC2034
+  readonly cccl_rapids_cmake_version
 fi
 
 # If the current version is less than 2.8.0, use 2.8.0 for the rapids-cmake version.
 # This is to allow rapids-cmake to correctly patch the CCCL install rules on current `main`.
-readonly cccl_version=$(version_max "${cccl_repo_version}" "2.8.0")
+cccl_version=$(version_max "${cccl_repo_version}" "2.8.0")
+readonly cccl_version
 
 readonly workdir="${cccl_repo}/build/${CCCL_BUILD_INFIX:-}/matx"
 readonly version_file="${workdir}/MatX/cmake/versions.json"
@@ -70,7 +74,7 @@ pip install numpy
 
 # Clone MatX
 rm -rf MatX
-git clone ${matx_repo} -b ${matx_branch}
+git clone "${matx_repo}" -b "${matx_branch}"
 
 cd MatX
 echo "MatX HEAD:"
@@ -88,18 +92,22 @@ jq -r ".packages.CCCL *=
   "${version_file}" > "${version_override_file}"
 
 echo "Overriding MatX versions.json file:"
-cat $version_override_file
+cat "$version_override_file"
 
 # Configure and build
 rm -rf build
-mkdir build
-cd build
-cmake -G Ninja ../MatX \
-  "-DCMAKE_CUDA_ARCHITECTURES=75;80" \
+
+cmake \
+  -B build -S MatX -G Ninja \
+  "-DCMAKE_CUDA_ARCHITECTURES=75;120" \
   "-DRAPIDS_CMAKE_CPM_OVERRIDE_VERSION_FILE=${version_override_file}" \
   -DMATX_BUILD_TESTS=ON \
   -DMATX_BUILD_EXAMPLES=ON \
   -DMATX_BUILD_BENCHMARKS=ON \
   -DMATX_EN_CUTENSOR=ON
 
-cmake --build . -j 8
+# Disabled because `cmake --build -j ""` is invalid, but so is
+# `cmake --build -j8`. CMake expects a space between `-j` and
+# the numeric argument, or no argument at all.
+# shellcheck disable=SC2086
+cmake --build build -j ${PARALLEL_LEVEL:-}

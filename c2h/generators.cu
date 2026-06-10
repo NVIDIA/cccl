@@ -4,10 +4,12 @@
 #include <cub/device/device_copy.cuh>
 
 #include <thrust/for_each.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/tabulate.h>
+
+#include <cuda/iterator>
+#include <cuda/std/optional>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
@@ -26,7 +28,6 @@
 
 namespace c2h::detail
 {
-
 #if !C2H_HAS_CURAND
 struct i_to_rnd_t
 {
@@ -45,29 +46,77 @@ struct i_to_rnd_t
 };
 #endif // !C2H_HAS_CURAND
 
-void generator_t::generate()
+class generator_t
 {
+public:
+  generator_t()
+  {
 #if C2H_HAS_CURAND
-  curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
-#else
-  thrust::tabulate(device_policy, m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_re});
-  m_re.discard(m_distribution.size());
+    curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
 #endif
+  }
+
+  ~generator_t()
+  {
+#if C2H_HAS_CURAND
+    curandDestroyGenerator(m_gen);
+#endif
+  }
+
+  float* prepare_random_generator(seed_t seed, std::size_t num_items)
+  {
+    m_distribution.resize(num_items);
+
+#if C2H_HAS_CURAND
+    curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
+#else
+    m_gen.seed(seed.get());
+#endif
+
+    generate();
+
+    return thrust::raw_pointer_cast(m_distribution.data());
+  }
+
+  // re-fills the currently held distribution vector with new random values
+  void generate()
+  {
+#if C2H_HAS_CURAND
+    curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
+#else
+    thrust::tabulate(device_policy, m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_gen});
+    m_gen.discard(m_distribution.size());
+#endif
+  }
+
+private:
+#if C2H_HAS_CURAND
+  curandGenerator_t
+#else
+  thrust::default_random_engine
+#endif
+    m_gen;
+  c2h::device_vector<float> m_distribution;
+};
+
+// global generator state
+cuda::std::optional<generator_t> generator;
+
+void init_generator()
+{
+  _CCCL_VERIFY(!generator.has_value(), "");
+  generator.emplace();
 }
 
-float* generator_t::prepare_random_generator(seed_t seed, std::size_t num_items)
+float* prepare_random_data(seed_t seed, std::size_t num_items)
 {
-  m_distribution.resize(num_items);
+  return generator.value().prepare_random_generator(seed, num_items);
+}
 
-#if C2H_HAS_CURAND
-  curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
-#else
-  m_re.seed(seed.get());
-#endif
-
-  generate();
-
-  return thrust::raw_pointer_cast(m_distribution.data());
+void cleanup_generator()
+{
+  _CCCL_VERIFY(generator.has_value(), "");
+  generator.reset();
 }
 
 struct random_to_custom_t
@@ -95,7 +144,7 @@ void gen_custom_type_state(
   std::size_t element_size)
 {
   // FIXME(bgruber): implement min/max handling for custom_type_state_t
-  float* d_in = generator.prepare_random_generator(seed, elements * 2);
+  float* d_in = prepare_random_data(seed, elements * 2);
   thrust::for_each(device_policy,
                    thrust::counting_iterator<std::size_t>{0},
                    thrust::counting_iterator<std::size_t>{elements},
@@ -138,21 +187,21 @@ struct offset_to_iterator_t
 template <class T>
 struct repeat_index_t
 {
-  __host__ __device__ __forceinline__ thrust::constant_iterator<T> operator()(std::size_t i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<T> operator()(std::size_t i)
   {
-    return thrust::constant_iterator<T>(static_cast<T>(i));
+    return cuda::constant_iterator<T>(static_cast<T>(i));
   }
 };
 
 template <>
 struct repeat_index_t<custom_type_state_t>
 {
-  __host__ __device__ __forceinline__ thrust::constant_iterator<custom_type_state_t> operator()(std::size_t i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<custom_type_state_t> operator()(std::size_t i)
   {
     custom_type_state_t item{};
     item.key = i;
     item.val = i;
-    return thrust::constant_iterator<custom_type_state_t>(item);
+    return cuda::constant_iterator<custom_type_state_t>(item);
   }
 };
 
@@ -191,7 +240,12 @@ void init_key_segments(::cuda::std::span<const OffsetT> segment_offsets, KeyT* d
   cub::DeviceCopy::Batched(
     d_temp_storage, temp_storage_bytes, d_range_srcs, d_range_dsts, d_range_sizes, total_segments);
 
+#  if THRUST_VERSION >= 300100
   device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+#  else
+  device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+#  endif // THRUST_VERSION >= 300100
+
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // TODO(bgruber): replace by a non-CUB implementation
@@ -234,5 +288,4 @@ init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, half_t
 template void
 init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, bfloat16_t* out, std::size_t element_size);
 #endif // TEST_BF_T()
-
 } // namespace c2h::detail

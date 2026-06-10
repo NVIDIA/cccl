@@ -1,0 +1,576 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#include <cuda/memory_resource>
+#include <cuda/stream>
+
+#include <iostream>
+
+#include <testing.cuh>
+
+#include "../test_resource.cuh" // IWYU pragma: keep
+
+#ifndef __CUDA_ARCH__
+
+TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
+{
+  using TestResource = TestType;
+  static_assert(cuda::mr::synchronous_resource_with<TestResource, ::cuda::mr::host_accessible>);
+  constexpr bool is_big = sizeof(TestResource) > cuda::__default_small_object_size;
+
+  SECTION("construct and destruct")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("copy and move")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+
+      auto mr2 = mr;
+      expected.new_count += is_big;
+      ++expected.copy_count;
+      ++expected.object_count;
+      CHECK(this->counts == expected);
+      CHECK(mr == mr2);
+      CHECK(!(mr != mr2));
+      expected.equal_to_count += 2;
+      CHECK(this->counts == expected);
+
+      auto mr3 = std::move(mr);
+      expected.move_count += !is_big; // for big resources, move is a pointer swap
+      CHECK(this->counts == expected);
+      CHECK(mr2 == mr3);
+      CHECK(!(mr2 != mr3));
+      expected.equal_to_count += 2;
+      CHECK(this->counts == expected);
+
+      // Test inequality with different resource
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr4{TestResource{43, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+      CHECK(mr2 != mr4);
+      ++expected.equal_to_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += 3 * is_big;
+    expected.object_count -= 3;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("allocate and deallocate_sync")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+
+      void* ptr = mr.allocate_sync(this->bytes(50), this->align(8));
+      CHECK(ptr == this);
+      ++expected.allocate_count;
+      CHECK(this->counts == expected);
+
+      mr.deallocate_sync(ptr, this->bytes(50), this->align(8));
+      ++expected.deallocate_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("allocate and deallocate")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::stream stream{cuda::device_ref{0}};
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+
+      void* ptr = mr.allocate(::cuda::stream_ref{stream}, this->bytes(50), this->align(8));
+      CHECK(ptr == this);
+      ++expected.allocate_async_count;
+      CHECK(this->counts == expected);
+
+      mr.deallocate(::cuda::stream_ref{stream}, ptr, this->bytes(50), this->align(8));
+      ++expected.deallocate_async_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("conversion to synchronous_resource_ref")
+  {
+    Counts expected{};
+    {
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+
+      cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible> ref = mr;
+
+      CHECK(this->counts == expected);
+      auto* ptr = ref.allocate_sync(this->bytes(100), this->align(8));
+      CHECK(ptr == this);
+      ++expected.allocate_count;
+      CHECK(this->counts == expected);
+      ref.deallocate_sync(ptr, this->bytes(0), this->align(0));
+      ++expected.deallocate_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("conversion to resource_ref")
+  {
+    Counts expected{};
+    {
+      cuda::stream stream{cuda::device_ref{0}};
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+
+      cuda::mr::resource_ref<::cuda::mr::host_accessible> ref = mr;
+
+      CHECK(this->counts == expected);
+      auto* ptr = ref.allocate(::cuda::stream_ref{stream}, this->bytes(100), this->align(8));
+      CHECK(ptr == this);
+      ++expected.allocate_async_count;
+      CHECK(this->counts == expected);
+      ref.deallocate(::cuda::stream_ref{stream}, ptr, this->bytes(100), this->align(8));
+      ++expected.deallocate_async_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("conversion to any_synchronous_resource")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+
+      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible> sync_mr = std::move(mr);
+      // Move from any_resource to any_synchronous_resource
+      expected.move_count += 2 * !is_big; // for big resources, move is a pointer swap
+      CHECK(this->counts == expected);
+
+      void* ptr = sync_mr.allocate_sync(this->bytes(100), this->align(8));
+      CHECK(ptr == this);
+      ++expected.allocate_count;
+      CHECK(this->counts == expected);
+      sync_mr.deallocate_sync(ptr, this->bytes(100), this->align(8));
+      ++expected.deallocate_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("self-assignment")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+
+      test::assign(mr, mr); // self copy assignment
+      CHECK(this->counts == expected);
+
+      CHECK(mr == mr);
+      CHECK(!(mr != mr));
+      expected.equal_to_count += 2;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    expected.object_count -= 1;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("conversion from resource_ref")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      TestResource test{42, this};
+      ++expected.object_count;
+      CHECK(this->counts == expected);
+
+      cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data> ref{test};
+      CHECK(this->counts == expected);
+
+      cuda::mr::any_resource<::cuda::mr::host_accessible, get_data> mr = ref;
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.copy_count;
+      CHECK(this->counts == expected);
+
+      CHECK(get_property(mr, get_data{}) == 42);
+      void* ptr = mr.allocate(::cuda::stream_ref{cuda::stream{cuda::device_ref{0}}}, this->bytes(100), this->align(8));
+      CHECK(ptr == this);
+      ++expected.allocate_async_count;
+      CHECK(this->counts == expected);
+      mr.deallocate(::cuda::stream_ref{cuda::stream{cuda::device_ref{0}}}, ptr, this->bytes(100), this->align(8));
+      ++expected.deallocate_async_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    expected.object_count -= 2;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("make_any_resource")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr =
+        cuda::mr::make_any_resource<TestResource, ::cuda::mr::host_accessible>(42, this);
+      expected.new_count += is_big;
+      ++expected.object_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+  // Reset the counters:
+  this->counts = Counts();
+}
+
+TEMPLATE_TEST_CASE_METHOD(
+  test_fixture, "ref assignment operators", "[container][resource]", big_resource, small_resource)
+{
+  big_resource mr{42, this};
+  cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data> ref{mr};
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 42);
+
+  big_resource mr2{43, this};
+  cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data> ref2{mr2};
+  ref = ref2;
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 43);
+
+  cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data, extra_property> ref3{mr};
+  ref = ref3; // copy assignment with property narrowing
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 42);
+
+  ref = std::move(ref2); // NOLINT(performance-move-const-arg) - test move assignment works
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 43);
+
+  test::assign(ref, ref); // self copy assignment
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 43);
+}
+
+struct host_device_resource
+{
+  void* allocate(cuda::stream_ref, size_t, size_t)
+  {
+    return nullptr;
+  }
+  void deallocate(cuda::stream_ref, void*, size_t, size_t) noexcept {}
+  void* allocate_sync(size_t, size_t)
+  {
+    return nullptr;
+  }
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  friend bool operator==(const host_device_resource&, const host_device_resource&) noexcept
+  {
+    return true;
+  }
+  friend bool operator!=(const host_device_resource&, const host_device_resource&) noexcept
+  {
+    return false;
+  }
+  friend constexpr void get_property(const host_device_resource&, cuda::mr::host_accessible) noexcept {}
+  friend constexpr void get_property(const host_device_resource&, cuda::mr::device_accessible) noexcept {}
+};
+static_assert(cuda::has_property<host_device_resource, cuda::mr::device_accessible>);
+static_assert(cuda::has_property<host_device_resource, cuda::mr::host_accessible>);
+
+struct explicit_dynamic_resource
+{
+  void* allocate(cuda::stream_ref, size_t, size_t)
+  {
+    return nullptr;
+  }
+  void deallocate(cuda::stream_ref, void*, size_t, size_t) noexcept {}
+  void* allocate_sync(size_t, size_t)
+  {
+    return nullptr;
+  }
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  friend bool operator==(const explicit_dynamic_resource&, const explicit_dynamic_resource&) noexcept
+  {
+    return true;
+  }
+  friend bool operator!=(const explicit_dynamic_resource&, const explicit_dynamic_resource&) noexcept
+  {
+    return false;
+  }
+  friend constexpr void get_property(const explicit_dynamic_resource&, cuda::mr::host_accessible) noexcept {}
+  friend constexpr cuda::mr::__memory_accessibility
+  get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept
+  {
+    return cuda::mr::__memory_accessibility ::__device;
+  }
+};
+
+void requires_host(cuda::mr::resource_ref<cuda::mr::host_accessible>) {}
+void requires_device(cuda::mr::resource_ref<cuda::mr::device_accessible>) {}
+
+bool checks_device_runtime_any_resource(cuda::mr::any_resource<cuda::mr::host_accessible> res)
+{
+  if (try_get_property(res, cuda::mr::device_accessible{}))
+  {
+    std::cout << "Dynamically determined that we are device accessible" << '\n';
+    return true;
+  }
+  return false;
+}
+
+bool checks_device_runtime_resource_ref(cuda::mr::resource_ref<cuda::mr::host_accessible> ref)
+{
+  if (try_get_property(ref, cuda::mr::device_accessible{}))
+  {
+    std::cout << "Dynamically determined that we are device accessible" << '\n';
+    return true;
+  }
+  return false;
+}
+
+TEST_CASE("resource_ref regression test for cccl#6839", "[container][resource]")
+{
+  // Test for https://github.com/NVIDIA/cccl/issues/6839
+  auto host_device_mr =
+    cuda::mr::make_any_resource<host_device_resource, cuda::mr::host_accessible, cuda::mr::device_accessible>();
+  cuda::mr::resource_ref<cuda::mr::host_accessible> ref = host_device_mr;
+  requires_host(host_device_mr); // compile-time enforced, good.
+  requires_device(host_device_mr); // compile-time enforced, good
+
+  cuda::mr::any_resource<cuda::mr::host_accessible> res = host_device_mr;
+  CHECK(checks_device_runtime_any_resource(res)); // Test that we are device accessible
+  CHECK(checks_device_runtime_resource_ref(ref)); // Test that we are device accessible
+}
+
+TEST_CASE("dynamic_accessibility_property in type-erased wrappers", "[container][resource]")
+{
+  cuda::mr::any_resource<cuda::mr::host_accessible> host_device_any{host_device_resource{}};
+  CHECK(get_property(host_device_any, cuda::mr::dynamic_accessibility_property{})
+        == cuda::mr::__memory_accessibility ::__host_device);
+
+  cuda::mr::any_resource<cuda::mr::host_accessible> explicit_any{explicit_dynamic_resource{}};
+  CHECK(get_property(explicit_any, cuda::mr::dynamic_accessibility_property{})
+        == cuda::mr::__memory_accessibility ::__device);
+
+  host_device_resource host_device_mr{};
+  cuda::mr::resource_ref<cuda::mr::host_accessible> host_device_ref{host_device_mr};
+  CHECK(get_property(host_device_ref, cuda::mr::dynamic_accessibility_property{})
+        == cuda::mr::__memory_accessibility ::__host_device);
+}
+
+TEMPLATE_TEST_CASE_METHOD(test_fixture, "Empty property set", "[container][resource]", big_resource, small_resource)
+{
+  using TestResource = TestType;
+  {
+    cuda::mr::any_resource<> mr{TestResource{42, this}};
+    CHECK(mr.allocate_sync(this->bytes(100), this->align(8)) == this);
+    CHECK(!try_get_property(mr, get_data{}));
+    CHECK(!try_get_property(mr, extra_property{}));
+    mr.deallocate_sync(this, this->bytes(0), this->align(0));
+  }
+
+  {
+    cuda::mr::any_resource<get_data> mr{TestResource{42, this}};
+    cuda::mr::any_resource<> mr_sliced_off_to_empty{mr};
+    CHECK(mr.allocate_sync(this->bytes(100), this->align(8)) == this);
+    CHECK(try_get_property(mr, get_data{}).value() == 42);
+    CHECK(!try_get_property(mr, extra_property{}));
+    mr.deallocate_sync(this, this->bytes(0), this->align(0));
+  }
+}
+
+struct my_resource_wrapper
+{
+  explicit my_resource_wrapper(cuda::mr::resource_ref<cuda::mr::device_accessible>);
+
+  void* allocate(cuda::stream_ref, ::cuda::std::size_t, ::cuda::std::size_t);
+  void deallocate(cuda::stream_ref, void*, ::cuda::std::size_t, ::cuda::std::size_t) noexcept;
+  void* allocate_sync(::cuda::std::size_t, ::cuda::std::size_t);
+  void deallocate_sync(void*, ::cuda::std::size_t, ::cuda::std::size_t) noexcept;
+  bool operator==(my_resource_wrapper const&) const;
+  bool operator!=(my_resource_wrapper const&) const;
+  friend void get_property(my_resource_wrapper const&, cuda::mr::device_accessible) noexcept {}
+};
+
+// See https://github.com/NVIDIA/cccl/issues/8037
+TEST_CASE("regression test for NVIDIA/cccl#8037", "[container][resource]")
+{
+  STATIC_REQUIRE(cuda::std::move_constructible<my_resource_wrapper>);
+}
+
+// Minimal proxy that wraps a value and provides operator T&(), mimicking
+// Cython's __Pyx_FakeReference<T> which wraps intermediate expression results.
+template <typename T>
+struct value_proxy
+{
+  T value;
+
+  template <typename... Args>
+  explicit value_proxy(Args&&... args)
+      : value(std::forward<Args>(args)...)
+  {}
+
+  operator T&()
+  {
+    return value;
+  }
+};
+
+// See https://github.com/NVIDIA/cccl/issues/8316
+TEST_CASE("any_resource from proxy-wrapped resource_ref", "[container][resource]")
+{
+  host_device_resource mr;
+  cuda::mr::resource_ref<cuda::mr::host_accessible> ref{mr};
+
+  SECTION("direct construction from resource_ref")
+  {
+    cuda::mr::any_resource<cuda::mr::host_accessible> any{ref};
+    // Extra parens prevent Catch2's expression decomposition, which triggers
+    // an nvcc bug with auto NTTP deduction in __satisfies during ADL.
+    CHECK((any == ref));
+  }
+
+#  if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
+  // nvcc before CTK 12.9 has a bug where auto NTTP deduction failures in
+  // __satisfies are hard errors instead of SFINAE during overload resolution.
+  SECTION("construction from lvalue proxy-wrapped resource_ref")
+  {
+    value_proxy<cuda::mr::resource_ref<cuda::mr::host_accessible>> proxy{mr};
+    cuda::mr::any_resource<cuda::mr::host_accessible> any{proxy};
+    CHECK((any == ref));
+  }
+
+  SECTION("construction from rvalue proxy-wrapped resource_ref")
+  {
+    cuda::mr::any_resource<cuda::mr::host_accessible> any{
+      value_proxy<cuda::mr::resource_ref<cuda::mr::host_accessible>>{mr}};
+    CHECK((any == ref));
+  }
+#  endif // !_CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
+}
+
+TEST_CASE("any_synchronous_resource from proxy-wrapped synchronous_resource_ref", "[container][resource]")
+{
+  host_device_resource mr;
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible> ref{mr};
+
+  SECTION("direct construction from synchronous_resource_ref")
+  {
+    cuda::mr::any_synchronous_resource<cuda::mr::host_accessible> any{ref};
+    CHECK((any == ref));
+  }
+
+#  if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
+  SECTION("construction from lvalue proxy-wrapped synchronous_resource_ref")
+  {
+    value_proxy<cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible>> proxy{mr};
+    cuda::mr::any_synchronous_resource<cuda::mr::host_accessible> any{proxy};
+    CHECK((any == ref));
+  }
+
+  SECTION("construction from rvalue proxy-wrapped synchronous_resource_ref")
+  {
+    cuda::mr::any_synchronous_resource<cuda::mr::host_accessible> any{
+      value_proxy<cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible>>{mr}};
+    CHECK((any == ref));
+  }
+#  endif // !_CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
+}
+#endif // __CUDA_ARCH__

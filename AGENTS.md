@@ -19,6 +19,22 @@ The repository uses **CMake** with the **Ninja** generator and provides standard
 
 ---
 
+## Iteration Cycles
+
+For a given task, you should:
+
+1. Research. Search the web, read existing code, look up system/dependency headers / implementations of related functionality. Figure out best practices and common pitfalls. Look for existing tests of the functionality; if none exist, plan a new test that integrates with the relevant existing testing frameworks.
+2. Plan. Create a high-level plan to implement the requested feature.
+3. Review and Refine plan. Look for pitfalls, find ways to smooth out rough edges. Verify any assumptions, edgecases, or identified pitfalls. Repeat until the plan is solid.
+4. Gather consistency context. Look at similar code (sibling classes if possible, otherwise just related source files) to learn the style and patterns used in the project. Consistency is important -- similar features should be organized and implemented similarly. Naming conventions should be followed.
+5. If requested: Present the plan. Only do this if the user asks for a plan to do something -- if they just ask you implement something without requesting a plan, skip this step.
+6. Draft. Implement the requested task to the best of your ability.
+7. Review and Refine. Read through your changes. Verify that API calls are correct. Assess clarity, performance, and readability. Iterate as needed.
+8. Style check. Ensure that your changes follow style and naming conventions.
+9. Build and test. Once you're confident that your changes are functionally and stylistically correct start build, test, and iterate cycles. If you don't have permissions to do these, ask the user to run specific build/test commands for you.
+
+---
+
 ## Known Agent Limitations
 
 ### OpenAI Codex
@@ -36,7 +52,7 @@ All CCCL subprojects are computationally expensive to build and test. Use the pr
 
 ### CMake Presets
 
-Presets are defined in `CMakePresets.json`. Names follow a `<project>-cxx<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx-cpp20`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
+Presets are defined in `CMakePresets.json`. Names follow a `project` or `<project>-cpp<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
 
 ### `.devcontainer/launch.sh`
 
@@ -46,15 +62,16 @@ Common options:
 
 * `-d, --docker` — Run without VSCode (required for agents)
 * `--cuda <version>` — Select CUDA Toolkit (optional)
+* `--cuda-ext` — Use a docker image with extended CTK libraries
 * `--host <compiler>` — Select host compiler (optional)
-* `--gpus all` — Expose GPUs (omit in GPU-less environments)
+* `--gpus <request>` — GPU devices to add to the container (use `all` to pass all GPUs)
 * `-e/--env`, `-v/--volume` — Environment variables / volume mounts
 * `-- <script>` — Run script inside container after setup
 
 Example:
 
 ```bash
-.devcontainer/launch.sh -d --cuda 13.0 --host gcc14 -- <script> [args...]
+.devcontainer/launch.sh -d --cuda 13.3 --host gcc14 -- <script> [args...]
 ```
 
 ### `ci/util/build_and_test_targets.sh`
@@ -114,7 +131,7 @@ ci/util/build_and_test_targets.sh \
 
 ```bash
 ci/util/build_and_test_targets.sh \
-  --preset libcudacxx-cpp20 \
+  --preset libcudacxx \
   --lit-precompile-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp" \
   --lit-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
 ```
@@ -123,7 +140,7 @@ ci/util/build_and_test_targets.sh \
 
 ```bash
 ci/util/build_and_test_targets.sh \
-  --preset cudax-cpp20 \
+  --preset cudax \
   --build-targets "cudax.cpp20.test.async_buffer" \
   --ctest-targets "cudax.cpp20.test.async_buffer"
 ```
@@ -188,8 +205,9 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 
 ### Modules
 
-* **cuda.cccl.parallel** — Device-level algorithms, iterators, custom GPU types
-* **cuda.cccl.cooperative** — Block/warp-level primitives
+* **cuda.compute** — Device-level algorithms, iterators, custom GPU types
+* **cuda.coop._experimental** — Block/warp-level primitives for Numba CUDA
+* **cuda.stf._experimental** — Stream Task Flow (CUDASTF) Python bindings (Linux only)
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -198,6 +216,12 @@ From PyPI:
 
 ```bash
 pip install cuda-cccl[cu13] # or [cu12] for CTK 12.X
+```
+
+From conda-forge:
+
+```bash
+conda install -c conda-forge cccl-python
 ```
 
 From source:
@@ -210,21 +234,22 @@ pip install -e .[test-cu13] # or [test-cu12] for CTK 12.X
 
 Requirements:
 
-* Python 3.9+
-* CUDA Toolkit 12.x
+* Python 3.10+
+* CUDA Toolkit 12.x or 13.x
 * NVIDIA GPU (CC 6.0+)
-* Dependencies: `numba>=0.60.0`, `numpy`, `cuda-bindings>=12.9.1`, `cuda-core`, `numba-cuda>=0.18.0`
+* Base dependencies: `numba>=0.60.0`, `numpy`, `cuda-pathfinder>=1.2.3`, `cuda-core`, `typing_extensions`
+* CUDA extras: `cuda-bindings` + `cuda-toolkit` + `numba-cuda` via `cuda-cccl[cu12]` or `cuda-cccl[cu13]`
 
 ### Usage Examples
 
 ```python
-import cuda.cccl.parallel.experimental as parallel
-result = parallel.reduce_into(input_array, output_scalar, init_val, binary_op)
+import cuda.compute
+result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
-import cuda.cccl.cooperative.experimental as cooperative
+import cuda.coop._experimental as coop
 @cuda.jit
 def kernel(data):
-    cooperative.block.reduce(data, binary_op)
+    coop.block.reduce(data, binary_op)
 
 import cuda.cccl.headers as headers
 include_paths = headers.get_include_paths()
@@ -234,18 +259,134 @@ include_paths = headers.get_include_paths()
 
 ```bash
 ./ci/build_cuda_cccl_python.sh -py-version 3.10
-./ci/test_cuda_cccl_parallel_python.sh -py-version 3.10
-./ci/test_cuda_cccl_cooperative_python.sh -py-version 3.10
+./ci/test_cuda_compute_python.sh -py-version 3.10
+./ci/test_cuda_coop_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
+./ci/test_cuda_stf_python.sh -py-version 3.10  # Linux only
 ```
 
 Test organization:
 
-* `tests/parallel` — Algorithms and iterators
-* `tests/cooperative` — Cooperative primitives
+* `tests/compute` — Algorithms and iterators
+* `tests/coop` — Cooperative primitives
 * `tests/headers` — Header integration
-* `examples/` — Usage demonstrations
+* `tests/stf` — Sequential Task Flow (Linux only)
+* `test_examples.py` — Runs compute/coop examples
+
+---
+
+## SASS Diffs
+
+Use this test when asked to check for SASS changes between commits, branches or a local changeset.
+
+### Goal
+
+Detect relevant changes in generated CUDA machine code (i.e. SASS) while filtering noise from addresses, symbols, metadata, etc.
+Any non-trivial change must be detected.
+
+### Inputs to establish
+
+* Compiled binary under test
+* The CUDA SM architectures to compile for. Try to detect this from the code and offer the user a list of suggestions.
+  The user must conform or provide this list.
+* Baseline disassembly (from the previous commit/branch or the current commit without the changes in the working copy).
+* Comparison disassembly (form the current commit/branch or the current commit with the changes in the working copy).
+* By default, prefer `cuobjdump -sass` to inspect SASS changes.
+  Use `cuobjdump -ptx` if the request is to check for PTX changes instead.
+
+### Normalization rules (strip known noise)
+
+Apply these transforms to both baseline and candidate listings before diffing.
+Write the normalized listings to separate files.
+
+* Remove addresses/offsets/hex location prefixes.
+* Remove build IDs, timestamps, absolute paths, temp directories, and compiler banners.
+* Normalize whitespace and alignment to single spaces.
+* Remove empty lines and purely comment lines.
+
+### Comparison rules (what matters)
+
+Ignore as trivial:
+
+* Register renaming with identical instruction sequence and operands.
+* Pure label renumbering or reordering of identical basic blocks.
+* Formatting-only differences or reordered symbol tables.
+
+### Reporting
+
+* If any non-trivial change was detected, the top 5 regions where a non-trivial change was detected,
+  including the name of the kernel they appeared in.
+* A short summary of the diff type (opcode change, memory access size change, size delta, control-flow, etc.).
+* Explicitly state if only noise was detected after normalization.
+* If you are not sure if the differences are impactful, show it and ask the user for guidance.
+* Keep the disassembly dumps available for reference and show the command to the user to generate a diff.
+
+---
+
+## Continuous Integration (CI)
+
+See `ci-overview.md` for detailed examples and troubleshooting guidance.
+
+CCCL's CI is built on GitHub Actions and relies on a dynamically generated job matrix plus several helper scripts.
+
+### Key Components
+
+* **`ci/matrix.yaml`**
+
+  * Declares build and test jobs for `pull_request`, `nightly`, and `weekly` workflows.
+  * Pull request (PR) runs typically spawn ~250 jobs.
+  * To reduce overhead, you can add an override matrix in `workflows.override`. This limits the PR CI run to a targeted subset of jobs. Overrides are recommended when:
+    * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.py` for dependency information.
+    * A smaller subset of jobs is enough to validate the change (e.g. infra changes, targeted fixes).
+  * Important rules:
+    * PR merges are blocked while an override matrix is active.
+    * The override must be reset to empty (not removed) before merging.
+    * Only add overrides when starting a new draft that qualifies; never remove one without being asked.
+
+* **`.github/actions/workflow-build/`**
+
+  * Runs `build-workflow.py`.
+  * Reads `ci/matrix.yaml` and prunes jobs using `ci/inspect_changes.py`.
+  * Calls `prepare-workflow-dispatch.py` to produce a formatted job matrix for dispatch.
+
+* **`.github/actions/workflow-run-job-{linux,windows}/`**
+
+  * Runs a single matrix job inside a devcontainer.
+
+* **`.github/actions/workflow-results/`**
+
+  * Aggregates artifacts and results.
+  * Marks workflow as failed if any job fails or an override matrix is present.
+
+* **`.github/workflows/ci-workflow-{pull-request,nightly,weekly}.yml`**
+
+  * Top-level GitHub Actions workflows invoking CI.
+
+* **`ci/inspect_changes.py`**
+
+  * Detects which subprojects changed between commits.
+  * Defines internal dependencies between CCCL projects. If a project is marked dirty, all dependent projects are also marked dirty and tested.
+  * Allows `build-workflow.py` to skip unaffected jobs.
+
+---
+
+### Commit Message Controls
+
+Tags appended to the commit summary (case-sensitive) control CI behavior:
+
+* `[bench-only]`: Skip all non-benchmark CI jobs. Equivalent to `[skip-matrix][skip-vdc][skip-docs][skip-tpt]`.
+* `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
+* `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
+* `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
+* `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
+* `[skip-matx]`: Skip building the MatX third-party smoke test.
+* `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
+* `[skip-rapids]`: Skip building the RAPIDS third-party smoke test.
+
+> ⚠️ All of these tags block merging until removed and a full CI run (with no overrides) succeeds.
+
+Use these tags for early iterations to save resources. Remove them before review/merge.
 
 ---
 
@@ -264,15 +405,16 @@ pre-commit run --files <file1> <file2>
 
 ## General Guidelines
 
-* Always validate changes with builds and tests
-* Always run `pre-commit` before committing
-* Review `CONTRIBUTING.md` before submitting PRs
+* Validate changes with builds/tests; report results.
+* Run `pre-commit` before committing.
+* Review `CONTRIBUTING.md` and `ci-overview.md` before starting work.
 
-Performance tips:
+### Performance Tips
 
-* Use development containers with `sccache` (internal users)
-* Limit architectures to target hardware (e.g. `-arch "native"`)
-* Build with Ninja parallelization (`--parallel <N>`)
+* Use development containers with `sccache` (CCCL team only).
+* Limit architectures to reduce compile time (e.g. `-arch "native"` or `"80"` if no GPU).
+* Build with Ninja for fast, parallel builds.
+
 
 ---
 
@@ -297,10 +439,13 @@ Python package layout:
 
 ```
 python/cuda_cccl/
-├── cuda/cccl/
-│   ├── parallel/
-│   ├── cooperative/
-│   └── headers/
+├── cuda/
+│   ├── compute/
+│   ├── coop/
+│   └── cccl/
+│       ├── parallel/
+│       ├── cooperative/
+│       └── headers/
 ├── tests/
 ├── benchmarks/
 └── pyproject.toml

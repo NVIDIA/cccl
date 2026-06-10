@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file reduce.h
  *  \brief OpenMP implementation of reduce algorithms.
@@ -29,20 +16,22 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
+
+#include <thrust/system/detail/generic/partition.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
-THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
-{
+#include <cuda/std/__utility/pair.h>
 
+THRUST_NAMESPACE_BEGIN
+namespace system::omp::detail
+{
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 ForwardIterator
-stable_partition(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred);
+stable_partition(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
+{
+  // omp prefers generic::stable_partition to cpp::stable_partition
+  return thrust::system::detail::generic::stable_partition(exec, first, last, pred);
+} // end stable_partition()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator stable_partition(
@@ -50,20 +39,28 @@ ForwardIterator stable_partition(
   ForwardIterator first,
   ForwardIterator last,
   InputIterator stencil,
-  Predicate pred);
+  Predicate pred)
+{
+  // omp prefers generic::stable_partition to cpp::stable_partition
+  return thrust::system::detail::generic::stable_partition(exec, first, last, stencil, pred);
+} // end stable_partition()
 
 template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
   OutputIterator1 out_true,
   OutputIterator2 out_false,
-  Predicate pred);
+  Predicate pred)
+{
+  // omp prefers generic::stable_partition_copy to cpp::stable_partition_copy
+  return thrust::system::detail::generic::stable_partition_copy(exec, first, last, out_true, out_false, pred);
+} // end stable_partition_copy()
 
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -71,18 +68,17 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
   OutputIterator1 out_true,
   OutputIterator2 out_false,
-  Predicate pred);
-
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+  Predicate pred)
+{
+  // omp prefers generic::stable_partition_copy to cpp::stable_partition_copy
+  return thrust::system::detail::generic::stable_partition_copy(exec, first, last, stencil, out_true, out_false, pred);
+} // end stable_partition_copy()
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END
-
-#include <thrust/system/omp/detail/partition.inl>

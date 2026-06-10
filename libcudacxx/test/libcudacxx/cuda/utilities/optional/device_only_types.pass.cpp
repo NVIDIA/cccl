@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   using optional = cuda::std::optional<T>;
   { // default construction
@@ -133,12 +133,10 @@ __device__ void test()
   }
 }
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   test<device_only_type>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<device_only_type&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 }
 
 int main(int arg, char** argv)

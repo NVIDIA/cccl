@@ -15,7 +15,7 @@ on:
       launch_args:
         description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--cuda 12.9 --host gcc13'"
         required: false
-        default: "--cuda 13.0 --host gcc14"
+        default: "--cuda 13.3 --host gcc14"
         type: string
       preset:
         description: "CMake preset. Ex: cub-cpp20"
@@ -23,9 +23,9 @@ on:
         default: "cub-cpp20"
         type: string
       cmake_options:
-        description: "Additional options passed to CMake preset configure (e.g. -DVAR=ON)"
+        description: "Additional options passed to CMake preset configure (e.g. -DCMAKE_CUDA_ARCHITECTURES=80;90)"
         required: false
-        default: "-DCMAKE_CUDA_ARCHITECTURES=80;90;100;120"
+        default: ""
         type: string
       build_targets:
         description: "Space separated ninja build targets to build."
@@ -214,7 +214,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           fetch-depth: 0          # FULL history
@@ -222,7 +222,7 @@ jobs:
 
       - name: Get AWS credentials for sccache bucket
         if: ${{ github.repository == 'NVIDIA/cccl' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -255,7 +255,7 @@ jobs:
 
       - name: Run git bisect
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           # AWS credentials from the configure-aws-credentials action
@@ -304,6 +304,7 @@ jobs:
             --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" \
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
+            --env "GH_TOKEN=$GH_TOKEN" \
             --env "LAUNCH_ARGS=${LAUNCH_ARGS} ${GPU_ARGS}" \
             --env "STEP_SUMMARY_URL=${STEP_SUMMARY_URL}" \
             --env "GHA_LOG_URL=${GHA_LOG_URL}" \

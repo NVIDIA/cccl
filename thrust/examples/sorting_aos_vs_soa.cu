@@ -3,9 +3,10 @@
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
-#include <assert.h>
+#include <cuda/std/cassert>
 
-#include "include/host_device.h"
+#include <iostream>
+
 #include "include/timer.h"
 
 // This examples compares sorting performance using Array of Structures (AoS)
@@ -35,9 +36,9 @@ void initialize_keys(thrust::device_vector<int>& keys)
 
   thrust::host_vector<int> h_keys(keys.size());
 
-  for (size_t i = 0; i < h_keys.size(); i++)
+  for (auto& e : h_keys)
   {
-    h_keys[i] = dist(rng);
+    e = dist(rng);
   }
 
   keys = h_keys;
@@ -50,9 +51,9 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
 
   thrust::host_vector<MyStruct> h_structures(structures.size());
 
-  for (size_t i = 0; i < h_structures.size(); i++)
+  for (auto& s : h_structures)
   {
-    h_structures[i].key = dist(rng);
+    s.key = dist(rng);
   }
 
   structures = h_structures;
@@ -73,7 +74,7 @@ int main()
     thrust::sort(structures.begin(), structures.end());
     assert(thrust::is_sorted(structures.begin(), structures.end()));
 
-    std::cout << "AoS sort took " << 1e3 * t.elapsed() << " milliseconds" << std::endl;
+    std::cout << "AoS sort took " << 1e3 * t.elapsed() << " milliseconds" << '\n';
   }
 
   // Sort Key-Value pairs using Structure of Arrays (SoA) storage
@@ -88,7 +89,7 @@ int main()
     thrust::sort_by_key(keys.begin(), keys.end(), values.begin());
     assert(thrust::is_sorted(keys.begin(), keys.end()));
 
-    std::cout << "SoA sort took " << 1e3 * t.elapsed() << " milliseconds" << std::endl;
+    std::cout << "SoA sort took " << 1e3 * t.elapsed() << " milliseconds" << '\n';
   }
 
   return 0;

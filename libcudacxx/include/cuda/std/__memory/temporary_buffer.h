@@ -5,7 +5,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024-25 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,14 +24,12 @@
 
 #include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__new_>
+#include <cuda/std/__new/allocate.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/alignment_of.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -84,6 +82,15 @@ _CCCL_API inline void return_temporary_buffer(_Tp* __p) noexcept
 {
   ::cuda::std::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
 }
+
+struct __return_temporary_buffer
+{
+  template <class _Tp>
+  _CCCL_API void operator()(_Tp* __p) const noexcept
+  {
+    ::cuda::std::return_temporary_buffer(__p);
+  }
+};
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

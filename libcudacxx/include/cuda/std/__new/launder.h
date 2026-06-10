@@ -28,6 +28,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC)
+#  define _CCCL_BUILTIN_LAUNDER(...) __builtin_launder(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>

@@ -32,12 +32,11 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _InputIter)
-_CCCL_REQUIRES(__is_cpp17_input_iterator<_InputIter>::value)
+_CCCL_REQUIRES(__has_input_traversal<_InputIter>)
 [[nodiscard]] _CCCL_API constexpr _InputIter
 prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
-  _CCCL_ASSERT(__n <= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
-               "Attempt to prev(it, +n) on a non-bidi iterator");
+  _CCCL_ASSERT(__n <= 0 || __has_bidirectional_traversal<_InputIter>, "Attempt to prev(it, +n) on a non-bidi iterator");
   ::cuda::std::advance(__x, -__n);
   return __x;
 }
@@ -46,7 +45,7 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.prev]
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__prev)
 struct __fn
 {
@@ -64,7 +63,7 @@ struct __fn
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
-    ::cuda::std::ranges::advance(__x, -__n);
+    ::cuda::std::ranges::__advance_cpo{}(__x, -__n);
     return __x;
   }
 
@@ -73,7 +72,7 @@ struct __fn
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Ip __bound_iter) const
   {
-    ::cuda::std::ranges::advance(__x, -__n, __bound_iter);
+    ::cuda::std::ranges::__advance_cpo{}(__x, -__n, __bound_iter);
     return __x;
   }
 };
@@ -82,9 +81,12 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto prev = __prev::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __prev_cpo = __prev::__fn;
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

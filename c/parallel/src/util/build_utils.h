@@ -14,11 +14,8 @@
 
 #include <cccl/c/types.h>
 
-namespace cccl
+namespace cccl::detail
 {
-namespace detail
-{
-
 /**
  * @brief Extends a vector of compilation arguments with extra flags and include directories from a build config
  *
@@ -27,6 +24,10 @@ namespace detail
  */
 inline void extend_args_with_build_config(std::vector<const char*>& args, const cccl_build_config* config)
 {
+  // Work around an NVRTC 13.3 diagnostic pragma bug in CUDA Toolkit headers that leaves deprecated vector type warnings
+  // unsuppressed when including headers such as cuda_fp8.h, cuda_fp6.h, and cuda_fp4.h.
+  args.push_back("-D__NV_NO_VECTOR_DEPRECATION_DIAG");
+
   if (config)
   {
     // Add extra compile flags
@@ -42,6 +43,4 @@ inline void extend_args_with_build_config(std::vector<const char*>& args, const 
     }
   }
 }
-
-} // namespace detail
-} // namespace cccl
+} // namespace cccl::detail

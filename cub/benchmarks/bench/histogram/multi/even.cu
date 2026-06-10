@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <nvbench_helper.cuh>
 
@@ -44,34 +20,22 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   constexpr int num_channels        = 4;
   constexpr int num_active_channels = 3;
 
-  using sample_iterator_t = SampleT*;
-
-#if !TUNE_BASE
-  using policy_t = policy_hub_t<key_t, num_channels, num_active_channels>;
-  using dispatch_t =
-    cub::DispatchHistogram<num_channels, //
-                           num_active_channels,
-                           sample_iterator_t,
-                           CounterT,
-                           SampleT,
-                           OffsetT,
-                           policy_t>;
-#else // TUNE_BASE
-  using dispatch_t =
-    cub::DispatchHistogram<num_channels, //
-                           num_active_channels,
-                           sample_iterator_t,
-                           CounterT,
-                           /* LevelT = */ SampleT,
-                           OffsetT>;
-#endif // TUNE_BASE
-
   const auto entropy     = str_to_entropy(state.get_string("Entropy"));
   const auto elements    = state.get_int64("Elements{io}");
   const auto num_bins    = state.get_int64("Bins");
   const int num_levels_r = static_cast<int>(num_bins) + 1;
   const int num_levels_g = num_levels_r;
   const int num_levels_b = num_levels_g;
+
+  // Skip invalid configurations where LevelT (= SampleT) cannot represent the number of bins
+  if constexpr (cuda::std::is_integral_v<SampleT>)
+  {
+    if (num_bins > static_cast<int64_t>(cuda::std::numeric_limits<SampleT>::max()))
+    {
+      state.skip("Number of bins exceeds what LevelT (= SampleT) can represent");
+      return;
+    }
+  }
 
   const SampleT lower_level_r = 0;
   const SampleT upper_level_r = get_upper_level<SampleT>(num_bins, elements);
@@ -90,49 +54,30 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   CounterT* d_histogram_g = thrust::raw_pointer_cast(hist_g.data());
   CounterT* d_histogram_b = thrust::raw_pointer_cast(hist_b.data());
 
-  std::uint8_t* d_temp_storage = nullptr;
-  std::size_t temp_storage_bytes{};
-
-  cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
-  OffsetT num_row_pixels     = static_cast<OffsetT>(elements);
-  OffsetT num_rows           = 1;
-  OffsetT row_stride_samples = num_row_pixels;
-
   state.add_element_count(elements);
   state.add_global_memory_reads<SampleT>(elements * num_active_channels);
   state.add_global_memory_writes<CounterT>(num_bins * num_active_channels);
 
-  dispatch_t::DispatchEven(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_input,
-    {d_histogram_r, d_histogram_g, d_histogram_b},
-    {num_levels_r, num_levels_g, num_levels_b},
-    {lower_level_r, lower_level_g, lower_level_b},
-    {upper_level_r, upper_level_g, upper_level_b},
-    num_row_pixels,
-    num_rows,
-    row_stride_samples,
-    0,
-    is_byte_sample);
-
-  thrust::device_vector<nvbench::uint8_t> tmp(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::DispatchEven(
-      d_temp_storage,
-      temp_storage_bytes,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>),
+      "MultiHistogramEven failed",
       d_input,
-      {d_histogram_r, d_histogram_g, d_histogram_b},
-      {num_levels_r, num_levels_g, num_levels_b},
-      {lower_level_r, lower_level_g, lower_level_b},
-      {upper_level_r, upper_level_g, upper_level_b},
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      launch.get_stream(),
-      is_byte_sample);
+      cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+      cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
+      cuda::std::array<SampleT, num_active_channels>{lower_level_r, lower_level_g, lower_level_b},
+      cuda::std::array<SampleT, num_active_channels>{upper_level_r, upper_level_g, upper_level_b},
+      static_cast<OffsetT>(elements),
+      env);
   });
 }
 

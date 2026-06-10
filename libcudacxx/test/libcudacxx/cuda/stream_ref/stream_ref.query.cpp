@@ -11,9 +11,9 @@
 // UNSUPPORTED: nvrtc
 
 #include <cuda/std/cassert>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::execution::__queryable_with<cuda::stream_ref, cuda::get_stream_t>);
 

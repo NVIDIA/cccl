@@ -1,0 +1,161 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+//
+// Unit tests for stf_logical_data_with_place(): logical data with explicit
+// data place (host, pinned host, device).
+//
+//===----------------------------------------------------------------------===//
+
+#include <memory>
+#include <vector>
+
+#include <cuda_runtime.h>
+
+#include <c2h/catch2_test_helper.h>
+#include <cccl/c/experimental/stf/stf.h>
+
+__global__ void scale_inplace(int n, float* data, float factor)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n)
+  {
+    data[i] *= factor;
+  }
+}
+
+C2H_TEST("stf_logical_data_with_place - host place (malloc)", "[logical_data_with_place]")
+{
+  size_t N = 1024;
+
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  std::vector<float> A(N);
+  for (size_t i = 0; i < N; ++i)
+  {
+    A[i] = static_cast<float>(i);
+  }
+
+  stf_data_place_handle host_place = stf_data_place_host();
+  stf_logical_data_handle lA       = stf_logical_data_with_place(ctx, A.data(), N * sizeof(float), host_place);
+  REQUIRE(lA != nullptr);
+  stf_data_place_destroy(host_place);
+
+  stf_task_handle t = stf_task_create(ctx);
+  REQUIRE(t != nullptr);
+  stf_task_add_dep(t, lA, STF_RW);
+  stf_task_start(t);
+  stf_task_end(t);
+  stf_task_destroy(t);
+
+  stf_logical_data_destroy(lA);
+  stf_ctx_finalize(ctx);
+
+  for (size_t i = 0; i < N; ++i)
+  {
+    REQUIRE(A[i] == static_cast<float>(i));
+  }
+}
+
+C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_data_with_place]")
+{
+  size_t N = 1024;
+
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  float* A        = nullptr;
+  cudaError_t err = cudaMallocHost(&A, N * sizeof(float));
+  REQUIRE(err == cudaSuccess);
+  for (size_t i = 0; i < N; ++i)
+  {
+    A[i] = static_cast<float>(i);
+  }
+
+  stf_data_place_handle host_place = stf_data_place_host();
+  stf_logical_data_handle lA       = stf_logical_data_with_place(ctx, A, N * sizeof(float), host_place);
+  REQUIRE(lA != nullptr);
+  stf_data_place_destroy(host_place);
+
+  stf_task_handle t = stf_task_create(ctx);
+  REQUIRE(t != nullptr);
+  stf_task_add_dep(t, lA, STF_RW);
+  stf_task_start(t);
+  stf_task_end(t);
+  stf_task_destroy(t);
+
+  stf_logical_data_destroy(lA);
+  stf_ctx_finalize(ctx);
+
+  for (size_t i = 0; i < N; ++i)
+  {
+    REQUIRE(A[i] == static_cast<float>(i));
+  }
+
+  REQUIRE(cudaFreeHost(A) == cudaSuccess);
+}
+
+C2H_TEST("stf_logical_data_with_place - device place (data on current device)", "[logical_data_with_place]")
+{
+  size_t N           = 1024;
+  const float factor = 2.0f;
+
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  float* d_raw    = nullptr;
+  cudaError_t err = cudaMalloc(&d_raw, N * sizeof(float));
+  REQUIRE(err == cudaSuccess);
+  std::unique_ptr<void, decltype(&cudaFree)> d_data_owner(d_raw, cudaFree);
+  float* d_data = static_cast<float*>(d_data_owner.get());
+
+  std::vector<float> h_init(N);
+  for (size_t i = 0; i < N; ++i)
+  {
+    h_init[i] = static_cast<float>(i);
+  }
+  err = cudaMemcpy(d_data, h_init.data(), N * sizeof(float), cudaMemcpyHostToDevice);
+  REQUIRE(err == cudaSuccess);
+
+  stf_data_place_handle dev_place = stf_data_place_device(0);
+  stf_logical_data_handle lD      = stf_logical_data_with_place(ctx, d_data, N * sizeof(float), dev_place);
+  REQUIRE(lD != nullptr);
+  stf_data_place_destroy(dev_place);
+  stf_logical_data_set_symbol(lD, "device_buf");
+
+  stf_cuda_kernel_handle k = stf_cuda_kernel_create(ctx);
+  REQUIRE(k != nullptr);
+  stf_cuda_kernel_set_symbol(k, "scale_inplace");
+  stf_cuda_kernel_add_dep(k, lD, STF_RW);
+  stf_cuda_kernel_start(k);
+  float* arg_ptr = static_cast<float*>(stf_cuda_kernel_get_arg(k, 0));
+  REQUIRE(arg_ptr == d_data);
+  int n               = static_cast<int>(N);
+  const void* args[3] = {&n, &arg_ptr, &factor};
+  dim3 grid(4);
+  dim3 block(256);
+  err = stf_cuda_kernel_add_desc(k, reinterpret_cast<void*>(scale_inplace), grid, block, 0, 3, args);
+  REQUIRE(err == cudaSuccess);
+  stf_cuda_kernel_end(k);
+  stf_cuda_kernel_destroy(k);
+
+  stf_logical_data_destroy(lD);
+  stf_ctx_finalize(ctx);
+
+  // Copy back and verify: should be i * factor
+  std::vector<float> h_result(N);
+  err = cudaMemcpy(h_result.data(), d_data, N * sizeof(float), cudaMemcpyDeviceToHost);
+  REQUIRE(err == cudaSuccess);
+
+  for (size_t i = 0; i < N; ++i)
+  {
+    REQUIRE(h_result[i] == static_cast<float>(i) * factor);
+  }
+}

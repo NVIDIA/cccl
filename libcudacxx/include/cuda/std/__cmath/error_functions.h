@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -43,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  undef _CCCL_BUILTIN_ERFL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-[[nodiscard]] _CCCL_API inline float erf(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float erf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ERFF)
   return _CCCL_BUILTIN_ERFF(__x);
@@ -52,7 +53,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // ^^^ !_CCCL_BUILTIN_ERFF ^^^
 }
 
-[[nodiscard]] _CCCL_API inline float erff(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float erff(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ERFF)
   return _CCCL_BUILTIN_ERFF(__x);
@@ -61,7 +62,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // ^^^ !_CCCL_BUILTIN_ERFF ^^^
 }
 
-[[nodiscard]] _CCCL_API inline double erf(double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double erf(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ERF)
   return _CCCL_BUILTIN_ERF(__x);
@@ -71,7 +72,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double erf(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double erf(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ERFL)
   return _CCCL_BUILTIN_ERFL(__x);
@@ -80,7 +81,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  endif // ^^^ !_CCCL_BUILTIN_ERFL ^^^
 }
 
-[[nodiscard]] _CCCL_API inline long double erfl(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double erfl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ERFL)
   return _CCCL_BUILTIN_ERFL(__x);
@@ -91,14 +92,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half erf(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half erf(__half __x) noexcept
 {
   return ::__float2half(::cuda::std::erf(::__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 erf(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 erf(__nv_bfloat16 __x) noexcept
 {
   return ::__float2bfloat16(::cuda::std::erf(::__bfloat162float(__x)));
 }
@@ -106,7 +107,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
-[[nodiscard]] _CCCL_API inline double erf(_Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double erf(_Tp __x) noexcept
 {
   return ::cuda::std::erf(static_cast<double>(__x));
 }
@@ -125,7 +126,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 #  undef _CCCL_BUILTIN_ERFCL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-[[nodiscard]] _CCCL_API inline float erfc(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float erfc(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ERFCF)
   return _CCCL_BUILTIN_ERFCF(__x);
@@ -134,7 +135,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 #endif // ^^^ !_CCCL_BUILTIN_ERFCF ^^^
 }
 
-[[nodiscard]] _CCCL_API inline float erfcf(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float erfcf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ERFCF)
   return _CCCL_BUILTIN_ERFCF(__x);
@@ -143,7 +144,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 #endif // ^^^ !_CCCL_BUILTIN_ERFCF ^^^
 }
 
-[[nodiscard]] _CCCL_API inline double erfc(double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double erfc(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ERFC)
   return _CCCL_BUILTIN_ERFC(__x);
@@ -153,7 +154,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double erfc(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double erfc(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ERFCL)
   return _CCCL_BUILTIN_ERFCL(__x);
@@ -162,7 +163,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 #  endif // ^^^ !_CCCL_BUILTIN_ERFCL ^^^
 }
 
-[[nodiscard]] _CCCL_API inline long double erfcl(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double erfcl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ERFCL)
   return _CCCL_BUILTIN_ERFCL(__x);
@@ -173,14 +174,14 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half erfc(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half erfc(__half __x) noexcept
 {
   return ::__float2half(::cuda::std::erfc(::__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 erfc(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 erfc(__nv_bfloat16 __x) noexcept
 {
   return ::__float2bfloat16(::cuda::std::erfc(::__bfloat162float(__x)));
 }
@@ -188,7 +189,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
-[[nodiscard]] _CCCL_API inline double erfc(_Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double erfc(_Tp __x) noexcept
 {
   return ::cuda::std::erfc(static_cast<double>(__x));
 }

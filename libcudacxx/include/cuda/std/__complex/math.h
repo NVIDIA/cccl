@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/sincos.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
@@ -42,7 +43,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // abs
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _Tp abs(const complex<_Tp>& __c)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline _Tp abs(const complex<_Tp>& __c)
 {
   return ::cuda::std::hypot(__c.real(), __c.imag());
 }
@@ -50,7 +51,7 @@ template <class _Tp>
 // norm
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp norm(const complex<_Tp>& __c)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp norm(const complex<_Tp>& __c)
 {
   if (::cuda::std::isinf(__c.real()))
   {
@@ -98,7 +99,7 @@ template <class _Tp>
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>) )
-[[nodiscard]] _CCCL_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
 {
   if (::cuda::std::isinf(__re))
   {
@@ -109,7 +110,7 @@ _CCCL_REQUIRES((is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
-[[nodiscard]] _CCCL_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
 {
   return __cccl_complex_complex_type<_Tp>(__re);
 }
@@ -117,7 +118,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 // polar
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> polar(const _Tp& __rho, const _Tp& __theta = _Tp())
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> polar(const _Tp& __rho, const _Tp& __theta = _Tp())
 {
   if (::cuda::std::isnan(__rho) || ::cuda::std::signbit(__rho))
   {
@@ -139,12 +140,13 @@ template <class _Tp>
     }
     return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), numeric_limits<_Tp>::quiet_NaN());
   }
-  _Tp __x = __rho * ::cuda::std::cos(__theta);
+  const auto [__sin_theta, __cos_theta] = ::cuda::sincos(__theta);
+  _Tp __x                               = __rho * __cos_theta;
   if (::cuda::std::isnan(__x))
   {
     __x = 0;
   }
-  _Tp __y = __rho * ::cuda::std::sin(__theta);
+  _Tp __y = __rho * __sin_theta;
   if (::cuda::std::isnan(__y))
   {
     __y = 0;

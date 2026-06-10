@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -30,9 +31,13 @@ typedef struct cccl_device_histogram_build_result_t
   size_t cubin_size;
   CUlibrary library;
   cccl_type_info counter_type;
+  cccl_type_info level_type;
+  cccl_type_info sample_type;
   int num_active_channels;
+  bool may_overflow;
   CUkernel init_kernel;
   CUkernel sweep_kernel;
+  void* runtime_policy;
 } cccl_device_histogram_build_result_t;
 
 CCCL_C_API CUresult cccl_device_histogram_build(
@@ -90,3 +95,4 @@ CCCL_C_API CUresult cccl_device_histogram_even(
 CCCL_C_API CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

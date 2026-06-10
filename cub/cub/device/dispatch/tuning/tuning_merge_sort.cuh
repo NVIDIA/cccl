@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -37,39 +13,81 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_merge_sort.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_math.cuh>
+
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+template <int ThreadsPerBlock,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
+struct agent_merge_sort_policy
+{
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
+};
+} // namespace detail
+
+template <int ThreadsPerBlock,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
+using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceMergeSort") =
+  detail::agent_merge_sort_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
+
+//! The tuning policy for all algorithms in @ref DeviceMergeSort.
+struct MergeSortPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.store_algorithm == rhs.store_algorithm;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
+  {
+    return os << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+              << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 namespace detail::merge_sort
 {
-
-template <typename PolicyT, typename = void>
-struct MergeSortPolicyWrapper : PolicyT
-{
-  CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
-
-template <typename StaticPolicyT>
-struct MergeSortPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::MergeSortPolicy::LOAD_MODIFIER)>>
-    : StaticPolicyT
-{
-  CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
-
-  CUB_DEFINE_SUB_POLICY_GETTER(MergeSort);
-};
-
-template <typename PolicyT>
-CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper<PolicyT> MakeMergeSortPolicyWrapper(PolicyT policy)
-{
-  return MergeSortPolicyWrapper<PolicyT>{policy};
-}
-
+// TODO(bgruber): drop in CCCL 4.0 when we remove all public CUB dispatchers
 template <typename KeyIteratorT>
 struct policy_hub
 {
@@ -78,11 +96,11 @@ struct policy_hub
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<256,
-                           Nominal4BItemsToItems<KeyT>(11),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_LDG,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<256,
+                              Nominal4BItemsToItems<KeyT>(11),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_LDG,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   // NVBug 3384810
@@ -92,27 +110,74 @@ struct policy_hub
   struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<512,
-                           Nominal4BItemsToItems<KeyT>(15),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_LDG,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<512,
+                              Nominal4BItemsToItems<KeyT>(15),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_LDG,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 #endif
 
   struct Policy600 : ChainedPolicy<600, Policy600, Policy520>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<256,
-                           Nominal4BItemsToItems<KeyT>(17),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_DEFAULT,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<256,
+                              Nominal4BItemsToItems<KeyT>(17),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_DEFAULT,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   using MaxPolicy = Policy600;
 };
 
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept merge_sort_policy_selector = policy_selector<T, MergeSortPolicy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
+{
+  int key_size;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> MergeSortPolicy
+  {
+    // from SM60
+    return MergeSortPolicy{
+      256,
+      detail::nominal_4B_items_to_items(17, key_size),
+      BLOCK_LOAD_WARP_TRANSPOSE,
+      LOAD_DEFAULT,
+      BLOCK_STORE_WARP_TRANSPOSE};
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(merge_sort_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+template <typename KeyIteratorT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> MergeSortPolicy
+  {
+    return policy_selector{int{sizeof(it_value_t<KeyIteratorT>)}}(cc);
+  }
+};
+
+// TODO(bgruber): remove in CCCL 4.0
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  // this is only called in device code, so we can ignore the cc parameter
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> MergeSortPolicy
+  {
+    using ap = typename PolicyHub::MaxPolicy::ActivePolicy;
+    using mp = typename ap::MergeSortPolicy;
+    return MergeSortPolicy{
+      mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
+  }
+};
 } // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

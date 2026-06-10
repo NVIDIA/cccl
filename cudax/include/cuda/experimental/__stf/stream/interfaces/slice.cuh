@@ -33,7 +33,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /** @brief Contiguous memory interface. Supports multiple dimensions (compile-time chosen) and strides (run-time
  * chosen).
  */
@@ -95,8 +94,8 @@ public:
       return;
     }
 
-    exec_place_grid grid = memory_node.get_grid();
-    size_t total_size    = this->shape.size();
+    exec_place grid   = memory_node.affine_exec_place();
+    size_t total_size = this->shape.size();
 
     // position (x,y,z,t) on (nx,ny,nz,nt)
     // * index = x + nx*y + nx*ny*z + nx*ny*nz*t
@@ -145,10 +144,9 @@ public:
     // Get the extents stored as a dim4
     const dim4 data_dims = this->shape.get_data_dims();
 
-    auto array = bctx.get_composite_cache().get(
+    auto [array, cached_prereqs] = bctx.get_composite_cache().get(
       memory_node, memory_node.get_partitioner(), delinearize, total_size, sizeof(T), data_dims);
-    // We need to wait for its pending dependencies if any...
-    array->merge_into(prereqs);
+    prereqs.merge(mv(cached_prereqs));
     base_ptr = static_cast<T*>(array->get_base_ptr());
 
     // Store this localized array in the extra_args associated to the
@@ -188,8 +186,8 @@ public:
     // localized_array object into a cache, which will speedup the
     // allocation of identical arrays, if any.
     // This cached array is only usable once the prereqs of this deallocation are fulfilled.
-    auto* array = static_cast<reserved::localized_array*>(extra_args);
-    bctx.get_composite_cache().put(::std::unique_ptr<reserved::localized_array>(array), prereqs);
+    auto* array = static_cast<localized_array*>(extra_args);
+    bctx.get_composite_cache().put(::std::unique_ptr<localized_array>(array), prereqs);
   }
 
   void data_copy(backend_ctx_untyped& bctx,
@@ -204,8 +202,8 @@ public:
     // static_assert(dimensions <= 2, "unsupported yet.");
     //_CCCL_ASSERT(dimensions <= 2, "unsupported yet.");
 
-    auto decorated_s = dst_memory_node.getDataStream(bctx.async_resources());
-    auto op          = stream_async_op(bctx, decorated_s, prereqs);
+    auto augmented_s = dst_memory_node.getDataStream(bctx.async_resources().get_place_resources());
+    auto op          = stream_async_op(bctx, augmented_s, prereqs);
 
     if (bctx.generate_event_symbols())
     {
@@ -213,7 +211,7 @@ public:
       op.set_symbol("slice copy " + src_memory_node.to_string() + "->" + dst_memory_node.to_string());
     }
 
-    cudaStream_t s = decorated_s.stream;
+    cudaStream_t s = augmented_s.stream;
 
     // Let CUDA figure out from pointers
     cudaMemcpyKind kind = cudaMemcpyDefault;
@@ -299,5 +297,4 @@ struct streamed_interface_of<mdspan<T, P...>>
 {
   using type = slice_stream_interface<T, mdspan<T, P...>::rank()>;
 };
-
 } // namespace cuda::experimental::stf

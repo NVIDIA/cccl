@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -29,16 +16,15 @@
 #include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/memory_resource.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_base_of.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
-
 template <typename MR>
 struct validator
 {
-  static_assert(::cuda::std::is_base_of<memory_resource<typename MR::pointer>, MR>::value,
+  static_assert(::cuda::std::is_base_of_v<memory_resource<typename MR::pointer>, MR>,
                 "a type used as a memory resource must derive from memory_resource");
 };
 
@@ -51,6 +37,5 @@ struct validator2
 template <typename T>
 struct validator2<T, T> : private validator<T>
 {};
-
 } // namespace mr
 THRUST_NAMESPACE_END

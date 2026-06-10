@@ -7,9 +7,10 @@ Functional
    :hidden:
    :maxdepth: 1
 
+   functional/always_true_false
    functional/proclaim_return_type
    functional/maximum_minimum
-   memory/get_device_address
+   functional/operator_properties
 
 .. list-table::
    :widths: 25 45 30 30
@@ -19,6 +20,16 @@ Functional
      - **Content**
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
+
+   * - :ref:`cuda::always_true <libcudacxx-extended-api-functional-always-true-false>`
+     - Function object that always returns ``true``
+     - CCCL 3.4.0
+     - CUDA 13.4
+
+   * - :ref:`cuda::always_false <libcudacxx-extended-api-functional-always-true-false>`
+     - Function object that always returns ``false``
+     - CCCL 3.4.0
+     - CUDA 13.4
 
    * - :ref:`cuda::maximum <libcudacxx-extended-api-functional-maximum-minimum>`
      - Returns the maximum of two values
@@ -44,3 +55,8 @@ Functional
      - Returns a valid address to a device object
      - CCCL 2.8.0
      - CUDA 12.9
+
+   * - :ref:`cuda::is_associative_v <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::is_commutative_v <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::identity_element() <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::absorbing_element() <libcudacxx-extended-api-functional-operator-properties>`
+     - Determines if an operator is associative for a type
+     - CCCL 3.3.0
+     - CUDA 13.3

@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -32,6 +33,7 @@ typedef struct cccl_device_unique_by_key_build_result_t
   CUkernel sweep_kernel;
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
+  void* runtime_policy;
 } cccl_device_unique_by_key_build_result_t;
 
 CCCL_C_API CUresult cccl_device_unique_by_key_build(
@@ -82,3 +84,4 @@ CCCL_C_API CUresult cccl_device_unique_by_key(
 CCCL_C_API CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

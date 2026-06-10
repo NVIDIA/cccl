@@ -16,6 +16,20 @@
 
 #include <cccl/c/types.h>
 
+// GCC emits a dangling pointer warning in the `LargeSegmentsSelector` and
+// `SmallSegmentsSelector` functions in segmented_sort.cu. The warning occurs
+// when `return indirect_arg_t()` invokes the `indirect_arg_t` constructor that
+// accepts a `cccl_op_t`. Even though this is a stateless op, we must initialize
+// the `ptr` member to a valid address.
+//
+// We cannot use `nullptr` because the pointer is passed to a driver API that
+// requires the size of empty arguments to be 1 (not 0), meaning it will attempt
+// to copy a byte from the address.
+//
+// Initially, we initialized `ptr` to `this`, but this triggered the dangling
+// pointer warning in GCC. To avoid this, we use a global variable instead.
+static inline char _global_storage = 0;
+
 struct indirect_arg_t
 {
   void* ptr;
@@ -25,7 +39,7 @@ struct indirect_arg_t
   {}
 
   indirect_arg_t(cccl_op_t& op)
-      : ptr(op.type == cccl_op_kind_t::CCCL_STATEFUL ? op.state : this)
+      : ptr(op.type == cccl_op_kind_t::CCCL_STATEFUL ? op.state : &_global_storage)
   {}
 
   indirect_arg_t(cccl_value_t& val)

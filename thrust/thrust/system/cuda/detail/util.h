@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights meserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights meserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -40,21 +17,21 @@
 
 #include <cub/util_device.cuh>
 
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
-
 #include <nv/target>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <thrust/system/cuda/error.h>
 #  include <thrust/system_error.h>
 
 #  include <cstdio>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
+// forward declare to avoid cyclic includes
+template <class>
+struct execution_policy;
 
 inline _CCCL_HOST_DEVICE cudaStream_t default_stream()
 {
@@ -134,9 +111,10 @@ _CCCL_HOST_DEVICE cudaError_t synchronize_optional(Policy& policy)
   return synchronize_stream_optional(derived_cast(policy));
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class Type>
-THRUST_HOST_FUNCTION cudaError_t trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
+_CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t
+trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
 {
   cudaError status = cudaSuccess;
   if (count == 0)
@@ -144,13 +122,14 @@ THRUST_HOST_FUNCTION cudaError_t trivial_copy_from_device(Type* dst, Type const*
     return status;
   }
 
-  status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDeviceToHost, stream);
+  status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDefault, stream);
   cudaStreamSynchronize(stream);
   return status;
 }
 
 template <class Type>
-THRUST_HOST_FUNCTION cudaError_t trivial_copy_to_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
+_CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t
+trivial_copy_to_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
 {
   cudaError status = cudaSuccess;
   if (count == 0)
@@ -158,7 +137,7 @@ THRUST_HOST_FUNCTION cudaError_t trivial_copy_to_device(Type* dst, Type const* s
     return status;
   }
 
-  status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyHostToDevice, stream);
+  status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDefault, stream);
   cudaStreamSynchronize(stream);
   return status;
 }
@@ -179,7 +158,7 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   cuda_cub::synchronize_optional(policy);
   return status;
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 {
@@ -206,9 +185,14 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 
 #endif
 
+#if _CCCL_HOSTED()
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system_error(status, thrust::cuda_category());),
                  (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
+    THRUST_TEMP_DEVICE_CODE;
+    ::cuda::std::terminate();
+#endif // _CCCL_FREESTANDING()
 
 #undef THRUST_TEMP_DEVICE_CODE
   }
@@ -239,9 +223,14 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg
 
 #endif
 
+#if _CCCL_HOSTED()
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system_error(status, thrust::cuda_category(), msg);),
                  (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
+    THRUST_TEMP_DEVICE_CODE;
+    ::cuda::std::terminate();
+#endif // _CCCL_FREESTANDING()
 
 #undef THRUST_TEMP_DEVICE_CODE
   }

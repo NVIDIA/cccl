@@ -3,7 +3,6 @@ function(get_system_libs return_var)
   set(${return_var} "" PARENT_SCOPE)
 endfunction()
 
-
 function(link_system_libs target)
   message(AUTHOR_WARNING "link_system_libs no longer needed")
 endfunction()
@@ -19,30 +18,38 @@ endfunction()
 #     OMITTED_TARGETS - looks only at targets that are not being configured
 # )
 function(is_llvm_target_library library return_var)
-  cmake_parse_arguments(ARG "ALL_TARGETS;INCLUDED_TARGETS;OMITTED_TARGETS" "" "" ${ARGN})
+  cmake_parse_arguments(
+    ARG
+    "ALL_TARGETS;INCLUDED_TARGETS;OMITTED_TARGETS"
+    ""
+    ""
+    ${ARGN}
+  )
   # Sets variable `return_var' to ON if `library' corresponds to a
   # LLVM supported target. To OFF if it doesn't.
   set(${return_var} OFF PARENT_SCOPE)
   string(TOUPPER "${library}" capitalized_lib)
-  if(ARG_INCLUDED_TARGETS)
+  if (ARG_INCLUDED_TARGETS)
     string(TOUPPER "${LLVM_TARGETS_TO_BUILD}" targets)
-  elseif(ARG_OMITTED_TARGETS)
+  elseif (ARG_OMITTED_TARGETS)
     set(omitted_targets ${LLVM_ALL_TARGETS})
     list(REMOVE_ITEM omitted_targets ${LLVM_TARGETS_TO_BUILD})
     string(TOUPPER "${omitted_targets}" targets)
   else()
     string(TOUPPER "${LLVM_ALL_TARGETS}" targets)
   endif()
-  foreach(t ${targets})
-    if( capitalized_lib STREQUAL t OR
-        capitalized_lib STREQUAL "${t}" OR
-        capitalized_lib STREQUAL "${t}DESC" OR
-        capitalized_lib STREQUAL "${t}CODEGEN" OR
-        capitalized_lib STREQUAL "${t}ASMPARSER" OR
-        capitalized_lib STREQUAL "${t}ASMPRINTER" OR
-        capitalized_lib STREQUAL "${t}DISASSEMBLER" OR
-        capitalized_lib STREQUAL "${t}INFO" OR
-        capitalized_lib STREQUAL "${t}UTILS" )
+  foreach (t ${targets})
+    if (
+      capitalized_lib STREQUAL t
+      OR capitalized_lib STREQUAL "${t}"
+      OR capitalized_lib STREQUAL "${t}DESC"
+      OR capitalized_lib STREQUAL "${t}CODEGEN"
+      OR capitalized_lib STREQUAL "${t}ASMPARSER"
+      OR capitalized_lib STREQUAL "${t}ASMPRINTER"
+      OR capitalized_lib STREQUAL "${t}DISASSEMBLER"
+      OR capitalized_lib STREQUAL "${t}INFO"
+      OR capitalized_lib STREQUAL "${t}UTILS"
+    )
       set(${return_var} ON PARENT_SCOPE)
       break()
     endif()
@@ -52,13 +59,15 @@ endfunction(is_llvm_target_library)
 function(is_llvm_target_specifier library return_var)
   is_llvm_target_library(${library} ${return_var} ${ARGN})
   string(TOUPPER "${library}" capitalized_lib)
-  if(NOT ${return_var})
-    if( capitalized_lib STREQUAL "ALLTARGETSASMPARSERS" OR
-        capitalized_lib STREQUAL "ALLTARGETSDESCS" OR
-        capitalized_lib STREQUAL "ALLTARGETSDISASSEMBLERS" OR
-        capitalized_lib STREQUAL "ALLTARGETSINFOS" OR
-        capitalized_lib STREQUAL "NATIVE" OR
-        capitalized_lib STREQUAL "NATIVECODEGEN" )
+  if (NOT ${return_var})
+    if (
+      capitalized_lib STREQUAL "ALLTARGETSASMPARSERS"
+      OR capitalized_lib STREQUAL "ALLTARGETSDESCS"
+      OR capitalized_lib STREQUAL "ALLTARGETSDISASSEMBLERS"
+      OR capitalized_lib STREQUAL "ALLTARGETSINFOS"
+      OR capitalized_lib STREQUAL "NATIVE"
+      OR capitalized_lib STREQUAL "NATIVECODEGEN"
+    )
       set(${return_var} ON PARENT_SCOPE)
     endif()
   endif()
@@ -68,7 +77,7 @@ macro(llvm_config executable)
   cmake_parse_arguments(ARG "USE_SHARED" "" "" ${ARGN})
   set(link_components ${ARG_UNPARSED_ARGUMENTS})
 
-  if(ARG_USE_SHARED)
+  if (ARG_USE_SHARED)
     # If USE_SHARED is specified, then we link against libLLVM,
     # but also against the component libraries below. This is
     # done in case libLLVM does not contain all of the components
@@ -80,7 +89,7 @@ macro(llvm_config executable)
     # libLLVM.
 
     if (DEFINED link_components AND DEFINED LLVM_DYLIB_COMPONENTS)
-      if("${LLVM_DYLIB_COMPONENTS}" STREQUAL "all")
+      if ("${LLVM_DYLIB_COMPONENTS}" STREQUAL "all")
         set(link_components "")
       else()
         list(REMOVE_ITEM link_components ${LLVM_DYLIB_COMPONENTS})
@@ -93,15 +102,18 @@ macro(llvm_config executable)
   explicit_llvm_config(${executable} ${link_components})
 endmacro(llvm_config)
 
-
 function(explicit_llvm_config executable)
-  set( link_components ${ARGN} )
+  set(link_components ${ARGN})
 
   llvm_map_components_to_libnames(LIBRARIES ${link_components})
   get_target_property(t ${executable} TYPE)
-  if(t STREQUAL "STATIC_LIBRARY")
+  if (t STREQUAL "STATIC_LIBRARY")
     target_link_libraries(${executable} INTERFACE ${LIBRARIES})
-  elseif(t STREQUAL "EXECUTABLE" OR t STREQUAL "SHARED_LIBRARY" OR t STREQUAL "MODULE_LIBRARY")
+  elseif (
+    t STREQUAL "EXECUTABLE"
+    OR t STREQUAL "SHARED_LIBRARY"
+    OR t STREQUAL "MODULE_LIBRARY"
+  )
     target_link_libraries(${executable} PRIVATE ${LIBRARIES})
   else()
     # Use plain form for legacy user.
@@ -109,12 +121,14 @@ function(explicit_llvm_config executable)
   endif()
 endfunction(explicit_llvm_config)
 
-
 # This is Deprecated
 function(llvm_map_components_to_libraries OUT_VAR)
-  message(AUTHOR_WARNING "Using llvm_map_components_to_libraries() is deprecated. Use llvm_map_components_to_libnames() instead")
+  message(
+    AUTHOR_WARNING
+    "Using llvm_map_components_to_libraries() is deprecated. Use llvm_map_components_to_libnames() instead"
+  )
   explicit_map_components_to_libraries(result ${ARGN})
-  set( ${OUT_VAR} ${result} ${sys_result} PARENT_SCOPE )
+  set(${OUT_VAR} ${result} ${sys_result} PARENT_SCOPE)
 endfunction(llvm_map_components_to_libraries)
 
 # Expand pseudo-components into real components.
@@ -122,80 +136,80 @@ endfunction(llvm_map_components_to_libraries)
 # handling. Also does not cover 'all' as we only have a list of the libnames
 # available and not a list of the components.
 function(llvm_expand_pseudo_components out_components)
-  set( link_components ${ARGN} )
-  foreach(c ${link_components})
+  set(link_components ${ARGN})
+  foreach (c ${link_components})
     # add codegen, asmprinter, asmparser, disassembler
     list(FIND LLVM_TARGETS_TO_BUILD ${c} idx)
-    if( NOT idx LESS 0 )
-      if( TARGET LLVM${c}CodeGen )
+    if (NOT idx LESS 0)
+      if (TARGET LLVM${c}CodeGen)
         list(APPEND expanded_components "${c}CodeGen")
       else()
-        if( TARGET LLVM${c} )
+        if (TARGET LLVM${c})
           list(APPEND expanded_components "${c}")
         else()
           message(FATAL_ERROR "Target ${c} is not in the set of libraries.")
         endif()
       endif()
-      if( TARGET LLVM${c}AsmPrinter )
+      if (TARGET LLVM${c}AsmPrinter)
         list(APPEND expanded_components "${c}AsmPrinter")
       endif()
-      if( TARGET LLVM${c}AsmParser )
+      if (TARGET LLVM${c}AsmParser)
         list(APPEND expanded_components "${c}AsmParser")
       endif()
-      if( TARGET LLVM${c}Desc )
+      if (TARGET LLVM${c}Desc)
         list(APPEND expanded_components "${c}Desc")
       endif()
-      if( TARGET LLVM${c}Disassembler )
+      if (TARGET LLVM${c}Disassembler)
         list(APPEND expanded_components "${c}Disassembler")
       endif()
-      if( TARGET LLVM${c}Info )
+      if (TARGET LLVM${c}Info)
         list(APPEND expanded_components "${c}Info")
       endif()
-      if( TARGET LLVM${c}Utils )
+      if (TARGET LLVM${c}Utils)
         list(APPEND expanded_components "${c}Utils")
       endif()
-    elseif( c STREQUAL "nativecodegen" )
-      if( TARGET LLVM${LLVM_NATIVE_ARCH}CodeGen )
+    elseif (c STREQUAL "nativecodegen")
+      if (TARGET LLVM${LLVM_NATIVE_ARCH}CodeGen)
         list(APPEND expanded_components "${LLVM_NATIVE_ARCH}CodeGen")
       endif()
-      if( TARGET LLVM${LLVM_NATIVE_ARCH}Desc )
+      if (TARGET LLVM${LLVM_NATIVE_ARCH}Desc)
         list(APPEND expanded_components "${LLVM_NATIVE_ARCH}Desc")
       endif()
-      if( TARGET LLVM${LLVM_NATIVE_ARCH}Info )
+      if (TARGET LLVM${LLVM_NATIVE_ARCH}Info)
         list(APPEND expanded_components "${LLVM_NATIVE_ARCH}Info")
       endif()
-    elseif( c STREQUAL "AllTargetsCodeGens" )
+    elseif (c STREQUAL "AllTargetsCodeGens")
       # Link all the codegens from all the targets
-      foreach(t ${LLVM_TARGETS_TO_BUILD})
-        if( TARGET LLVM${t}CodeGen)
+      foreach (t ${LLVM_TARGETS_TO_BUILD})
+        if (TARGET LLVM${t}CodeGen)
           list(APPEND expanded_components "${t}CodeGen")
         endif()
       endforeach(t)
-    elseif( c STREQUAL "AllTargetsAsmParsers" )
+    elseif (c STREQUAL "AllTargetsAsmParsers")
       # Link all the asm parsers from all the targets
-      foreach(t ${LLVM_TARGETS_TO_BUILD})
-        if( TARGET LLVM${t}AsmParser )
+      foreach (t ${LLVM_TARGETS_TO_BUILD})
+        if (TARGET LLVM${t}AsmParser)
           list(APPEND expanded_components "${t}AsmParser")
         endif()
       endforeach(t)
-    elseif( c STREQUAL "AllTargetsDescs" )
+    elseif (c STREQUAL "AllTargetsDescs")
       # Link all the descs from all the targets
-      foreach(t ${LLVM_TARGETS_TO_BUILD})
-        if( TARGET LLVM${t}Desc )
+      foreach (t ${LLVM_TARGETS_TO_BUILD})
+        if (TARGET LLVM${t}Desc)
           list(APPEND expanded_components "${t}Desc")
         endif()
       endforeach(t)
-    elseif( c STREQUAL "AllTargetsDisassemblers" )
+    elseif (c STREQUAL "AllTargetsDisassemblers")
       # Link all the disassemblers from all the targets
-      foreach(t ${LLVM_TARGETS_TO_BUILD})
-        if( TARGET LLVM${t}Disassembler )
+      foreach (t ${LLVM_TARGETS_TO_BUILD})
+        if (TARGET LLVM${t}Disassembler)
           list(APPEND expanded_components "${t}Disassembler")
         endif()
       endforeach(t)
-    elseif( c STREQUAL "AllTargetsInfos" )
+    elseif (c STREQUAL "AllTargetsInfos")
       # Link all the infos from all the targets
-      foreach(t ${LLVM_TARGETS_TO_BUILD})
-        if( TARGET LLVM${t}Info )
+      foreach (t ${LLVM_TARGETS_TO_BUILD})
+        if (TARGET LLVM${t}Info)
           list(APPEND expanded_components "${t}Info")
         endif()
       endforeach(t)
@@ -209,8 +223,8 @@ endfunction(llvm_expand_pseudo_components out_components)
 # This is a variant intended for the final user:
 # Map LINK_COMPONENTS to actual libnames.
 function(llvm_map_components_to_libnames out_libs)
-  set( link_components ${ARGN} )
-  if(NOT LLVM_AVAILABLE_LIBS)
+  set(link_components ${ARGN})
+  if (NOT LLVM_AVAILABLE_LIBS)
     # Inside LLVM itself available libs are in a global property.
     get_property(LLVM_AVAILABLE_LIBS GLOBAL PROPERTY LLVM_LIBS)
   endif()
@@ -222,11 +236,14 @@ function(llvm_map_components_to_libnames out_libs)
   # not all targets create the same set of libraries we actually need to ensure
   # that all build targets associated with a target are added before we can
   # process target dependencies.
-  if(NOT LLVM_TARGETS_CONFIGURED)
-    foreach(c ${link_components})
+  if (NOT LLVM_TARGETS_CONFIGURED)
+    foreach (c ${link_components})
       is_llvm_target_specifier(${c} iltl_result ALL_TARGETS)
-      if(iltl_result)
-        message(FATAL_ERROR "Specified target library before target registration is complete.")
+      if (iltl_result)
+        message(
+          FATAL_ERROR
+          "Specified target library before target registration is complete."
+        )
       endif()
     endforeach()
   endif()
@@ -234,9 +251,9 @@ function(llvm_map_components_to_libnames out_libs)
   # Expand some keywords:
   list(FIND LLVM_TARGETS_TO_BUILD "${LLVM_NATIVE_ARCH}" have_native_backend)
   list(FIND link_components "engine" engine_required)
-  if( NOT engine_required EQUAL -1 )
+  if (NOT engine_required EQUAL -1)
     list(FIND LLVM_TARGETS_WITH_JIT "${LLVM_NATIVE_ARCH}" have_jit)
-    if( NOT have_native_backend EQUAL -1 AND NOT have_jit EQUAL -1 )
+    if (NOT have_native_backend EQUAL -1 AND NOT have_jit EQUAL -1)
       list(APPEND link_components "jit")
       list(APPEND link_components "native")
     else()
@@ -244,38 +261,41 @@ function(llvm_map_components_to_libnames out_libs)
     endif()
   endif()
   list(FIND link_components "native" native_required)
-  if( NOT native_required EQUAL -1 )
-    if( NOT have_native_backend EQUAL -1 )
+  if (NOT native_required EQUAL -1)
+    if (NOT have_native_backend EQUAL -1)
       list(APPEND link_components ${LLVM_NATIVE_ARCH})
     endif()
   endif()
 
   # Translate symbolic component names to real libraries:
   llvm_expand_pseudo_components(link_components ${link_components})
-  foreach(c ${link_components})
+  foreach (c ${link_components})
     get_property(c_rename GLOBAL PROPERTY LLVM_COMPONENT_NAME_${c})
-    if(c_rename)
-        set(c ${c_rename})
+    if (c_rename)
+      set(c ${c_rename})
     endif()
-    if( c STREQUAL "native" )
+    if (c STREQUAL "native")
       # already processed
-    elseif( c STREQUAL "backend" )
+    elseif (c STREQUAL "backend")
       # same case as in `native'.
-    elseif( c STREQUAL "engine" )
+    elseif (c STREQUAL "engine")
       # already processed
-    elseif( c STREQUAL "all" )
+    elseif (c STREQUAL "all")
       get_property(all_components GLOBAL PROPERTY LLVM_COMPONENT_LIBS)
       list(APPEND expanded_components ${all_components})
     else()
       # Canonize the component name:
       string(TOUPPER "${c}" capitalized)
       list(FIND capitalized_libs LLVM${capitalized} lib_idx)
-      if( lib_idx LESS 0 )
+      if (lib_idx LESS 0)
         # The component is unknown. Maybe is an omitted target?
         is_llvm_target_library(${c} iltl_result OMITTED_TARGETS)
-        if(iltl_result)
+        if (iltl_result)
           # A missing library to a directly referenced omitted target would be bad.
-          message(FATAL_ERROR "Library '${c}' is a direct reference to a target library for an omitted target.")
+          message(
+            FATAL_ERROR
+            "Library '${c}' is a direct reference to a target library for an omitted target."
+          )
         else()
           # If it is not an omitted target we should assume it is a component
           # that hasn't yet been processed by CMake. Missing components will
@@ -283,11 +303,11 @@ function(llvm_map_components_to_libnames out_libs)
           # that this is valid here.
           list(APPEND expanded_components LLVM${c})
         endif()
-      else( lib_idx LESS 0 )
+      else(lib_idx LESS 0)
         list(GET LLVM_AVAILABLE_LIBS ${lib_idx} canonical_lib)
         list(APPEND expanded_components ${canonical_lib})
-      endif( lib_idx LESS 0 )
-    endif( c STREQUAL "native" )
+      endif(lib_idx LESS 0)
+    endif(c STREQUAL "native")
   endforeach(c)
 
   set(${out_libs} ${expanded_components} PARENT_SCOPE)
@@ -298,24 +318,24 @@ endfunction()
 # in tools/llvm-config/llvm-config.cpp, function ComputeLibsForComponents.
 function(expand_topologically name required_libs visited_libs)
   list(FIND visited_libs ${name} found)
-  if( found LESS 0 )
+  if (found LESS 0)
     list(APPEND visited_libs ${name})
     set(visited_libs ${visited_libs} PARENT_SCOPE)
 
     #
     get_property(libname GLOBAL PROPERTY LLVM_COMPONENT_NAME_${name})
-    if(libname)
+    if (libname)
       set(cname LLVM${libname})
-    elseif(TARGET ${name})
+    elseif (TARGET ${name})
       set(cname ${name})
-    elseif(TARGET LLVM${name})
+    elseif (TARGET LLVM${name})
       set(cname LLVM${name})
     else()
       message(FATAL_ERROR "unknown component ${name}")
     endif()
 
     get_property(lib_deps TARGET ${cname} PROPERTY LLVM_LINK_COMPONENTS)
-    foreach( lib_dep ${lib_deps} )
+    foreach (lib_dep ${lib_deps})
       expand_topologically(${lib_dep} "${required_libs}" "${visited_libs}")
       set(required_libs ${required_libs} PARENT_SCOPE)
       set(visited_libs ${visited_libs} PARENT_SCOPE)
@@ -332,11 +352,11 @@ function(llvm_expand_dependencies out_libs)
 
   set(required_libs)
   set(visited_libs)
-  foreach( lib ${expanded_components} )
+  foreach (lib ${expanded_components})
     expand_topologically(${lib} "${required_libs}" "${visited_libs}")
   endforeach()
 
-  if(required_libs)
+  if (required_libs)
     list(REVERSE required_libs)
   endif()
   set(${out_libs} ${required_libs} PARENT_SCOPE)
@@ -347,8 +367,8 @@ function(explicit_map_components_to_libraries out_libs)
   llvm_expand_dependencies(expanded_components ${link_libs})
   # Return just the libraries included in this build:
   set(result)
-  foreach(c ${expanded_components})
-    if( TARGET ${c} )
+  foreach (c ${expanded_components})
+    if (TARGET ${c})
       set(result ${result} ${c})
     endif()
   endforeach(c)

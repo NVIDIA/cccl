@@ -33,7 +33,7 @@
  * of the programming guide with some additions like error checking.
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda/std/span>
@@ -68,7 +68,7 @@ __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B
 /**
  * Host main routine
  */
-int main(void)
+int main()
 try
 {
   // A CUDA stream on which to execute the vector addition kernel
@@ -92,11 +92,10 @@ try
 
   // Define the kernel launch parameters
   constexpr int threadsPerBlock = 256;
-  auto config                   = cudax::distribute<threadsPerBlock>(numElements);
+  auto config                   = cuda::distribute<threadsPerBlock>(numElements);
 
   // Launch the vectorAdd kernel
-  printf(
-    "CUDA kernel launch with %d blocks of %d threads\n", config.dims.count(cudax::block, cudax::grid), threadsPerBlock);
+  printf("CUDA kernel launch with %zu blocks of %d threads\n", cuda::block.count(cuda::grid, config), threadsPerBlock);
   cudax::launch(stream, config, vectorAdd, in(A), in(B), out(C));
 
   printf("waiting for the stream to finish\n");

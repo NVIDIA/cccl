@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_BEGIN_NAMESPACE_CPO(__all)
 
@@ -91,7 +91,7 @@ using all_t =
   enable_if_t<::cuda::std::ranges::viewable_range<_Range>, decltype(::cuda::std::ranges::views::all(declval<_Range>()))>;
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_CCCL_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
 #include <cuda/std/__cccl/epilogue.h>
 

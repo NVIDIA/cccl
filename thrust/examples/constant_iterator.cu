@@ -1,23 +1,21 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/transform.h>
+
+#include <cuda/iterator>
 
 #include <iostream>
 #include <iterator>
 
 int main()
 {
-  thrust::device_vector<int> data(4);
-  data[0] = 3;
-  data[1] = 7;
-  data[2] = 2;
-  data[3] = 5;
+  thrust::device_vector<int> data{3, 7, 2, 5};
 
   // add 10 to all values in data
-  thrust::transform(
-    data.begin(), data.end(), thrust::constant_iterator<int>(10), data.begin(), ::cuda::std::plus<int>());
+  thrust::transform(data.begin(), data.end(), cuda::constant_iterator<int>(10), data.begin(), cuda::std::plus<int>());
 
   // data is now [13, 17, 12, 15]
 

@@ -1,39 +1,14 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_macro.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <cuda/functional>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
 #include <cstring>
@@ -89,8 +64,6 @@ __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperato
   *d_out = cub::ThreadReduce(span, reduce_operator);
 }
 
-#if _CCCL_STD_VER >= 2023
-
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
@@ -105,8 +78,6 @@ __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOpera
   cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NUM_ITEMS>{});
   *d_out = cub::ThreadReduce(mdspan, reduce_operator);
 }
-
-#endif // _CCCL_STD_VER >= 2023
 
 /***********************************************************************************************************************
  * CUB operator to STD operator
@@ -159,76 +130,6 @@ struct cub_operator_to_std<T, cuda::maximum<>>
 
 template <typename T, typename Operator>
 using cub_operator_to_std_t = typename cub_operator_to_std<T, Operator>::type;
-
-/***********************************************************************************************************************
- * CUB operator to identity
- **********************************************************************************************************************/
-
-template <typename T, typename Operator, typename = void>
-struct cub_operator_to_identity;
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::plus<>>
-{
-  static constexpr T value()
-  {
-    return T{};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::multiplies<>>
-{
-  static constexpr T value()
-  {
-    return T{1};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_and<>>
-{
-  static constexpr T value()
-  {
-    return static_cast<T>(~T{0});
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_or<>>
-{
-  static constexpr T value()
-  {
-    return T{0};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_xor<>>
-{
-  static constexpr T value()
-  {
-    return T{0};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::minimum<>>
-{
-  static constexpr T value()
-  {
-    return ::std::numeric_limits<T>::max();
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::maximum<>>
-{
-  static constexpr T value()
-  {
-    return ::std::numeric_limits<T>::min();
-  }
-};
 
 /***********************************************************************************************************************
  * Type list definition
@@ -365,9 +266,10 @@ constexpr int num_seeds = 10;
 C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_list, cub_operator_integral_list)
 {
   using value_t                    = c2h::get<0, TestType>;
-  constexpr auto reduce_op         = c2h::get<1, TestType>{};
-  constexpr auto std_reduce_op     = cub_operator_to_std_t<value_t, c2h::get<1, TestType>>{};
-  constexpr auto operator_identity = cub_operator_to_identity<value_t, c2h::get<1, TestType>>::value();
+  using op_t                       = c2h::get<1, TestType>;
+  constexpr auto reduce_op         = op_t{};
+  constexpr auto std_reduce_op     = cub_operator_to_std_t<value_t, op_t>{};
+  constexpr auto operator_identity = cuda::identity_element<op_t, value_t>();
   CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
@@ -384,9 +286,10 @@ C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_l
 C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_list, cub_operator_fp_list)
 {
   using value_t                = c2h::get<0, TestType>;
-  constexpr auto reduce_op     = c2h::get<1, TestType>{};
-  constexpr auto std_reduce_op = cub_operator_to_std_t<value_t, c2h::get<1, TestType>>{};
-  const auto operator_identity = cub_operator_to_identity<value_t, c2h::get<1, TestType>>::value();
+  using op_t                   = c2h::get<1, TestType>;
+  constexpr auto reduce_op     = op_t{};
+  constexpr auto std_reduce_op = cub_operator_to_std_t<value_t, op_t>{};
+  const auto operator_identity = cuda::identity_element<op_t, value_t>();
   CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
@@ -408,9 +311,10 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
          cub_operator_fp_list)
 {
   using value_t                = c2h::get<0, TestType>;
-  constexpr auto reduce_op     = c2h::get<1, TestType>{};
-  constexpr auto std_reduce_op = cub_operator_to_std_t<float, c2h::get<1, TestType>>{};
-  const auto operator_identity = cub_operator_to_identity<float, c2h::get<1, TestType>>::value();
+  using op_t                   = c2h::get<1, TestType>;
+  constexpr auto reduce_op     = op_t{};
+  constexpr auto std_reduce_op = cub_operator_to_std_t<float, op_t>{};
+  const auto operator_identity = cuda::identity_element<op_t, float>();
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, value_t{1.0f}, value_t{2.0f});
@@ -447,11 +351,9 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 
-#if _CCCL_STD_VER >= 2023
   thread_reduce_kernel_mdspan<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
-#endif // _CCCL_STD_VER >= 2023
 }

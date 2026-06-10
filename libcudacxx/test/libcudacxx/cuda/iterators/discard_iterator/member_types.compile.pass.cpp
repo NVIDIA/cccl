@@ -11,11 +11,12 @@
 // iterator_type, value_type, difference_type, iterator_concept, iterator_category
 
 #include <cuda/iterator>
+#include <cuda/std/type_traits>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using Iter = cuda::discard_iterator;
   static_assert(cuda::std::same_as<Iter::value_type, void>);
@@ -23,6 +24,7 @@ __host__ __device__ void test()
   static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
   static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::random_access_iterator_tag>);
+  static_assert(cuda::std::is_trivially_copyable_v<Iter>);
 }
 
 int main(int, char**)

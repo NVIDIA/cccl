@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 
@@ -58,26 +35,18 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
+namespace cuda_cub::core::detail
 {
-namespace core
-{
-namespace detail
-{
-#  ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
-#    define THRUST_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
-#  endif
-
 #  if _CCCL_DEVICE_COMPILATION()
 template <class Agent, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
 {
   extern __shared__ char shmem[];
   Agent::entry(args..., shmem);
 }
 
 template <class Agent, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
   _kernel_agent_vshmem(char* vshmem, Args... args)
 {
   extern __shared__ char shmem[];
@@ -87,11 +56,11 @@ THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_TH
 
 #  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 template <class, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
 {}
 
 template <class, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
+_CCCL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
 {}
 #  endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 
@@ -107,10 +76,8 @@ struct AgentLauncher : Agent
   bool has_shmem;
   size_t shmem_size;
 
-  enum
-  {
-    MAX_SHMEM_PER_BLOCK = 48 * 1024,
-  };
+  static constexpr int MAX_SHMEM_PER_BLOCK = 48 * 1024;
+
   using has_enough_shmem_t = typename has_enough_shmem<Agent, MAX_SHMEM_PER_BLOCK>::type;
   using shm1               = has_enough_shmem<Agent, MAX_SHMEM_PER_BLOCK>;
 
@@ -169,7 +136,7 @@ struct AgentLauncher : Agent
     assert(plan.grid_size > 0);
   }
 
-  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = 0)
+  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = nullptr)
   {
     return get_agent_plan<Agent>(get_ptx_version());
   }
@@ -185,17 +152,17 @@ struct AgentLauncher : Agent
   }
 
   template <class K>
-  static cuda_optional<int> THRUST_RUNTIME_FUNCTION max_blocks_per_sm_impl(K k, int block_threads)
+  static cuda_optional<int> THRUST_RUNTIME_FUNCTION max_blocks_per_sm_impl(K k, int threads_per_block)
   {
     int occ;
-    cudaError_t status = cub::MaxSmOccupancy(occ, k, block_threads);
+    cudaError_t status = cub::MaxSmOccupancy(occ, k, threads_per_block);
     return cuda_optional<int>(status == cudaSuccess ? occ : -1, status);
   }
 
   template <class K>
   cuda_optional<int> THRUST_RUNTIME_FUNCTION max_sm_occupancy(K k) const
   {
-    return max_blocks_per_sm_impl(k, plan.block_threads);
+    return max_blocks_per_sm_impl(k, plan.threads_per_block);
   }
 
   template <class K>
@@ -211,7 +178,7 @@ struct AgentLauncher : Agent
         "%d ptx_version \n",
         name,
         grid,
-        plan.block_threads,
+        plan.threads_per_block,
         (has_shmem ? (int) plan.shared_memory_size : 0),
         (long long) stream,
         (long long) count,
@@ -226,7 +193,7 @@ struct AgentLauncher : Agent
         "Invoking %s<<<%u, %d, %d, %lld>>>(), %d items per thread, %d SM occupancy, %d vshmem size, %d ptx_version\n",
         name,
         grid,
-        plan.block_threads,
+        plan.threads_per_block,
         (has_shmem ? (int) plan.shared_memory_size : 0),
         (long long) stream,
         plan.items_per_thread,
@@ -240,7 +207,7 @@ struct AgentLauncher : Agent
   template <class... Args>
   static cuda_optional<int> THRUST_RUNTIME_FUNCTION get_max_blocks_per_sm(AgentPlan plan)
   {
-    return max_blocks_per_sm_impl(_kernel_agent<Agent, Args...>, plan.block_threads);
+    return max_blocks_per_sm_impl(_kernel_agent<Agent, Args...>, plan.threads_per_block);
   }
 
   // If we are guaranteed to have enough shared memory
@@ -251,7 +218,7 @@ struct AgentLauncher : Agent
   {
     assert(has_shmem && vshmem == nullptr);
     print_info(_kernel_agent<Agent, Args...>);
-    cuda_cub::detail::triple_chevron(grid, plan.block_threads, shmem_size, stream)
+    cuda_cub::detail::triple_chevron(grid, plan.threads_per_block, shmem_size, stream)
       .doit(_kernel_agent<Agent, Args...>, args...);
   }
 
@@ -268,7 +235,7 @@ struct AgentLauncher : Agent
   {
     assert((has_shmem && vshmem == nullptr) || (!has_shmem && vshmem != nullptr && shmem_size == 0));
     print_info(_kernel_agent_vshmem<Agent, Args...>);
-    cuda_cub::detail::triple_chevron(grid, plan.block_threads, shmem_size, stream)
+    cuda_cub::detail::triple_chevron(grid, plan.threads_per_block, shmem_size, stream)
       .doit(_kernel_agent_vshmem<Agent, Args...>, vshmem, args...);
   }
 
@@ -279,11 +246,8 @@ struct AgentLauncher : Agent
     sync();
   }
 };
-
-} // namespace detail
-} // namespace core
-} // namespace cuda_cub
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END
 
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

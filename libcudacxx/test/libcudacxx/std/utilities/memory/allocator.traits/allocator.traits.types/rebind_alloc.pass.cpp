@@ -28,12 +28,12 @@ struct ReboundA
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 
   template <class U>
   struct rebind
   {
-    typedef ReboundA<U> other;
+    using other = ReboundA<U>;
   };
 };
 
@@ -44,77 +44,80 @@ struct ReboundB
 template <class T, class U>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 
   template <class V>
   struct rebind
   {
-    typedef ReboundB<V, U> other;
+    using other = ReboundB<V, U>;
   };
 };
 
 template <class T>
 struct C
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T, class U>
 struct D
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
 struct E
 {
-  typedef T value_type;
+  using value_type = T;
 
   template <class U>
   struct rebind
   {
-    typedef ReboundA<U> otter;
+    using otter = ReboundA<U>;
   };
 };
 
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 template <class T>
 struct F
 {
-  typedef T value_type;
+  using value_type = T;
 
 private:
   template <class>
   struct rebind
   {
-    typedef void other;
+    using other = void;
   };
 };
 
 template <class T>
 struct G
 {
-  typedef T value_type;
+  using value_type = T;
   template <class>
   struct rebind
   {
   private:
-    typedef void other;
+    using other = void;
   };
 };
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
 int main(int, char**)
 {
   static_assert(
-    (cuda::std::is_same<cuda::std::allocator_traits<A<char>>::rebind_alloc<double>, ReboundA<double>>::value), "");
+    (cuda::std::is_same<cuda::std::allocator_traits<A<char>>::rebind_alloc<double>, ReboundA<double>>::value));
+  static_assert((
+    cuda::std::is_same<cuda::std::allocator_traits<B<int, char>>::rebind_alloc<double>, ReboundB<double, char>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::rebind_alloc<double>, C<double>>::value));
   static_assert(
-    (cuda::std::is_same<cuda::std::allocator_traits<B<int, char>>::rebind_alloc<double>, ReboundB<double, char>>::value),
-    "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::rebind_alloc<double>, C<double>>::value), "");
-  static_assert(
-    (cuda::std::is_same<cuda::std::allocator_traits<D<int, char>>::rebind_alloc<double>, D<double, char>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<E<char>>::rebind_alloc<double>, E<double>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<F<char>>::rebind_alloc<double>, F<double>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<G<char>>::rebind_alloc<double>, G<double>>::value), "");
+    (cuda::std::is_same<cuda::std::allocator_traits<D<int, char>>::rebind_alloc<double>, D<double, char>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<E<char>>::rebind_alloc<double>, E<double>>::value));
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<F<char>>::rebind_alloc<double>, F<double>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<G<char>>::rebind_alloc<double>, G<double>>::value));
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
   return 0;
 }

@@ -15,7 +15,7 @@
 // result_of<Fn(ArgTypes...)>
 
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/type_traits>
 #ifdef _LIBCUDACXX_HAS_MEMORY
@@ -27,14 +27,17 @@
 
 TEST_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
 TEST_DIAG_SUPPRESS_CLANG("-Wdeprecated-volatile")
+#if TEST_COMPILER(GCC, >, 9)
+TEST_DIAG_SUPPRESS_GCC("-Wvolatile")
+#endif // TEST_COMPILER(GCC, >, 9)
 
 struct wat
 {
-  __host__ __device__ wat& operator*()
+  TEST_FUNC wat& operator*()
   {
     return *this;
   }
-  __host__ __device__ void foo();
+  TEST_FUNC void foo();
 };
 
 struct F
@@ -48,17 +51,17 @@ struct test_invoke_result;
 template <typename Fn, typename... Args, typename Ret>
 struct test_invoke_result<Fn(Args...), Ret>
 {
-  __host__ __device__ static void call()
+  TEST_FUNC static void call()
   {
-    static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
-    static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value, "");
+    static_assert(cuda::std::is_invocable<Fn, Args...>::value);
+    static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value);
     static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn, Args...>::type>);
     static_assert(cuda::std::is_same_v<Ret, cuda::std::invoke_result_t<Fn, Args...>>);
   }
 };
 
 template <class T, class U>
-__host__ __device__ void test_result_of_imp()
+TEST_FUNC void test_result_of_imp()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::result_of<T>::type>);
   static_assert(cuda::std::is_same_v<U, cuda::std::result_of_t<T>>);
@@ -68,7 +71,7 @@ __host__ __device__ void test_result_of_imp()
 int main(int, char**)
 {
   {
-    typedef char F::* PMD;
+    using PMD = char F::*;
     test_result_of_imp<PMD(F&), char&>();
     test_result_of_imp<PMD(F const&), char const&>();
     test_result_of_imp<PMD(F volatile&), char volatile&>();

@@ -3,7 +3,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
@@ -37,8 +37,6 @@ struct custom_int
   _CCCL_HOST_DEVICE custom_int(int) {}
   _CCCL_HOST_DEVICE operator int() const;
 };
-static_assert(thrust::detail::is_numeric<custom_int>::value);
-
 static_assert(diff_type_is<custom_int, ptrdiff_t>);
 
 _CCCL_DIAG_PUSH
@@ -61,7 +59,7 @@ void TestCountingIteratorTraits()
 
   static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
 
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+  static_assert(cuda::std::__has_random_access_traversal<it>);
 
   static_assert(!cuda::std::output_iterator<it, int>);
   static_assert(cuda::std::input_iterator<it>);
@@ -97,8 +95,8 @@ void TestCountingIteratorCopyConstructor()
   ASSERT_EQUAL(*iter0, *d_iter);
 }
 DECLARE_UNITTEST(TestCountingIteratorCopyConstructor);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value, "");
-static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value);
+static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value);
 
 void TestCountingIteratorIncrement()
 {
@@ -350,3 +348,14 @@ void TestCountingIteratorPointer()
 DECLARE_UNITTEST(TestCountingIteratorPointer);
 
 _CCCL_DIAG_POP
+
+// Test that counting_iterator<float> distance_to does not trigger
+// MSVC C4244 (implicit float-to-integer conversion) without suppression.
+void TestCountingIteratorFloatDistanceTo()
+{
+  thrust::counting_iterator<float> iter1(0);
+  thrust::counting_iterator<float> iter2(5);
+
+  ASSERT_EQUAL(iter2 - iter1, 5);
+}
+DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);

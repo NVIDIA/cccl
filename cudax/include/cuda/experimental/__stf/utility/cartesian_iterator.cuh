@@ -20,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <iostream>
 
 namespace cuda::experimental::stf::reserved
 {
-
 #if 0
 /**
  * @brief Implementation of a cartesian product of multiple iterators
@@ -84,7 +84,7 @@ UNITTEST("cartesian product") {
     while (!product.is_end()) {
         auto tuple = *product;
         ::std::cout << "(" << *(::std::get<0>(tuple)) << ", " << *(::std::get<1>(tuple)) << ", " << *(::std::get<2>(tuple))
-                  << ")" << ::std::endl;
+                  << ")" << ::'\n';
 
         ++product;
     }
@@ -288,7 +288,6 @@ __global__ void unit_test_range_func(T n)
   }
   assert(sum == n);
 }
-
 } // namespace reserved
 
 UNITTEST("range")
@@ -474,7 +473,7 @@ UNITTEST("StridedRange")
     cnt++;
   }
 
-  //    ::std::cout << ::std::endl;
+  //    ::std::cout << ::'\n';
 
   EXPECT(cnt == expected_cnt);
 };
@@ -494,7 +493,7 @@ UNITTEST("StridedRange loop")
       EXPECT(cnt < n);
       cnt++;
     }
-    //        ::std::cout << ::std::endl;
+    //        ::std::cout << ::'\n';
   }
 
   EXPECT(cnt == n);
@@ -519,5 +518,4 @@ UNITTEST("StridedRange CUDA")
   cudaDeviceSynchronize();
 };
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf::reserved

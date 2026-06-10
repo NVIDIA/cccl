@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2020 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2020, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/system/tbb/memory.h
  *  \brief Managing memory associated with Thrust's TBB system.
@@ -33,14 +20,11 @@
 #include <thrust/detail/reference.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::tbb
 {
-namespace tbb
-{
-
 /*! \p tbb::pointer stores a pointer to an object allocated in memory accessible
  *  by the \p tbb system. This type provides type safety when dispatching
  *  algorithms on ranges resident in \p tbb memory.
@@ -102,9 +86,7 @@ using universal_host_pinned_pointer = universal_pointer<T>;
  */
 template <typename T>
 using reference = thrust::tagged_reference<T, thrust::system::tbb::tag>;
-
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb
 
 /*! \addtogroup system_backends Systems
  *  \ingroup system

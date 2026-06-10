@@ -18,7 +18,7 @@
 TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N, cuda::std::size_t Start = 0, cuda::std::size_t End = static_cast<cuda::std::size_t>(-1)>
-__host__ __device__ constexpr bool test_reset_one()
+TEST_FUNC constexpr bool test_reset_one()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   if (Start >= 9)
@@ -49,21 +49,21 @@ int main(int, char**)
   test_reset_one<64>();
   test_reset_one<65>();
   test_reset_one<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test_reset_one<0>(), "");
-  static_assert(test_reset_one<1>(), "");
-  static_assert(test_reset_one<31>(), "");
-  static_assert(test_reset_one<32>(), "");
-  static_assert(test_reset_one<33>(), "");
-  static_assert(test_reset_one<63, 0, 6>(), "");
-  static_assert(test_reset_one<63, 6>(), "");
-  static_assert(test_reset_one<64, 0, 3>(), "");
-  static_assert(test_reset_one<64, 3, 6>(), "");
-  static_assert(test_reset_one<64, 6, 9>(), "");
-  static_assert(test_reset_one<64, 9>(), "");
-  static_assert(test_reset_one<65, 0, 3>(), "");
-  static_assert(test_reset_one<65, 3, 6>(), "");
-  static_assert(test_reset_one<65, 6, 9>(), "");
-  static_assert(test_reset_one<65, 9>(), "");
+  static_assert(test_reset_one<0>());
+  static_assert(test_reset_one<1>());
+  static_assert(test_reset_one<31>());
+  static_assert(test_reset_one<32>());
+  static_assert(test_reset_one<33>());
+  static_assert(test_reset_one<63, 0, 6>());
+  static_assert(test_reset_one<63, 6>());
+  static_assert(test_reset_one<64, 0, 3>());
+  static_assert(test_reset_one<64, 3, 6>());
+  static_assert(test_reset_one<64, 6, 9>());
+  static_assert(test_reset_one<64, 9>());
+  static_assert(test_reset_one<65, 0, 3>());
+  static_assert(test_reset_one<65, 3, 6>());
+  static_assert(test_reset_one<65, 6, 9>());
+  static_assert(test_reset_one<65, 9>());
 
   return 0;
 }

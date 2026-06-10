@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -38,17 +14,17 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
-#include <cub/device/dispatch/kernels/merge_sort.cuh>
+#include <cub/detail/cc_dispatch.cuh>
+#include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <thrust/detail/integer_math.h>
-
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -56,7 +32,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::merge_sort
 {
-template <typename MaxPolicyT,
+template <typename PolicySelectorT,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -65,13 +41,17 @@ template <typename MaxPolicyT,
           typename CompareOpT>
 struct DeviceMergeSortKernelSource
 {
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(detail::merge_sort::merge_sort_policy_selector<PolicySelectorT>);
+#endif // _CCCL_HAS_CONCEPTS()
+
   using KeyT   = cub::detail::it_value_t<KeyIteratorT>;
   using ValueT = cub::detail::it_value_t<ValueIteratorT>;
 
   CUB_DEFINE_KERNEL_GETTER(
     MergeSortBlockSortKernel,
     DeviceMergeSortBlockSortKernel<
-      MaxPolicyT,
+      PolicySelectorT,
       KeyInputIteratorT,
       ValueInputIteratorT,
       KeyIteratorT,
@@ -86,7 +66,7 @@ struct DeviceMergeSortKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(
     MergeSortMergeKernel,
-    DeviceMergeSortMergeKernel<MaxPolicyT,
+    DeviceMergeSortMergeKernel<PolicySelectorT,
                                KeyInputIteratorT,
                                ValueInputIteratorT,
                                KeyIteratorT,
@@ -112,6 +92,7 @@ struct DeviceMergeSortKernelSource
  * Policy
  ******************************************************************************/
 
+// TODO(bgruber): deprecate this when we make the tuning API public and remove in CCCL 4.0
 template <typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -120,7 +101,7 @@ template <typename KeyInputIteratorT,
           typename CompareOpT,
           typename PolicyHub    = detail::merge_sort::policy_hub<KeyIteratorT>,
           typename KernelSource = detail::merge_sort::DeviceMergeSortKernelSource<
-            typename PolicyHub::MaxPolicy,
+            detail::merge_sort::policy_selector_from_hub<PolicyHub>,
             KeyInputIteratorT,
             ValueInputIteratorT,
             KeyIteratorT,
@@ -128,10 +109,9 @@ template <typename KeyInputIteratorT,
             OffsetT,
             CompareOpT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
-          typename VSMemHelperT          = detail::merge_sort::VSMemHelper,
           typename KeyT                  = cub::detail::it_value_t<KeyIteratorT>,
           typename ValueT                = cub::detail::it_value_t<ValueIteratorT>>
-struct DispatchMergeSort
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceMergeSort") DispatchMergeSort
 {
   /// Whether or not there are values to be trucked along with keys
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
@@ -201,221 +181,207 @@ struct DispatchMergeSort
       , launcher_factory(launcher_factory)
   {}
 
+private:
+  template <typename ActivePolicyT>
+  struct policy_getter
+  {
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() -> MergeSortPolicy
+    {
+      using mp = typename ActivePolicyT::MergeSortPolicy;
+      return {mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
+    }
+  };
+
+public:
   // Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke([[maybe_unused]] ActivePolicyT = {})
   {
-    cudaError error = cudaSuccess;
-
     if (num_items == 0)
     {
       if (d_temp_storage == nullptr)
       {
-        temp_storage_bytes = 0;
+        temp_storage_bytes = 1;
       }
+      return cudaSuccess;
+    }
+
+    static constexpr auto policy = detail::merge_sort::merge_sort_vsmem_helper_t<
+      policy_getter<ActivePolicyT>,
+      KeyInputIteratorT,
+      ValueInputIteratorT,
+      KeyIteratorT,
+      ValueIteratorT,
+      OffsetT,
+      CompareOpT,
+      KeyT,
+      ValueT>::policy;
+    static_assert(1 <= policy.threads_per_block && policy.threads_per_block <= 1024,
+                  "Number of threads per block need to be inside [1;1024]");
+    static_assert(1 <= policy.items_per_thread, "Number of items per thread needs to be at least 1");
+    constexpr auto tile_size = policy.threads_per_block * policy.items_per_thread;
+    const auto num_tiles     = ::cuda::ceil_div(num_items, tile_size);
+
+    const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
+    const auto temporary_keys_storage_size   = static_cast<size_t>(num_items * kernel_source.KeySize());
+    const auto temporary_values_storage_size = static_cast<size_t>(num_items * kernel_source.ValueSize()) * !KEYS_ONLY;
+
+    /**
+     * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
+     * merge sort allocates virtual shared memory that resides in global memory.
+     */
+
+    using merge_sort_vsmem_t = detail::merge_sort::merge_sort_vsmem_helper_t<
+      policy_getter<ActivePolicyT>,
+      KeyInputIteratorT,
+      ValueInputIteratorT,
+      KeyIteratorT,
+      ValueIteratorT,
+      OffsetT,
+      CompareOpT,
+      KeyT,
+      ValueT>;
+    const ::cuda::std::size_t block_sort_smem_size =
+      num_tiles * detail::vsmem_helper_impl<typename merge_sort_vsmem_t::block_sort_agent_t>::vsmem_per_block;
+    const ::cuda::std::size_t merge_smem_size =
+      num_tiles * detail::vsmem_helper_impl<typename merge_sort_vsmem_t::merge_agent_t>::vsmem_per_block;
+    const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
+
+    void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
+    size_t allocation_sizes[4] = {
+      merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
+
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
       return error;
     }
 
-    do
+    if (d_temp_storage == nullptr)
     {
-      auto wrapped_policy  = detail::merge_sort::MakeMergeSortPolicyWrapper(policy);
-      const auto tile_size = VSMemHelperT::template ItemsPerTile<
-        typename ActivePolicyT::MergeSortPolicy,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyIteratorT,
-        ValueIteratorT,
-        OffsetT,
-        CompareOpT,
-        KeyT,
-        ValueT>(wrapped_policy.MergeSort());
-      const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
+      // Return if the caller is simply requesting the size of the storage allocation
+      return cudaSuccess;
+    }
 
-      const auto merge_partitions_size       = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
-      const auto temporary_keys_storage_size = static_cast<size_t>(num_items * kernel_source.KeySize());
-      const auto temporary_values_storage_size =
-        static_cast<size_t>(num_items * kernel_source.ValueSize()) * !KEYS_ONLY;
+    const int num_passes = ::cuda::ceil_ilog2(num_tiles);
 
-      /**
-       * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
-       * merge sort allocates virtual shared memory that resides in global memory.
-       */
-      const ::cuda::std::size_t block_sort_smem_size =
-        num_tiles
-        * VSMemHelperT::template BlockSortVSMemPerBlock<
-          typename ActivePolicyT::MergeSortPolicy,
-          KeyInputIteratorT,
-          ValueInputIteratorT,
-          KeyIteratorT,
-          ValueIteratorT,
-          OffsetT,
-          CompareOpT,
-          KeyT,
-          ValueT>(wrapped_policy.MergeSort());
-      const ::cuda::std::size_t merge_smem_size =
-        num_tiles
-        * VSMemHelperT::template MergeVSMemPerBlock<
-          typename ActivePolicyT::MergeSortPolicy,
-          KeyInputIteratorT,
-          ValueInputIteratorT,
-          KeyIteratorT,
-          ValueIteratorT,
-          OffsetT,
-          CompareOpT,
-          KeyT,
-          ValueT>(wrapped_policy.MergeSort());
-      const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
+    /*
+     * The algorithm consists of stages. At each stage, there are input and output arrays. There are two pairs of
+     * arrays allocated (keys and items). One pair is from function arguments and another from temporary storage. Ping
+     * is a helper variable that controls which of these two pairs of arrays is an input and which is an output for a
+     * current stage. If the ping is true - the current stage stores its result in the temporary storage. The
+     * temporary storage acts as input data otherwise.
+     *
+     * Block sort is executed before the main loop. It stores its result in  the pair of arrays that will be an input
+     * of the next stage. The initial value of the ping variable is selected so that the result of the final stage is
+     * stored in the input arrays.
+     */
+    bool ping = num_passes % 2 == 0;
 
-      void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
-      size_t allocation_sizes[4] = {
-        merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
+    auto merge_partitions = static_cast<OffsetT*>(allocations[0]);
+    auto keys_buffer      = static_cast<KeyT*>(allocations[1]);
+    auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    const int threads_per_block = policy.threads_per_block;
 
-      if (d_temp_storage == nullptr)
-      {
-        // Return if the caller is simply requesting the size of the storage allocation
-        break;
-      }
+    // Invoke DeviceMergeSortBlockSortKernel
+    launcher_factory(
+      static_cast<int>(num_tiles), threads_per_block, 0, stream, /* dependent launch */ ptx_version >= 900)
+      .doit(kernel_source.MergeSortBlockSortKernel(),
+            ping,
+            d_input_keys,
+            d_input_items,
+            d_output_keys,
+            d_output_items,
+            num_items,
+            keys_buffer,
+            items_buffer,
+            compare_op,
+            cub::detail::vsmem_t{allocations[3]});
 
-      const int num_passes = static_cast<int>(THRUST_NS_QUALIFIER::detail::log2_ri(num_tiles));
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
 
-      /*
-       * The algorithm consists of stages. At each stage, there are input and output arrays. There are two pairs of
-       * arrays allocated (keys and items). One pair is from function arguments and another from temporary storage. Ping
-       * is a helper variable that controls which of these two pairs of arrays is an input and which is an output for a
-       * current stage. If the ping is true - the current stage stores its result in the temporary storage. The
-       * temporary storage acts as input data otherwise.
-       *
-       * Block sort is executed before the main loop. It stores its result in  the pair of arrays that will be an input
-       * of the next stage. The initial value of the ping variable is selected so that the result of the final stage is
-       * stored in the input arrays.
-       */
-      bool ping = num_passes % 2 == 0;
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
 
-      auto merge_partitions = static_cast<OffsetT*>(allocations[0]);
-      auto keys_buffer      = static_cast<KeyT*>(allocations[1]);
-      auto items_buffer     = static_cast<ValueT*>(allocations[2]);
+    const OffsetT num_partitions              = num_tiles + 1;
+    constexpr int threads_per_partition_block = 256;
+    const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
 
-      const int block_threads = VSMemHelperT::template BlockThreads<
-        typename ActivePolicyT::MergeSortPolicy,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyIteratorT,
-        ValueIteratorT,
-        OffsetT,
-        CompareOpT,
-        KeyT,
-        ValueT>(wrapped_policy.MergeSort());
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
 
-      // Invoke DeviceMergeSortBlockSortKernel
-      launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, true)
-        .doit(kernel_source.MergeSortBlockSortKernel(),
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    for (int pass = 0; pass < num_passes; ++pass, ping = !ping)
+    {
+      const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
+
+      // Partition
+      launcher_factory(
+        partition_grid_size, threads_per_partition_block, 0, stream, /* dependent launch */ ptx_version >= 900)
+        .doit(kernel_source.MergeSortPartitionKernel(),
               ping,
-              d_input_keys,
-              d_input_items,
+              d_output_keys,
+              keys_buffer,
+              num_items,
+              num_partitions,
+              merge_partitions,
+              compare_op,
+              target_merged_tiles_number,
+              tile_size);
+
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      // Merge
+      launcher_factory(
+        static_cast<int>(num_tiles), threads_per_block, 0, stream, /* dependent launch */ ptx_version >= 900)
+        .doit(kernel_source.MergeSortMergeKernel(),
+              ping,
               d_output_keys,
               d_output_items,
               num_items,
               keys_buffer,
               items_buffer,
               compare_op,
+              merge_partitions,
+              target_merged_tiles_number,
               cub::detail::vsmem_t{allocations[3]});
 
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
-        break;
+        return error;
       }
 
       // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
-        break;
+        return error;
       }
+    }
 
-      const OffsetT num_partitions              = num_tiles + 1;
-      constexpr int threads_per_partition_block = 256;
-      const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
-
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      for (int pass = 0; pass < num_passes; ++pass, ping = !ping)
-      {
-        const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
-
-        // Partition
-        launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream, true)
-          .doit(kernel_source.MergeSortPartitionKernel(),
-                ping,
-                d_output_keys,
-                keys_buffer,
-                num_items,
-                num_partitions,
-                merge_partitions,
-                compare_op,
-                target_merged_tiles_number,
-                tile_size);
-
-        error = CubDebug(detail::DebugSyncStream(stream));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-
-        // Merge
-        launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, true)
-          .doit(kernel_source.MergeSortMergeKernel(),
-                ping,
-                d_output_keys,
-                d_output_items,
-                num_items,
-                keys_buffer,
-                items_buffer,
-                compare_op,
-                merge_partitions,
-                target_merged_tiles_number,
-                cub::detail::vsmem_t{allocations[3]});
-
-        error = CubDebug(detail::DebugSyncStream(stream));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-      }
-    } while (0);
-
-    return error;
+    return cudaSuccess;
   }
 
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
@@ -433,42 +399,269 @@ struct DispatchMergeSort
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
-    cudaError error = cudaSuccess;
-    do
+    // Get PTX version
+    int ptx_version = 0;
+    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
     {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Create dispatch functor
-      DispatchMergeSort dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_input_keys,
-        d_input_items,
-        d_output_keys,
-        d_output_items,
-        num_items,
-        compare_op,
-        stream,
-        ptx_version,
-        kernel_source,
-        launcher_factory);
+    // Create dispatch functor
+    DispatchMergeSort dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      d_input_items,
+      d_output_keys,
+      d_output_items,
+      num_items,
+      compare_op,
+      stream,
+      ptx_version,
+      kernel_source,
+      launcher_factory);
 
-      // Dispatch to chained policy
-      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
+    // Dispatch to chained policy
+    if (const auto error = CubDebug(max_policy.Invoke(ptx_version, dispatch)))
+    {
+      return error;
+    }
 
-    return error;
+    return cudaSuccess;
   }
 };
+
+namespace detail::merge_sort
+{
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyIteratorT,
+          typename ValueIteratorT,
+          typename OffsetT,
+          typename CompareOpT,
+          typename PolicySelector        = policy_selector_from_types<KeyIteratorT>,
+          typename KernelSource          = DeviceMergeSortKernelSource<PolicySelector,
+                                                                       KeyInputIteratorT,
+                                                                       ValueInputIteratorT,
+                                                                       KeyIteratorT,
+                                                                       ValueIteratorT,
+                                                                       OffsetT,
+                                                                       CompareOpT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
+          typename KeyT                  = it_value_t<KeyIteratorT>,
+          typename ValueT                = it_value_t<ValueIteratorT>>
+#if _CCCL_HAS_CONCEPTS()
+  requires merge_sort_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputIteratorT d_input_keys,
+  ValueInputIteratorT d_input_items,
+  KeyIteratorT d_output_keys,
+  ValueIteratorT d_output_items,
+  OffsetT num_items,
+  CompareOpT compare_op,
+  cudaStream_t stream,
+  PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {},
+  KeyT*                                  = nullptr /* for CCCL.C */,
+  ValueT*                                = nullptr /* for CCCL.C */) -> cudaError_t
+{
+  [[maybe_unused]] constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+
+  if (num_items == 0)
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+    }
+    return cudaSuccess;
+  }
+
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
+    const MergeSortPolicy active_policy = policy_getter();
+#else // CUB_DEFINE_RUNTIME_POLICIES
+    using vsmem_adapted_agents = merge_sort_vsmem_helper_t<
+      decltype(policy_getter),
+      KeyInputIteratorT,
+      ValueInputIteratorT,
+      KeyIteratorT,
+      ValueIteratorT,
+      OffsetT,
+      CompareOpT,
+      KeyT,
+      ValueT>;
+  constexpr MergeSortPolicy active_policy = vsmem_adapted_agents::policy;
+#endif // CUB_DEFINE_RUNTIME_POLICIES
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceMergeSort to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+
+    _CCCL_ASSERT(1 <= active_policy.threads_per_block && active_policy.threads_per_block <= 1024,
+                 "Number of threads per block need to be inside [1;1024]");
+    _CCCL_ASSERT(1 <= active_policy.items_per_thread, "Number of items per thread needs to be at least 1");
+    const auto tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
+    const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
+
+    const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
+    const auto temporary_keys_storage_size   = static_cast<size_t>(num_items * kernel_source.KeySize());
+    const auto temporary_values_storage_size = static_cast<size_t>(num_items * kernel_source.ValueSize()) * !keys_only;
+
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
+    const ::cuda::std::size_t block_sort_smem_size = 0;
+    const ::cuda::std::size_t merge_smem_size      = 0;
+#else // CUB_DEFINE_RUNTIME_POLICIES
+    const ::cuda::std::size_t block_sort_smem_size =
+      num_tiles * vsmem_helper_impl<typename vsmem_adapted_agents::block_sort_agent_t>::vsmem_per_block;
+    const ::cuda::std::size_t merge_smem_size = num_tiles * vsmem_helper_impl<typename vsmem_adapted_agents::merge_agent_t>::vsmem_per_block;
+#endif // CUB_DEFINE_RUNTIME_POLICIES
+    const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
+
+    void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
+    size_t allocation_sizes[4] = {
+      merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
+
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
+
+    if (d_temp_storage == nullptr)
+    {
+      return cudaSuccess;
+    }
+
+    const int num_passes = ::cuda::ceil_ilog2(num_tiles);
+    bool ping            = num_passes % 2 == 0;
+
+    auto merge_partitions = static_cast<OffsetT*>(allocations[0]);
+    auto keys_buffer      = static_cast<KeyT*>(allocations[1]);
+    auto items_buffer     = static_cast<ValueT*>(allocations[2]);
+
+    if (const auto error = CubDebug(
+          launcher_factory(static_cast<int>(num_tiles),
+                           active_policy.threads_per_block,
+                           0,
+                           stream,
+                           /* dependent launch */ cc >= ::cuda::compute_capability{9, 0})
+            .doit(kernel_source.MergeSortBlockSortKernel(),
+                  ping,
+                  d_input_keys,
+                  d_input_items,
+                  d_output_keys,
+                  d_output_items,
+                  num_items,
+                  keys_buffer,
+                  items_buffer,
+                  compare_op,
+                  cub::detail::vsmem_t{allocations[3]})))
+    {
+      return error;
+    }
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    const OffsetT num_partitions              = num_tiles + 1;
+    constexpr int threads_per_partition_block = 256;
+    const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
+
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    for (int pass = 0; pass < num_passes; ++pass, ping = !ping)
+    {
+      const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
+
+      if (const auto error = CubDebug(
+            launcher_factory(partition_grid_size,
+                             threads_per_partition_block,
+                             0,
+                             stream,
+                             /* dependent launch */ cc >= ::cuda::compute_capability{9, 0})
+              .doit(kernel_source.MergeSortPartitionKernel(),
+                    ping,
+                    d_output_keys,
+                    keys_buffer,
+                    num_items,
+                    num_partitions,
+                    merge_partitions,
+                    compare_op,
+                    target_merged_tiles_number,
+                    tile_size)))
+      {
+        return error;
+      }
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+      if (const auto error = CubDebug(
+            launcher_factory(static_cast<int>(num_tiles),
+                             active_policy.threads_per_block,
+                             0,
+                             stream,
+                             /* dependent launch */ cc >= ::cuda::compute_capability{9, 0})
+              .doit(kernel_source.MergeSortMergeKernel(),
+                    ping,
+                    d_output_keys,
+                    d_output_items,
+                    num_items,
+                    keys_buffer,
+                    items_buffer,
+                    compare_op,
+                    merge_partitions,
+                    target_merged_tiles_number,
+                    cub::detail::vsmem_t{allocations[3]})))
+      {
+        return error;
+      }
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
+  });
+}
+} // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

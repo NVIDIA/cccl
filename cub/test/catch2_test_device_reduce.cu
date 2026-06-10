@@ -1,34 +1,14 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
+#include <thrust/sequence.h>
+
+#include <cuda/__cmath/uabs.h>
+#include <cuda/std/__algorithm/max_element.h>
+#include <cuda/std/__algorithm/min_element.h>
 
 #include <cstdint>
 
@@ -46,6 +26,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -102,6 +83,16 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
+struct abs_less_t
+{
+  template <typename T>
+  _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
+  {
+    // need to use `uabs` to avoid integer overflow in case of abs(INT_MIN)
+    return cuda::uabs(a) < cuda::uabs(b);
+  }
+};
+
 C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
 {
   using params   = params_t<TestType>;
@@ -138,6 +129,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
+  CAPTURE(c2h::type_name<item_t>(), c2h::type_name<output_t>(), num_items);
+
 #if TEST_TYPES != 4
   SECTION("reduce")
   {
@@ -153,9 +146,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_t{});
+    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_value_t{});
 
     // Verify result
     REQUIRE(expected_result == out_result[0]);
@@ -291,5 +284,147 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
+
+#  if TEST_TYPES < 2
+  SECTION("argmin-abs_less_t")
+  {
+    abs_less_t compare_op;
+
+    // Prepare verification data
+    c2h::host_vector<item_t> host_items(in_items);
+    auto expected_result = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
+
+    // Run test
+    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    c2h::device_vector<result_t> out_result(num_segments);
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
+    device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
+
+    // Verify result
+    result_t gpu_result   = out_result[0];
+    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_extremum);
+    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
+  }
+
+  SECTION("argmax-abs_less_t")
+  {
+    abs_less_t compare_op;
+
+    // Prepare verification data
+    c2h::host_vector<item_t> host_items(in_items);
+    auto expected_result = cuda::std::max_element(host_items.cbegin(), host_items.cend(), compare_op);
+
+    // Run test
+    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    c2h::device_vector<result_t> out_result(num_segments);
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
+    device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
+
+    // Verify result
+    result_t gpu_result   = out_result[0];
+    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_extremum);
+    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
+  }
+#  endif
 #endif
 }
+
+#if TEST_TYPES == 0
+// this type stands in for lambda functions, which are also not copy-assignable before C++17
+struct non_copy_assignable_plus
+{
+  non_copy_assignable_plus()                                           = default;
+  non_copy_assignable_plus(const non_copy_assignable_plus&)            = default;
+  non_copy_assignable_plus& operator=(const non_copy_assignable_plus&) = delete;
+
+  template <typename T>
+  _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> T
+  {
+    return a + b;
+  }
+};
+
+struct non_copy_assignable_less
+{
+  non_copy_assignable_less()                                           = default;
+  non_copy_assignable_less(const non_copy_assignable_less&)            = default;
+  non_copy_assignable_less& operator=(const non_copy_assignable_less&) = delete;
+
+  template <typename T>
+  _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
+  {
+    return a < b;
+  }
+};
+
+C2H_TEST("Device reduce works with a non copy assignable reduction operator", "[reduce][device]")
+{
+  using item_t   = int;
+  using output_t = int;
+
+  constexpr int num_items = 1000;
+
+  c2h::device_vector<item_t> input(num_items, 42);
+  thrust::sequence(input.begin(), input.end(), 1);
+
+  SECTION("reduce")
+  {
+    c2h::device_vector<output_t> output(1);
+    device_reduce(input.data(), output.data(), num_items, non_copy_assignable_plus{}, 0);
+    CHECK((num_items * (num_items + 1)) / 2 == output[0]);
+  }
+
+  SECTION("argmin")
+  {
+    c2h::device_vector<output_t> output_extremum(1);
+    c2h::device_vector<int> output_index(1);
+    device_arg_min(input.data(), output_extremum.data(), output_index.data(), num_items, non_copy_assignable_less{});
+    REQUIRE(1 == output_extremum[0]);
+    REQUIRE(0 == output_index[0]);
+  }
+}
+
+struct checking_reduce
+{
+  static constexpr auto sentinel = 42;
+
+  _CCCL_HOST_DEVICE_API auto operator()(int a, int b) const -> int
+  {
+    CHECK(a == sentinel);
+    CHECK(b == sentinel);
+    return sentinel;
+  }
+};
+
+struct faulting_reduce
+{
+  _CCCL_HOST_DEVICE_API auto operator()(int, int) const -> int
+  {
+    CHECK(false);
+    return 0;
+  }
+};
+
+C2H_TEST("Device reduce works without initial value", "[reduce][device]")
+{
+  constexpr int num_items = 1000;
+  c2h::device_vector<int> input(num_items, checking_reduce::sentinel);
+
+  SECTION("for some elements")
+  {
+    c2h::device_vector<int> output(1);
+    device_reduce(input.data(), output.data(), num_items, checking_reduce{}, cub::detail::reduce::no_init);
+    CHECK(output[0] == checking_reduce::sentinel);
+  }
+  SECTION("for no elements")
+  {
+    device_reduce(input.data(), static_cast<int*>(nullptr), 0, faulting_reduce{}, cub::detail::reduce::no_init);
+  }
+}
+#endif // TEST_TYPES == 0

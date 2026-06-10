@@ -16,14 +16,14 @@
 //   constexpr bool  // constexpr in C++20
 //   prev_permutation(Iter first, Iter last, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr int factorial(int x)
+TEST_FUNC constexpr int factorial(int x)
 {
   int r = 1;
   for (; x; --x)
@@ -34,9 +34,9 @@ __host__ __device__ constexpr int factorial(int x)
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
-  typedef cuda::std::greater<int> C;
+  using C      = cuda::std::greater<int>;
   int ia[]     = {1, 2, 3, 4, 5, 6};
   const int sa = sizeof(ia) / sizeof(ia[0]);
   int prev[sa] = {};
@@ -65,11 +65,18 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<bidirectional_iterator<int*>>();
   test<random_access_iterator<int*>>();
   test<int*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
 
   return true;
 }
@@ -78,7 +85,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

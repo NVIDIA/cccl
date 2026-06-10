@@ -8,7 +8,6 @@
 
 namespace unittest
 {
-
 // mark the absence of a type
 struct null_type
 {};
@@ -63,7 +62,7 @@ struct for_each_type
     loop(n);
   }
 
-  void operator()(void)
+  void operator()()
   {
     // run the function on type T
     Function<T> f;
@@ -88,7 +87,7 @@ struct for_each_type<TypeList, Function, null_type, i>
     // no-op
   }
 
-  void operator()(void)
+  void operator()()
   {
     // no-op
   }
@@ -171,5 +170,4 @@ struct concat<L<T1s...>, L<T2s...>, Ls...>
 {
   using type = concat<L<T1s..., T2s...>, Ls...>;
 };
-
 } // namespace unittest

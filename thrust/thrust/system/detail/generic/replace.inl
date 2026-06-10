@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -35,7 +22,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 // this functor receives x, and returns a new_value if predicate(x) is true; otherwise,
 // it returns x
 template <typename Predicate, typename NewType, typename OutputType>
@@ -80,7 +66,6 @@ struct constant_unary
 
   T c;
 }; // end constant_unary
-
 } // namespace detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
@@ -170,6 +155,5 @@ replace(thrust::execution_policy<DerivedPolicy>& exec,
 
   return thrust::replace_if(exec, first, last, _1 == old_value, new_value);
 } // end replace()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

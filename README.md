@@ -41,7 +41,7 @@ The sum of each block is then reduced to a single value using an atomic add via 
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
-[Try it live on Godbolt!](https://godbolt.org/z/aMx4j9f4T)
+[Try it live on Godbolt!](https://godbolt.org/z/3KaWz3Msf)
 
 ```cpp
 #include <thrust/execution_policy.h>
@@ -88,7 +88,7 @@ int main() {
 
   auto const err = cudaDeviceSynchronize();
   if (err != cudaSuccess) {
-    std::cout << "Error: " << cudaGetErrorString(err) << std::endl;
+    std::cout << "Error: " << cudaGetErrorString(err) << '\n';
     return -1;
   }
 
@@ -286,15 +286,19 @@ In the spirit of "You only support what you test", see our [CI Overview](https:/
 
 ### GPU Architectures
 
-While some features may be specific to certain architectures, CCCL generally supports all GPU architectures that are [supported by the *current* major CUDA Toolkit (CTK)](https://developer.nvidia.com/cuda-gpus).
+CCCL supports all GPU architectures that are [supported by the *current* major CUDA Toolkit (CTK)](https://developer.nvidia.com/cuda-gpus).
 
-To be clear, while CCCL supports compilation with [two CTK major versions](#CUDA-toolkit-(CTK)-compatibility), this does *not* mean we continue to support all architectures from the older CTK.
+To be clear, while CCCL can be compiled with both the current and previous CTK major versions, we do not test or validate architectures that were only supported in the older CTK.
+
+Those architectures may still work — we do not intentionally break them — but they are outside our regular CI coverage. Furthermore, new features are not guaranteed to work with these architectures either.
+
+We welcome community contributions for reasonable fixes that unblock users on these older architectures.
 
 For example, CCCL 3.0 supports compiling with CTK 12.x and 13.x where
 - CUDA Toolkit 13.x supports `>=sm_75`
 - CUDA Toolkit 12.x supports `>=sm_50`
 
-So even when compiling CCCL 3.0 with CTK 12.x, only the architectures supported by the current CTK (13.x) are available (`sm_75`+).
+In this scenario, compiling CCCL 3.0 with CTK 12.x targeting architectures below `sm_75` may work, but those configurations are not part of our regular testing.
 
 ### C++ Dialects
 - C++17
@@ -449,6 +453,7 @@ The deprecation period will depend on the impact of the change, but will usually
 
 | CCCL version | CTK version |
 |--------------|-------------|
+| 3.2          | 13.2        |
 | 3.1          | 13.1        |
 | 3.0          | 13.0        |
 | 2.8          | 12.9        |
@@ -489,8 +494,11 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [cuDF](https://github.com/rapidsai/cudf) - Algorithms and file readers for ETL data analytics
 - [cuGraph](https://github.com/rapidsai/cugraph) - Algorithms for graph analytics
 - [cuML](https://github.com/rapidsai/cuml) - Machine learning algorithms and primitives
+- [cuOpt](https://github.com/NVIDIA/cuopt) - Accelerated decision optimization
 - [CuPy](https://cupy.dev) - NumPy & SciPy for GPU
 - [cuSOLVER](https://developer.nvidia.com/cusolver) - Dense and sparse linear solvers
+- [CUSP](https://github.com/cusplibrary/cusplibrary) - Sparse matrix operations, iterative methods, and algebraic multigrid
+- [cuVS](https://github.com/rapidsai/cuvs) - Approximate clustering and vector search
 - [GooFit](https://github.com/GooFit/GooFit) - Library for maximum-likelihood fits
 - [HeavyDB](https://github.com/heavyai/heavydb) - SQL database engine
 - [HOOMD](https://github.com/glotzerlab/hoomd-blue) - Monte Carlo and molecular dynamics simulations
@@ -499,12 +507,16 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [Hypre](https://github.com/hypre-space/hypre) - Multigrid linear solvers
 - [LightSeq](https://github.com/bytedance/lightseq) - Training and inference for sequence processing and generation
 - [MatX](https://github.com/NVIDIA/matx) - Numerical computing library using expression templates to provide efficient, Python-like syntax
+- [Parrot](https://github.com/NVlabs/parrot) - Array fusion GPU library
 - [PyTorch](https://github.com/pytorch/pytorch) - Tensor and neural network computations
 - [Qiskit](https://github.com/Qiskit/qiskit-aer) - High performance simulator for quantum circuits
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations
 - [RAFT](https://github.com/rapidsai/raft) - Algorithms and primitives for machine learning
+- [SGLang](https://github.com/sgl-project/sglang) - LLM serving framework
 - [TensorFlow](https://github.com/tensorflow/tensorflow) - End-to-end platform for machine learning
 - [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep learning inference
+- [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) - Optimized LLM inference
 - [tsne-cuda](https://github.com/CannyLab/tsne-cuda) - Stochastic Neighborhood Embedding library
 - [Visualization Toolkit (VTK)](https://gitlab.kitware.com/vtk/vtk) - Rendering and visualization library
+- [vLLM](https://github.com/vllm-project/vllm) - LLM inference and serving
 - [XGBoost](https://github.com/dmlc/xgboost) - Gradient boosting machine learning algorithms

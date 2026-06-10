@@ -26,10 +26,10 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/stream/reduction.cuh>
+#include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 namespace cuda::experimental::stf
 {
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <typename element_type, size_t dimensions = 1, typename ReduxOp>
 __global__ void

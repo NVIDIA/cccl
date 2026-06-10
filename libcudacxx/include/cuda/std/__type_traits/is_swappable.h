@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_complete.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
@@ -49,7 +51,7 @@ namespace __detect_hidden_friend_swap
 // This will intentionally create an ambiguity with std::swap if that is find-able by ADL. But it will not interfere
 // with hidden friend swap
 template <class _Tp>
-_CCCL_HOST_DEVICE void swap(_Tp&, _Tp&);
+_CCCL_HOST_DEVICE void swap(_Tp&, _Tp&); // NOLINT(performance-noexcept-swap)
 
 struct __hidden_friend_swap_found
 {};
@@ -66,7 +68,6 @@ struct __has_hidden_friend_swap
 
 namespace __detect_adl_swap
 {
-
 template <class _Tp>
 void swap(_Tp&, _Tp&) = delete;
 
@@ -147,7 +148,6 @@ struct __nothrow_swappable_with
 template <class _Tp, class _Up>
 struct __nothrow_swappable_with<_Tp, _Up, false> : false_type
 {};
-
 } // namespace __detail
 
 template <class _Tp>
@@ -159,40 +159,50 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_swappable_with : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
+inline constexpr bool is_swappable_with_v = __detail::__swappable_with<_Tp, _Up>::value;
+
+template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+inline constexpr bool is_swappable_v = false;
+
+template <class _Tp>
+inline constexpr bool is_swappable_v<_Tp, true> =
+  is_swappable_with_v<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>;
+
+template <class _Tp, class _Up>
+inline constexpr bool is_nothrow_swappable_with_v = __detail::__nothrow_swappable_with<_Tp, _Up>::value;
+
+template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+inline constexpr bool is_nothrow_swappable_v = false;
+
+template <class _Tp>
+inline constexpr bool is_nothrow_swappable_v<_Tp, true> =
+  is_nothrow_swappable_with_v<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>;
+
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with : public bool_constant<is_swappable_with_v<_Tp, _Up>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
-    : public conditional_t<__cccl_is_referenceable<_Tp>::value,
-                           is_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
-                           false_type>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable : public bool_constant<is_swappable_v<_Tp>>
 {};
 
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_swappable_with : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
+is_nothrow_swappable_with : public bool_constant<is_nothrow_swappable_with_v<_Tp, _Up>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable
-    : public conditional_t<__cccl_is_referenceable<_Tp>::value,
-                           is_nothrow_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
-                           false_type>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable : public bool_constant<is_nothrow_swappable_v<_Tp>>
 {};
 
-template <class _Tp, class _Up>
-inline constexpr bool is_swappable_with_v = is_swappable_with<_Tp, _Up>::value;
+// Do not use this trait over is_nothrow_swappable unless necessary. It is only useful in rare
+// cases where a type may need to work with incomplete types and has friend functions that
+// greedily instantiate the nothrow_swappable functions.
+template <class _Tp, bool = __is_complete_v<_Tp>>
+inline constexpr bool __is_complete_and_nothrow_swappable_v = false;
 
 template <class _Tp>
-inline constexpr bool is_swappable_v = is_swappable<_Tp>::value;
-
-template <class _Tp, class _Up>
-inline constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<_Tp, _Up>::value;
-
-template <class _Tp>
-inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
+inline constexpr bool __is_complete_and_nothrow_swappable_v<_Tp, true> = is_nothrow_swappable_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

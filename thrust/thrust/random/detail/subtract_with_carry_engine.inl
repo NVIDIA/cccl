@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -35,7 +22,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 template <typename UIntType, size_t w, size_t s, size_t r>
 _CCCL_HOST_DEVICE subtract_with_carry_engine<UIntType, w, s, r>::subtract_with_carry_engine(result_type value)
 {
@@ -60,7 +46,7 @@ _CCCL_HOST_DEVICE void subtract_with_carry_engine<UIntType, w, s, r>::seed(resul
 
 template <typename UIntType, size_t w, size_t s, size_t r>
 _CCCL_HOST_DEVICE typename subtract_with_carry_engine<UIntType, w, s, r>::result_type
-subtract_with_carry_engine<UIntType, w, s, r>::operator()(void)
+subtract_with_carry_engine<UIntType, w, s, r>::operator()()
 {
   // XXX we probably need to cache these m_x[m_k] in a register
   //     maybe we need to cache the use of all member variables
@@ -195,7 +181,6 @@ _CCCL_HOST_DEVICE bool operator!=(const subtract_with_carry_engine<UIntType, w, 
 {
   return !(lhs == rhs);
 }
-
 } // namespace random
 
 THRUST_NAMESPACE_END

@@ -42,6 +42,7 @@
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
+#include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <algorithm>
 #include <fstream>
@@ -59,7 +60,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 int get_next_prereq_unique_id();
 
 //! Sets of integer pairs used to represent edges
@@ -312,7 +312,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     auto& m = metadata[unique_id];
     m.color = "red";
@@ -387,7 +387,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     set_current_color_by_device(guard);
 
@@ -413,7 +413,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     auto& m          = metadata[prereq_unique_id];
     m.color          = get_current_color();
@@ -448,7 +448,7 @@ public:
       return;
     }
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (is_discarded(id_from, guard) || is_discarded(id_to, guard))
     {
@@ -476,7 +476,7 @@ public:
     // Do this work outside the critical section
     const auto remove_deps = getenv("CUDASTF_DOT_REMOVE_DATA_DEPS");
 
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (!tracing_enabled)
     {
@@ -544,7 +544,7 @@ public:
   template <typename task_type>
   void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
   {
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (!tracing_enabled)
     {
@@ -555,13 +555,12 @@ public:
     metadata[t.get_unique_id()].timing = time_ms;
   }
 
-  // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone did take a lock.
-  void set_current_color_by_device(::std::lock_guard<::std::mutex>&)
+  // Take a reference to an (unused) `::std::scoped_lock<::std::mutex>` to make sure someone did take a lock.
+  void set_current_color_by_device(::std::scoped_lock<::std::mutex>&)
   {
     if (getenv("CUDASTF_DOT_COLOR_BY_DEVICE"))
     {
-      int dev;
-      cuda_safe_call(cudaGetDevice(&dev));
+      const int dev = cuda_try<cudaGetDevice>();
       EXPECT(dev < sizeof(colors) / sizeof(*colors));
       current_color = colors[dev];
     }
@@ -573,7 +572,7 @@ public:
     {
       return;
     }
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
     current_color = color;
   }
 
@@ -593,7 +592,7 @@ public:
     discarded_tasks.insert(id);
   }
 
-  bool is_discarded(int id, ::std::lock_guard<::std::mutex>&) const
+  bool is_discarded(int id, ::std::scoped_lock<::std::mutex>&) const
   {
     return discarded_tasks.find(id) != discarded_tasks.end();
   }
@@ -688,14 +687,14 @@ private:
   ::std::optional<int> proxy_end_unique_id;
 };
 
-class dot : public reserved::meyers_singleton<dot>
+class dot : public ::cuda::experimental::meyers_singleton<dot>
 {
 public:
 
 protected:
   dot()
   {
-    ::std::lock_guard<::std::mutex> lock(mtx);
+    ::std::scoped_lock lock(mtx);
 
     const char* filename = getenv("CUDASTF_DOT_FILE");
     if (!filename)
@@ -736,7 +735,7 @@ public:
   // Add a context to the vector of contexts we need to depict in DOT
   void track_ctx(::std::shared_ptr<per_ctx_dot> pc)
   {
-    ::std::lock_guard<::std::mutex> lock(mtx);
+    ::std::scoped_lock lock(mtx);
 
     per_ctx.push_back(mv(pc));
   }
@@ -744,7 +743,7 @@ public:
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
-    ::std::lock_guard<::std::mutex> guard(mtx);
+    ::std::scoped_lock guard(mtx);
 
     if (dot_filename.empty())
     {
@@ -827,7 +826,7 @@ public:
     }
     else
     {
-      ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
+      ::std::cerr << "Unable to open file: " << dot_filename << '\n';
     }
 
     const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
@@ -851,7 +850,7 @@ public:
       }
       else
       {
-        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
+        ::std::cerr << "Unable to open file: " << stats_filename << '\n';
       }
     }
 
@@ -1458,8 +1457,8 @@ private:
       next = path_predecessor[next];
     }
 
-    outFile << "// T1 = " << t1 << ::std::endl;
-    outFile << "// Tinf = " << max_dist << ::std::endl;
+    outFile << "// T1 = " << t1 << '\n';
+    outFile << "// Tinf = " << max_dist << '\n';
 
     critical_path = max_dist;
     total_work    = t1;
@@ -1511,7 +1510,7 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
     return;
   }
 
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+#if __has_include(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
   nvtxRangePushA(symbol.c_str());
 #endif
 
@@ -1519,7 +1518,7 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
   auto sec = ::std::make_shared<dot_section>(mv(symbol));
   int id   = sec->get_id();
 
-  ::std::lock_guard<::std::mutex> guard(pc->mtx);
+  ::std::scoped_lock guard(pc->mtx);
 
   // Get parent section ID from stack (must have at least the context section)
   auto& section_stack = pc->section_id_stack;
@@ -1545,15 +1544,14 @@ inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
   }
 
   {
-    auto guard = ::std::lock_guard{pc->mtx};
+    auto guard = ::std::scoped_lock{pc->mtx};
 
     _CCCL_ASSERT(!pc->section_id_stack.empty(), "Cannot pop from empty section stack");
     pc->section_id_stack.pop_back();
   } // Release lock before potentially expensive NVTX call
 
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+#if __has_include(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
   nvtxRangePop();
 #endif
 }
-
 } // namespace cuda::experimental::stf::reserved

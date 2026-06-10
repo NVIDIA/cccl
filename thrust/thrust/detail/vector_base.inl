@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -26,27 +13,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/advance.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/overlapped_copy.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/vector_base.h>
-#include <thrust/distance.h>
 #include <thrust/equal.h>
+#include <thrust/fill.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/type_traits>
-
-#include <stdexcept>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__iterator/next.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/initializer_list>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base()
     : m_storage()
@@ -144,7 +139,7 @@ vector_base<T, Alloc>::vector_base(const vector_base& v, const Alloc& alloc)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(vector_base&& v)
+vector_base<T, Alloc>::vector_base(vector_base&& v) noexcept
     : m_storage(copy_allocator_t(), v.m_storage)
     , m_size(0)
 {
@@ -158,7 +153,13 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
   {
     m_storage.destroy_on_allocator_mismatch(v.m_storage, begin(), end());
     m_storage.deallocate_on_allocator_mismatch(v.m_storage);
-
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    {
+      if (m_storage.get_allocator() != v.m_storage.get_allocator())
+      {
+        m_size = 0;
+      }
+    }
     m_storage.propagate_allocator(v.m_storage);
 
     assign(v.begin(), v.end());
@@ -168,7 +169,7 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(vector_base&& v)
+vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(vector_base&& v) noexcept
 {
   m_storage.destroy(begin(), end());
   m_storage = ::cuda::std::move(v.m_storage);
@@ -286,8 +287,7 @@ void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 } // end vector_base::range_init()
 
 template <typename T, typename Alloc>
-template <typename InputIterator,
-          ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
+template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
     : m_storage()
     , m_size(0)
@@ -297,8 +297,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-template <typename InputIterator,
-          ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
+template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
@@ -881,105 +880,93 @@ void vector_base<T, Alloc>::append(size_type n)
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T& x)
 {
-  if (n != 0)
+  if (n == 0)
   {
-    if (capacity() - size() >= n)
+    return;
+  }
+
+  if (n <= static_cast<size_type>(capacity() - m_size))
+  {
+    // we've got room for all of them
+    const size_type num_displaced_elements = end() - position;
+    iterator old_end                       = end();
+    iterator mid                           = position + n;
+
+    if (num_displaced_elements > n)
     {
-      // we've got room for all of them
-      // how many existing elements will we displace?
-      const size_type num_displaced_elements = end() - position;
-      iterator old_end                       = end();
+      // construct copy n displaced elements to new elements following the insertion
+      m_storage.uninitialized_copy(old_end - n, old_end, old_end);
 
-      if (num_displaced_elements > n)
-      {
-        // construct copy n displaced elements to new elements
-        // following the insertion
-        m_storage.uninitialized_copy(end() - n, end(), end());
+      // extend the size
+      m_size += n;
 
-        // extend the size
-        m_size += n;
+      // copy old_end - mid elements over existing elements after mid, may overlap
+      const size_type copy_length = old_end - mid;
+      thrust::detail::overlapped_copy(position, position + copy_length, mid);
 
-        // copy num_displaced_elements - n elements to existing elements
-        // this copy overlaps
-        const size_type copy_length = (old_end - n) - position;
-        thrust::detail::overlapped_copy(position, old_end - n, old_end - copy_length);
-
-        // finally, fill the range to the insertion point
-        thrust::fill_n(position, n, x);
-      } // end if
-      else
-      {
-        // construct new elements at the end of the vector
-        m_storage.uninitialized_fill_n(end(), n - num_displaced_elements, x);
-
-        // extend the size
-        m_size += n - num_displaced_elements;
-
-        // construct copy the displaced elements
-        m_storage.uninitialized_copy(position, old_end, end());
-
-        // extend the size
-        m_size += num_displaced_elements;
-
-        // fill to elements which already existed
-        thrust::fill(position, old_end, x);
-      } // end else
-    } // end if
+      // finally, fill the range to the insertion point
+      thrust::fill_n(position, n, x);
+    }
     else
     {
-      const size_type old_size = size();
+      // construct new elements at the end of the vector
+      m_storage.uninitialized_fill_n(old_end, n - num_displaced_elements, x);
 
-      // compute the new capacity after the allocation
-      size_type new_capacity = old_size + ::cuda::std::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, n);
+      // extend the size
+      m_size += n - num_displaced_elements;
 
-      // allocate exponentially larger new storage
-      new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
+      // construct copy the displaced elements
+      m_storage.uninitialized_copy(position, old_end, mid);
 
-      // do not exceed maximum storage
-      new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
+      // extend the size
+      m_size += num_displaced_elements;
 
-      if (new_capacity > max_size())
-      {
-        throw std::length_error("insert(): insertion exceeds max_size().");
-      } // end if
-
-      storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
-
-      // record how many constructors we invoke in the try block below
-      iterator new_end = new_storage.begin();
-
-      try
-      {
-        // construct copy elements before the insertion to the beginning of the newly
-        // allocated storage
-        new_end = m_storage.uninitialized_copy(begin(), position, new_storage.begin());
-
-        // construct new elements to insert
-        m_storage.uninitialized_fill_n(new_end, n, x);
-        new_end += n;
-
-        // construct copy displaced elements from the old storage to the new storage
-        // remember [position, end()) refers to the old storage
-        new_end = m_storage.uninitialized_copy(position, end(), new_end);
-      } // end try
-      catch (...)
-      {
-        // something went wrong, so destroy & deallocate the new storage
-        m_storage.destroy(new_storage.begin(), new_end);
-        new_storage.deallocate();
-
-        // rethrow
-        throw;
-      } // end catch
-
-      // call destructors on the elements in the old storage
-      m_storage.destroy(begin(), end());
-
-      // record the vector's new state
-      m_storage.swap(new_storage);
-      m_size = old_size + n;
+      // fill to elements which already existed
+      thrust::fill(position, old_end, x);
     } // end else
-  } // end if
+  }
+  else
+  {
+    const size_type old_size = size();
+
+    // Ensure allocation grows exponentially within bounds
+    const size_type new_capacity =
+      ::cuda::std::clamp<size_type>(old_size + n, static_cast<size_type>(2 * capacity()), max_size());
+
+    storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
+
+    iterator new_end = new_storage.begin();
+
+    try
+    {
+      // Copy elements before insertion point
+      new_end = m_storage.uninitialized_copy(begin(), position, new_storage.begin());
+
+      // Fill n elements with x at insertion point
+      new_storage.uninitialized_fill_n(new_end, n, x);
+      new_end += n;
+
+      // Copy elements after insertion point
+      new_end = m_storage.uninitialized_copy(position, end(), new_end);
+    } // end try
+    catch (...)
+    {
+      // something went wrong, so destroy & deallocate the new storage
+      new_storage.destroy(new_storage.begin(), new_end);
+      new_storage.deallocate();
+
+      // rethrow
+      throw;
+    } // end catch
+
+    // record the vector's new state
+    m_storage.swap(new_storage);
+
+    // call destructors on the elements in the old storage
+    new_storage.destroy(new_storage.begin(), new_storage.begin() + old_size);
+
+    m_size = old_size + n;
+  }
 } // end vector_base::fill_insert()
 
 template <typename T, typename Alloc>
@@ -1206,7 +1193,6 @@ bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2
 {
   return !(lhs == rhs);
 }
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

@@ -4,11 +4,10 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 
-#include <iostream>
-#include <iterator>
-#include <string>
+#include <cuda/std/iterator>
 
-#include "include/host_device.h"
+#include <iostream>
+#include <string>
 
 // this functor clamps a value to the range [lo, hi]
 template <typename T>
@@ -50,7 +49,7 @@ struct simple_negate
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  using T = typename std::iterator_traits<Iterator>::value_type;
+  using T = cuda::std::iter_value_t<Iterator>;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
@@ -112,10 +111,10 @@ int main()
 
   ////
   // combine transform_iterator with another transform_iterator
-  using NegatedClampedCountingIterator = thrust::transform_iterator<::cuda::std::negate<int>, ClampedCountingIterator>;
+  using NegatedClampedCountingIterator = thrust::transform_iterator<cuda::std::negate<int>, ClampedCountingIterator>;
 
-  NegatedClampedCountingIterator ncs_begin = thrust::make_transform_iterator(cs_begin, ::cuda::std::negate<int>());
-  NegatedClampedCountingIterator ncs_end   = thrust::make_transform_iterator(cs_end, ::cuda::std::negate<int>());
+  NegatedClampedCountingIterator ncs_begin = thrust::make_transform_iterator(cs_begin, cuda::std::negate<int>());
+  NegatedClampedCountingIterator ncs_end   = thrust::make_transform_iterator(cs_end, cuda::std::negate<int>());
 
   print_range("negated sequence ", ncs_begin, ncs_end);
 

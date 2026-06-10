@@ -20,7 +20,7 @@
 #include "testing.cuh" // IWYU pragma: keep
 
 // Workaround for https://github.com/llvm/llvm-project/issues/113087
-#if defined(__clang__) && defined(__cpp_lib_tuple_like)
+#if defined(__clang__) && __cpp_lib_tuple_like >= 202207L
 #  define C2H_CHECK_TUPLE(...) CHECK((__VA_ARGS__))
 #else
 #  define C2H_CHECK_TUPLE(...) CHECK(__VA_ARGS__)
@@ -67,13 +67,16 @@ struct potentially_throwing
 
   _CCCL_HOST_DEVICE potentially_throwing(potentially_throwing&&) noexcept(false) {}
 
-  _CCCL_HOST_DEVICE potentially_throwing(const potentially_throwing&) noexcept(false) {}
+  _CCCL_HOST_DEVICE
+  potentially_throwing(const potentially_throwing&) noexcept(false) // NOLINT(modernize-use-equals-default)
+  {}
 
   _CCCL_HOST_DEVICE potentially_throwing& operator=(potentially_throwing&&) noexcept(false)
   {
     return *this;
   }
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE potentially_throwing& operator=(const potentially_throwing&) noexcept(false)
   {
     return *this;
@@ -218,17 +221,17 @@ void check_values(Sndr&& sndr, const Values&... values) noexcept
     auto opt = cudax_async::sync_wait(static_cast<Sndr&&>(sndr));
     if (!opt)
     {
-      CUDAX_FAIL("Expected value completion; got stopped instead.");
+      FAIL("Expected value completion; got stopped instead.");
     }
     else
     {
       auto&& vals = *opt;
-      CUDAX_CHECK(vals == ::cuda::std::tie(values...));
+      CHECK(vals == ::cuda::std::tie(values...));
     }
   }
   catch (...)
   {
-    CUDAX_FAIL("Expected value completion; got error instead.");
+    FAIL("Expected value completion; got error instead.");
   }
 }
 
@@ -263,13 +266,14 @@ _CCCL_HOST_DEVICE void check_sends_stopped(Sndr&&) noexcept
   static_assert(cudax_async::sends_stopped<Sndr> == SendsStopped, "sends_stopped does not match expected value");
 }
 
-template <class Sndr, class... Ts>
-inline void wait_for_value(Sndr&& snd, Ts&&... val)
+template <class Sndr, class Env, class... Ts>
+inline void wait_for_value_with_env(Sndr&& snd, Env&& env, Ts&&... val)
 {
-  ::cuda::std::optional<::cuda::std::tuple<Ts...>> res = cudax_async::sync_wait(static_cast<Sndr&&>(snd));
+  using values_t                      = ::cuda::std::tuple<::cuda::std::decay_t<Ts>...>;
+  ::cuda::std::optional<values_t> res = cudax_async::sync_wait(static_cast<Sndr&&>(snd), static_cast<Env&&>(env));
   CHECK(res.has_value());
-  ::cuda::std::tuple<Ts...> expected(static_cast<Ts&&>(val)...);
-  if constexpr (::cuda::std::tuple_size_v<::cuda::std::tuple<Ts...>> == 1)
+  values_t expected(static_cast<Ts&&>(val)...);
+  if constexpr (::cuda::std::tuple_size_v<values_t> == 1)
   {
     C2H_CHECK_TUPLE(::cuda::std::get<0>(res.value()) == ::cuda::std::get<0>(expected));
   }
@@ -277,4 +281,10 @@ inline void wait_for_value(Sndr&& snd, Ts&&... val)
   {
     C2H_CHECK_TUPLE(res.value() == expected);
   }
+}
+
+template <class Sndr, class... Ts>
+inline void wait_for_value(Sndr&& snd, Ts&&... val)
+{
+  wait_for_value_with_env(static_cast<Sndr&&>(snd), cudax_async::env<>{}, static_cast<Ts&&>(val)...);
 }

@@ -20,13 +20,13 @@
 #include "counting_predicates.h"
 #include "test_macros.h"
 
-__host__ __device__ bool is5(int i)
+TEST_FUNC bool is5(int i)
 {
   return i == 5;
 }
 
 template <typename T>
-__host__ __device__ bool call_pred(T pred)
+TEST_FUNC bool call_pred(T pred)
 {
   return pred(5);
 }
@@ -35,10 +35,10 @@ namespace adl
 {
 struct A
 {};
-__host__ __device__ void ref(A) {}
+TEST_FUNC void ref(A) {}
 } // namespace adl
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int i                                = 0;
@@ -58,10 +58,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
   static_assert(test());
-#endif // TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
 
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   {
     unary_counting_predicate<bool (*)(int), int> cp(is5);
     assert(!cp(6));
@@ -71,6 +70,7 @@ int main(int, char**)
     assert(call_pred(cuda::std::ref(cp)));
     assert(cp.count() == 2);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

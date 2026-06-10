@@ -12,6 +12,7 @@ cmake_minimum_required(VERSION 3.15)
 
 # Prepend the string with "0" until the string length equals the specified width
 function(pad_string_with_zeros string_var width)
+  # gersemi: ignore
   set(local_string "${${string_var}}")
   string(LENGTH "${local_string}" size)
   while(size LESS width)
@@ -38,6 +39,7 @@ if (NOT EXISTS "${LOGFILE}")
   message(FATAL_ERROR "LOGFILE does not exist ('${LOGFILE}').")
 endif()
 
+# gersemi: off
 string(JOIN "" regex
   "[0-9]+/[0-9]+[ ]+Test[ ]+#"
   "([0-9]+)"                        # Test ID
@@ -49,6 +51,7 @@ string(JOIN "" regex
   "([0-9]+)"                        # Seconds
   "\\.[0-9]+[ ]+sec"
 )
+# gersemi: on
 
 message(DEBUG "LOGFILE: ${LOGFILE}")
 message(DEBUG "MINSEC: ${MINSEC}")
@@ -57,16 +60,17 @@ message(DEBUG "regex: ${regex}")
 # Read the logfile and generate a map / keylist
 set(keys)
 file(STRINGS "${LOGFILE}" lines)
-foreach(line ${lines})
-
+foreach (line ${lines})
   # Parse each build time
   string(REGEX MATCH "${regex}" _DUMMY "${line}")
 
   if (CMAKE_MATCH_COUNT EQUAL 4)
+    # gersemi: off
     set(test_id      "${CMAKE_MATCH_1}")
     set(test_name    "${CMAKE_MATCH_2}")
     set(test_result  "${CMAKE_MATCH_3}")
     set(tmp          "${CMAKE_MATCH_4}") # floor(runtime_seconds)
+    # gersemi: on
 
     if (tmp LESS MINSEC)
       math(EXPR num_below_thresh "${num_below_thresh} + 1")
@@ -74,6 +78,7 @@ foreach(line ${lines})
     endif()
 
     # Compute human readable time
+    # gersemi: off
     math(EXPR days         "${tmp} / (60 * 60 * 24)")
     math(EXPR tmp          "${tmp} - (${days} * 60 * 60 * 24)")
     math(EXPR hours        "${tmp} / (60 * 60)")
@@ -81,6 +86,7 @@ foreach(line ${lines})
     math(EXPR minutes      "${tmp} / (60)")
     math(EXPR tmp          "${tmp} - (${minutes} * 60)")
     math(EXPR seconds      "${tmp}")
+    # gersemi: on
 
     # Format time components
     pad_string_with_zeros(days 3)
@@ -91,7 +97,9 @@ foreach(line ${lines})
     # Construct table entry
     # Later values in the file for the same command overwrite earlier entries
     string(MAKE_C_IDENTIFIER "${test_id}" key)
-    string(JOIN " | " ENTRY_${key}
+    string(
+      JOIN " | "
+      ENTRY_${key}
       "${days}d ${hours}h ${minutes}m ${seconds}s"
       "${test_result}"
       "${test_id}: ${test_name}"
@@ -106,7 +114,7 @@ list(REMOVE_DUPLICATES keys)
 
 # Build the entry list:
 set(entries)
-foreach(key ${keys})
+foreach (key ${keys})
   list(APPEND entries "${ENTRY_${key}}")
 endforeach()
 
@@ -118,7 +126,7 @@ endif()
 list(SORT entries ORDER DESCENDING)
 
 # Dump table:
-foreach(entry ${entries})
+foreach (entry ${entries})
   message(STATUS ${entry})
 endforeach()
 

@@ -32,17 +32,6 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVBF16()
-
 CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -53,7 +42,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T>
 extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm80();
 
@@ -461,7 +449,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto try_simd_operator(Op op)
     return op;
   }
 }
-
 } // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED

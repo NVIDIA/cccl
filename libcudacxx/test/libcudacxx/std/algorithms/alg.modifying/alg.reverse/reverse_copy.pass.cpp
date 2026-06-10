@@ -14,14 +14,14 @@
 //   constexpr OutIter          // constexpr after C++17
 //   reverse_copy(InIter first, InIter last, OutIter result);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   const int ia[]    = {0};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -60,7 +60,7 @@ __host__ __device__ constexpr void test()
   assert(jd[3] == 0);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<bidirectional_iterator<const int*>, forward_iterator<int*>>();
@@ -86,7 +86,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

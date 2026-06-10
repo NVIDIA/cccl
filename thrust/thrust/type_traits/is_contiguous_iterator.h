@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief An extensible type trait for determining if an iterator satisfies the
@@ -33,7 +20,10 @@
 #endif // no system header
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -53,7 +43,7 @@ THRUST_NAMESPACE_BEGIN
  * \see THRUST_PROCLAIM_CONTIGUOUS_ITERATOR
  */
 template <typename Iterator>
-struct proclaim_contiguous_iterator : false_type
+struct proclaim_contiguous_iterator : ::cuda::std::false_type
 {};
 
 /*! \brief Declares that the iterator \c Iterator is
@@ -63,12 +53,12 @@ struct proclaim_contiguous_iterator : false_type
  * \see is_contiguous_iterator
  * \see proclaim_contiguous_iterator
  */
-#define THRUST_PROCLAIM_CONTIGUOUS_ITERATOR(Iterator)                            \
-  THRUST_NAMESPACE_BEGIN                                                         \
-  template <>                                                                    \
-  struct proclaim_contiguous_iterator<Iterator> : THRUST_NS_QUALIFIER::true_type \
-  {};                                                                            \
-  THRUST_NAMESPACE_END                                                           \
+#define THRUST_PROCLAIM_CONTIGUOUS_ITERATOR(Iterator)                    \
+  THRUST_NAMESPACE_BEGIN                                                 \
+  template <>                                                            \
+  struct proclaim_contiguous_iterator<Iterator> : ::cuda::std::true_type \
+  {};                                                                    \
+  THRUST_NAMESPACE_END                                                   \
   /**/
 
 /*! \cond
@@ -79,7 +69,7 @@ namespace detail
 template <typename Iterator>
 inline constexpr bool is_libcxx_wrap_iter_v = false;
 
-#if defined(_LIBCPP_VERSION)
+#if _CCCL_HOST_STD_LIB(LIBCXX)
 template <typename Iterator>
 inline constexpr bool is_libcxx_wrap_iter_v<
 #  if _LIBCPP_VERSION < 14000
@@ -88,30 +78,29 @@ inline constexpr bool is_libcxx_wrap_iter_v<
   std::__wrap_iter<Iterator>
 #  endif
   > = true;
-#endif
+#endif // _CCCL_HOST_STD_LIB(LIBCXX)
 
 template <typename Iterator>
 inline constexpr bool is_libstdcxx_normal_iterator_v = false;
 
-#if defined(__GLIBCXX__)
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 template <typename Iterator, typename Container>
 inline constexpr bool is_libstdcxx_normal_iterator_v<::__gnu_cxx::__normal_iterator<Iterator, Container>> = true;
-#endif
+#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
 
-#if _CCCL_COMPILER(MSVC)
+#if _CCCL_HOST_STD_LIB(STL)
 template <typename Iterator>
 inline constexpr bool is_msvc_contiguous_iterator_v = ::cuda::std::is_pointer_v<::std::_Unwrapped_t<Iterator>>;
-#else
+#else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv !_CCCL_HOST_STD_LIB(STL) vvv
 template <typename Iterator>
 inline constexpr bool is_msvc_contiguous_iterator_v = false;
-#endif
+#endif // ^^^ !_CCCL_HOST_STD_LIB(STL) ^^^
 
 template <typename Iterator>
 inline constexpr bool is_contiguous_iterator_impl_v =
   ::cuda::std::contiguous_iterator<Iterator> || is_thrust_pointer_v<Iterator> || is_libcxx_wrap_iter_v<Iterator>
   || is_libstdcxx_normal_iterator_v<Iterator> || is_msvc_contiguous_iterator_v<Iterator>
   || proclaim_contiguous_iterator<Iterator>::value;
-
 } // namespace detail
 
 /*! \endcond

@@ -8,11 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/devices>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include <utility.cuh>
+#include <testing.cuh>
 
 C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
 {
@@ -137,11 +138,20 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
   auto id2 = stream2.id();
 
   // Test that different streams have different IDs
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+  CCCLRT_REQUIRE(cuda::std::to_underlying(id1) != cuda::std::to_underlying(id2));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
   CCCLRT_REQUIRE(id1 != id2);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
   // Test that the same stream returns the same ID when called multiple times
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+  CCCLRT_REQUIRE(cuda::std::to_underlying(stream1.id()) == cuda::std::to_underlying(id1));
+  CCCLRT_REQUIRE(cuda::std::to_underlying(stream2.id()) == cuda::std::to_underlying(id2));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
   CCCLRT_REQUIRE(stream1.id() == id1);
   CCCLRT_REQUIRE(stream2.id() == id2);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
   {
     // Test that stream_ref also supports id()
@@ -150,7 +160,42 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
     cuda::stream_ref ref1(::cudaStream_t{});
     cuda::stream_ref ref2(stream1);
 
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+    CCCLRT_REQUIRE(cuda::std::to_underlying(ref1.id()) != cuda::std::to_underlying(ref2.id()));
+    CCCLRT_REQUIRE(cuda::std::to_underlying(ref2.id()) == cuda::std::to_underlying(id1));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
     CCCLRT_REQUIRE(ref1.id() != ref2.id());
     CCCLRT_REQUIRE(ref2.id() == id1);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
+  }
+}
+
+C2H_CCCLRT_TEST("Invalid stream", "[stream]")
+{
+  // 1. Test the signature
+  STATIC_REQUIRE(cuda::std::is_same_v<const cuda::invalid_stream_t, decltype(cuda::invalid_stream)>);
+
+  // 2. Test explicit construction of stream_ref from invalid_stream
+  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::stream_ref, cuda::invalid_stream_t>);
+  STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::invalid_stream_t, cuda::stream_ref>);
+  {
+    cuda::stream_ref stream{cuda::invalid_stream};
+    CCCLRT_REQUIRE(stream.get() == (cudaStream_t) (~0ull)); // NOLINT(performance-no-int-to-ptr)
+  }
+
+  // 3. Test stream_ref comparisons
+  {
+    cuda::stream_ref valid_stream{(cudaStream_t) (123ull)}; // NOLINT(performance-no-int-to-ptr)
+    cuda::stream_ref invalid_stream{cuda::invalid_stream};
+
+    CCCLRT_REQUIRE(!(valid_stream == cuda::invalid_stream));
+    CCCLRT_REQUIRE(invalid_stream == cuda::invalid_stream);
+    CCCLRT_REQUIRE(!(cuda::invalid_stream == valid_stream));
+    CCCLRT_REQUIRE(cuda::invalid_stream == invalid_stream);
+
+    CCCLRT_REQUIRE(valid_stream != cuda::invalid_stream);
+    CCCLRT_REQUIRE(!(invalid_stream != cuda::invalid_stream));
+    CCCLRT_REQUIRE(cuda::invalid_stream != valid_stream);
+    CCCLRT_REQUIRE(!(cuda::invalid_stream != invalid_stream));
   }
 }

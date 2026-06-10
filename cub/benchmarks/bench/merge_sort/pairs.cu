@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_merge_sort.cuh>
@@ -40,59 +16,27 @@
 #endif
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_LOAD == 2
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
 template <typename KeyT>
-struct policy_hub_t
+struct policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::MergeSortPolicy
   {
-    using MergeSortPolicy =
-      cub::AgentMergeSortPolicy<TUNE_THREADS_PER_BLOCK,
-                                cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
-                                TUNE_LOAD_ALGORITHM,
-                                TUNE_LOAD_MODIFIER,
-                                TUNE_STORE_ALGORITHM>;
-  };
-
-  using MaxPolicy = policy_t;
+    return cub::MergeSortPolicy{
+      TUNE_THREADS_PER_BLOCK,
+      cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
+      (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
+      (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : (TUNE_LOAD == 1 ? cub::LOAD_LDG : cub::LOAD_CA)),
+      (TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE)};
+  }
 };
 #endif // TUNE_BASE
 
 template <typename KeyT, typename ValueT, typename OffsetT>
 void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using key_t            = KeyT;
-  using value_t          = ValueT;
-  using key_input_it_t   = key_t*;
-  using value_input_it_t = value_t*;
-  using key_it_t         = key_t*;
-  using value_it_t       = value_t*;
-  using offset_t         = cub::detail::choose_offset_t<OffsetT>;
-  using compare_op_t     = less_t;
-
-#if !TUNE_BASE
-  using policy_t = policy_hub_t<key_t>;
-  using dispatch_t =
-    cub::DispatchMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
-#else // TUNE_BASE
-  using dispatch_t =
-    cub::DispatchMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
-#endif // TUNE_BASE
+  using key_t        = KeyT;
+  using value_t      = ValueT;
+  using compare_op_t = less_t;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -115,33 +59,26 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
   state.add_global_memory_writes<KeyT>(elements);
   state.add_global_memory_writes<ValueT>(elements);
 
-  // Allocate temporary storage:
-  std::size_t temp_size{};
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    d_keys_buffer_1,
-    d_values_buffer_1,
-    d_keys_buffer_2,
-    d_values_buffer_2,
-    static_cast<offset_t>(elements),
-    compare_op_t{},
-    0 /* stream */);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      temp_storage,
-      temp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<key_t>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceMergeSort::SortPairsCopy,
+      "SortPairsCopy failed",
       d_keys_buffer_1,
       d_values_buffer_1,
       d_keys_buffer_2,
       d_values_buffer_2,
-      static_cast<offset_t>(elements),
+      static_cast<OffsetT>(elements),
       compare_op_t{},
-      launch.get_stream());
+      env);
   });
 }
 
@@ -155,7 +92,7 @@ using key_types = all_types;
 using value_types = nvbench::type_list<TUNE_ValueT>;
 #else // !defined(TUNE_ValueT)
 using value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
 // nvcc currently hangs for __int128 value type with the fallback policy of {CTA: 64, IPT: 1}. NVBug 4384075
 //  ,
 //  int128_t

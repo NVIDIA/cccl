@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -54,29 +55,33 @@ struct sync_wait_t
   template <class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
   {
-    // FUTURE: if _Env provides a delegation scheduler, we don't need the run_loop
-    run_loop __loop_;
-    _Env __env_;
+    _CCCL_HOST_DEVICE_API constexpr explicit __state_base_t(_Env __env) noexcept
+        : __loop_(static_cast<_Env&&>(__env))
+    {}
+
+    // FUTURE: if _Env provides a delegation scheduler, we don't need the run_loop (?)
+    basic_run_loop<_Env> __loop_;
   };
 
-  template <class _Env>
+public:
+  template <class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
-      -> __query_result_t<_Env, _Query>
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
     {
-      return __state_->__env_.query(_Query{});
+      return get_env(__state_->__loop_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_scheduler_t>)
       {
-        return __state_->__env_.query(get_scheduler);
+        return get_env(__state_->__loop_).query(get_scheduler);
       }
       else
       {
@@ -86,11 +91,11 @@ struct sync_wait_t
     }
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr auto query(get_delegation_scheduler_t) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_delegation_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_delegation_scheduler_t>)
       {
-        return __state_->__env_.query(get_delegation_scheduler);
+        return get_env(__state_->__loop_).query(get_delegation_scheduler);
       }
       else
       {
@@ -105,11 +110,17 @@ struct sync_wait_t
   template <class... _Ts>
   using __decayed_tuple = ::cuda::std::tuple<decay_t<_Ts>...>;
 
+  _CUDAX_SEMI_PRIVATE :
   template <class _Values, class _Errors, class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
-    ::cuda::std::optional<_Values>* __values_;
-    _Errors __errors_;
+    _CCCL_HOST_DEVICE_API constexpr explicit __state_t(_Env __env, ::cuda::std::optional<_Values>* __values) noexcept
+        : __state_base_t<_Env>{static_cast<_Env&&>(__env)}
+        , __values_{__values}
+    {}
+
+    ::cuda::std::optional<_Values>* __values_{};
+    _Errors __errors_{};
   };
 
   template <class _Values, class _Errors, class _Env = env<>>
@@ -118,7 +129,7 @@ struct sync_wait_t
     using receiver_concept = receiver_t;
 
     template <class... _As>
-    _CCCL_API void set_value(_As&&... __as) noexcept
+    _CCCL_HOST_DEVICE_API void set_value(_As&&... __as) noexcept
     {
       _CCCL_TRY
       {
@@ -129,14 +140,14 @@ struct sync_wait_t
         // avoid ODR-using a call to __emplace(exception_ptr) if this code is unreachable.
         if constexpr (!__nothrow_decay_copyable<_As...>)
         {
-          __state_->__errors_.__emplace(::std::current_exception());
+          __state_->__errors_.__emplace(execution::current_exception());
         }
       }
       __state_->__loop_.finish();
     }
 
     template <class _Error>
-    _CCCL_API void set_error(_Error&& __err) noexcept
+    _CCCL_HOST_DEVICE_API void set_error(_Error&& __err) noexcept
     {
       _CCCL_TRY
       {
@@ -147,18 +158,18 @@ struct sync_wait_t
         // avoid ODR-using a call to __emplace(exception_ptr) if this code is unreachable.
         if constexpr (!__nothrow_decay_copyable<_Error>)
         {
-          __state_->__errors_.__emplace(::std::current_exception());
+          __state_->__errors_.__emplace(execution::current_exception());
         }
       }
       __state_->__loop_.finish();
     }
 
-    _CCCL_API constexpr void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
     {
       __state_->__loop_.finish();
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t<_Env>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __env_t<_Env>
     {
       return __env_t<_Env>{__state_};
     }
@@ -169,9 +180,21 @@ struct sync_wait_t
   struct __throw_error_fn
   {
     template <class _Error>
-    _CCCL_HOST_API void operator()(_Error __err) const
+    [[noreturn]]
+    _CCCL_HOST_DEVICE_API void operator()(_Error __err) const
     {
-      if constexpr (__same_as<_Error, ::std::exception_ptr>)
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (__do_throw(static_cast<_Error&&>(__err));), (::cuda::std::terminate();))
+    }
+
+    template <class _Error>
+    [[noreturn]]
+    _CCCL_HOST_API static void __do_throw(_Error __err)
+    {
+      if constexpr (__same_as<_Error, exception_ptr>)
+      {
+        execution::rethrow_exception(static_cast<_Error&&>(__err));
+      }
+      else if constexpr (__same_as<_Error, ::std::exception_ptr>)
       {
         ::std::rethrow_exception(static_cast<_Error&&>(__err));
       }
@@ -181,12 +204,13 @@ struct sync_wait_t
       }
       else if constexpr (__same_as<_Error, cudaError_t>)
       {
-        ::cuda::__throw_cuda_error(__err, "sync_wait failed with cudaError_t");
+        _CCCL_THROW(::cuda::cuda_error, __err, "sync_wait failed with cudaError_t");
       }
       else
       {
         throw static_cast<_Error&&>(__err);
       }
+      _CCCL_UNREACHABLE();
     }
   };
 
@@ -203,7 +227,7 @@ struct sync_wait_t
     // Attempt to suppress follow-on errors about non-convertibility after the one already
     // reported.
     template <class _Ty>
-    _CCCL_API operator _Ty&&() const noexcept;
+    _CCCL_HOST_DEVICE_API operator _Ty&&() const noexcept;
 
     int i{}; // so that structured bindings kinda work
   };
@@ -211,7 +235,7 @@ struct sync_wait_t
 public:
   // This is the actual default sync_wait implementation.
   template <class _Sndr, class _Env>
-  _CCCL_API static auto apply_sender(_Sndr&& __sndr, _Env&& __env)
+  _CCCL_HOST_DEVICE_API static auto apply_sender(_Sndr&& __sndr, _Env&& __env)
   {
     using __partial_completions_t = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
     using __all_nothrow_t =
@@ -224,7 +248,7 @@ public:
     using __errors_t = __error_types<__completions_t, __decayed_variant>;
 
     ::cuda::std::optional<__values_t> __result{};
-    __state_t<__values_t, __errors_t, _Env> __state{{{}, static_cast<_Env&&>(__env)}, &__result, {}};
+    __state_t<__values_t, __errors_t, _Env> __state(static_cast<_Env&&>(__env), &__result);
 
     // Launch the sender with a continuation that will fill in a variant
     auto __opstate = execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<__values_t, __errors_t, _Env>{&__state});
@@ -236,14 +260,14 @@ public:
 
     if (__state.__errors_.__index() != __npos)
     {
-      __errors_t::__visit(__throw_error_fn{}, static_cast<__errors_t&&>(__state.__errors_));
+      __visit(__throw_error_fn{}, static_cast<__errors_t&&>(__state.__errors_));
     }
 
     return __result; // uses NRVO to return the result
   }
 
   template <class _Sndr>
-  _CCCL_API static auto apply_sender(_Sndr&& __sndr)
+  _CCCL_HOST_DEVICE_API static auto apply_sender(_Sndr&& __sndr)
   {
     return apply_sender(static_cast<_Sndr&&>(__sndr), env{});
   }
@@ -268,17 +292,17 @@ public:
   /// @retval error Throws the error.
   ///
   /// @throws ::std::rethrow_exception(error) if the error has type
-  ///         `::std::exception_ptr`.
+  ///         `exception_ptr`.
   /// @throws ::std::system_error(error) if the error has type
   ///         `::std::error_code`.
   /// @throws ::cuda::cuda_error(error, "...") if the error has type
   ///         `cudaError_t`.
   /// @throws error otherwise
   // clang-format on
-  template <class _Sndr, class... _Env>
-  _CCCL_API auto operator()(_Sndr&& __sndr, _Env&&... __env) const
+  template <class _Sndr, class _Env = env<>>
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr&& __sndr, _Env&& __env = {}) const
   {
-    using __env_t                = sync_wait_t::__env_t<::cuda::std::__type_index_c<0, _Env..., env<>>>;
+    using __env_t                = sync_wait_t::__env_t<_Env>;
     constexpr auto __completions = get_completion_signatures<_Sndr, __env_t>();
     using __completions_t        = decltype(__completions);
 
@@ -293,8 +317,8 @@ public:
     }
     else
     {
-      using __dom_t _CCCL_NODEBUG_ALIAS = __late_domain_of_t<_Sndr, __env_t, __early_domain_of_t<_Sndr>>;
-      return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)...);
+      constexpr auto __domain = __completion_domain_of_t<set_value_t, _Sndr, __env_t>();
+      return execution::apply_sender(__domain, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));
     }
   }
 };

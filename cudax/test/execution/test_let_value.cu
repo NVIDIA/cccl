@@ -26,9 +26,9 @@ namespace
 // Return a different sender when we invoke this custom defined let_value implementation
 struct let_value_test_domain
 {
-  _CCCL_TEMPLATE(class Sender)
-  _CCCL_REQUIRES(::cuda::std::same_as<ex::tag_of_t<Sender>, ex::let_value_t>)
-  static auto transform_sender(Sender&&)
+  _CCCL_TEMPLATE(class Sender, class Env)
+  _CCCL_REQUIRES(ex::sender_for<Sender, ex::let_value_t>)
+  static auto transform_sender(ex::set_value_t, Sender&&, const Env&)
   {
     return ex::just(std::string{"hallo"});
   }
@@ -344,18 +344,18 @@ C2H_TEST("let_value has the values_type corresponding to the given values", "[ad
 C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]")
 {
   dummy_scheduler sched1{};
-  error_scheduler sched2{::std::exception_ptr{}};
+  error_scheduler sched2{ex::exception_ptr{}};
   error_scheduler<int> sched3{43};
 
-  check_error_types<std::exception_ptr>( //
+  check_error_types<ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched1) | ex::let_value([] {
       return ex::just();
     }));
-  check_error_types<std::exception_ptr>( //
+  check_error_types<ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched2) | ex::let_value([] {
       return ex::just();
     }));
-  check_error_types<int, std::exception_ptr>( //
+  check_error_types<int, ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched3) | ex::let_value([] {
       return ex::just();
     }));
@@ -365,7 +365,7 @@ C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]
   //   ex::just() | ex::continues_on(sched1) | ex::let_value([]_CCCL_HOST_DEVICE() noexcept {
   //     return ex::just();
   //   }));
-  // check_error_types<std::exception_ptr>( //
+  // check_error_types<ex::exception_ptr>( //
   //   ex::just() | ex::continues_on(sched2) | ex::let_value([]_CCCL_HOST_DEVICE() noexcept {
   //     return ex::just();
   //   }));
@@ -392,15 +392,13 @@ C2H_TEST("let_value keeps sends_stopped from input sender", "[adaptors][let_valu
 
 C2H_TEST("let_value can be customized", "[adaptors][let_value]")
 {
-  auto attrs = ex::prop{ex::get_completion_domain<ex::set_value_t>, let_value_test_domain{}};
-
+  auto env = ex::prop{ex::get_domain, let_value_test_domain{}};
   // The customization will return a different value
   auto sndr = ex::just(std::string{"hello"}) //
-            | ex::write_attrs(attrs) //
             | ex::let_value([](std::string& x) {
                 return ex::just(x + ", world");
               });
-  wait_for_value(std::move(sndr), std::string{"hallo"});
+  wait_for_value_with_env(std::move(sndr), env, std::string{"hallo"});
 }
 
 C2H_TEST("let_value can nest", "[adaptors][let_value]")
@@ -418,7 +416,7 @@ C2H_TEST("let_value can nest", "[adaptors][let_value]")
 constexpr struct test_query_t : ex::forwarding_query_t
 {
   template <class Env>
-  _CCCL_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
   {
     return env.query(*this);
   }
@@ -431,7 +429,7 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
                             }),
                             ex::prop{test_query, 42});
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 // NOT YET SUPPORTED
@@ -455,7 +453,7 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 //   bool& completed_;
 // };
 
-// C2H_TEST("let_value does not add std::exception_ptr even if the receiver is bad", "[adaptors][let_value]")
+// C2H_TEST("let_value does not add ex::exception_ptr even if the receiver is bad", "[adaptors][let_value]")
 // {
 //   auto sndr = ex::let_value(ex::just(), []_CCCL_HOST_DEVICE() noexcept {
 //     return ex::just();
@@ -469,8 +467,16 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 
 #endif // _CCCL_HOST_COMPILATION()
 
-#if !_CCCL_CUDA_COMPILER(NVCC)
-// This example causes nvcc to segfault
+#if !_CCCL_CUDA_COMPILER(NVCC) && !defined(_CCCL_CLANG_TIDY_INVOKED)
+// This example causes nvcc to segfault, and clang-tidy to error out with
+//
+// cudax/test/execution/test_let_value.cu:487:17: error: static assertion failed due to requirement
+// '::cuda::std::is_same_v<cuda::experimental::execution::default_domain, (anonymous
+// namespace)::let_value_test_domain2>' [clang-diagnostic-error]
+//
+// 487 |   static_assert(::cuda::std::is_same_v<decltype(result), let_value_test_domain2>);
+//     |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 struct let_value_test_domain2
 {};
 
@@ -500,5 +506,4 @@ C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
   auto dom   = ex::get_completion_domain<ex::set_value_t>(ex::get_env(sndr));
   static_assert(::cuda::std::is_same_v<decltype(dom), let_value_test_domain>);
 }
-
 } // namespace

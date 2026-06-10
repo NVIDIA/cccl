@@ -10,7 +10,7 @@
 
 // greater
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -21,10 +21,10 @@
 #  include "pointer_comparison_test_helper.hpp"
 #endif // !TEST_COMPILER(NVRTC)
 
-// ensure that we allow `__device__` functions too
+// ensure that we allow `TEST_DEVICE_FUNC` functions too
 struct with_device_op
 {
-  __device__ friend constexpr bool operator>(const with_device_op&, const with_device_op&)
+  TEST_DEVICE_FUNC friend constexpr bool operator>(const with_device_op&, const with_device_op&)
   {
     return true;
   }
@@ -38,12 +38,12 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::greater<int> F;
+  using F   = cuda::std::greater<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
-  static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
-  static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
-  static_assert((cuda::std::is_same<bool, F::result_type>::value), "");
+  static_assert((cuda::std::is_same<int, F::first_argument_type>::value));
+  static_assert((cuda::std::is_same<int, F::second_argument_type>::value));
+  static_assert((cuda::std::is_same<bool, F::result_type>::value));
 #endif // TEST_STD_VER <= 2017
   assert(!f(36, 36));
   assert(f(36, 6));
@@ -54,7 +54,7 @@ int main(int, char**)
                  // greater<void>.
                  do_pointer_comparison_test<int, cuda::std::greater>();))
 
-  typedef cuda::std::greater<> F2;
+  using F2    = cuda::std::greater<>;
   const F2 f2 = F2();
   assert(!f2(36, 36));
   assert(f2(36, 6));
@@ -64,10 +64,10 @@ int main(int, char**)
   assert(!f2(6, 36.0));
   assert(!f2(6.0, 36));
   constexpr bool foo = cuda::std::greater<int>()(36, 36);
-  static_assert(!foo, "");
+  static_assert(!foo);
 
   constexpr bool bar = cuda::std::greater<>()(36.0, 36);
-  static_assert(!bar, "");
+  static_assert(!bar);
 
   return 0;
 }

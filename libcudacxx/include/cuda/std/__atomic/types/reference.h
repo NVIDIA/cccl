@@ -38,28 +38,29 @@ struct __atomic_ref_storage
 #if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
   static_assert(is_trivially_copyable_v<_Tp>, "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
+  static_assert(sizeof(__underlying_t) <= 16, "cuda::std::atomic_ref<Tp> only supports sizeof(Tp) <= 16");
 
   _Tp* __a_value;
 
   __atomic_ref_storage() = delete;
 
-  _CCCL_HOST_DEVICE constexpr explicit inline __atomic_ref_storage(_Tp* value) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit __atomic_ref_storage(_Tp* value) noexcept
       : __a_value(value)
   {}
 
-  _CCCL_HOST_DEVICE inline auto get() noexcept -> __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() noexcept -> __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() const noexcept -> __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() const noexcept -> __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() volatile noexcept -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() volatile noexcept -> volatile __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() const volatile noexcept -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() const volatile noexcept -> volatile __underlying_t*
   {
     return __a_value;
   }

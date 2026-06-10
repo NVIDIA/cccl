@@ -23,7 +23,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/format_error.h>
 #include <cuda/std/__fwd/format.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -38,7 +38,7 @@ public:
   using const_iterator = typename basic_string_view<_CharT>::const_iterator;
   using iterator       = const_iterator;
 
-  _CCCL_API constexpr explicit basic_format_parse_context(
+  _CCCL_HOST_DEVICE_API constexpr explicit basic_format_parse_context(
     basic_string_view<_CharT> __fmt, size_t __num_args = 0) noexcept
       : __begin_(__fmt.begin())
       , __end_(__fmt.end())
@@ -52,22 +52,22 @@ public:
   basic_format_parse_context& operator=(const basic_format_parse_context&) = delete;
   basic_format_parse_context& operator=(basic_format_parse_context&&)      = delete;
 
-  [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator begin() const noexcept
   {
     return __begin_;
   }
 
-  [[nodiscard]] _CCCL_API constexpr const_iterator end() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator end() const noexcept
   {
     return __end_;
   }
 
-  _CCCL_API constexpr void advance_to(const_iterator __it)
+  _CCCL_HOST_DEVICE_API constexpr void advance_to(const_iterator __it)
   {
     __begin_ = __it;
   }
 
-  [[nodiscard]] _CCCL_API constexpr size_t next_arg_id()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_t next_arg_id()
   {
     if (__indexing_ == _Indexing::__manual)
     {
@@ -77,14 +77,14 @@ public:
     {
       __indexing_ = _Indexing::__automatic;
     }
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       _CCCL_VERIFY(__next_arg_id_ < __num_args_, "argument index outside the valid range");
     }
     return __next_arg_id_++;
   }
 
-  _CCCL_API constexpr void check_arg_id(size_t __id)
+  _CCCL_HOST_DEVICE_API constexpr void check_arg_id(size_t __id)
   {
     if (__indexing_ == _Indexing::__automatic)
     {
@@ -94,7 +94,7 @@ public:
     {
       __indexing_ = _Indexing::__manual;
     }
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       _CCCL_VERIFY(__id < __num_args_, "argument index outside the valid range");
     }
@@ -115,7 +115,7 @@ private:
   size_t __num_args_;
 };
 
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(basic_format_parse_context);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(basic_format_parse_context);
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

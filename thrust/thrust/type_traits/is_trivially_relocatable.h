@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief <a href="https://wg21.link/P1144">P1144</a>'s proposed
@@ -37,10 +24,11 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -57,10 +45,8 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T>
 struct is_trivially_relocatable_impl;
-
 } // namespace detail
 
 /*! \endcond
@@ -112,7 +98,7 @@ constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
  */
 template <typename From, typename To>
 using is_trivially_relocatable_to =
-  integral_constant<bool, ::cuda::std::is_same<From, To>::value && is_trivially_relocatable<To>::value>;
+  integral_constant<bool, ::cuda::std::is_same_v<From, To> && is_trivially_relocatable<To>::value>;
 
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
@@ -208,17 +194,15 @@ struct proclaim_trivially_relocatable : false_type
 
 namespace detail
 {
-
 // https://wg21.link/P1144R0#wording-inheritance
 template <typename T>
 struct is_trivially_relocatable_impl
-    : integral_constant<bool, ::cuda::std::is_trivially_copyable<T>::value || proclaim_trivially_relocatable<T>::value>
+    : integral_constant<bool, ::cuda::is_trivially_copyable_v<T> || proclaim_trivially_relocatable<T>::value>
 {};
 
 template <typename T, ::cuda::std::size_t N>
 struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T>
 {};
-
 } // namespace detail
 
 THRUST_NAMESPACE_END
@@ -253,6 +237,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long3)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(long4)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -263,6 +248,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong3)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulong4)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -273,6 +259,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong3)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(longlong4)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -283,6 +270,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong3)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(ulonglong4)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -304,6 +292,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double3)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double4)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)

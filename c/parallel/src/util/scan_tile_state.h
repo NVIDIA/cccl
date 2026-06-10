@@ -56,9 +56,8 @@ struct scan_tile_state
 
   cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes) const
   {
-    temp_storage_bytes =
-      cub::detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
-    return cudaSuccess;
+    return cub::detail::tile_state_allocation_size(
+      temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
 };
 

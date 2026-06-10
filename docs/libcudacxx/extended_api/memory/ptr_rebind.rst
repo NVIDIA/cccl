@@ -3,23 +3,29 @@
 ``cuda::ptr_rebind``
 ====================
 
+Defined in the header ``<cuda/memory>``.
+
 .. code:: cuda
 
-    template <typename U, typename T>
-    [[nodiscard]] __host__ __device__ inline
-    U* ptr_rebind(T* ptr) noexcept
+    namespace cuda {
 
     template <typename U, typename T>
-    [[nodiscard]] __host__ __device__ inline
-    const U* ptr_rebind(const T* ptr) noexcept
+    [[nodiscard]] __host__ __device__
+    U* ptr_rebind(T* ptr) noexcept;
 
     template <typename U, typename T>
-    [[nodiscard]] __host__ __device__ inline
-    volatile U* ptr_rebind(volatile T* ptr) noexcept
+    [[nodiscard]] __host__ __device__
+    const U* ptr_rebind(const T* ptr) noexcept;
 
     template <typename U, typename T>
-    [[nodiscard]] __host__ __device__ inline
-    const volatile U* ptr_rebind(const volatile T* ptr) noexcept
+    [[nodiscard]] __host__ __device__
+    volatile U* ptr_rebind(volatile T* ptr) noexcept;
+
+    template <typename U, typename T>
+    [[nodiscard]] __host__ __device__
+    const volatile U* ptr_rebind(const volatile T* ptr) noexcept;
+
+    } // namespace cuda
 
 The functions return the pointer ``ptr`` cast to type ``U*`` or ``const U*``. They are shorter and safer alternative to ``reinterpret_cast``.
 
@@ -61,4 +67,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/oY7vTnWe4>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/bavzabce9>`__

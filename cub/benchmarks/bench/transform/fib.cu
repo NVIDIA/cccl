@@ -1,11 +1,26 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Because CUB cannot inspect the transformation function, we cannot add any tunings based on the results of this
-// benchmark. Its main use is to detect regressions.
-
+// %RANGE% TUNE_BIF_BIAS bif -16:16:4
+// %RANGE% TUNE_ALGORITHM alg 0:4:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
-// %RANGE% TUNE_ALGORITHM alg 0:1:1
+
+// for TUNE_ALGORITHM == 1 (vectorized), this is the number of vectors per thread, which is similar in spirit
+// %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
+
+// those parameters only apply if TUNE_ALGORITHM == 0 (prefetch)
+// %RANGE% TUNE_PREFETCH_MULT pref 1:3:1
+
+// those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
+// %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
+
+#if !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_PREFETCH_MULT != 1)
+#  error "Non-prefetch algorithms require prefetch multiple to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_PREFETCH_MULT != 1)
+
+#if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
+#  error "Non-vectorized algorithms require vector size to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
 
 #include "common.h"
 
@@ -40,12 +55,12 @@ struct fib_t
     return t2;
   }
 };
-template <typename OffsetT>
-static void fibonacci(nvbench::state& state, nvbench::type_list<OffsetT>)
+static void fibonacci(nvbench::state& state)
+try
 {
   using index_t                     = int64_t;
   using output_t                    = uint32_t;
-  const auto n                      = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n                      = state.get_int64("Elements{io}");
   thrust::device_vector<index_t> in = generate(n, bit_entropy::_1_000, index_t{0}, index_t{42});
   thrust::device_vector<output_t> out(n);
 
@@ -53,10 +68,11 @@ static void fibonacci(nvbench::state& state, nvbench::type_list<OffsetT>)
   state.add_global_memory_reads<index_t>(n);
   state.add_global_memory_writes<output_t>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, fib_t<index_t, output_t>{});
+  bench_transform(state, cuda::std::tuple{in.begin()}, out.begin(), n, fib_t<index_t, output_t>{});
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
-NVBENCH_BENCH_TYPES(fibonacci, NVBENCH_TYPE_AXES(offset_types))
-  .set_name("fibonacci")
-  .set_type_axes_names({"OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+NVBENCH_BENCH(fibonacci).set_name("fibonacci").add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

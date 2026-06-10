@@ -3,11 +3,17 @@
 ``cuda::uabs``
 ====================================
 
-.. code:: cpp
+Defined in the ``<cuda/cmath>`` header.
+
+.. code:: cuda
+
+   namespace cuda {
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    cuda::std::make_unsigned_t<T> uabs(T value) noexcept;
+
+   } // namespace cuda
 
 The function computes the absolute value of the input value. The result is returned as an unsigned integer type of the same size as the input value. In comparison to the standard ``abs`` function, the ``uabs`` eliminates the undefined behaviour when a signed ``T_MIN`` is passed as an input.
 
@@ -26,7 +32,7 @@ The function computes the absolute value of the input value. The result is retur
 Example
 -------
 
-.. code:: cpp
+.. code:: cuda
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>
@@ -47,4 +53,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/vPbrKKqMd>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/KEoYfq53G>`__

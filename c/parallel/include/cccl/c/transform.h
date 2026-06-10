@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -30,6 +31,7 @@ typedef struct cccl_device_transform_build_result_t
   CUkernel transform_kernel;
   int loaded_bytes_per_iteration;
   void* runtime_policy;
+  void* cache;
 } cccl_device_transform_build_result_t;
 
 CCCL_C_API CUresult cccl_device_unary_transform_build(
@@ -106,3 +108,4 @@ CCCL_C_API CUresult cccl_device_binary_transform(
 CCCL_C_API CUresult cccl_device_transform_cleanup(cccl_device_transform_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

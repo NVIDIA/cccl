@@ -1,29 +1,8 @@
-/******************************************************************************
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
+
+#include <cuda/iterator>
+
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include <c2h/catch2_test_helper.h>
@@ -31,22 +10,28 @@
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
 // %PARAM% TEST_LAUNCH lid 0:1
+// %PARAM% TEST_TYPES types 0:1
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 
+#if TEST_TYPES == 0
+using pair_types = c2h::type_list<c2h::type_list<bool, std::uint8_t>, //
+                                  c2h::type_list<std::int8_t, std::uint64_t>>;
+#elif TEST_TYPES == 1
 using pair_types =
-  c2h::type_list<c2h::type_list<bool, std::uint8_t>,
-                 c2h::type_list<std::int8_t, std::uint64_t>,
-                 c2h::type_list<double, float>
-#if TEST_HALF_T()
+  c2h::type_list<c2h::type_list<double, float>
+#  if TEST_HALF_T()
                  ,
                  c2h::type_list<half_t, std::int8_t>
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
                  ,
                  c2h::type_list<bfloat16_t, float>
-#endif // TEST_BF_T()
+#  endif // TEST_BF_T()
                  >;
+#endif // TEST_TYPES
+
+#if TEST_TYPES == 0
 
 C2H_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][device]")
 {
@@ -119,6 +104,8 @@ C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
   REQUIRE(keys_buffer.selector == 0);
   REQUIRE(values_buffer.selector == 1);
 }
+
+#endif // TEST_TYPES == 0
 
 C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
          "[pairs][segmented][sort][device][skip-cs-racecheck]",
@@ -201,6 +188,8 @@ C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
   test_unspecified_segments_random<KeyT, ValueT>(C2H_SEED(4));
 }
 
+#if TEST_TYPES == 0
+
 C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
          "[pairs][segmented][sort][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          all_offset_types)
@@ -231,8 +220,8 @@ try
   c2h::device_vector<key_t> out_keys(num_items);
   c2h::device_vector<value_t> out_values(num_items);
 
-  auto offsets = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(std::size_t{0}),
+  auto offsets = cuda::transform_iterator(
+    cuda::counting_iterator(std::size_t{0}),
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
   auto offsets_plus_1 = offsets + 1;
 
@@ -308,3 +297,5 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
+
+#endif // TEST_TYPES == 0

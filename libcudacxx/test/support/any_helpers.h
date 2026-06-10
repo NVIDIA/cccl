@@ -13,12 +13,9 @@
 #include <type_traits>
 #include <typeinfo>
 
-namespace std
+namespace std::experimental
 {
-namespace experimental
-{
-}
-} // namespace std
+} // namespace std::experimental
 
 #include "test_macros.h"
 #include "type_id.h"
@@ -191,9 +188,9 @@ int small_type<Dummy>::const_copied = 0;
 template <int Dummy>
 int small_type<Dummy>::non_const_copied = 0;
 
-typedef small_type<> small;
-typedef small_type<1> small1;
-typedef small_type<2> small2;
+using small  = small_type<>;
+using small1 = small_type<1>;
+using small2 = small_type<2>;
 
 // A test type that will NOT trigger the small object optimization in any.
 template <int Dummy = 0>
@@ -283,9 +280,9 @@ int large_type<Dummy>::const_copied = 0;
 template <int Dummy>
 int large_type<Dummy>::non_const_copied = 0;
 
-typedef large_type<> large;
-typedef large_type<1> large1;
-typedef large_type<2> large2;
+using large  = large_type<>;
+using large1 = large_type<1>;
+using large2 = large_type<2>;
 
 // The exception type thrown by 'small_throws_on_copy', 'large_throws_on_copy'
 // and 'throws_on_move'.

@@ -32,11 +32,11 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _InputIter)
-_CCCL_REQUIRES(__is_cpp17_input_iterator<_InputIter>::value)
+_CCCL_REQUIRES(__has_input_traversal<_InputIter>)
 [[nodiscard]] _CCCL_API constexpr _InputIter
 next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
-  _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
+  _CCCL_ASSERT(__n >= 0 || __has_bidirectional_traversal<_InputIter>,
                "Attempt to next(it, n) with negative n on a non-bidirectional iterator");
 
   ::cuda::std::advance(__x, __n);
@@ -47,7 +47,7 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.next]
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__next)
 struct __fn
 {
@@ -65,7 +65,7 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
-    ::cuda::std::ranges::advance(__x, __n);
+    ::cuda::std::ranges::__advance_cpo{}(__x, __n);
     return __x;
   }
 
@@ -74,7 +74,7 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
   {
-    ::cuda::std::ranges::advance(__x, __bound_sentinel);
+    ::cuda::std::ranges::__advance_cpo{}(__x, __bound_sentinel);
     return __x;
   }
 
@@ -83,7 +83,7 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
-    ::cuda::std::ranges::advance(__x, __n, __bound_sentinel);
+    ::cuda::std::ranges::__advance_cpo{}(__x, __n, __bound_sentinel);
     return __x;
   }
 };
@@ -92,9 +92,12 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto next = __next::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __next_cpo = __next::__fn;
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

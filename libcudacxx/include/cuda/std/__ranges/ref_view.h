@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Range>
 struct __conversion_tester
@@ -79,42 +79,42 @@ public:
 
   _CCCL_API constexpr iterator_t<_Range> begin() const
   {
-    return ::cuda::std::ranges::begin(*__range_);
+    return ::cuda::std::ranges::__begin_cpo{}(*__range_);
   }
   _CCCL_API constexpr sentinel_t<_Range> end() const
   {
-    return ::cuda::std::ranges::end(*__range_);
+    return ::cuda::std::ranges::__end_cpo{}(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
   _CCCL_REQUIRES(invocable<::cuda::std::ranges::__empty::__fn, const _Range2&>)
   _CCCL_API constexpr bool empty() const
   {
-    return ::cuda::std::ranges::empty(*__range_);
+    return ::cuda::std::ranges::__empty_cpo{}(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
   _CCCL_REQUIRES(sized_range<_Range2>)
   _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::size(*__range_);
+    return ::cuda::std::ranges::__size_cpo{}(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
   _CCCL_REQUIRES(contiguous_range<_Range2>)
   _CCCL_API constexpr auto data() const
   {
-    return ::cuda::std::ranges::data(*__range_);
+    return ::cuda::std::ranges::__data_cpo{}(*__range_);
   }
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE ref_view(_Range&) -> ref_view<_Range>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES ref_view(_Range&) -> ref_view<_Range>;
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -45,7 +45,6 @@
 
 namespace mersenne
 {
-
 /* Period parameters */
 constexpr unsigned int N          = 624;
 constexpr unsigned int M          = 397;
@@ -159,5 +158,4 @@ inline unsigned int genrand_int32()
 
   return y;
 }
-
 } // namespace mersenne

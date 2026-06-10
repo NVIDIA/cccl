@@ -24,7 +24,6 @@
 #include <cuda/__bit/bitmask.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -33,50 +32,53 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-#if __cccl_ptx_isa >= 200
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
+#  if __cccl_ptx_isa >= 200
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t
-__bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
+[[nodiscard]]
+_CCCL_DEVICE_API inline uint32_t __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__dest) : "r"(__source), "r"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t
+[[nodiscard]] _CCCL_DEVICE_API inline uint64_t
 __bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b64 %0, %1, %2, %3, %4;" : "=l"(__dest) : "l"(__source), "l"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
 {
   uint32_t __ret;
   asm("bfe.u32 %0, %1, %2, %3;" : "=r"(__ret) : "r"(__value), "r"(__start), "r"(__width));
   return __ret;
 }
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __bfe(uint64_t __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline uint64_t __bfe(uint64_t __value, int __start, int __width) noexcept
 {
   uint64_t __ret;
   asm("bfe.u64 %0, %1, %2, %3;" : "=l"(__ret) : "l"(__value), "r"(__start), "r"(__width));
   return __ret;
 }
 
-#endif // __cccl_ptx_isa >= 200
+#  endif // __cccl_ptx_isa >= 200
+#endif // !_CCCL_TILE_COMPILATION()
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp
-bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
+[[nodiscard]]
+_CCCL_API constexpr _Tp bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
 {
   static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, "bitfield_insert() requires unsigned integer types");
   [[maybe_unused]] constexpr auto __digits = ::cuda::std::numeric_limits<_Tp>::digits;
   _CCCL_ASSERT(__width >= 0 && __width <= __digits, "width out of range");
   _CCCL_ASSERT(__start >= 0 && __start <= __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
-  if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
       // clang-format off
       NV_DISPATCH_TARGET( // all SM < 70
@@ -87,6 +89,7 @@ bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) 
       // clang-format on
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
   auto __mask = ::cuda::bitmask<_Tp>(__start, __width);
   return (::cuda::__shl(__source, __start) & __mask) | (__dest & ~__mask);
 }
@@ -100,9 +103,10 @@ template <typename _Tp>
   _CCCL_ASSERT(__width >= 0 && __width <= __digits, "width out of range");
   _CCCL_ASSERT(__start >= 0 && __start <= __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
-  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
       // clang-format off
       NV_DISPATCH_TARGET( // all SM < 70
@@ -112,6 +116,7 @@ template <typename _Tp>
       // clang-format on
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::__shr(__value, __start) & ::cuda::bitmask<_Tp>(0, __width);
 }
 

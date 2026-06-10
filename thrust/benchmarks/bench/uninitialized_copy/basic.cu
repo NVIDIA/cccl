@@ -37,6 +37,7 @@ struct no_copy
   {}
 
   // the user-defined copy constructor prevents the type from being trivially copyable
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE no_copy(const no_copy& nt)
       : a(nt.a)
   {}

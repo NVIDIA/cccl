@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -70,9 +70,6 @@ namespace cuda::experimental
 //! \var graph_node_type::free
 //! Represents a node that performs memory deallocation.
 //!
-//! \var graph_node_type::batch_memop
-//! Represents a node that performs a batch memory operation.
-//!
 //! \var graph_node_type::conditional
 //! Represents a conditional execution node.
 enum class graph_node_type : int
@@ -91,11 +88,10 @@ enum class graph_node_type : int
   free             = cudaGraphNodeTypeMemFree,
 // batch_memop      = CU_GRAPH_NODE_TYPE_BATCH_MEM_OP, // not exposed by the CUDA runtime
 
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
+#if _CCCL_CTK_AT_LEAST(12, 8)
   conditional = cudaGraphNodeTypeConditional
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 8)
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

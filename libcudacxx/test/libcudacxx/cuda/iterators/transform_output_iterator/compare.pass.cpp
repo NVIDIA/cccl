@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 
@@ -46,7 +46,7 @@ __host__ __device__ constexpr bool test()
   assert(!(iter2 != iter2));
 
 #if TEST_HAS_SPACESHIP()
-  static_assert(cuda::std::three_way_comparable<cuda::transform_output_iterator<int>>);
+  static_assert(cuda::std::three_way_comparable<cuda::transform_output_iterator<PlusOne, int*>>);
   assert((iter1 <=> iter2) == cuda::std::strong_ordering::less);
   assert((iter1 <=> iter1) == cuda::std::strong_ordering::equal);
   assert((iter2 <=> iter1) == cuda::std::strong_ordering::greater);
@@ -58,7 +58,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

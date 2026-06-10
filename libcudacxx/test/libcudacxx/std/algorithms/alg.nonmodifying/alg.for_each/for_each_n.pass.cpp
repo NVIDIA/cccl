@@ -13,7 +13,7 @@
 //    constexpr InputIterator      // constexpr after C++17
 //    for_each_n(InputIterator first, Size n, Function f);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
@@ -21,13 +21,13 @@
 
 struct add_two
 {
-  __host__ __device__ constexpr void operator()(int& a) const noexcept
+  TEST_FUNC constexpr void operator()(int& a) const noexcept
   {
     a += 2;
   }
 };
 
-__host__ __device__ constexpr bool test_constexpr()
+TEST_FUNC constexpr bool test_constexpr()
 {
   int ia[]                  = {1, 3, 6, 7};
   int expected[]            = {3, 5, 8, 9};
@@ -45,10 +45,10 @@ struct for_each_test
 {
   int count;
 
-  __host__ __device__ constexpr for_each_test(int c)
+  TEST_FUNC constexpr for_each_test(int c)
       : count(c)
   {}
-  __host__ __device__ constexpr void operator()(int& i)
+  TEST_FUNC constexpr void operator()(int& i)
   {
     ++i;
     ++count;
@@ -57,7 +57,7 @@ struct for_each_test
 
 int main(int, char**)
 {
-  typedef cpp17_input_iterator<int*> Iter;
+  using Iter       = cpp17_input_iterator<int*>;
   int ia[]         = {0, 1, 2, 3, 4, 5};
   const unsigned s = sizeof(ia) / sizeof(ia[0]);
 
@@ -92,7 +92,7 @@ int main(int, char**)
     }
   }
 
-  static_assert(test_constexpr(), "");
+  static_assert(test_constexpr());
 
   return 0;
 }

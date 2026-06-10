@@ -14,14 +14,14 @@
 //   T
 //   max(initializer_list<T> t, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/initializer_list>
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int i = cuda::std::max({2, 3, 1}, cuda::std::greater<int>());
   assert(i == 1);
@@ -42,7 +42,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

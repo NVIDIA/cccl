@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__host_stdlib/new>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -43,8 +43,6 @@
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
@@ -54,13 +52,14 @@ _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 struct __empty
 {};
 
+template <class...>
 struct [[deprecated]] __deprecated
 {};
 
 struct __nil
 {};
 
-_CCCL_API constexpr auto __maximum(::cuda::std::initializer_list<size_t> __il) noexcept -> size_t
+_CCCL_HOST_DEVICE_API constexpr auto __maximum(::cuda::std::initializer_list<size_t> __il) noexcept -> size_t
 {
   size_t __max = 0;
   for (auto i : __il)
@@ -73,7 +72,7 @@ _CCCL_API constexpr auto __maximum(::cuda::std::initializer_list<size_t> __il) n
   return __max;
 }
 
-_CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
+_CCCL_HOST_DEVICE_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
 {
   for (bool const* __where = __begin; __where != __end; ++__where)
   {
@@ -86,7 +85,7 @@ _CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const
 }
 
 template <class _Ty, class... _Ts>
-_CCCL_API constexpr auto __index_of() noexcept -> size_t
+_CCCL_HOST_DEVICE_API constexpr auto __index_of() noexcept -> size_t
 {
   constexpr bool __map[] = {__same_as<_Ty, _Ts>...};
   return execution::__find_pos(__map, __map + sizeof...(_Ts));
@@ -94,7 +93,7 @@ _CCCL_API constexpr auto __index_of() noexcept -> size_t
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty, class _Uy = _Ty>
-_CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
+_CCCL_HOST_DEVICE_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
 {
   constexpr bool __is_nothrow = //
     noexcept(_Ty(static_cast<_Ty&&>(__obj))) && //
@@ -108,7 +107,7 @@ _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
-_CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
+_CCCL_HOST_DEVICE_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
   constexpr bool __is_nothrow = //
     noexcept(_Ty(static_cast<_Ty&&>(__left))) && //
@@ -122,7 +121,8 @@ _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
-[[nodiscard]] _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> decay_t<_Ty>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
+  -> decay_t<_Ty>
 {
   return static_cast<_Ty&&>(__ty);
 }
@@ -133,6 +133,8 @@ template <class _Ty>
   _CCCL_TRY_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrs, __pv);
   return __attrs;
 }
+
+#define __debug_printf(...) (printf(__VA_ARGS__), [] NV_IF_ELSE_TARGET(NV_IS_HOST, (fflush(stdout);), (void(0);))())
 
 // This function can only be called from a catch handler.
 [[nodiscard]] _CCCL_HOST_API inline auto __get_cuda_error_from_active_exception() -> ::cudaError_t
@@ -208,7 +210,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __first_callable
 private:
   //! @brief Returns the first function that is callable with a given set of arguments.
   template <class... _Args, class _Self>
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {__callable<::cuda::std::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
@@ -227,7 +229,7 @@ public:
   //! @brief Calls the first function that is callable with a given set of arguments.
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_NODEBUG_API constexpr auto
+  _CCCL_HOST_DEVICE_API constexpr auto
   operator()(_Args&&... __args) && noexcept(__nothrow_callable<__1st_fn_t<__first_callable, _Args...>, _Args...>)
     -> __call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
   {
@@ -238,7 +240,7 @@ public:
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Args&&... __args) const& noexcept(
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Args&&... __args) const& noexcept(
     __nothrow_callable<__1st_fn_t<__first_callable const&, _Args...>, _Args...>)
     -> __call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
   {
@@ -249,31 +251,49 @@ public:
 };
 
 template <class... _Fns>
-_CCCL_HOST_DEVICE __first_callable(_Fns...) -> __first_callable<_Fns...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __first_callable(_Fns...) -> __first_callable<_Fns...>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // __call_or
 namespace __detail
 {
-// query an environment, or return a default value if the query is not supported
+// call a function with a set of arguments or return a default value if the function is
+// not callable.
 struct __call_or_t
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Fn, class _Default, class... _Args)
+  _CCCL_TEMPLATE(class _Fn, class _Default = __nil, class... _Args)
   _CCCL_REQUIRES(__callable<_Fn, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn&& __fn, _Default&&, _Args&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Fn&& __fn, _Default&&, _Args&&... __args) const
     noexcept(__nothrow_callable<_Fn, _Args...>) -> __call_result_t<_Fn, _Args...>
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Default, class... _Args>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const
-    noexcept(__nothrow_movable<_Default>) -> _Default
+  template <class _Default = __nil,
+            class _Result  = ::cuda::std::_If<__same_as<_Default, __nil>, void, _Default>,
+            class... _Args>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const noexcept(__nothrow_movable<_Default>)
+    -> _Result
   {
-    return static_cast<_Default&&>(__default);
+    return static_cast<_Result>(static_cast<_Default&&>(__default));
   }
+};
+
+template <bool>
+struct __call_result_or
+{
+  template <class _Fn, class _Default, class... _Args>
+  using __call _CCCL_NODEBUG_ALIAS = __call_result_t<__call_or_t, _Fn, _Default, _Args...>;
+};
+
+template <>
+struct __call_result_or<true>
+{
+  template <class _Fn, class _Default, class... _Args>
+  using __call _CCCL_NODEBUG_ALIAS = decltype(__call_or_t()(declval<_Fn>(), {}, declval<_Args>()...));
 };
 } // namespace __detail
 
@@ -281,7 +301,7 @@ _CCCL_GLOBAL_CONSTANT __detail::__call_or_t __call_or{};
 
 template <class _Fn, class _Default, class... _Args>
 using __call_result_or_t _CCCL_NODEBUG_ALIAS =
-  decltype(__call_or(::cuda::std::declval<_Fn>(), ::cuda::std::declval<_Default>(), ::cuda::std::declval<_Args>()...));
+  cuda::std::__type_call<__detail::__call_result_or<__same_as<_Default, __nil>>, _Fn, _Default, _Args...>;
 
 //! @brief A callable that always return a value of type _Ty, regardless of the arguments
 //! passed to it.
@@ -289,22 +309,41 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
 {
   template <class... _Args>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
   {
     return static_cast<_Ty&&>(__value);
   }
 
   template <class... _Args>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
   {
     return __value;
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _Ty __value{};
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Ty __value{};
 };
 
 template <class _Ty>
-_CCCL_HOST_DEVICE __always(_Ty) -> __always<_Ty>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __always(_Ty) -> __always<_Ty>;
+
+// @brief A type that turns a nullary callable into an object that is
+// implicitly convertible to the result type of the callable.
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __emplace_from
+{
+  using __result_t = __call_result_t<_Fn>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE_API constexpr operator __result_t() && noexcept(__nothrow_callable<_Fn>)
+  {
+    return static_cast<_Fn&&>(__fn_)();
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS _Fn __fn_;
+};
+
+template <class _Fn>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __emplace_from(_Fn) -> __emplace_from<_Fn>;
 
 template <class _Ty, class... _Us>
 using __unless_one_of_t = ::cuda::std::enable_if_t<__none_of<_Ty, _Us...>, _Ty>;
@@ -388,7 +427,6 @@ using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
 
 _CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

@@ -24,20 +24,20 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
-  typedef unsigned short size_type;
+  using value_type = T;
+  using size_type  = unsigned short;
 };
 
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
 struct C
 {
-  typedef T value_type;
+  using value_type = T;
   struct pointer
   {};
   struct const_pointer
@@ -48,38 +48,36 @@ struct C
   {};
 };
 
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 template <class T>
 struct D
 {
-  typedef T value_type;
-  typedef short difference_type;
+  using value_type      = T;
+  using difference_type = short;
 
 private:
-  typedef void size_type;
+  using size_type = void;
 };
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
-namespace cuda
+namespace cuda::std
 {
-namespace std
-{
-
 template <>
 struct pointer_traits<C<char>::pointer>
 {
-  typedef signed char difference_type;
+  using difference_type = signed char;
 };
-
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::size_type, unsigned short>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::size_type, unsigned short>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::size_type,
-                                    cuda::std::make_unsigned<cuda::std::ptrdiff_t>::type>::value),
-                "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::size_type, unsigned char>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char>>::size_type, unsigned short>::value), "");
+                                    cuda::std::make_unsigned<cuda::std::ptrdiff_t>::type>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::size_type, unsigned char>::value));
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char>>::size_type, unsigned short>::value));
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
   return 0;
 }

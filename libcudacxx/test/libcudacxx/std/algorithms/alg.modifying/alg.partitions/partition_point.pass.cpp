@@ -14,7 +14,7 @@
 //     constexpr ForwardIterator       // constexpr after C++17
 //     partition_point(ForwardIterator first, ForwardIterator last, Predicate pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
@@ -22,13 +22,13 @@
 
 struct is_odd
 {
-  __host__ __device__ constexpr bool operator()(const int& i) const
+  TEST_FUNC constexpr bool operator()(const int& i) const
   {
     return i & 1;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     const int ia[] = {2, 4, 6, 8, 10};
@@ -93,7 +93,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

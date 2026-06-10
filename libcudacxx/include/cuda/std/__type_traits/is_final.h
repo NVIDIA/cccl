@@ -20,34 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_FINAL(...) __is_final(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_FINAL)
-
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public bool_constant<_CCCL_BUILTIN_IS_FINAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : bool_constant<_CCCL_BUILTIN_IS_FINAL(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_final_v = _CCCL_BUILTIN_IS_FINAL(_Tp);
-
-#else // ^^^ _CCCL_BUILTIN_IS_FINAL ^^^ / vvv !_CCCL_BUILTIN_IS_FINAL vvv
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public false_type
-{
-  static_assert(__always_false_v<_Tp>, "is_final requires compiler support");
-};
-
-template <class _Tp>
-inline constexpr bool is_final_v = is_final<_Tp>::value;
-
-#endif // !_CCCL_BUILTIN_IS_FINAL
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

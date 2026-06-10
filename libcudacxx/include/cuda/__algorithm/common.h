@@ -11,7 +11,7 @@
 #ifndef __CUDA___ALGORITHM_COMMON
 #define __CUDA___ALGORITHM_COMMON
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

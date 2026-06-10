@@ -22,13 +22,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/cstddef>
 
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() && !_CCCL_COMPILER(NVRTC)
-#  include <new> // for align_val_t
+#  include <cuda/std/__host_stdlib/new> // for align_val_t
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() !_CCCL_COMPILER(NVRTC)
 
-#if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation < 201309L
+#if __cpp_sized_deallocation < 201309L
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 0
 #else
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 1

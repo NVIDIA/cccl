@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -58,14 +61,14 @@
 
 struct TriviallyCopyable
 {
-  __host__ __device__ TriviallyCopyable(int i)
+  TEST_FUNC TriviallyCopyable(int i)
       : i_(i)
   {}
   int i_;
 };
 
 template <class T>
-__host__ __device__ void test(T t)
+TEST_FUNC void test(T t)
 {
   cuda::std::atomic<T> t0(t);
   cuda::std::atomic_ref<T> t1(t);

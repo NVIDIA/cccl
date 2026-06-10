@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/iterator_adaptor.h
  *  \brief An iterator which adapts a base iterator
@@ -93,7 +80,7 @@ THRUST_NAMESPACE_BEGIN
  *      unsigned int n;
  *
  *      // used to keep track of where we began
- *      const Iterator begin;
+ *      Iterator begin;
  *
  *      // it is private because only thrust::iterator_core_access needs access to it
  *      __host__ __device__

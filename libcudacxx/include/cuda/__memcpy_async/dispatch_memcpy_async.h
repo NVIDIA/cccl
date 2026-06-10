@@ -50,26 +50,26 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  ***********************************************************************/
 
 template <::cuda::std::size_t _Align, typename _Group>
-[[nodiscard]] _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_any_to_any(
+[[nodiscard]] _CCCL_DEVICE_API __completion_mechanism __dispatch_memcpy_async_any_to_any(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
   ::cuda::std::size_t __size,
-  ::cuda::std::uint32_t __allowed_completions,
-  ::cuda::std::uint64_t* __bar_handle)
+  [[maybe_unused]] ::cuda::std::uint32_t __allowed_completions,
+  [[maybe_unused]] ::cuda::std::uint64_t* __bar_handle)
 {
   ::cuda::__cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
   return __completion_mechanism::__sync;
 }
 
 template <::cuda::std::size_t _Align, typename _Group>
-[[nodiscard]] _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_global_to_shared(
+[[nodiscard]] _CCCL_DEVICE_API __completion_mechanism __dispatch_memcpy_async_global_to_shared(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
   ::cuda::std::size_t __size,
-  ::cuda::std::uint32_t __allowed_completions,
-  ::cuda::std::uint64_t* __bar_handle)
+  [[maybe_unused]] ::cuda::std::uint32_t __allowed_completions,
+  [[maybe_unused]] ::cuda::std::uint64_t* __bar_handle)
 {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(
@@ -82,7 +82,7 @@ template <::cuda::std::size_t _Align, typename _Group>
        if (__can_use_complete_tx
            && ::cuda::device::is_address_from(__bar_handle, ::cuda::device::address_space::shared))
        {
-         ::cuda::__cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
+         ::cuda::__cp_async_bulk_shared_global_and_expect_tx(__group, __dest_char, __src_char, __size, __bar_handle);
          return __completion_mechanism::__mbarrier_complete_tx;
        }
      }
@@ -109,13 +109,13 @@ template <::cuda::std::size_t _Align, typename _Group>
 
 // __dispatch_memcpy_async is the internal entry point for dispatching to the correct memcpy_async implementation.
 template <::cuda::std::size_t _Align, typename _Group>
-[[nodiscard]] _CCCL_API inline __completion_mechanism __dispatch_memcpy_async(
+[[nodiscard]] _CCCL_HOST_DEVICE_API __completion_mechanism __dispatch_memcpy_async(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
   ::cuda::std::size_t __size,
-  ::cuda::std::uint32_t __allowed_completions,
-  ::cuda::std::uint64_t* __bar_handle)
+  [[maybe_unused]] ::cuda::std::uint32_t __allowed_completions,
+  [[maybe_unused]] ::cuda::std::uint64_t* __bar_handle)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
@@ -145,12 +145,12 @@ template <::cuda::std::size_t _Align, typename _Group>
 }
 
 template <::cuda::std::size_t _Align, typename _Group>
-[[nodiscard]] _CCCL_API inline __completion_mechanism __dispatch_memcpy_async(
+[[nodiscard]] _CCCL_HOST_DEVICE_API __completion_mechanism __dispatch_memcpy_async(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
-  ::cuda::std::size_t __size,
-  ::cuda::std::uint32_t __allowed_completions)
+  [[maybe_unused]] ::cuda::std::size_t __size,
+  [[maybe_unused]] ::cuda::std::uint32_t __allowed_completions)
 {
   _CCCL_ASSERT(!(__allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx)),
                "Cannot allow mbarrier_complete_tx completion mechanism when not passing a barrier. ");

@@ -28,18 +28,17 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#define _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)                                              \
-  _LIBCUDACXX_DIAGNOSE_WARNING(                                                                \
-    __m == memory_order_consume || __m == memory_order_acquire || __m == memory_order_acq_rel, \
-    "memory order argument to atomic operation is invalid")
+#define _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)                                                                   \
+  _CCCL_DIAGNOSE_WARNING(__m == memory_order_consume || __m == memory_order_acquire || __m == memory_order_acq_rel, \
+                         "memory order argument to atomic operation is invalid")
 
-#define _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)                                           \
-  _LIBCUDACXX_DIAGNOSE_WARNING(__m == memory_order_release || __m == memory_order_acq_rel, \
-                               "memory order argument to atomic operation is invalid")
+#define _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)                                     \
+  _CCCL_DIAGNOSE_WARNING(__m == memory_order_release || __m == memory_order_acq_rel, \
+                         "memory order argument to atomic operation is invalid")
 
-#define _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__m, __f)                                  \
-  _LIBCUDACXX_DIAGNOSE_WARNING(__f == memory_order_release || __f == memory_order_acq_rel, \
-                               "memory order argument to atomic operation is invalid")
+#define _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__m, __f)                            \
+  _CCCL_DIAGNOSE_WARNING(__f == memory_order_release || __f == memory_order_acq_rel, \
+                         "memory order argument to atomic operation is invalid")
 
 #ifndef __ATOMIC_RELAXED
 #  define __ATOMIC_RELAXED 0
@@ -97,7 +96,7 @@ using memory_order = enum memory_order {
 
 #endif // _CCCL_STD_VER >= 2020
 
-_CCCL_HOST_DEVICE inline int __stronger_order_cuda(int __a, int __b)
+_CCCL_HOST_DEVICE_API inline int __stronger_order_cuda(int __a, int __b)
 {
   int const __max = __a > __b ? __a : __b;
   if (__max != __ATOMIC_RELEASE)
@@ -108,7 +107,7 @@ _CCCL_HOST_DEVICE inline int __stronger_order_cuda(int __a, int __b)
   return __xform[__a < __b ? __a : __b];
 }
 
-_CCCL_HOST_DEVICE inline constexpr int __atomic_order_to_int(memory_order __order)
+_CCCL_HOST_DEVICE_API constexpr int __atomic_order_to_int(memory_order __order)
 {
   // Avoid switch statement to make this a constexpr.
   return __order == memory_order_relaxed
@@ -122,7 +121,7 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_order_to_int(memory_order __orde
                         : (__order == memory_order_acq_rel ? __ATOMIC_ACQ_REL : __ATOMIC_CONSUME))));
 }
 
-_CCCL_HOST_DEVICE inline constexpr int __atomic_failure_order_to_int(memory_order __order)
+_CCCL_HOST_DEVICE_API constexpr int __atomic_failure_order_to_int(memory_order __order)
 {
   // Avoid switch statement to make this a constexpr.
   return __order == memory_order_relaxed
@@ -136,7 +135,7 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_failure_order_to_int(memory_orde
                         : (__order == memory_order_acq_rel ? __ATOMIC_ACQUIRE : __ATOMIC_CONSUME))));
 }
 
-static_assert((is_same<underlying_type<memory_order>::type, __memory_order_underlying_t>::value),
+static_assert((is_same_v<underlying_type<memory_order>::type, __memory_order_underlying_t>),
               "unexpected underlying type for std::memory_order");
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -36,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp, typename _Sco>
 struct __atomic_common
 {
-  _CCCL_API constexpr __atomic_common(_Tp __v)
+  _CCCL_HOST_DEVICE_API constexpr __atomic_common(_Tp __v)
       : __a(__v)
   {}
 
@@ -44,9 +44,9 @@ struct __atomic_common
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
@@ -55,7 +55,7 @@ struct __atomic_common
 template <typename _Tp, typename _Sco>
 struct __atomic_arithmetic
 {
-  _CCCL_API constexpr __atomic_arithmetic(_Tp __v)
+  _CCCL_HOST_DEVICE_API constexpr __atomic_arithmetic(_Tp __v)
       : __a(__v)
   {}
 
@@ -63,9 +63,9 @@ struct __atomic_arithmetic
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
@@ -77,7 +77,7 @@ struct __atomic_arithmetic
 template <typename _Tp, typename _Sco>
 struct __atomic_bitwise
 {
-  _CCCL_API constexpr __atomic_bitwise(_Tp __v)
+  _CCCL_HOST_DEVICE_API constexpr __atomic_bitwise(_Tp __v)
       : __a(__v)
   {}
 
@@ -85,9 +85,9 @@ struct __atomic_bitwise
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
@@ -102,7 +102,7 @@ struct __atomic_bitwise
 template <typename _Tp, typename _Sco>
 struct __atomic_pointer
 {
-  _CCCL_API constexpr __atomic_pointer(_Tp __v)
+  _CCCL_HOST_DEVICE_API constexpr __atomic_pointer(_Tp __v)
       : __a(__v)
   {}
 
@@ -110,9 +110,9 @@ struct __atomic_pointer
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
@@ -122,14 +122,12 @@ struct __atomic_pointer
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
-using __atomic_impl =
-  _If<is_pointer<_Tp>::value,
-      __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
-      _If<is_floating_point<_Tp>::value,
-          __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
-          _If<is_integral<_Tp>::value,
-              __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>,
-              __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
+using __atomic_impl = _If<
+  is_pointer_v<_Tp>,
+  __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
+  _If<is_floating_point_v<_Tp>,
+      __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
+      _If<is_integral_v<_Tp>, __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>, __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

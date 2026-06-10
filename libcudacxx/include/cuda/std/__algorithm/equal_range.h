@@ -43,7 +43,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _Iter, class _Sent, class _Tp, class _Proj>
-_CCCL_API constexpr pair<_Iter, _Iter>
+_CCCL_HOST_DEVICE_API constexpr pair<_Iter, _Iter>
 __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp, _Proj&& __proj)
 {
   auto __len  = _IterOps<_AlgPolicy>::distance(__first, __last);
@@ -52,12 +52,12 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
   {
     auto __half_len = ::cuda::std::__half_positive(__len);
     _Iter __mid     = _IterOps<_AlgPolicy>::next(__first, __half_len);
-    if (::cuda::std::__invoke(__comp, ::cuda::std::__invoke(__proj, *__mid), __value))
+    if (::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj, *__mid), __value))
     {
       __first = ++__mid;
       __len -= __half_len + 1;
     }
-    else if (::cuda::std::__invoke(__comp, __value, ::cuda::std::__invoke(__proj, *__mid)))
+    else if (::cuda::std::invoke(__comp, __value, ::cuda::std::invoke(__proj, *__mid)))
     {
       __end = __mid;
       __len = __half_len;
@@ -74,11 +74,11 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Tp, class _Compare>
-[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
-  static_assert(is_copy_constructible<_ForwardIterator>::value, "Iterator has to be copy constructible");
+  static_assert(is_copy_constructible_v<_ForwardIterator>, "Iterator has to be copy constructible");
   return ::cuda::std::__equal_range<_ClassicAlgPolicy>(
     ::cuda::std::move(__first),
     ::cuda::std::move(__last),
@@ -88,7 +88,7 @@ equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 }
 
 template <class _ForwardIterator, class _Tp>
-[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
   return ::cuda::std::equal_range(::cuda::std::move(__first), ::cuda::std::move(__last), __value, __less{});

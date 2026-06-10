@@ -3,13 +3,16 @@
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
+#include <thrust/tabulate.h>
 
 #include <cuda/functional>
+#include <cuda/iterator>
 #include <cuda/std/array>
+
+#include <numeric>
 
 #include <unittest/unittest.h>
 
@@ -541,15 +544,23 @@ struct only_set_when_expected_it
   {
     return *this;
   }
+
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator++(int) const
+  {
+    return *this;
+  }
+
   _CCCL_HOST_DEVICE only_set_when_expected_it operator*() const
   {
     return *this;
   }
+
   template <typename Difference>
   _CCCL_HOST_DEVICE only_set_when_expected_it operator+(Difference) const
   {
     return *this;
   }
+
   template <typename Index>
   _CCCL_HOST_DEVICE only_set_when_expected_it operator[](Index) const
   {
@@ -589,8 +600,8 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
@@ -620,8 +631,8 @@ DECLARE_UNITTEST(TestInclusiveScanWithBigIndexes);
 
 void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
@@ -655,24 +666,40 @@ struct Int
   _CCCL_HOST_DEVICE explicit Int(int num)
       : i(num)
   {}
-  _CCCL_HOST_DEVICE Int()
-      : i{}
-  {}
-  _CCCL_HOST_DEVICE Int operator+(Int const& o) const
+
+  // TODO(bgruber): I think we should not need this constructors, but CUB fails to compile without it
+  Int() = default;
+
+  _CCCL_HOST_DEVICE friend Int operator+(Int const& a, Int const& b)
   {
-    return Int{this->i + o.i};
+    return Int{a.i + b.i};
+  }
+
+  _CCCL_HOST_DEVICE friend bool operator==(Int const& a, Int const& b)
+  {
+    return a.i == b.i;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, Int const& a)
+  {
+    return os << "Int{" << a.i << "}";
   }
 };
 
-void TestInclusiveScanWithUserDefinedType()
+void TestScanWithUserDefinedTypeAndInit()
 {
-  thrust::device_vector<Int> vec(5, Int{1});
-
-  thrust::inclusive_scan(thrust::device, vec.cbegin(), vec.cend(), vec.begin());
-
-  ASSERT_EQUAL(static_cast<Int>(vec.back()).i, 5);
+  {
+    thrust::device_vector<Int> vec(5, Int{1});
+    thrust::exclusive_scan(thrust::device, vec.cbegin(), vec.cend(), vec.begin(), Int{100}, ::cuda::std::plus<Int>());
+    ASSERT_EQUAL(vec, (thrust::device_vector<Int>{Int{100}, Int{101}, Int{102}, Int{103}, Int{104}}));
+  }
+  {
+    thrust::device_vector<Int> vec(5, Int{1});
+    thrust::inclusive_scan(thrust::device, vec.cbegin(), vec.cend(), vec.begin(), Int{100}, ::cuda::std::plus<Int>());
+    ASSERT_EQUAL(vec, (thrust::device_vector<Int>{Int{101}, Int{102}, Int{103}, Int{104}, Int{105}}));
+  }
 }
-DECLARE_UNITTEST(TestInclusiveScanWithUserDefinedType);
+DECLARE_UNITTEST(TestScanWithUserDefinedTypeAndInit);
 
 // Represents a permutation as a tuple of integers, see also: https://en.wikipedia.org/wiki/Permutation
 // We need a distinct type (instead of an alias) for operator<< to be found via ADL
@@ -707,7 +734,9 @@ struct composition_op_t
     permutation_t result;
     for (std::size_t i = 0; i < lhs.size(); i++)
     {
-      result[i] = rhs[lhs[i]];
+      const int sub = lhs[i];
+      _CCCL_ASSERT(sub >= 0 && sub < 5, "Permutation index out of range. Reading invalid data?");
+      result[i] = rhs[sub];
     }
     return result;
   }
@@ -760,3 +789,189 @@ void TestInclusiveScanWithNonCommutativeOp()
       {4, 0, 2, 1, 3}}));
 }
 DECLARE_UNITTEST(TestInclusiveScanWithNonCommutativeOp);
+
+struct checking_identity
+{
+  static constexpr unsigned sentinel = 0x12345678;
+
+  _CCCL_HOST_DEVICE unsigned operator()([[maybe_unused]] unsigned a, [[maybe_unused]] unsigned b) const
+  {
+    _CCCL_ASSERT(a == sentinel, "Unexpected value in scan operator. Reading invalid data?");
+    _CCCL_ASSERT(b == sentinel, "Unexpected value in scan operator. Reading invalid data?");
+    return sentinel;
+  }
+};
+
+void TestInclusiveScanForInvalidValues()
+{
+  using value_t = unsigned;
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  // for the CUDA backend, only the warpspeed implementation does not call the scan operator on out-of-bounds data
+  cuda::compute_capability cc;
+  ASSERT_EQUAL(cub::detail::ptx_compute_cap(cc), cudaSuccess);
+  using policy_selector_t = cub::detail::scan::
+    policy_selector_from_types<const value_t*, value_t*, value_t, unsigned long long, checking_identity>;
+  if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::warpspeed)
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  {
+    for (int n : {1, 100, 10'000})
+    {
+      const thrust::device_vector<value_t> input(n, checking_identity::sentinel);
+      thrust::device_vector<value_t> output(n, thrust::no_init);
+
+      thrust::inclusive_scan(input.begin(), input.end(), output.begin(), checking_identity{});
+      ASSERT_EQUAL(input, output);
+
+      thrust::exclusive_scan(
+        input.begin(), input.end(), output.begin(), checking_identity::sentinel, checking_identity{});
+      ASSERT_EQUAL(input, output);
+    }
+  }
+}
+DECLARE_UNITTEST(TestInclusiveScanForInvalidValues);
+
+// Adapted from issue: https://github.com/NVIDIA/cccl/issues/6317
+void TestScanBug6317()
+{
+  using T     = unsigned int;
+  const int n = 1729;
+  {
+    thrust::device_vector<T> s = unittest::random_integers<T>(n);
+    thrust::device_vector<T> d(n);
+    const auto r = thrust::inclusive_scan(s.cbegin(), s.cend(), d.begin(), ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d.end() == r), true);
+    std::partial_sum(s.cbegin(), s.cend(), s.begin(), std::multiplies<>{});
+    ASSERT_EQUAL(s, d);
+  }
+  {
+    thrust::device_vector<T> s = unittest::random_integers<T>(n);
+    thrust::device_vector<T> d(n);
+    const auto r = thrust::exclusive_scan(s.cbegin(), s.cend(), d.begin(), 42, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d.end() == r), true);
+    thrust::exclusive_scan(s.cbegin(), s.cend(), s.begin(), 42, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL(s, d);
+  }
+}
+DECLARE_UNITTEST(TestScanBug6317);
+
+// Test edge cases for parallel scan with non-additive operations
+void TestScanEdgeCases()
+{
+  // Test 1: Large array with inclusive_scan, multiplies, and init
+  // Tests Step 1 fix with many threads
+  {
+    const int n = 10000;
+    thrust::device_vector<int> d_input(n);
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), (_1 % 5) + 1);
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    // Verify with host scan
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 2, ::cuda::std::multiplies<>{});
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 2: Boundary exactly at parallel_scan_threshold (1024)
+  {
+    const int n = 1024;
+    thrust::device_vector<int> d_input(n);
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), _1 + 1);
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 10, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 10, ::cuda::std::multiplies<>{});
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 3: Below threshold (1023) should use serial path
+  {
+    const int n = 1023;
+    thrust::device_vector<int> d_input(n);
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), (_1 % 3) + 1);
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 4: Very small array (edge case for block distribution)
+  {
+    thrust::device_vector<int> d_input = {3, 7};
+    thrust::device_vector<int> d_output(2);
+
+    auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::device_vector<int> expected = {6, 42};
+    ASSERT_EQUAL(d_output, expected);
+  }
+
+  // Test 5: exclusive_scan with large array and multiplies
+  {
+    const int n = 10000;
+    thrust::device_vector<int> d_input(n);
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), (_1 % 3) + 1);
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 6: exclusive_scan at boundary (1024 elements)
+  {
+    const int n = 1024;
+    thrust::device_vector<int> d_input(n);
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), (_1 % 5) + 1);
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 3, ::cuda::std::multiplies<>{});
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 7: exclusive_scan with very small array
+  {
+    thrust::device_vector<int> d_input = {2, 4};
+    thrust::device_vector<int> d_output(2);
+
+    auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::device_vector<int> expected = {3, 6};
+    ASSERT_EQUAL(d_output, expected);
+  }
+}
+DECLARE_UNITTEST(TestScanEdgeCases);

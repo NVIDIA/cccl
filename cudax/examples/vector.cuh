@@ -24,14 +24,13 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__launch/param_kind.cuh>
 
-#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
 using ::cuda::std::span;
@@ -119,20 +118,20 @@ private:
   };
 
   [[nodiscard]] friend __action<__detail::__param_kind::_inout>
-  transform_device_argument(::cuda::stream_ref __str, vector& __v) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, vector& __v) noexcept
   {
     return __action<__detail::__param_kind::_inout>{__str, __v};
   }
 
   [[nodiscard]] friend __action<__detail::__param_kind::_in>
-  transform_device_argument(::cuda::stream_ref __str, const vector& __v) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, const vector& __v) noexcept
   {
     return __action<__detail::__param_kind::_in>{__str, __v};
   }
 
   template <__detail::__param_kind _Kind>
   [[nodiscard]] friend __action<_Kind>
-  transform_device_argument(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b) noexcept
   {
     return __action<_Kind>{__str, __b.__val};
   }
@@ -141,8 +140,6 @@ private:
   mutable device_vector<_Ty> __d_{};
   mutable bool __dirty_ = true;
 };
-
 } // namespace cuda::experimental
 
-#endif
 #endif

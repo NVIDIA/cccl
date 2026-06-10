@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -124,4 +100,206 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
   d_data.resize(d_num_selected_out[0]);
   REQUIRE(d_data == expected);
+}
+
+C2H_TEST("cub::DeviceSelect::Unique in-place works with int data elements", "[select][device]")
+{
+  // example-begin select-unique-inplace
+  constexpr int num_items                       = 8;
+  thrust::device_vector<int> d_data             = {0, 2, 2, 9, 5, 5, 5, 8};
+  thrust::device_vector<int> d_num_selected_out = {0};
+
+  // Determine temporary device storage requirements
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_data.begin(), d_num_selected_out.begin(), num_items);
+
+  // Allocate temporary storage
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+
+  // Run selection
+  cub::DeviceSelect::Unique(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_data.begin(),
+    d_num_selected_out.begin(),
+    num_items);
+
+  // Resize input to new length
+  d_data.resize(d_num_selected_out[0]);
+
+  thrust::device_vector<int> expected{0, 2, 9, 5, 8};
+  // example-end select-unique-inplace
+
+  REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
+  REQUIRE(d_data == expected);
+}
+
+// example-begin select-unique-inplace-eqop-myequalityop
+struct my_equality_op
+{
+  __host__ __device__ bool operator()(int lhs, int rhs) const
+  {
+    return lhs == rhs;
+  }
+};
+// example-end select-unique-inplace-eqop-myequalityop
+
+C2H_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int data elements", "[select][device]")
+{
+  // example-begin select-unique-inplace-eqop
+  constexpr int num_items                       = 8;
+  thrust::device_vector<int> d_data             = {0, 2, 2, 9, 5, 5, 5, 8};
+  thrust::device_vector<int> d_num_selected_out = {0};
+  my_equality_op equality_op{};
+
+  // Determine temporary device storage requirements
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSelect::Unique(
+    nullptr, temp_storage_bytes, d_data.begin(), d_num_selected_out.begin(), num_items, equality_op);
+
+  // Allocate temporary storage
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+
+  // Run selection
+  cub::DeviceSelect::Unique(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_data.begin(),
+    d_num_selected_out.begin(),
+    num_items,
+    equality_op);
+
+  // Resize input to new length
+  d_data.resize(d_num_selected_out[0]);
+
+  thrust::device_vector<int> expected{0, 2, 9, 5, 8};
+  // example-end select-unique-inplace-eqop
+
+  REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
+  REQUIRE(d_data == expected);
+}
+
+// Guard tests: each public DeviceSelect method must resolve unambiguously
+// to the legacy temp-storage overload when called in its minimal form
+// (no explicit stream, all defaults left implicit), even though the env
+// overloads are also in scope. If env-overload SFINAE drifts, these become
+// "ambiguous overload" compile errors.
+
+struct select_always_true_t
+{
+  __host__ __device__ bool operator()(int) const
+  {
+    return true;
+  }
+};
+
+C2H_TEST("DeviceSelect::Flagged legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_flags              = nullptr;
+  int* d_out                = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected, n));
+}
+
+C2H_TEST("DeviceSelect::Flagged in-place legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_data               = nullptr;
+  int* d_flags              = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected, n));
+}
+
+C2H_TEST("DeviceSelect::If legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_out                = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::If(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected, n, select_always_true_t{}));
+}
+
+C2H_TEST("DeviceSelect::If in-place legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_data               = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes, d_data, d_num_selected, n, select_always_true_t{}));
+}
+
+C2H_TEST("DeviceSelect::FlaggedIf legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_flags              = nullptr;
+  int* d_out                = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::FlaggedIf(
+            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected, n, select_always_true_t{}));
+}
+
+C2H_TEST("DeviceSelect::FlaggedIf in-place legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_data               = nullptr;
+  int* d_flags              = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::FlaggedIf(
+            d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected, n, select_always_true_t{}));
+}
+
+C2H_TEST("DeviceSelect::Unique legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_out                = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected, n));
+}
+
+C2H_TEST("DeviceSelect::UniqueByKey legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_keys_in            = nullptr;
+  int* d_values_in          = nullptr;
+  int* d_keys_out           = nullptr;
+  int* d_values_out         = nullptr;
+  int* d_num_selected       = nullptr;
+  int n                     = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::UniqueByKey(
+            d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_keys_out, d_values_out, d_num_selected, n));
 }

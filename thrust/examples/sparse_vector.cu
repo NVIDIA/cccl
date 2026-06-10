@@ -16,7 +16,7 @@ void print_sparse_vector(const IndexVector& A_index, const ValueVector& A_value)
   {
     std::cout << "(" << A_index[i] << "," << A_value[i] << ") ";
   }
-  std::cout << std::endl;
+  std::cout << '\n';
 }
 
 template <typename IndexVector1,
@@ -64,8 +64,8 @@ void sum_sparse_vectors(
       temp_index.end() - 1,
       temp_index.begin() + 1,
       size_t(0),
-      ::cuda::std::plus<size_t>(),
-      ::cuda::std::not_equal_to<IndexType>())
+      cuda::std::plus<size_t>(),
+      cuda::std::not_equal_to<IndexType>())
     + 1;
 
   // allocate space for output
@@ -79,8 +79,8 @@ void sum_sparse_vectors(
     temp_value.begin(),
     C_index.begin(),
     C_value.begin(),
-    ::cuda::std::equal_to<IndexType>(),
-    ::cuda::std::plus<ValueType>());
+    cuda::std::equal_to<IndexType>(),
+    cuda::std::plus<ValueType>());
 }
 
 int main()
@@ -115,7 +115,7 @@ int main()
 
   sum_sparse_vectors(A_index, A_value, B_index, B_value, C_index, C_value);
 
-  std::cout << "Computing C = A + B for sparse vectors A and B" << std::endl;
+  std::cout << "Computing C = A + B for sparse vectors A and B" << '\n';
   std::cout << "A ";
   print_sparse_vector(A_index, A_value);
   std::cout << "B ";

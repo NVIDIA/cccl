@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Helper class to define a reduction operator attached to a data
  * interface.
@@ -75,8 +74,8 @@ public:
     const exec_place& ep,
     event_list& prereqs) override
   {
-    auto dstream  = inout_memory_node.getDataStream(d.get_ctx().async_resources());
-    auto async_op = stream_async_op(d.get_ctx(), dstream, prereqs);
+    const auto dstream = inout_memory_node.getDataStream(d.get_ctx().async_resources().get_place_resources());
+    auto async_op      = stream_async_op(d.get_ctx(), dstream, prereqs);
     if (d.get_ctx().generate_event_symbols())
     {
       async_op.set_symbol("redux op " + d.get_symbol());
@@ -96,8 +95,8 @@ public:
                        const exec_place& ep,
                        event_list& prereqs) override
   {
-    auto dstream  = out_memory_node.getDataStream(d.get_ctx().async_resources());
-    auto async_op = stream_async_op(d.get_ctx(), dstream, prereqs);
+    const auto dstream = out_memory_node.getDataStream(d.get_ctx().async_resources().get_place_resources());
+    auto async_op      = stream_async_op(d.get_ctx(), dstream, prereqs);
     if (d.get_ctx().generate_event_symbols())
     {
       async_op.set_symbol("redux init op " + d.get_symbol());
@@ -164,5 +163,4 @@ class stream_reduction_operator : public stream_reduction_operator_untyped
     init_op(out_instance, e, s);
   }
 };
-
 } // end namespace cuda::experimental::stf

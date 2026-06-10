@@ -53,11 +53,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Fn, class _View>
 _CCCL_CONCEPT __regular_invocable_with_range_ref = regular_invocable<_Fn, range_reference_t<_View>>;
@@ -417,7 +413,7 @@ public:
   _CCCL_API constexpr transform_view(_View __base, _Fn __func)
       : view_interface<transform_view<_View, _Fn>>()
       , __base_(::cuda::std::move(__base))
-      , __func_(::cuda::std::in_place, ::cuda::std::move(__func))
+      , __func_(in_place_t{}, ::cuda::std::move(__func))
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -433,24 +429,24 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr __iterator<false> begin()
   {
-    return __iterator<false>{*this, ::cuda::std::ranges::begin(__base_)};
+    return __iterator<false>{*this, ::cuda::std::ranges::__begin_cpo{}(__base_)};
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(range<const _View2> _CCCL_AND __regular_invocable_with_range_ref<const _Fn&, const _View2>)
   [[nodiscard]] _CCCL_API constexpr __iterator<true> begin() const
   {
-    return __iterator<true>(*this, ::cuda::std::ranges::begin(__base_));
+    return __iterator<true>(*this, ::cuda::std::ranges::__begin_cpo{}(__base_));
   }
 
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
     if constexpr (common_range<_View>)
     {
-      return __iterator<false>(*this, ::cuda::std::ranges::end(__base_));
+      return __iterator<false>(*this, ::cuda::std::ranges::__end_cpo{}(__base_));
     }
     else
     {
-      return __sentinel<false>(::cuda::std::ranges::end(__base_));
+      return __sentinel<false>(::cuda::std::ranges::__end_cpo{}(__base_));
     }
   }
 
@@ -460,11 +456,11 @@ public:
   {
     if constexpr (common_range<const _View>)
     {
-      return __iterator<true>(*this, ::cuda::std::ranges::end(__base_));
+      return __iterator<true>(*this, ::cuda::std::ranges::__end_cpo{}(__base_));
     }
     else
     {
-      return __sentinel<true>(::cuda::std::ranges::end(__base_));
+      return __sentinel<true>(::cuda::std::ranges::__end_cpo{}(__base_));
     }
   }
 
@@ -472,22 +468,23 @@ public:
   _CCCL_REQUIRES(sized_range<_View2>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::__size_cpo{}(__base_);
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::__size_cpo{}(__base_);
   }
 };
 
 template <class _Range, class _Fn>
-_CCCL_HOST_DEVICE transform_view(_Range&&, _Fn) -> transform_view<::cuda::std::ranges::views::all_t<_Range>, _Fn>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES transform_view(_Range&&, _Fn)
+  -> transform_view<::cuda::std::ranges::views::all_t<_Range>, _Fn>;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
-_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__transform)
 struct __fn
 {
@@ -513,9 +510,7 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto transform = __transform::__fn{};
 } // namespace __cpo
-_CCCL_END_NAMESPACE_VIEWS
-
-_CCCL_DIAG_POP
+_CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
 #include <cuda/std/__cccl/epilogue.h>
 

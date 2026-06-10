@@ -1,0 +1,535 @@
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+import cupy as cp
+import numpy as np
+import pytest
+
+import cuda.compute
+from cuda.compute import (
+    ConstantIterator,
+    CountingIterator,
+    OpKind,
+    TransformIterator,
+    TransformOutputIterator,
+    gpu_struct,
+)
+
+
+@pytest.fixture(params=["i4", "u4", "i8", "u8"])
+def offset_dtype(request):
+    return np.dtype(request.param)
+
+
+def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
+    "Test for all supported input types and for some offset types"
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+
+    def binary_op(a, b):
+        return a + b
+
+    assert input_array.ndim == 1
+    sz = input_array.size
+    rng = cp.random
+    n_segments = 16
+    h_offsets = cp.zeros(n_segments + 1, dtype="int64")
+    h_offsets[1:] = rng.multinomial(sz, [1 / n_segments] * n_segments)
+
+    offsets = cp.cumsum(cp.asarray(h_offsets, dtype=offset_dtype), dtype=offset_dtype)
+
+    start_offsets = offsets[:-1]
+    end_offsets = offsets[1:]
+
+    assert offsets.dtype == np.dtype(offset_dtype)
+    assert cp.all(start_offsets <= end_offsets)
+    assert end_offsets[-1] == sz
+
+    d_in = cp.asarray(input_array)
+    d_out = cp.empty(n_segments, dtype=d_in.dtype)
+
+    h_init = np.zeros(tuple(), dtype=input_array.dtype)
+
+    if input_array.dtype == np.float16:
+        reduce_op = OpKind.PLUS
+    else:
+        reduce_op = binary_op
+
+    # Call single-phase API directly with num_segments parameter
+    cuda.compute.segmented_reduce(
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=n_segments,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+        op=reduce_op,
+        h_init=h_init,
+    )
+
+    d_expected = cp.empty_like(d_out)
+    for i in range(n_segments):
+        d_expected[i] = cp.sum(d_in[start_offsets[i] : end_offsets[i]])
+
+    assert cp.all(d_out == d_expected)
+
+
+def test_segmented_reduce_struct_type(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    import cupy as cp
+    import numpy as np
+
+    @gpu_struct
+    class Pixel:
+        r: np.int32
+        g: np.int32
+        b: np.int32
+
+    def max_g_value(x, y):
+        return x if x.g > y.g else y
+
+    def align_up(n, m):
+        return ((n + m - 1) // m) * m
+
+    segment_size = 64
+    n_pixels = align_up(4000, 64)
+    offsets = cp.arange(n_pixels + segment_size - 1, step=segment_size, dtype=np.int64)
+    start_offsets = offsets[:-1]
+    end_offsets = offsets[1:]
+    n_segments = start_offsets.size
+
+    d_rgb = cp.random.randint(0, 256, (n_pixels, 3), dtype=np.int32).view(Pixel.dtype)
+    d_out = cp.empty(n_segments, Pixel.dtype)
+
+    h_init = Pixel(0, 0, 0)
+
+    # Call single-phase API directly with n_segments parameter
+    cuda.compute.segmented_reduce(
+        d_in=d_rgb,
+        d_out=d_out,
+        num_segments=n_segments,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+        op=max_g_value,
+        h_init=h_init,
+    )
+
+    h_rgb = np.reshape(d_rgb.get(), (n_segments, -1))
+    expected = h_rgb[np.arange(h_rgb.shape[0]), h_rgb["g"].argmax(axis=-1)]
+
+    np.testing.assert_equal(expected["g"], d_out.get()["g"])
+
+
+@pytest.mark.large
+def test_large_num_segments_uniform_segment_sizes_nonuniform_input(monkeypatch):
+    """
+    This test verifies that segmented_reduce raises an error when
+    num_segments exceeds 2^31-1.
+    """
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+
+    def make_difference(idx: np.int64) -> np.uint8:
+        p = np.uint8(7)
+
+        # Annotations on this nested function are intentionally omitted: on
+        # Python 3.14 they cause numba_cuda to abort with `AssertionError:
+        # unreachable` in op_SET_FUNCTION_ATTRIBUTE, because the new 0x10
+        # (`__annotate__`, PEP 649) flag isn't handled.
+        # Original signature: def Fu(idx: np.int64) -> np.uint8:
+        def Fu(idx):
+            i8 = np.uint8(idx % 5) + np.uint8(idx % 3)
+            f = (i8 * (i8 + 1)) % p
+            return f
+
+        return (Fu(idx + 1) - Fu(idx)) % p
+
+    input_it = TransformIterator(CountingIterator(np.int64(0)), make_difference)
+
+    def make_scaler(step):
+        def scale(row_id):
+            return row_id * step
+
+        return scale
+
+    segment_size = 116
+    offset0 = np.int64(0)
+    row_offset = make_scaler(np.int64(segment_size))
+    start_offsets = TransformIterator(CountingIterator(offset0), row_offset)
+    end_offsets = start_offsets + 1
+
+    num_segments = (2**15 + 2**3) * 2**16
+    try:
+        res = cp.full(num_segments, fill_value=127, dtype=cp.uint8)
+    except cp.cuda.memory.OutOfMemoryError:
+        pytest.skip("Insufficient memory to run the large number of segments test")
+    assert res.size == num_segments
+
+    def my_add(a: np.uint8, b: np.uint8) -> np.uint8:
+        return (a + b) % np.uint8(7)
+
+    h_init = np.zeros(tuple(), dtype=np.uint8)
+
+    # Verify that the appropriate error is raised
+    with pytest.raises(
+        RuntimeError,
+        match="Segmented sort does not currently support more than 2\\^31-1 segments\\.",
+    ):
+        cuda.compute.segmented_reduce(
+            d_in=input_it,
+            d_out=res,
+            num_segments=num_segments,
+            start_offsets_in=start_offsets,
+            end_offsets_in=end_offsets,
+            op=my_add,
+            h_init=h_init,
+        )
+
+
+@pytest.mark.large
+def test_large_num_segments_nonuniform_segment_sizes_uniform_input(monkeypatch):
+    """
+    This test verifies that segmented_reduce raises an error when
+    num_segments exceeds 2^31-1.
+    """
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    input_it = ConstantIterator(np.int16(1))
+
+    def offset_functor(m0: np.int64, p: np.int64):
+        def offset_value(n: np.int64) -> np.int64:
+            """
+            Offset value computes closed form for
+            :math:`sum(1 + (k % p), k=0..n)`.
+
+            So segment lengths are periodic linearly
+            increasing sequences, e.g,
+            [min , min + 1, ..., min + p - 2,
+                min + p - 1, min, min +1 , ....]
+            """
+            q = n // p
+            r = n - q * p
+            p2 = (p * (p - 1)) // 2
+            r2 = (r * (r + 1)) // 2
+
+            offset_val = (n + 1) * m0 + q * p2 + r2
+            return offset_val
+
+        return offset_value
+
+    m0, p = np.int64(265), np.int64(163)
+    offsets_it = TransformIterator(
+        CountingIterator(np.int64(-1)), offset_functor(m0, p)
+    )
+    start_offsets = offsets_it
+    end_offsets = offsets_it + 1
+
+    def _plus(a, b):
+        return a + b
+
+    num_segments = (2**15 + 2**3) * 2**16
+    try:
+        res = cp.full(num_segments, fill_value=-1, dtype=cp.int16)
+    except cp.cuda.memory.OutOfMemoryError:
+        pytest.skip("Insufficient memory to run the large number of segments test")
+    assert res.size == num_segments
+
+    h_init = np.zeros(tuple(), dtype=np.int16)
+
+    # Verify that the appropriate error is raised
+    with pytest.raises(
+        RuntimeError,
+        match="Segmented sort does not currently support more than 2\\^31-1 segments\\.",
+    ):
+        cuda.compute.segmented_reduce(
+            d_in=input_it,
+            d_out=res,
+            num_segments=num_segments,
+            start_offsets_in=start_offsets,
+            end_offsets_in=end_offsets,
+            op=_plus,
+            h_init=h_init,
+        )
+
+
+def test_segmented_reduce_well_known_plus(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+
+    # Create segmented data: [1, 2, 3] | [4, 5] | [6, 7, 8, 9]
+    d_input = cp.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    cuda.compute.segmented_reduce(
+        d_in=d_input,
+        d_out=d_output,
+        num_segments=3,
+        start_offsets_in=d_starts,
+        end_offsets_in=d_ends,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = np.array([6, 9, 30])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_segmented_reduce_well_known_maximum(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    dtype = np.int32
+    h_init = np.array([-100], dtype=dtype)
+
+    # Create segmented data: [1, 9, 3] | [4, 2] | [6, 7, 1, 8]
+    d_input = cp.array([1, 9, 3, 4, 2, 6, 7, 1, 8], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    cuda.compute.segmented_reduce(
+        d_in=d_input,
+        d_out=d_output,
+        num_segments=3,
+        start_offsets_in=d_starts,
+        end_offsets_in=d_ends,
+        op=OpKind.MAXIMUM,
+        h_init=h_init,
+    )
+
+    expected = np.array([9, 4, 8])  # max of each segment
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_segmented_reduce_bool_maximum(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    h_init = np.array([False], dtype=np.bool_)
+
+    # Create segmented data: [False, True] | [False, False] | [True]
+    d_input = cp.array([False, True, False, False, True], dtype=np.bool_)
+    d_starts = cp.array([0, 2, 4], dtype=np.int32)
+    d_ends = cp.array([2, 4, 5], dtype=np.int32)
+    d_output = cp.empty(3, dtype=np.bool_)
+
+    cuda.compute.segmented_reduce(
+        d_in=d_input,
+        d_out=d_output,
+        num_segments=3,
+        start_offsets_in=d_starts,
+        end_offsets_in=d_ends,
+        op=OpKind.MAXIMUM,
+        h_init=h_init,
+    )
+
+    expected = np.array([True, False, True], dtype=np.bool_)
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_segmented_reduce_transform_output_iterator(floating_array, monkeypatch):
+    """Test segmented reduce with TransformOutputIterator."""
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    dtype = floating_array.dtype
+    h_init = np.array([0], dtype=dtype)
+
+    # Use the floating_array fixture which provides random floating-point data of size 1000
+    d_input = floating_array
+
+    # Create 2 segments of roughly equal size
+    segment_size = d_input.size // 2
+    d_output = cp.empty(2, dtype=dtype)
+    start_offsets = cp.array([0, segment_size], dtype=np.int32)
+    end_offsets = cp.array([segment_size, d_input.size], dtype=np.int32)
+
+    def sqrt(x: dtype) -> dtype:
+        return x**0.5
+
+    d_out_it = TransformOutputIterator(d_output, sqrt)
+
+    cuda.compute.segmented_reduce(
+        d_in=d_input,
+        d_out=d_out_it,
+        num_segments=2,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = cp.sqrt(
+        cp.array(
+            [
+                cp.sum(d_input[0:segment_size]),
+                cp.sum(d_input[segment_size : d_input.size]),
+            ]
+        )
+    )
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
+
+
+def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+
+    def add_op(a, b):
+        return a + b
+
+    n_rows, n_cols = 67, 12345
+    rng = cp.random.default_rng()
+    mat = rng.integers(low=-31, high=32, dtype=np.int32, size=(n_rows, n_cols))
+
+    def make_scaler(step):
+        def scale(row_id):
+            return row_id * step
+
+        return scale
+
+    zero = np.int32(0)
+    row_offset = make_scaler(np.int32(n_cols))
+    start_offsets = TransformIterator(CountingIterator(zero), row_offset)
+
+    end_offsets = start_offsets + 1
+
+    d_input = mat
+    h_init = np.zeros(tuple(), dtype=np.int32)
+    d_output = cp.empty(n_rows, dtype=d_input.dtype)
+
+    cuda.compute.segmented_reduce(
+        d_in=d_input,
+        d_out=d_output,
+        num_segments=n_rows,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+        op=add_op,
+        h_init=h_init,
+    )
+
+    expected = cp.sum(mat, axis=-1)
+    assert cp.all(d_output == expected)
+
+
+def test_segmented_reduce_with_lambda(monkeypatch):
+    """Test segmented_reduce with a lambda function as the reducer."""
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+
+    # Create segmented data: [1, 2, 3] | [4, 5] | [6, 7, 8, 9]
+    d_input = cp.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    # Use a lambda function directly as the reducer
+    cuda.compute.segmented_reduce(
+        d_in=d_input,
+        d_out=d_output,
+        num_segments=3,
+        start_offsets_in=d_starts,
+        end_offsets_in=d_ends,
+        op=lambda a, b: a + b,
+        h_init=h_init,
+    )
+
+    expected = np.array([6, 9, 30])  # sum of each segment
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.parametrize(
+    "max_seg_size",
+    [
+        4,  # small: warp-level reduction path
+        64,  # medium: warp-level reduction path
+        512,  # large: block-level reduction path
+    ],
+)
+def test_segmented_reduce_max_segment_size(max_seg_size, monkeypatch):
+    """Test that max_segment_size hint produces correct results with non-uniform segments.
+
+    max_segment_size is a performance hint that selects an optimized kernel
+    dispatch path. Segments vary in size from 1 to max_seg_size elements.
+    """
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    dtype = np.int32
+    rng = cp.random
+    num_segments = 1024
+    h_init = np.zeros(1, dtype=dtype)
+
+    # Non-uniform segment sizes in [1, max_seg_size]
+    sizes = rng.randint(1, max_seg_size + 1, size=num_segments, dtype=np.int64)
+    offsets = cp.zeros(num_segments + 1, dtype=np.int64)
+    offsets[1:] = cp.cumsum(sizes)
+
+    total = int(offsets[-1].item())
+    d_input = rng.randint(0, 100, size=total, dtype=dtype)
+    d_output = cp.empty(num_segments, dtype=dtype)
+
+    d_starts = offsets[:-1]
+    d_ends = offsets[1:]
+
+    cuda.compute.segmented_reduce(
+        d_in=d_input,
+        d_out=d_output,
+        num_segments=num_segments,
+        start_offsets_in=d_starts,
+        end_offsets_in=d_ends,
+        op=OpKind.PLUS,
+        h_init=h_init,
+        max_segment_size=max_seg_size,
+    )
+
+    expected = cp.empty(num_segments, dtype=dtype)
+    for i in range(num_segments):
+        expected[i] = cp.sum(d_input[int(d_starts[i].item()) : int(d_ends[i].item())])
+
+    np.testing.assert_array_equal(d_output.get(), expected.get())

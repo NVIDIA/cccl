@@ -200,11 +200,7 @@ C2H_TEST("then keeps error_types from input sender", "[adaptors][then]")
 
   check_error_types(ex::just() | ex::continues_on(sched1) | ex::then([]() noexcept {}));
   check_error_types<error_code>(ex::just() | ex::continues_on(sched2) | ex::then([]() noexcept {}));
-#if _CCCL_HAS_EXCEPTIONS() && _CCCL_HOST_COMPILATION()
-  check_error_types<std::exception_ptr, int>(ex::just() | ex::continues_on(sched3) | ex::then([] {}));
-#else
-  check_error_types<int>(ex::just() | ex::continues_on(sched3) | ex::then([] {}));
-#endif
+  check_error_types<ex::exception_ptr, int>(ex::just() | ex::continues_on(sched3) | ex::then([] {}));
 }
 
 C2H_TEST("then keeps sends_stopped from input sender", "[adaptors][then]")
@@ -260,9 +256,9 @@ C2H_TEST("sync_wait can handle when then() returns a throws-on-copy type by refe
 // Return a different sender when we invoke this custom defined then implementation
 struct then_test_domain
 {
-  _CCCL_TEMPLATE(class Sender, class... Env)
+  _CCCL_TEMPLATE(class Sender, class Env)
   _CCCL_REQUIRES(cuda::std::same_as<ex::tag_of_t<Sender>, ex::then_t>)
-  static auto transform_sender(Sender&&, Env&&...)
+  _CCCL_HOST_DEVICE static auto transform_sender(ex::set_value_t, Sender&&, Env&&)
   {
     return ex::just(string{"ciao"});
   }

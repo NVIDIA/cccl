@@ -171,7 +171,6 @@ struct my_tag : THRUST_NS_QUALIFIER::device_execution_policy<my_tag>
 
 namespace unittest
 {
-
 using std::int16_t;
 using std::int32_t;
 using std::int64_t;
@@ -181,5 +180,4 @@ using std::uint16_t;
 using std::uint32_t;
 using std::uint64_t;
 using std::uint8_t;
-
 } // namespace unittest

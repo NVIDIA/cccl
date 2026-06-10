@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_transform.cuh>
@@ -48,6 +25,8 @@
 #  include <thrust/zip_function.h>
 
 #  include <cuda/__functional/address_stability.h>
+#  include <cuda/__iterator/zip_function.h>
+#  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/std/__algorithm/transform.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
@@ -68,7 +47,7 @@ struct unary_transform_f
   Predicate pred;
 
   template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
+  void _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(Size idx)
   {
     if (pred(raw_reference_cast(stencil[idx])))
     {
@@ -110,7 +89,7 @@ struct binary_transform_f
   Predicate pred;
 
   template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
+  void _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(Size idx)
   {
     if (pred(raw_reference_cast(stencil[idx])))
     {
@@ -151,8 +130,8 @@ template <class Derived,
           class... InputIts,
           class OutputIt,
           class TransformOp,
-          class Predicate = cub::detail::transform::always_true_predicate>
-OutputIt THRUST_FUNCTION cub_transform_many(
+          class Predicate = ::cuda::always_true>
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<InputIts...> firsts,
   OutputIt result,
@@ -165,22 +144,21 @@ OutputIt THRUST_FUNCTION cub_transform_many(
     return result;
   }
 
-  constexpr auto stable_address =
-    (::cuda::proclaims_copyable_arguments<Predicate>::value && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
-      ? cub::detail::transform::requires_stable_address::no
-      : cub::detail::transform::requires_stable_address::yes;
+  // throw exception in case num_items is negative. Should never happen since last - first iterator must be positive.
+  _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(num_items);
 
   cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    (cub::detail::transform::dispatch_t<stable_address,
-                                        decltype(num_items_fixed),
-                                        ::cuda::std::tuple<InputIts...>,
-                                        OutputIt,
-                                        Predicate,
-                                        TransformOp>::dispatch),
-    num_items,
-    (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
+  if constexpr (::cuda::proclaims_copyable_arguments<Predicate>::value
+                && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
+  {
+    status = CUB_NS_QUALIFIER::DeviceTransform::TransformIf(
+      firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));
+  }
+  else
+  {
+    status = CUB_NS_QUALIFIER::DeviceTransform::__transform_if_stable_argument_addresses(
+      firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));
+  }
   throw_on_error(status, "transform: failed inside CUB");
 
   status = cuda_cub::synchronize_optional(policy);
@@ -190,8 +168,9 @@ OutputIt THRUST_FUNCTION cub_transform_many(
 }
 
 // unwrap zip_iterator and zip_function into their underlying iterators so cub::DeviceTransform can optimize them
+// TODO(bgruber): we may want to move this unpacking logic into cub::DeviceTransform directly
 template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
-OutputIt THRUST_FUNCTION cub_transform_many(
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<zip_iterator<::cuda::std::tuple<InputIts...>>> firsts,
   OutputIt result,
@@ -199,7 +178,18 @@ OutputIt THRUST_FUNCTION cub_transform_many(
   zip_function<TransformOp> transform_op)
 {
   return cub_transform_many(
-    policy, get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
+    policy, ::cuda::std::get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
+}
+
+template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
+  execution_policy<Derived>& policy,
+  ::cuda::std::tuple<::cuda::zip_iterator<InputIts...>> firsts,
+  OutputIt result,
+  Offset num_items,
+  ::cuda::zip_function<TransformOp> transform_op)
+{
+  return cub_transform_many(policy, ::cuda::std::get<0>(firsts).__iterators(), result, num_items, transform_op.__fun());
 }
 
 template <typename F>
@@ -208,7 +198,7 @@ struct raw_reference_cast_args
   mutable F f; // mutable to support non-const F::operator()
 
   template <typename... Ts>
-  THRUST_FUNCTION decltype(auto) operator()(Ts&&... args) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE decltype(auto) operator()(Ts&&... args) const
   {
     return f(raw_reference_cast(::cuda::std::forward<Ts>(args))...);
   }
@@ -218,7 +208,7 @@ struct raw_reference_cast_args
 //  one input data stream
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp>
-THRUST_FUNCTION OutputIt
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt
 transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op)
 {
   THRUST_CDP_DISPATCH(
@@ -229,7 +219,7 @@ transform(execution_policy<Derived>& policy, InputIt first, InputIt last, Output
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp>
-THRUST_FUNCTION OutputIt transform_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_n(
   execution_policy<Derived>& policy,
   InputIt first,
   ::cuda::std::iter_difference_t<InputIt> num_items,
@@ -243,7 +233,7 @@ THRUST_FUNCTION OutputIt transform_n(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp, typename Predicate>
-THRUST_FUNCTION OutputIt transform_if(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -270,7 +260,7 @@ THRUST_FUNCTION OutputIt transform_if(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp, typename Predicate>
-THRUST_FUNCTION OutputIt transform_if_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if_n(
   execution_policy<Derived>& policy,
   InputIt first,
   ::cuda::std::iter_difference_t<InputIt> num_items,
@@ -293,7 +283,7 @@ THRUST_FUNCTION OutputIt transform_if_n(
 //  one input data stream + stencil
 
 template <class Derived, class InputIt, class OutputIt, class StencilInputIt, class TransformOp, class Predicate>
-THRUST_FUNCTION OutputIt transform_if(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -312,7 +302,7 @@ template <typename Derived,
           typename OutputIt,
           typename TransformOp,
           typename Predicate>
-THRUST_FUNCTION OutputIt transform_if_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if_n(
   execution_policy<Derived>& policy,
   InputIt first,
   ::cuda::std::iter_difference_t<InputIt> num_items,
@@ -327,7 +317,7 @@ THRUST_FUNCTION OutputIt transform_if_n(
 // two input data streams
 
 template <typename Derived, typename InputIt1, typename InputIt2, typename OutputIt, typename BinaryTransformOp>
-THRUST_FUNCTION OutputIt transform(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   InputIt1 last1,
@@ -347,7 +337,7 @@ THRUST_FUNCTION OutputIt transform(
 }
 
 template <typename Derived, typename InputIt1, typename InputIt2, typename OutputIt, typename BinaryTransformOp>
-THRUST_FUNCTION OutputIt transform_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_n(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   ::cuda::std::iter_difference_t<InputIt1> num_items,
@@ -374,7 +364,7 @@ template <typename Derived,
           typename OutputIt,
           typename BinaryTransformOp,
           typename Predicate>
-THRUST_FUNCTION OutputIt transform_if(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   InputIt1 last1,
@@ -395,7 +385,7 @@ template <typename Derived,
           typename OutputIt,
           typename BinaryTransformOp,
           typename Predicate>
-THRUST_FUNCTION OutputIt transform_if_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if_n(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   ::cuda::std::iter_difference_t<InputIt1> num_items,
@@ -408,8 +398,7 @@ THRUST_FUNCTION OutputIt transform_if_n(
   return __transform::binary_if_with_stencil(
     policy, first1, first2, result, num_items, stencil, transform_op, predicate);
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

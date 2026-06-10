@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_memcpy.cuh>
 
@@ -99,43 +75,32 @@ struct offset_to_size_t
 };
 
 #if !TUNE_BASE
-template <unsigned int MagicNs, unsigned int L2W, unsigned int DCID>
-using delay_constructor_t =
-  nvbench::tl::get<DCID,
-                   nvbench::type_list<cub::detail::no_delay_constructor_t<L2W>,
-                                      cub::detail::fixed_delay_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backoff_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backoff_jitter_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backoff_jitter_window_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backon_jitter_window_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backon_jitter_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backon_constructor_t<MagicNs, L2W>>>;
 
-using buff_delay_constructor_t =
-  delay_constructor_t<TUNE_BUFF_MAGIC_NS, TUNE_BUFF_L2_WRITE_LATENCY_NS, TUNE_BUFF_DELAY_CONSTRUCTOR_ID>;
-using block_delay_constructor_t =
-  delay_constructor_t<TUNE_BLOCK_MAGIC_NS, TUNE_BLOCK_L2_WRITE_LATENCY_NS, TUNE_BLOCK_DELAY_CONSTRUCTOR_ID>;
-
-struct policy_hub_t
+struct policy_selector_t
 {
-  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::batch_memcpy::batch_memcpy_policy
   {
-    using AgentSmallBufferPolicyT = cub::detail::AgentBatchMemcpyPolicy<
-      TUNE_THREADS,
-      TUNE_BUFFERS_PER_THREAD,
-      TUNE_TLEV_BYTES_PER_THREAD,
-      TUNE_PREFER_POW2_BITS,
-      TUNE_LARGE_THREADS * TUNE_LARGE_BUFFER_BYTES_PER_THREAD,
-      TUNE_WARP_LEVEL_THRESHOLD,
-      TUNE_BLOCK_LEVEL_THRESHOLD,
-      buff_delay_constructor_t,
-      block_delay_constructor_t>;
+    return {
+      {
+        TUNE_THREADS,
+        TUNE_BUFFERS_PER_THREAD,
+        TUNE_TLEV_BYTES_PER_THREAD,
+        bool{TUNE_PREFER_POW2_BITS},
+        TUNE_LARGE_THREADS * TUNE_LARGE_BUFFER_BYTES_PER_THREAD,
+        TUNE_WARP_LEVEL_THRESHOLD,
+        TUNE_BLOCK_LEVEL_THRESHOLD,
+        cub::LookbackDelayPolicy{static_cast<cub::LookbackDelayAlgorithm>(TUNE_BUFF_DELAY_CONSTRUCTOR_ID),
+                                 TUNE_BUFF_MAGIC_NS,
+                                 TUNE_BUFF_L2_WRITE_LATENCY_NS},
+        cub::LookbackDelayPolicy{static_cast<cub::LookbackDelayAlgorithm>(TUNE_BLOCK_DELAY_CONSTRUCTOR_ID),
+                                 TUNE_BLOCK_MAGIC_NS,
+                                 TUNE_BLOCK_L2_WRITE_LATENCY_NS},
 
-    using AgentLargeBufferPolicyT =
-      cub::detail::batch_memcpy::agent_large_buffer_policy<TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD>;
-  };
-
-  using MaxPolicy = policy_t;
+      },
+      {TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD},
+    };
+  }
 };
 #endif
 
@@ -181,20 +146,6 @@ void copy(nvbench::state& state,
   using input_buffer_it_t  = it_t*;
   using output_buffer_it_t = it_t*;
   using buffer_size_it_t   = offset_t*;
-  using buffer_offset_t    = std::uint32_t;
-  using block_offset_t     = std::uint32_t;
-
-  using dispatch_t = cub::detail::DispatchBatchMemcpy<
-    input_buffer_it_t,
-    output_buffer_it_t,
-    buffer_size_it_t,
-    block_offset_t,
-    cub::CopyAlg::Memcpy
-#if !TUNE_BASE
-    ,
-    policy_hub_t
-#endif
-    >;
 
   thrust::device_vector<T> input_buffer = generate(elements);
   thrust::device_vector<T> output_buffer(elements);
@@ -232,24 +183,25 @@ void copy(nvbench::state& state,
   state.add_global_memory_reads<it_t>(buffers);
   state.add_global_memory_reads<offset_t>(buffers);
 
-  std::size_t temp_storage_bytes{};
-  std::uint8_t* d_temp_storage{};
-  dispatch_t::Dispatch(
-    d_temp_storage, temp_storage_bytes, d_input_buffers, d_output_buffers, d_buffer_sizes, buffers, 0);
-
-  thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               dispatch_t::Dispatch(
-                 d_temp_storage,
-                 temp_storage_bytes,
+               auto env = cub_bench_env(
+                 alloc,
+                 launch
+#if !TUNE_BASE
+                 ,
+                 cuda::execution::tune(policy_selector_t{})
+#endif
+               );
+               _CCCL_TRY_CUDA_API(
+                 cub::DeviceMemcpy::Batched,
+                 "Batched failed",
                  d_input_buffers,
                  d_output_buffers,
                  d_buffer_sizes,
-                 buffers,
-                 launch.get_stream());
+                 static_cast<cuda::std::int64_t>(buffers),
+                 env);
              });
 }
 

@@ -21,11 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
@@ -88,14 +90,25 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! // values is now {10, -1, -1, -1, 50, 60, -1, 80}
 //! @endcode
-template <class _Iter, class _Index = _Iter>
+template <class _Iter, class _Index>
 class permutation_iterator
 {
 private:
-  _Iter __iter_   = {};
-  _Index __index_ = {};
+  _Iter __iter_;
+  _Index __index_;
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Internal helpers
   // We need to factor these out because old gcc chokes with using arguments in friend functions
+  template <class _Iter1>
+  static constexpr bool __nothrow_plus =
+    ::cuda::std::is_nothrow_copy_constructible_v<_Iter1> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>
+    && noexcept(::cuda::std::declval<const _Index&>() + ::cuda::std::iter_difference_t<_Index>());
+
+  template <class _Iter1>
+  static constexpr bool __nothrow_minus =
+    ::cuda::std::is_nothrow_copy_constructible_v<_Iter1> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>
+    && noexcept(::cuda::std::declval<const _Index&>() - ::cuda::std::iter_difference_t<_Index>());
+
   template <class _Iter1>
   static constexpr bool __nothrow_difference =
     noexcept(::cuda::std::declval<_Iter1>() - ::cuda::std::declval<_Iter1>());
@@ -113,6 +126,7 @@ private:
   template <class _Iter1, class _Iter2>
   static constexpr bool __nothrow_greater_equal =
     noexcept(::cuda::std::declval<_Iter1>() >= ::cuda::std::declval<_Iter2>());
+#endif // _CCCL_DOXYGEN_INVOKED
 
 public:
   using iterator_type       = _Iter;
@@ -132,19 +146,25 @@ public:
                 "cuda::permutation_iterator: _Indexs value type must be convertible to iter_difference<Iter>");
 
   //! To actually use operator+ we need the index iterator to be random access
-  static_assert(::cuda::std::random_access_iterator<_Index>,
+  static_assert(::cuda::std::__has_random_access_traversal<_Index>,
                 "cuda::permutation_iterator: _Index must be a random access iterator!");
 
   //! To actually use operator+ we need the base iterator to be random access
-  static_assert(::cuda::std::random_access_iterator<_Iter>,
+  static_assert(::cuda::std::__has_random_access_traversal<_Iter>,
                 "cuda::permutation_iterator: _Iter must be a random access iterator!");
 
   //! @brief Default constructs an @c permutation_iterator with a value initialized iterator and index
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI constexpr permutation_iterator() = default;
+  _CCCL_TEMPLATE(class _Iter2 = _Iter, class _Index2 = _Index)
+  _CCCL_REQUIRES(::cuda::std::default_initializable<_Iter2> _CCCL_AND ::cuda::std::default_initializable<_Index2>)
+  _CCCL_API constexpr permutation_iterator() noexcept(
+    ::cuda::std::is_nothrow_default_constructible_v<_Iter2> && ::cuda::std::is_nothrow_default_constructible_v<_Index2>)
+      : __iter_()
+      , __index_()
+  {}
 
   //! @brief Constructs an @c permutation_iterator from an iterator and an optional index
-  //! @param __iter The iterator to to index from
+  //! @param __iter The iterator to index from
   //! @param __index The iterator with the permutations
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator(_Iter __iter, _Index __index) noexcept(
@@ -266,15 +286,15 @@ public:
     return __tmp;
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with constexpr friend operators
   //! @brief Advances a @c permutation_iterator by a given number of elements
   //! @param __iter The original @c permutation_iterator
   //! @param __n The number of elements to advance
   //! @return Equivalent to ``permutation_iterator{iter, index + __n}``
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
-  operator+(const permutation_iterator& __iter, difference_type __n) noexcept( //
-    noexcept(__iter.__index_ + __n)
-    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
+  operator+(const permutation_iterator& __iter, difference_type __n) noexcept(__nothrow_plus<_Iter2>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
   }
@@ -284,13 +304,25 @@ public:
   //! @param __iter The original @c permutation_iterator
   //! @return Equivalent to ``permutation_iterator{iter, index + __n}``
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
-  operator+(difference_type __n, const permutation_iterator& __iter) noexcept(
-    noexcept(__iter.__index_ + __n)
-    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
+  operator+(difference_type __n, const permutation_iterator& __iter) noexcept(__nothrow_plus<_Iter2>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
   }
+
+  //! @brief Decrements a @c permutation_iterator by a given number of elements
+  //! @param __iter The original @c permutation_iterator
+  //! @param __n The number of elements to decrement
+  //! @return Equivalent to ``permutation_iterator{iter, index - __n}``
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
+  operator-(const permutation_iterator& __iter, difference_type __n) noexcept(__nothrow_minus<_Iter2>)
+  {
+    return permutation_iterator{__iter.__iter_, __iter.__index_ - __n};
+  }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   //! @brief Advances the @c permutation_iterator by a given number of elements
   //! @param __n The number of elements to advance
@@ -300,19 +332,6 @@ public:
   {
     __index_ += __n;
     return *this;
-  }
-
-  //! @brief Decrements a @c permutation_iterator by a given number of elements
-  //! @param __iter The original @c permutation_iterator
-  //! @param __n The number of elements to decrement
-  //! @return Equivalent to ``permutation_iterator{iter, index - __n}``
-  _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
-  operator-(const permutation_iterator& __iter, difference_type __n) noexcept( //
-    noexcept(__iter.__index_ - __n)
-    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
-  {
-    return permutation_iterator{__iter.__iter_, __iter.__index_ - __n};
   }
 
   //! @brief Decrements the @c permutation_iterator by a given number of elements
@@ -428,16 +447,20 @@ public:
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 _CCCL_TEMPLATE(class _Iter, class _Index)
-_CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter> _CCCL_AND ::cuda::std::random_access_iterator<_Index>)
-_CCCL_HOST_DEVICE permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
+_CCCL_REQUIRES(
+  ::cuda::std::__has_random_access_traversal<_Iter> _CCCL_AND ::cuda::std::__has_random_access_traversal<_Index>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates an @c permutation_iterator from a base iterator and an iterator to an integral index
 //! @param __iter The iterator
 //! @param __index The iterator to an integral index
 //! @relates permutation_iterator
 _CCCL_TEMPLATE(class _Iter, class _Index)
-_CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter> _CCCL_AND ::cuda::std::random_access_iterator<_Index>)
+_CCCL_REQUIRES(
+  ::cuda::std::__has_random_access_traversal<_Iter> _CCCL_AND ::cuda::std::__has_random_access_traversal<_Index>)
 [[nodiscard]] _CCCL_API constexpr permutation_iterator<_Iter, _Index>
 make_permutation_iterator(_Iter __iter, _Index __index) noexcept(
   ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)

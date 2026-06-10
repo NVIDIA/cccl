@@ -25,14 +25,45 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/cstddef>
 
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) \
+  || (_CCCL_COMPILER(NVRTC) && defined(__NV_BUILTIN_MOVE_FORWARD))
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
+#else // ^^^ has builtin std::forward ^^^ / vvv no builtin std::forward vvv
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
+#endif // ^^^ no builtin std::forward ^^^
+
+// nvcc always supports std::forward in device code.
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// We cannot use host features if we are building in freestanding
+// However, NVRTC handles it specially
+#if _CCCL_FREESTANDING() && !_CCCL_COMPILER(NVRTC)
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
+#endif // _CCCL_ENABLE_FREESTANDING
+
+// include minimal std:: headers, nvcc in device mode doesn't need the std:: header
+#if _CCCL_HAS_BUILTIN_STD_FORWARD() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
+#    include <bits/move.h>
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/forward.h>)
+#    include <__utility/forward.h>
+#  elif _CCCL_HOSTED()
+#    include <utility>
+#  endif // _CCCL_HOSTED()
+#endif // _CCCL_HAS_BUILTIN_STD_FORWARD() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_BUILTIN_STD_FORWARD()
 
-// The compiler treats ::std::forward_like as a builtin function so it does not need to be
-// instantiated and will be compiled away even at -O0.
+// The compiler treats ::std::forward as a builtin function so it does not need to be instantiated and will be compiled
+// away even at -O0.
 using ::std::forward;
 
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_FORWARD() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_FORWARD() vvv
@@ -46,11 +77,11 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr _Tp&& forward(remove_reference_t<_Tp>&& __t) noexcept
 {
-  static_assert(!is_lvalue_reference<_Tp>::value, "cannot forward an rvalue as an lvalue");
+  static_assert(!is_lvalue_reference_v<_Tp>, "cannot forward an rvalue as an lvalue");
   return static_cast<_Tp&&>(__t);
 }
 
-#endif // _CCCL_HAS_BUILTIN_STD_FORWARD()
+#endif // ^^^ !_CCCL_HAS_BUILTIN_STD_FORWARD() ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

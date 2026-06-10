@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
 
@@ -41,130 +17,163 @@
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/distance.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__execution/tune.h>
+#include <cuda/__functional/call_or.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__mdspan/layout_left.h>
+#include <cuda/std/__mdspan/layout_right.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace for_each
-{
-
-/**
- * `op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
- */
-template <class OffsetT, class OpT, class RandomAccessIteratorT>
-struct op_wrapper_t
-{
-  RandomAccessIteratorT input;
-  OpT op;
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
-  {
-    // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
-    // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
-    (void) op(THRUST_NS_QUALIFIER::raw_reference_cast(*(input + i)));
-  }
-};
-
-/**
- * `op_wrapper_vectorized_t` turns bulk into a for-each-copy operation.
- * `op_wrapper_vectorized_t` is similar to `op_wrapper_t` but does not provide any guarantees about
- * address of the input parameter. `OpT` might be given a copy of the value or an actual reference
- * to the input iterator value (depending on the alignment of input iterator)
- */
-template <class OffsetT, class OpT, class T>
-struct op_wrapper_vectorized_t
-{
-  const T* input; // Raw pointer to the input data
-  OpT op; // User-provided operator
-  OffsetT partially_filled_vector_id; // Index of the vector that doesn't have all elements
-  OffsetT num_items; // Total number of non-vectorized items
-
-  // TODO Can be extracted into tuning
-  constexpr static int vec_size = 4;
-
-  // Type of the vector that is used to load the input data
-  using vector_t = typename CubVector<T, vec_size>::Type;
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
-  {
-    // Surrounding `Bulk` call doesn't invoke this operator on invalid indices, so we don't need to
-    // check for out-of-bounds access here.
-    if (i != partially_filled_vector_id)
-    { // Case of fully filled vector
-      const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
-
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int j = 0; j < vec_size; j++)
-      {
-        (void) op(*(reinterpret_cast<const T*>(&vec) + j));
-      }
-    }
-    else
-    { // Case of partially filled vector
-      for (OffsetT j = i * vec_size; j < num_items; j++)
-      {
-        (void) op(input[j]);
-      }
-    }
-  }
-};
-
-} // namespace for_each
-} // namespace detail
-
+//! @rst
+//! DeviceFor provides device-wide, parallel operations for iterating over data elements.
+//!
+//! @par Tuning
+//! All algorithms in DeviceFor that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ForPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin bulk-policy-selector
+//!      :end-before: example-end bulk-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin bulk-tuning
+//!      :end-before: example-end bulk-tuning
+//!
+//! @endrst
 struct DeviceFor
 {
-private:
-  /**
-   * Checks if the pointer is aligned to the given vector type
-   */
-  template <class VectorT, class T>
-  CUB_RUNTIME_FUNCTION static bool is_aligned(const T* ptr)
+  //! `__op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
+  template <class OffsetT, class OpT, class RandomAccessIteratorT>
+  struct __op_wrapper_t
   {
-    return (reinterpret_cast<size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
+    static_assert(::cuda::std::is_integral_v<OffsetT>);
+
+    RandomAccessIteratorT input;
+    OpT op;
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+    {
+      // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
+      // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
+      (void) op(THRUST_NS_QUALIFIER::raw_reference_cast(*(input + i)));
+    }
+  };
+
+  //!  `__op_wrapper_vectorized_t` turns bulk into a for-each-copy operation.
+  //!  `__op_wrapper_vectorized_t` is similar to `op_wrapper_t` but does not provide any guarantees about
+  //!  address of the input parameter. `OpT` might be given a copy of the value or an actual reference
+  //!  to the input iterator value (depending on the alignment of input iterator)
+  template <class OffsetT, class OpT, class T>
+  struct __op_wrapper_vectorized_t
+  {
+    static_assert(::cuda::std::is_integral_v<OffsetT>);
+
+    const T* input; // Raw pointer to the input data
+    OpT op; // User-provided operator
+    OffsetT partially_filled_vector_id; // Index of the vector that doesn't have all elements
+    OffsetT num_items; // Total number of non-vectorized items
+
+    // TODO Can be extracted into tuning
+    constexpr static int vec_size = 4;
+
+    // Type of the vector that is used to load the input data
+    using vector_t = typename CubVector<T, vec_size>::Type;
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+    {
+      // Surrounding `Bulk` call doesn't invoke this operator on invalid indices, so we don't need to
+      // check for out-of-bounds access here.
+      if (i == partially_filled_vector_id)
+      { // Case of partially filled vector
+        for (OffsetT j = i * vec_size; j < num_items; j++)
+        {
+          (void) op(input[j]);
+        }
+      }
+      else
+      { // Case of fully filled vector
+        const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 0; j < vec_size; j++)
+        {
+          (void) op(*(reinterpret_cast<const T*>(&vec) + j));
+        }
+      }
+    }
+  };
+
+  template <class OffsetT, class OpT, class EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(OffsetT num_items, OpT op, EnvT env = {})
+  {
+    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    [[maybe_unused]] const auto tuning_env =
+      ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
+    using default_policy_selector = detail::for_each::policy_selector;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), ForPolicy, default_policy_selector>;
+    return detail::for_each::dispatch(num_items, op, stream.get(), policy_selector{});
   }
 
-  template <bool UseVectorization, class RandomAccessOrContiguousIteratorT, class OffsetT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  for_each_n(RandomAccessOrContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream)
+  template <bool AllowCopy = false, class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  __for_each_n(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env)
   {
-    if constexpr (UseVectorization)
+    // We tried to detect if we can still use vectorization from the non-Copy CUB APIs, but it's disabled for now:
+    constexpr bool allow_vectorization =
+      (AllowCopy
+       /*|| detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value*/);
+
+    if constexpr (allow_vectorization && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>)
     {
       auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
-      using wrapped_op_t =
-        detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<RandomAccessOrContiguousIteratorT>>;
+      using wrapped_op_t    = __op_wrapper_vectorized_t<NumItemsT, OpT, detail::it_value_t<RandomAccessIteratorT>>;
 
-      if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
+      if (::cuda::std::is_sufficiently_aligned<alignof(typename wrapped_op_t::vector_t)>(unwrapped_first))
       { // Vectorize loads
-        const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
-
-        return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(
-          num_vec_items,
-          wrapped_op_t{
-            unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
-          stream);
+        const NumItemsT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
+        return __bulk(
+          num_vec_items, wrapped_op_t{unwrapped_first, op, num_items / wrapped_op_t::vec_size, num_items}, env);
       }
+    }
 
-      // Fallback to non-vectorized version
-      return for_each_n<false>(first, num_items, op, stream);
-    }
-    else
+    return __bulk(num_items, __op_wrapper_t<NumItemsT, OpT, RandomAccessIteratorT>{first, op}, env);
+  }
+
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __for_each_n(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RandomAccessIteratorT first,
+    NumItemsT num_items,
+    OpT op,
+    cudaStream_t stream = {})
+  {
+    if (d_temp_storage == nullptr)
     {
-      using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessOrContiguousIteratorT>;
-      return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
+      temp_storage_bytes = 1;
+      return cudaSuccess;
     }
+    return __for_each_n(first, num_items, op, stream);
   }
 
 public:
@@ -176,6 +185,9 @@ public:
   //! The algorithm is similar to
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
@@ -206,8 +218,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -241,6 +252,9 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
   //!
@@ -273,8 +287,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -314,6 +327,9 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, last)``
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
   //!
@@ -343,8 +359,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -386,6 +401,9 @@ public:
   //! Unlike the ``ForEachN`` algorithm, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
@@ -419,8 +437,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -462,6 +479,9 @@ public:
   //! Unlike the ``ForEach`` algorithm, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopy`` to vectorize loads.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
@@ -492,8 +512,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -536,7 +555,16 @@ public:
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
   //!
-  //! - The return value of ``op``, if any, is ignored.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! .. note::
+  //!
+  //!    The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -555,6 +583,23 @@ public:
   //!     :start-after: example-begin bulk-wo-temp-storage
   //!     :end-before: example-end bulk-wo-temp-storage
   //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use Bulk with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin bulk-square-env-t
+  //!     :end-before: example-end bulk-square-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin bulk-env
+  //!     :end-before: example-end bulk-env
+  //!
   //! @endrst
   //!
   //! @tparam ShapeT
@@ -563,46 +608,61 @@ public:
   //! @tparam OpT
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
   //! @param[in] shape
   //!   Shape of the index space to iterate over
   //!
   //! @param[in] op
   //!   Function object to apply to each index in the index space
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class ShapeT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream = {})
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <class ShapeT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
     static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
-    using offset_t = ShapeT;
-    return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
+    if (shape == 0)
+    {
+      return cudaSuccess;
+    }
+    return __bulk(shape, op, env);
   }
 
-private:
-  // Internal version without NVTX raNGE
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachNNoNVTX(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  // we need this so the previous overload is not ambiguous with the next one
+  static_assert(!::cuda::std::is_convertible_v<::cuda::stream_ref, cudaStream_t>);
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class ShapeT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream)
   {
-    using offset_t = NumItemsT;
-    // Disable auto-vectorization for now:
-    // constexpr bool use_vectorization =
-    //   detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value
-    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>;
-    constexpr bool use_vectorization = false;
-    return for_each_n<use_vectorization, RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream);
+    return Bulk(shape, op, ::cuda::stream_ref{stream});
   }
 
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``
   //!
-  //! - The return value of ``op``, if any, is ignored.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! .. note::
+  //!
+  //!    The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -621,6 +681,23 @@ public:
   //!     :start-after: example-begin for-each-n-wo-temp-storage
   //!     :end-before: example-end for-each-n-wo-temp-storage
   //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use `ForEachN` with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin square-ref-env-t
+  //!     :end-before: example-end square-ref-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-n-env
+  //!     :end-before: example-end for-each-n-env
+  //!
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
@@ -632,6 +709,10 @@ public:
   //! @tparam OpT
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
   //! @param[in] first
   //!   The beginning of the sequence
   //!
@@ -641,14 +722,28 @@ public:
   //! @param[in] op
   //!   Function object to apply to each element in the range
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <class RandomAccessIteratorT,
+            class NumItemsT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
-    return ForEachNNoNVTX(first, num_items, op, stream);
+    return __for_each_n(first, num_items, op, env);
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream)
+  {
+    return ForEachN(first, num_items, op, ::cuda::stream_ref{stream});
   }
 
   //! @rst
@@ -657,7 +752,16 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, last)``
   //!
-  //! - The return value of ``op``, if any, is ignored.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! .. note::
+  //!
+  //!    The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -676,6 +780,23 @@ public:
   //!     :start-after: example-begin for-each-wo-temp-storage
   //!     :end-before: example-end for-each-wo-temp-storage
   //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use `ForEach` with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin square-ref-env-t
+  //!     :end-before: example-end square-ref-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-env
+  //!     :end-before: example-end for-each-env
+  //!
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
@@ -683,6 +804,10 @@ public:
   //!
   //! @tparam OpT
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
   //!
   //! @param[in] first
   //!   The beginning of the sequence
@@ -693,31 +818,31 @@ public:
   //! @param[in] op
   //!   Function object to apply to each element in the range
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class RandomAccessIteratorT, class OpT>
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <class RandomAccessIteratorT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
+  ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
-
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
-    return ForEachNNoNVTX(first, num_items, op, stream);
+    return __for_each_n(first, num_items, op, env);
   }
 
-private:
-  // Internal version without NVTX range
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class RandomAccessIteratorT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachCopyNNoNVTX(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream)
   {
-    using offset_t                   = NumItemsT;
-    constexpr bool use_vectorization = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>;
-    return for_each_n<use_vectorization, RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream);
+    return ForEach(first, last, op, ::cuda::stream_ref{stream});
   }
 
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -725,6 +850,13 @@ public:
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``.
   //! Unlike the ``ForEachN`` algorithm, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
   //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
@@ -746,6 +878,23 @@ public:
   //!     :start-after: example-begin for-each-copy-n-wo-temp-storage
   //!     :end-before: example-end for-each-copy-n-wo-temp-storage
   //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use `ForEachCopyN` with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin odd-count-env-t
+  //!     :end-before: example-end odd-count-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-copy-n-env
+  //!     :end-before: example-end for-each-copy-n-env
+  //!
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
@@ -757,6 +906,10 @@ public:
   //! @tparam OpT
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
   //! @param[in] first
   //!   The beginning of the sequence
   //!
@@ -766,14 +919,28 @@ public:
   //! @param[in] op
   //!   Function object to apply to a copy of each element in the range
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <class RandomAccessIteratorT,
+            class NumItemsT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
-    return ForEachCopyNNoNVTX(first, num_items, op, stream);
+    return __for_each_n<true>(first, num_items, op, env);
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream)
+  {
+    return ForEachCopyN(first, num_items, op, ::cuda::stream_ref{stream});
   }
 
   //! @rst
@@ -783,6 +950,13 @@ public:
   //! Applies the function object ``op`` to each element in the range ``[first, last)``.
   //! Unlike the ``ForEach`` algorithm, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopy`` to vectorize loads.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
   //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
@@ -804,6 +978,23 @@ public:
   //!     :start-after: example-begin for-each-copy-wo-temp-storage
   //!     :end-before: example-end for-each-copy-wo-temp-storage
   //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use `ForEachCopy` with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin odd-count-env-t
+  //!     :end-before: example-end odd-count-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-copy-env
+  //!     :end-before: example-end for-each-copy-env
+  //!
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
@@ -811,6 +1002,10 @@ public:
   //!
   //! @tparam OpT
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
   //!
   //! @param[in] first
   //!   The beginning of the sequence
@@ -821,16 +1016,29 @@ public:
   //! @param[in] op
   //!   Function object to apply to a copy of each element in the range
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class RandomAccessIteratorT, class OpT>
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <class RandomAccessIteratorT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
+  ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
-    return ForEachCopyNNoNVTX(first, num_items, op, stream);
+    return __for_each_n<true>(first, num_items, op, env);
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class RandomAccessIteratorT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream)
+  {
+    return ForEachCopy(first, last, op, ::cuda::stream_ref{stream});
   }
 
   /*********************************************************************************************************************
@@ -841,7 +1049,11 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Iterate through a multi-dimensional extents into
+  //! Iterate through a multi-dimensional extents into a single linear index and a list of indices for each extent
+  //! dimension.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - a single linear index that represents the current iteration
   //! - indices of each extent dimension
@@ -882,8 +1094,7 @@ public:
   //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -907,8 +1118,6 @@ public:
     OpType op,
     cudaStream_t stream = {})
   {
-    // TODO: check dimensions overflows
-    // TODO: check tha arity of OpType is equal to sizeof...(ExtentsType)
     if (d_temp_storage == nullptr)
     {
       temp_storage_bytes = 1;
@@ -922,6 +1131,13 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Iterate through a multi-dimensional extents producing
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
   //!
   //! - a single linear index that represents the current iteration
   //! - list of indices containing the coordinates for each extent dimension
@@ -961,33 +1177,189 @@ public:
   //! @tparam OpType
   //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
   //! @param[in] extents
   //!   Extents object that represents a multi-dimensional index space
   //!
   //! @param[in] op
   //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within. Default stream is `NULL`
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
   //!
   //! @return cudaError_t
   //!   error status
+  template <typename IndexType,
+            size_t... Extents,
+            typename OpType,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, EnvT env = {})
+  {
+    using extents_type = ::cuda::std::extents<IndexType, Extents...>;
+    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, env);
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
   template <typename IndexType, size_t... Extents, typename OpType>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream)
+  {
+    using extents_type = ::cuda::std::extents<IndexType, Extents...>;
+    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, stream);
+  }
+
+  /*********************************************************************************************************************
+   * ForEachInLayout
+   ********************************************************************************************************************/
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each
+  //! element, passing
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - a single linear index that represents the current iteration
+  //! - a list of indices containing the coordinates for each extent dimension
+  //!
+  //! The iteration order depends on the layout type:
+  //!
+  //! - ``layout_right``: Iterates in row-major order (rightmost index varies fastest)
+  //! - ``layout_left``: Iterates in column-major order (leftmost index varies fastest)
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! .. note::
+  //!
+  //!    The return value of ``op``, if any, is ignored.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use ``ForEachInLayout`` to iterate through a 2D matrix in
+  //! column-major order using ``layout_left``.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_layout_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-layout-op
+  //!     :end-before: example-end for-each-in-layout-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_layout_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-layout-example
+  //!     :end-before: example-end for-each-in-layout-example
+  //!
+  //! @endrst
+  //!
+  //! @tparam Layout
+  //!   **[inferred]** The mdspan layout type, must be either ``cuda::std::layout_left`` or ``cuda::std::layout_right``
+  //!
+  //! @tparam IndexType
+  //!   **[inferred]** An integral type that represents the extent index space
+  //!
+  //! @tparam Extents
+  //!   **[inferred]** The extent sizes for each rank index
+  //!
+  //! @tparam OpType
+  //!   **[inferred]** A function object with arity equal to the number of extents + 1 for the linear index (iteration).
+  //!   The first parameter is the linear index, followed by one parameter for each dimension coordinate.
+  //!
+  //! @param[in] layout_mapping
+  //!   Layout mapping object that determines the iteration order and represents a multi-dimensional index space
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates.
+  //!   Called as ``op(linear_index, coord_0, coord_1, ..., coord_n)``
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  //!
+  //! @return cudaError_t
+  //!   error status
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping> _CCCL_AND(
+    !::cuda::std::is_convertible_v<EnvT, cudaStream_t>))
+  CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    return __for_each_in_extents(layout_mapping, op, env);
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, cudaStream_t stream)
+  {
+    return ForEachInLayout(layout_mapping, op, ::cuda::stream_ref{stream});
+  }
+
+  // Internal version of ForEachInLayout without NVTX range, for use by other device algorithms
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  __for_each_in_extents(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
   {
     using namespace cub::detail;
-    using extents_type      = ::cuda::std::extents<IndexType, Extents...>;
-    using extent_index_type = typename extents_type::index_type;
-    using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    using extents_type                   = typename LayoutMapping::extents_type;
+    using extent_index_type              = typename extents_type::index_type;
+    using fast_mod_array_t               = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
     static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
-    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(extents, seq);
+    constexpr bool is_layout_right       = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
+    auto extents                         = layout_mapping.extents();
+    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
     fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
-    for_each::op_wrapper_extents_t<OpType, extents_type, fast_mod_array_t> op_wrapper{
+    for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
       op, extents, sub_sizes_div_array, extents_div_array};
-    return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
+    using ShapeT = implicit_prom_t<extent_index_type>;
+    auto shape   = static_cast<ShapeT>(cub::detail::size(extents));
+    if (shape == 0)
+    {
+      return cudaSuccess;
+    }
+    return __bulk(shape, op_wrapper, env);
   }
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const LayoutMapping& layout_mapping,
+    OpType op,
+    cudaStream_t stream = {})
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+    return ForEachInLayout(layout_mapping, op, stream);
+  }
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

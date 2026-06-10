@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -60,25 +36,26 @@ struct Mod2Equality
   }
 };
 
-template <typename InputIt, typename OutputIt, typename InitT, typename BinaryOp>
-void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt result, InitT init, BinaryOp op)
+template <typename InputIt, typename OutputIt, typename InitValueT, typename BinaryOp>
+void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt result, InitValueT init, BinaryOp op)
 {
   using value_t  = cub::detail::it_value_t<InputIt>;
-  using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitT>;
+  using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitValueT>;
   using output_t = cub::detail::it_value_t<OutputIt>;
   accum_t acc    = static_cast<accum_t>(init);
   for (; first != last; ++first)
   {
+    auto v    = *first;
     *result++ = static_cast<output_t>(acc);
-    acc       = op(acc, *first);
+    acc       = op(acc, v);
   }
 }
 
-template <typename InputIt, typename OutputIt, typename BinaryOp, typename InitT>
-void compute_inclusive_scan_reference(InputIt first, InputIt last, OutputIt result, BinaryOp op, InitT init)
+template <typename InputIt, typename OutputIt, typename BinaryOp, typename InitValueT>
+void compute_inclusive_scan_reference(InputIt first, InputIt last, OutputIt result, BinaryOp op, InitValueT init)
 {
   using value_t  = cub::detail::it_value_t<InputIt>;
-  using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitT>;
+  using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitValueT>;
   using output_t = cub::detail::it_value_t<OutputIt>;
   accum_t acc    = static_cast<accum_t>(init);
   for (; first != last; ++first)
@@ -93,18 +70,18 @@ template <typename ValueInItT,
           typename ValuesOutItT,
           typename ScanOpT,
           typename EqualityOpT,
-          typename InitT>
+          typename InitValueT>
 void compute_exclusive_scan_by_key_reference(
   ValueInItT h_values_it,
   KeyInItT h_keys_it,
   ValuesOutItT result_out_it,
   ScanOpT scan_op,
   EqualityOpT equality_op,
-  InitT init,
+  InitValueT init,
   std::size_t num_items)
 {
   using value_t  = cub::detail::it_value_t<ValueInItT>;
-  using accum_t  = ::cuda::std::__accumulator_t<ScanOpT, value_t, InitT>;
+  using accum_t  = ::cuda::std::__accumulator_t<ScanOpT, value_t, InitValueT>;
   using output_t = cub::detail::it_value_t<ValuesOutItT>;
 
   if (num_items > 0)
@@ -127,14 +104,14 @@ void compute_exclusive_scan_by_key_reference(
   }
 }
 
-template <typename ValueT, typename KeyT, typename ValuesOutItT, typename ScanOpT, typename EqualityOpT, typename InitT>
+template <typename ValueT, typename KeyT, typename ValuesOutItT, typename ScanOpT, typename EqualityOpT, typename InitValueT>
 void compute_exclusive_scan_by_key_reference(
   const c2h::device_vector<ValueT>& d_values,
   const c2h::device_vector<KeyT>& d_keys,
   ValuesOutItT result_out_it,
   ScanOpT scan_op,
   EqualityOpT equality_op,
-  InitT init)
+  InitValueT init)
 {
   c2h::host_vector<ValueT> host_values(d_values);
   c2h::host_vector<KeyT> host_keys(d_keys);
@@ -190,3 +167,66 @@ void compute_inclusive_scan_by_key_reference(
   compute_inclusive_scan_by_key_reference(
     host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, num_items);
 }
+
+struct block_size_recording_constant_iterator
+{
+  using value_type        = int;
+  using reference         = int;
+  using pointer           = int*;
+  using difference_type   = ptrdiff_t;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
+
+  int value;
+  int* block_size_ptr;
+  difference_type offset;
+
+  __host__ __device__ block_size_recording_constant_iterator(int val, int* bs_ptr, difference_type off = 0)
+      : value(val)
+      , block_size_ptr(bs_ptr)
+      , offset(off)
+  {}
+
+  __device__ reference operator[](difference_type) const
+  {
+    if (threadIdx.x == 0)
+    {
+      *block_size_ptr = blockDim.x;
+    }
+    return value;
+  }
+
+  __device__ reference operator*() const
+  {
+    if (threadIdx.x == 0)
+    {
+      *block_size_ptr = blockDim.x;
+    }
+    return value;
+  }
+
+  __host__ __device__ block_size_recording_constant_iterator operator+(difference_type n) const
+  {
+    return {value, block_size_ptr, offset + n};
+  }
+
+  __host__ __device__ block_size_recording_constant_iterator& operator+=(difference_type n)
+  {
+    offset += n;
+    return *this;
+  }
+
+  __host__ __device__ difference_type operator-(const block_size_recording_constant_iterator& other) const
+  {
+    return offset - other.offset;
+  }
+
+  __host__ __device__ bool operator==(const block_size_recording_constant_iterator& other) const
+  {
+    return offset == other.offset;
+  }
+
+  __host__ __device__ bool operator!=(const block_size_recording_constant_iterator& other) const
+  {
+    return offset != other.offset;
+  }
+};

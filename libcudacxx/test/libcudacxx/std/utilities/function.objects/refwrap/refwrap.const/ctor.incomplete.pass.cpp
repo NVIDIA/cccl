@@ -7,13 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17
-
 // <functional>
 //
 // reference_wrapper<T>
 //
-//  where T is an incomplete type (since C++20)
+//  where T is an incomplete type
 
 // #include <cuda/std/functional>
 #include <cuda/std/cassert>
@@ -23,9 +21,9 @@
 
 struct Foo;
 
-__host__ __device__ Foo& get_foo();
+TEST_FUNC Foo& get_foo();
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   Foo& foo = get_foo();
   cuda::std::reference_wrapper<Foo> ref{foo};
@@ -35,7 +33,7 @@ __host__ __device__ void test()
 struct Foo
 {};
 
-__host__ __device__ Foo& get_foo()
+TEST_FUNC Foo& get_foo()
 {
   static Foo foo;
   return foo;

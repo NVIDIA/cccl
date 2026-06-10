@@ -45,7 +45,7 @@ template <class _Elem, size_t _Len>
 inline constexpr bool __is_bounded_array_of<_Elem[_Len], _Elem> = true;
 
 template <class _Context, class _Tp>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
 {
   using _CtxCharT = typename _Context::char_type;
 
@@ -100,8 +100,8 @@ template <class _Context, class _Tp>
     __ret = __fmt_arg_t::__const_char_type_ptr;
   }
   // todo: add std::string and std::string_view support
-  // - add `|| __cccl_is_std_string_view_v<_Tp> || __cccl_is_std_string_v<_Tp>` to the condition
-  else if constexpr (__cccl_is_string_view_v<_Tp>)
+  // - add `|| __is_std_basic_string_view_v<_Tp> || __is_std_basic_string_v<_Tp>` to the condition
+  else if constexpr (__is_cuda_std_basic_string_view_v<_Tp>)
   {
     __ret = (is_same_v<_CtxCharT, typename _Tp::value_type>) ? __fmt_arg_t::__string_view : __ret;
   }
@@ -123,7 +123,7 @@ template <class _Context, class _Tp>
 }
 
 template <class _Context, class _Tp>
-[[nodiscard]] _CCCL_API basic_format_arg<_Context> __fmt_make_format_arg(_Tp& __value) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API basic_format_arg<_Context> __fmt_make_format_arg(_Tp& __value) noexcept
 {
   using _Dp                   = remove_const_t<_Tp>;
   constexpr __fmt_arg_t __arg = __fmt_determine_arg_t<_Context, _Dp>();
@@ -196,7 +196,7 @@ template <class _Context, class _Tp>
 }
 
 template <class _Context, class _Tp>
-_CCCL_API void __fmt_make_packed_storage_impl(
+_CCCL_HOST_DEVICE_API void __fmt_make_packed_storage_impl(
   uint64_t& __types, __basic_format_arg_value<_Context>*& __values, int& __shift, _Tp& __v) noexcept
 {
   basic_format_arg<_Context> __arg = ::cuda::std::__fmt_make_format_arg<_Context>(__v);
@@ -214,7 +214,7 @@ _CCCL_API void __fmt_make_packed_storage_impl(
 }
 
 template <class _Context, class... _Args>
-_CCCL_API void
+_CCCL_HOST_DEVICE_API void
 __fmt_make_packed_storage(uint64_t& __types, __basic_format_arg_value<_Context>* __values, _Args&... __args) noexcept
 {
   int __shift = 0;
@@ -222,7 +222,7 @@ __fmt_make_packed_storage(uint64_t& __types, __basic_format_arg_value<_Context>*
 }
 
 template <class _Context, class... _Args>
-_CCCL_API void __fmt_store_basic_format_arg(basic_format_arg<_Context>* __data, _Args&... __args) noexcept
+_CCCL_HOST_DEVICE_API void __fmt_store_basic_format_arg(basic_format_arg<_Context>* __data, _Args&... __args) noexcept
 {
   ((*__data++ = ::cuda::std::__fmt_make_format_arg<_Context>(__args)), ...);
 }
@@ -249,7 +249,7 @@ struct __unpacked_format_arg_store
 template <class _Context, class... _Args>
 struct __format_arg_store
 {
-  _CCCL_API __format_arg_store(_Args&... __args) noexcept
+  _CCCL_HOST_DEVICE_API __format_arg_store(_Args&... __args) noexcept
   {
     if constexpr (sizeof...(_Args) != 0)
     {

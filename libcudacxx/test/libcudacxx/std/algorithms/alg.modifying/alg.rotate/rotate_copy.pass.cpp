@@ -8,20 +8,23 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <algorithm>
 
 // template<ForwardIterator InIter, OutputIterator<auto, InIter::reference> OutIter>
 //   constexpr OutIter          // constexpr after C++17
 //   rotate_copy(InIter first, InIter middle, InIter last, OutIter result);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]          = {0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -126,7 +129,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<bidirectional_iterator<const int*>, forward_iterator<int*>>();
@@ -153,7 +156,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   return 0;
 }

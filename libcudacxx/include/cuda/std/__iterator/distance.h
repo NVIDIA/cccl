@@ -39,7 +39,7 @@ template <class _InputIter>
 [[nodiscard]] _CCCL_API constexpr typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
-  if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
+  if constexpr (__has_random_access_traversal<_InputIter>) // To support pointers to incomplete types
   {
     return __last - __first;
   }
@@ -62,7 +62,7 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.distance]
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__distance)
 struct __fn
 {
@@ -93,7 +93,6 @@ struct __fn
     {
       return __last - decay_t<_Ip>(__first);
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -103,13 +102,12 @@ struct __fn
   {
     if constexpr (sized_range<_Rp>)
     {
-      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::size(__r));
+      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::__size_cpo{}(__r));
     }
     else
     {
-      return operator()(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r));
+      return operator()(::cuda::std::ranges::__begin_cpo{}(__r), ::cuda::std::ranges::__end_cpo{}(__r));
     }
-    _CCCL_UNREACHABLE();
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -117,9 +115,12 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto distance = __distance::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __distance_cpo = __distance::__fn;
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

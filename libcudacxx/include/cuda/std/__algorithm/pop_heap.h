@@ -72,9 +72,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
 _CCCL_API constexpr void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-  static_assert(::cuda::std::is_copy_constructible<_RandomAccessIterator>::value,
-                "Iterators must be copy constructible.");
-  static_assert(::cuda::std::is_copy_assignable<_RandomAccessIterator>::value, "Iterators must be copy assignable.");
+  static_assert(::cuda::std::is_copy_constructible_v<_RandomAccessIterator>, "Iterators must be copy constructible.");
+  static_assert(::cuda::std::is_copy_assignable_v<_RandomAccessIterator>, "Iterators must be copy assignable.");
 
   typename iterator_traits<_RandomAccessIterator>::difference_type __len = __last - __first;
   ::cuda::std::__pop_heap<_ClassicAlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last), __comp, __len);

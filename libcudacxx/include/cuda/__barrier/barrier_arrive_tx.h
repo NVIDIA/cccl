@@ -26,7 +26,6 @@
 #  if __cccl_ptx_isa >= 800
 
 #    include <cuda/__barrier/barrier_block_scope.h>
-#    include <cuda/__barrier/barrier_native_handle.h>
 #    include <cuda/__memory/address_space.h>
 #    include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
@@ -39,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
-[[nodiscard]] _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
+[[nodiscard]] _CCCL_DEVICE_API inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
   barrier<thread_scope_block>& __b,
   ::cuda::std::ptrdiff_t __arrive_count_update,
   ::cuda::std::ptrdiff_t __transaction_count_update)

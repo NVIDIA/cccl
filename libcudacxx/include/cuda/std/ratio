@@ -212,11 +212,10 @@ template <intmax_t _Num, intmax_t _Den>
 constexpr intmax_t ratio<_Num, _Den>::den;
 
 template <class _Tp>
-struct __is_ratio : false_type
-{};
+inline constexpr bool __is_cuda_std_ratio_v = false;
+
 template <intmax_t _Num, intmax_t _Den>
-struct __is_ratio<ratio<_Num, _Den>> : true_type
-{};
+inline constexpr bool __is_cuda_std_ratio_v<ratio<_Num, _Den>> = true;
 
 using atto  = ratio<1LL, 1000000000000000000LL>;
 using femto = ratio<1LL, 1000000000000000LL>;

@@ -17,21 +17,21 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
-    cuda::transform_output_iterator<random_access_iterator<int*>, PlusOne> iter;
+    cuda::transform_output_iterator<PlusOne, random_access_iterator<int*>> iter;
     assert(iter.base() == random_access_iterator<int*>{});
   }
 
   {
-    const cuda::transform_output_iterator<random_access_iterator<int*>, PlusOne> iter;
+    const cuda::transform_output_iterator<PlusOne, random_access_iterator<int*>> iter;
     assert(iter.base() == random_access_iterator<int*>{});
   }
 
   {
     static_assert(!cuda::std::is_default_constructible_v<
-                  cuda::transform_output_iterator<random_access_iterator<int*>, NotDefaultConstructiblePlusOne>>);
+                  cuda::transform_output_iterator<NotDefaultConstructiblePlusOne, random_access_iterator<int*>>>);
   }
 
   return true;
@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

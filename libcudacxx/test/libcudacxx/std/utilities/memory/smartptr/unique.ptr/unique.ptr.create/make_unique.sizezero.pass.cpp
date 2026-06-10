@@ -12,6 +12,9 @@
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: nvhpc
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // Test the fix for https://llvm.org/PR54100
 
 #include <cuda/std/__memory_>
@@ -23,7 +26,7 @@ struct A
 {
   int m[0];
 };
-static_assert(sizeof(A) == 0, ""); // an extension supported by GCC and Clang
+static_assert(sizeof(A) == 0); // an extension supported by GCC and Clang
 
 int main(int, char**)
 {

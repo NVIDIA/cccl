@@ -31,7 +31,7 @@ _CCCL_CONCEPT canPlusEqual = _CCCL_REQUIRES_EXPR((T, U), T& t, U& u)(t += u);
 template <class T, class U>
 _CCCL_CONCEPT canMinusEqual = _CCCL_REQUIRES_EXPR((T, U), T& t, U& u)(t -= u);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[]    = {1, 2, 3, 4, 5};
   double b[] = {4.1, 3.2, 4.3, 0.1, 0.2};
@@ -89,6 +89,15 @@ __host__ __device__ constexpr bool test()
     assert(iter2 - iter1 == 5);
     assert(iter1 - iter2 == -5);
     static_assert(cuda::std::is_same_v<decltype(iter2 - iter1), cuda::std::iter_difference_t<Iter>>);
+  }
+
+  { // One of the iterators is not default constructible but sized
+    cuda::zip_iterator iter1{IterNotDefaultConstructibleSized{0}, b};
+    cuda::zip_iterator iter2{IterNotDefaultConstructibleSized{5}, b + 5};
+    assert(iter2 - iter1 == 5);
+    assert(iter1 - iter2 == -5);
+
+    // Its a fake iterator, so we did not implement all the random_access interface
   }
 
   { // One of the iterators is not random access but sized

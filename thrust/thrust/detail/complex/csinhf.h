@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2005 Bruce D. Evans and Steven G. Kargl
@@ -54,14 +41,16 @@
 #include <thrust/detail/complex/cexpf.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/hyperbolic_functions.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace detail
+namespace detail::complex
 {
-namespace complex
-{
-
 using thrust::complex;
 
 _CCCL_HOST_DEVICE inline complex<float> csinhf(const complex<float>& z)
@@ -84,37 +73,38 @@ _CCCL_HOST_DEVICE inline complex<float> csinhf(const complex<float>& z)
   {
     if (iy == 0)
     {
-      return (complex<float>(sinhf(x), y));
+      return (complex<float>(::cuda::std::sinhf(x), y));
     }
     if (ix < 0x41100000) /* small x: normal case */
     {
-      return (complex<float>(sinhf(x) * cosf(y), coshf(x) * sinf(y)));
+      return (
+        complex<float>(::cuda::std::sinhf(x) * ::cuda::std::cosf(y), ::cuda::std::coshf(x) * ::cuda::std::sinf(y)));
     }
 
     /* |x| >= 9, so cosh(x) ~= exp(|x|) */
     if (ix < 0x42b17218)
     {
       /* x < 88.7: expf(|x|) won't overflow */
-      h = expf(fabsf(x)) * 0.5f;
-      return (complex<float>(copysignf(h, x) * cosf(y), h * sinf(y)));
+      h = ::cuda::std::expf(::cuda::std::fabsf(x)) * 0.5f;
+      return (complex<float>(::cuda::std::copysignf(h, x) * ::cuda::std::cosf(y), h * ::cuda::std::sinf(y)));
     }
     else if (ix < 0x4340b1e7)
     {
       /* x < 192.7: scale to avoid overflow */
-      complex<float> z_ = ldexp_cexpf(complex<float>(fabsf(x), y), -1);
-      return (complex<float>(z_.real() * copysignf(1.0f, x), z_.imag()));
+      complex<float> z_ = ldexp_cexpf(complex<float>(::cuda::std::fabsf(x), y), -1);
+      return (complex<float>(z_.real() * ::cuda::std::copysignf(1.0f, x), z_.imag()));
     }
     else
     {
       /* x >= 192.7: the result always overflows */
       h = huge * x;
-      return (complex<float>(h * cosf(y), h * h * sinf(y)));
+      return (complex<float>(h * ::cuda::std::cosf(y), h * h * ::cuda::std::sinf(y)));
     }
   }
 
   if (ix == 0 && iy >= 0x7f800000)
   {
-    return (complex<float>(copysignf(0, x * (y - y)), y - y));
+    return (complex<float>(::cuda::std::copysignf(0, x * (y - y)), y - y));
   }
 
   if (iy == 0 && ix >= 0x7f800000)
@@ -123,7 +113,7 @@ _CCCL_HOST_DEVICE inline complex<float> csinhf(const complex<float>& z)
     {
       return (complex<float>(x, y));
     }
-    return (complex<float>(x, copysignf(0.0f, y)));
+    return (complex<float>(x, ::cuda::std::copysignf(0.0f, y)));
   }
 
   if (ix < 0x7f800000 && iy >= 0x7f800000)
@@ -137,7 +127,8 @@ _CCCL_HOST_DEVICE inline complex<float> csinhf(const complex<float>& z)
     {
       return (complex<float>(x * x, x * (y - y)));
     }
-    return (complex<float>(x * cosf(y), ::cuda::std::numeric_limits<float>::infinity() * sinf(y)));
+    return (
+      complex<float>(x * ::cuda::std::cosf(y), ::cuda::std::numeric_limits<float>::infinity() * ::cuda::std::sinf(y)));
   }
 
   return (complex<float>((x * x) * (y - y), (x + x) * (y - y)));
@@ -148,10 +139,7 @@ _CCCL_HOST_DEVICE inline complex<float> csinf(complex<float> z)
   z = csinhf(complex<float>(-z.imag(), z.real()));
   return (complex<float>(z.imag(), -z.real()));
 }
-
-} // namespace complex
-
-} // namespace detail
+} // namespace detail::complex
 
 template <>
 _CCCL_HOST_DEVICE inline complex<float> sin(const complex<float>& z)

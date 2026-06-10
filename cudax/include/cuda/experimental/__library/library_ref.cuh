@@ -26,12 +26,12 @@
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-
 template <class _Signature>
 class kernel_ref;
 
@@ -74,14 +74,14 @@ public:
   [[nodiscard]] bool has_kernel(const char* __name) const
   {
     ::CUkernel __kernel{};
-    switch (const auto __res = _CUDA_DRIVER::__libraryGetKernelNoThrow(__kernel, __library_, __name))
+    switch (const auto __res = ::cuda::__driver::__libraryGetKernelNoThrow(__kernel, __library_, __name))
     {
       case ::cudaSuccess:
         return true;
       case ::cudaErrorSymbolNotFound:
         return false;
       default:
-        ::cuda::__throw_cuda_error(__res, "Failed to get the kernel from library");
+        _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the kernel from library");
     }
   }
 
@@ -98,10 +98,10 @@ public:
   [[nodiscard]] kernel_ref<_Signature> kernel(const char* __name) const
   {
     ::CUkernel __kernel{};
-    if (const auto __res = _CUDA_DRIVER::__libraryGetKernelNoThrow(__kernel, __library_, __name);
+    if (const auto __res = ::cuda::__driver::__libraryGetKernelNoThrow(__kernel, __library_, __name);
         __res != ::cudaSuccess)
     {
-      ::cuda::__throw_cuda_error(__res, "Failed to get the kernel from the library");
+      _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the kernel from the library");
     }
     return kernel_ref<_Signature>{__kernel};
   }
@@ -120,14 +120,14 @@ public:
 
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    switch (const auto __res = _CUDA_DRIVER::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name))
+    switch (const auto __res = ::cuda::__driver::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name))
     {
       case ::cudaSuccess:
         return true;
       case ::cudaErrorSymbolNotFound:
         return false;
       default:
-        ::cuda::__throw_cuda_error(__res, "Failed to get the global symbol from library");
+        _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the global symbol from library");
     }
   }
 
@@ -145,10 +145,10 @@ public:
 
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    if (const auto __res = _CUDA_DRIVER::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name);
+    if (const auto __res = ::cuda::__driver::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name);
         __res != ::cudaSuccess)
     {
-      ::cuda::__throw_cuda_error(__res, "Failed to get the global symbol from the library");
+      _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the global symbol from the library");
     }
     return library_symbol_info{reinterpret_cast<void*>(__dptr), __size};
   }
@@ -166,14 +166,14 @@ public:
   {
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    switch (const auto __res = _CUDA_DRIVER::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name))
+    switch (const auto __res = ::cuda::__driver::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name))
     {
       case ::cudaSuccess:
         return true;
       case ::cudaErrorSymbolNotFound:
         return false;
       default:
-        ::cuda::__throw_cuda_error(__res, "Failed to get the managed symbol from library");
+        _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the managed symbol from library");
     }
   }
 
@@ -190,10 +190,10 @@ public:
   {
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    if (const auto __res = _CUDA_DRIVER::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name);
+    if (const auto __res = ::cuda::__driver::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name);
         __res != ::cudaSuccess)
     {
-      ::cuda::__throw_cuda_error(__res, "Failed to get the managed symbol from the library");
+      _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the managed symbol from the library");
     }
     return library_symbol_info{reinterpret_cast<void*>(__dptr), __size};
   }
@@ -229,7 +229,6 @@ public:
 protected:
   ::CUlibrary __library_;
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Iter, class _Func>
 using for_each_result = in_fun_result<_Iter, _Func>;
@@ -67,7 +67,8 @@ public:
   _CCCL_API constexpr for_each_result<borrowed_iterator_t<_Range>, _Func>
   operator()(_Range&& __range, _Func __func, _Proj __proj = {}) const
   {
-    return __for_each_impl(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __func, __proj);
+    return __for_each_impl(
+      ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range), __func, __proj);
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -77,7 +78,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto for_each = __for_each::__fn{};
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

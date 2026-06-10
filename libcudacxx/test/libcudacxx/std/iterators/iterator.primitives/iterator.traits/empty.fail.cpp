@@ -24,132 +24,132 @@ struct NotAnIteratorEmpty
 
 struct NotAnIteratorNoDifference
 {
-  //     typedef int                       difference_type;
-  typedef A value_type;
-  typedef A* pointer;
-  typedef A& reference;
-  typedef cuda::std::forward_iterator_tag iterator_category;
+  //     using difference_type = int;
+  using value_type        = A;
+  using pointer           = A*;
+  using reference         = A&;
+  using iterator_category = cuda::std::forward_iterator_tag;
 };
 
 struct NotAnIteratorNoValue
 {
-  typedef int difference_type;
-  //     typedef A                         value_type;
-  typedef A* pointer;
-  typedef A& reference;
-  typedef cuda::std::forward_iterator_tag iterator_category;
+  using difference_type = int;
+  //     using value_type = A;
+  using pointer           = A*;
+  using reference         = A&;
+  using iterator_category = cuda::std::forward_iterator_tag;
 };
 
 struct NotAnIteratorNoPointer
 {
-  typedef int difference_type;
-  typedef A value_type;
-  //     typedef A*                        pointer;
-  typedef A& reference;
-  typedef cuda::std::forward_iterator_tag iterator_category;
+  using difference_type = int;
+  using value_type      = A;
+  //     using pointer = A*;
+  using reference         = A&;
+  using iterator_category = cuda::std::forward_iterator_tag;
 };
 
 struct NotAnIteratorNoReference
 {
-  typedef int difference_type;
-  typedef A value_type;
-  typedef A* pointer;
-  //    typedef A&                        reference;
-  typedef cuda::std::forward_iterator_tag iterator_category;
+  using difference_type = int;
+  using value_type      = A;
+  using pointer         = A*;
+  //    using reference = A&;
+  using iterator_category = cuda::std::forward_iterator_tag;
 };
 
 struct NotAnIteratorNoCategory
 {
-  typedef int difference_type;
-  typedef A value_type;
-  typedef A* pointer;
-  typedef A& reference;
-  //     typedef cuda::std::forward_iterator_tag iterator_category;
+  using difference_type = int;
+  using value_type      = A;
+  using pointer         = A*;
+  using reference       = A&;
+  //     using iterator_category = cuda::std::forward_iterator_tag;
 };
 
 int main(int, char**)
 {
   {
-    typedef cuda::std::iterator_traits<NotAnIteratorEmpty> T;
-    typedef T::difference_type DT; // expected-error-re {{no type named 'difference_type' in
+    using T  = cuda::std::iterator_traits<NotAnIteratorEmpty>;
+    using DT = T::difference_type; // expected-error-re {{no type named 'difference_type' in
                                    // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::value_type VT; // expected-error-re {{no type named 'value_type' in
+    using VT = T::value_type; // expected-error-re {{no type named 'value_type' in
                               // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::pointer PT; // expected-error-re {{no type named 'pointer' in
+    using PT = T::pointer; // expected-error-re {{no type named 'pointer' in
                            // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::reference RT; // expected-error-re {{no type named 'reference' in
+    using RT = T::reference; // expected-error-re {{no type named 'reference' in
                              // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::iterator_category CT; // expected-error-re {{no type named 'iterator_category' in
+    using CT = T::iterator_category; // expected-error-re {{no type named 'iterator_category' in
                                      // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
   }
 
   {
-    typedef cuda::std::iterator_traits<NotAnIteratorNoDifference> T;
-    typedef T::difference_type DT; // expected-error-re {{no type named 'difference_type' in
+    using T  = cuda::std::iterator_traits<NotAnIteratorNoDifference>;
+    using DT = T::difference_type; // expected-error-re {{no type named 'difference_type' in
                                    // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::value_type VT; // expected-error-re {{no type named 'value_type' in
+    using VT = T::value_type; // expected-error-re {{no type named 'value_type' in
                               // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::pointer PT; // expected-error-re {{no type named 'pointer' in
+    using PT = T::pointer; // expected-error-re {{no type named 'pointer' in
                            // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::reference RT; // expected-error-re {{no type named 'reference' in
+    using RT = T::reference; // expected-error-re {{no type named 'reference' in
                              // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::iterator_category CT; // expected-error-re {{no type named 'iterator_category' in
+    using CT = T::iterator_category; // expected-error-re {{no type named 'iterator_category' in
                                      // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
   }
 
   {
-    typedef cuda::std::iterator_traits<NotAnIteratorNoValue> T;
-    typedef T::difference_type DT; // expected-error-re {{no type named 'difference_type' in
+    using T  = cuda::std::iterator_traits<NotAnIteratorNoValue>;
+    using DT = T::difference_type; // expected-error-re {{no type named 'difference_type' in
                                    // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::value_type VT; // expected-error-re {{no type named 'value_type' in
+    using VT = T::value_type; // expected-error-re {{no type named 'value_type' in
                               // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::pointer PT; // expected-error-re {{no type named 'pointer' in
+    using PT = T::pointer; // expected-error-re {{no type named 'pointer' in
                            // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::reference RT; // expected-error-re {{no type named 'reference' in
+    using RT = T::reference; // expected-error-re {{no type named 'reference' in
                              // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::iterator_category CT; // expected-error-re {{no type named 'iterator_category' in
+    using CT = T::iterator_category; // expected-error-re {{no type named 'iterator_category' in
                                      // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
   }
 
   {
-    typedef cuda::std::iterator_traits<NotAnIteratorNoPointer> T;
-    typedef T::difference_type DT; // expected-error-re {{no type named 'difference_type' in
+    using T  = cuda::std::iterator_traits<NotAnIteratorNoPointer>;
+    using DT = T::difference_type; // expected-error-re {{no type named 'difference_type' in
                                    // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::value_type VT; // expected-error-re {{no type named 'value_type' in
+    using VT = T::value_type; // expected-error-re {{no type named 'value_type' in
                               // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::pointer PT; // expected-error-re {{no type named 'pointer' in
+    using PT = T::pointer; // expected-error-re {{no type named 'pointer' in
                            // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::reference RT; // expected-error-re {{no type named 'reference' in
+    using RT = T::reference; // expected-error-re {{no type named 'reference' in
                              // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::iterator_category CT; // expected-error-re {{no type named 'iterator_category' in
+    using CT = T::iterator_category; // expected-error-re {{no type named 'iterator_category' in
                                      // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
   }
 
   {
-    typedef cuda::std::iterator_traits<NotAnIteratorNoReference> T;
-    typedef T::difference_type DT; // expected-error-re {{no type named 'difference_type' in
+    using T  = cuda::std::iterator_traits<NotAnIteratorNoReference>;
+    using DT = T::difference_type; // expected-error-re {{no type named 'difference_type' in
                                    // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::value_type VT; // expected-error-re {{no type named 'value_type' in
+    using VT = T::value_type; // expected-error-re {{no type named 'value_type' in
                               // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::pointer PT; // expected-error-re {{no type named 'pointer' in
+    using PT = T::pointer; // expected-error-re {{no type named 'pointer' in
                            // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::reference RT; // expected-error-re {{no type named 'reference' in
+    using RT = T::reference; // expected-error-re {{no type named 'reference' in
                              // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::iterator_category CT; // expected-error-re {{no type named 'iterator_category' in
+    using CT = T::iterator_category; // expected-error-re {{no type named 'iterator_category' in
                                      // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
   }
 
   {
-    typedef cuda::std::iterator_traits<NotAnIteratorNoCategory> T;
-    typedef T::difference_type DT; // expected-error-re {{no type named 'difference_type' in
+    using T  = cuda::std::iterator_traits<NotAnIteratorNoCategory>;
+    using DT = T::difference_type; // expected-error-re {{no type named 'difference_type' in
                                    // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::value_type VT; // expected-error-re {{no type named 'value_type' in
+    using VT = T::value_type; // expected-error-re {{no type named 'value_type' in
                               // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::pointer PT; // expected-error-re {{no type named 'pointer' in
+    using PT = T::pointer; // expected-error-re {{no type named 'pointer' in
                            // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::reference RT; // expected-error-re {{no type named 'reference' in
+    using RT = T::reference; // expected-error-re {{no type named 'reference' in
                              // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
-    typedef T::iterator_category CT; // expected-error-re {{no type named 'iterator_category' in
+    using CT = T::iterator_category; // expected-error-re {{no type named 'iterator_category' in
                                      // 'cuda::std::{{.+}}::iterator_traits<{{.+}}>}}
   }
 

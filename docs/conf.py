@@ -23,13 +23,17 @@ copyright = f"{datetime.now().year}, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 
 # Version information
-try:
-    with open("VERSION.md", "r") as f:
-        version = f.read().strip()
-except Exception:
-    version = "latest"
+_env_version = os.environ.get("SPHINX_CCCL_VER")
+if _env_version:
+    release = _env_version
+else:
+    try:
+        with open("VERSION.md", "r", encoding="utf-8") as f:
+            release = f.read().strip()
+    except Exception:
+        release = "unstable"
 
-release = version
+version = release
 
 # -- General configuration ---------------------------------------------------
 
@@ -96,6 +100,8 @@ source_suffix = {
     ".md": "markdown",
 }
 
+templates_path = ["_templates"]
+
 # Exclude patterns
 exclude_patterns = [
     "_build",
@@ -116,6 +122,12 @@ exclude_patterns = [
 html_theme = "nvidia_sphinx_theme"
 
 html_logo = "_static/nvidia-logo.png"
+
+html_baseurl = (
+    os.environ.get("CCCL_DOCS_BASE_URL", "https://nvidia.github.io/cccl/").rstrip("/")
+    + "/"
+)
+
 html_theme_options = {
     "icon_links": [
         {
@@ -133,6 +145,10 @@ html_theme_options = {
     "footer_end": ["sphinx-version"],
     "sidebar_includehidden": True,
     "collapse_navigation": False,
+    "switcher": {
+        "json_url": f"{html_baseurl}nv-versions.json",
+        "version_match": release,
+    },
 }
 
 html_static_path = ["_static"] if os.path.exists("_static") else []
@@ -183,8 +199,10 @@ autodoc_default_options = {
 }
 
 # Enable type hints to be shown in the documentation
-autodoc_typehints = "description"
-autodoc_type_aliases = {}
+autodoc_type_hints = "description"
+autodoc_type_aliases = {
+    "Operator": "Operator",
+}
 
 # Set Python domain primary for intersphinx
 primary_domain = "py"
@@ -203,7 +221,6 @@ autodoc_mock_imports = [
     "numba.cuda.dispatcher",
     "numba.extending",
     "numba.types",
-    "pynvjitlink",
     "cuda.bindings",
     "cuda.bindings.driver",
     "cuda.bindings.runtime",
@@ -217,8 +234,8 @@ autodoc_mock_imports = [
     # numpy is installed as a real dependency (see requirements.txt)
     "numpydoc_test_module",  # Mock to avoid import errors
     "cupy",
-    "cuda.cccl.parallel.experimental._bindings",
-    "cuda.cccl.parallel.experimental._bindings_impl",
+    "cuda.compute._bindings",
+    "cuda.compute._bindings_impl",
 ]
 
 # External links configuration
@@ -233,6 +250,27 @@ extlinks = {
 # Note: numpydoc settings removed as Napoleon is used instead
 
 # Config copybutton
+# Suppress specific warning categories that arise from breathe (Doxygen-to-Sphinx
+# bridge) limitations.  These cannot be fixed in our source headers or RST files.
+#
+# See also _BREATHE_SKIP_SYMBOLS in _ext/auto_api_generator.py for symbols that
+# are excluded from page generation entirely due to unparsable declarations.
+suppress_warnings = [
+    # Breathe walks each Doxygen XML file independently.  When a symbol appears
+    # in both a namespace XML and a class/group XML (which is normal for Doxygen),
+    # breathe emits the C++ declaration twice, triggering a duplicate-declaration
+    # warning.  There is no way to control this from our side without patching
+    # breathe's XML traversal.
+    "cpp.duplicate_declaration",
+    # When breathe expands doxygenfunction/doxygenvariable directives, it writes
+    # the resolved C++ signature into RST.  Signatures containing default argument
+    # values (e.g. ``= {}``) or complex SFINAE expressions produce RST that the
+    # docutils parser cannot handle (mismatched inline-literal markers, unexpected
+    # braces, etc.).  The source C++ is valid; the issue is that what breathe
+    # emits as RST is not valid RST.
+    "docutils",
+]
+
 copybutton_prompt_text = ">>> |$ |# "
 autosummary_imported_members = False
 autosummary_generate = True

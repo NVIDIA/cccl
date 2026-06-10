@@ -76,12 +76,9 @@ class Configuration(object):
         self.cxx_library_root = None
         self.cxx_runtime_root = None
         self.abi_library_root = None
-        self.link_shared = self.get_lit_bool("enable_shared", default=True)
-        self.debug_build = self.get_lit_bool("debug_build", default=False)
         self.exec_env = dict(os.environ)
         self.exec_env["CUDA_MODULE_LOADING"] = "EAGER"
         self.use_target = False
-        self.use_system_cxx_lib = False
         self.use_clang_verify = False
         self.long_tests = None
         self.execute_external = False
@@ -190,7 +187,7 @@ class Configuration(object):
         self.lit_config.note(
             "Deduced compute capabilities are: %s" % deduced_compute_archs
         )
-        deduced_comput_archs_str = ", ".join(
+        deduced_comput_archs_str = ",".join(
             [str(element) for element in deduced_compute_archs]
         )
         return deduced_comput_archs_str
@@ -275,7 +272,6 @@ class Configuration(object):
 
     def configure(self):
         self.configure_executor()
-        self.configure_use_system_cxx_lib()
         self.configure_target_info()
         self.configure_cxx()
         self.configure_triple()
@@ -288,9 +284,7 @@ class Configuration(object):
         self.configure_use_thread_safety()
         self.configure_no_execute()
         self.configure_execute_external()
-        self.configure_ccache()
         self.configure_compile_flags()
-        self.configure_filesystem_compile_flags()
         self.configure_link_flags()
         self.configure_env()
         self.configure_color_diagnostics()
@@ -298,11 +292,11 @@ class Configuration(object):
             self.configure_debug_mode()
             self.configure_warnings()
             self.configure_sanitizer()
-            self.configure_coverage()
             self.configure_modules()
             self.configure_coroutines()
             self.configure_substitutions()
             self.configure_features()
+        self.configure_ccache()
 
     def print_config_info(self):
         # Print the final compile and link flags.
@@ -552,27 +546,6 @@ class Configuration(object):
             "cxx_runtime_root", self.cxx_library_root
         )
 
-    def configure_use_system_cxx_lib(self):
-        # This test suite supports testing against either the system library or
-        # the locally built one; the former mode is useful for testing ABI
-        # compatibility between the current headers and a shipping dynamic
-        # library.
-        # Default to testing against the locally built libc++ library.
-        self.use_system_cxx_lib = self.get_lit_conf("use_system_cxx_lib")
-        if self.use_system_cxx_lib == "true":
-            self.use_system_cxx_lib = True
-        elif self.use_system_cxx_lib == "false":
-            self.use_system_cxx_lib = False
-        elif self.use_system_cxx_lib:
-            assert os.path.isdir(self.use_system_cxx_lib), (
-                "the specified use_system_cxx_lib parameter (%s) is not a valid directory"
-                % self.use_system_cxx_lib
-            )
-            self.use_system_cxx_lib = os.path.abspath(self.use_system_cxx_lib)
-        self.lit_config.note(
-            "inferred use_system_cxx_lib as: %r" % self.use_system_cxx_lib
-        )
-
     def configure_cxx_stdlib_under_test(self):
         self.cxx_stdlib_under_test = self.get_lit_conf(
             "cxx_stdlib_under_test", "libc++"
@@ -588,13 +561,6 @@ class Configuration(object):
                 % self.cxx_stdlib_under_test
             )
         self.config.available_features.add(self.cxx_stdlib_under_test)
-        if self.cxx_stdlib_under_test == "libstdc++":
-            self.config.available_features.add("libstdc++")
-            # Manually enable the experimental and filesystem tests for libstdc++
-            # if the options aren't present.
-            # FIXME this is a hack.
-            if self.get_lit_conf("enable_experimental") is None:
-                self.config.enable_experimental = "true"
 
     def configure_use_clang_verify(self):
         if self.cxx.type == "nvrtcc":
@@ -659,35 +625,12 @@ class Configuration(object):
 
         target_platform = self.target_info.platform()
 
-        # Write an "available feature" that combines the triple when
-        # use_system_cxx_lib is enabled. This is so that we can easily write
-        # XFAIL markers for tests that are known to fail with versions of
-        # libc++ as were shipped with a particular triple.
-        if self.use_system_cxx_lib:
-            self.config.available_features.add("with_system_cxx_lib")
-            self.config.available_features.add(
-                "with_system_cxx_lib=%s" % self.config.target_triple
-            )
-
-            # Add subcomponents individually.
-            target_components = self.config.target_triple.split("-")
-            for component in target_components:
-                self.config.available_features.add("with_system_cxx_lib=%s" % component)
-
-            # Add available features for more generic versions of the target
-            # triple attached to  with_system_cxx_lib.
-            if self.use_deployment:
-                self.add_deployment_feature("with_system_cxx_lib")
-
         # Configure the availability feature. Availability is only enabled
         # with libc++, because other standard libraries do not provide
         # availability markup.
         if self.use_deployment and self.cxx_stdlib_under_test == "libc++":
             self.config.available_features.add("availability")
             self.add_deployment_feature("availability")
-
-        if platform.system() == "Darwin":
-            self.config.available_features.add("apple-darwin")
 
         # Insert the platform name into the available features as a lower case.
         self.config.available_features.add(target_platform)
@@ -703,9 +646,8 @@ class Configuration(object):
         if self.long_tests:
             self.config.available_features.add("long_tests")
 
-        if not self.get_lit_bool("enable_filesystem", default=True):
-            self.config.available_features.add("c++filesystem-disabled")
-            self.config.available_features.add("dylib-has-no-filesystem")
+        self.config.available_features.add("c++filesystem-disabled")
+        self.config.available_features.add("dylib-has-no-filesystem")
 
         # Run a compile test for the -fsized-deallocation flag. This is needed
         # in test/std/language.support/support.dynamic/new.delete
@@ -722,8 +664,8 @@ class Configuration(object):
         if self.cxx.hasCompileFlag("-fdelayed-template-parsing"):
             self.config.available_features.add("fdelayed-template-parsing")
 
-        if self.get_lit_bool("has_libatomic", False):
-            self.config.available_features.add("libatomic")
+        if self.get_lit_bool("enable_tile", False):
+            self.config.available_features.add("enable-tile")
 
         if "msvc" not in self.config.available_features:
             macros = self._dump_macros_verbose()
@@ -769,7 +711,8 @@ class Configuration(object):
         # Configure extra flags
         compile_flags_str = self.get_lit_conf("compile_flags", "")
         self.cxx.compile_flags += shlex.split(compile_flags_str)
-        self.cxx.compile_flags += ["-D_CCCL_NO_SYSTEM_HEADER"]
+        if self.get_lit_bool("enable_pedantic_warnings", default=True):
+            self.cxx.compile_flags += ["-D_CCCL_NO_SYSTEM_HEADER"]
         if self.is_windows:
             # FIXME: Can we remove this?
             self.cxx.compile_flags += ["-D_CRT_SECURE_NO_WARNINGS"]
@@ -823,6 +766,7 @@ class Configuration(object):
                 compute_archs = self.get_all_major_compute_capabilities()
 
             compute_archs = sorted(set(re.split("\\s|;|,", compute_archs)))
+            arch_flags = []
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)
@@ -845,10 +789,11 @@ class Configuration(object):
                     pre_sm_90 = True
                 if arch < 90 or (arch == 90 and subarchitecture < "a"):
                     pre_sm_90a = True
-                arch_flag = real_arch_format.format(str(arch) + subarchitecture)
+                arch = str(arch) + subarchitecture
+                arch_flags += [real_arch_format.format(arch)]
                 if mode.count("virtual"):
-                    arch_flag = virt_arch_format.format(str(arch) + subarchitecture)
-                self.cxx.compile_flags += [arch_flag]
+                    arch_flags += [virt_arch_format.format(arch)]
+            self.cxx.compile_flags += sorted(arch_flags)
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
         if pre_sm_60:
@@ -960,9 +905,6 @@ class Configuration(object):
         self.configure_compile_flags_exceptions()
         self.configure_compile_flags_rtti()
         self.configure_compile_flags_abi_version()
-        enable_32bit = self.get_lit_bool("enable_32bit", False)
-        if enable_32bit:
-            self.cxx.flags += ["-m32"]
         # Use verbose output for better errors
         if not self.cxx.use_ccache or self.cxx.type == "msvc":
             self.cxx.flags += ["-v"]
@@ -972,12 +914,17 @@ class Configuration(object):
         gcc_toolchain = self.get_lit_conf("gcc_toolchain")
         if gcc_toolchain:
             self.cxx.flags += ["--gcc-toolchain=" + gcc_toolchain]
-        # NOTE: the _DEBUG definition must precede the triple check because for
-        # the Windows build of libc++, the forced inclusion of a header requires
-        # that _DEBUG is defined.  Incorrect ordering will result in -target
-        # being elided.
-        if self.is_windows and self.debug_build:
-            self.cxx.compile_flags += ["-D_DEBUG"]
+
+        # Suppress attribute related warnings when compiling with nvcc 12.0 and gcc because they lead to warnings in
+        # compute_XX.cudafe1.stub.c which are promoted to errors.
+        if (
+            self.cxx.type == "nvcc"
+            and self.cxx.version[0] == 12
+            and self.cxx.version[1] == 0
+            and self.cxx.host_cxx.type == "gcc"
+        ):
+            self.cxx.flags += ["-Xcompiler", "-Wno-attributes"]
+
         if self.use_target:
             if not self.cxx.addFlagIfSupported(
                 ["--target=" + self.config.target_triple]
@@ -1027,15 +974,7 @@ class Configuration(object):
                 os.path.join(support_path, "msvc_stdlib_force_include.h"),
             ]
             pass
-        if (
-            self.is_windows
-            and self.debug_build
-            and self.cxx_stdlib_under_test != "msvc"
-        ):
-            self.cxx.compile_flags += [
-                "-include",
-                os.path.join(support_path, "set_windows_crt_report_mode.h"),
-            ]
+
         cxx_headers = self.get_lit_conf("cxx_headers")
         if cxx_headers == "" or (
             cxx_headers is None and self.cxx_stdlib_under_test != "libc++"
@@ -1047,9 +986,13 @@ class Configuration(object):
         #    self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcudacxx_src_root, "include")
+            thrust_headers = os.path.join(self.libcudacxx_src_root, "../thrust/")
+            cub_headers = os.path.join(self.libcudacxx_src_root, "../cub/")
         if not os.path.isdir(cxx_headers):
             self.lit_config.fatal("cxx_headers='%s' is not a directory." % cxx_headers)
         self.cxx.compile_flags += ["-I" + cxx_headers]
+        self.cxx.compile_flags += ["-I" + thrust_headers]
+        self.cxx.compile_flags += ["-I" + cub_headers]
         if self.libcudacxx_obj_root is not None:
             cxxabi_headers = os.path.join(
                 self.libcudacxx_obj_root, "include", "c++build"
@@ -1135,68 +1078,22 @@ class Configuration(object):
             self.config.available_features.add("libcpp-no-exceptions")
 
     def configure_compile_flags_rtti(self):
-        enable_rtti = self.get_lit_bool("enable_rtti", True)
-        if not enable_rtti:
-            self.config.available_features.add("libcpp-no-rtti")
-            if self.cxx.type == "nvcc":
-                self.cxx.compile_flags += ["-Xcompiler"]
-            if "nvhpc" in self.config.available_features:
-                self.cxx.compile_flags += ["--no_rtti"]
-            elif "msvc" in self.config.available_features:
-                self.cxx.compile_flags += ["/GR-"]
-                self.cxx.compile_flags += ["-D_SILENCE_CXX20_CISO646_REMOVED_WARNING"]
-            else:
-                self.cxx.compile_flags += ["-fno-rtti"]
+        self.config.available_features.add("libcpp-no-rtti")
+        if self.cxx.type == "nvcc":
+            self.cxx.compile_flags += ["-Xcompiler"]
+        if "nvhpc" in self.config.available_features:
+            self.cxx.compile_flags += ["--no_rtti"]
+        elif "msvc" in self.config.available_features:
+            self.cxx.compile_flags += ["/GR-"]
+            self.cxx.compile_flags += ["-D_SILENCE_CXX20_CISO646_REMOVED_WARNING"]
+        else:
+            self.cxx.compile_flags += ["-fno-rtti"]
 
     def configure_compile_flags_abi_version(self):
         abi_unstable = self.get_lit_bool("abi_unstable")
         if abi_unstable:
             self.config.available_features.add("libcpp-abi-unstable")
             self.cxx.compile_flags += ["-D_LIBCUDACXX_ABI_UNSTABLE"]
-
-    def configure_filesystem_compile_flags(self):
-        if not self.get_lit_bool("enable_filesystem", default=True):
-            return
-
-        static_env = os.path.join(
-            self.libcudacxx_src_root,
-            "test",
-            "libcudacxx",
-            "std",
-            "input.output",
-            "filesystems",
-            "Inputs",
-            "static_test_env",
-        )
-        static_env = os.path.realpath(static_env)
-        assert os.path.isdir(static_env)
-        self.cxx.compile_flags += [
-            '-DLIBCXX_FILESYSTEM_STATIC_TEST_ROOT="%s"' % static_env
-        ]
-
-        dynamic_env = os.path.join(
-            self.config.test_exec_root, "filesystem", "Output", "dynamic_env"
-        )
-        dynamic_env = os.path.realpath(dynamic_env)
-        if not os.path.isdir(dynamic_env):
-            os.makedirs(dynamic_env)
-        self.cxx.compile_flags += [
-            '-DLIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT="%s"' % dynamic_env
-        ]
-        self.exec_env["LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT"] = "%s" % dynamic_env
-
-        dynamic_helper = os.path.join(
-            self.libcudacxx_src_root,
-            "test",
-            "support",
-            "filesystem_dynamic_test_helper.py",
-        )
-        assert os.path.isfile(dynamic_helper)
-
-        self.cxx.compile_flags += [
-            '-DLIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER="%s %s"'
-            % (sys.executable, dynamic_helper)
-        ]
 
     def configure_link_flags(self):
         nvcc_host_compiler = self.get_lit_conf("nvcc_host_compiler")
@@ -1226,9 +1123,9 @@ class Configuration(object):
                         if self.cxx.type == "nvcc":
                             self.cxx.link_flags += ["-Xcompiler"]
                         self.cxx.link_flags += ["-nostdlib"]
-            self.configure_link_flags_cxx_library()
-            self.configure_link_flags_abi_library()
-            self.configure_extra_library_flags()
+            if self.is_windows:
+                self.cxx.link_flags += ["-lmsvcrtd"]
+            self.target_info.add_cxx_link_flags(self.cxx.link_flags)
         elif self.cxx_stdlib_under_test == "libstdc++":
             self.config.available_features.add("c++experimental")
             self.cxx.link_flags += ["-lstdc++fs", "-lm", "-pthread"]
@@ -1244,24 +1141,9 @@ class Configuration(object):
         self.cxx.link_flags += shlex.split(link_flags_str)
 
     def configure_link_flags_cxx_library_path(self):
-        if not self.use_system_cxx_lib:
-            if self.cxx_library_root:
-                self.cxx.link_flags += ["-L" + self.cxx_library_root]
-                if self.is_windows and self.link_shared:
-                    self.add_path(self.cxx.compile_env, self.cxx_library_root)
-            if self.cxx_runtime_root:
-                if not self.is_windows:
-                    if self.cxx.type == "nvcc":
-                        self.cxx.link_flags += [
-                            "-Xcompiler",
-                            '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
-                        ]
-                    else:
-                        self.cxx.link_flags += ["-Wl,-rpath," + self.cxx_runtime_root]
-                elif self.is_windows and self.link_shared:
-                    self.add_path(self.exec_env, self.cxx_runtime_root)
-        elif os.path.isdir(str(self.use_system_cxx_lib)):
-            self.cxx.link_flags += ["-L" + self.use_system_cxx_lib]
+        if self.cxx_library_root:
+            self.cxx.link_flags += ["-L" + self.cxx_library_root]
+        if self.cxx_runtime_root:
             if not self.is_windows:
                 if self.cxx.type == "nvcc":
                     self.cxx.link_flags += [
@@ -1269,9 +1151,7 @@ class Configuration(object):
                         '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
                     ]
                 else:
-                    self.cxx.link_flags += ["-Wl,-rpath," + self.use_system_cxx_lib]
-            if self.is_windows and self.link_shared:
-                self.add_path(self.cxx.compile_env, self.use_system_cxx_lib)
+                    self.cxx.link_flags += ["-Wl,-rpath," + self.cxx_runtime_root]
         additional_flags = self.get_lit_conf("test_linker_flags")
         if additional_flags:
             self.cxx.link_flags += shlex.split(additional_flags)
@@ -1291,57 +1171,6 @@ class Configuration(object):
                     self.cxx.link_flags += ["-Wl,-rpath," + self.abi_library_root]
             else:
                 self.add_path(self.exec_env, self.abi_library_root)
-
-    def configure_link_flags_cxx_library(self):
-        libcxx_experimental = self.get_lit_bool("enable_experimental", default=False)
-        if libcxx_experimental:
-            self.config.available_features.add("c++experimental")
-            self.cxx.link_flags += ["-lc++experimental"]
-        if self.link_shared:
-            self.cxx.link_flags += ["-lc++"]
-
-    def configure_link_flags_abi_library(self):
-        cxx_abi = self.get_lit_conf("cxx_abi", "libcxxabi")
-        if cxx_abi == "libstdc++":
-            self.cxx.link_flags += ["-lstdc++"]
-        elif cxx_abi == "libsupc++":
-            self.cxx.link_flags += ["-lsupc++"]
-        elif cxx_abi == "libcxxabi":
-            # If the C++ library requires explicitly linking to libc++abi, or
-            # if we're testing libc++abi itself (the test configs are shared),
-            # then link it.
-            testing_libcxxabi = self.get_lit_conf("name", "") == "libc++abi"
-            if self.target_info.allow_cxxabi_link() or testing_libcxxabi:
-                libcxxabi_shared = self.get_lit_bool("libcxxabi_shared", default=True)
-                if libcxxabi_shared:
-                    self.cxx.link_flags += ["-lc++abi"]
-                else:
-                    cxxabi_library_root = self.get_lit_conf("abi_library_path")
-                    if cxxabi_library_root:
-                        libname = self.make_static_lib_name("c++abi")
-                        abs_path = os.path.join(cxxabi_library_root, libname)
-                        self.cxx.link_flags += [abs_path]
-                    else:
-                        self.cxx.link_flags += ["-lc++abi"]
-        elif cxx_abi == "libcxxrt":
-            self.cxx.link_flags += ["-lcxxrt"]
-        elif cxx_abi == "vcruntime":
-            debug_suffix = "d" if self.debug_build else ""
-            self.cxx.link_flags += [
-                "-l%s%s" % (lib, debug_suffix)
-                for lib in ["vcruntime", "ucrt", "msvcrt"]
-            ]
-        elif cxx_abi == "none" or cxx_abi == "default":
-            if self.is_windows:
-                debug_suffix = "d" if self.debug_build else ""
-                self.cxx.link_flags += ["-lmsvcrt%s" % debug_suffix]
-        else:
-            self.lit_config.fatal("C++ ABI setting %s unsupported for tests" % cxx_abi)
-
-    def configure_extra_library_flags(self):
-        if self.get_lit_bool("cxx_ext_threads", default=False):
-            self.cxx.link_flags += ["-lc++external_threads"]
-        self.target_info.add_cxx_link_flags(self.cxx.link_flags)
 
     def configure_color_diagnostics(self):
         use_color = self.get_lit_conf("color_diagnostics")
@@ -1370,7 +1199,6 @@ class Configuration(object):
             return
         if debug_level not in ["0", "1"]:
             self.lit_config.fatal('Invalid value for debug_level "%s".' % debug_level)
-        self.cxx.compile_flags += ["-D_LIBCUDACXX_DEBUG=%s" % debug_level]
 
     def configure_warnings(self):
         default_enable_warnings = (
@@ -1379,12 +1207,16 @@ class Configuration(object):
             or "nvcc" in self.config.available_features
         )
         enable_warnings = self.get_lit_bool("enable_warnings", default_enable_warnings)
+        enable_pedantic = self.get_lit_bool("enable_pedantic_warnings", default=True)
         self.cxx.useWarnings(enable_warnings)
         if "nvcc" in self.config.available_features:
             self.cxx.warning_flags += ["-Xcudafe", "--display_error_number"]
-            self.cxx.warning_flags += ["-Werror=all-warnings"]
+            if enable_pedantic:
+                self.cxx.warning_flags += ["-Werror=all-warnings"]
             if "msvc" in self.config.available_features:
-                self.cxx.warning_flags += ["-Xcompiler", "/W4", "-Xcompiler", "/WX"]
+                self.cxx.warning_flags += ["-Xcompiler", "/W4"]
+                if enable_pedantic:
+                    self.cxx.warning_flags += ["-Xcompiler", "/WX"]
                 # warning C4100: 'quack': unreferenced formal parameter
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4100"]
                 # warning C4127: conditional expression is constant
@@ -1393,6 +1225,9 @@ class Configuration(object):
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4180"]
                 # warning C4309: 'moo': truncation of constant value
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4309"]
+                # warning C4505: unreferenced local function has been removed
+                # CUDA's host_runtime.h emits this for __cudaUnregisterBinaryUtil.
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4505"]
                 # warning C4996: deprecation warnings
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4996"]
             else:
@@ -1405,7 +1240,8 @@ class Configuration(object):
 
                 addIfHostSupports("-Wall")
                 addIfHostSupports("-Wextra")
-                addIfHostSupports("-Werror")
+                if enable_pedantic:
+                    addIfHostSupports("-Werror")
                 if "gcc" in self.config.available_features:
                     addIfHostSupports(
                         "-Wno-literal-suffix"
@@ -1427,17 +1263,21 @@ class Configuration(object):
 
                 # TODO: port the warning disables from the non-NVCC path?
 
-                self.cxx.warning_flags += [
-                    "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER"
-                ]
+                if enable_pedantic:
+                    self.cxx.warning_flags += [
+                        "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER"
+                    ]
                 pass
         else:
             self.cxx.warning_flags += [
-                "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER",
                 "-Wall",
                 "-Wextra",
-                "-Werror",
             ]
+            if enable_pedantic:
+                self.cxx.warning_flags += [
+                    "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER",
+                    "-Werror",
+                ]
             if self.cxx.hasWarningFlag("-Wuser-defined-warnings"):
                 self.cxx.warning_flags += ["-Wuser-defined-warnings"]
                 self.config.available_features.add("diagnose-if-support")
@@ -1462,7 +1302,7 @@ class Configuration(object):
             if "nvcc" not in self.config.available_features:
                 # The '#define static_assert' provided by libc++ in C++03 mode
                 # causes an unused local typedef whenever it is used.
-                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedef")
+                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedefs")
 
     def configure_sanitizer(self):
         san = self.get_lit_conf("use_sanitizer", "").strip()
@@ -1536,12 +1376,6 @@ class Configuration(object):
                     ]
                 else:
                     self.cxx.link_flags += ["-Wl,-rpath," + os.path.dirname(san_lib)]
-
-    def configure_coverage(self):
-        self.generate_coverage = self.get_lit_bool("generate_coverage", False)
-        if self.generate_coverage:
-            self.cxx.flags += ["-g", "--coverage"]
-            self.cxx.compile_flags += ["-O0"]
 
     def configure_coroutines(self):
         if self.cxx.hasCompileFlag("-fcoroutines-ts"):
@@ -1647,37 +1481,6 @@ class Configuration(object):
 
         # Save the triple (and warn on Apple platforms).
         self.config.target_triple = target_triple
-        if self.use_target and "apple" in target_triple:
-            self.lit_config.warning(
-                "consider using arch and platform instead"
-                " of target_triple on Apple platforms"
-            )
-
-        # If no target triple was given, try to infer it from the compiler
-        # under test.
-        if not self.config.target_triple:
-            target_triple = (
-                self.cxx if self.cxx.type != "nvcc" else self.cxx.host_cxx
-            ).getTriple()
-            # Drop sub-major version components from the triple, because the
-            # current XFAIL handling expects exact matches for feature checks.
-            # Example: x86_64-apple-darwin14.0.0 -> x86_64-apple-darwin14
-            # The 5th group handles triples greater than 3 parts
-            # (ex x86_64-pc-linux-gnu).
-            target_triple = re.sub(
-                r"([^-]+)-([^-]+)-([^.]+)([^-]*)(.*)", r"\1-\2-\3\5", target_triple
-            )
-            # linux-gnu is needed in the triple to properly identify linuxes
-            # that use GLIBC. Handle redhat and opensuse triples as special
-            # cases and append the missing `-gnu` portion.
-            if target_triple.endswith("redhat-linux") or target_triple.endswith(
-                "suse-linux"
-            ):
-                target_triple += "-gnu"
-            self.config.target_triple = target_triple
-            self.lit_config.note(
-                "inferred target_triple as: %r" % self.config.target_triple
-            )
 
     def configure_deployment(self):
         assert self.use_deployment is not None
@@ -1716,41 +1519,6 @@ class Configuration(object):
         self.lit_config.note(
             "computed target_triple as: %r" % self.config.target_triple
         )
-
-        # If we're testing a system libc++ as opposed to the upstream LLVM one,
-        # take the version of the system libc++ into account to compute which
-        # features are enabled/disabled. Otherwise, disable availability markup,
-        # which is not relevant for non-shipped flavors of libc++.
-        if self.use_system_cxx_lib:
-            # Dylib support for shared_mutex was added in macosx10.12.
-            if name == "macosx" and version in ("10.%s" % v for v in range(7, 12)):
-                self.config.available_features.add("dylib-has-no-shared_mutex")
-                self.lit_config.note(
-                    "shared_mutex is not supported by the deployment target"
-                )
-            # Throwing bad_optional_access, bad_variant_access and bad_any_cast is
-            # supported starting in macosx10.14.
-            if name == "macosx" and version in ("10.%s" % v for v in range(7, 14)):
-                self.config.available_features.add("dylib-has-no-bad_optional_access")
-                self.lit_config.note(
-                    "throwing bad_optional_access is not supported by the deployment target"
-                )
-
-                self.config.available_features.add("dylib-has-no-bad_variant_access")
-                self.lit_config.note(
-                    "throwing bad_variant_access is not supported by the deployment target"
-                )
-
-                self.config.available_features.add("dylib-has-no-bad_any_cast")
-                self.lit_config.note(
-                    "throwing bad_any_cast is not supported by the deployment target"
-                )
-            # Filesystem is support on Apple platforms starting with macosx10.15.
-            if name == "macosx" and version in ("10.%s" % v for v in range(7, 15)):
-                self.config.available_features.add("dylib-has-no-filesystem")
-                self.lit_config.note(
-                    "the deployment target does not support <filesystem>"
-                )
 
     def configure_env(self):
         self.target_info.configure_env(self.exec_env)

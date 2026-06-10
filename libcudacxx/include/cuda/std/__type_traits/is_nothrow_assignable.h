@@ -55,7 +55,7 @@ struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
 
 template <class _Tp, class _Arg>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_assignable : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
+is_nothrow_assignable : public __cccl_is_nothrow_assignable<is_assignable_v<_Tp, _Arg>, _Tp, _Arg>
 {};
 
 template <class _Tp, class _Arg>

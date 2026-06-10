@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 // [range.prim.data]
 
@@ -51,7 +51,7 @@ concept __member_data = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires
 
 template <class _Tp>
 concept __ranges_begin_invocable = !__member_data<_Tp> && __can_borrow<_Tp> && requires(_Tp&& __t) {
-  { ::cuda::std::ranges::begin(__t) } -> contiguous_iterator;
+  { ::cuda::std::ranges::__begin_cpo{}(__t) } -> contiguous_iterator;
 };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
@@ -64,10 +64,11 @@ template <class _Tp>
 _CCCL_CONCEPT __member_data = _CCCL_FRAGMENT(__member_data_, _Tp);
 
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__ranges_begin_invocable_,
-                       requires(_Tp&& __t)(requires(!__member_data<_Tp>),
-                                           requires(__can_borrow<_Tp>),
-                                           requires(contiguous_iterator<decltype(::cuda::std::ranges::begin(__t))>)));
+_CCCL_CONCEPT_FRAGMENT(
+  __ranges_begin_invocable_,
+  requires(_Tp&& __t)(requires(!__member_data<_Tp>),
+                      requires(__can_borrow<_Tp>),
+                      requires(contiguous_iterator<decltype(::cuda::std::ranges::__begin_cpo{}(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __ranges_begin_invocable = _CCCL_FRAGMENT(__ranges_begin_invocable_, _Tp);
@@ -87,9 +88,9 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__ranges_begin_invocable<_Tp>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::to_address(::cuda::std::ranges::begin(__t))))
+    noexcept(noexcept(::cuda::std::to_address(::cuda::std::ranges::__begin_cpo{}(__t))))
   {
-    return ::cuda::std::to_address(::cuda::std::ranges::begin(__t));
+    return ::cuda::std::to_address(::cuda::std::ranges::__begin_cpo{}(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -97,6 +98,9 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto data = __data::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __data_cpo = __data::__fn;
 } // namespace __cpo
 
 // [range.prim.cdata]
@@ -107,19 +111,19 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t)))
+    noexcept(noexcept(::cuda::std::ranges::__data_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t))))
+      -> decltype(::cuda::std::ranges::__data_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
-    return ::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t));
+    return ::cuda::std::ranges::__data_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::data(static_cast<const _Tp&&>(__t))))
-      -> decltype(::cuda::std::ranges::data(static_cast<const _Tp&&>(__t)))
+    noexcept(noexcept(::cuda::std::ranges::__data_cpo{}(static_cast<const _Tp&&>(__t))))
+      -> decltype(::cuda::std::ranges::__data_cpo{}(static_cast<const _Tp&&>(__t)))
   {
-    return ::cuda::std::ranges::data(static_cast<const _Tp&&>(__t));
+    return ::cuda::std::ranges::__data_cpo{}(static_cast<const _Tp&&>(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -127,9 +131,12 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cdata = __cdata::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __cdata_cpo = __cdata::__fn;
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

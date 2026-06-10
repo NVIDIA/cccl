@@ -80,6 +80,7 @@ _create_rapids_cmake_override_json() {
     echo "Replacing CCCL repo information in rapids-cmake versions.json:";
     curl -fsSL -o- "https://raw.githubusercontent.com/${rapids_cmake_upstream}/rapids-cmake/${rapids_cmake_tag}/rapids-cmake/cpm/versions.json" \
   | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"${cccl_sha}\", \"always_download\": true}" \
+  | jq -r "del(.packages.CCCL.url) | del(.packages.CCCL.url_hash)" \
   > ~/rapids-cmake-override-versions-cccl-repo.json;
 
     if test -n "${CCCL_VERSION-}"; then
@@ -134,12 +135,12 @@ _run_post_create_command() {
     _apply_manifest_modifications;
 
     # Clone all the repos
-    gh config set git_protocol ssh;
-    gh config set git_protocol ssh --host github.com;
+    gh config set git_protocol https;
+    gh config set git_protocol https --host github.com;
 
     clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules --no-update-env;
 }
 
-if [ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]; then
+if [[ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]]; then
     _run_post_create_command;
 fi

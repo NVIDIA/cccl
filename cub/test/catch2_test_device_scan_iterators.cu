@@ -1,37 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-
+#include <cuda/iterator>
 #include <cuda/std/limits>
 
 #include <cstdint>
@@ -80,7 +54,7 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   // Prepare input iterator
   input_t default_constant{};
   init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
+  auto in_it = cuda::constant_iterator(default_constant);
 
   SECTION("inclusive sum")
   {
@@ -168,11 +142,11 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    c2h::device_vector<init_t> d_initial_value(1);
-    d_initial_value[0]     = static_cast<init_t>(init_value);
-    auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    c2h::device_vector<init_value_t> d_initial_value(1);
+    d_initial_value[0]     = static_cast<init_value_t>(init_value);
+    auto future_init_value = cub::FutureValue<init_value_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(in_it, d_out_it, op_t{}, future_init_value, num_items);
 
     // Verify result
@@ -205,7 +179,7 @@ class custom_accumulator_t
   {}
 
 public:
-  __host__ __device__ custom_accumulator_t() {}
+  custom_accumulator_t() = default;
 
   __host__ __device__ custom_accumulator_t(const custom_accumulator_t& in)
       : m_val(in.is_valid() * in.get())
@@ -214,7 +188,6 @@ public:
 
   __host__ __device__ custom_accumulator_t(const custom_input_t& in)
       : m_val(in.get())
-      , m_magic_value(42)
   {}
 
   __host__ __device__ void operator=(const custom_input_t& in)
@@ -294,7 +267,7 @@ C2H_TEST("Device scan works complex accumulator types", "[scan][device]")
   c2h::device_vector<custom_output_t> d_output{static_cast<size_t>(num_items), custom_output_t{nullptr, 0}};
   c2h::device_vector<int> d_ok_count(1);
 
-  auto index_it = thrust::make_counting_iterator(0);
+  auto index_it = cuda::counting_iterator(0);
   thrust::transform(
     c2h::device_policy,
     index_it,

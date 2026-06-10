@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17
-
 // <functional>
 //
 // reference_wrapper
@@ -17,15 +15,15 @@
 //  cuda::std::invoke_result_t<T&, ArgTypes...>
 //      operator()(ArgTypes&&... args) const;
 //
-// Requires T to be a complete type (since C++20).
+// Requires T to be a complete type
 
 // #include <cuda/std/functional>
 #include <cuda/std/utility>
 
 struct Foo;
-__host__ __device__ Foo& get_foo();
+TEST_FUNC Foo& get_foo();
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   cuda::std::reference_wrapper<Foo> ref = get_foo();
   ref(0); // incomplete at the point of call
@@ -33,9 +31,9 @@ __host__ __device__ void test()
 
 struct Foo
 {
-  __host__ __device__ void operator()(int) const {}
+  TEST_FUNC void operator()(int) const {}
 };
-__host__ __device__ Foo& get_foo()
+TEST_FUNC Foo& get_foo()
 {
   static Foo foo;
   return foo;

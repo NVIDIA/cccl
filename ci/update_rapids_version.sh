@@ -1,5 +1,5 @@
-#!/bin/bash
-# Copyright (c) 2024, NVIDIA CORPORATION.
+#!/usr/bin/env bash
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 ##########################
 # RAPIDS Version Updater #
 ##########################
@@ -11,11 +11,11 @@
 NEXT_FULL_TAG=$1
 
 #Get <major>.<minor> for next version
-NEXT_MAJOR=$(echo $NEXT_FULL_TAG | awk '{split($0, a, "."); print a[1]}')
-NEXT_MINOR=$(echo $NEXT_FULL_TAG | awk '{split($0, a, "."); print a[2]}')
-NEXT_PATCH=$(echo $NEXT_FULL_TAG | awk '{split($0, a, "."); print a[3]}')
+NEXT_MAJOR=$(echo "$NEXT_FULL_TAG" | awk '{split($0, a, "."); print a[1]}')
+NEXT_MINOR=$(echo "$NEXT_FULL_TAG" | awk '{split($0, a, "."); print a[2]}')
+# shellcheck disable=SC2034
+NEXT_PATCH=$(echo "$NEXT_FULL_TAG" | awk '{split($0, a, "."); print a[3]}')
 NEXT_SHORT_TAG=${NEXT_MAJOR}.${NEXT_MINOR}
-NEXT_UCXX_SHORT_TAG="$(curl -sL https://version.gpuci.io/rapids/${NEXT_SHORT_TAG})"
 
 # Need to distutils-normalize the versions for some use cases
 NEXT_SHORT_TAG_PEP440=$(python -c "from packaging.version import Version; print(Version('${NEXT_SHORT_TAG}'))")
@@ -24,15 +24,12 @@ echo "Updating RAPIDS and devcontainers to $NEXT_FULL_TAG"
 
 # Inplace sed replace; workaround for Linux and Mac
 function sed_runner() {
-    sed -i.bak ''"$1"'' $2 && rm -f ${2}.bak
+    sed -i.bak ''"$1"'' "$2" && rm -f "${2}".bak
 }
 
 # Update CI files
 sed_runner "/devcontainer_version/ s/'[0-9.]*'/'${NEXT_SHORT_TAG}'/g" ci/matrix.yaml
-for FILE in .github/workflows/*.yml; do
-  sed_runner "/rapidsai/ s/\"branch-.*\"/\"branch-${NEXT_SHORT_TAG}\"/g" "${FILE}"
-  sed_runner "/ucxx/ s/\"branch-.*\"/\"branch-${NEXT_UCXX_SHORT_TAG}\"/g" "${FILE}"
-done
+sed_runner "/devcontainer_version=/ s/=[0-9.]*/=${NEXT_SHORT_TAG}/g" ci/build_cuda_cccl_python.sh
 
 function update_devcontainer() {
     sed_runner "s@rapidsai/devcontainers:[0-9.]*@rapidsai/devcontainers:${NEXT_SHORT_TAG}@g" "${1}"

@@ -11,7 +11,7 @@
 #ifndef _CUDA___RUNTIME_ENSURE_CURRENT_CONTEXT_H
 #define _CUDA___RUNTIME_ENSURE_CURRENT_CONTEXT_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,7 +23,8 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__device/all_devices.h>
+#  include <cuda/__device/device_ref.h>
+#  include <cuda/__device/physical_device.h>
 #  include <cuda/__driver/driver_api.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -31,6 +32,7 @@
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
 class stream_ref;
 
 //! @brief RAII helper which on construction sets the current context to the specified one.
@@ -44,9 +46,9 @@ struct [[maybe_unused]] __ensure_current_context
   //! @param new_device The device to switch the context to
   //!
   //! @throws cuda_error if the context switch fails
-  explicit __ensure_current_context(device_ref __new_device)
+  _CCCL_HOST_API explicit __ensure_current_context(device_ref __new_device)
   {
-    auto __ctx = devices[__new_device.get()].primary_context();
+    auto __ctx = ::cuda::__physical_devices()[__new_device.get()].__primary_context();
     ::cuda::__driver::__ctxPush(__ctx);
   }
 
@@ -56,7 +58,7 @@ struct [[maybe_unused]] __ensure_current_context
   //! @param ctx The context to switch to
   //!
   //! @throws cuda_error if the context switch fails
-  explicit __ensure_current_context(::CUcontext __ctx)
+  _CCCL_HOST_API explicit __ensure_current_context(::CUcontext __ctx)
   {
     ::cuda::__driver::__ctxPush(__ctx);
   }
@@ -67,7 +69,7 @@ struct [[maybe_unused]] __ensure_current_context
   //! @param stream Stream indicating the context to switch to
   //!
   //! @throws cuda_error if the context switch fails
-  explicit __ensure_current_context(stream_ref __stream);
+  _CCCL_HOST_API explicit __ensure_current_context(stream_ref __stream);
 
   __ensure_current_context(__ensure_current_context&&)                 = delete;
   __ensure_current_context(__ensure_current_context const&)            = delete;
@@ -79,7 +81,7 @@ struct [[maybe_unused]] __ensure_current_context
   //!
   //! @throws cuda_error if the device switch fails. If the destructor is called
   //!         during stack unwinding, the program is automatically terminated.
-  ~__ensure_current_context() noexcept(false)
+  _CCCL_HOST_API ~__ensure_current_context() noexcept(false)
   {
     // TODO would it make sense to assert here that we pushed and popped the same thing?
     ::cuda::__driver::__ctxPop();

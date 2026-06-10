@@ -48,6 +48,9 @@ class LibcxxTestFormat(object):
                 "FLAKY_TEST.", ParserKind.TAG, initial_value=False
             ),
             IntegratedTestKeywordParser(
+                "FORCE_ALL_WARNINGS.", ParserKind.TAG, initial_value=False
+            ),
+            IntegratedTestKeywordParser(
                 "MODULES_DEFINES:", ParserKind.LIST, initial_value=[]
             ),
             IntegratedTestKeywordParser(
@@ -138,6 +141,11 @@ class LibcxxTestFormat(object):
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
 
+        force_all_warnings = self._get_parser("FORCE_ALL_WARNINGS.", parsers).getValue()
+
+        if force_all_warnings:
+            test_cxx.useWarnings(True)
+
         extra_compile_definitions = self._get_parser(
             "ADDITIONAL_COMPILE_DEFINITIONS:", parsers
         ).getValue()
@@ -200,6 +208,14 @@ class LibcxxTestFormat(object):
                     test_cxx.compile_flags += ["-Xcompiler", f'"{constexpr_steps_opt}"']
                 else:
                     test_cxx.compile_flags += [constexpr_steps_opt]
+
+        if test.path_in_suite[:2] == ("cuda", "ptx") and test_cxx.type == "nvcc":
+            test_cxx.compile_flags += ["-rdc=true", "-dc"]
+            test_cxx.link_flags += [
+                flag
+                for flag in test_cxx.compile_flags
+                if flag.startswith("-gencode=") or flag.startswith("--generate-code=")
+            ]
 
         # Dispatch the test based on its suffix.
         if is_sh_test:

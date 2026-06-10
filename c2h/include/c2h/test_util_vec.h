@@ -49,198 +49,199 @@ inline int CoutCast(signed char val)
 /**
  * Vector1 overloads
  */
-#  define C2H_VEC_OVERLOAD_1(T)                                               \
-    /* Ostream output */                                                      \
-    inline std::ostream& operator<<(std::ostream& os, const T& val)           \
-    {                                                                         \
-      os << '(' << CoutCast(val.x) << ')';                                    \
-      return os;                                                              \
-    }                                                                         \
-    /* Inequality */                                                          \
-    inline __host__ __device__ bool operator!=(const T& a, const T& b)        \
-    {                                                                         \
-      return (a.x != b.x);                                                    \
-    }                                                                         \
-    /* Equality */                                                            \
-    inline __host__ __device__ bool operator==(const T& a, const T& b)        \
-    {                                                                         \
-      return (a.x == b.x);                                                    \
-    }                                                                         \
-    /* Max */                                                                 \
-    inline __host__ __device__ bool operator>(const T& a, const T& b)         \
-    {                                                                         \
-      return (a.x > b.x);                                                     \
-    }                                                                         \
-    /* Min */                                                                 \
-    inline __host__ __device__ bool operator<(const T& a, const T& b)         \
-    {                                                                         \
-      return (a.x < b.x);                                                     \
-    }                                                                         \
-    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */ \
-    inline __host__ __device__ T operator+(T a, T b)                          \
-    {                                                                         \
-      T retval = make_##T(a.x + b.x);                                         \
-      return retval;                                                          \
+#  define C2H_VEC_OVERLOAD_1(T)                                                  \
+    /* Ostream output */                                                         \
+    inline std::ostream& operator<<(std::ostream& os, const T& val)              \
+    {                                                                            \
+      os << '(' << CoutCast(val.x) << ')';                                       \
+      return os;                                                                 \
+    }                                                                            \
+    /* Inequality */                                                             \
+    inline __host__ __device__ constexpr bool operator!=(const T& a, const T& b) \
+    {                                                                            \
+      return (a.x != b.x);                                                       \
+    }                                                                            \
+    /* Equality */                                                               \
+    inline __host__ __device__ constexpr bool operator==(const T& a, const T& b) \
+    {                                                                            \
+      return (a.x == b.x);                                                       \
+    }                                                                            \
+    /* Max */                                                                    \
+    inline __host__ __device__ constexpr bool operator>(const T& a, const T& b)  \
+    {                                                                            \
+      return (a.x > b.x);                                                        \
+    }                                                                            \
+    /* Min */                                                                    \
+    inline __host__ __device__ constexpr bool operator<(const T& a, const T& b)  \
+    {                                                                            \
+      return (a.x < b.x);                                                        \
+    }                                                                            \
+    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */    \
+    inline __host__ __device__ constexpr T operator+(T a, T b)                   \
+    {                                                                            \
+      using V = decltype(T::x);                                                  \
+      return T{static_cast<V>(a.x + b.x)};                                       \
     }
 
 /**
  * Vector2 overloads
  */
-#  define C2H_VEC_OVERLOAD_2(T)                                               \
-    /* Ostream output */                                                      \
-    inline std::ostream& operator<<(std::ostream& os, const T& val)           \
-    {                                                                         \
-      os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ')';          \
-      return os;                                                              \
-    }                                                                         \
-    /* Inequality */                                                          \
-    inline __host__ __device__ bool operator!=(const T& a, const T& b)        \
-    {                                                                         \
-      return (a.x != b.x) || (a.y != b.y);                                    \
-    }                                                                         \
-    /* Equality */                                                            \
-    inline __host__ __device__ bool operator==(const T& a, const T& b)        \
-    {                                                                         \
-      return (a.x == b.x) && (a.y == b.y);                                    \
-    }                                                                         \
-    /* Max */                                                                 \
-    inline __host__ __device__ bool operator>(const T& a, const T& b)         \
-    {                                                                         \
-      if (a.x > b.x)                                                          \
-        return true;                                                          \
-      else if (b.x > a.x)                                                     \
-        return false;                                                         \
-      return a.y > b.y;                                                       \
-    }                                                                         \
-    /* Min */                                                                 \
-    inline __host__ __device__ bool operator<(const T& a, const T& b)         \
-    {                                                                         \
-      if (a.x < b.x)                                                          \
-        return true;                                                          \
-      else if (b.x < a.x)                                                     \
-        return false;                                                         \
-      return a.y < b.y;                                                       \
-    }                                                                         \
-    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */ \
-    inline __host__ __device__ T operator+(T a, T b)                          \
-    {                                                                         \
-      T retval = make_##T(a.x + b.x, a.y + b.y);                              \
-      return retval;                                                          \
+#  define C2H_VEC_OVERLOAD_2(T)                                                  \
+    /* Ostream output */                                                         \
+    inline std::ostream& operator<<(std::ostream& os, const T& val)              \
+    {                                                                            \
+      os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ')';             \
+      return os;                                                                 \
+    }                                                                            \
+    /* Inequality */                                                             \
+    inline __host__ __device__ constexpr bool operator!=(const T& a, const T& b) \
+    {                                                                            \
+      return (a.x != b.x) || (a.y != b.y);                                       \
+    }                                                                            \
+    /* Equality */                                                               \
+    inline __host__ __device__ constexpr bool operator==(const T& a, const T& b) \
+    {                                                                            \
+      return (a.x == b.x) && (a.y == b.y);                                       \
+    }                                                                            \
+    /* Max */                                                                    \
+    inline __host__ __device__ constexpr bool operator>(const T& a, const T& b)  \
+    {                                                                            \
+      if (a.x > b.x)                                                             \
+        return true;                                                             \
+      else if (b.x > a.x)                                                        \
+        return false;                                                            \
+      return a.y > b.y;                                                          \
+    }                                                                            \
+    /* Min */                                                                    \
+    inline __host__ __device__ constexpr bool operator<(const T& a, const T& b)  \
+    {                                                                            \
+      if (a.x < b.x)                                                             \
+        return true;                                                             \
+      else if (b.x < a.x)                                                        \
+        return false;                                                            \
+      return a.y < b.y;                                                          \
+    }                                                                            \
+    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */    \
+    inline __host__ __device__ constexpr T operator+(T a, T b)                   \
+    {                                                                            \
+      using V = decltype(T::x);                                                  \
+      return T{static_cast<V>(a.x + b.x), static_cast<V>(a.y + b.y)};            \
     }
 
 /**
  * Vector3 overloads
  */
-#  define C2H_VEC_OVERLOAD_3(T)                                                                \
-    /* Ostream output */                                                                       \
-    inline std::ostream& operator<<(std::ostream& os, const T& val)                            \
-    {                                                                                          \
-      os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ',' << CoutCast(val.z) << ')'; \
-      return os;                                                                               \
-    }                                                                                          \
-    /* Inequality */                                                                           \
-    inline __host__ __device__ bool operator!=(const T& a, const T& b)                         \
-    {                                                                                          \
-      return (a.x != b.x) || (a.y != b.y) || (a.z != b.z);                                     \
-    }                                                                                          \
-    /* Equality */                                                                             \
-    inline __host__ __device__ bool operator==(const T& a, const T& b)                         \
-    {                                                                                          \
-      return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);                                     \
-    }                                                                                          \
-    /* Max */                                                                                  \
-    inline __host__ __device__ bool operator>(const T& a, const T& b)                          \
-    {                                                                                          \
-      if (a.x > b.x)                                                                           \
-        return true;                                                                           \
-      else if (b.x > a.x)                                                                      \
-        return false;                                                                          \
-      if (a.y > b.y)                                                                           \
-        return true;                                                                           \
-      else if (b.y > a.y)                                                                      \
-        return false;                                                                          \
-      return a.z > b.z;                                                                        \
-    }                                                                                          \
-    /* Min */                                                                                  \
-    inline __host__ __device__ bool operator<(const T& a, const T& b)                          \
-    {                                                                                          \
-      if (a.x < b.x)                                                                           \
-        return true;                                                                           \
-      else if (b.x < a.x)                                                                      \
-        return false;                                                                          \
-      if (a.y < b.y)                                                                           \
-        return true;                                                                           \
-      else if (b.y < a.y)                                                                      \
-        return false;                                                                          \
-      return a.z < b.z;                                                                        \
-    }                                                                                          \
-    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                  \
-    inline __host__ __device__ T operator+(T a, T b)                                           \
-    {                                                                                          \
-      T retval = make_##T(a.x + b.x, a.y + b.y, a.z + b.z);                                    \
-      return retval;                                                                           \
+#  define C2H_VEC_OVERLOAD_3(T)                                                                  \
+    /* Ostream output */                                                                         \
+    inline std::ostream& operator<<(std::ostream& os, const T& val)                              \
+    {                                                                                            \
+      os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ',' << CoutCast(val.z) << ')';   \
+      return os;                                                                                 \
+    }                                                                                            \
+    /* Inequality */                                                                             \
+    inline __host__ __device__ constexpr bool operator!=(const T& a, const T& b)                 \
+    {                                                                                            \
+      return (a.x != b.x) || (a.y != b.y) || (a.z != b.z);                                       \
+    }                                                                                            \
+    /* Equality */                                                                               \
+    inline __host__ __device__ constexpr bool operator==(const T& a, const T& b)                 \
+    {                                                                                            \
+      return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);                                       \
+    }                                                                                            \
+    /* Max */                                                                                    \
+    inline __host__ __device__ constexpr bool operator>(const T& a, const T& b)                  \
+    {                                                                                            \
+      if (a.x > b.x)                                                                             \
+        return true;                                                                             \
+      else if (b.x > a.x)                                                                        \
+        return false;                                                                            \
+      if (a.y > b.y)                                                                             \
+        return true;                                                                             \
+      else if (b.y > a.y)                                                                        \
+        return false;                                                                            \
+      return a.z > b.z;                                                                          \
+    }                                                                                            \
+    /* Min */                                                                                    \
+    inline __host__ __device__ constexpr bool operator<(const T& a, const T& b)                  \
+    {                                                                                            \
+      if (a.x < b.x)                                                                             \
+        return true;                                                                             \
+      else if (b.x < a.x)                                                                        \
+        return false;                                                                            \
+      if (a.y < b.y)                                                                             \
+        return true;                                                                             \
+      else if (b.y < a.y)                                                                        \
+        return false;                                                                            \
+      return a.z < b.z;                                                                          \
+    }                                                                                            \
+    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                    \
+    inline __host__ __device__ constexpr T operator+(T a, T b)                                   \
+    {                                                                                            \
+      using V = decltype(T::x);                                                                  \
+      return T{static_cast<V>(a.x + b.x), static_cast<V>(a.y + b.y), static_cast<V>(a.z + b.z)}; \
     }
 
 /**
  * Vector4 overloads
  */
-#  define C2H_VEC_OVERLOAD_4(T)                                                                                  \
-    /* Ostream output */                                                                                         \
-    inline std::ostream& operator<<(std::ostream& os, const T& val)                                              \
-    {                                                                                                            \
-      os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ',' << CoutCast(val.z) << ',' << CoutCast(val.w) \
-         << ')';                                                                                                 \
-      return os;                                                                                                 \
-    }                                                                                                            \
-    /* Inequality */                                                                                             \
-    inline __host__ __device__ bool operator!=(const T& a, const T& b)                                           \
-    {                                                                                                            \
-      return (a.x != b.x) || (a.y != b.y) || (a.z != b.z) || (a.w != b.w);                                       \
-    }                                                                                                            \
-    /* Equality */                                                                                               \
-    inline __host__ __device__ bool operator==(const T& a, const T& b)                                           \
-    {                                                                                                            \
-      return (a.x == b.x) && (a.y == b.y) && (a.z == b.z) && (a.w == b.w);                                       \
-    }                                                                                                            \
-    /* Max */                                                                                                    \
-    inline __host__ __device__ bool operator>(const T& a, const T& b)                                            \
-    {                                                                                                            \
-      if (a.x > b.x)                                                                                             \
-        return true;                                                                                             \
-      else if (b.x > a.x)                                                                                        \
-        return false;                                                                                            \
-      if (a.y > b.y)                                                                                             \
-        return true;                                                                                             \
-      else if (b.y > a.y)                                                                                        \
-        return false;                                                                                            \
-      if (a.z > b.z)                                                                                             \
-        return true;                                                                                             \
-      else if (b.z > a.z)                                                                                        \
-        return false;                                                                                            \
-      return a.w > b.w;                                                                                          \
-    }                                                                                                            \
-    /* Min */                                                                                                    \
-    inline __host__ __device__ bool operator<(const T& a, const T& b)                                            \
-    {                                                                                                            \
-      if (a.x < b.x)                                                                                             \
-        return true;                                                                                             \
-      else if (b.x < a.x)                                                                                        \
-        return false;                                                                                            \
-      if (a.y < b.y)                                                                                             \
-        return true;                                                                                             \
-      else if (b.y < a.y)                                                                                        \
-        return false;                                                                                            \
-      if (a.z < b.z)                                                                                             \
-        return true;                                                                                             \
-      else if (b.z < a.z)                                                                                        \
-        return false;                                                                                            \
-      return a.w < b.w;                                                                                          \
-    }                                                                                                            \
-    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                                    \
-    inline __host__ __device__ T operator+(T a, T b)                                                             \
-    {                                                                                                            \
-      const auto retval = make_##T(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);                                  \
-      return retval;                                                                                             \
+#  define C2H_VEC_OVERLOAD_4(T)                                                                                      \
+    /* Ostream output */                                                                                             \
+    inline std::ostream& operator<<(std::ostream& os, const T& val)                                                  \
+    {                                                                                                                \
+      os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ',' << CoutCast(val.z) << ',' << CoutCast(val.w)     \
+         << ')';                                                                                                     \
+      return os;                                                                                                     \
+    }                                                                                                                \
+    /* Inequality */                                                                                                 \
+    inline __host__ __device__ constexpr bool operator!=(const T& a, const T& b)                                     \
+    {                                                                                                                \
+      return (a.x != b.x) || (a.y != b.y) || (a.z != b.z) || (a.w != b.w);                                           \
+    }                                                                                                                \
+    /* Equality */                                                                                                   \
+    inline __host__ __device__ constexpr bool operator==(const T& a, const T& b)                                     \
+    {                                                                                                                \
+      return (a.x == b.x) && (a.y == b.y) && (a.z == b.z) && (a.w == b.w);                                           \
+    }                                                                                                                \
+    /* Max */                                                                                                        \
+    inline __host__ __device__ constexpr bool operator>(const T& a, const T& b)                                      \
+    {                                                                                                                \
+      if (a.x > b.x)                                                                                                 \
+        return true;                                                                                                 \
+      else if (b.x > a.x)                                                                                            \
+        return false;                                                                                                \
+      if (a.y > b.y)                                                                                                 \
+        return true;                                                                                                 \
+      else if (b.y > a.y)                                                                                            \
+        return false;                                                                                                \
+      if (a.z > b.z)                                                                                                 \
+        return true;                                                                                                 \
+      else if (b.z > a.z)                                                                                            \
+        return false;                                                                                                \
+      return a.w > b.w;                                                                                              \
+    }                                                                                                                \
+    /* Min */                                                                                                        \
+    inline __host__ __device__ constexpr bool operator<(const T& a, const T& b)                                      \
+    {                                                                                                                \
+      if (a.x < b.x)                                                                                                 \
+        return true;                                                                                                 \
+      else if (b.x < a.x)                                                                                            \
+        return false;                                                                                                \
+      if (a.y < b.y)                                                                                                 \
+        return true;                                                                                                 \
+      else if (b.y < a.y)                                                                                            \
+        return false;                                                                                                \
+      if (a.z < b.z)                                                                                                 \
+        return true;                                                                                                 \
+      else if (b.z < a.z)                                                                                            \
+        return false;                                                                                                \
+      return a.w < b.w;                                                                                              \
+    }                                                                                                                \
+    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                                        \
+    inline __host__ __device__ constexpr T operator+(T a, T b)                                                       \
+    {                                                                                                                \
+      using V = decltype(T::x);                                                                                      \
+      return T{                                                                                                      \
+        static_cast<V>(a.x + b.x), static_cast<V>(a.y + b.y), static_cast<V>(a.z + b.z), static_cast<V>(a.w + b.w)}; \
     }
 
 /**

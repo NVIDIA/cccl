@@ -21,12 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/cstring>
+#include <cuda/std/__cstring/memset.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdlib>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <nv/target>
 
@@ -38,20 +39,25 @@ using ::free;
 using ::malloc;
 
 #if _CCCL_CUDA_COMPILATION()
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
 
-  const size_t __nbytes = __n * __size;
-
-  if (::__umul64hi(__n, __size) == 0)
+#  if _CCCL_TILE_COMPILATION() // dynamic allocations are not supported in tile mode
+  _CCCL_VERIFY(false, "dynamimc allocation is not supported in tile programs");
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
+  // check for overflow through a hypothetical larger integer
+  // TODO (miscco): use `mul_overflow` once implemented
+  if (::cuda::mul_hi(__n, __size) == 0)
   {
-    __ptr = ::cuda::std::malloc(__nbytes);
+    const size_t __nbytes = __n * __size;
+    __ptr                 = ::cuda::std::malloc(__nbytes);
     if (__ptr != nullptr)
     {
       ::cuda::std::memset(__ptr, 0, __nbytes);
     }
   }
+#  endif // !_CCCL_TILE_COMPILATION()
 
   return __ptr;
 }

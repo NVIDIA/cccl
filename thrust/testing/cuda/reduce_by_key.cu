@@ -1,8 +1,11 @@
+#include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
+
+#include <cuda/iterator>
+#include <cuda/std/functional>
 
 #include <cstdint>
 
@@ -110,6 +113,47 @@ void initialize_values(Vector& values)
   values[8] = 8;
 }
 
+// Checks whether the equality operator is ever invoked on out-of-bounds items
+struct check_valid_item_op
+{
+  cuda::std::uint32_t* error_counter{};
+  int expected_upper_bound{};
+
+  __device__ bool operator()(const int lhs, const int rhs) const
+  {
+    if (lhs > expected_upper_bound || rhs > expected_upper_bound)
+    {
+      if (error_counter)
+      {
+        atomicAdd(error_counter, 1);
+      }
+      return false;
+    }
+    return lhs == rhs;
+  }
+};
+
+template <typename ReturnedT>
+struct check_accumulator_t_op
+{
+  cuda::std::uint32_t* error_counter{};
+
+  template <typename T,
+            typename U,
+            typename = cuda::std::enable_if_t<cuda::std::is_same_v<T, U> && !cuda::std::is_same_v<T, ReturnedT>>>
+  _CCCL_DEVICE ReturnedT operator()(const T lhs, const U& rhs) const
+  {
+    return static_cast<ReturnedT>(lhs + rhs);
+  }
+
+  template <typename T>
+  _CCCL_DEVICE ReturnedT operator()(const ReturnedT lhs, const T& rhs) const
+  {
+    atomicAdd(error_counter, 1);
+    return lhs + static_cast<ReturnedT>(rhs);
+  }
+};
+
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy>
 void TestReduceByKeyDevice(ExecutionPolicy exec)
@@ -120,7 +164,7 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
   thrust::device_vector<T> values;
 
   using iterator_pair =
-    typename thrust::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>;
+    typename cuda::std::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>;
 
   thrust::device_vector<iterator_pair> new_last_vec(1);
   iterator_pair new_last;
@@ -249,7 +293,7 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
   Vector keys;
   Vector values;
 
-  thrust::pair<Vector::iterator, Vector::iterator> new_last;
+  cuda::std::pair<Vector::iterator, Vector::iterator> new_last;
 
   // basic test
   initialize_keys(keys);
@@ -440,3 +484,94 @@ void TestReduceByKeyWithBigIndexes()
 #endif
 }
 DECLARE_UNITTEST(TestReduceByKeyWithBigIndexes);
+
+void TestReduceByKeyWithCustomEqualityOp()
+{
+  using key_vector_t = thrust::device_vector<cuda::std::int32_t>;
+  using val_vector_t = thrust::device_vector<cuda::std::int32_t>;
+  using key_t        = key_vector_t::value_type;
+  using val_t        = val_vector_t::value_type;
+
+  auto constexpr num_items = 1000;
+  auto keys                = cuda::make_counting_iterator(key_t{0});
+  auto values              = cuda::make_counting_iterator(val_t{42});
+
+  thrust::device_vector<cuda::std::uint32_t> error_counter(1, 0);
+  auto const error_counter_ptr = thrust::raw_pointer_cast(error_counter.data());
+
+  key_vector_t unique_out(num_items);
+  val_vector_t aggregates_out(num_items);
+  auto [unique_out_end, aggregates_out_end] = thrust::reduce_by_key(
+    keys,
+    keys + num_items,
+    values,
+    unique_out.begin(),
+    aggregates_out.begin(),
+    check_valid_item_op{error_counter_ptr, num_items - 1});
+
+  // Verify that the number of unique keys is correct
+  const auto num_unique_out     = cuda::std::distance(unique_out.begin(), unique_out_end);
+  const auto num_aggregates_out = cuda::std::distance(aggregates_out.begin(), aggregates_out_end);
+  ASSERT_EQUAL(num_unique_out, num_items);
+  ASSERT_EQUAL(num_aggregates_out, num_items);
+
+  // Verify that the equality operator was never invoked on out-of-bounds items
+  ASSERT_EQUAL(error_counter[0], cuda::std::uint32_t{0});
+
+  // Verify that unique keys are correct
+  bool all_keys_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), keys);
+  ASSERT_EQUAL(all_keys_correct, true);
+
+  // Verify that the aggregates are correct
+  bool all_values_correct = thrust::equal(aggregates_out.cbegin(), aggregates_out.cend(), values);
+  ASSERT_EQUAL(all_values_correct, true);
+}
+
+DECLARE_UNITTEST(TestReduceByKeyWithCustomEqualityOp);
+
+void TestReduceByKeyWithDifferentAccumulatorT()
+{
+  using key_t          = cuda::std::uint32_t;
+  using val_t          = cuda::std::uint8_t;
+  using reduction_op_t = check_accumulator_t_op<cuda::std::uint32_t>;
+
+  auto constexpr num_items            = 20000;
+  auto constexpr expected_num_uniques = 1;
+  constexpr auto unique_key           = key_t{42U};
+  auto keys                           = cuda::make_constant_iterator(unique_key);
+  auto values                         = cuda::make_counting_iterator(val_t{0});
+
+  thrust::device_vector<cuda::std::uint32_t> error_counter(1, 0);
+  auto const error_counter_ptr = thrust::raw_pointer_cast(error_counter.data());
+
+  thrust::device_vector<key_t> unique_out(expected_num_uniques);
+  thrust::device_vector<val_t> aggregates_out(expected_num_uniques);
+  auto [unique_out_end, aggregates_out_end] = thrust::reduce_by_key(
+    keys,
+    keys + num_items,
+    values,
+    unique_out.begin(),
+    aggregates_out.begin(),
+    cuda::std::equal_to<>{},
+    reduction_op_t{error_counter_ptr});
+
+  // Verify that the number of unique keys is correct
+  auto num_unique_out     = cuda::std::distance(unique_out.begin(), unique_out_end);
+  auto num_aggregates_out = cuda::std::distance(aggregates_out.begin(), aggregates_out_end);
+  ASSERT_EQUAL(num_unique_out, expected_num_uniques);
+  ASSERT_EQUAL(num_aggregates_out, expected_num_uniques);
+
+  // Verify that the equality operator was never invoked on out-of-bounds items
+  ASSERT_EQUAL(error_counter[0], cuda::std::uint32_t{0});
+
+  // Verify that the unique key is correct
+  ASSERT_EQUAL(unique_out[0], unique_key);
+
+  // // Verify that the aggregate is correct
+  constexpr auto mod_val            = 0x01 << cuda::std::numeric_limits<val_t>::digits;
+  constexpr auto sum                = ((num_items * (num_items - 1)) / 2);
+  constexpr auto expected_aggregate = static_cast<val_t>(sum % mod_val);
+  ASSERT_EQUAL(aggregates_out[0], expected_aggregate);
+}
+
+DECLARE_UNITTEST(TestReduceByKeyWithDifferentAccumulatorT);

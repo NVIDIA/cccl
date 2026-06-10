@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file merge.h
  *  \brief Merging sorted ranges
@@ -30,7 +17,8 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/pair.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -104,6 +92,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see \p set_union
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator merge(
@@ -169,6 +161,10 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \see \p set_union
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -234,6 +230,10 @@ merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputI
  *  \see https://en.cppreference.com/w/cpp/algorithm/merge
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -300,6 +300,10 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \see https://en.cppreference.com/w/cpp/algorithm/merge
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
 OutputIterator
@@ -384,7 +388,7 @@ merge(InputIterator1 first1,
  *  int keys_result[13];
  *  int vals_result[13];
  *
- *  thrust::pair<int*,int*> end =
+ *  cuda::std::pair<int*,int*> end =
  *    thrust::merge_by_key(thrust::host,
  *                         A_keys, A_keys + 6,
  *                         B_keys, B_keys + 7,
@@ -398,6 +402,10 @@ merge(InputIterator1 first1,
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -406,7 +414,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -486,7 +494,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  int keys_result[13];
  *  int vals_result[13];
  *
- *  thrust::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
  * keys_result, vals_result);
  *
  *  // keys_result = {1, 1, 1, 2, 3, 3, 5, 5, 7, 8, 9, 11, 13}
@@ -496,6 +504,10 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -503,7 +515,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -585,7 +597,7 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  int keys_result[13];
  *  int vals_result[13];
  *
- *  thrust::pair<int*,int*> end =
+ *  cuda::std::pair<int*,int*> end =
  *    thrust::merge_by_key(thrust::host,
  *                         A_keys, A_keys + 6,
  *                         B_keys, B_keys + 7,
@@ -600,6 +612,10 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -609,7 +625,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Compare>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -688,7 +704,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  int keys_result[13];
  *  int vals_result[13];
  *
- *  thrust::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
  * keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result = {13, 11, 9, 8, 7, 5, 5, 3, 3, 2, 1, 1, 1}
@@ -698,6 +714,10 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -706,7 +726,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,

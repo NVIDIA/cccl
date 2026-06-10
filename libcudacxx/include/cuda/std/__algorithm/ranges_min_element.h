@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CPO(__min_element)
 struct __fn
@@ -51,7 +51,8 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr borrowed_iterator_t<_Rp>
   operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
   {
-    return ::cuda::std::__min_element(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r), __comp, __proj);
+    return ::cuda::std::__min_element(
+      ::cuda::std::ranges::__begin_cpo{}(__r), ::cuda::std::ranges::__end_cpo{}(__r), __comp, __proj);
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -61,7 +62,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto min_element = __min_element::__fn{};
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

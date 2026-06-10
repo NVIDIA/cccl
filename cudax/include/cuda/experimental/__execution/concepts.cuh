@@ -24,6 +24,8 @@
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/copyable.h>
+#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -36,13 +38,6 @@
 
 namespace cuda::experimental::execution
 {
-// Utilities:
-template <class _Ty>
-_CCCL_API constexpr auto __is_constexpr_helper(_Ty) -> bool
-{
-  return true;
-}
-
 // Receiver concepts:
 template <class _Rcvr>
 _CCCL_CONCEPT receiver = //
@@ -85,7 +80,7 @@ _CCCL_CONCEPT __is_awaitable = false; // TODO: Implement this concept.
 
 // Sender traits:
 template <class _Sndr>
-_CCCL_API constexpr auto __enable_sender() -> bool
+_CCCL_HOST_DEVICE_API constexpr auto __enable_sender() -> bool
 {
   if constexpr (__is_sender<_Sndr>)
   {
@@ -106,17 +101,20 @@ template <class... _Env>
 struct __completions_tester
 {
   template <class _Sndr, bool _EnableIfConstexpr = ((void) execution::get_completion_signatures<_Sndr, _Env...>(), true)>
-  _CCCL_API static constexpr auto __is_valid(int) -> bool
+  _CCCL_HOST_DEVICE_API static constexpr auto __is_valid(int) -> bool
   {
     return __valid_completion_signatures<completion_signatures_of_t<_Sndr, _Env...>>;
   }
 
   template <class _Sndr>
-  _CCCL_API static constexpr auto __is_valid(long) -> bool
+  _CCCL_HOST_DEVICE_API static constexpr auto __is_valid(long) -> bool
   {
     return false;
   }
 };
+
+template <class _Sndr, class... _Env>
+_CCCL_CONCEPT __has_valid_completion_signatures = __completions_tester<_Env...>::template __is_valid<_Sndr>(0);
 
 template <class _Sndr>
 _CCCL_CONCEPT sender = //
@@ -134,7 +132,7 @@ _CCCL_CONCEPT sender_in = //
     requires(sender<_Sndr>), //
     requires(sizeof...(_Env) <= 1), //
     requires((__queryable<_Env> && ... && true)), //
-    requires(__completions_tester<_Env...>::template __is_valid<_Sndr>(0)) //
+    requires(__has_valid_completion_signatures<_Sndr, _Env...>) //
   );
 
 template <class _Sndr>
@@ -145,6 +143,16 @@ _CCCL_CONCEPT dependent_sender = //
     requires(__is_dependent_sender<_Sndr>()) //
   );
 
+// Scheduler concepts:
+template <class _Sch>
+_CCCL_CONCEPT scheduler = //
+  _CCCL_REQUIRES_EXPR((_Sch), __declfn_t<_Sch> __sch) //
+  ( //
+    requires(__is_scheduler<_Sch>), //
+    schedule(__sch()), //
+    requires(::cuda::std::equality_comparable<::cuda::std::remove_cvref_t<_Sch>>), //
+    requires(::cuda::std::copyable<::cuda::std::remove_cvref_t<_Sch>>) //
+  );
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

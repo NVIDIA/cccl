@@ -44,6 +44,23 @@ __global__ void test_cp_async_bulk(void** fn_ptr)
                                cuda::std::uint64_t*)>(cuda::ptx::cp_async_bulk));));
 #endif // __cccl_ptx_isa >= 860
 
+#if __cccl_ptx_isa >= 920
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.ignore_oob [dstMem], [srcMem], size,
+        // ignoreBytesLeft, ignoreBytesRight, [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_shared_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               const cuda::std::uint32_t&,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_async_bulk_ignore_oob));));
+#endif // __cccl_ptx_isa >= 920
+
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,

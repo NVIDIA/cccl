@@ -3,18 +3,18 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace unittest
 {
-
 class UnitTestException
 {
 public:
   std::string message;
 
-  UnitTestException() {}
-  UnitTestException(const std::string& msg)
-      : message(msg)
+  UnitTestException() = default;
+  UnitTestException(std::string msg)
+      : message(std::move(msg))
   {}
 
   friend std::ostream& operator<<(std::ostream& os, const UnitTestException& e)
@@ -35,7 +35,7 @@ public:
 class UnitTestError : public UnitTestException
 {
 public:
-  UnitTestError() {}
+  UnitTestError() = default;
   UnitTestError(const std::string& msg)
       : UnitTestException(msg)
   {}
@@ -44,7 +44,7 @@ public:
 class UnitTestFailure : public UnitTestException
 {
 public:
-  UnitTestFailure() {}
+  UnitTestFailure() = default;
   UnitTestFailure(const std::string& msg)
       : UnitTestException(msg)
   {}
@@ -53,10 +53,9 @@ public:
 class UnitTestKnownFailure : public UnitTestException
 {
 public:
-  UnitTestKnownFailure() {}
+  UnitTestKnownFailure() = default;
   UnitTestKnownFailure(const std::string& msg)
       : UnitTestException(msg)
   {}
 };
-
 } // end namespace unittest

@@ -41,7 +41,6 @@ using ::cuda::std::mdspan;
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Abstraction for the shape of a structure such as a multidimensional view, i.e. everything but the data
  * itself. A type to be used with cudastf must specialize this template.
@@ -194,13 +193,11 @@ _CCCL_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
 
 namespace reserved
 {
-
 template <typename View, typename... Whatevs>
 auto make_mdview(Whatevs&&... whatevs)
 {
   return make_slice(::std::forward<Whatevs>(whatevs)...);
 }
-
 } // namespace reserved
 
 #ifdef UNITTESTED_FILE
@@ -402,7 +399,7 @@ public:
   shape_of() = default;
 
   /**
-   * @name Copies a shape.
+   * @brief Copies a shape.
    *
    * All `shape_of` specializations must define this constructor.
    */
@@ -423,11 +420,9 @@ public:
   /**
    * @brief Create a new `shape_of` object from a `coords_t` object.
    *
-   * @tparam Sizes Types (all must convert to `size_t` implicitly)
-   * @param size0 Size for the first dimension (
-   * @param sizes Sizes of data for the other dimensions, one per dimension
+   * @param sizes Sizes for each dimension
    *
-   * Initializes dimensions to `size0`, `sizes...`. This constructor is optional.
+   * This constructor is optional.
    */
   explicit shape_of(const coords_t& sizes)
       : extents(reserved::to_cuda_array(sizes))
@@ -568,19 +563,19 @@ public:
     dim4 dims(0);
     if constexpr (rank() >= 1)
     {
-      dims.x = static_cast<int>(extents.extent(0));
+      dims.x = static_cast<size_t>(extents.extent(0));
     }
     if constexpr (rank() >= 2)
     {
-      dims.y = static_cast<int>(extents.extent(1));
+      dims.y = static_cast<size_t>(extents.extent(1));
     }
     if constexpr (rank() >= 3)
     {
-      dims.z = static_cast<int>(extents.extent(2));
+      dims.z = static_cast<size_t>(extents.extent(2));
     }
     if constexpr (rank() >= 4)
     {
-      dims.t = static_cast<int>(extents.extent(3));
+      dims.t = static_cast<size_t>(extents.extent(3));
     }
     return dims;
   }
@@ -1111,7 +1106,7 @@ void data_dump([[maybe_unused]] mdspan<E, X, L, A> s,
   }
   else
   {
-    ::std::cerr << "Unsupported typed." << ::std::endl;
+    ::std::cerr << "Unsupported typed." << '\n';
   }
 }
 
@@ -1215,5 +1210,4 @@ UNITTEST("shape_of<slice> basics")
 };
 
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

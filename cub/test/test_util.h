@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -45,7 +21,7 @@
 
 #include <thrust/iterator/discard_iterator.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 #include <nv/target>
 
@@ -150,9 +126,9 @@ struct CommandLineArgs
   {
     using namespace std;
 
-    for (std::size_t i = 0; i < keys.size(); ++i)
+    for (const auto& key : keys)
     {
-      if (keys[i] == string(arg_name))
+      if (key == string(arg_name))
       {
         return true;
       }
@@ -348,7 +324,7 @@ struct CommandLineArgs
         fflush(stdout);
       }
 
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -478,51 +454,55 @@ template <typename T>
 __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, std::size_t index = 0)
 {
   // RandomBits is host-only.
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_IS_HOST,
-    (switch (gen_mode) {
-      case RANDOM:
-        RandomBits(value);
-        break;
-      case RANDOM_BIT: {
-        char c;
-        RandomBits(c, 0, 0, 1);
-        value = static_cast<T>((c > 0) ? 1 : -1);
-        break;
-      }
-      case RANDOM_MINUS_PLUS_ZERO: {
-        // Replace roughly 1/128 of values with -0.0 or +0.0, and
-        // generate the rest randomly
-        using UnsignedBits = typename CUB_NS_QUALIFIER::Traits<T>::UnsignedBits;
-        char c;
-        RandomBits(c);
-        if (c == 0)
-        {
-          // Replace 1/256 of values with +0.0 bit pattern
-          value = c2h::SafeBitCast<T>(UnsignedBits(0));
-        }
-        else if (c == 1)
-        {
-          // Replace 1/256 of values with -0.0 bit pattern
-          value = c2h::SafeBitCast<T>(UnsignedBits(UnsignedBits(1) << (sizeof(UnsignedBits) * 8) - 1));
-        }
-        else
-        {
-          // 127/128 of values are random
+    ({
+      switch (gen_mode)
+      {
+        case RANDOM:
           RandomBits(value);
+          break;
+        case RANDOM_BIT: {
+          char c;
+          RandomBits(c, 0, 0, 1);
+          value = static_cast<T>((c > 0) ? 1 : -1);
+          break;
         }
-        break;
+        case RANDOM_MINUS_PLUS_ZERO: {
+          // Replace roughly 1/128 of values with -0.0 or +0.0, and
+          // generate the rest randomly
+          using UnsignedBits = typename CUB_NS_QUALIFIER::Traits<T>::UnsignedBits;
+          char c;
+          RandomBits(c);
+          if (c == 0)
+          {
+            // Replace 1/256 of values with +0.0 bit pattern
+            value = c2h::SafeBitCast<T>(UnsignedBits(0));
+          }
+          else if (c == 1)
+          {
+            // Replace 1/256 of values with -0.0 bit pattern
+            value = c2h::SafeBitCast<T>(UnsignedBits(UnsignedBits(1) << (sizeof(UnsignedBits) * 8) - 1));
+          }
+          else
+          {
+            // 127/128 of values are random
+            RandomBits(value);
+          }
+          break;
+        }
+        case UNIFORM:
+          value = 2;
+          break;
+        case INTEGER_SEED:
+        default:
+          value = static_cast<T>(index);
+          break;
       }
-      case UNIFORM:
-        value = 2;
-        break;
-      case INTEGER_SEED:
-      default:
-        value = static_cast<T>(index);
-        break;
     }),
-    ( // NV_IS_DEVICE:
-      switch (gen_mode) {
+    ({
+      switch (gen_mode)
+      {
         case RANDOM:
         case RANDOM_BIT:
         case RANDOM_MINUS_PLUS_ZERO:
@@ -536,7 +516,8 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
         default:
           value = static_cast<T>(index);
           break;
-      }));
+      }
+    }));
 }
 
 /**
@@ -546,25 +527,29 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
 __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, bool& value, std::size_t index = 0)
 {
   // RandomBits is host-only.
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_IS_HOST,
-    (switch (gen_mode) {
-      case RANDOM:
-      case RANDOM_BIT:
-        char c;
-        RandomBits(c, 0, 0, 1);
-        value = (c > 0);
-        break;
-      case UNIFORM:
-        value = true;
-        break;
-      case INTEGER_SEED:
-      default:
-        value = (index > 0);
-        break;
+    ({
+      switch (gen_mode)
+      {
+        case RANDOM:
+        case RANDOM_BIT:
+          char c;
+          RandomBits(c, 0, 0, 1);
+          value = (c > 0);
+          break;
+        case UNIFORM:
+          value = true;
+          break;
+        case INTEGER_SEED:
+        default:
+          value = (index > 0);
+          break;
+      }
     }),
-    ( // NV_IS_DEVICE,
-      switch (gen_mode) {
+    ({
+      switch (gen_mode)
+      {
         case RANDOM:
         case RANDOM_BIT:
         case RANDOM_MINUS_PLUS_ZERO:
@@ -578,7 +563,8 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, bool& value
         default:
           value = (index > 0);
           break;
-      }));
+      }
+    }));
 }
 
 /**
@@ -601,18 +587,18 @@ InitValue(GenMode gen_mode, CUB_NS_QUALIFIER::KeyValuePair<KeyT, ValueT>& value,
   // This specialization only appears to be used by test_warp_scan.
   // It initializes with uniform values and random keys, so we need to
   // protect the call to the host-only RandomBits.
-  // clang-format off
-    NV_IF_TARGET(NV_IS_HOST, (
-        // Assign corresponding flag with a likelihood of the last bit
-        // being set with entropy-reduction level 3
-        RandomBits(value.key, 3);
-        value.key = (value.key & 0x1);
-      ), ( // NV_IS_DEVICE
-        _CubLog("%s\n",
-                "cub::InitValue cannot generate random numbers on device.");
-        cuda::std::terminate();
-      ));
-  // clang-format on
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    ({
+      // Assign corresponding flag with a likelihood of the last bit
+      // being set with entropy-reduction level 3
+      RandomBits(value.key, 3);
+      value.key = (value.key & 0x1);
+    }),
+    ({
+      _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
+      cuda::std::terminate();
+    }));
 }
 
 /******************************************************************************
@@ -755,6 +741,7 @@ CUB_VEC_OVERLOAD_OLD(char)
 CUB_VEC_OVERLOAD_OLD(short)
 CUB_VEC_OVERLOAD_OLD(int)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(long)
 CUB_VEC_OVERLOAD_OLD(longlong)
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -768,6 +755,7 @@ CUB_VEC_OVERLOAD_OLD(uchar)
 CUB_VEC_OVERLOAD_OLD(ushort)
 CUB_VEC_OVERLOAD_OLD(uint)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(ulong)
 CUB_VEC_OVERLOAD_OLD(ulonglong)
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -779,6 +767,7 @@ CUB_VEC_OVERLOAD_4_OLD(ulonglong4_32a)
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 CUB_VEC_OVERLOAD_OLD(float)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(double)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -921,9 +910,8 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestFoo& va
   InitValue(gen_mode, value.w, index);
 }
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <>
-class numeric_limits<TestFoo>
+class ::cuda::std::numeric_limits<TestFoo>
 {
 public:
   static constexpr bool is_specialized = true;
@@ -946,7 +934,6 @@ public:
       numeric_limits<char>::lowest());
   }
 };
-_CCCL_END_NAMESPACE_CUDA_STD
 
 //---------------------------------------------------------------------
 // Complex data type TestBar (with optimizations for fence-free warp-synchrony)
@@ -1051,9 +1038,8 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestBar& va
   InitValue(gen_mode, value.y, index);
 }
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <>
-class numeric_limits<TestBar>
+class cuda::std::numeric_limits<TestBar>
 {
 public:
   static constexpr bool is_specialized = true;
@@ -1068,7 +1054,6 @@ public:
     return TestBar(numeric_limits<long long>::lowest(), numeric_limits<int>::lowest());
   }
 };
-_CCCL_END_NAMESPACE_CUDA_STD
 
 /******************************************************************************
  * Helper routines for list comparison and display
@@ -1437,12 +1422,12 @@ struct GpuTimer
 
   void Start()
   {
-    cudaEventRecord(start, 0);
+    cudaEventRecord(start, nullptr);
   }
 
   void Stop()
   {
-    cudaEventRecord(stop, 0);
+    cudaEventRecord(stop, nullptr);
   }
 
   float ElapsedMillis()

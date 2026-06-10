@@ -28,22 +28,22 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-inline constexpr bool __cccl_is_floating_point_helper_v = false;
+inline constexpr bool __cccl_is_floating_point_v = false;
 
 template <>
-inline constexpr bool __cccl_is_floating_point_helper_v<float> = true;
+inline constexpr bool __cccl_is_floating_point_v<float> = true;
 
 template <>
-inline constexpr bool __cccl_is_floating_point_helper_v<double> = true;
+inline constexpr bool __cccl_is_floating_point_v<double> = true;
 
 template <>
-inline constexpr bool __cccl_is_floating_point_helper_v<long double> = true;
+inline constexpr bool __cccl_is_floating_point_v<long double> = true;
 
 template <class _Tp>
-inline constexpr bool is_floating_point_v = __cccl_is_floating_point_helper_v<remove_cv_t<_Tp>>;
+inline constexpr bool is_floating_point_v = __cccl_is_floating_point_v<remove_cv_t<_Tp>>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : public bool_constant<is_floating_point_v<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : bool_constant<is_floating_point_v<_Tp>>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD

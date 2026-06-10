@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! cub::AgentReduce implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduction.
@@ -50,12 +26,15 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__memory/is_aligned.h>
+#include <thrust/type_traits/is_trivially_relocatable.h>
+
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -63,87 +42,70 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+// TODO(bgruber): deprecate once we publish the tuning API
 /**
  * Parameterizable tuning policy type for AgentReduce
- * @tparam NOMINAL_BLOCK_THREADS_4B Threads per thread block
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
+ * @tparam NominalThreadsPerBlock4B Threads per thread block
+ * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
- * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
- * @tparam _BLOCK_ALGORITHM Cooperative block-wide reduction algorithm to use
- * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
+ * @tparam VectorLoadLength Number of items per vectorized load
+ * @tparam BlockAlgorithm Cooperative block-wide reduction algorithm to use
+ * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  int _VECTOR_LOAD_LENGTH,
-  BlockReduceAlgorithm _BLOCK_ALGORITHM,
-  CacheLoadModifier _LOAD_MODIFIER,
-  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          BlockReduceAlgorithm BlockAlgorithm,
+          CacheLoadModifier LoadModifier,
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentReducePolicy : ScalingType
 {
   /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+  static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Cooperative block-wide reduction algorithm to use
-  static constexpr BlockReduceAlgorithm BLOCK_ALGORITHM = _BLOCK_ALGORITHM;
+  static constexpr BlockReduceAlgorithm BLOCK_ALGORITHM = BlockAlgorithm;
 
   /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  ReduceAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
-  (BLOCK_ALGORITHM, BlockAlgorithm, cub::BlockReduceAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-
 /**
- * Parameterizable tuning policy type for AgentReduce
- * @tparam _BLOCK_THREADS Threads per thread block
- * @tparam _WARP_THREADS Threads per warp
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
+ * Parameterizable tuning policy type for AgentWarpReduce
+ * @tparam ThreadsPerBlock Threads per thread block
+ * @tparam WarpThreads Threads per warp
+ * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
- * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
- * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
+ * @tparam VectorLoadLength Number of items per vectorized load
+ * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int _BLOCK_THREADS,
-          int _WARP_THREADS,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
+template <int ThreadsPerBlock,
+          int WarpThreads,
+          int NominalItemsPerThread4B,
           typename ComputeT,
-          int _VECTOR_LOAD_LENGTH,
-          CacheLoadModifier _LOAD_MODIFIER>
+          int VectorLoadLength,
+          CacheLoadModifier LoadModifier>
 struct AgentWarpReducePolicy
 {
   /// Number of threads per warp
-  static constexpr int WARP_THREADS = _WARP_THREADS;
+  static constexpr int WARP_THREADS = WarpThreads;
 
   /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+  static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Number of threads per block
-  static constexpr int BLOCK_THREADS = _BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
 
-  /// Number of items per thread
+  /// Number of items per thread. When `ComputeT` is `void`, the nominal value is used as-is (no scaling),
+  /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
   static constexpr int ITEMS_PER_THREAD =
-    detail::MemBoundScaling<0, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>::ITEMS_PER_THREAD;
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<ComputeT, void>,
+                               detail::NoScaling<0, NominalItemsPerThread4B>,
+                               detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 
   /// Number of items per tile
   constexpr static int ITEMS_PER_TILE = ITEMS_PER_THREAD * WARP_THREADS;
@@ -160,7 +122,6 @@ struct AgentWarpReducePolicy
 
 namespace detail::reduce
 {
-
 /**
  * @brief AgentReduceImpl implements a stateful abstraction of CUDA thread blocks
  *        and warps, for participating in device-wide reduction .
@@ -174,9 +135,6 @@ namespace detail::reduce
  *
  * @tparam InputIteratorT
  *   Random-access iterator type for input
- *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -202,7 +160,6 @@ namespace detail::reduce
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -231,15 +188,18 @@ struct AgentReduceImpl
                      InputIteratorT>;
 
   /// Constants
-  static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS         = NumThreads * ITEMS_PER_THREAD;
-  static constexpr int VECTOR_LOAD_LENGTH = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int ITEMS_PER_THREAD = AgentReducePolicy::ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = NumThreads * ITEMS_PER_THREAD;
+  static constexpr int vec_size         = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
+  // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-    && (::cuda::std::is_pointer_v<InputIteratorT>) && is_primitive<InputT>::value;
+    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
+    && (::cuda::std::is_pointer_v<InputIteratorT>)
+    // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
+    &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>);
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
@@ -274,7 +234,7 @@ struct AgentReduceImpl
   {
     if constexpr (AttemptVectorization)
     {
-      return ::cuda::is_aligned(d_in, sizeof(VectorT));
+      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in);
     }
     else
     {
@@ -318,7 +278,7 @@ struct AgentReduceImpl
     if constexpr (CanVectorize)
     {
       // Fabricate a vectorized input iterator
-      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
+      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * vec_size);
       CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
         reinterpret_cast<VectorT*>(d_in_unqualified));
 
@@ -327,7 +287,7 @@ struct AgentReduceImpl
       VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
 
       // Alias items as an array of VectorT and load it in striped fashion
-      static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
+      static constexpr int words = ITEMS_PER_THREAD / vec_size;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < words; ++i)
       {
@@ -506,9 +466,6 @@ private:
  * @tparam InputIteratorT
  *   Random-access iterator type for input
  *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
- *
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
@@ -524,7 +481,6 @@ private:
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -532,7 +488,6 @@ template <typename AgentReducePolicy,
 struct AgentReduce
     : AgentReduceImpl<AgentReducePolicy,
                       InputIteratorT,
-                      OutputIteratorT,
                       OffsetT,
                       ReductionOp,
                       AccumT,
@@ -543,7 +498,6 @@ struct AgentReduce
   using base_t =
     AgentReduceImpl<AgentReducePolicy,
                     InputIteratorT,
-                    OutputIteratorT,
                     OffsetT,
                     ReductionOp,
                     AccumT,
@@ -574,9 +528,6 @@ struct AgentReduce
  * @tparam InputIteratorT
  *   Random-access iterator type for input
  *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
- *
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
@@ -592,7 +543,6 @@ struct AgentReduce
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -600,7 +550,6 @@ template <typename AgentReducePolicy,
 struct AgentWarpReduce
     : AgentReduceImpl<AgentReducePolicy,
                       InputIteratorT,
-                      OutputIteratorT,
                       OffsetT,
                       ReductionOp,
                       AccumT,
@@ -612,7 +561,6 @@ struct AgentWarpReduce
   using base_t =
     AgentReduceImpl<AgentReducePolicy,
                     InputIteratorT,
-                    OutputIteratorT,
                     OffsetT,
                     ReductionOp,
                     AccumT,
@@ -629,7 +577,6 @@ struct AgentWarpReduce
       : base_t(temp_storage, d_in, reduction_op, transform_op, threadIdx.x % AgentReducePolicy::WARP_THREADS)
   {}
 };
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

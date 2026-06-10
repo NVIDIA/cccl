@@ -11,7 +11,7 @@
 #ifndef _CUDA_STD___FLOATING_POINT_FP_H
 #define _CUDA_STD___FLOATING_POINT_FP_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -28,6 +28,7 @@
 #include <cuda/std/__floating_point/constants.h>
 #include <cuda/std/__floating_point/conversion_rank_order.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__floating_point/decompose.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/mask.h>
 #include <cuda/std/__floating_point/native_type.h>

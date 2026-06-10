@@ -33,7 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-[[nodiscard]] _CCCL_API constexpr char __fmt_hex_to_upper(char __c) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr char __fmt_hex_to_upper(char __c) noexcept
 {
   switch (__c)
   {
@@ -66,7 +66,7 @@ struct __fmt_padding_size_result
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(940) // missing return statement at end of non-void function
 #endif // _CCCL_COMPILER(MSVC)
 
-[[nodiscard]] _CCCL_API constexpr __fmt_padding_size_result
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_padding_size_result
 __fmt_padding_size(size_t __size, size_t __width, __fmt_spec_alignment __align)
 {
   _CCCL_ASSERT(__width > __size, "don't call this function when no padding is required");
@@ -102,20 +102,20 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 //!
 //! This uses a "mass output function" of __format::__output_buffer when possible.
 template <class _CharT, class _OutCharT = _CharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt __fmt_copy(basic_string_view<_CharT> __str, _OutIt __out_it)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_copy(basic_string_view<_CharT> __str, _OutIt __out_it)
 {
   // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
   return ::cuda::std::copy(__str.begin(), __str.end(), ::cuda::std::move(__out_it));
 }
 
 template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt __fmt_copy(_It __first, _It __last, _OutIt __out_it)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_copy(_It __first, _It __last, _OutIt __out_it)
 {
   return ::cuda::std::__fmt_copy(basic_string_view{__first, __last}, ::cuda::std::move(__out_it));
 }
 
 template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt __fmt_copy(_It __first, size_t __n, _OutIt __out_it)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_copy(_It __first, size_t __n, _OutIt __out_it)
 {
   return ::cuda::std::__fmt_copy(basic_string_view{::cuda::std::to_address(__first), __n}, ::cuda::std::move(__out_it));
 }
@@ -124,7 +124,8 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
 //!
 //! This uses a "mass output function" of __format::__output_buffer when possible.
 template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT, class _OutIt, class _UnaryOp>
-[[nodiscard]] _CCCL_API _OutIt __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
+__fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
 {
   // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
   return ::cuda::std::transform(__first, __last, ::cuda::std::move(__out_it), __operation);
@@ -134,14 +135,14 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
 //!
 //! This uses a "mass output function" of __format::__output_buffer when possible.
 template <class _CharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, _CharT __value)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, _CharT __value)
 {
   // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
   return ::cuda::std::fill_n(::cuda::std::move(__out_it), __n, __value);
 }
 
 template <class _CharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, __fmt_spec_code_point<_CharT> __value)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, __fmt_spec_code_point<_CharT> __value)
 {
   return ::cuda::std::__fmt_fill(::cuda::std::move(__out_it), __n, __value.__data[0]);
 }
@@ -168,7 +169,7 @@ template <class _CharT, class _OutIt>
 //! conversion, which means the [\a __first, \a __last) always contains elements
 //! of the type \c char.
 template <class _CharT, class _ParserCharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_write(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_ParserCharT> __specs, ptrdiff_t __size)
 {
   if (__size >= static_cast<ptrdiff_t>(__specs.__width_))
@@ -184,7 +185,7 @@ __fmt_write(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<
 }
 
 template <class _It, class _ParserCharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_write(_It __first, _It __last, _OutIt __out_it, __fmt_parsed_spec<_ParserCharT> __specs, ptrdiff_t __size)
 {
   _CCCL_ASSERT(__first <= __last, "Not a valid range");
@@ -193,7 +194,7 @@ __fmt_write(_It __first, _It __last, _OutIt __out_it, __fmt_parsed_spec<_ParserC
 
 // Calls the function above where \a __size = \a __last - \a __first.
 template <class _It, class _ParserCharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_write(_It __first, _It __last, _OutIt __out_it, __fmt_parsed_spec<_ParserCharT> __specs)
 {
   _CCCL_ASSERT(__first <= __last, "Not a valid range");
@@ -201,7 +202,7 @@ __fmt_write(_It __first, _It __last, _OutIt __out_it, __fmt_parsed_spec<_ParserC
 }
 
 template <class _It, class _CharT = iter_value_t<_It>, class _ParserCharT, class _OutIt, class _UnaryOp>
-[[nodiscard]] _CCCL_API _OutIt __fmt_write_transformed(
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_write_transformed(
   _It __first, _It __last, _OutIt __out_it, __fmt_parsed_spec<_ParserCharT> __specs, _UnaryOp __op)
 {
   _CCCL_ASSERT(__first <= __last, "Not a valid range");
@@ -224,7 +225,7 @@ template <class _It, class _CharT = iter_value_t<_It>, class _ParserCharT, class
 //!
 //! @note When \c _LIBCPP_HAS_UNICODE is false the function assumes the input is ASCII.
 template <class _CharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_write_string_no_precision(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs)
 {
   _CCCL_ASSERT(!__specs.__has_precision(), "use __write_string");
@@ -244,7 +245,7 @@ __fmt_write_string_no_precision(basic_string_view<_CharT> __str, _OutIt __out_it
 }
 
 template <class _CharT>
-[[nodiscard]] _CCCL_API int __fmt_truncate(basic_string_view<_CharT>& __str, int __precision)
+[[nodiscard]] _CCCL_HOST_DEVICE_API int __fmt_truncate(basic_string_view<_CharT>& __str, int __precision)
 {
   const auto __result =
     ::cuda::std::__fmt_estimate_column_width(__str, __precision, __fmt_column_width_rounding::__down);
@@ -254,7 +255,7 @@ template <class _CharT>
 
 //! Writes a string using format's width estimation algorithm.
 template <class _CharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_write_string(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs)
 {
   if (!__specs.__has_precision())

@@ -24,19 +24,19 @@ struct Decrementable
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const Decrementable&) const = default;
 #else
-  __host__ __device__ bool operator==(const Decrementable&) const;
-  __host__ __device__ bool operator!=(const Decrementable&) const;
+  TEST_FUNC bool operator==(const Decrementable&) const;
+  TEST_FUNC bool operator!=(const Decrementable&) const;
 
-  __host__ __device__ bool operator<(const Decrementable&) const;
-  __host__ __device__ bool operator<=(const Decrementable&) const;
-  __host__ __device__ bool operator>(const Decrementable&) const;
-  __host__ __device__ bool operator>=(const Decrementable&) const;
+  TEST_FUNC bool operator<(const Decrementable&) const;
+  TEST_FUNC bool operator<=(const Decrementable&) const;
+  TEST_FUNC bool operator>(const Decrementable&) const;
+  TEST_FUNC bool operator>=(const Decrementable&) const;
 #endif // TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr Decrementable& operator++();
-  __host__ __device__ constexpr Decrementable operator++(int);
-  __host__ __device__ constexpr Decrementable& operator--();
-  __host__ __device__ constexpr Decrementable operator--(int);
+  TEST_FUNC constexpr Decrementable& operator++();
+  TEST_FUNC constexpr Decrementable operator++(int);
+  TEST_FUNC constexpr Decrementable& operator--();
+  TEST_FUNC constexpr Decrementable operator--(int);
 };
 
 struct Incrementable
@@ -46,17 +46,17 @@ struct Incrementable
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const Incrementable&) const = default;
 #else
-  __host__ __device__ bool operator==(const Incrementable&) const;
-  __host__ __device__ bool operator!=(const Incrementable&) const;
+  TEST_FUNC bool operator==(const Incrementable&) const;
+  TEST_FUNC bool operator!=(const Incrementable&) const;
 
-  __host__ __device__ bool operator<(const Incrementable&) const;
-  __host__ __device__ bool operator<=(const Incrementable&) const;
-  __host__ __device__ bool operator>(const Incrementable&) const;
-  __host__ __device__ bool operator>=(const Incrementable&) const;
+  TEST_FUNC bool operator<(const Incrementable&) const;
+  TEST_FUNC bool operator<=(const Incrementable&) const;
+  TEST_FUNC bool operator>(const Incrementable&) const;
+  TEST_FUNC bool operator>=(const Incrementable&) const;
 #endif // TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr Incrementable& operator++();
-  __host__ __device__ constexpr Incrementable operator++(int);
+  TEST_FUNC constexpr Incrementable& operator++();
+  TEST_FUNC constexpr Incrementable operator++(int);
 };
 
 struct BigType
@@ -68,17 +68,17 @@ struct BigType
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const BigType&) const = default;
 #else
-  __host__ __device__ bool operator==(const BigType&) const;
-  __host__ __device__ bool operator!=(const BigType&) const;
+  TEST_FUNC bool operator==(const BigType&) const;
+  TEST_FUNC bool operator!=(const BigType&) const;
 
-  __host__ __device__ bool operator<(const BigType&) const;
-  __host__ __device__ bool operator<=(const BigType&) const;
-  __host__ __device__ bool operator>(const BigType&) const;
-  __host__ __device__ bool operator>=(const BigType&) const;
+  TEST_FUNC bool operator<(const BigType&) const;
+  TEST_FUNC bool operator<=(const BigType&) const;
+  TEST_FUNC bool operator>(const BigType&) const;
+  TEST_FUNC bool operator>=(const BigType&) const;
 #endif // TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr BigType& operator++();
-  __host__ __device__ constexpr BigType operator++(int);
+  TEST_FUNC constexpr BigType& operator++();
+  TEST_FUNC constexpr BigType operator++(int);
 };
 
 struct CharDifferenceType
@@ -88,25 +88,31 @@ struct CharDifferenceType
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const CharDifferenceType&) const = default;
 #else
-  __host__ __device__ bool operator==(const CharDifferenceType&) const;
-  __host__ __device__ bool operator!=(const CharDifferenceType&) const;
+  TEST_FUNC bool operator==(const CharDifferenceType&) const;
+  TEST_FUNC bool operator!=(const CharDifferenceType&) const;
 
-  __host__ __device__ bool operator<(const CharDifferenceType&) const;
-  __host__ __device__ bool operator<=(const CharDifferenceType&) const;
-  __host__ __device__ bool operator>(const CharDifferenceType&) const;
-  __host__ __device__ bool operator>=(const CharDifferenceType&) const;
+  TEST_FUNC bool operator<(const CharDifferenceType&) const;
+  TEST_FUNC bool operator<=(const CharDifferenceType&) const;
+  TEST_FUNC bool operator>(const CharDifferenceType&) const;
+  TEST_FUNC bool operator>=(const CharDifferenceType&) const;
 #endif // TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr CharDifferenceType& operator++();
-  __host__ __device__ constexpr CharDifferenceType operator++(int);
+  TEST_FUNC constexpr CharDifferenceType& operator++();
+  TEST_FUNC constexpr CharDifferenceType operator++(int);
 };
 
 template <class T>
 _CCCL_CONCEPT HasIteratorCategory =
   _CCCL_REQUIRES_EXPR((T))(typename(typename cuda::std::ranges::iterator_t<T>::iterator_category));
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
+#if _CCCL_HAS_INT128()
+  using widest_integer = __int128_t;
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  using widest_integer = long long;
+#endif // !_CCCL_HAS_INT128()
+
   {
     const cuda::std::ranges::iota_view<char> io(0);
     using Iter = decltype(io.begin());
@@ -155,7 +161,7 @@ __host__ __device__ void test()
     // Same as below, if there is no type larger than long, we can just use that.
     static_assert(sizeof(Iter::difference_type) >= sizeof(long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::same_as<Iter::difference_type, widest_integer>);
     unused(io);
   }
   {
@@ -168,7 +174,7 @@ __host__ __device__ void test()
     // https://eel.is/c++draft/range.iota.view#1.3
     static_assert(sizeof(Iter::difference_type) >= sizeof(long long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::same_as<Iter::difference_type, widest_integer>);
     unused(io);
   }
   {

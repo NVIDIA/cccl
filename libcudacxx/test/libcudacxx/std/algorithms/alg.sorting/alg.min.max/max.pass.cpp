@@ -14,18 +14,18 @@
 //   const T&
 //   max(const T& a, const T& b);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test(const T& a, const T& b, const T& x)
+TEST_FUNC constexpr void test(const T& a, const T& b, const T& x)
 {
   assert(&cuda::std::max(a, b) == &x);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int x = 0;
@@ -51,7 +51,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

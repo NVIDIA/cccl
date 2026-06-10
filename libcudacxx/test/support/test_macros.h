@@ -14,9 +14,9 @@
 #include <cuda/std/detail/__config>
 
 // Use the CCCL compiler detection
-#define TEST_COMPILER(...)       _CCCL_COMPILER(__VA_ARGS__)
-#define TEST_CUDA_COMPILER(...)  _CCCL_CUDA_COMPILER(__VA_ARGS__)
-#define TEST_HAS_CUDA_COMPILER() _CCCL_HAS_CUDA_COMPILER()
+#define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILATION() _CCCL_CUDA_COMPILATION()
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
@@ -24,6 +24,10 @@
 #define TEST_DIAG_SUPPRESS_NVHPC(...) _CCCL_DIAG_SUPPRESS_NVHPC(__VA_ARGS__)
 #define TEST_DIAG_SUPPRESS_MSVC(...)  _CCCL_DIAG_SUPPRESS_MSVC(__VA_ARGS__)
 #define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_BEGIN_NV_DIAG_SUPPRESS(__VA_ARGS__)
+
+// Use the CCCL host device function
+#define TEST_FUNC        _CCCL_HOST_DEVICE _CCCL_TILE
+#define TEST_DEVICE_FUNC _CCCL_DEVICE _CCCL_TILE
 
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER
@@ -48,7 +52,7 @@
 #define TEST_HAS_SPACESHIP() _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
+#  define TEST_IS_CONSTANT_EVALUATED() _CCCL_BUILTIN_IS_CONSTANT_EVALUATED()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
 #endif
@@ -60,7 +64,7 @@
 #endif // ^^^ TEST_STD_VER <= 2020
 
 // Attempt to deduce the GLIBC version
-#if _CCCL_HAS_INCLUDE(<features.h>) || defined(__linux__)
+#if __has_include(<features.h>) || defined(__linux__)
 #  include <features.h>
 #  if defined(__GLIBC_PREREQ)
 #    define TEST_HAS_GLIBC
@@ -81,13 +85,10 @@
 #      define TEST_HAS_TIMESPEC_GET
 #      define TEST_HAS_C11_FEATURES
 #    endif
-#  elif defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#    define TEST_HAS_C11_FEATURES
-#    define TEST_HAS_TIMESPEC_GET
 #  endif
 #endif
 
-#if !_CCCL_HAS_FEATURE(cxx_rtti) && !defined(__cpp_rtti) && !defined(__GXX_RTTI)
+#if !_CCCL_HAS_FEATURE(cxx_rtti) && __cpp_rtti == 0 && !defined(__GXX_RTTI)
 #  define TEST_HAS_NO_RTTI
 #endif
 
@@ -96,6 +97,12 @@
 #endif
 
 #define TEST_IGNORE_NODISCARD (void)
+
+#if TEST_COMPILER(NVRTC, >=, 13)
+#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION TEST_FUNC
+#else
+#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
+#endif
 
 #if TEST_COMPILER(MSVC)
 #  include <intrin.h>
@@ -107,13 +114,13 @@ inline void DoNotOptimize(Tp const& value)
 }
 #else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv
 template <class Tp>
-__host__ __device__ inline void DoNotOptimize(Tp const& value)
+TEST_FUNC inline void DoNotOptimize(Tp const& value)
 {
   asm volatile("" : : "r,m"(value) : "memory");
 }
 
 template <class Tp>
-__host__ __device__ inline void DoNotOptimize(Tp& value)
+TEST_FUNC inline void DoNotOptimize(Tp& value)
 {
 #  if TEST_COMPILER(CLANG)
   asm volatile("" : "+r,m"(value) : : "memory");
@@ -131,17 +138,25 @@ __host__ __device__ inline void DoNotOptimize(Tp& value)
 #  define _STATIC_MEMBER_IMPL(type) static type v;
 #endif
 
-#define STATIC_MEMBER_VAR(name, type)     \
-  __host__ __device__ static type& name() \
-  {                                       \
-    _STATIC_MEMBER_IMPL(type);            \
-    return v;                             \
+#define STATIC_MEMBER_VAR(name, type) \
+  TEST_FUNC static type& name()       \
+  {                                   \
+    _STATIC_MEMBER_IMPL(type);        \
+    return v;                         \
   }
 
 template <class... T>
-__host__ __device__ constexpr bool unused(T&&...)
+TEST_FUNC constexpr bool unused(T&&...)
 {
   return true;
 }
+
+// Class-type and floating-point NTTPs require C++20 and are broken on nvcc < 13.1
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L \
+  && !TEST_CUDA_COMPILER(NVCC, <, 13, 1)
+#  define TEST_HAS_CLASS_NTTP 1
+#else
+#  define TEST_HAS_CLASS_NTTP 0
+#endif
 
 #endif // SUPPORT_TEST_MACROS_HPP

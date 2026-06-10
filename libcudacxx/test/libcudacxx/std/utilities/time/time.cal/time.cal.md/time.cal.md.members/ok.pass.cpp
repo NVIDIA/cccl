@@ -29,8 +29,8 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const month_day>().ok()));
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const month_day>().ok())>);
 
-  static_assert(!month_day{}.ok(), "");
-  static_assert(month_day{cuda::std::chrono::May, day{2}}.ok(), "");
+  static_assert(!month_day{}.ok());
+  static_assert(month_day{cuda::std::chrono::May, day{2}}.ok());
 
   assert(!(month_day(cuda::std::chrono::April, day{0}).ok()));
 

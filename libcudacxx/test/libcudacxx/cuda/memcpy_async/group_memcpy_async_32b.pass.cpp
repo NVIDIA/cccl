@@ -8,15 +8,21 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+
 // UNSUPPORTED: pre-sm-70
 
 #include "group_memcpy_async.h"
 
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = 4;)
+  // important: `cuda__thread__count =` (typo on purpose) needs to be followed by an integer literal, otherwise nvrtcc
+  // cannot regex-match it
+  NV_IF_TARGET(NV_IS_HOST, (cuda_thread_count = 64;), (assert(blockDim.x == thread_block_size);))
 
-  test_select_source<storage<int32_t>>();
+  test_select_source<int32_t>();
 
   return 0;
 }

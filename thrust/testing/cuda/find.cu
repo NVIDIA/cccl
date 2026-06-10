@@ -1,52 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/find.h>
+#include <thrust/functional.h>
 
 #include <unittest/unittest.h>
-
-template <typename T>
-struct equal_to_value_pred
-{
-  T value;
-
-  equal_to_value_pred(T value)
-      : value(value)
-  {}
-
-  _CCCL_HOST_DEVICE bool operator()(T v) const
-  {
-    return v == value;
-  }
-};
-
-template <typename T>
-struct not_equal_to_value_pred
-{
-  T value;
-
-  not_equal_to_value_pred(T value)
-      : value(value)
-  {}
-
-  _CCCL_HOST_DEVICE bool operator()(T v) const
-  {
-    return v != value;
-  }
-};
-
-template <typename T>
-struct less_than_value_pred
-{
-  T value;
-
-  less_than_value_pred(T value)
-      : value(value)
-  {}
-
-  _CCCL_HOST_DEVICE bool operator()(T v) const
-  {
-    return v < value;
-  }
-};
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename T, typename Iterator2>
@@ -125,9 +81,10 @@ void TestFindIfDevice(ExecutionPolicy exec)
   using iter_type = typename thrust::device_vector<int>::iterator;
   thrust::device_vector<iter_type> d_result(1);
 
-  h_iter = thrust::find_if(h_data.begin(), h_data.end(), equal_to_value_pred<int>(0));
+  using thrust::placeholders::_1;
+  h_iter = thrust::find_if(h_data.begin(), h_data.end(), _1 == 0);
 
-  find_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), equal_to_value_pred<int>(0), d_result.begin());
+  find_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 == 0, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -139,9 +96,9 @@ void TestFindIfDevice(ExecutionPolicy exec)
   {
     int sample = h_data[i];
 
-    h_iter = thrust::find_if(h_data.begin(), h_data.end(), equal_to_value_pred<int>(sample));
+    h_iter = thrust::find_if(h_data.begin(), h_data.end(), _1 == sample);
 
-    find_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), equal_to_value_pred<int>(sample), d_result.begin());
+    find_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 == sample, d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
       ASSERT_EQUAL(cudaSuccess, err);
@@ -181,9 +138,10 @@ void TestFindIfNotDevice(ExecutionPolicy exec)
   using iter_type = typename thrust::device_vector<int>::iterator;
   thrust::device_vector<iter_type> d_result(1);
 
-  h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), not_equal_to_value_pred<int>(0));
+  using thrust::placeholders::_1;
+  h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), _1 != 0);
 
-  find_if_not_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), not_equal_to_value_pred<int>(0), d_result.begin());
+  find_if_not_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 != 0, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -195,10 +153,9 @@ void TestFindIfNotDevice(ExecutionPolicy exec)
   {
     int sample = h_data[i];
 
-    h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), not_equal_to_value_pred<int>(sample));
+    h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), _1 != sample);
 
-    find_if_not_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), not_equal_to_value_pred<int>(sample), d_result.begin());
+    find_if_not_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 != sample, d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
       ASSERT_EQUAL(cudaSuccess, err);

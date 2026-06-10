@@ -14,7 +14,7 @@
 //   Iter
 //   rotate(Iter first, Iter middle, Iter last);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "MoveOnly.h"
@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using iter_value_t = typename cuda::std::remove_reference<decltype(*cuda::std::declval<Iter>())>::type;
 
@@ -214,7 +214,7 @@ __host__ __device__ constexpr void test()
   assert(ig[5] == 2);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<int*>>();
   test<bidirectional_iterator<int*>>();
@@ -233,7 +233,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

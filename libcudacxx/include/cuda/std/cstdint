@@ -23,9 +23,9 @@
 
 #include <cuda/std/version>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdint>
-#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#elif _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/climits>
 
 using int8_t   = signed char;

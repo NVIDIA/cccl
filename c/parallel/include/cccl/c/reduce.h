@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -32,6 +33,8 @@ typedef struct cccl_device_reduce_build_result_t
   CUkernel single_tile_kernel;
   CUkernel single_tile_second_kernel;
   CUkernel reduction_kernel;
+  CUkernel nondeterministic_atomic_kernel;
+  cccl_determinism_t determinism;
   void* runtime_policy;
 } cccl_device_reduce_build_result_t;
 
@@ -42,6 +45,7 @@ CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_iterator_t d_out,
   cccl_op_t op,
   cccl_value_t init,
+  cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -56,6 +60,7 @@ CCCL_C_API CUresult cccl_device_reduce_build_ex(
   cccl_iterator_t d_out,
   cccl_op_t op,
   cccl_value_t init,
+  cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -75,6 +80,18 @@ CCCL_C_API CUresult cccl_device_reduce(
   cccl_value_t init,
   CUstream stream);
 
+CCCL_C_API CUresult cccl_device_reduce_nondeterministic(
+  cccl_device_reduce_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_value_t init,
+  CUstream stream);
+
 CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

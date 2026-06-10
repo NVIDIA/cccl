@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 // [ranges.access.rbegin]
 
@@ -58,8 +58,8 @@ concept __unqualified_rbegin =
 template <class _Tp>
 concept __can_reverse =
   __can_borrow<_Tp> && !__member_rbegin<_Tp> && !__unqualified_rbegin<_Tp> && requires(_Tp&& __t) {
-    { ::cuda::std::ranges::begin(__t) } -> same_as<decltype(::cuda::std::ranges::end(__t))>;
-    { ::cuda::std::ranges::begin(__t) } -> bidirectional_iterator;
+    { ::cuda::std::ranges::__begin_cpo{}(__t) } -> same_as<decltype(::cuda::std::ranges::__end_cpo{}(__t))>;
+    { ::cuda::std::ranges::__begin_cpo{}(__t) } -> bidirectional_iterator;
   };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
@@ -90,8 +90,9 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(__can_borrow<_Tp>),
     requires(!__member_rbegin<_Tp>),
     requires(!__unqualified_rbegin<_Tp>),
-    requires(same_as<decltype(::cuda::std::ranges::end(__t)), decltype(::cuda::std::ranges::begin(__t))>),
-    requires(bidirectional_iterator<decltype(::cuda::std::ranges::begin(__t))>)));
+    requires(
+      same_as<decltype(::cuda::std::ranges::__end_cpo{}(__t)), decltype(::cuda::std::ranges::__begin_cpo{}(__t))>),
+    requires(bidirectional_iterator<decltype(::cuda::std::ranges::__begin_cpo{}(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_reverse = _CCCL_FRAGMENT(__can_reverse_, _Tp);
@@ -120,9 +121,10 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_reverse<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(::cuda::std::ranges::end(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(::cuda::std::ranges::__end_cpo{}(__t)))
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__t));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__end_cpo{}(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
@@ -134,6 +136,9 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto rbegin = __rbegin::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __rbegin_cpo = __rbegin::__fn;
 } // namespace __cpo
 
 // [range.access.crbegin]
@@ -145,20 +150,20 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t)))
+    noexcept(noexcept(::cuda::std::ranges::__rbegin_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t))))
+      -> decltype(::cuda::std::ranges::__rbegin_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
-    return ::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t));
+    return ::cuda::std::ranges::__rbegin_cpo{}(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t))))
-      -> decltype(::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t)))
+    noexcept(noexcept(::cuda::std::ranges::__rbegin_cpo{}(static_cast<const _Tp&&>(__t))))
+      -> decltype(::cuda::std::ranges::__rbegin_cpo{}(static_cast<const _Tp&&>(__t)))
   {
-    return ::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t));
+    return ::cuda::std::ranges::__rbegin_cpo{}(static_cast<const _Tp&&>(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -166,9 +171,12 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crbegin = __crbegin::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __crbegin_cpo = __crbegin::__fn;
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

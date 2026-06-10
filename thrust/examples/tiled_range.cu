@@ -8,8 +8,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // this example illustrates how to tile a range multiple times
 // examples:
 //   tiled_range([0, 1, 2, 3], 1) -> [0, 1, 2, 3]
@@ -69,16 +67,12 @@ protected:
 
 int main()
 {
-  thrust::device_vector<int> data(4);
-  data[0] = 10;
-  data[1] = 20;
-  data[2] = 30;
-  data[3] = 40;
+  thrust::device_vector<int> data{10, 20, 30, 40};
 
   // print the initial data
   std::cout << "range        ";
   thrust::copy(data.begin(), data.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   using Iterator = thrust::device_vector<int>::iterator;
 
@@ -86,13 +80,13 @@ int main()
   tiled_range<Iterator> two(data.begin(), data.end(), 2);
   std::cout << "two tiles:   ";
   thrust::copy(two.begin(), two.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // create tiled_range with three tiles
   tiled_range<Iterator> three(data.begin(), data.end(), 3);
   std::cout << "three tiles: ";
   thrust::copy(three.begin(), three.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   return 0;
 }

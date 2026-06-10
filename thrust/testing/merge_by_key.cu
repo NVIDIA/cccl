@@ -1,11 +1,12 @@
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -40,7 +41,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   my_system& system,
   InputIterator1,
   InputIterator1,
@@ -52,7 +53,7 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator2 values_result)
 {
   system.validate_dispatch();
-  return thrust::make_pair(keys_result, values_result);
+  return cuda::std::make_pair(keys_result, values_result);
 }
 
 void TestMergeByKeyDispatchExplicit()
@@ -73,7 +74,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   my_tag,
   InputIterator1,
   InputIterator1,
@@ -85,7 +86,7 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator2 values_result)
 {
   *keys_result = 13;
-  return thrust::make_pair(keys_result, values_result);
+  return cuda::std::make_pair(keys_result, values_result);
 }
 
 void TestMergeByKeyDispatchImplicit()
@@ -218,7 +219,7 @@ void TestMergeByKeyToDiscardIterator(size_t n)
   const thrust::device_vector<T> d_a_vals = h_a_vals;
   const thrust::device_vector<T> d_b_vals = h_b_vals;
 
-  using discard_pair = thrust::pair<thrust::discard_iterator<>, thrust::discard_iterator<>>;
+  using discard_pair = cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>>;
 
   const discard_pair h_result = thrust::merge_by_key(
     h_a_keys.begin(),
@@ -293,7 +294,7 @@ void TestMergeByKeyFromCuDFDremel()
   auto offset_transformer  = offset_transform{};
   auto transformed_empties = thrust::make_transform_iterator(empties.begin(), offset_transformer);
 
-  auto input_parent_rep_it = thrust::make_constant_iterator(level);
+  auto input_parent_rep_it = cuda::make_constant_iterator(level);
   auto input_parent_def_it = thrust::make_transform_iterator(empties_idx.begin(), def_level_fn{});
   auto input_parent_zip_it = thrust::make_zip_iterator(input_parent_rep_it, input_parent_def_it);
   auto input_child_zip_it  = thrust::make_zip_iterator(temp_rep_vals.begin(), temp_def_vals.begin());

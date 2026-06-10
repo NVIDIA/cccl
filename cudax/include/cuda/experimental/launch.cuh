@@ -11,10 +11,10 @@
 #ifndef __CUDAX_LAUNCH___
 #define __CUDAX_LAUNCH___
 
-#include <cuda/experimental/__launch/configuration.cuh>
-#include <cuda/experimental/__launch/host_launch.cuh>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__stream/launch_transform.h>
+
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__launch/param_kind.cuh>
-#include <cuda/experimental/__stream/device_transform.cuh>
 
 #endif // __CUDAX_LAUNCH___

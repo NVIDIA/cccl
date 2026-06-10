@@ -60,7 +60,7 @@ _CCCL_API constexpr unsigned long long __convert_to_integral(unsigned long long 
 }
 
 template <typename _Fp>
-_CCCL_API constexpr enable_if_t<is_floating_point<_Fp>::value, long long> __convert_to_integral(_Fp __val)
+_CCCL_API constexpr enable_if_t<is_floating_point_v<_Fp>, long long> __convert_to_integral(_Fp __val)
 {
   return __val;
 }
@@ -77,7 +77,7 @@ _CCCL_API constexpr __uint128_t __convert_to_integral(__uint128_t __val)
 }
 #endif // _CCCL_HAS_INT128()
 
-template <class _Tp, bool = is_enum<_Tp>::value>
+template <class _Tp, bool = is_enum_v<_Tp>>
 struct __sfinae_underlying_type
 {
   using type            = typename underlying_type<_Tp>::type;

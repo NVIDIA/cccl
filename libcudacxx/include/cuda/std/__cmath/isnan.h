@@ -21,16 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
-
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
-#  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,14 +35,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isnan)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_ISNAN
+#endif // _CCCL_TILE_COMPILATION()
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isnan_impl(_Tp __x) noexcept
 {
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+#if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isnan(__x);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return __x != __x;
 }
 
@@ -84,7 +85,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool isnan(__half __x) noexcept
 {
 #  if _LIBCUDACXX_HAS_NVFP16()
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::__hisnan(__x);
   }
@@ -100,7 +101,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool isnan(__nv_bfloat16 __x) noexcept
 {
 #  if _LIBCUDACXX_HAS_NVFP16()
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::__hisnan(__x);
   }
@@ -158,10 +159,16 @@ template <class _Tp>
 #if _CCCL_HAS_FLOAT128()
 [[nodiscard]] _CCCL_API constexpr bool isnan(__float128 __x) noexcept
 {
+  // __builtin_isnan is not efficient for __float128, prefer __nv_fp128_isnan at run-time
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization
+                                                                        // flags
+  }
 #  if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
-  return ::cuda::std::__isnan_impl(__x);
+  return __x != __x;
 #  endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
 #endif // _CCCL_HAS_FLOAT128()

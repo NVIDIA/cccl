@@ -26,7 +26,7 @@ struct B
 struct A1
 {
   mutable B b_;
-  __host__ __device__ constexpr operator B&() const
+  TEST_FUNC constexpr operator B&() const
   {
     return b_;
   }
@@ -35,26 +35,26 @@ struct A1
 struct A2
 {
   mutable B b_;
-  __host__ __device__ constexpr operator B&() const noexcept
+  TEST_FUNC constexpr operator B&() const noexcept
   {
     return b_;
   }
 };
 
-__host__ __device__ void implicitly_convert(cuda::std::reference_wrapper<B>) noexcept;
+TEST_FUNC void implicitly_convert(cuda::std::reference_wrapper<B>) noexcept;
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     A1 a{};
-#if !TEST_COMPILER(NVHPC)
+#if !_CCCL_COMPILER(GCC, <, 9) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
     static_assert(!noexcept(implicitly_convert(a)));
-#endif // TEST_COMPILER(NVHPC)
+#endif // !_CCCL_COMPILER(GCC, <, 8) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
     cuda::std::reference_wrapper<B> b1 = a;
     assert(&b1.get() == &a.b_);
-#if !TEST_COMPILER(NVHPC)
+#if !_CCCL_COMPILER(GCC, <, 9) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
     static_assert(!noexcept(b1 = a));
-#endif // TEST_COMPILER(NVHPC)
+#endif // !_CCCL_COMPILER(GCC, <, 8) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
     b1 = a;
     assert(&b1.get() == &a.b_);
   }
@@ -73,9 +73,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
   static_assert(test());
-#endif // TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
 
   return 0;
 }

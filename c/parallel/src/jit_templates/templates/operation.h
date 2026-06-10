@@ -11,9 +11,14 @@
 #pragma once
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+#  include <cuda/std/array>
 #  include <cuda/std/cstddef>
+#  include <cuda/std/optional>
+#  include <cuda/std/span>
 #  include <cuda/std/type_traits>
 #  include <cuda/std/utility>
+
+#  include <string_view>
 
 #  include <cccl/c/types.h>
 #  include <util/types.h>
@@ -22,23 +27,21 @@
 #include "../mappings/operation.h"
 #include "../mappings/type_info.h"
 
+template <cccl_type_info_mapping RetT>
+using cccl_mapping_to_type = decltype(RetT)::Type;
+
 template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
 struct stateless_user_operation
 {
-  // Note: The user provided C f  unction (Operation.operation) must match the signature:
+  // Note: The user provided C function must match the signature:
   // void (void* arg1, ..., void* argN, void* result_ptr)
-  __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args) const
+  __device__ cccl_mapping_to_type<RetT> operator()(cccl_mapping_to_type<ArgTs>... args) const
   {
-    using TargetCFuncPtr = void (*)(const decltype(args, void())*..., void*);
-
-    // Cast the stored operation pointer (assumed to be void* or compatible)
-    auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
-
     // Prepare storage for the result
     typename decltype(RetT)::Type result;
 
     // Call the C function, casting argument addresses to void*
-    c_func_ptr((const_cast<void*>(static_cast<const void*>(&args)))..., &result);
+    decltype(Operation)::operation((const_cast<void*>(static_cast<const void*>(&args)))..., &result);
 
     return result;
   }
@@ -54,20 +57,15 @@ template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT
 struct stateful_user_operation
 {
   user_operation_state<Operation.size, Operation.alignment> state;
-  __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args)
+  __device__ cccl_mapping_to_type<RetT> operator()(cccl_mapping_to_type<ArgTs>... args)
   {
-    // Note: The user provided C function (Operation.operation) must match the signature:
+    // Note: The user provided C function must match the signature:
     // void (void* state, void* arg1, ..., void* argN, void* result_ptr)
-    using TargetCFuncPtr = void (*)(void*, const decltype(args, void())*..., void*);
-
-    // Cast the stored operation pointer (assumed to be void* or compatible)
-    auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
-
     // Prepare storage for the result
     typename decltype(RetT)::Type result;
 
     // Call the C function, passing state address, casting argument addresses to void*, and result pointer
-    c_func_ptr(&state, (const_cast<void*>(static_cast<const void*>(&args)))..., &result);
+    decltype(Operation)::operation(&state, (const_cast<void*>(static_cast<const void*>(&args)))..., &result);
 
     return result;
   }
@@ -85,7 +83,7 @@ struct user_operation_traits
   using operator_builder = std::string (*)(cuda::std::span<std::string_view>, const char*, const char*);
   using argument_matcher = operator_builder (*)(cuda::std::span<cccl_type_enum>, std::string_view);
 
-  static std::string unary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name)
+  static std::string unary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name_)
   {
     return std::format(
       R"(
@@ -97,14 +95,14 @@ __device__ {1} operator{2}(const {3} & arg)
   return ret;
 }}
                        )",
-      name, // 0
+      name_, // 0
       types[0], // 1
       symbol, // 2
       types[1] // 3
     );
   }
 
-  static std::string binary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name)
+  static std::string binary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name_)
   {
     return std::format(
       R"(
@@ -116,25 +114,25 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return ret;
 }}
                        )",
-      name, // 0
+      name_, // 0
       types[0], // 1
       symbol, // 2
       types[1] // 3
     );
   }
 
-  static operator_builder unary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder unary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 2)
     {
-      throw std::runtime_error(
-        std::format("c.parallel: well-known operation '{}' expected 1 argument, received {}.", name, types.size() - 1));
+      throw std::runtime_error(std::format(
+        "c.parallel: well-known operation '{}' expected 1 argument, received {}.", name_, types.size() - 1));
     }
     if (types[0] != types[1])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to return its argument type ({}), but returns {}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[0])));
     }
@@ -142,19 +140,19 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return unary_builder;
   }
 
-  static operator_builder binary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder binary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 3)
     {
       throw std::runtime_error(std::format(
-        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name, types.size() - 1));
+        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name_, types.size() - 1));
     }
     if (types[1] != types[2])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to have matching argument types, but has argument types {} and "
         "{}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[2])));
     }
@@ -162,7 +160,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to return its argument type ({}), but returns {}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[0])));
     }
@@ -170,37 +168,37 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return binary_builder;
   }
 
-  static operator_builder unary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder unary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 2)
     {
-      throw std::runtime_error(
-        std::format("c.parallel: well-known operation '{}' expected 1 argument, received {}.", name, types.size() - 1));
+      throw std::runtime_error(std::format(
+        "c.parallel: well-known operation '{}' expected 1 argument, received {}.", name_, types.size() - 1));
     }
     if (types[0] != cccl_type_enum::CCCL_BOOLEAN)
     {
       throw std::runtime_error(
         std::format("c.parallel: well-known operation '{}' expected to return boolean, but returns {}.",
-                    name,
+                    name_,
                     cccl_type_enum_to_name(types[0])));
     }
 
     return unary_builder;
   }
 
-  static operator_builder binary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder binary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 3)
     {
       throw std::runtime_error(std::format(
-        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name, types.size() - 1));
+        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name_, types.size() - 1));
     }
     if (types[1] != types[2])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to have matching argument types, but has argument types {} and "
         "{}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[2])));
     }
@@ -208,7 +206,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     {
       throw std::runtime_error(
         std::format("c.parallel: well-known operation '{}' expected to return boolean, but returns {}.",
-                    name,
+                    name_,
                     cccl_type_enum_to_name(types[0])));
     }
 
@@ -220,6 +218,13 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     std::format_string<const char*> name;
     argument_matcher check;
     std::optional<const char*> symbol = std::nullopt;
+
+    constexpr well_known_description(
+      std::format_string<const char*> name, argument_matcher check, std::optional<const char*> symbol = std::nullopt)
+        : name(name)
+        , check(check)
+        , symbol(symbol)
+    {}
   };
 
   static cuda::std::optional<well_known_description> well_known_operation_description(cccl_op_kind_t kind)
@@ -267,7 +272,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
       case cccl_op_kind_t::CCCL_BIT_NOT:
         return well_known_description{"::cuda::std::bit_not<{}>", unary_matcher, "~"};
       case cccl_op_kind_t::CCCL_IDENTITY:
-        return well_known_description{"::cuda::std::identity<{}>", unary_matcher};
+        return well_known_description{"::cuda::std::identity", unary_matcher};
       case cccl_op_kind_t::CCCL_NEGATE:
         return well_known_description{"::cuda::std::negate<{}>", unary_matcher, "-"};
       case cccl_op_kind_t::CCCL_MINIMUM:
@@ -279,36 +284,103 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     }
   }
 
-  template <typename, typename... Args>
-  static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info ret, Args... arguments)
+  template <typename Tag, typename RetStorageT, typename... ArgStorageTs>
+  static cuda::std::optional<specialization>
+  special(cccl_op_t operation,
+          tagged_arg<RetStorageT, cccl_type_info> ret,
+          tagged_arg<ArgStorageTs, cccl_type_info>... arguments)
   {
-    auto&& entry = well_known_operation_description(operation.type);
+    // We cannot use well-known operations with storage types as there
+    // is currently no way to tell whether multiple storage types,
+    // e.g., input and output, are the same type. This is necessary in
+    // order for operations like `negate` to work, as it requires both
+    // input and output to be the same type. For now, this check short
+    // circuits the specialization process for well-known operations
+    // with storage types. The code below that checks whether any of
+    // the arguments or the return type are storage types will
+    // currently not run, but is left here as it will be needed in the
+    // future.
+    if (ret.value.type == cccl_type_enum::CCCL_STORAGE
+        || ((arguments.value.type == cccl_type_enum::CCCL_STORAGE) || ...))
+    {
+      return cuda::std::nullopt;
+    }
+
+    auto entry = well_known_operation_description(operation.type);
     if (!entry)
     {
       return cuda::std::nullopt;
     }
 
-    cccl_type_enum type_info_table[] = {ret.type, arguments.type...};
+    cccl_type_enum type_info_table[] = {ret.value.type, arguments.value.type...};
     auto builder                     = entry->check(cuda::std::span(type_info_table), std::format(entry->name, +""));
 
     std::string aux = "#include <cuda/std/functional>\n";
     if (entry->symbol)
     {
-      if (((arguments.type == cccl_type_enum::CCCL_STORAGE) || ...))
+      if (((arguments.value.type == cccl_type_enum::CCCL_STORAGE) || ...))
       {
-        std::string type_names[] = {cccl_type_enum_to_name(ret.type), cccl_type_enum_to_name(arguments.type)...};
+        std::string type_names[] = {cccl_type_enum_to_name<RetStorageT>(ret.value.type),
+                                    cccl_type_enum_to_name<ArgStorageTs>(arguments.value.type)...};
         auto type_name_views     = [&]<auto... Is>(std::index_sequence<Is...>) {
-          return std::array<std::string_view, sizeof...(Is)>{{type_names[Is]...}};
+          return cuda::std::array<std::string_view, sizeof...(Is)>{{type_names[Is]...}};
         }(std::make_index_sequence<1 + sizeof...(arguments)>());
         aux += builder(cuda::std::span(type_name_views), *entry->symbol, operation.name);
       }
-      else if (ret.type == cccl_type_enum::CCCL_STORAGE)
+      else if (ret.value.type == cccl_type_enum::CCCL_STORAGE)
       {
         return cuda::std::nullopt;
       }
     }
 
-    return specialization{std::format(entry->name, cccl_type_enum_to_name(type_info_table[1]).c_str()), aux};
+    // Format the specialization name using the appropriate storage type
+    // type_info_table[1] corresponds to the first argument
+    using FirstArgStorageT = typename cuda::std::tuple_element<0, cuda::std::tuple<ArgStorageTs...>>::type;
+    std::string type_name  = cccl_type_enum_to_name<FirstArgStorageT>(type_info_table[1]);
+
+    return specialization{std::format(entry->name, type_name.c_str()), aux};
+  }
+
+  template <typename Tag, typename... Args>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, Args... args)
+  {
+    return special<Tag>(operation, arg_traits<cuda::std::decay_t<Args>>::wrap(args)...);
+  }
+#endif
+};
+
+struct unary_user_operation_traits
+{
+  static const constexpr auto name = "unary_user_operation_traits::type";
+  // Input operand count for generated C ABI declarations.
+  static constexpr int arity = 1;
+
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping ValueT>
+  using type = user_operation_traits::type<Tag, Operation, RetT, ValueT>;
+
+#ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+  template <typename Tag, typename RetArg, typename ValueArg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, RetArg ret, ValueArg value)
+  {
+    return user_operation_traits::special<Tag>(operation, ret, value);
+  }
+#endif
+};
+
+struct unary_user_predicate_traits
+{
+  static const constexpr auto name = "unary_user_predicate_traits::type";
+  static constexpr int arity       = 1;
+
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping ValueT>
+  using type = user_operation_traits::type<Tag, Operation, cccl_type_info_mapping<bool>{}, ValueT>;
+
+#ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+  template <typename Tag, typename ValueArg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, ValueArg value)
+  {
+    return user_operation_traits::special<Tag>(
+      operation, cccl_type_info{sizeof(bool), alignof(bool), CCCL_BOOLEAN}, value);
   }
 #endif
 };
@@ -316,14 +388,32 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
 struct binary_user_operation_traits
 {
   static const constexpr auto name = "binary_user_operation_traits::type";
-  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping ValueT>
-  using type = user_operation_traits::type<Tag, Operation, ValueT, ValueT, ValueT>;
+  static constexpr int arity       = 2;
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
+  using type = user_operation_traits::type<Tag, Operation, RetT, ArgTs...>;
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
-  template <typename Tag, typename... Args>
-  static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info arg_t)
+  template <typename Tag, typename RetArg, typename LhsArg, typename RhsArg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, RetArg ret, LhsArg lhs, RhsArg rhs)
   {
-    return user_operation_traits::special<Tag>(operation, arg_t, arg_t, arg_t);
+    return user_operation_traits::special<Tag>(operation, ret, lhs, rhs);
+  }
+#endif
+};
+
+struct binary_user_predicate_traits
+{
+  static const constexpr auto name = "binary_user_predicate_traits::type";
+  static constexpr int arity       = 2;
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping ValueT, cccl_type_info_mapping... OtherArgTs>
+  using type = user_operation_traits::type<Tag, Operation, cccl_type_info_mapping<bool>{}, ValueT, OtherArgTs...>;
+
+#ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+  template <typename Tag, typename LhsArg, typename RhsArg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, LhsArg lhs, RhsArg rhs)
+  {
+    return user_operation_traits::special<Tag>(
+      operation, cccl_type_info{sizeof(bool), alignof(bool), CCCL_BOOLEAN}, lhs, rhs);
   }
 #endif
 };

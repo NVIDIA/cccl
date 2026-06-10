@@ -20,7 +20,7 @@
 #
 # See the accompanying README.md for more information and build instructions.
 
-cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(ThrustFlexibleDeviceSystemDemo CXX)
 
@@ -30,17 +30,18 @@ include(cmake/CPM.cmake)
 
 # We define these as variables so they can be overridden in CI to pull from a PR instead of CCCL `main`
 # In your project, these variables are unnecessary and you can just use the values directly
-set(CCCL_REPOSITORY "https://github.com/NVIDIA/cccl" CACHE STRING "GitHub repository to fetch CCCL from")
+set(
+  CCCL_REPOSITORY
+  "https://github.com/NVIDIA/cccl"
+  CACHE STRING
+  "GitHub repository to fetch CCCL from"
+)
 set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
 
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available.
 # The default `CCCL::Thrust` target will be configured to use the system device defined by
 # `CCCL_THRUST_DEVICE_SYSTEM`.
-CPMAddPackage(
-    NAME CCCL
-    GIT_REPOSITORY "${CCCL_REPOSITORY}"
-    GIT_TAG ${CCCL_TAG}
-)
+CPMAddPackage(NAME CCCL GIT_REPOSITORY "${CCCL_REPOSITORY}" GIT_TAG ${CCCL_TAG})
 
 # CUDA specific setup
 if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
@@ -48,16 +49,24 @@ if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
   # Note that the project(...) command earlier only enables CXX by default.
   enable_language(CUDA)
 
+  # Optional: Call find_package(CCCL) again after enabling new languages
+  # to update compatibility flags for newly detected compilers.
+  find_package(CCCL CONFIG REQUIRED)
+
   # Compile for the native CUDA arch if not specified:
-  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES native)
   endif()
 endif()
 
 # Creates a cmake executable target for the main program
 add_executable(example_program example.cpp)
- # Thrust requires at least C++17:
-target_compile_features(example_program PUBLIC cuda_std_17 cxx_std_17)
+
+# Thrust requires at least C++17:
+target_compile_features(example_program PUBLIC cxx_std_17)
+if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
+  target_compile_features(example_program PUBLIC cuda_std_17)
+endif()
 
 # By default, CMake inspects the source file extension to determine whether to use C++ or CUDA
 # compilers. We can override this behavior by using source file properties. Here, we tell CMake
@@ -74,6 +83,9 @@ target_link_libraries(example_program PRIVATE CCCL::CCCL)
 include(CTest)
 enable_testing()
 add_test(NAME example_program COMMAND example_program)
-set_tests_properties(example_program PROPERTIES
-  PASS_REGULAR_EXPRESSION "Detected device system: ${CCCL_THRUST_DEVICE_SYSTEM}"
+set_tests_properties(
+  example_program
+  PROPERTIES
+    PASS_REGULAR_EXPRESSION
+      "Detected device system: ${CCCL_THRUST_DEVICE_SYSTEM}"
 )

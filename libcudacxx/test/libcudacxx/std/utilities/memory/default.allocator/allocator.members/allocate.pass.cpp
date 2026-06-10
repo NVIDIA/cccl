@@ -8,12 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <memory>
 
 // allocator:
 // constexpr T* allocate(size_t n);
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
@@ -44,24 +47,24 @@ template <cuda::std::size_t Align>
 struct alignas(Align) AlignedType
 {
   char data;
-  __host__ __device__ AlignedType()
+  TEST_FUNC AlignedType()
   {
     ++AlignedType_constructed;
   }
-  __host__ __device__ AlignedType(AlignedType const&)
+  TEST_FUNC AlignedType(AlignedType const&)
   {
     ++AlignedType_constructed;
   }
-  __host__ __device__ ~AlignedType()
+  TEST_FUNC ~AlignedType()
   {
     --AlignedType_constructed;
   }
 };
 
 template <cuda::std::size_t Align>
-__host__ __device__ void test_aligned()
+TEST_FUNC void test_aligned()
 {
-  typedef AlignedType<Align> T;
+  using T                 = AlignedType<Align>;
   AlignedType_constructed = 0;
   globalMemCounter.reset();
   cuda::std::allocator<T> a;
@@ -96,9 +99,9 @@ __host__ __device__ void test_aligned()
 
 #if TEST_STD_VER >= 2020
 template <cuda::std::size_t Align>
-__host__ __device__ constexpr bool test_aligned_constexpr()
+TEST_FUNC constexpr bool test_aligned_constexpr()
 {
-  typedef AlignedType<Align> T;
+  using T = AlignedType<Align>;
   cuda::std::allocator<T> a;
   T* ap = a.allocate(3);
   a.deallocate(ap, 3);

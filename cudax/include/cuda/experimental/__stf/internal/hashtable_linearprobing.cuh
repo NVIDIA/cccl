@@ -27,16 +27,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 const uint32_t kEmpty = 0xffffffff;
 
 /**
@@ -59,7 +56,6 @@ public:
 
 /* Default capacity */
 const ::std::uint32_t kHashTableCapacity = 64 * 1024 * 1024;
-
 } // end namespace reserved
 
 /**
@@ -213,7 +209,7 @@ public:
   {}
 
   /**
-   * @name Copies a shape.
+   * @brief Copies a shape.
    *
    * All `shape_of` specializations must define this constructor.
    */
@@ -258,5 +254,4 @@ struct hash<hashtable>
     return ::std::hash<reserved::KeyValue*>{}(s.addr);
   }
 };
-
 } // end namespace cuda::experimental::stf

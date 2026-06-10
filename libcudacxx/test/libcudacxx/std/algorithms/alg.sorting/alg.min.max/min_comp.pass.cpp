@@ -15,19 +15,19 @@
 //   const T&
 //   min(const T& a, const T& b, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
 #include "test_macros.h"
 
 template <class T, class C>
-__host__ __device__ constexpr void test(const T& a, const T& b, C c, const T& x)
+TEST_FUNC constexpr void test(const T& a, const T& b, C c, const T& x)
 {
   assert(&cuda::std::min(a, b, c) == &x);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int x = 0;
@@ -54,7 +54,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -131,8 +131,9 @@ def filter_benchmarks(benchmarks, args):
     algnames = filter_benchmarks_by_regex(benchmarks.keys(), args.R)
     if args.P0:
         algnames = filter_benchmarks_by_regex(
-            algnames, "^(?!.*segmented).*(scan|reduce|select|sort).*"
+            algnames, r"^(?!.*segmented).*(scan|reduce|select|sort).*"
         )
+        algnames = filter_benchmarks_by_regex(algnames, r"^(?!.*P[123456789]\d*).*")
     algnames.sort()
 
     if args.num_shards > 1:

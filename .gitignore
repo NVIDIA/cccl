@@ -1,11 +1,15 @@
 .idea/
 build*/
 .cache
+# Shared caches for the cu12/cu13 Python wheel builds (ccache + CPM source).
+.ccache/
+.cpm-cache/
 .aws
 .config
 _deps/catch2-src/
 .vscode/
 _site/
+.devcontainer/local*
 compile_commands.json
 CMakeUserPresets.json
 /ci/rapids/.conda
@@ -15,3 +19,8 @@ CMakeUserPresets.json
 *.pyc
 __pycache__
 *.pyd
+wheelhouse/
+bench-artifacts/
+CLAUDE.local.md
+.codegraph/*
+.cursor/rules/codegraph.mdc

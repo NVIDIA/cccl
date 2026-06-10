@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -eo pipefail
 
@@ -18,13 +18,14 @@ CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
 GLOBAL_CMAKE_OPTIONS=()
 DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
+PEDANTIC=${PEDANTIC:-} # Enable strict warnings. Default: on in CI, off locally.
 CONFIGURE_ONLY=false
 
 # Check if the correct number of arguments has been provided
 function usage {
     echo "Usage: $0 [OPTIONS]"
     echo
-    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
+    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores minus one."
     echo
     echo "Options:"
     echo "  -v/-verbose: enable shell echo for debugging"
@@ -33,6 +34,7 @@ function usage {
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo "  -pedantic/--pedantic: Enable strict warnings-as-errors and expose CCCL header warnings (default in CI)"
     echo "  -cmake-options: Additional options to pass to CMake"
     echo
     echo "Examples:"
@@ -50,12 +52,12 @@ function check_required_dependencies() {
     local missing_deps=()
 
     # Check for essential tools
-    local required_tools=("cmake" "git" "ninja" "nproc")
+    local required_tools=("cmake" "git" "jq" "ninja" "nproc")
     for tool in "${required_tools[@]}"; do
         command -v "$tool" &>/dev/null || missing_deps+=("$tool")
     done
 
-    if [ ${#missing_deps[@]} -ne 0 ]; then
+    if [[ ${#missing_deps[@]} -ne 0 ]]; then
         echo "❌ Error: Missing required dependencies:" >&2
         printf "   • %s\n" "${missing_deps[@]}" >&2
         echo >&2
@@ -68,7 +70,7 @@ function check_required_dependencies() {
 # Copy the args into a temporary array, since we will modify them and
 # the parent script may still need them.
 args=("$@")
-while [ "${#args[@]}" -ne 0 ]; do
+while [[ "${#args[@]}" -ne 0 ]]; do
     case "${args[0]}" in
     -v | --verbose | -verbose) VERBOSE=1; args=("${args[@]:1}");;
     -configure) CONFIGURE_ONLY=true;   args=("${args[@]:1}");;
@@ -76,15 +78,19 @@ while [ "${#args[@]}" -ne 0 ]; do
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
-    -disable-benchmarks) DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
+    -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
+    -disable-benchmarks) export DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
-        if [ -n "${args[1]}" ]; then
+        if [[ -n "${args[1]}" ]]; then
             IFS=' ' read -ra split_args <<< "${args[1]}"
             GLOBAL_CMAKE_OPTIONS+=("${split_args[@]}")
             args=("${args[@]:2}")
         else
             echo "Error: No arguments provided for -cmake-options"
             usage
+            # usage will exit 1 for us, so below exit 1 is unreachable, but it does not
+            # hurt and guards against changes in usage.
+            # shellcheck disable=SC2317
             exit 1
         fi
         ;;
@@ -99,8 +105,8 @@ function validate_and_resolve_compiler() {
     local compiler_var="$2"
     local compiler_path
 
-    compiler_path=$(which "${compiler_var}" 2>/dev/null)
-    if [ -z "$compiler_path" ]; then
+    compiler_path=$(command -v "${compiler_var}" 2>/dev/null)
+    if [[ -z "$compiler_path" ]]; then
         echo "❌ Error: ${compiler_name} '${compiler_var}' not found in PATH" >&2
         exit 1
     fi
@@ -111,11 +117,34 @@ function validate_and_resolve_compiler() {
 HOST_COMPILER=$(validate_and_resolve_compiler "Host compiler" "${HOST_COMPILER}")
 CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}")
 
+if [[ "$(basename "$CUDA_COMPILER")" == nvcc* ]]; then
+    NVCC_VERSION=$("$CUDA_COMPILER" --version | grep "release" | sed 's/.*, V//')
+    # Verify that we have an X.Y.Z version in case the output format changes:
+    if ! [[ "$NVCC_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "❌ Error: Detected nvcc version is not a valid X.Y.Z triple: '$NVCC_VERSION'" >&2
+        echo "$CUDA_COMPILER --version" >&2 || :
+        $CUDA_COMPILER --version >&2 || :
+        exit 1
+    fi
+fi
+
+
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
 fi
 
-if [ $VERBOSE ]; then
+# Default to pedantic mode in CI
+if [[ -z "${PEDANTIC}" && -n "${GITHUB_ACTIONS:-}" ]]; then
+    PEDANTIC=1
+fi
+
+if [[ -n "${PEDANTIC}" ]]; then
+    GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_WERROR=ON" "-DCCCL_ENABLE_PRAGMA_SYSTEM_HEADER=OFF")
+else
+    GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_WERROR=OFF" "-DCCCL_ENABLE_PRAGMA_SYSTEM_HEADER=ON")
+fi
+
+if [[ -n "$VERBOSE" ]]; then
     set -x
 fi
 
@@ -125,9 +154,9 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
+readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all --ignore=1)}
 
-if [ -z ${CCCL_BUILD_INFIX+x} ]; then
+if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
 fi
 
@@ -139,9 +168,9 @@ BUILD_ROOT=$(cd "../build" && pwd)
 BUILD_DIR="$BUILD_ROOT/$CCCL_BUILD_INFIX"
 
 # The most recent devcontainer build dir will always be symlinked to cccl/build/latest
-mkdir -p $BUILD_DIR
-rm -f $BUILD_ROOT/latest
-ln -sf $BUILD_DIR $BUILD_ROOT/latest
+mkdir -p "$BUILD_DIR"
+rm -f "$BUILD_ROOT"/latest
+ln -sf "$BUILD_DIR" "$BUILD_ROOT"/latest
 
 # The more recent preset build dir will always be symlinked to:
 # cccl/preset-latest
@@ -163,10 +192,22 @@ export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
 export CXX_STANDARD
 
+# shellcheck source=ci/pretty_printing.sh
 source ./pretty_printing.sh
+
+# Kill any build / test steps that exceed this time, otherwise CI jobs may be
+# killed by GHA before they can upload logs / artifacts needed to reproduce the timeout.
+# Only applies when running inside GitHub Actions.
+# Note that this is per-build/test limit, not a total timeout for the entire job.
+: "${CCCL_CI_COMMAND_TIMEOUT:=5.5h}"
 
 print_environment_details() {
   begin_group "⚙️ Environment Details"
+
+  echo "free -h:"
+  free -h || :
+
+  echo "nproc=$(nproc || :)"
 
   echo "pwd=$(pwd)"
 
@@ -179,8 +220,10 @@ print_environment_details() {
       NVCC_VERSION \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
+      CCCL_CI_COMMAND_TIMEOUT \
       CCCL_CUDA_EXTENDED \
       CCCL_BUILD_INFIX \
+      PEDANTIC \
       GLOBAL_CMAKE_OPTIONS \
       TBB_ROOT
 
@@ -191,6 +234,12 @@ print_environment_details() {
     nvidia-smi
   else
     echo "nvidia-smi not found"
+  fi
+
+  if command -v sccache &> /dev/null; then
+    sccache --version
+  else
+    echo "sccache not found"
   fi
 
   if command -v cmake &> /dev/null; then
@@ -208,6 +257,24 @@ print_environment_details() {
   end_group "⚙️ Environment Details"
 }
 
+run_ci_timed_command() {
+    local group_name="${1:-}"
+    shift
+    local -a command=("$@")
+
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        if [[ -n "${CCCL_CI_COMMAND_TIMEOUT}" && "${CCCL_CI_COMMAND_TIMEOUT}" != "0" ]]; then
+            if command -v timeout &> /dev/null; then
+                run_command "${group_name}" timeout "${CCCL_CI_COMMAND_TIMEOUT}" "${command[@]}"
+                return $?
+            fi
+            echo "Warning: timeout not found; running without CI timeout." >&2
+        fi
+    fi
+
+    run_command "${group_name}" "${command[@]}"
+}
+
 fail_if_no_gpu() {
     if ! nvidia-smi &> /dev/null; then
         echo "Error: No NVIDIA GPU detected. Please ensure you have an NVIDIA GPU installed and the drivers are properly configured." >&2
@@ -215,19 +282,66 @@ fail_if_no_gpu() {
     fi
 }
 
+function cccl_configure_preset_for_test() {
+    local test_preset=$1
+    local presets_file="${BUILD_ROOT}/../CMakePresets.json"
+    local configure_preset
+
+    if [[ ! -f "${presets_file}" ]]; then
+        echo "Error: CMakePresets.json not found: ${presets_file}" >&2
+        return 1
+    fi
+
+    configure_preset=$(
+        jq -r --arg t "${test_preset}" '
+            .testPresets[] | select(.name == $t) | .configurePreset // empty
+        ' "${presets_file}"
+    )
+
+    if [[ -z "${configure_preset}" ]]; then
+        configure_preset="${test_preset}"
+    fi
+
+    echo "${configure_preset}"
+}
+
+function cccl_smoke_tests_enabled() {
+    local configure_preset=$1
+    local cache_file="${BUILD_DIR}/${configure_preset}/CMakeCache.txt"
+
+    [[ -f "${cache_file}" ]] \
+        && grep -q '^CCCL_ENABLE_CUDA_SMOKE_TESTS:BOOL=ON' "${cache_file}"
+}
+
+function run_cuda_smoke_test() {
+    local BUILD_NAME=$1
+    local test_preset=$2
+
+    local configure_preset
+    configure_preset="$(cccl_configure_preset_for_test "${test_preset}")"
+    local smoke_bin="${BUILD_DIR}/${configure_preset}/bin/cccl.test.cuda_runtime_smoke"
+
+    if [[ -x "${smoke_bin}" ]]; then
+        run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "${smoke_bin}" || return $?
+    elif cccl_smoke_tests_enabled "${configure_preset}"; then
+        echo "Error: CCCL_ENABLE_CUDA_SMOKE_TESTS=ON but smoke binary not found: ${smoke_bin}" >&2
+        return 1
+    fi
+}
+
 function print_test_time_summary()
 {
     ctest_log=${1}
 
-    if [ -f ${ctest_log} ]; then
+    if [[ -f "${ctest_log}" ]]; then
         begin_group "⏱️ Longest Test Steps"
         # Only print the full output in CI:
-        if [ -n "${GITHUB_ACTIONS:-}" ]; then
-            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake
+        if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+            cmake -DLOGFILE="${ctest_log}" -P ../cmake/PrintCTestRunTimes.cmake
         else
             # `|| :` to avoid `set -o pipefail` from triggering when `head` closes the pipe before `cmake` finishes.
             # Otherwise the script will exit early with status 141 (SIGPIPE).
-            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake | head -n 15 || :
+            cmake -DLOGFILE="${ctest_log}" -P ../cmake/PrintCTestRunTimes.cmake | head -n 15 || :
         fi
         end_group "⏱️ Longest Test Steps"
     fi
@@ -237,7 +351,9 @@ function configure_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
-    local CMAKE_OPTIONS=$3
+    shift 2
+    local CMAKE_OPTIONS=("$@")
+
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
     symlink_latest_preset "$PRESET"
@@ -245,10 +361,10 @@ function configure_preset()
     pushd .. > /dev/null
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
       # Retry 5 times with 30 seconds between attempts to try to WAR network issues during CPM fetch on CI runners:
-      export RUN_COMMAND_RETRY_PARAMS="5 30"
+      export RUN_COMMAND_RETRY_PARAMS=(5 30)
     fi
     status=0
-    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
+    run_command "$GROUP_NAME" cmake --preset="$PRESET" --log-level=VERBOSE "${CMAKE_OPTIONS[@]}" "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         unset RUN_COMMAND_RETRY_PARAMS
     fi
@@ -258,20 +374,24 @@ function configure_preset()
         echo "${BUILD_NAME} configuration complete:"
         echo "  Exit code:       ${status}"
         echo "  CMake Preset:    ${PRESET}"
-        echo "  CMake Options:   ${CMAKE_OPTIONS}"
+        echo "  CMake Options:   ${CMAKE_OPTIONS[*]}"
         echo "  Build Directory: ${BUILD_DIR}/${PRESET}"
-        exit $status
+        exit "$status"
     fi
 
-    return $status
+    return "$status"
 }
 
 function build_preset() {
     local BUILD_NAME=$1
     local PRESET=$2
+    # shellcheck disable=SC2034
     local green="1;32"
+    # shellcheck disable=SC2034
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+    shift 2
+    local BUILD_COMMANDS=("$@")
 
     symlink_latest_preset "$PRESET"
 
@@ -281,39 +401,49 @@ function build_preset() {
 
     local preset_dir="${BUILD_DIR}/${PRESET}"
     local sccache_json="${preset_dir}/sccache_stats.json"
+    local memmon_log="${preset_dir}/memmon.log"
 
-    source "./sccache_stats.sh" "start" || :
+    sccache -z > /dev/null || :
+
+    # Track memory usage on CI:
+    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+      util/memmon.sh --start \
+          --log-threshold "${MEMMON_LOG_THRESHOLD:-2}" \
+          --print-threshold "${MEMMON_PRINT_THRESHOLD:-5}" \
+          --log-file "$memmon_log" \
+          --poll "${MEMMON_POLL_INTERVAL:-5}" \
+          || :
+    fi
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v || status=$?
+    run_ci_timed_command "$GROUP_NAME" cmake --build --preset="$PRESET" -v "${BUILD_COMMANDS[@]}" || status=$?
     popd > /dev/null
 
-    sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
-
-    minimal_sccache_stats=$(source "./sccache_stats.sh" "end" || :)
+    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+      util/memmon.sh --stop || :
+      run_command "📝 Memory Monitor Log" head -n20 "$memmon_log" || :
+    fi
 
     # Only print detailed stats in actions workflow
-    if [ -n "${GITHUB_ACTIONS:-}" ]; then
-        begin_group "💲 sccache stats"
-        echo "${minimal_sccache_stats}"
-        sccache -s || :
-        end_group
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
+        run_command "📊 sccache stats" sccache --show-adv-stats || :
 
         begin_group "🥷 ninja build times"
-        echo "The "weighted" time is the elapsed time of each build step divided by the number
+        echo "The \"weighted\" time is the elapsed time of each build step divided by the number
               of tasks that were running in parallel. This makes it an excellent approximation
-              of how "important" a slow step was. A link that is entirely or mostly serialized
+              of how \"important\" a slow step was. A link that is entirely or mostly serialized
               will have a weighted time that is the same or similar to its elapsed time. A
               compile that runs in parallel with 999 other compiles will have a weighted time
               that is tiny."
-        ./ninja_summary.py -C ${BUILD_DIR}/${PRESET} || echo "Warning: ninja_summary.py failed to execute properly."
+        ./ninja_summary.py -C "${BUILD_DIR}"/"${PRESET}" || echo "Warning: ninja_summary.py failed to execute properly."
         end_group
     else
-      echo $minimal_sccache_stats
+      sccache -s || :
     fi
 
-    return $status
+    return "$status"
 }
 
 function test_preset()
@@ -330,6 +460,9 @@ function test_preset()
 
     if $GPU_REQUIRED; then
         fail_if_no_gpu
+        if [[ -z "${CCCL_SKIP_CI_SMOKE:-}" ]]; then
+            run_cuda_smoke_test "${BUILD_NAME}" "${PRESET}" || return $?
+        fi
     fi
 
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"
@@ -339,21 +472,22 @@ function test_preset()
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET || status=$?
+    run_ci_timed_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset="$PRESET" || status=$?
     popd > /dev/null
 
-    print_test_time_summary ${ctest_log}
+    print_test_time_summary "${ctest_log}"
 
-    return $status
+    return "$status"
 }
 
 function configure_and_build_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
-    local CMAKE_OPTIONS=$3
+    shift 2
+    local CMAKE_OPTIONS=("$@")
 
-    configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
+    configure_preset "$BUILD_NAME" "$PRESET" "${CMAKE_OPTIONS[@]}"
 
     if ! $CONFIGURE_ONLY; then
         build_preset "$BUILD_NAME" "$PRESET"

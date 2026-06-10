@@ -28,6 +28,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/attributes.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/execution_space.h>
 
 // For unknown reasons, nvc++ need to selectively disable this warning
@@ -51,6 +52,12 @@
 #  define _CCCL_VISIBILITY_DEFAULT __attribute__((__visibility__("default")))
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_VISIBILITY_EXPORT __declspec(dllexport)
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_VISIBILITY_EXPORT _CCCL_VISIBILITY_DEFAULT
+#endif // !_CCCL_COMPILER(MSVC)
+
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT
 #  define _CCCL_TYPE_VISIBILITY_HIDDEN
@@ -64,8 +71,10 @@
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_FORCEINLINE __forceinline
+#  define _CCCL_FORCEINLINE_LAMBDA
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
-#  define _CCCL_FORCEINLINE __inline__ __attribute__((__always_inline__))
+#  define _CCCL_FORCEINLINE        __inline__ __attribute__((__always_inline__))
+#  define _CCCL_FORCEINLINE_LAMBDA __attribute__((__always_inline__))
 #endif // !_CCCL_COMPILER(MSVC)
 
 #if _CCCL_HAS_ATTRIBUTE(__exclude_from_explicit_instantiation__)
@@ -81,9 +90,16 @@
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
 #endif // !_CCCL_COMPILER(NVHPC)
 
-#if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)
-#  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
-#endif // !CCCL_DETAIL_KERNEL_ATTRIBUTES
+// Note: we will allow the user to redefine _CCCL_KERNEL_ATTRIBUTES until CCCL 4.0, since they may have
+// redefined CUB_DETAIL_KERNEL_ATTRIBUTES or THRUST_DETAIL_KERNEL_ATTRIBUTES.
+#if !defined(_CCCL_KERNEL_ATTRIBUTES)
+#  define _CCCL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
+#endif // !_CCCL_KERNEL_ATTRIBUTES
+
+#if defined(CUB_DETAIL_KERNEL_ATTRIBUTES) || defined(THRUST_DETAIL_KERNEL_ATTRIBUTES)
+#  error \
+    "Redefining CCCL's kernel attributes via CUB_DETAIL_KERNEL_ATTRIBUTES or THRUST_DETAIL_KERNEL_ATTRIBUTES is not allowed. If you absolutely rely on this, you can override them by defining _CCCL_KERNEL_ATTRIBUTES, but this will be disallowed in CCCL 4.0."
+#endif // !_CCCL_KERNEL_ATTRIBUTES
 
 //! @brief \c _CCCL_HIDE_FROM_ABI and \c _CCCL_FORCEINLINE cannot be used together because
 //! they both try to add `inline` to the function declaration. The following macros slice
@@ -94,13 +110,15 @@
 //! - \c _CCCL_TRIVIAL_API does the same as \c _CCCL_NODEBUG_API while also force-inlining
 //!   the function.
 #if _CCCL_COMPILER(NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
-#  define _CCCL_API        _CCCL_HOST_DEVICE
-#  define _CCCL_HOST_API   _CCCL_HOST
-#  define _CCCL_DEVICE_API _CCCL_DEVICE
+#  define _CCCL_API             _CCCL_HOST_DEVICE
+#  define _CCCL_HOST_DEVICE_API _CCCL_HOST_DEVICE
+#  define _CCCL_HOST_API        _CCCL_HOST
+#  define _CCCL_DEVICE_API      _CCCL_DEVICE
 #else // ^^^ _CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_COMPILER(NVHPC) vvv
-#  define _CCCL_API        _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#  define _CCCL_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#  define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_API             _CCCL_TILE _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_HOST_DEVICE_API _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_HOST_API        _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_DEVICE_API      _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !_CCCL_COMPILER(NVHPC)
 
 //! @brief \c _CCCL_NODEBUG_API marks a function's visibility as hidden and causes
@@ -136,6 +154,20 @@
 #  define _CCCL_PUBLIC_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_DEFAULT
 #  define _CCCL_PUBLIC_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_DEFAULT
 #endif // !_CCCL_COMPILER(MSVC)
+
+#ifdef _CCCL_DOXYGEN_INVOKED // Only for documentation
+//! If defined, usage of CUDA Dynamic Parallelism is disabled and APIs launching kernels can only be called from the
+//! host
+#  define CCCL_DISABLE_CDP
+#endif // _CCCL_DOXYGEN_INVOKED
+
+#if _CCCL_HAS_CDP()
+// We have CDP, so host and device APIs can call kernels
+#  define _CCCL_CDP_API _CCCL_API
+#else // ^^^ _CCCL_HAS_CDP() ^^^ / vvv !_CCCL_HAS_CDP() vvv
+// We don't have CDP, only host APIs can call kernels
+#  define _CCCL_CDP_API _CCCL_HOST_API
+#endif // ^^^ !_CCCL_HAS_CDP() ^^^
 
 //! _LIBCUDACXX_HIDE_FROM_ABI is for backwards compatibility for external projects.
 //! _CCCL_API and its variants are the preferred way to declare functions

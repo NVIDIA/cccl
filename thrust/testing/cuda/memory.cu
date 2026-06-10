@@ -50,7 +50,7 @@ void TestGetTemporaryBufferDeviceSeq()
   const std::ptrdiff_t n = 9001;
 
   using pointer         = thrust::pointer<int, thrust::detail::seq_t>;
-  using ptr_and_sz_type = thrust::pair<pointer, std::ptrdiff_t>;
+  using ptr_and_sz_type = cuda::std::pair<pointer, std::ptrdiff_t>;
   thrust::device_vector<ptr_and_sz_type> d_result(1);
 
   get_temporary_buffer_kernel<<<1, 1>>>(n, d_result.begin());

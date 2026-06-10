@@ -26,29 +26,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh> // logical_data_untyped
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class logical_data;
 
-/**
- * @brief Frozen logical data are logical data which can be accessed outside tasks
- *
- * They are created using ctx.freeze, which returns a frozen_logical_data
- * object. The get() and unfreeze() method allow to get an instance of the
- * frozen data that is valid until unfreeze is called.
- */
-template <typename T>
-class frozen_logical_data
+class logical_data_untyped;
+
+class frozen_logical_data_untyped
 {
 private:
   class impl
   {
   public:
-    impl(backend_ctx_untyped bctx_, logical_data<T> ld_, access_mode m_, data_place place_, bool user_freeze)
+    impl(backend_ctx_untyped bctx_, logical_data_untyped ld_, access_mode m_, data_place place_, bool user_freeze)
         : ld(mv(ld_))
         , m(m_)
         , place(mv(place_))
@@ -75,6 +68,7 @@ private:
      * @brief Get the instance of a frozen data on a data place. It returns
      * the instance and the corresponding prereqs.
      */
+    template <typename T>
     ::std::pair<T, event_list> get(data_place place_)
     {
       auto result = ld.template get_frozen<T>(freeze_fake_task, mv(place_), m);
@@ -97,10 +91,11 @@ private:
       return mv(result);
     }
 
+    template <typename T>
     T get(data_place place_, cudaStream_t stream)
     {
       // Get the tuple and synchronize it with the user-provided stream
-      ::std::pair<T, event_list> p = get(mv(place_));
+      ::std::pair<T, event_list> p = this->get<T>(mv(place_));
       auto& prereqs                = p.second;
       prereqs.sync_with_stream(bctx, stream);
       return p.first;
@@ -158,7 +153,7 @@ private:
     }
 
   private:
-    logical_data<T> ld;
+    logical_data_untyped ld;
     access_mode m;
     data_place place;
     backend_ctx_untyped bctx;
@@ -171,35 +166,38 @@ private:
   };
 
 public:
-  frozen_logical_data(backend_ctx_untyped bctx, logical_data<T> ld, access_mode m, data_place place, bool user_freeze)
+  frozen_logical_data_untyped(
+    backend_ctx_untyped bctx, logical_data_untyped ld, access_mode m, data_place place, bool user_freeze)
       : pimpl(::std::make_shared<impl>(mv(bctx), mv(ld), m, mv(place), user_freeze))
   {}
 
   // So that we can have a frozen data variable that is populated later
-  frozen_logical_data() = default;
+  frozen_logical_data_untyped() = default;
 
   // Copy constructor
-  frozen_logical_data(const frozen_logical_data& other) = default;
+  frozen_logical_data_untyped(const frozen_logical_data_untyped& other) = default;
 
   // Move constructor
-  frozen_logical_data(frozen_logical_data&& other) noexcept = default;
+  frozen_logical_data_untyped(frozen_logical_data_untyped&& other) noexcept = default;
 
   // Copy assignment
-  frozen_logical_data& operator=(const frozen_logical_data& other) = default;
+  frozen_logical_data_untyped& operator=(const frozen_logical_data_untyped& other) = default;
 
   // Move assignment
-  frozen_logical_data& operator=(frozen_logical_data&& other) noexcept = default;
+  frozen_logical_data_untyped& operator=(frozen_logical_data_untyped&& other) noexcept = default;
 
+  template <typename T>
   ::std::pair<T, event_list> get(data_place place)
   {
     assert(pimpl);
-    return pimpl->get(mv(place));
+    return pimpl->template get<T>(mv(place));
   }
 
+  template <typename T>
   T get(data_place place, cudaStream_t stream)
   {
     assert(pimpl);
-    return pimpl->get(mv(place), stream);
+    return pimpl->template get<T>(mv(place), stream);
   }
 
   void unfreeze(event_list prereqs)
@@ -214,7 +212,7 @@ public:
     pimpl->unfreeze(stream);
   }
 
-  frozen_logical_data& set_automatic_unfreeze(bool flag = true)
+  frozen_logical_data_untyped& set_automatic_unfreeze(bool flag = true)
   {
     assert(pimpl);
     pimpl->set_automatic_unfreeze(flag);
@@ -243,4 +241,52 @@ private:
   ::std::shared_ptr<impl> pimpl = nullptr;
 };
 
+/**
+ * @brief Frozen logical data are logical data which can be accessed outside tasks
+ *
+ * They are created using ctx.freeze, which returns a frozen_logical_data
+ * object. The get() and unfreeze() method allow to get an instance of the
+ * frozen data that is valid until unfreeze is called.
+ */
+template <typename T>
+class frozen_logical_data : public frozen_logical_data_untyped
+{
+public:
+  /// @brief Alias for `T`
+  using element_type = T;
+
+  /// @brief Default constructor
+  frozen_logical_data() = default;
+
+  /// @brief Constructor from an untyped frozen logical data
+  ///
+  /// Warning : no checks are done to ensure the type used to create the
+  /// untyped logical data matches, it is the responsibility of the caller to
+  /// ensure this is a valid conversion
+  frozen_logical_data(frozen_logical_data_untyped&& u)
+      : frozen_logical_data_untyped(u)
+  {}
+
+  frozen_logical_data(backend_ctx_untyped bctx, logical_data<T> ld, access_mode m, data_place place, bool user_freeze)
+      : frozen_logical_data_untyped(mv(bctx), mv(ld), m, mv(place), user_freeze)
+  {}
+
+  ::std::pair<T, event_list> get(data_place place)
+  {
+    return frozen_logical_data_untyped::template get<T>(mv(place));
+  }
+
+  T get(data_place place, cudaStream_t stream)
+  {
+    return frozen_logical_data_untyped::template get<T>(mv(place), stream);
+  }
+};
+
+// Inline implementation of methods that need full type definitions
+template <typename Engine>
+inline frozen_logical_data_untyped backend_ctx<Engine>::freeze(
+  cuda::experimental::stf::logical_data_untyped d, access_mode m, data_place where, bool user_freeze)
+{
+  return frozen_logical_data_untyped(*this, mv(d), m, mv(where), user_freeze);
+}
 } // namespace cuda::experimental::stf

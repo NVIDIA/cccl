@@ -13,12 +13,12 @@
 //   constexpr OutIter   // constexpr after C++17
 //   copy(InIter first, InIter last, OutIter result);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "copy_common.h"
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
+TEST_CONSTEXPR_CXX20 TEST_FUNC bool test()
 {
   test<bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<bidirectional_iterator<const int*>, cpp17_input_iterator<int*>>();

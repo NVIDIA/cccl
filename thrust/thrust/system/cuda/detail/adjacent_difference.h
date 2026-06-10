@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -48,13 +25,17 @@
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/__memory/check_address.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/is_pointer.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -68,11 +49,9 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 
 namespace cuda_cub
 {
-
 namespace __adjacent_difference
 {
-
-template <cub::MayAlias AliasOpt, class InputIt, class OutputIt, class BinaryOp>
+template <class InputIt, class OutputIt, class BinaryOp>
 cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -87,55 +66,47 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     return cudaSuccess;
   }
 
-  constexpr cub::ReadOption read_left = cub::ReadOption::Left;
+  using InputValueT                    = thrust::detail::it_value_t<InputIt>;
+  using OutputValueT                   = thrust::detail::it_value_t<OutputIt>;
+  constexpr bool can_compare_iterators = ::cuda::std::is_pointer_v<InputIt> && ::cuda::std::is_pointer_v<OutputIt>
+                                      && std::is_same_v<InputValueT, OutputValueT>;
 
-  using Dispatch32 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int32_t, AliasOpt, read_left>;
-  using Dispatch64 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int64_t, AliasOpt, read_left>;
-
-  cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH2(
-    status,
-    Dispatch32::Dispatch,
-    Dispatch64::Dispatch,
-    num_items,
-    (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
-  return status;
-}
-
-template <class InputIt, class OutputIt, class BinaryOp>
-cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt first,
-  OutputIt result,
-  BinaryOp binary_op,
-  std::size_t num_items,
-  cudaStream_t stream,
-  thrust::detail::integral_constant<bool, false> /* comparable */)
-{
-  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
-}
-
-template <class InputIt, class OutputIt, class BinaryOp>
-cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt first,
-  OutputIt result,
-  BinaryOp binary_op,
-  std::size_t num_items,
-  cudaStream_t stream,
-  thrust::detail::integral_constant<bool, true> /* comparable */)
-{
-  // The documentation states that pointers might be equal but can't alias in
-  // any other way. That is, the distance should be equal to zero or exceed
-  // `num_items`. In the latter case, we use an optimized version.
-  if (first != result)
+  if constexpr (can_compare_iterators)
   {
-    return doit_step<cub::MayAlias::No>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+    cudaError_t status;
+    // cub::DeviceAdjacentDifference only allows in-place (first and result iterator equal) or non-overlapping use cases
+    if (first == result)
+    {
+      // in-place
+      THRUST_INDEX_TYPE_DISPATCH(
+        status,
+        cub::DeviceAdjacentDifference::SubtractLeft,
+        num_items,
+        (d_temp_storage, temp_storage_bytes, result, num_items_fixed, binary_op, stream));
+    }
+    else
+    {
+      _CCCL_ASSERT(!::cuda::__are_ptrs_overlapping(first, result, num_items), "Ranges must not overlap");
+      THRUST_INDEX_TYPE_DISPATCH(
+        status,
+        cub::DeviceAdjacentDifference::SubtractLeftCopy,
+        num_items,
+        (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
+    }
+    return status;
   }
-
-  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+  else
+  {
+    // when we cannot compare the iterators, we have to assume they could alias
+    // TODO(bgruber): expose a cub::DeviceAdjacentDifference::SubtractLeft with two different iterators
+    cudaError_t status;
+    THRUST_INDEX_TYPE_DISPATCH(
+      status,
+      (cub::detail::adjacent_difference::dispatch<cub::MayAlias::Yes, cub::ReadOption::Left>),
+      num_items,
+      (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
+    return status;
+  }
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename BinaryOp>
@@ -146,37 +117,17 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   std::size_t storage_size = 0;
   cudaStream_t stream      = cuda_cub::stream(policy);
 
-  using UnwrapInputIt  = thrust::try_unwrap_contiguous_iterator_t<InputIt>;
-  using UnwrapOutputIt = thrust::try_unwrap_contiguous_iterator_t<OutputIt>;
-
-  using InputValueT  = thrust::detail::it_value_t<UnwrapInputIt>;
-  using OutputValueT = thrust::detail::it_value_t<UnwrapOutputIt>;
-
-  constexpr bool can_compare_iterators =
-    ::cuda::std::is_pointer<UnwrapInputIt>::value && ::cuda::std::is_pointer<UnwrapOutputIt>::value
-    && std::is_same<InputValueT, OutputValueT>::value;
-
   auto first_unwrap  = thrust::try_unwrap_contiguous_iterator(first);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
 
-  thrust::detail::integral_constant<bool, can_compare_iterators> comparable;
-
-  cudaError_t status =
-    doit_step(nullptr, storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream, comparable);
+  cudaError_t status = doit_step(nullptr, storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream);
   cuda_cub::throw_on_error(status, "adjacent_difference failed on 1st step");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
 
   status = doit_step(
-    static_cast<void*>(tmp.data().get()),
-    storage_size,
-    first_unwrap,
-    result_unwrap,
-    binary_op,
-    num_items,
-    stream,
-    comparable);
+    static_cast<void*>(tmp.data().get()), storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream);
   cuda_cub::throw_on_error(status, "adjacent_difference failed on 2nd step");
 
   status = cuda_cub::synchronize_optional(policy);
@@ -184,7 +135,6 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
 
   return result + num_items;
 }
-
 } // namespace __adjacent_difference
 
 //-------------------------
@@ -209,11 +159,10 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   using input_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::adjacent_difference(policy, first, last, result, ::cuda::std::minus<input_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
 //
 #  include <thrust/adjacent_difference.h>
 #  include <thrust/memory.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

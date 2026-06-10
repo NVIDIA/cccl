@@ -7,7 +7,7 @@
 Test runner for CCCL examples.
 
 This module automatically discovers and runs all example scripts from both
-cooperative and parallel directories to ensure they execute without errors.
+coop and compute directories to ensure they execute without errors.
 """
 
 import importlib
@@ -22,10 +22,13 @@ def discover_examples():
     tests_dir = Path(__file__).parent
     examples = []
 
-    # Look for examples in both cooperative and parallel directories
-    example_directories = ["cooperative/examples", "parallel/examples"]
+    example_directories = [
+        ("Coop Experimental", "coop/_experimental/examples"),
+        ("Compute", "compute/examples"),
+        ("STF", "stf/examples"),
+    ]
 
-    for example_dir in example_directories:
+    for framework, example_dir in example_directories:
         example_path = tests_dir / example_dir
         if not example_path.exists():
             continue
@@ -41,20 +44,18 @@ def discover_examples():
             # Calculate the relative path from the tests directory
             rel_path = python_file.relative_to(tests_dir)
 
-            # Convert path to module name (e.g., "cooperative/examples/block/reduce.py" -> "cooperative.examples.block.reduce")
-            module_name = str(rel_path.with_suffix("")).replace("/", ".")
+            # Convert path to module name (OS-agnostic)
+            # Example: coop/_experimental/examples/block/reduce.py
+            #          -> coop._experimental.examples.block.reduce
+            module_name = ".".join(rel_path.with_suffix("").parts)
 
             # Extract category info for display
-            parts = rel_path.parts
-            if len(parts) >= 3:
-                # e.g., cooperative/examples/block/reduce.py
-                framework = parts[0].title()  # Cooperative or Parallel
-                category = parts[2].title()  # Block, Warp, Reduction, etc.
-                filename = parts[3].replace(".py", "").replace("_", " ").title()
+            parts = python_file.relative_to(example_path).parts
+            if len(parts) >= 2:
+                category = parts[0].title()  # Block, Warp, Reduction, etc.
+                filename = parts[1].replace(".py", "").replace("_", " ").title()
                 display_name = f"{framework} - {category} - {filename}"
-            elif len(parts) >= 2:
-                # e.g., cooperative/examples/reduce.py
-                framework = parts[0].title()
+            elif len(parts) == 1:
                 filename = parts[-1].replace(".py", "").replace("_", " ").title()
                 display_name = f"{framework} - {filename}"
             else:
@@ -70,8 +71,26 @@ def run_example_module(module_name, display_name):
     try:
         print(f"Testing {display_name}...")
 
-        # Import the module
-        module = importlib.import_module(module_name)
+        # Import the module. Examples may sys.exit(0) at module load to skip
+        # when their preconditions aren't met on this build (e.g. v2-only
+        # RawOp examples loaded against a v1 wheel). Treat that as a pass.
+        try:
+            module = importlib.import_module(module_name)
+        except SystemExit as exit_exc:
+            if exit_exc.code in (None, 0):
+                print(f"  {display_name} skipped (sys.exit({exit_exc.code}))")
+                return True
+            raise
+        except ImportError as import_exc:
+            # Some STF examples require optional nvmath-python dependencies that
+            # are not installed in all CI example test environments.
+            if module_name in {
+                "stf.examples.cholesky",
+                "stf.examples.potri",
+            } and "requires nvmath-python" in str(import_exc):
+                print(f"  {display_name} skipped ({import_exc})")
+                return True
+            raise
 
         # Check if module has a main function - if so, run it
         if hasattr(module, "__main__") or hasattr(module, "main"):

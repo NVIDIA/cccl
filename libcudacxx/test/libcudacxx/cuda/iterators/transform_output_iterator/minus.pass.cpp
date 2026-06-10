@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
   PlusOne func{};
@@ -46,13 +46,25 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::iter_difference_t<int*>>);
   }
 
+  { // <iterator> - <iterator> not random access
+    cuda::transform_output_iterator iter1{forward_sized_iterator{buffer + 6}, func};
+    cuda::transform_output_iterator iter2{forward_sized_iterator{buffer + 3}, func};
+    assert(iter1 - iter2 == 3);
+    assert(iter1 - iter1 == 0);
+    assert(iter2 - iter1 == -3);
+
+    static_assert(noexcept(iter1 - iter2));
+    static_assert(
+      cuda::std::same_as<decltype(iter1 - iter2), cuda::std::iter_difference_t<forward_sized_iterator<int*>>>);
+  }
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

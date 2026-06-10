@@ -22,7 +22,7 @@
 
 struct LVal
 {
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError&)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError&)
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -34,7 +34,7 @@ struct LVal
 struct CLVal
 {
   cuda::std::expected<void, TestError> operator()(TestError&) = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(const TestError&)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(const TestError&)
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -46,7 +46,7 @@ struct RVal
 {
   cuda::std::expected<void, TestError> operator()(TestError&)       = delete;
   cuda::std::expected<void, TestError> operator()(const TestError&) = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError&&)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError&&)
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -58,7 +58,7 @@ struct CRVal
   cuda::std::expected<void, TestError> operator()(TestError&)       = delete;
   cuda::std::expected<void, TestError> operator()(const TestError&) = delete;
   cuda::std::expected<void, TestError> operator()(TestError&&)      = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(const TestError&&)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(const TestError&&)
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -66,7 +66,7 @@ struct CRVal
 
 struct RefQual
 {
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError) &
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError) &
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -78,7 +78,7 @@ struct RefQual
 struct CRefQual
 {
   cuda::std::expected<void, TestError> operator()(TestError) & = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError) const&
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError) const&
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -90,7 +90,7 @@ struct RVRefQual
 {
   cuda::std::expected<void, TestError> operator()(TestError) &      = delete;
   cuda::std::expected<void, TestError> operator()(TestError) const& = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError) &&
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError) &&
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -102,7 +102,7 @@ struct RVCRefQual
   cuda::std::expected<void, TestError> operator()(TestError) &      = delete;
   cuda::std::expected<void, TestError> operator()(TestError) const& = delete;
   cuda::std::expected<void, TestError> operator()(TestError) &&     = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError) const&&
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError) const&&
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -110,7 +110,7 @@ struct RVCRefQual
 
 struct NOLVal
 {
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError&)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError&)
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -122,7 +122,7 @@ struct NOLVal
 struct NOCLVal
 {
   cuda::std::expected<void, TestError> operator()(TestError&) = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(const TestError&)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(const TestError&)
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -134,7 +134,7 @@ struct NORVal
 {
   cuda::std::expected<void, TestError> operator()(TestError&)       = delete;
   cuda::std::expected<void, TestError> operator()(const TestError&) = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError&&)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError&&)
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -146,7 +146,7 @@ struct NOCRVal
   cuda::std::expected<void, TestError> operator()(TestError&)       = delete;
   cuda::std::expected<void, TestError> operator()(const TestError&) = delete;
   cuda::std::expected<void, TestError> operator()(TestError&&)      = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(const TestError&&)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(const TestError&&)
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -154,7 +154,7 @@ struct NOCRVal
 
 struct NORefQual
 {
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError) &
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError) &
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -166,7 +166,7 @@ struct NORefQual
 struct NOCRefQual
 {
   cuda::std::expected<void, TestError> operator()(TestError) & = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError) const&
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError) const&
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -178,7 +178,7 @@ struct NORVRefQual
 {
   cuda::std::expected<void, TestError> operator()(TestError) &      = delete;
   cuda::std::expected<void, TestError> operator()(TestError) const& = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError) &&
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError) &&
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -190,7 +190,7 @@ struct NORVCRefQual
   cuda::std::expected<void, TestError> operator()(TestError) &      = delete;
   cuda::std::expected<void, TestError> operator()(TestError) const& = delete;
   cuda::std::expected<void, TestError> operator()(TestError) &&     = delete;
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(TestError) const&&
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(TestError) const&&
   {
     return cuda::std::unexpected<TestError>{42};
   }
@@ -198,13 +198,13 @@ struct NORVCRefQual
 
 struct NonConst
 {
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> non_const()
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> non_const()
   {
     return cuda::std::unexpected<TestError>{42};
   }
 };
 
-__host__ __device__ constexpr void test_val_types()
+TEST_FUNC constexpr void test_val_types()
 {
   const cuda::std::expected<void, TestError> previous_value{cuda::std::in_place};
   const cuda::std::expected<void, TestError> expected_error{cuda::std::unexpect, 42};
@@ -366,14 +366,14 @@ __host__ __device__ constexpr void test_val_types()
 struct nvrtc_workaround
 {
   template <typename T>
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(T&& t)
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(T&& t)
   {
     return t.non_const();
   }
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__ constexpr void test_sfinae()
+TEST_FUNC constexpr void test_sfinae()
 {
   cuda::std::expected<void, NonConst> expect{cuda::std::in_place};
   ;
@@ -386,7 +386,7 @@ __host__ __device__ constexpr void test_sfinae()
 template <class T>
 struct AlwaysFalse
 {
-  __host__ __device__ constexpr AlwaysFalse()
+  TEST_FUNC constexpr AlwaysFalse()
   {
     assert(false);
   }
@@ -395,13 +395,13 @@ struct AlwaysFalse
 struct NeverCalled
 {
   template <class T>
-  __host__ __device__ constexpr cuda::std::expected<void, TestError> operator()(T) const
+  TEST_FUNC constexpr cuda::std::expected<void, TestError> operator()(T) const
   {
     return AlwaysFalse<T>{}, cuda::std::expected<void, TestError>{cuda::std::in_place};
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_val_types();
   test_sfinae();
@@ -420,7 +420,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

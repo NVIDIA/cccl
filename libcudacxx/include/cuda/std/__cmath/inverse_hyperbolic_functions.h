@@ -22,15 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 #include <nv/target>
-
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
-#  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -50,7 +46,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  undef _CCCL_BUILTIN_ACOSHL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-[[nodiscard]] _CCCL_API inline float acosh(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float acosh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ACOSHF)
   return _CCCL_BUILTIN_ACOSHF(__x);
@@ -59,7 +55,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // !_CCCL_BUILTIN_ACOSHF
 }
 
-[[nodiscard]] _CCCL_API inline float acoshf(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float acoshf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ACOSHF)
   return _CCCL_BUILTIN_ACOSHF(__x);
@@ -68,7 +64,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // !_CCCL_BUILTIN_ACOSHF
 }
 
-[[nodiscard]] _CCCL_API inline double acosh(double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double acosh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ACOSH)
   return _CCCL_BUILTIN_ACOSH(__x);
@@ -78,7 +74,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double acosh(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double acosh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ACOSHL)
   return _CCCL_BUILTIN_ACOSHL(__x);
@@ -87,7 +83,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  endif // !_CCCL_BUILTIN_ACOSHL
 }
 
-[[nodiscard]] _CCCL_API inline long double acoshl(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double acoshl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ACOSHL)
   return _CCCL_BUILTIN_ACOSHL(__x);
@@ -98,21 +94,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half acosh(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half acosh(__half __x) noexcept
 {
   return __float2half(::cuda::std::acoshf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 acosh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 acosh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(::cuda::std::acoshf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
-[[nodiscard]] _CCCL_API inline double acosh(_Integer __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double acosh(_Integer __x) noexcept
 {
   return ::cuda::std::acosh((double) __x);
 }
@@ -131,7 +127,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  undef _CCCL_BUILTIN_ASINHL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-[[nodiscard]] _CCCL_API inline float asinh(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float asinh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ASINHF)
   return _CCCL_BUILTIN_ASINHF(__x);
@@ -140,7 +136,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // !_CCCL_BUILTIN_ASINHF
 }
 
-[[nodiscard]] _CCCL_API inline float asinhf(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float asinhf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ASINHF)
   return _CCCL_BUILTIN_ASINHF(__x);
@@ -149,7 +145,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // !_CCCL_BUILTIN_ASINHF
 }
 
-[[nodiscard]] _CCCL_API inline double asinh(double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double asinh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ASINH)
   return _CCCL_BUILTIN_ASINH(__x);
@@ -159,7 +155,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double asinh(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double asinh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ASINHL)
   return _CCCL_BUILTIN_ASINHL(__x);
@@ -168,7 +164,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  endif // !_CCCL_BUILTIN_ASINHL
 }
 
-[[nodiscard]] _CCCL_API inline long double asinhl(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double asinhl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ASINHL)
   return _CCCL_BUILTIN_ASINHL(__x);
@@ -179,21 +175,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half asinh(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half asinh(__half __x) noexcept
 {
   return __float2half(::cuda::std::asinhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 asinh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 asinh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(::cuda::std::asinhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
-[[nodiscard]] _CCCL_API inline double asinh(_Integer __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double asinh(_Integer __x) noexcept
 {
   return ::cuda::std::asinh((double) __x);
 }
@@ -212,7 +208,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  undef _CCCL_BUILTIN_ATANHL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-[[nodiscard]] _CCCL_API inline float atanh(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float atanh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ATANHF)
   return _CCCL_BUILTIN_ATANHF(__x);
@@ -221,7 +217,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // !_CCCL_BUILTIN_ATANHF
 }
 
-[[nodiscard]] _CCCL_API inline float atanhf(float __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float atanhf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ATANHF)
   return _CCCL_BUILTIN_ATANHF(__x);
@@ -230,7 +226,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // !_CCCL_BUILTIN_ATANHF
 }
 
-[[nodiscard]] _CCCL_API inline double atanh(double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double atanh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ATANH)
   return _CCCL_BUILTIN_ATANH(__x);
@@ -240,7 +236,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double atanh(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double atanh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ATANHL)
   return _CCCL_BUILTIN_ATANHL(__x);
@@ -249,7 +245,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  endif // !_CCCL_BUILTIN_ATANHL
 }
 
-[[nodiscard]] _CCCL_API inline long double atanhl(long double __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double atanhl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ATANHL)
   return _CCCL_BUILTIN_ATANHL(__x);
@@ -260,21 +256,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half atanh(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half atanh(__half __x) noexcept
 {
   return __float2half(::cuda::std::atanhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 atanh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 atanh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(::cuda::std::atanhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
-[[nodiscard]] _CCCL_API inline double atanh(_Integer __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double atanh(_Integer __x) noexcept
 {
   return ::cuda::std::atanh((double) __x);
 }

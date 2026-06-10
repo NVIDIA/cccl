@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! block_load.cuh Operations for reading linear tiles of data into the CUDA thread block.
@@ -46,6 +22,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__new/device_new.h>
+
 CUB_NAMESPACE_BEGIN
 
 //! @name Blocked arrangement I/O (direct)
@@ -54,6 +33,9 @@ CUB_NAMESPACE_BEGIN
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @blocked
 //!
 //! @endrst
@@ -61,7 +43,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   **[inferred]** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -76,20 +58,23 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @param[out] dst_items
 //!   Destination to load data into
-template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
+LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread])
 {
   // Load directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid * ITEMS_PER_THREAD + i];
+    dst_items[i] = block_src_it[linear_tid * ItemsPerThread + i];
   }
 }
 
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block, guarded by range.
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @blocked
 //!
@@ -98,7 +83,7 @@ LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_ite
 //! @tparam T
 //!   **[inferred]** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -116,14 +101,14 @@ LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_ite
 //!
 //! @param[in] block_items_end
 //!   First out-of-bounds index when loading from block_src_it
-template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
-  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
+  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
-    const auto src_pos = linear_tid * ITEMS_PER_THREAD + i;
+    const auto src_pos = linear_tid * ItemsPerThread + i;
     if (src_pos < block_items_end)
     {
       dst_items[i] = block_src_it[src_pos];
@@ -135,6 +120,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
 //! Load a linear segment of items into a blocked arrangement across the thread block, guarded
 //! by range, with a fall-back assignment of out-of-bound elements.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @blocked
 //!
 //! @endrst
@@ -142,7 +130,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
 //! @tparam T
 //!   **[inferred]** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -163,16 +151,16 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
 //!
 //! @param[in] oob_default
 //!   Default value to assign out-of-bound items
-template <typename T, typename DefaultT, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <typename T, typename DefaultT, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
   int linear_tid,
   RandomAccessIterator block_src_it,
-  T (&dst_items)[ITEMS_PER_THREAD],
+  T (&dst_items)[ItemsPerThread],
   int block_items_end,
   DefaultT oob_default)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
     dst_items[i] = oob_default;
   }
@@ -193,9 +181,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
 //!
 //! @param[out] dst_items
 //!   Destination to load data into
-template <CacheLoadModifier MODIFIER, typename T, int ITEMS_PER_THREAD>
+template <CacheLoadModifier MODIFIER, typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&dst_items)[ITEMS_PER_THREAD])
+InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&dst_items)[ItemsPerThread])
 {
   // Find biggest memory access word that T is a whole multiple of
   using device_word_t = typename UnitWord<T>::DeviceWord;
@@ -226,7 +214,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 
     // Copy to destination
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; i++)
+    for (int i = 0; i < ItemsPerThread; i++)
     {
       dst_items[i] = *(reinterpret_cast<T*>(vec_items) + i);
     }
@@ -242,13 +230,16 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @blocked
 //!
 //! The input offset (``block_ptr + block_offset``) must be quad-item aligned
 //!
 //! The following conditions will prevent vectorization and loading will fall back to cub::BLOCK_LOAD_DIRECT:
 //!
-//! - ``ITEMS_PER_THREAD`` is odd
+//! - ``ItemsPerThread`` is odd
 //! - The data type ``T`` is not a built-in primitive or CUDA vector type
 //!   (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)
 //!
@@ -257,7 +248,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 //! @tparam T
 //!   **[inferred]** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @param[in] linear_tid
@@ -269,31 +260,34 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 //!
 //! @param[out] dst_items
 //!  destination to load data into
-template <typename T, int ITEMS_PER_THREAD>
+template <typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[ITEMS_PER_THREAD])
+LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[ItemsPerThread])
 {
   InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_ptr, dst_items);
 }
 
-//! @} end member group
+//! @}
 //! @name Striped arrangement I/O (direct)
 //! @{
 
 //! @rst
 //! Load a linear segment of items into a striped arrangement across the thread block.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @striped
 //!
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
 //!   **[inferred]** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -308,27 +302,27 @@ LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[ITE
 //!
 //! @param[out] dst_items
 //!   Destination to load data into
-template <int BLOCK_THREADS, typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-LoadDirectStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
+LoadDirectStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread])
 {
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid + i * BLOCK_THREADS];
+    dst_items[i] = block_src_it[linear_tid + i * ThreadsPerBlock];
   }
 }
 
 namespace detail
 {
-template <int BLOCK_THREADS, typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator, typename TransformOpT>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator, typename TransformOpT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
-  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], TransformOpT transform_op)
+  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], TransformOpT transform_op)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = transform_op(block_src_it[linear_tid + i * BLOCK_THREADS]);
+    dst_items[i] = transform_op(block_src_it[linear_tid + i * ThreadsPerBlock]);
   }
 }
 } // namespace detail
@@ -336,17 +330,20 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
 //! @rst
 //! Load a linear segment of items into a striped arrangement across the thread block, guarded by range
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @striped
 //!
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
 //!   **inferred** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **inferred** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -364,14 +361,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
 //!
 //! @param[in] block_items_end
 //!   Number of valid items to load
-template <int BLOCK_THREADS, typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
-  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
+  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
-    const auto src_pos = linear_tid + i * BLOCK_THREADS;
+    const auto src_pos = linear_tid + i * ThreadsPerBlock;
     if (src_pos < block_items_end)
     {
       dst_items[i] = block_src_it[src_pos];
@@ -383,17 +380,20 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //! Load a linear segment of items into a striped arrangement across the thread block, guarded
 //! by range, with a fall-back assignment of out-of-bound elements.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @striped
 //!
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
 //!   **inferred** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **inferred** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -414,29 +414,32 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //!
 //! @param[in] oob_default
 //!   Default value to assign out-of-bound items
-template <int BLOCK_THREADS, typename T, typename DefaultT, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, typename DefaultT, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   int linear_tid,
   RandomAccessIterator block_src_it,
-  T (&dst_items)[ITEMS_PER_THREAD],
+  T (&dst_items)[ItemsPerThread],
   int block_items_end,
   DefaultT oob_default)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
     dst_items[i] = oob_default;
   }
 
-  LoadDirectStriped<BLOCK_THREADS>(linear_tid, block_src_it, dst_items, block_items_end);
+  LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
-//! @} end member group
+//! @}
 //! @name Warp-striped arrangement I/O (direct)
 //! @{
 
 //! @rst
 //! Load a linear segment of items into a warp-striped arrangement across the thread block.
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @warpstriped
 //!
@@ -450,7 +453,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //! @tparam T
 //!   **inferred** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **inferred** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -465,17 +468,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //!
 //! @param[out] dst_items
 //!   Destination to load data into
-template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
+LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread])
 {
   const int tid         = linear_tid & (detail::warp_threads - 1);
   const int wid         = linear_tid >> detail::log2_warp_threads;
-  const int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
+  const int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   // Load directly in warp-striped order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
     new (&dst_items[i]) T(block_src_it[warp_offset + tid + (i * detail::warp_threads)]);
   }
@@ -483,6 +486,9 @@ LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst
 
 //! @rst
 //! Load a linear segment of items into a warp-striped arrangement across the thread block, guarded by range
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @warpstriped
 //!
@@ -496,7 +502,7 @@ LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst
 //! @tparam T
 //!   **inferred** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **inferred** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -514,17 +520,17 @@ LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst
 //!
 //! @param[in] block_items_end
 //!   Number of valid items to load
-template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
-  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
+  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end)
 {
   const int tid         = linear_tid & (detail::warp_threads - 1);
   const int wid         = linear_tid >> detail::log2_warp_threads;
-  const int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
+  const int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   // Load directly in warp-striped order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
     const auto src_pos = warp_offset + tid + (i * detail::warp_threads);
     if (src_pos < block_items_end)
@@ -538,6 +544,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 //! Load a linear segment of items into a warp-striped arrangement across the thread block,
 //! guarded by range, with a fall-back assignment of out-of-bound elements.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @warpstriped
 //!
 //! @endrst
@@ -550,7 +559,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 //! @tparam T
 //!   **inferred** The data type to load.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **inferred** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam RandomAccessIterator
@@ -571,17 +580,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 //!
 //! @param[in] oob_default
 //!   Default value to assign out-of-bound items
-template <typename T, typename DefaultT, int ITEMS_PER_THREAD, typename RandomAccessIterator>
+template <typename T, typename DefaultT, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
   int linear_tid,
   RandomAccessIterator block_src_it,
-  T (&dst_items)[ITEMS_PER_THREAD],
+  T (&dst_items)[ItemsPerThread],
   int block_items_end,
   DefaultT oob_default)
 {
   // Load directly in warp-striped order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < ITEMS_PER_THREAD; i++)
+  for (int i = 0; i < ItemsPerThread; i++)
   {
     dst_items[i] = oob_default;
   }
@@ -589,7 +598,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
   LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
-//! @} end member group
+//! @}
 
 //! @brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data
 //!        from memory into a blocked arrangement across a CUDA thread block.
@@ -629,7 +638,7 @@ enum BlockLoadAlgorithm
   //!
   //! A :ref:`blocked arrangement <flexible-data-arrangement>` of data is read from memory using CUDA's built-in
   //! vectorized loads as a coalescing optimization. For example, ``ld.global.v4.s32`` instructions will be generated
-  //! when ``T = int`` and ``ITEMS_PER_THREAD % 4 == 0``.
+  //! when ``T = int`` and ``ItemsPerThread % 4 == 0``.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -639,7 +648,7 @@ enum BlockLoadAlgorithm
   //!   is lower).
   //! - The following conditions will prevent vectorization and loading will fall back to cub::BLOCK_LOAD_DIRECT:
   //!
-  //!   - ``ITEMS_PER_THREAD`` is odd
+  //!   - ``ItemsPerThread`` is odd
   //!   - The ``RandomAccessIterator`` is not a simple pointer type
   //!   - The block input offset is not quadword-aligned
   //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
@@ -675,7 +684,7 @@ enum BlockLoadAlgorithm
   //! Usage Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - BLOCK_THREADS must be a multiple of WARP_THREADS
+  //! - ThreadsPerBlock must be a multiple of WARP_THREADS
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -701,7 +710,7 @@ enum BlockLoadAlgorithm
   //! Usage Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - BLOCK_THREADS must be a multiple of WARP_THREADS
+  //! - ThreadsPerBlock must be a multiple of WARP_THREADS
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -713,6 +722,29 @@ enum BlockLoadAlgorithm
   //! @endrst
   BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED,
 };
+
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
+{
+  switch (algo)
+  {
+    case BLOCK_LOAD_DIRECT:
+      return os << "BLOCK_LOAD_DIRECT";
+    case BLOCK_LOAD_STRIPED:
+      return os << "BLOCK_LOAD_STRIPED";
+    case BLOCK_LOAD_VECTORIZE:
+      return os << "BLOCK_LOAD_VECTORIZE";
+    case BLOCK_LOAD_TRANSPOSE:
+      return os << "BLOCK_LOAD_TRANSPOSE";
+    case BLOCK_LOAD_WARP_TRANSPOSE:
+      return os << "BLOCK_LOAD_WARP_TRANSPOSE";
+    case BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED:
+      return os << "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED";
+    default:
+      return os << "<unknown BlockLoadAlgorithm: " << static_cast<int>(algo) << ">";
+  }
+}
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear
@@ -771,6 +803,7 @@ enum BlockLoadAlgorithm
 //!        // Load a segment of consecutive items that are blocked across threads
 //!        int thread_data[4];
 //!        BlockLoad(temp_storage).Load(d_data, thread_data);
+//!    }
 //!
 //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``. The set of ``thread_data`` across the block of threads in
 //! those threads will be ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -787,278 +820,59 @@ enum BlockLoadAlgorithm
 //! @tparam T
 //!   The data type to read into (which must be convertible from the input iterator's value type).
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   The number of consecutive items partitioned onto each thread.
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockLoadAlgorithm tuning policy. default: ``cub::BLOCK_LOAD_DIRECT``.
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T,
-          int BLOCK_DIM_X,
-          int ITEMS_PER_THREAD,
-          BlockLoadAlgorithm ALGORITHM = BLOCK_LOAD_DIRECT,
-          int BLOCK_DIM_Y              = 1,
-          int BLOCK_DIM_Z              = 1>
+          int BlockDimX,
+          int ItemsPerThread,
+          BlockLoadAlgorithm Algorithm = BLOCK_LOAD_DIRECT,
+          int BlockDimY                = 1,
+          int BlockDimZ                = 1>
 class BlockLoad
 {
-  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z; // total threads in the block
+  static constexpr int ThreadsPerBlock = BlockDimX * BlockDimY * BlockDimZ; // total threads in the block
 
-  template <BlockLoadAlgorithm _POLICY, int DUMMY>
-  struct LoadInternal; // helper to dispatch the load algorithm
+  // transposing load algorithms need a BlockExchange
+  using block_exchange =
+    BlockExchange<T,
+                  BlockDimX,
+                  ItemsPerThread,
+                  /* WarpTimeSlicing = */ Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED,
+                  BlockDimY,
+                  BlockDimZ>;
 
-  template <int DUMMY>
-  struct LoadInternal<BLOCK_LOAD_DIRECT, DUMMY>
+  static_assert((Algorithm != BLOCK_LOAD_WARP_TRANSPOSE && Algorithm != BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
+                  || (ThreadsPerBlock % detail::warp_threads == 0),
+                "ThreadsPerBlock must be a multiple of warp_threads for this BlockLoadAlgorithm");
+
+  _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
   {
-    using TempStorage = NullType;
-    int linear_tid;
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage& /*temp_storage*/, int linear_tid)
-        : linear_tid(linear_tid)
-    {}
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
+    if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_STRIPED
+                  || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+      return NullType{};
     }
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
+    else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE
+                       || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+      return typename block_exchange::TempStorage{};
     }
+  }
 
-    template <typename RandomAccessIterator, typename DefaultT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end, DefaultT oob_default)
-    {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
-    }
-  };
-
-  template <int DUMMY>
-  struct LoadInternal<BLOCK_LOAD_STRIPED, DUMMY>
-  {
-    using TempStorage = NullType;
-    int linear_tid;
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage& /*temp_storage*/, int linear_tid)
-        : linear_tid(linear_tid)
-    {}
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
-    {
-      LoadDirectStriped<BLOCK_THREADS>(linear_tid, block_src_it, dst_items);
-    }
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
-    {
-      LoadDirectStriped<BLOCK_THREADS>(linear_tid, block_src_it, dst_items, block_items_end);
-    }
-
-    template <typename RandomAccessIterator, typename DefaultT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end, DefaultT oob_default)
-    {
-      LoadDirectStriped<BLOCK_THREADS>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
-    }
-  };
-
-  template <int DUMMY>
-  struct LoadInternal<BLOCK_LOAD_VECTORIZE, DUMMY>
-  {
-    using TempStorage = NullType;
-    int linear_tid;
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage& /*temp_storage*/, int linear_tid)
-        : linear_tid(linear_tid)
-    {}
-
-    // attempts vectorization (pointer)
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(const T* block_ptr, T (&dst_items)[ITEMS_PER_THREAD])
-    {
-      InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, dst_items);
-    }
-    // NOTE: This function is necessary for pointers to non-const types.
-    // The core reason is that the compiler will not deduce 'T*' to 'const T*' automatically.
-    // Otherwise, when the pointer type is 'T*', the compiler will prefer the overloaded version
-    // Load(RandomAccessIterator...) over Load(const T*...), which means it will never perform vectorized loading for
-    // pointers to non-const types.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T* block_ptr, T (&dst_items)[ITEMS_PER_THREAD])
-    {
-      InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, dst_items);
-    }
-
-    // any other iterator, no vectorization
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
-    {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items);
-    }
-
-    // attempts vectorization (cache modified iterator)
-    template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT> block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
-    {
-      InternalLoadDirectBlockedVectorized<MODIFIER>(linear_tid, block_src_it.ptr, dst_items);
-    }
-
-    // skips vectorization
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
-    {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
-    }
-
-    // skips vectorization
-    template <typename RandomAccessIterator, typename DefaultT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end, DefaultT oob_default)
-    {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
-    }
-  };
-
-  template <int DUMMY>
-  struct LoadInternal<BLOCK_LOAD_TRANSPOSE, DUMMY>
-  {
-    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-    using _TempStorage  = typename BlockExchange::TempStorage;
-    using TempStorage   = Uninitialized<_TempStorage>;
-
-    _TempStorage& temp_storage;
-    int linear_tid;
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage& temp_storage, int linear_tid)
-        : temp_storage(temp_storage.Alias())
-        , linear_tid(linear_tid)
-    {}
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
-    {
-      LoadDirectStriped<BLOCK_THREADS>(linear_tid, block_src_it, dst_items);
-      BlockExchange(temp_storage).StripedToBlocked(dst_items, dst_items);
-    }
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
-    {
-      LoadDirectStriped<BLOCK_THREADS>(linear_tid, block_src_it, dst_items, block_items_end);
-      BlockExchange(temp_storage).StripedToBlocked(dst_items, dst_items);
-    }
-
-    template <typename RandomAccessIterator, typename DefaultT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end, DefaultT oob_default)
-    {
-      LoadDirectStriped<BLOCK_THREADS>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
-      BlockExchange(temp_storage).StripedToBlocked(dst_items, dst_items);
-    }
-  };
-
-  template <int DUMMY>
-  struct LoadInternal<BLOCK_LOAD_WARP_TRANSPOSE, DUMMY>
-  {
-    static constexpr int WARP_THREADS = detail::warp_threads;
-    static_assert(BLOCK_THREADS % WARP_THREADS == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
-
-    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-    using _TempStorage  = typename BlockExchange::TempStorage;
-    using TempStorage   = Uninitialized<_TempStorage>;
-
-    _TempStorage& temp_storage;
-    int linear_tid;
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage& temp_storage, int linear_tid)
-        : temp_storage(temp_storage.Alias())
-        , linear_tid(linear_tid)
-    {}
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
-    {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
-      BlockExchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
-    }
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
-    {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
-      BlockExchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
-    }
-
-    template <typename RandomAccessIterator, typename DefaultT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end, DefaultT oob_default)
-    {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
-      BlockExchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
-    }
-  };
-
-  template <int DUMMY>
-  struct LoadInternal<BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED, DUMMY>
-  {
-    static constexpr int WARP_THREADS = detail::warp_threads;
-    static_assert(BLOCK_THREADS % WARP_THREADS == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
-
-    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-    using _TempStorage  = typename BlockExchange::TempStorage;
-    using TempStorage   = Uninitialized<_TempStorage>;
-
-    _TempStorage& temp_storage;
-    int linear_tid;
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage& temp_storage, int linear_tid)
-        : temp_storage(temp_storage.Alias())
-        , linear_tid(linear_tid)
-    {}
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
-    {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
-      BlockExchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
-    }
-
-    template <typename RandomAccessIterator>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
-    {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
-      BlockExchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
-    }
-
-    template <typename RandomAccessIterator, typename DefaultT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end, DefaultT oob_default)
-    {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
-      BlockExchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
-    }
-  };
-
-  using InternalLoad = LoadInternal<ALGORITHM, 0>; // load implementation to use
-  using _TempStorage = typename InternalLoad::TempStorage;
+  using _TempStorage = decltype(temp_storage_helper());
 
   // Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
@@ -1077,25 +891,39 @@ public:
   //! @name Collective constructors
   //! @{
 
-  /// @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  /// @brief Collective constructor using the specified memory allocation as temporary storage.
-  /// @param[in] temp_storage Reference to memory allocation having layout type TempStorage
+  //! @brief Collective constructor using the specified memory allocation as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
+  //!
+  //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Data movement
   //! @{
 
   //! @rst
   //! Load a linear segment of items from memory.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @smemreuse
@@ -1123,6 +951,7 @@ public:
   //!        // Load a segment of consecutive items that are blocked across threads
   //!        int thread_data[4];
   //!        BlockLoad(temp_storage).Load(d_data, thread_data);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``. The set of ``thread_data`` across the block of threads
   //! in those threads will be ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1135,14 +964,49 @@ public:
   //! @param[out] dst_items
   //!   Destination to load data into
   template <typename RandomAccessIterator>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread])
   {
-    InternalLoad(temp_storage, linear_tid).Load(block_src_it, dst_items);
+    if constexpr (Algorithm == BLOCK_LOAD_DIRECT)
+    {
+      LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
+    {
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
+    {
+      if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>)
+      {
+        InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
+      }
+      else if constexpr (::cuda::std::contiguous_iterator<RandomAccessIterator>
+                         && ::cuda::std::__can_to_address<RandomAccessIterator>)
+      {
+        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
+      }
+      else
+      {
+        LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+      }
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
+    {
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
+      block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
+    {
+      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
+      block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
+    }
   }
 
   //! @rst
-  //!
   //! Load a linear segment of items from memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @smemreuse
@@ -1170,6 +1034,7 @@ public:
   //!        // Load a segment of consecutive items that are blocked across threads
   //!        int thread_data[4];
   //!        BlockLoad(temp_storage).Load(d_data, thread_data, block_items_end);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, 6...`` and ``block_items_end`` is ``5``. The set of
   //! ``thread_data`` across the block of threads in those threads will be ``{ [0,1,2,3], [4,?,?,?], ..., [?,?,?,?] }``,
@@ -1188,13 +1053,33 @@ public:
   //!   Number of valid items to load
   template <typename RandomAccessIterator>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
+  Load(RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end)
   {
-    InternalLoad(temp_storage, linear_tid).Load(block_src_it, dst_items, block_items_end);
+    if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
+    {
+      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
+    {
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
+    {
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+      block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
+    {
+      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
+      block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
+    }
   }
 
   //! @rst
   //! Load a linear segment of items from memory, guarded by range, with a fall-back assignment of out-of-bound elements
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @smemreuse
@@ -1222,6 +1107,7 @@ public:
   //!        // Load a segment of consecutive items that are blocked across threads
   //!        int thread_data[4];
   //!        BlockLoad(temp_storage).Load(d_data, thread_data, block_items_end, -1);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, 6...``, ``block_items_end`` is ``5``, and the out-of-bounds
   //! default is ``-1``. The set of ``thread_data`` across the block of threads in those threads will be
@@ -1243,12 +1129,29 @@ public:
   //!   Default value to assign out-of-bound items
   template <typename RandomAccessIterator, typename DefaultT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Load(RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end, DefaultT oob_default)
+  Load(RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end, DefaultT oob_default)
   {
-    InternalLoad(temp_storage, linear_tid).Load(block_src_it, dst_items, block_items_end, oob_default);
+    if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
+    {
+      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
+    {
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
+    {
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
+    {
+      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
+    }
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 template <class Policy, class It, class T = cub::detail::it_value_t<It>>

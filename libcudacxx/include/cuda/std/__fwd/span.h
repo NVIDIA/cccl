@@ -33,10 +33,10 @@ template <typename _Tp, size_t _Extent = dynamic_extent>
 class span;
 
 template <class _Tp>
-inline constexpr bool __is_std_span_v = false;
+inline constexpr bool __is_cuda_std_span_v = false;
 
 template <class _Tp, size_t _Extent>
-inline constexpr bool __is_std_span_v<span<_Tp, _Extent>> = true;
+inline constexpr bool __is_cuda_std_span_v<span<_Tp, _Extent>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -20,41 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_class.h> // __two
-#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
-
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic : public integral_constant<bool, _CCCL_BUILTIN_IS_POLYMORPHIC(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic : bool_constant<_CCCL_BUILTIN_IS_POLYMORPHIC(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_polymorphic_v = _CCCL_BUILTIN_IS_POLYMORPHIC(_Tp);
-
-#else
-
-template <typename _Tp>
-_CCCL_HOST_DEVICE char& __is_polymorphic_impl(
-  enable_if_t<sizeof((_Tp*) dynamic_cast<const volatile void*>(::cuda::std::declval<_Tp*>())) != 0, int>);
-template <typename _Tp>
-_CCCL_HOST_DEVICE __two& __is_polymorphic_impl(...);
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_polymorphic : public integral_constant<bool, sizeof(__is_polymorphic_impl<_Tp>(0)) == 1>
-{};
-
-template <class _Tp>
-inline constexpr bool is_polymorphic_v = is_polymorphic<_Tp>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

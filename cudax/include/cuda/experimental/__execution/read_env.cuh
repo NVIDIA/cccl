@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
 
@@ -54,14 +55,14 @@ private:
 
     _Rcvr __rcvr_;
 
-    _CCCL_API constexpr explicit __opstate_t(_Rcvr __rcvr) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(_Rcvr __rcvr) noexcept
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_API void start() noexcept
+    _CCCL_HOST_DEVICE_API void start() noexcept
     {
       // If the query invocation is noexcept, call it directly. Otherwise,
       // wrap it in a try-catch block and forward the exception to the
@@ -80,7 +81,7 @@ private:
         }
         _CCCL_CATCH_ALL
         {
-          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), execution::current_exception());
         }
       }
     }
@@ -88,7 +89,7 @@ private:
 
   struct __attrs_t
   {
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_behavior_t) const noexcept
     {
       return completion_behavior::inline_completion;
     }
@@ -102,7 +103,7 @@ public:
   /// invokes the query with the receiver's environment and forwards the result
   /// to the receiver's `set_value` member.
   template <class _Query>
-  _CCCL_NODEBUG_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
+  _CCCL_HOST_DEVICE_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
 };
 
 template <class _Query>
@@ -111,7 +112,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   using sender_concept = sender_t;
 
   template <class _Self, class _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     if constexpr (!__callable<_Query, _Env>)
     {
@@ -137,31 +138,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr, _Query>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto get_env() noexcept
   {
     return __attrs_t{};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
-  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ read_env_t __tag;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Query __query;
 };
 
 template <class _Query>
-_CCCL_NODEBUG_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
+_CCCL_HOST_DEVICE_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
 {
   return __sndr_t<_Query>{{}, __query};
 }
 
 template <class _Query>
-inline constexpr size_t structured_binding_size<read_env_t::__sndr_t<_Query>> = 2;
+inline constexpr int structured_binding_size<read_env_t::__sndr_t<_Query>> = 2;
 
 _CCCL_GLOBAL_CONSTANT read_env_t read_env{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

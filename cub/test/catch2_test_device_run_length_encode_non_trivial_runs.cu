@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -271,18 +247,16 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
 
 // Guard against #293
 template <bool TimeSlicing>
-struct device_rle_policy_hub
+struct device_rle_policy_selector
 {
   static constexpr int threads = 96;
   static constexpr int items   = 15;
 
-  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
   {
-    using RleSweepPolicyT = cub::
-      AgentRlePolicy<threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  using MaxPolicy = Policy500;
+    return {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS};
+  }
 };
 
 struct CustomDeviceRunLengthEncode
@@ -299,28 +273,20 @@ struct CustomDeviceRunLengthEncode
     OffsetsOutputIteratorT d_offsets_out,
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
-    cudaStream_t stream = 0)
+    int num_items, // Signed integer type for global offsets
+    cudaStream_t stream = nullptr)
   {
-    using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = cuda::std::equal_to<>; // Default == operator
-
-    return cub::DeviceRleDispatch<InputIteratorT,
-                                  OffsetsOutputIteratorT,
-                                  LengthsOutputIteratorT,
-                                  NumRunsOutputIteratorT,
-                                  EqualityOp,
-                                  OffsetT,
-                                  device_rle_policy_hub<TimeSlicing>>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_in,
-               d_offsets_out,
-               d_lengths_out,
-               d_num_runs_out,
-               EqualityOp(),
-               num_items,
-               stream);
+    return cub::detail::rle::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_offsets_out,
+      d_lengths_out,
+      d_num_runs_out,
+      cuda::std::equal_to<>{}, // Default == operator
+      num_items,
+      stream,
+      device_rle_policy_selector<TimeSlicing>{});
   }
 };
 
@@ -332,9 +298,9 @@ using time_slicing = c2h::type_list<std::true_type, std::false_type>;
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[device][run_length_encode]", time_slicing)
 {
   using type         = typename c2h::get<0, TestType>;
-  using policy_hub_t = device_rle_policy_hub<type::value>;
+  using policy_sel_t = device_rle_policy_selector<type::value>;
 
-  constexpr int tile_size    = policy_hub_t::threads * policy_hub_t::items;
+  constexpr int tile_size    = policy_sel_t::threads * policy_sel_t::items;
   constexpr int num_items    = 2 * tile_size;
   constexpr int magic_number = num_items + 1;
 
@@ -373,7 +339,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[d
   out_offsets.front() = magic_number;
   out_lengths.front() = magic_number;
 
-  if (type::value)
+  if constexpr (type::value)
   {
     run_length_encode_293_true(
       in.begin(), out_offsets.begin() + 1, out_lengths.begin() + 1, out_num_runs.begin(), num_items);
@@ -431,7 +397,7 @@ try
 }
 catch (const std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
@@ -483,5 +449,5 @@ try
 }
 catch (const std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }

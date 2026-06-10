@@ -80,6 +80,54 @@ _CCCL_DEVICE static inline void cp_async_bulk(
 #endif // __cccl_ptx_isa >= 860
 
 /*
+// cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.ignore_oob [dstMem], [srcMem], size, ignoreBytesLeft,
+ignoreBytesRight, [smem_bar]; // PTX ISA 92, SM_90
+// .dst       = { .shared::cta }
+// .src       = { .global }
+template <typename = void>
+__device__ static inline void cp_async_bulk_ignore_oob(
+  cuda::ptx::space_shared_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* srcMem,
+  const uint32_t& size,
+  const uint32_t& ignoreBytesLeft,
+  const uint32_t& ignoreBytesRight,
+  uint64_t* smem_bar);
+*/
+#if __cccl_ptx_isa >= 920
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_ignore_oob_is_not_supported_before_SM_90__();
+template <typename = void>
+_CCCL_DEVICE static inline void cp_async_bulk_ignore_oob(
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::space_global_t,
+  void* __dstMem,
+  const void* __srcMem,
+  const ::cuda::std::uint32_t& __size,
+  const ::cuda::std::uint32_t& __ignoreBytesLeft,
+  const ::cuda::std::uint32_t& __ignoreBytesRight,
+  ::cuda::std::uint64_t* __smem_bar)
+{
+// __space == space_shared (due to parameter type constraint)
+// __space == space_global (due to parameter type constraint)
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  asm("cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.ignore_oob [%0], [%1], %2, %3, %4, [%5];"
+      :
+      : "r"(__as_ptr_smem(__dstMem)),
+        "l"(__as_ptr_gmem(__srcMem)),
+        "r"(__size),
+        "r"(__ignoreBytesLeft),
+        "r"(__ignoreBytesRight),
+        "r"(__as_ptr_smem(__smem_bar))
+      : "memory");
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_cp_async_bulk_ignore_oob_is_not_supported_before_SM_90__();
+#  endif
+}
+#endif // __cccl_ptx_isa >= 920
+
+/*
 // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .shared::cta }

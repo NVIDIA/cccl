@@ -22,10 +22,28 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class>
+class reference_wrapper;
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+// cuda::std:: forward declarations
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_reference_wrapper_v = false;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_reference_wrapper_v<reference_wrapper<_Tp>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

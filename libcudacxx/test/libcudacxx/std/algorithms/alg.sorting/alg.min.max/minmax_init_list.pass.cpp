@@ -14,13 +14,13 @@
 //   pair<T, T>
 //   minmax(initializer_list<T> t);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   assert((cuda::std::minmax({1, 2, 3}) == cuda::std::pair<int, int>(1, 3)));
   assert((cuda::std::minmax({1, 3, 2}) == cuda::std::pair<int, int>(1, 3)));
@@ -35,7 +35,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

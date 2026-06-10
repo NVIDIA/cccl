@@ -55,7 +55,7 @@ void TestMergeByKeyDevice(ExecutionPolicy exec)
 
   using Iterator = typename thrust::device_vector<int>::iterator;
 
-  thrust::device_vector<thrust::pair<Iterator, Iterator>> result_ends(1);
+  thrust::device_vector<cuda::std::pair<Iterator, Iterator>> result_ends(1);
 
   merge_by_key_kernel<<<1, 1>>>(
     exec,
@@ -71,7 +71,7 @@ void TestMergeByKeyDevice(ExecutionPolicy exec)
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
-  thrust::pair<Iterator, Iterator> ends = result_ends[0];
+  cuda::std::pair<Iterator, Iterator> ends = result_ends[0];
 
   ASSERT_EQUAL_QUIET(result_key.end(), ends.first);
   ASSERT_EQUAL_QUIET(result_val.end(), ends.second);
@@ -120,7 +120,7 @@ void TestMergeByKeyCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  thrust::pair<Iterator, Iterator> ends = thrust::merge_by_key(
+  cuda::std::pair<Iterator, Iterator> ends = thrust::merge_by_key(
     thrust::cuda::par.on(s),
     a_key.begin(),
     a_key.end(),

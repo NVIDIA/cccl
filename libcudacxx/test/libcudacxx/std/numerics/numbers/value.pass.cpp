@@ -15,11 +15,11 @@
 #include <cuda/std/cassert>
 #include <cuda/std/numbers>
 
-#include <test_macros.h>
+#include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(1046) // Suppress "floating-point value cannot be represented exactly"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // default constants
   assert(cuda::std::numbers::e == 2.718281828459045);
@@ -104,11 +104,12 @@ __host__ __device__ constexpr bool test()
 }
 
 // Extended floating point types are not comparable in constexpr context
-__host__ __device__ void test_ext_fp()
+TEST_FUNC void test_ext_fp()
 {
 #if !TEST_COMPILER(MSVC)
-  // MSVC errors here because of "error: A __device__ variable template cannot have a const qualified type on Windows"
-#  if _LIBCUDACXX_HAS_NVFP16()
+  // MSVC errors here because of "error: A __device__ variable template cannot have a const qualified type on
+  // Windows"
+#  if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   // __half constants
   assert(cuda::std::numbers::e_v<__half> == __half{2.7182817f});
   assert(cuda::std::numbers::log2e_v<__half> == __half{1.442695f});
@@ -123,9 +124,9 @@ __host__ __device__ void test_ext_fp()
   assert(cuda::std::numbers::inv_sqrt3_v<__half> == __half{0.57735026f});
   assert(cuda::std::numbers::egamma_v<__half> == __half{0.5772157f});
   assert(cuda::std::numbers::phi_v<__half> == __half{1.618034f});
-#  endif // _LIBCUDACXX_HAS_NVFP16()
+#  endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#  if _LIBCUDACXX_HAS_NVBF16()
+#  if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   assert(cuda::std::numbers::e_v<__nv_bfloat16> == __nv_bfloat16{2.7182817f});
   assert(cuda::std::numbers::log2e_v<__nv_bfloat16> == __nv_bfloat16{1.442695f});
   assert(cuda::std::numbers::log10e_v<__nv_bfloat16> == __nv_bfloat16{0.4342945f});
@@ -139,7 +140,7 @@ __host__ __device__ void test_ext_fp()
   assert(cuda::std::numbers::inv_sqrt3_v<__nv_bfloat16> == __nv_bfloat16{0.57735026f});
   assert(cuda::std::numbers::egamma_v<__nv_bfloat16> == __nv_bfloat16{0.5772157f});
   assert(cuda::std::numbers::phi_v<__nv_bfloat16> == __nv_bfloat16{1.618034f});
-#  endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 #endif // !TEST_COMPILER(MSVC)
 }
 

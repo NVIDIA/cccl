@@ -41,6 +41,7 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/move.h>
 
@@ -319,8 +320,8 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator==(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
   {
     return __lhs.__count_ == __rhs.__count_;
   }
@@ -406,25 +407,24 @@ public:
 
   template <class _I2>
   _CCCL_API friend constexpr auto iter_swap(const counted_iterator& __x, const counted_iterator<_I2>& __y) noexcept(
-    noexcept(::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_)))
+    noexcept(::cuda::std::ranges::__iter_swap_cpo{}(__x.__current_, __y.__current_)))
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_I2, _Iter>)
   {
     _CCCL_ASSERT(__x.__count_ > 0 && __y.__count_ > 0, "Iterators must not be past end of range.");
-    return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
+    return ::cuda::std::ranges::__iter_swap_cpo{}(__x.__current_, __y.__current_);
+  }
+
+  _CCCL_TEMPLATE(class _I2 = _Iter)
+  _CCCL_REQUIRES(input_iterator<_I2>)
+  [[nodiscard]] _CCCL_API friend constexpr decltype(auto)
+  iter_move(const counted_iterator& __i) noexcept(noexcept(::cuda::std::ranges::__iter_move_cpo{}(__i.base())))
+  {
+    _CCCL_ASSERT(__i.count() > 0, "Iterator must not be past end of range.");
+    return ::cuda::std::ranges::__iter_move_cpo{}(__i.base());
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(counted_iterator)
-
-// Not a hidden friend because of MSVC
-_CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(input_iterator<_Iter>)
-[[nodiscard]] _CCCL_API constexpr decltype(auto) iter_move(const counted_iterator<_Iter>& __i) noexcept(
-  noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>())))
-{
-  _CCCL_ASSERT(__i.count() > 0, "Iterator must not be past end of range.");
-  return ::cuda::std::ranges::iter_move(__i.base());
-}
 
 #if _CCCL_HAS_CONCEPTS()
 template <input_iterator _Iter>

@@ -84,21 +84,21 @@ struct test_buffer
       cuda::__ensure_current_context ctx_setter{cuda::device_ref{0}};
       if (type == test_buffer_type::pinned)
       {
-        _CCCL_TRY_CUDA_API(cudaFreeHost, "Failed to free pinned memory", data_ptr);
+        _CCCL_LOG_CUDA_API(cudaFreeHost, "Failed to free pinned memory", data_ptr);
       }
       else if (type == test_buffer_type::device)
       {
-        _CCCL_TRY_CUDA_API(cudaFree, "Failed to free device memory", data_ptr);
+        _CCCL_LOG_CUDA_API(cudaFree, "Failed to free device memory", data_ptr);
       }
       else if (type == test_buffer_type::managed)
       {
-        _CCCL_TRY_CUDA_API(cudaFree, "Failed to free managed memory", data_ptr);
+        _CCCL_LOG_CUDA_API(cudaFree, "Failed to free managed memory", data_ptr);
       }
     }
   }
 
   test_buffer(const test_buffer&) = delete;
-  test_buffer(test_buffer&& other)
+  test_buffer(test_buffer&& other) noexcept
       : type(other.type)
       , data_ptr(other.data_ptr)
       , buffer_size(other.buffer_size)
@@ -108,7 +108,7 @@ struct test_buffer
   }
 
   test_buffer& operator=(const test_buffer&) = delete;
-  test_buffer& operator=(test_buffer&& other)
+  test_buffer& operator=(test_buffer&& other) noexcept
   {
     ::cuda::std::exchange(type, other.type);
     ::cuda::std::exchange(data_ptr, other.data_ptr);

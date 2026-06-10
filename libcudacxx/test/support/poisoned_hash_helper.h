@@ -93,7 +93,6 @@ void test_library_hash_specializations_available(Types = Types{});
 
 namespace PoisonedHashDetail
 {
-
 template <class T, class = typename T::foo_bar_baz>
 constexpr bool instantiate(int)
 {
@@ -156,7 +155,6 @@ constexpr bool can_hash()
 {
   return can_hash<T>(0);
 }
-
 } // namespace PoisonedHashDetail
 
 template <class Hash, class Key, class InputKey>
@@ -164,32 +162,32 @@ void test_hash_enabled(InputKey const& key)
 {
   using namespace PoisonedHashDetail;
 
-  static_assert(std::is_destructible<Hash>::value, "");
+  static_assert(std::is_destructible<Hash>::value);
   // Enabled hash requirements
-  static_assert(std::is_default_constructible<Hash>::value, "");
-  static_assert(std::is_copy_constructible<Hash>::value, "");
-  static_assert(std::is_move_constructible<Hash>::value, "");
-  static_assert(std::is_copy_assignable<Hash>::value, "");
-  static_assert(std::is_move_assignable<Hash>::value, "");
+  static_assert(std::is_default_constructible<Hash>::value);
+  static_assert(std::is_copy_constructible<Hash>::value);
+  static_assert(std::is_move_constructible<Hash>::value);
+  static_assert(std::is_copy_assignable<Hash>::value);
+  static_assert(std::is_move_assignable<Hash>::value);
 
-  static_assert(std::is_swappable<Hash>::value, "");
+  static_assert(std::is_swappable<Hash>::value);
 
   // Hashable requirements
-  static_assert(can_hash<Hash(Key&)>(), "");
-  static_assert(can_hash<Hash(Key const&)>(), "");
-  static_assert(can_hash<Hash(Key&&)>(), "");
-  static_assert(can_hash<Hash const&(Key&)>(), "");
-  static_assert(can_hash<Hash const&(Key const&)>(), "");
-  static_assert(can_hash<Hash const&(Key&&)>(), "");
+  static_assert(can_hash<Hash(Key&)>());
+  static_assert(can_hash<Hash(Key const&)>());
+  static_assert(can_hash<Hash(Key&&)>());
+  static_assert(can_hash<Hash const&(Key&)>());
+  static_assert(can_hash<Hash const&(Key const&)>());
+  static_assert(can_hash<Hash const&(Key&&)>());
 
-  static_assert(can_hash<Hash(ConvertibleToSimple<Key>&)>(), "");
-  static_assert(can_hash<Hash(ConvertibleToSimple<Key> const&)>(), "");
-  static_assert(can_hash<Hash(ConvertibleToSimple<Key>&&)>(), "");
+  static_assert(can_hash<Hash(ConvertibleToSimple<Key>&)>());
+  static_assert(can_hash<Hash(ConvertibleToSimple<Key> const&)>());
+  static_assert(can_hash<Hash(ConvertibleToSimple<Key>&&)>());
 
-  static_assert(can_hash<Hash(ConvertibleTo<Key>&)>(), "");
-  static_assert(can_hash<Hash(ConvertibleTo<Key> const&)>(), "");
-  static_assert(can_hash<Hash(ConvertibleTo<Key>&&)>(), "");
-  static_assert(can_hash<Hash(ConvertibleTo<Key> const&&)>(), "");
+  static_assert(can_hash<Hash(ConvertibleTo<Key>&)>());
+  static_assert(can_hash<Hash(ConvertibleTo<Key> const&)>());
+  static_assert(can_hash<Hash(ConvertibleTo<Key>&&)>());
+  static_assert(can_hash<Hash(ConvertibleTo<Key> const&&)>());
 
   const Hash h{};
   assert(h(key) == h(key));
@@ -201,31 +199,31 @@ void test_hash_disabled()
   using namespace PoisonedHashDetail;
 
   // Disabled hash requirements
-  static_assert(!std::is_default_constructible<Hash>::value, "");
-  static_assert(!std::is_copy_constructible<Hash>::value, "");
-  static_assert(!std::is_move_constructible<Hash>::value, "");
-  static_assert(!std::is_copy_assignable<Hash>::value, "");
-  static_assert(!std::is_move_assignable<Hash>::value, "");
+  static_assert(!std::is_default_constructible<Hash>::value);
+  static_assert(!std::is_copy_constructible<Hash>::value);
+  static_assert(!std::is_move_constructible<Hash>::value);
+  static_assert(!std::is_copy_assignable<Hash>::value);
+  static_assert(!std::is_move_assignable<Hash>::value);
 
   static_assert(
-    !std::is_function<typename std::remove_pointer<typename std::remove_reference<Hash>::type>::type>::value, "");
+    !std::is_function<typename std::remove_pointer<typename std::remove_reference<Hash>::type>::type>::value);
 
   // Hashable requirements
-  static_assert(!can_hash<Hash(Key&)>(), "");
-  static_assert(!can_hash<Hash(Key const&)>(), "");
-  static_assert(!can_hash<Hash(Key&&)>(), "");
-  static_assert(!can_hash<Hash const&(Key&)>(), "");
-  static_assert(!can_hash<Hash const&(Key const&)>(), "");
-  static_assert(!can_hash<Hash const&(Key&&)>(), "");
+  static_assert(!can_hash<Hash(Key&)>());
+  static_assert(!can_hash<Hash(Key const&)>());
+  static_assert(!can_hash<Hash(Key&&)>());
+  static_assert(!can_hash<Hash const&(Key&)>());
+  static_assert(!can_hash<Hash const&(Key const&)>());
+  static_assert(!can_hash<Hash const&(Key&&)>());
 
-  static_assert(!can_hash<Hash(ConvertibleToSimple<Key>&)>(), "");
-  static_assert(!can_hash<Hash(ConvertibleToSimple<Key> const&)>(), "");
-  static_assert(!can_hash<Hash(ConvertibleToSimple<Key>&&)>(), "");
+  static_assert(!can_hash<Hash(ConvertibleToSimple<Key>&)>());
+  static_assert(!can_hash<Hash(ConvertibleToSimple<Key> const&)>());
+  static_assert(!can_hash<Hash(ConvertibleToSimple<Key>&&)>());
 
-  static_assert(!can_hash<Hash(ConvertibleTo<Key>&)>(), "");
-  static_assert(!can_hash<Hash(ConvertibleTo<Key> const&)>(), "");
-  static_assert(!can_hash<Hash(ConvertibleTo<Key>&&)>(), "");
-  static_assert(!can_hash<Hash(ConvertibleTo<Key> const&&)>(), "");
+  static_assert(!can_hash<Hash(ConvertibleTo<Key>&)>());
+  static_assert(!can_hash<Hash(ConvertibleTo<Key> const&)>());
+  static_assert(!can_hash<Hash(ConvertibleTo<Key>&&)>());
+  static_assert(!can_hash<Hash(ConvertibleTo<Key> const&&)>());
 }
 
 template <class First, class... Rest>
@@ -234,7 +232,7 @@ struct TypeList<First, Rest...>
   template <template <class> class Trait, bool Expect = true>
   static constexpr bool assertTrait()
   {
-    static_assert(Trait<First>::value == Expect, "");
+    static_assert(Trait<First>::value == Expect);
     return TypeList<Rest...>::template assertTrait<Trait, Expect>();
   }
 

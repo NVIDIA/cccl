@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cmath>
 
 #include <cuda/std/cassert>
@@ -22,10 +25,10 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_remainder(T val)
+TEST_FUNC void test_remainder(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::remainder(T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::remainder(T{}, T{})), ret>);
 
   const T x = T(13.23456789);
 
@@ -217,7 +220,7 @@ __host__ __device__ void test_remainder(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_remquo(const T x, const T y, const bool expected_octant)
+TEST_FUNC void test_remquo(const T x, const T y, const bool expected_octant)
 {
   const T quotient = cuda::std::remainder(x, y);
   int octant       = 0;
@@ -226,10 +229,10 @@ __host__ __device__ void test_remquo(const T x, const T y, const bool expected_o
 }
 
 template <typename T>
-__host__ __device__ void test_remquo(T val)
+TEST_FUNC void test_remquo(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::remquo(T{}, T{}, static_cast<int*>(nullptr))), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::remquo(T{}, T{}, static_cast<int*>(nullptr))), ret>);
 
   const T x = T(13.23456789);
 
@@ -518,13 +521,13 @@ __host__ __device__ void test_remquo(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_remainder<T>(val);
   test_remquo<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

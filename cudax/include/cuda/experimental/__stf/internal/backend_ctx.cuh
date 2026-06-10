@@ -27,12 +27,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/machine.cuh>
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
-#include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
 #include <cuda/experimental/__stf/internal/reorderer.cuh> // backend_ctx_untyped::impl uses reorderer
 #include <cuda/experimental/__stf/internal/repeat.cuh>
 #include <cuda/experimental/__stf/internal/scheduler.cuh> // backend_ctx_untyped::impl uses scheduler
@@ -41,24 +41,22 @@
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
-// XXX there is currently a dependency on this header for places.h
-// Until we find a solution we need to include this
-#include <cuda/experimental/__stf/places/exec/green_context.cuh>
-
 #include <atomic>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class logical_data;
 
 template <typename T>
 class frozen_logical_data;
+
+class frozen_logical_data_untyped;
 
 class graph_ctx;
 
@@ -68,7 +66,6 @@ class stream_ctx;
 
 namespace reserved
 {
-
 template <typename Ctx, typename exec_place_t, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
@@ -83,7 +80,6 @@ class cuda_kernel_scope;
 
 // We need to have a map of logical data stored in the ctx.
 class logical_data_untyped_impl;
-
 } // end namespace reserved
 
 /**
@@ -118,20 +114,26 @@ protected:
   public:
     friend class backend_ctx_untyped;
 
-    impl(async_resources_handle async_resources = async_resources_handle())
+    impl(async_resources_handle async_resources = async_resources_handle(), bool initialize_cuda_runtime = true)
         : auto_scheduler(reserved::scheduler::make(getenv("CUDASTF_SCHEDULE")))
         , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
+        // Record whether the handle was supplied by the caller *before* we
+        // move it into ``async_resources``. Relies on declaration order:
+        // ``user_provided_handle`` is declared before ``async_resources``.
+        , user_provided_handle(bool(async_resources))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
     {
-      // Forces init
-      cudaError_t ret = cudaFree(0);
-
-      // If we are running the task in the context of a CUDA callback, we are
-      // not allowed to issue any CUDA API call.
-      EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
+      if (initialize_cuda_runtime)
+      {
+        // Initialize the CUDA runtime before STF starts issuing work.
+        cudaError_t ret = cudaFree(0);
+        // If we are running the task in the context of a CUDA callback, we
+        // are not allowed to issue any CUDA API call.
+        EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
+      }
 
       // Enable peer memory accesses (if not done already)
-      reserved::machine::instance().enable_peer_accesses();
+      machine::instance().enable_peer_accesses();
 
       // If CUDASTF_DISPLAY_STATS is set to a non 0 value, record stats
       const char* record_stats_env = getenv("CUDASTF_DISPLAY_STATS");
@@ -188,6 +190,11 @@ protected:
     virtual cudaGraph_t graph() const
     {
       return nullptr;
+    }
+
+    virtual bool is_graph_ctx() const
+    {
+      return false;
     }
 
     void set_graph_cache_policy(::std::function<bool()> fn)
@@ -349,6 +356,13 @@ protected:
     ::std::atomic<size_t> total_finished_task_cnt = 0;
 #endif
 
+    // True iff the ``async_resources_handle`` was supplied by the caller at
+    // context construction time (as opposed to being freshly created
+    // internally). Set from ``bool(async_resources)`` *before* the handle is
+    // moved into ``async_resources`` -- see the member initializer list. Must
+    // therefore be declared before ``async_resources``.
+    bool user_provided_handle = false;
+
     // This data structure contains all resources useful for an efficient
     // asynchronous execution. This will for example contain pools of CUDA
     // streams which are costly to create.
@@ -417,7 +431,7 @@ protected:
 
     void add_dangling_events(backend_ctx_untyped& bctx, const event_list& lst)
     {
-      auto guard = ::std::lock_guard(dangling_events_mutex);
+      auto guard = ::std::scoped_lock(dangling_events_mutex);
       dangling_events.merge(lst);
       /* If the number of dangling events gets too high, we try to optimize
        * the list to avoid keeping events alive for no reason. */
@@ -454,7 +468,7 @@ protected:
       void remove(int task_id)
       {
         // Erase that leaf task if it is found, or do nothing
-        auto guard = ::std::lock_guard(leaf_tasks_mutex);
+        auto guard = ::std::scoped_lock(leaf_tasks_mutex);
         leaf_tasks.erase(task_id);
       }
 
@@ -504,7 +518,7 @@ protected:
       }
 
       {
-        auto guard = ::std::lock_guard(leaves.leaf_tasks_mutex);
+        auto guard = ::std::scoped_lock(leaves.leaf_tasks_mutex);
 
         // Sync with the events of all leaf tasks
         for (auto& [t_id, t_done_prereqs] : leaves.get_leaf_tasks())
@@ -530,7 +544,7 @@ protected:
 
       {
         // Wait for all pending get() operations associated to frozen logical data
-        auto guard = ::std::lock_guard(pending_freeze_mutex);
+        auto guard = ::std::scoped_lock(pending_freeze_mutex);
 
         for (auto& [fake_t_id, get_prereqs] : pending_freeze)
         {
@@ -551,7 +565,7 @@ protected:
       // not "reachable". For example if some async operations occurred in a data
       // handle destructor there could be some remaining events to sync with to
       // make sure data were properly deallocated.
-      auto guard = ::std::lock_guard(dangling_events_mutex);
+      auto guard = ::std::scoped_lock(dangling_events_mutex);
       if (dangling_events.size() > 0)
       {
         prereqs.merge(mv(dangling_events));
@@ -568,7 +582,7 @@ protected:
 
     void add_pending_freeze(const task& fake_t, const event_list& events)
     {
-      auto guard = ::std::lock_guard(pending_freeze_mutex);
+      auto guard = ::std::scoped_lock(pending_freeze_mutex);
 
       // This creates an entry if necessary (there can be multiple gets)
       event_list& prereqs = pending_freeze[fake_t.get_unique_id()];
@@ -582,7 +596,7 @@ protected:
     // sync'ed with
     void remove_pending_freeze(const task& fake_t)
     {
-      auto guard = ::std::lock_guard(pending_freeze_mutex);
+      auto guard = ::std::scoped_lock(pending_freeze_mutex);
       pending_freeze.erase(fake_t.get_unique_id());
     }
 
@@ -618,6 +632,18 @@ protected:
     void add_resource(::std::shared_ptr<ctx_resource> resource)
     {
       ctx_resources.add(mv(resource));
+    }
+
+    // Export all resources by moving them to a new ctx_resource_set
+    ctx_resource_set export_resources()
+    {
+      return ctx_resources.export_resources();
+    }
+
+    // Import all resources from another ctx_resource_set
+    void import_resources(ctx_resource_set&& other)
+    {
+      ctx_resources.import_resources(mv(other));
     }
   };
 
@@ -707,6 +733,20 @@ public:
     pimpl->add_resource(mv(resource));
   }
 
+  //! Export all resources by moving them to a new ctx_resource_set
+  //! The current context will have no resources after this operation
+  ctx_resource_set export_resources()
+  {
+    return pimpl->export_resources();
+  }
+
+  //! Import all resources from another ctx_resource_set
+  //! The other set will be left empty after this operation
+  void import_resources(ctx_resource_set&& other)
+  {
+    pimpl->import_resources(mv(other));
+  }
+
   /* Customize the allocator used by all logical data */
   void set_allocator(block_allocator_untyped custom)
   {
@@ -774,6 +814,11 @@ public:
   cudaGraph_t graph() const
   {
     return pimpl->graph();
+  }
+
+  bool is_graph_ctx() const
+  {
+    return pimpl->is_graph_ctx();
   }
 
   void set_graph_cache_policy(::std::function<bool()> policy)
@@ -911,10 +956,13 @@ public:
   }
 
   // Automatically pick a CUDA stream from the pool attached to the current
-  // execution place
+  // execution place. The pool lives in this context's async_resources_handle
+  // registry, so streams have the same lifetime as the context (instead of
+  // outliving every context like process-global pools used to).
   auto pick_dstream()
   {
-    return default_exec_place().get_stream_pool(async_resources(), true).next();
+    exec_place p = default_exec_place();
+    return p.get_stream_pool(true, async_resources().get_place_resources()).next(p);
   }
   cudaStream_t pick_stream()
   {
@@ -933,6 +981,9 @@ template <typename Engine>
 class backend_ctx : public backend_ctx_untyped
 {
 public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::logical_data<T>;
+
   backend_ctx(::std::shared_ptr<impl> impl)
       : backend_ctx_untyped(mv(impl))
   {
@@ -940,6 +991,21 @@ public:
   }
 
   ~backend_ctx() = default;
+
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    return static_cast<backend_ctx_untyped&>(*this);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    return static_cast<const backend_ctx_untyped&>(*this);
+  }
 
   /**
    * @brief Returns a `logical_data` object with the given shape, tied to this graph. Initial data place is invalid.
@@ -1003,6 +1069,12 @@ public:
     return frozen_logical_data<T>(*this, mv(d), m, mv(where), user_freeze);
   }
 
+  frozen_logical_data_untyped
+  freeze(cuda::experimental::stf::logical_data_untyped d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true);
+
   /**
    * @brief Creates a typed task on the current CUDA device
    * @return An instantiation of `task` with the appropriate arguments, suitable for use with `operator->*`.
@@ -1042,13 +1114,6 @@ public:
   auto launch(thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
   {
     return reserved::launch_scope<Engine, thread_hierarchy_spec_t, Deps...>(self(), mv(spec), mv(e_place), mv(deps)...);
-  }
-
-  /* Using ctx.launch with a host place */
-  template <typename... Deps>
-  auto launch(exec_place_host, task_dep<Deps>... deps)
-  {
-    return reserved::host_launch_scope<Engine, true, Deps...>(self(), mv(deps)...);
   }
 
   /* Default execution policy, explicit place */
@@ -1116,9 +1181,6 @@ public:
   }
 
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
-
-  template <typename S, typename... Deps>
   auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
@@ -1137,5 +1199,4 @@ private:
     return ::std::make_shared<typename Engine::template data_interface<T>>(::std::forward<P>(p)...);
   }
 };
-
 } // end namespace cuda::experimental::stf

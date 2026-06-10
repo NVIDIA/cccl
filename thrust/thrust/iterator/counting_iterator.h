@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/counting_iterator.h
  *  \brief An iterator which returns an increasing incrementable value
@@ -44,13 +31,27 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/strided_iterator.h>
 
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/type_traits>
-#include <cuda/type_traits>
 
 THRUST_NAMESPACE_BEGIN
+
+template <typename T>
+struct __runtime_value
+{
+  T value;
+};
+
+template <auto Value>
+struct __compile_time_value
+{
+  static constexpr decltype(Value) value = Value;
+};
 
 template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 class counting_iterator;
@@ -64,7 +65,7 @@ using counting_iterator_difference_type =
 template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 struct make_counting_iterator_base
 {
-  using system = typename eval_if<::cuda::std::is_same<System, use_default>::value,
+  using system = typename eval_if<::cuda::std::is_same_v<System, use_default>,
                                   ::cuda::std::type_identity<any_system_tag>,
                                   ::cuda::std::type_identity<System>>::type;
 
@@ -86,7 +87,7 @@ struct make_counting_iterator_base
                      difference>;
 };
 
-using unit_stride = compile_time_value<1>;
+using unit_stride = __compile_time_value<1>;
 } // namespace detail
 
 //! \addtogroup iterators
@@ -159,6 +160,10 @@ using unit_stride = compile_time_value<1>;
 //! \endcode
 //!
 //! \see make_counting_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename Incrementable,
           typename System       = use_default,
           typename Traversal    = use_default,
@@ -281,7 +286,7 @@ private:
   _CCCL_HOST_DEVICE difference_type distance_to(
     counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, StrideHolder> const& y) const
   {
-    if constexpr (::cuda::std::is_integral<Incrementable>::value)
+    if constexpr (::cuda::std::is_integral_v<Incrementable>)
     {
       return static_cast<difference_type>(y.base()) - static_cast<difference_type>(this->base());
     }
@@ -313,7 +318,7 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
 template <typename Incrementable, typename Stride>
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 {
-  return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, runtime_value<Stride>>(
+  return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, __runtime_value<Stride>>(
     x, {stride});
 }
 
@@ -325,7 +330,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
                            use_default,
                            random_access_traversal_tag,
                            use_default,
-                           compile_time_value<Stride>>(x, {});
+                           __compile_time_value<Stride>>(x, {});
 }
 #endif // _CCCL_DOXYGEN_INVOKED
 

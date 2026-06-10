@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cuda/std/complex>
 
 // template<class T>
@@ -20,19 +23,19 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(const cuda::std::complex<T>& c, cuda::std::complex<T> x)
+TEST_FUNC void test(const cuda::std::complex<T>& c, cuda::std::complex<T> x)
 {
   assert(log10(c) == x);
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test(cuda::std::complex<T>(0, 0), cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), 0));
 }
 
 template <class T>
-__host__ __device__ void test_edges()
+TEST_FUNC void test_edges()
 {
   auto testcases   = get_testcases<T>();
   const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
@@ -44,19 +47,19 @@ __host__ __device__ void test_edges()
 
     // The __half or __nv_float16 functions use fp32, we need to account for this
     // as we are checking for floating-point equality:
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
     if constexpr (cuda::std::is_same_v<T, __half>)
     {
       z = log(cuda::std::complex<float>(testcases[i])) * 0.434294481903251827651128918916605082294397f;
     }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
     if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
     {
       z = log(cuda::std::complex<float>(testcases[i])) * 0.434294481903251827651128918916605082294397f;
     }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
     if (cuda::std::isnan(real(r)))
     {
@@ -86,19 +89,19 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test_edges<double>();
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test_edges<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test_edges<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

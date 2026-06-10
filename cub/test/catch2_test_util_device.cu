@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
@@ -32,6 +8,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
 #include <cuda/std/__algorithm/find_if.h>
 #include <cuda/std/array>
 
@@ -40,55 +17,59 @@
 
 CUB_NAMESPACE_BEGIN
 
-CUB_DETAIL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_arch)
+_CCCL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_cc)
 {
-  *d_kernel_cuda_arch = CUB_PTX_ARCH;
+  *d_kernel_cuda_cc = CUB_PTX_ARCH;
 }
 
-CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_arch_from_kernel(
-  void* d_temp_storage, size_t& temp_storage_bytes, int* d_kernel_cuda_arch, int* ptx_version, cudaStream_t stream = 0)
+CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_cc_from_kernel(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  int* d_kernel_cuda_cc,
+  int* ptx_version,
+  cudaStream_t stream = nullptr)
 {
   if (d_temp_storage == nullptr)
   {
     temp_storage_bytes = 1;
     return cudaSuccess;
   }
-  write_ptx_version_kernel<<<1, 1, 0, stream>>>(d_kernel_cuda_arch);
+  write_ptx_version_kernel<<<1, 1, 0, stream>>>(d_kernel_cuda_cc);
   return cub::PtxVersion(*ptx_version);
 }
 
 CUB_NAMESPACE_END
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(cub::get_cuda_arch_from_kernel, get_cuda_arch_from_kernel);
+DECLARE_LAUNCH_WRAPPER(cub::get_cuda_cc_from_kernel, get_cuda_cc_from_kernel);
 
 C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for", "[util][dispatch]")
 {
   constexpr std::size_t single_item = 1;
-  c2h::device_vector<int> cuda_arch(single_item);
+  c2h::device_vector<int> cuda_cc(single_item);
 
   // Query the arch the kernel was actually compiled for
   int ptx_version = [&]() -> int {
     int* buffer{};
     cudaMallocHost(&buffer, sizeof(*buffer));
-    get_cuda_arch_from_kernel(thrust::raw_pointer_cast(cuda_arch.data()), buffer);
+    get_cuda_cc_from_kernel(thrust::raw_pointer_cast(cuda_cc.data()), buffer);
     int result = *buffer;
     cudaFreeHost(buffer);
     return result;
   }();
 
-  int kernel_cuda_arch = cuda_arch[0];
+  int kernel_cuda_cc = cuda_cc[0];
 
   // Host cub::PtxVersion
   int host_ptx_version{};
   cub::PtxVersion(host_ptx_version);
 
   // Ensure variable was properly populated
-  REQUIRE(0 != kernel_cuda_arch);
+  REQUIRE(0 != kernel_cuda_cc);
 
-  // Ensure that the ptx version corresponds to the arch the kernel was compiled for
-  REQUIRE(ptx_version == kernel_cuda_arch);
-  REQUIRE(host_ptx_version == kernel_cuda_arch);
+  // Ensure that the ptx version corresponds to the cc the kernel was compiled for
+  REQUIRE(ptx_version == kernel_cuda_cc);
+  REQUIRE(host_ptx_version == kernel_cuda_cc);
 }
 
 #ifdef __CUDA_ARCH_LIST__
@@ -104,12 +85,12 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 {
   int ptx_version = 0;
   REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
-  auto arch_list = std::vector<int>{CUDA_SM_LIST};
-  for (auto& a : arch_list)
+  auto cc_list = std::vector<int>{CUDA_SM_LIST};
+  for (auto& cc : cc_list)
   {
-    a *= CUDA_SM_LIST_SCALE;
+    cc *= CUDA_SM_LIST_SCALE;
   }
-  REQUIRE(std::find(arch_list.begin(), arch_list.end(), ptx_version) != arch_list.end());
+  REQUIRE(std::find(cc_list.begin(), cc_list.end(), ptx_version) != cc_list.end());
 }
 #endif
 
@@ -124,7 +105,8 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 // actual architectures the tests are compiled for should match to one of those
 struct policy_hub_all
 {
-  // for the list of supported architectures, see libcudacxx/include/nv/target
+  // for the list of supported architectures,
+  // see libcudacxx/include/nv/target or libcudacxx/include/cuda/__device/arch_id.h
   GEN_POLICY(500, 500);
   GEN_POLICY(520, 500);
   GEN_POLICY(530, 520);
@@ -137,24 +119,26 @@ struct policy_hub_all
   GEN_POLICY(800, 750);
   GEN_POLICY(860, 800);
   GEN_POLICY(870, 860);
-  GEN_POLICY(890, 870);
+  GEN_POLICY(880, 870);
+  GEN_POLICY(890, 880);
   GEN_POLICY(900, 890);
   GEN_POLICY(1000, 900);
   GEN_POLICY(1010, 1000);
   GEN_POLICY(1030, 1010);
   GEN_POLICY(1100, 1030);
   GEN_POLICY(1200, 1100);
+  GEN_POLICY(1210, 1200);
   // add more policies here when new architectures emerge
-  GEN_POLICY(2000, 1200); // non-existing architecture, just to test pruning
+  GEN_POLICY(2000, 1210); // non-existing architecture, just to test pruning
 
   using max_policy = policy2000;
 };
 
-// Check that selected is one of (scaled) arches
-template <int Selected, int... ArchList>
+// check that the selected policy exactly matches one of (scaled) arches we compile for
+template <int SelectedPolicyCc, int... CcList>
 struct check
 {
-  static_assert(cuda::std::_Or<cuda::std::bool_constant<Selected == ArchList * CUDA_SM_LIST_SCALE>...>::value, "");
+  static_assert(((SelectedPolicyCc == CcList * CUDA_SM_LIST_SCALE) || ...));
   using type = cudaError_t;
 };
 
@@ -162,12 +146,10 @@ struct closure_all
 {
   int ptx_version;
 
-  // We need to fail template instantiation if ActivePolicy::value is not one from the
-  // __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION auto Invoke() const -> typename check<ActivePolicy::value, CUDA_SM_LIST>::type
   {
-    // policy_hub_all must list all PTX virtual architectures, so we can do an exact comparison here
+    // since policy_hub_all lists all PTX virtual architectures, we can do an exact comparison here
 #  if TEST_LAUNCH == 0
     REQUIRE(+ActivePolicy::value == ptx_version);
 #  endif // TEST_LAUNCH == 0
@@ -177,7 +159,7 @@ struct closure_all
 };
 
 CUB_RUNTIME_FUNCTION cudaError_t
-check_chained_policy_prunes_to_arch_list(void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t = 0)
+check_chained_policy_prunes_to_cc_list(void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t = 0)
 {
   if (d_temp_storage == nullptr)
   {
@@ -190,7 +172,7 @@ check_chained_policy_prunes_to_arch_list(void* d_temp_storage, size_t& temp_stor
   return policy_hub_all::max_policy::Invoke(ptx_version, c);
 }
 
-DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_arch_list, check_wrapper_all);
+DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_cc_list, check_wrapper_all);
 
 C2H_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
 {
@@ -240,7 +222,7 @@ struct check_policy_closure
 
 template <typename PolicyHub, int NumPolicies>
 CUB_RUNTIME_FUNCTION cudaError_t check_chained_policy_selects_correct_policy(
-  void* d_temp_storage, size_t& temp_storage_bytes, cuda::std::array<int, NumPolicies> policies, cudaStream_t = 0)
+  void* d_temp_storage, size_t& temp_storage_bytes, cuda::std::array<int, NumPolicies> policies, cudaStream_t = nullptr)
 {
   if (d_temp_storage == nullptr)
   {
@@ -295,4 +277,38 @@ C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
   {
     check_wrapper_some<policy_hub_minimal, 1>(cuda::std::array<int, 1>{500});
   }
+}
+
+__global__ void test_max_potential_dynamic_smem_bytes_kernel()
+{
+  // use inline PTX so the variable doesn't get optimized out
+  asm volatile(".shared .align 1 .b8 static_smem[4096];");
+}
+
+#if defined(CUB_RDC_ENABLED)
+__global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
+{
+  // Just compile on device.
+  cub::MaxPotentialDynamicSmemBytes(*result, test_max_potential_dynamic_smem_bytes_kernel);
+}
+#endif // CUB_RDC_ENABLED
+
+C2H_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]")
+{
+  cuda::device_ref device{0};
+
+  // Calculate the expected max potential dynamic shared memory size.
+  const auto max_smem_per_block_optin = device.attribute(cuda::device_attributes::max_shared_memory_per_block_optin);
+  const auto reserved_smem_per_block  = device.attribute(cuda::device_attributes::reserved_shared_memory_per_block);
+  const auto expected                 = static_cast<int>(max_smem_per_block_optin - reserved_smem_per_block - 4096);
+
+  // 1. Test positive case.
+  int dyn_smem_size{};
+  REQUIRE(
+    cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, test_max_potential_dynamic_smem_bytes_kernel) == cudaSuccess);
+  REQUIRE(dyn_smem_size == expected);
+
+  // 2. Test that we return -1 if an error occurs.
+  REQUIRE(cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, nullptr) != cudaSuccess);
+  REQUIRE(dyn_smem_size == -1);
 }

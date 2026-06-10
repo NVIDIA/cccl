@@ -11,7 +11,6 @@
 
 namespace unittest
 {
-
 template <typename T>
 std::string type_name()
 {
@@ -35,7 +34,6 @@ truncate_to_max_representable(std::size_t n)
 {
   return THRUST_NS_QUALIFIER::min<T>(static_cast<T>(n), ::cuda::std::numeric_limits<T>::max());
 }
-
 } // namespace unittest
 
 template <typename Iterator>
@@ -44,7 +42,7 @@ void PRINT(Iterator first, Iterator last)
   size_t n = 0;
   for (Iterator i = first; i != last; i++, n++)
   {
-    std::cout << ">>> [" << n << "] = " << *i << std::endl;
+    std::cout << ">>> [" << n << "] = " << *i << '\n';
   }
 }
 
@@ -57,5 +55,5 @@ void PRINT(const Container& c)
 template <size_t N>
 void PRINT(const char (&c)[N])
 {
-  std::cout << std::string(c, c + N) << std::endl;
+  std::cout << std::string(c, c + N) << '\n';
 }

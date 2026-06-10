@@ -12,6 +12,7 @@
 #include <iostream> // std::cerr
 #include <optional> // std::optional
 #include <string>
+#include <type_traits>
 
 #include <cuda_runtime.h>
 
@@ -30,6 +31,29 @@ struct scan_cleanup
   }
 };
 
+static std::string init_kind_as_key(cccl_init_kind_t k)
+{
+  switch (k)
+  {
+    case cccl_init_kind_t::CCCL_NO_INIT:
+      return "NONE";
+    case cccl_init_kind_t::CCCL_FUTURE_VALUE_INIT:
+      return "FUT";
+    case cccl_init_kind_t::CCCL_VALUE_INIT:
+      return "VAL";
+  }
+
+  throw std::runtime_error("Invalid init kind");
+}
+
+template <typename T>
+std::optional<std::string> make_scan_key(bool inclusive, cccl_init_kind_t init_kind)
+{
+  const std::string parts[] = {
+    KeyBuilder::type_as_key<T>(), KeyBuilder::bool_as_key(inclusive), init_kind_as_key(init_kind)};
+  return KeyBuilder::join(parts);
+}
+
 using scan_deleter       = BuildResultDeleter<BuildResultT, scan_cleanup>;
 using scan_build_cache_t = build_cache_t<std::string, result_wrapper_t<BuildResultT, scan_deleter>>;
 
@@ -39,12 +63,13 @@ auto& get_cache()
   return fixture<scan_build_cache_t, Tag>::get_or_create().get_value();
 }
 
-template <bool Disable75SassCheck = false>
+template <bool Disable75SassCheck = false, bool DisableForOtherArches = false>
 struct scan_build
 {
   CUresult operator()(
     BuildResultT* build_ptr,
     bool inclusive,
+    cccl_init_kind_t init_kind,
     cccl_iterator_t input,
     cccl_iterator_t output,
     uint64_t,
@@ -62,8 +87,73 @@ struct scan_build
       input,
       output,
       op,
-      init,
+      init.type,
       inclusive,
+      init_kind,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path);
+  }
+
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    bool inclusive,
+    cccl_init_kind_t init_kind,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    cccl_iterator_t init,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_scan_build(
+      build_ptr,
+      input,
+      output,
+      op,
+      init.value_type,
+      inclusive,
+      init_kind,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path);
+  }
+
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    bool inclusive,
+    cccl_init_kind_t init_kind,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    void* /*init*/,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_scan_build(
+      build_ptr,
+      input,
+      output,
+      op,
+      input.value_type, // The type is used to determine the accumulator type
+      inclusive,
+      init_kind,
       cc_major,
       cc_minor,
       cub_path,
@@ -75,7 +165,7 @@ struct scan_build
   static bool should_check_sass(int cc_major)
   {
     // TODO: add a check for NVRTC version; ref nvbug 5243118
-    return (!Disable75SassCheck || cc_major > 7) && cc_major < 9;
+    return !(Disable75SassCheck && DisableForOtherArches) && (!Disable75SassCheck || cc_major > 7) && cc_major < 9;
   }
 };
 
@@ -83,7 +173,12 @@ struct scan_run
 {
   template <typename... Ts>
   CUresult operator()(
-    BuildResultT build, void* temp_storage, size_t* temp_storage_nbytes, bool inclusive, Ts... args) const noexcept
+    BuildResultT build,
+    void* temp_storage,
+    size_t* temp_storage_nbytes,
+    bool inclusive,
+    cccl_init_kind_t /*init_kind*/,
+    Ts... args) const noexcept
   {
     if (inclusive)
     {
@@ -96,7 +191,53 @@ struct scan_run
   }
 };
 
-template <bool Disable75SassCheck = false, typename BuildCache = scan_build_cache_t, typename KeyT = std::string>
+struct scan_run_future_value
+{
+  template <typename... Ts>
+  CUresult operator()(
+    BuildResultT build,
+    void* temp_storage,
+    size_t* temp_storage_nbytes,
+    bool inclusive,
+    cccl_init_kind_t /*init_kind*/,
+    Ts... args) const noexcept
+  {
+    if (inclusive)
+    {
+      return cccl_device_inclusive_scan_future_value(build, temp_storage, temp_storage_nbytes, args...);
+    }
+    else
+    {
+      return cccl_device_exclusive_scan_future_value(build, temp_storage, temp_storage_nbytes, args...);
+    }
+  }
+};
+
+struct scan_run_no_init
+{
+  template <typename... Rest>
+  CUresult operator()(
+    BuildResultT build,
+    void* temp_storage,
+    size_t* temp_storage_nbytes,
+    bool /*inclusive*/,
+    cccl_init_kind_t /*init_kind*/,
+    cccl_iterator_t d_in,
+    cccl_iterator_t d_out,
+    uint64_t num_items,
+    cccl_op_t op,
+    void* /*init*/,
+    Rest... args) const noexcept
+  {
+    return cccl_device_inclusive_scan_no_init(
+      build, temp_storage, temp_storage_nbytes, d_in, d_out, num_items, op, args...);
+  }
+};
+
+template <bool Disable75SassCheck    = false,
+          bool DisableForOtherArches = false,
+          typename BuildCache        = scan_build_cache_t,
+          typename KeyT              = std::string>
 void scan(cccl_iterator_t input,
           cccl_iterator_t output,
           uint64_t num_items,
@@ -106,8 +247,56 @@ void scan(cccl_iterator_t input,
           std::optional<BuildCache>& cache,
           const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, scan_build<Disable75SassCheck>, scan_cleanup, scan_run, BuildCache, KeyT>(
-    cache, lookup_key, inclusive, input, output, num_items, op, init);
+  AlgorithmExecute<BuildResultT,
+                   scan_build<Disable75SassCheck, DisableForOtherArches>,
+                   scan_cleanup,
+                   scan_run,
+                   BuildCache,
+                   KeyT>(
+    cache, lookup_key, inclusive, cccl_init_kind_t::CCCL_VALUE_INIT, input, output, num_items, op, init);
+}
+
+template <bool Disable75SassCheck    = false,
+          bool DisableForOtherArches = false,
+          typename BuildCache        = scan_build_cache_t,
+          typename KeyT              = std::string>
+void scan(cccl_iterator_t input,
+          cccl_iterator_t output,
+          uint64_t num_items,
+          cccl_op_t op,
+          cccl_iterator_t init,
+          bool inclusive,
+          std::optional<BuildCache>& cache,
+          const std::optional<KeyT>& lookup_key)
+{
+  AlgorithmExecute<BuildResultT,
+                   scan_build<Disable75SassCheck, DisableForOtherArches>,
+                   scan_cleanup,
+                   scan_run_future_value,
+                   BuildCache,
+                   KeyT>(
+    cache, lookup_key, inclusive, cccl_init_kind_t::CCCL_FUTURE_VALUE_INIT, input, output, num_items, op, init);
+}
+
+template <bool Disable75SassCheck    = false,
+          bool DisableForOtherArches = false,
+          typename BuildCache        = scan_build_cache_t,
+          typename KeyT              = std::string>
+void scan(cccl_iterator_t input,
+          cccl_iterator_t output,
+          uint64_t num_items,
+          cccl_op_t op,
+          bool inclusive,
+          std::optional<BuildCache>& cache,
+          const std::optional<KeyT>& lookup_key)
+{
+  AlgorithmExecute<BuildResultT,
+                   scan_build<Disable75SassCheck, DisableForOtherArches>,
+                   scan_cleanup,
+                   scan_run_no_init,
+                   BuildCache,
+                   KeyT>(
+    cache, lookup_key, inclusive, cccl_init_kind_t::CCCL_NO_INIT, input, output, num_items, op, nullptr);
 }
 
 // ==============
@@ -129,7 +318,7 @@ C2H_TEST("Scan works with integral types", "[scan]", integral_types)
   value_t<T> init{T{42}};
 
   auto& build_cache    = get_cache<Scan_IntegralTypes_Fixture_Tag>();
-  const auto& test_key = make_key<T>();
+  const auto& test_key = make_scan_key<T>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
@@ -155,7 +344,7 @@ C2H_TEST("Scan works with integral types with well-known operations", "[scan][we
   value_t<T> init{T{42}};
 
   auto& build_cache    = get_cache<Scan_IntegralTypes_WellKnown_Fixture_Tag>();
-  const auto& test_key = make_key<T>();
+  const auto& test_key = make_scan_key<T>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
@@ -181,7 +370,7 @@ C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
   value_t<T> init{T{42}};
 
   auto& build_cache    = get_cache<InclusiveScan_IntegralTypes_Fixture_Tag>();
-  const auto& test_key = make_key<T>();
+  const auto& test_key = make_scan_key<T>(true, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan(input_ptr, output_ptr, num_items, op, init, true, build_cache, test_key);
 
@@ -209,15 +398,14 @@ C2H_TEST("Scan works with custom types", "[scan]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
-    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
-    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
-    "}");
+  operation_t op              = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };
+})");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
@@ -231,7 +419,7 @@ C2H_TEST("Scan works with custom types", "[scan]")
   value_t<pair> init{pair{4, 2}};
 
   auto& build_cache    = get_cache<Scan_CustomTypes_Fixture_Tag>();
-  const auto& test_key = make_key<pair>();
+  const auto& test_key = make_scan_key<pair>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan<true>(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
@@ -250,15 +438,14 @@ C2H_TEST("Scan works with custom types with well-known operations", "[scan][well
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op_state = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
-    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
-    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
-    "}");
+  operation_t op_state        = make_operation("op",
+                                        R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };
+})");
   cccl_op_t op                = op_state;
   op.type                     = cccl_op_kind_t::CCCL_PLUS;
   const std::vector<short> a  = generate<short>(num_items);
@@ -274,7 +461,7 @@ C2H_TEST("Scan works with custom types with well-known operations", "[scan][well
   value_t<pair> init{pair{4, 2}};
 
   auto& build_cache    = get_cache<Scan_CustomTypes_WellKnown_Fixture_Tag>();
-  const auto& test_key = make_key<pair>();
+  const auto& test_key = make_scan_key<pair>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan<true>(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
@@ -299,7 +486,7 @@ C2H_TEST("Scan works with input iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_InputIterators_Fixture_Tag>();
-  const auto& test_key = make_key<int>();
+  const auto& test_key = make_scan_key<int>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -329,7 +516,7 @@ C2H_TEST("Scan works with output iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_OutputIterators_Fixture_Tag>();
-  const auto& test_key = make_key<int>();
+  const auto& test_key = make_scan_key<int>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -359,7 +546,7 @@ C2H_TEST("Scan works with reverse input iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_ReverseInputIterators_Fixture_Tag>();
-  const auto& test_key = make_key<int>();
+  const auto& test_key = make_scan_key<int>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -385,7 +572,7 @@ C2H_TEST("Scan works with reverse output iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_ReverseOutputIterators_Fixture_Tag>();
-  const auto& test_key = make_key<int>();
+  const auto& test_key = make_scan_key<int>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -412,7 +599,7 @@ C2H_TEST("Scan works with input and output iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_InputOutputIterators_Fixture_Tag>();
-  const auto& test_key = make_key<int>();
+  const auto& test_key = make_scan_key<int>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -484,9 +671,10 @@ C2H_TEST("Scan works with floating point types", "[scan]", floating_point_types)
   value_t<T> init{T{42}};
 
   auto& build_cache    = get_cache<Scan_FloatingPointTypes_Fixture_Tag>();
-  const auto& test_key = make_key<T>();
+  const auto& test_key = make_scan_key<T>(false, cccl_init_kind_t::CCCL_VALUE_INIT);
 
-  scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
+  // FIXME: figure out why scan spills to lmem for double
+  scan<std::is_same_v<T, double>, true>(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
   const std::vector<T> output = output_ptr;
   std::vector<T> expected(num_items);
@@ -521,13 +709,9 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
   value_t<T> init{T{42}};
 
   // Test _ex version with custom build configuration
-  cccl_build_config config;
-  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
-  config.extra_compile_flags     = extra_flags;
-  config.num_extra_compile_flags = 1;
-  config.extra_include_dirs      = extra_dirs;
-  config.num_extra_include_dirs  = 1;
+  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
+  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
   cccl_device_scan_build_result_t build;
@@ -539,8 +723,9 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
       input_ptr,
       output_ptr,
       op,
-      init,
+      get_type_info<T>(),
       true,
+      cccl_init_kind_t::CCCL_VALUE_INIT,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
       build_info.get_cub_path(),
@@ -571,4 +756,56 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
 
   // Cleanup
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}
+
+struct Scan_FutureInitValue_Fixture_Tag;
+C2H_TEST("Scan works with future init value", "[scan]")
+{
+  using T = int32_t;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+  T init{42};
+  pointer_t<T> init_ptr(std::vector<T>{init});
+
+  auto& build_cache    = get_cache<Scan_FutureInitValue_Fixture_Tag>();
+  const auto& test_key = make_scan_key<T>(false, cccl_init_kind_t::CCCL_FUTURE_VALUE_INIT);
+
+  scan(input_ptr, output_ptr, num_items, op, init_ptr, false, build_cache, test_key);
+
+  std::vector<T> expected(num_items, 0);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init);
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
+}
+
+struct Scan_NoInitValue_Fixture_Tag;
+C2H_TEST("Scan works with no init value", "[scan]")
+{
+  using T = uint32_t;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+
+  auto& build_cache    = get_cache<Scan_NoInitValue_Fixture_Tag>();
+  const auto& test_key = make_scan_key<T>(true, cccl_init_kind_t::CCCL_NO_INIT);
+
+  scan(input_ptr, output_ptr, num_items, op, true, build_cache, test_key);
+
+  std::vector<T> expected(num_items, 0);
+  std::inclusive_scan(input.begin(), input.end(), expected.begin());
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
 }

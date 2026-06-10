@@ -28,10 +28,10 @@
 template <template <typename...> class Instantiated,
           class... CtrArgs,
           class = decltype(Instantiated(cuda::std::declval<CtrArgs>()...))>
-__host__ __device__ cuda::std::false_type SFINAEs_away_impl(int);
+TEST_FUNC cuda::std::false_type SFINAEs_away_impl(int);
 
 template <template <typename...> class Instantiated, class... CtrArgs>
-__host__ __device__ cuda::std::true_type SFINAEs_away_impl(...);
+TEST_FUNC cuda::std::true_type SFINAEs_away_impl(...);
 
 template <template <typename...> class Instantiated, class... CtrArgs>
 constexpr bool SFINAEs_away = decltype(SFINAEs_away_impl<Instantiated, CtrArgs...>(0))::value;
@@ -42,7 +42,7 @@ constexpr bool SFINAEs_away = decltype(SFINAEs_away_impl<Instantiated, CtrArgs..
 //   iterator);
 // - a bad allocator.
 template <template <typename...> class Container, typename InstantiatedContainer>
-__host__ __device__ constexpr void SequenceContainerDeductionGuidesSfinaeAway()
+TEST_FUNC constexpr void SequenceContainerDeductionGuidesSfinaeAway()
 {
   using Alloc = cuda::std::allocator<int>;
   using Iter  = int*;
@@ -54,9 +54,9 @@ __host__ __device__ constexpr void SequenceContainerDeductionGuidesSfinaeAway()
   // containers because they have constructors of the form `(size_type count,
   // const value_type& value)`. These constructors would be used when passing
   // two integral types and would deduce `value_type` to be an integral type.
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   using OutputIter = cuda::std::insert_iterator<InstantiatedContainer>;
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
 
   // (iter, iter)
   //
@@ -84,7 +84,7 @@ __host__ __device__ constexpr void SequenceContainerDeductionGuidesSfinaeAway()
 // - an allocator in place of a comparator.
 
 template <template <typename...> class Container, typename InstantiatedContainer>
-__host__ __device__ constexpr void AssociativeContainerDeductionGuidesSfinaeAway()
+TEST_FUNC constexpr void AssociativeContainerDeductionGuidesSfinaeAway()
 {
   using ValueType = typename InstantiatedContainer::value_type;
   using Comp      = cuda::std::less<int>;
@@ -97,9 +97,9 @@ __host__ __device__ constexpr void AssociativeContainerDeductionGuidesSfinaeAway
   // The only requirement in the Standard is that integral types cannot be
   // considered input iterators, beyond that it is unspecified.
   using BadIter = int;
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   using OutputIter = cuda::std::insert_iterator<InstantiatedContainer>;
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
   using AllocAsComp = Alloc;
 
   // (iter, iter)
@@ -156,7 +156,7 @@ __host__ __device__ constexpr void AssociativeContainerDeductionGuidesSfinaeAway
 // - an allocator in place of a hash functor;
 // - an allocator in place of a predicate.
 template <template <typename...> class Container, typename InstantiatedContainer>
-__host__ __device__ constexpr void UnorderedContainerDeductionGuidesSfinaeAway()
+TEST_FUNC constexpr void UnorderedContainerDeductionGuidesSfinaeAway()
 {
   using ValueType = typename InstantiatedContainer::value_type;
   using Pred      = cuda::std::equal_to<int>;
@@ -171,9 +171,9 @@ __host__ __device__ constexpr void UnorderedContainerDeductionGuidesSfinaeAway()
   // The only requirement in the Standard is that integral types cannot be
   // considered input iterators, beyond that it is unspecified.
   using BadIter = int;
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   using OutputIter = cuda::std::insert_iterator<InstantiatedContainer>;
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
   using AllocAsHash = Alloc;
   using AllocAsPred = Alloc;
 

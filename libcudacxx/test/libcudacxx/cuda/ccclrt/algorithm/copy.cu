@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "common.cuh"
+#include "cuda/__algorithm/copy.h"
 
 C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
 {
@@ -40,9 +41,18 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
       cuda::copy_bytes(_stream, const_buffer, cuda::std::span(host_vector));
       check_result_and_erase(_stream, host_vector);
 
-      ::cuda::std::span<int> span(const_buffer.data(), 0);
+      cuda::copy_configuration config;
+      config.src_location_hint = cuda::device_ref{0};
+#if _CCCL_CTK_AT_LEAST(13, 0)
+      config.src_access_order = cuda::source_access_order::stream;
+#else
+      config.src_access_order = cuda::source_access_order::any;
+#endif
+      cuda::copy_bytes(_stream, cuda::std::span(const_buffer), host_vector, config);
+      check_result_and_erase(_stream, host_vector);
+
+      cuda::std::span<int> span(const_buffer.data(), 0);
       cuda::copy_bytes(_stream, span, host_vector);
-      printf("0 sized span: %p\n", span.data());
     }
   }
 
@@ -99,9 +109,11 @@ void test_mdspan_copy_bytes(
   cuda::stream_ref stream, SrcExtents src_extents = SrcExtents(), DstExtents dst_extents = DstExtents())
 {
   auto src_buffer = make_buffer_for_mdspan<SrcLayout>(src_extents, 1);
+  auto tmp_buffer = make_buffer_for_mdspan<SrcLayout>(src_extents, 0);
   auto dst_buffer = make_buffer_for_mdspan<DstLayout>(dst_extents, 0);
 
   cuda::std::mdspan<int, SrcExtents, SrcLayout> src(src_buffer.data(), src_extents);
+  cuda::std::mdspan<int, SrcExtents, SrcLayout> tmp(tmp_buffer.data(), src_extents);
   cuda::std::mdspan<int, DstExtents, DstLayout> dst(dst_buffer.data(), dst_extents);
 
   for (int i = 0; i < static_cast<int>(src.extent(1)); i++)
@@ -109,7 +121,15 @@ void test_mdspan_copy_bytes(
     src(0, i) = i;
   }
 
-  cuda::copy_bytes(stream, std::move(src), dst);
+  cuda::copy_bytes(stream, std::move(src), tmp);
+
+  cuda::copy_configuration config;
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  config.src_access_order = cuda::source_access_order::stream;
+#else
+  config.src_access_order = cuda::source_access_order::any;
+#endif
+  cuda::copy_bytes(stream, tmp, dst, config);
   stream.sync();
 
   for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)

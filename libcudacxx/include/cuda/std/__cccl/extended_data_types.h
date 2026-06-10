@@ -23,20 +23,27 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/architecture.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/cuda_toolkit.h>
 #include <cuda/std/__cccl/diagnostic.h>
-#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
-#define _CCCL_HAS_INT128()      0
-#define _CCCL_HAS_LONG_DOUBLE() 0
-#define _CCCL_HAS_NVFP4()       0
-#define _CCCL_HAS_NVFP6()       0
-#define _CCCL_HAS_NVFP8()       0
-#define _CCCL_HAS_NVFP16()      0
-#define _CCCL_HAS_NVBF16()      0
-#define _CCCL_HAS_FLOAT128()    0
+#define _CCCL_HAS_INT128()   0
+#define _CCCL_HAS_NVFP4()    0
+#define _CCCL_HAS_NVFP6()    0
+#define _CCCL_HAS_NVFP8()    0
+#define _CCCL_HAS_NVFP16()   0
+#define _CCCL_HAS_NVBF16()   0
+#define _CCCL_HAS_FLOAT128() 0
+
+#if _CCCL_TILE_COMPILATION() // TODO(miscco): Fix access to extended floating point types
+#  define CCCL_DISABLE_NVFP4_SUPPORT
+#  define CCCL_DISABLE_NVFP6_SUPPORT
+#  define CCCL_DISABLE_NVFP8_SUPPORT
+#  define CCCL_DISABLE_INT128_SUPPORT
+#  define CCCL_DISABLE_FLOAT128_SUPPORT
+#endif // _CCCL_TILE_COMPILATION()
 
 #if !defined(CCCL_DISABLE_INT128_SUPPORT) && _CCCL_OS(LINUX) \
   && ((_CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__)) || defined(__SIZEOF_INT128__))
@@ -44,38 +51,58 @@
 #  define _CCCL_HAS_INT128() 1
 #endif
 
-// Fixme: replace the condition with (!_CCCL_DEVICE_COMPILATION())
-// FIXME: Enable this for clang-cuda in a followup
-#if !_CCCL_HAS_CUDA_COMPILER()
-#  undef _CCCL_HAS_LONG_DOUBLE
-#  define _CCCL_HAS_LONG_DOUBLE() 1
-#endif // !_CCCL_HAS_CUDA_COMPILER()
-
-#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CTK() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
+#if __has_include(<cuda_fp16.h>) && (_CCCL_HAS_CTK() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
                       && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #  undef _CCCL_HAS_NVFP16
 #  define _CCCL_HAS_NVFP16() 1
+struct __half;
+struct __half2;
 #endif
 
-#if _CCCL_HAS_INCLUDE(<cuda_bf16.h>) && _CCCL_HAS_NVFP16() && !defined(CCCL_DISABLE_BF16_SUPPORT)
+#if __has_include(<cuda_bf16.h>) && _CCCL_HAS_NVFP16() && !defined(CCCL_DISABLE_BF16_SUPPORT)
 #  undef _CCCL_HAS_NVBF16
 #  define _CCCL_HAS_NVBF16() 1
+struct __nv_bfloat16;
+struct __nv_bfloat162;
 #endif
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16() && !defined(CCCL_DISABLE_NVFP8_SUPPORT)
+#if __has_include(<cuda_fp8.h>) && _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16() && !defined(CCCL_DISABLE_NVFP8_SUPPORT)
 #  undef _CCCL_HAS_NVFP8
 #  define _CCCL_HAS_NVFP8() 1
+struct __nv_fp8_e5m2;
+struct __nv_fp8x2_e5m2;
+struct __nv_fp8x4_e5m2;
+
+struct __nv_fp8_e4m3;
+struct __nv_fp8x2_e4m3;
+struct __nv_fp8x4_e4m3;
+
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+struct __nv_fp8_e8m0;
+struct __nv_fp8x2_e8m0;
+struct __nv_fp8x4_e8m0;
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
 #endif
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !_CCCL_CUDA_COMPILER(NVHPC) \
+#if __has_include(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !_CCCL_CUDA_COMPILER(NVHPC) \
                       && !defined(CCCL_DISABLE_NVFP6_SUPPORT)
 #  undef _CCCL_HAS_NVFP6
 #  define _CCCL_HAS_NVFP6() 1
+struct __nv_fp6_e3m2;
+struct __nv_fp6x2_e3m2;
+struct __nv_fp6x4_e3m2;
+
+struct __nv_fp6_e2m3;
+struct __nv_fp6x2_e2m3;
+struct __nv_fp6x4_e2m3;
 #endif
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp4.h>) && _CCCL_HAS_NVFP6() && !defined(CCCL_DISABLE_NVFP4_SUPPORT)
+#if __has_include(<cuda_fp4.h>) && _CCCL_HAS_NVFP6() && !defined(CCCL_DISABLE_NVFP4_SUPPORT)
 #  undef _CCCL_HAS_NVFP4
 #  define _CCCL_HAS_NVFP4() 1
+struct __nv_fp4_e2m1;
+struct __nv_fp4x2_e2m1;
+struct __nv_fp4x4_e2m1;
 #endif
 
 #define _CCCL_HAS_NVFP4_E2M1() _CCCL_HAS_NVFP4()
@@ -89,7 +116,8 @@
  * __float128
  **********************************************************************************************************************/
 
-#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
+#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64) \
+  && !_CCCL_TILE_COMPILATION()
 // Detect host compiler support
 #  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__))
 #    if _CCCL_DEVICE_COMPILATION()
@@ -116,18 +144,5 @@
 #  undef _CCCL_HAS_FLOAT128
 #  define _CCCL_HAS_FLOAT128() 0
 #endif // _CCCL_HAS_FLOAT128()
-
-/***********************************************************************************************************************
- * char8_t
- **********************************************************************************************************************/
-
-#if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
-#  define _CCCL_HAS_CHAR8_T() 0
-#else
-#  define _CCCL_HAS_CHAR8_T() 1
-#endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
-
-// We currently do not support any of the STL wchar facilities
-#define _CCCL_HAS_WCHAR_T() 0
 
 #endif // __CCCL_EXTENDED_DATA_TYPES_H

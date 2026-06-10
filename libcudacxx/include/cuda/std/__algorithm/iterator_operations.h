@@ -56,18 +56,15 @@ struct _IterOps<_RangeAlgPolicy>
   using __value_type = iter_value_t<_Iter>;
 
   template <class _Iter>
-  using __iterator_category = ::cuda::std::ranges::__iterator_concept<_Iter>;
-
-  template <class _Iter>
   using __difference_type = iter_difference_t<_Iter>;
 
-  static constexpr auto advance      = ::cuda::std::ranges::advance;
-  static constexpr auto distance     = ::cuda::std::ranges::distance;
-  static constexpr auto __iter_move  = ::cuda::std::ranges::iter_move;
-  static constexpr auto iter_swap    = ::cuda::std::ranges::iter_swap;
-  static constexpr auto next         = ::cuda::std::ranges::next;
-  static constexpr auto prev         = ::cuda::std::ranges::prev;
-  static constexpr auto __advance_to = ::cuda::std::ranges::advance;
+  static constexpr auto advance      = ::cuda::std::ranges::__advance_cpo{};
+  static constexpr auto distance     = ::cuda::std::ranges::__distance_cpo{};
+  static constexpr auto __iter_move  = ::cuda::std::ranges::__iter_move_cpo{};
+  static constexpr auto iter_swap    = ::cuda::std::ranges::__iter_swap_cpo{};
+  static constexpr auto next         = ::cuda::std::ranges::__next_cpo{};
+  static constexpr auto prev         = ::cuda::std::ranges::__prev_cpo{};
+  static constexpr auto __advance_to = ::cuda::std::ranges::__advance_cpo{};
 };
 
 struct _ClassicAlgPolicy
@@ -78,9 +75,6 @@ struct _IterOps<_ClassicAlgPolicy>
 {
   template <class _Iter>
   using __value_type = typename iterator_traits<_Iter>::value_type;
-
-  template <class _Iter>
-  using __iterator_category = typename iterator_traits<_Iter>::iterator_category;
 
   template <class _Iter>
   using __difference_type = typename iterator_traits<_Iter>::difference_type;
@@ -109,7 +103,7 @@ struct _IterOps<_ClassicAlgPolicy>
   _CCCL_API constexpr static void __validate_iter_reference()
   {
     static_assert(
-      is_same<__deref_t<_Iter>, typename iterator_traits<remove_cvref_t<_Iter>>::reference>::value,
+      is_same_v<__deref_t<_Iter>, typename iterator_traits<remove_cvref_t<_Iter>>::reference>,
       "It looks like your iterator's `iterator_traits<It>::reference` does not match the return type of "
       "dereferencing the iterator, i.e., calling `*it`. This is undefined behavior according to [input.iterators] "
       "and can lead to dangling reference issues at runtime, so we are flagging this.");
@@ -117,7 +111,7 @@ struct _IterOps<_ClassicAlgPolicy>
 
   // iter_move
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter, enable_if_t<is_reference<__deref_t<_Iter>>::value, int> = 0>
+  template <class _Iter, enable_if_t<is_reference_v<__deref_t<_Iter>>, int> = 0>
   _CCCL_API constexpr static
     // If the result of dereferencing `_Iter` is a reference type, deduce the result of calling `::cuda::std::move` on
     // it. Note that the C++03 mode doesn't support `decltype(auto)` as the return type.
@@ -130,7 +124,7 @@ struct _IterOps<_ClassicAlgPolicy>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter, enable_if_t<!is_reference<__deref_t<_Iter>>::value, int> = 0>
+  template <class _Iter, enable_if_t<!is_reference_v<__deref_t<_Iter>>, int> = 0>
   _CCCL_API constexpr static
     // If the result of dereferencing `_Iter` is a value type, deduce the return value of this function to also be a
     // value -- otherwise, after `operator*` returns a temporary, this function would return a dangling reference to
@@ -147,7 +141,7 @@ struct _IterOps<_ClassicAlgPolicy>
   template <class _Iter1, class _Iter2>
   _CCCL_API constexpr static void iter_swap(_Iter1&& __a, _Iter2&& __b)
   {
-    ::cuda::std::iter_swap(::cuda::std::forward<_Iter1>(__a), ::cuda::std::forward<_Iter2>(__b));
+    ::cuda::std::__iter_swap_cpo{}(::cuda::std::forward<_Iter1>(__a), ::cuda::std::forward<_Iter2>(__b));
   }
 
   // next

@@ -21,10 +21,10 @@ Starting from scratch:
     cd cccl
     mkdir build
     cd build
-    cmake .. --preset=cub-benchmark
+    cmake .. --preset=benchmark
 
 You clone the repository, create a build directory and configure the build with CMake.
-The preset `cub-benchmark` takes care of everything.
+The preset `benchmark` takes care of everything.
 
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
 
@@ -108,6 +108,22 @@ See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs
 for more information on how to specify the axis values.
 If the specified axis does not exist, the benchmark will terminate with an error.
 
+If you want to plot the benchmark results, you can use the following script:
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_plot_bwutil.py base.json
+
+The `-a` option is supported to restrict the values for some axes as well,
+which is useful if you want to plot only a subset of workloads.
+Use the `-b` option to select a specific benchmark by name
+in case your JSON file contains results for multiple benchmarks.
+Multiple benchmarks are selected by repeating the `-b` option.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_plot_bwutil.py \
+        -b base -a Elements{io}[pow2]=28 base.json
 
 .. _cub-benchmarking-comparing:
 
@@ -124,7 +140,7 @@ You can now compare the two result JSON files using, assuming you are still in y
 
 .. code-block:: bash
 
-    PYTHONPATH=./_deps/nvbench-src/scripts ./_deps/nvbench-src/scripts/nvbench_compare.py base.json new.json
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_compare.py base.json new.json
 
 The `PYTHONPATH` environment variable may not be necessary in all cases.
 The script will print a Markdown report showing the runtime differences between each variant of the two benchmark run.
@@ -144,12 +160,29 @@ which corresponds to the relative standard deviation.
 It then reports with statistical significance in the `Status` column
 how the runtime changed from the base to the new version.
 
+You can reduce the output to runs with larger differences using the `--threshold-diff` option,
+passing the minimum percentage for a run to be shown, e.g., `0.05` for 5%.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_compare.py \
+        --threshold-diff 0.05 base.json new.json
+
+You can also plot the comparison by adding the `--plot` argument.
+It's reasonable to combine this with the `-a` option again
+to restrict the values for some axes.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_compare.py \
+        -a Elements{io}[pow2]=28 --plot base.json new.json
+
 
 Running all benchmarks directly from the command line
 --------------------------------------------------------------------------------
 
 To get a full snapshot of CUB's performance, you can run all benchmarks and save the results.
-For example:
+For example, inside a build directory you can run:
 
 .. code-block:: bash
 
@@ -171,23 +204,24 @@ Running all benchmarks via tuning scripts (alternative)
 The benchmark suite can also be run using the :ref:`tuning <cub-tuning>` infrastructure.
 The tuning infrastructure handles building benchmarks itself, because it records the build times.
 Therefore, it's critical that you run it in a clean build directory without any build artifacts.
-Running cmake is enough. Alternatively, you can also clean your build directory with.
-Furthermore, the tuning scripts require some additional python dependencies, which you have to install.
-
-To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
-desired GPU using `export CUDA_VISIBLE_DEVICES=x`, where `x` is the ID of the GPU you want to use (e.g., `1`).
-This ensures your application uses only the specified GPU.
+Running cmake is enough. Alternatively, you can also clean your build directory.
+Furthermore, the tuning scripts require some additional python dependencies, which you have to install:
 
 .. code-block:: bash
 
     ninja clean
     pip install --user fpzip pandas scipy
 
+To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
+desired GPU using `export CUDA_VISIBLE_DEVICES=x <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-environment-variables>`_,
+where `x` is the ID of the GPU you want to use (e.g., `1`).
+This ensures your application uses only the specified GPU.
 We can then run the full benchmark suite from the build directory with:
 
 .. code-block:: bash
 
-    <root_dir_to_cccl>/cccl/benchmarks/scripts/run.py
+    export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
+    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py
 
 You can expect the output to look like this:
 
@@ -205,11 +239,12 @@ You can expect the output to look like this:
 The tuning infrastructure will build and execute all benchmarks and their variants one after each other,
 reporting the time in seconds it took to execute the benchmarked region.
 
-It's also possible to benchmark a subset of algorithms and workloads:
+It's also possible to benchmark a subset of algorithms and workloads, by running in a build directory:
 
 .. code-block:: bash
 
-    <root_dir_to_cccl>/cccl/benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
+    export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
+    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
     &&&& RUNNING bench
      ctk:  12.6.77
     cccl:  v2.7.0-rc0-265-g32aa6aa5a
@@ -238,7 +273,7 @@ Benchmark results captured in different tuning databases can be compared as well
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/compare.py -o cccl_meta_bench1.db cccl_meta_bench2.db
+    <cccl_git_root>/benchmarks/scripts/compare.py -o cccl_meta_bench1.db cccl_meta_bench2.db
 
 This will print a Markdown report showing the runtime differences and noise for each variant.
 
@@ -252,7 +287,7 @@ You can plot one or more tuning databases as a bar chart or a box plot (add `--b
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/sol.py cccl_meta_bench.db ...
+    <cccl_git_root>/benchmarks/scripts/sol.py cccl_meta_bench.db ...
 
 This is useful to display the current performance of CUB as captured in a single tuning database,
 or visually compare the performance of CUB across different tuning databases
@@ -266,7 +301,7 @@ The resulting database contains all samples, which can be extracted into JSON fi
 
 .. code-block:: bash
 
-    <root_dir_to_cccl>/cccl/benchmarks/scripts/analyze.py -o ./cccl_meta_bench.db
+    <cccl_git_root>/benchmarks/scripts/analyze.py -o ./cccl_meta_bench.db
 
 This will create a JSON file for each benchmark variant next to the database.
 For example:
@@ -305,7 +340,7 @@ With cmake, you can just add `-DCMAKE_CUDA_FLAGS=-lineinfo` when invoking cmake 
 
 .. code-block:: bash
 
-    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_FLAGS=-lineinfo
+    cmake .. --preset=benchmark -DCMAKE_CUDA_FLAGS=-lineinfo
 
 To profile the kernels, use the `ncu` command.
 A typical invocation, if you work on a remote cluster, could look like this:

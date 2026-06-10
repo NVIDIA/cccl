@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -29,13 +16,8 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::tbb::detail
 {
-namespace tbb
-{
-namespace detail
-{
-
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator
 max_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
@@ -53,14 +35,11 @@ min_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, Forwar
 } // end min_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-thrust::pair<ForwardIterator, ForwardIterator>
+::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // tbb prefers generic::minmax_element to cpp::minmax_element
   return thrust::system::detail::generic::minmax_element(exec, first, last, comp);
 } // end minmax_element()
-
-} // namespace detail
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb::detail
 THRUST_NAMESPACE_END

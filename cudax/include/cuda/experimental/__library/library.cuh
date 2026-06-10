@@ -36,7 +36,6 @@
 
 namespace cuda::experimental
 {
-
 //! @brief An owning wrapper for a CUDA library handle
 struct library : public library_ref
 {
@@ -80,7 +79,7 @@ struct library : public library_ref
   {
     if (__library_ != value_type{})
     {
-      [[maybe_unused]] const auto __status = _CUDA_DRIVER::__libraryUnloadNoThrow(__library_);
+      [[maybe_unused]] const auto __status = ::cuda::__driver::__libraryUnloadNoThrow(__library_);
     }
   }
 
@@ -116,7 +115,6 @@ private:
       : library_ref{__handle}
   {}
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

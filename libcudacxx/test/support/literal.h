@@ -14,8 +14,10 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class CharT>
-[[nodiscard]] __host__ __device__ constexpr CharT _test_charlit_impl(
+[[nodiscard]] TEST_FUNC constexpr CharT _test_charlit_impl(
   [[maybe_unused]] char char_val,
   [[maybe_unused]] wchar_t wchar_val,
 #if _CCCL_HAS_CHAR8_T()
@@ -50,8 +52,8 @@ template <class CharT>
   {
     static_assert(cuda::std::__always_false_v<CharT>,
                   "Unsupported character type. Supported types are char, wchar_t, char8_t, char16_t, and char32_t.");
+    _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 #if _CCCL_HAS_CHAR8_T()
@@ -61,7 +63,7 @@ template <class CharT>
 #endif // _CCCL_HAS_CHAR8_T()
 
 template <class CharT, cuda::std::size_t N>
-[[nodiscard]] __host__ __device__ constexpr auto _test_strlit_impl(
+[[nodiscard]] TEST_FUNC constexpr auto _test_strlit_impl(
   [[maybe_unused]] const char (&char_str)[N],
   [[maybe_unused]] const wchar_t (&wchar_str)[N],
 #if _CCCL_HAS_CHAR8_T()
@@ -96,8 +98,8 @@ template <class CharT, cuda::std::size_t N>
   {
     static_assert(cuda::std::__always_false_v<CharT>,
                   "Unsupported character type. Supported types are char, wchar_t, char8_t, char16_t, and char32_t.");
+    _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 #if _CCCL_HAS_CHAR8_T()
@@ -115,7 +117,7 @@ struct _test_int_literal_impl_result
 };
 
 template <int Base>
-[[nodiscard]] __host__ __device__ constexpr bool _test_int_literal_char_to_digit(char c, int& value)
+[[nodiscard]] TEST_FUNC constexpr bool _test_int_literal_char_to_digit(char c, int& value)
 {
   static_assert(Base >= 2 && Base <= 36, "Base must be between 2 and 36 inclusive.");
 
@@ -150,7 +152,7 @@ template <int Base>
 }
 
 template <class T, unsigned Base>
-[[nodiscard]] __host__ __device__ constexpr _test_int_literal_impl_result<T>
+[[nodiscard]] TEST_FUNC constexpr _test_int_literal_impl_result<T>
 _test_int_literal_impl(const char* begin, const char* end) noexcept
 {
   using U         = cuda::std::make_unsigned_t<T>;
@@ -189,8 +191,7 @@ _test_int_literal_impl(const char* begin, const char* end) noexcept
 }
 
 template <class T, class SizeT = decltype(sizeof(int)), SizeT N>
-[[nodiscard]] __host__ __device__ constexpr _test_int_literal_impl_result<T>
-_test_int_literal_impl(const char (&cs)[N]) noexcept
+[[nodiscard]] TEST_FUNC constexpr _test_int_literal_impl_result<T> _test_int_literal_impl(const char (&cs)[N]) noexcept
 {
   unsigned base = 10;
   SizeT offset  = 0;
@@ -240,7 +241,6 @@ _test_int_literal_impl(const char (&cs)[N]) noexcept
 
 namespace test_integer_literals
 {
-
 // nvcc passes operator""_x to the host compiler as operator "" _x, which was deprecated in CWG 2521 (nvbug 5507437)
 // clang 20 already warns about this, so we need to suppress the warning here
 _CCCL_DIAG_PUSH
@@ -250,7 +250,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-literal-operator")
 
 #if _CCCL_HAS_INT128()
 template <char... Cs>
-[[nodiscard]] __host__ __device__ constexpr __int128_t operator""_i128() noexcept
+[[nodiscard]] TEST_FUNC constexpr __int128_t operator""_i128() noexcept
 {
   constexpr char cs[]{Cs...};
   constexpr auto result = _test_int_literal_impl<__int128_t>(cs);
@@ -260,7 +260,7 @@ template <char... Cs>
 }
 
 template <char... Cs>
-[[nodiscard]] __host__ __device__ constexpr __uint128_t operator""_u128() noexcept
+[[nodiscard]] TEST_FUNC constexpr __uint128_t operator""_u128() noexcept
 {
   constexpr char cs[]{Cs...};
   constexpr auto result = _test_int_literal_impl<__uint128_t>(cs);
@@ -271,7 +271,6 @@ template <char... Cs>
 #endif // _CCCL_HAS_INT128()
 
 _CCCL_DIAG_POP
-
 } // namespace test_integer_literals
 
 #endif // TEST_SUPPORT_LITERAL_H

@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 struct graphed_interface_of;
 
@@ -110,5 +109,4 @@ struct graphed_interface_of<void_interface>
 {
   using type = void_graph_interface;
 };
-
 } // end namespace cuda::experimental::stf

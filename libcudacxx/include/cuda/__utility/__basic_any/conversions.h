@@ -24,6 +24,7 @@
 #include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -53,9 +54,9 @@ struct __archetype<false, false> // immovable archetype
   __archetype(const __archetype&) = delete;
 
   template <class _Value>
-  _CCCL_API __archetype(_Value) noexcept;
+  _CCCL_HOST_DEVICE_API __archetype(_Value) noexcept;
   template <class _Value>
-  _CCCL_API __archetype(_Value*) = delete;
+  _CCCL_HOST_DEVICE_API __archetype(_Value*) = delete;
 };
 
 // Archetype for interfaces that extend __imovable but not __icopyable
@@ -63,7 +64,7 @@ template <>
 struct __archetype<true, false> : __archetype<false, false> // movable archetype
 {
   __archetype() = default;
-  _CCCL_API __archetype(__archetype&&) noexcept;
+  _CCCL_HOST_DEVICE_API __archetype(__archetype&&) noexcept;
   __archetype(const __archetype&) = delete;
 };
 
@@ -72,7 +73,7 @@ template <>
 struct __archetype<true, true> : __archetype<true, false>
 {
   __archetype() = default;
-  _CCCL_API __archetype(__archetype const&);
+  _CCCL_HOST_DEVICE_API __archetype(__archetype const&);
 };
 
 template <class _Interface>
@@ -81,10 +82,10 @@ using __archetype_t _CCCL_NODEBUG_ALIAS =
 
 // Strip top-level cv- and ref-qualifiers from pointer types:
 template <class _Ty>
-_CCCL_API auto __normalize_interface(_Ty&&) -> _Ty;
+_CCCL_HOST_DEVICE_API auto __normalize_interface(_Ty&&) -> _Ty;
 
 template <class _Ty>
-_CCCL_API auto __normalize_interface(_Ty*) -> _Ty*;
+_CCCL_HOST_DEVICE_API auto __normalize_interface(_Ty*) -> _Ty*;
 
 template <class _Ty>
 using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize_interface(::cuda::std::declval<_Ty>()));
@@ -101,13 +102,13 @@ extern _Interface& __interface_from<__basic_any<_Interface>&>;
 template <class _Interface>
 extern _Interface const& __interface_from<__basic_any<_Interface> const&>;
 template <class _Interface>
-extern _Interface* __interface_from<__basic_any<_Interface>*>;
+extern ::cuda::std::add_pointer_t<_Interface> __interface_from<__basic_any<_Interface>*>;
 template <class _Interface>
-extern _Interface const* __interface_from<__basic_any<_Interface> const*>;
+extern ::cuda::std::add_pointer_t<_Interface const> __interface_from<__basic_any<_Interface> const*>;
 template <class _Interface>
-extern _Interface* __interface_from<__basic_any<__ireference<_Interface>>*>;
+extern ::cuda::std::add_pointer_t<_Interface> __interface_from<__basic_any<__ireference<_Interface>>*>;
 template <class _Interface>
-extern _Interface* __interface_from<__basic_any<__ireference<_Interface>> const*>;
+extern ::cuda::std::add_pointer_t<_Interface const> __interface_from<__basic_any<__ireference<_Interface>> const*>;
 
 // Used to map a normalized interface type to an archetype for conversion testing:
 template <class _Interface>

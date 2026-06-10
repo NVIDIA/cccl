@@ -9,7 +9,8 @@
 
 if (FILECHECK_ENABLED)
   if (NOT EXISTS "${REFERENCE_FILE}")
-    message(FATAL_ERROR
+    message(
+      FATAL_ERROR
       "FileCheck requested for '${EXAMPLE_EXECUTABLE}', but reference file "
       "does not exist at '${REFERENCE_FILE}`."
     )
@@ -30,8 +31,7 @@ if (FILECHECK_ENABLED)
 endif()
 
 execute_process(
-  COMMAND "${EXAMPLE_EXECUTABLE}"
-  ${filecheck_command}
+  COMMAND "${EXAMPLE_EXECUTABLE}" ${filecheck_command}
   RESULT_VARIABLE exit_code
   OUTPUT_VARIABLE stdout
   ERROR_VARIABLE stderr
@@ -44,6 +44,9 @@ endif()
 if (check_empty_output)
   string(LENGTH "${stdout}" stdout_size)
   if (NOT stdout_size EQUAL 0)
-    message(FATAL_ERROR "${EXAMPLE_EXECUTABLE}: output received, but not expected:\n${stdout}")
+    message(
+      FATAL_ERROR
+      "${EXAMPLE_EXECUTABLE}: output received, but not expected:\n${stdout}"
+    )
   endif()
 endif()

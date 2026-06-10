@@ -7,8 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__algorithm_>
+// XFAIL: enable-tile
+// nvbug6080486 : error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
+
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -28,33 +31,31 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
 template <class T>
-__host__ __device__ constexpr void test_default()
+TEST_FUNC constexpr void test_default()
 {
   { // inplace_vecto<T, 0> is default_constructible
     cuda::std::inplace_vector<T, 0> vec{};
     assert(vec.empty());
-    static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
+    static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 0>>::value);
   }
 
   { // inplace_vecto<T, N> is default_constructible
     cuda::std::inplace_vector<T, 42> vec{};
     assert(vec.empty());
-    static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 42>>::value, "");
+    static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 42>>::value);
   }
 }
 
 template <class T>
-__host__ __device__ constexpr void test_copy_move()
+TEST_FUNC constexpr void test_copy_move()
 {
   // Zero capacity inplace_vector is trivial
-  static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
-  static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
+  static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 0>>::value);
+  static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 42>>::value
-                  == cuda::std::is_nothrow_copy_constructible<T>::value,
-                "");
+                == cuda::std::is_nothrow_copy_constructible<T>::value);
   static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 42>>::value
-                  == cuda::std::is_nothrow_move_constructible<T>::value,
-                "");
+                == cuda::std::is_nothrow_move_constructible<T>::value);
   { // inplace_vector<T, 0> can be copy constructed
     cuda::std::inplace_vector<T, 0> input{};
     cuda::std::inplace_vector<T, 0> vec(input);
@@ -99,13 +100,13 @@ __host__ __device__ constexpr void test_copy_move()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_size()
+TEST_FUNC constexpr void test_size()
 {
   { // inplace_vector<T, 0> can be constructed from a size
     cuda::std::inplace_vector<T, 0> vec(0);
     assert(vec.empty());
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0)), "");
+    static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0)));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
@@ -114,7 +115,7 @@ __host__ __device__ constexpr void test_size()
     inplace_vector vec(0);
     assert(vec.empty());
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(inplace_vector(0)), "");
+    static_assert(!noexcept(inplace_vector(0)));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
@@ -124,19 +125,19 @@ __host__ __device__ constexpr void test_size()
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(inplace_vector(3)), "");
+    static_assert(!noexcept(inplace_vector(3)));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 }
 
 template <class T>
-__host__ __device__ constexpr void test_size_value()
+TEST_FUNC constexpr void test_size_value()
 {
   { // inplace_vector<T, 0> can be constructed from a size and a const T&
     cuda::std::inplace_vector<T, 0> vec(0, T(42));
     assert(vec.empty());
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0, T(42))), "");
+    static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0, T(42))));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
@@ -145,7 +146,7 @@ __host__ __device__ constexpr void test_size_value()
     inplace_vector vec(0, T(42));
     assert(vec.empty());
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(inplace_vector(0, T(42))), "");
+    static_assert(!noexcept(inplace_vector(0, T(42))));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
@@ -155,13 +156,13 @@ __host__ __device__ constexpr void test_size_value()
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(inplace_vector(3, T(42))), "");
+    static_assert(!noexcept(inplace_vector(3, T(42))));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 }
 
 template <class T>
-__host__ __device__ constexpr void test_iter()
+TEST_FUNC constexpr void test_iter()
 {
   const cuda::std::array<T, 4> input{T(1), T(42), T(1337), T(0)};
   { // inplace_vector<T, 0> can be constructed from two equal input iterators
@@ -205,7 +206,7 @@ __host__ __device__ constexpr void test_iter()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_init_list()
+TEST_FUNC constexpr void test_init_list()
 {
   { // inplace_vector<T, 0> can be constructed from an empty initializer_list
     cuda::std::initializer_list<T> input{};
@@ -230,7 +231,7 @@ __host__ __device__ constexpr void test_init_list()
 
 #if !TEST_COMPILER(MSVC)
 template <class T, template <class, size_t> class Range>
-__host__ __device__ constexpr void test_range()
+TEST_FUNC constexpr void test_range()
 {
   { // inplace_vector<T, 0> can be constructed from an empty range
     cuda::std::inplace_vector<T, 0> vec(cuda::std::from_range, Range<T, 0>{});
@@ -251,7 +252,7 @@ __host__ __device__ constexpr void test_range()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_range()
+TEST_FUNC constexpr void test_range()
 {
 #  if !TEST_COMPILER(GCC, <, 8)
   test_range<T, input_range>();
@@ -263,7 +264,7 @@ __host__ __device__ constexpr void test_range()
 #endif // !TEST_COMPILER(MSVC)
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_trivial<T>::value, int> = 0>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_default<T>();
   test_copy_move<T>();
@@ -277,7 +278,7 @@ __host__ __device__ constexpr void test()
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_trivial<T>::value, int> = 0>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_default<T>();
 
@@ -294,7 +295,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -317,8 +318,8 @@ __host__ __device__ constexpr bool test()
 #if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 { // constructors throw std::bad_alloc
-  constexpr size_t capacity = 4;
-  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
+  [[maybe_unused]] constexpr size_t capacity = 4;
+  using inplace_vector                       = cuda::std::inplace_vector<int, capacity>;
 
   try
   {
@@ -444,7 +445,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

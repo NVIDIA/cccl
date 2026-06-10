@@ -17,7 +17,6 @@
 
 namespace user1
 {
-
 template <class ElementType>
 class AccessorB;
 
@@ -35,22 +34,21 @@ public:
 
   template <class OtherElementType,
             cuda::std::enable_if_t<cuda::std::is_convertible_v<OtherElementType (*)[], element_type (*)[]>, int> = 0>
-  __host__ __device__ constexpr AccessorA(const AccessorA<OtherElementType>&) noexcept
+  TEST_FUNC constexpr AccessorA(const AccessorA<OtherElementType>&) noexcept
   {}
 
   // Conversion from AccessorB to AccessorA type-erases; it has no preconditions, and can therefore be safely implicit.
   template <class OtherElementType,
             cuda::std::enable_if_t<cuda::std::is_convertible_v<OtherElementType (*)[], element_type (*)[]>, int> = 0>
-  __host__ __device__ constexpr AccessorA(const AccessorB<OtherElementType>&) noexcept
+  TEST_FUNC constexpr AccessorA(const AccessorB<OtherElementType>&) noexcept
   {}
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     return p[i];
   }
 
-  __host__ __device__ constexpr typename offset_policy::data_handle_type
-  offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr typename offset_policy::data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     return p + i;
   }
@@ -69,28 +67,26 @@ public:
 
   template <class OtherElementType,
             cuda::std::enable_if_t<cuda::std::is_convertible_v<OtherElementType (*)[], element_type (*)[]>, int> = 0>
-  __host__ __device__ constexpr AccessorB(const AccessorB<OtherElementType>&) noexcept
+  TEST_FUNC constexpr AccessorB(const AccessorB<OtherElementType>&) noexcept
   {}
 
   // Conversion from AccessorA to AccessorB asserts a precondition;
   // it un-type-erases from less specific AccessorA to more specific AccessorB. Thus, it is explicit.
   template <class OtherElementType,
             cuda::std::enable_if_t<cuda::std::is_convertible_v<OtherElementType (*)[], element_type (*)[]>, int> = 0>
-  __host__ __device__ constexpr explicit AccessorB(const AccessorA<OtherElementType>&) noexcept
+  TEST_FUNC constexpr explicit AccessorB(const AccessorA<OtherElementType>&) noexcept
   {}
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     return p[i];
   }
 
-  __host__ __device__ constexpr typename offset_policy::data_handle_type
-  offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr typename offset_policy::data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     return p + i;
   }
 };
-
 } // namespace user1
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -98,7 +94,6 @@ public:
 
 namespace user2
 {
-
 // Imagine that a different user1 writes AccessorC.
 // They can't change the public interface of AccessorA, but they want to permit a conversion from AccessorC to
 // AccessorA. AccessorA happens to be more type-erased than AccessorC, so this is a conversion without preconditions;
@@ -116,21 +111,20 @@ public:
 
   template <class OtherElementType,
             cuda::std::enable_if_t<cuda::std::is_convertible_v<OtherElementType (*)[], element_type (*)[]>, int> = 0>
-  __host__ __device__ constexpr AccessorC(const AccessorC<OtherElementType>&) noexcept
+  TEST_FUNC constexpr AccessorC(const AccessorC<OtherElementType>&) noexcept
   {}
 
-  __host__ __device__ constexpr operator user1::AccessorA<element_type>() const noexcept
+  TEST_FUNC constexpr operator user1::AccessorA<element_type>() const noexcept
   {
     return {};
   }
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     return p[i];
   }
 
-  __host__ __device__ constexpr typename offset_policy::data_handle_type
-  offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr typename offset_policy::data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     return p + i;
   }
@@ -152,32 +146,30 @@ public:
 
   template <class OtherElementType,
             cuda::std::enable_if_t<cuda::std::is_convertible_v<OtherElementType (*)[], element_type (*)[]>, int> = 0>
-  __host__ __device__ constexpr AccessorD(const AccessorD<OtherElementType>&) noexcept
+  TEST_FUNC constexpr AccessorD(const AccessorD<OtherElementType>&) noexcept
   {}
 
-  __host__ __device__ constexpr explicit operator user1::AccessorB<element_type>() const noexcept
+  TEST_FUNC constexpr explicit operator user1::AccessorB<element_type>() const noexcept
   {
     return {};
   }
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     return p[i];
   }
 
-  __host__ __device__ constexpr typename offset_policy::data_handle_type
-  offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr typename offset_policy::data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     return p + i;
   }
 };
-
 } // namespace user2
 
 //----------------------------------------------------------------------------------------------------------------------
 // TEST CODE
 
-__host__ __device__ void test_host_device_accessor_conversions()
+TEST_FUNC void test_host_device_accessor_conversions()
 {
   using user1::AccessorA;
   using user1::AccessorB;
@@ -233,7 +225,7 @@ __host__ __device__ void test_host_device_accessor_conversions()
   }
 }
 
-__host__ __device__ void test_conversion()
+TEST_FUNC void test_conversion()
 {
   using user1::AccessorA;
   using user1::AccessorB;
@@ -247,7 +239,7 @@ __host__ __device__ void test_conversion()
     // Test explicit and implicit conversion from cuda::__restrict_accessor<AccessorC<T>> to
     // cuda::__restrict_accessor<AccessorA<T>>. This works because cuda::__restrict_accessor<AccessorC<T>> publicly
     // inherits from AccessorC<T>, so it inherits AccessorC<T>'s conversion operators.
-    WrapperA wrapper_acc1{WrapperC{}};
+    [[maybe_unused]] WrapperA wrapper_acc1{WrapperC{}};
     auto f1 = [](const WrapperA& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
@@ -257,7 +249,7 @@ __host__ __device__ void test_conversion()
     // Test explicit conversion from cuda::__restrict_accessor<AccessorD<T>> to cuda::__restrict_accessor<AccessorB<T>>.
     // This works because cuda::__restrict_accessor<AccessorD<T>> publicly inherits from AccessorD<T>,
     // so it inherits AccessorD<T>'s conversion operators.
-    WrapperB wrapper_acc1{WrapperD{}};
+    [[maybe_unused]] WrapperB wrapper_acc1{WrapperD{}};
     auto f1 = [](const WrapperD& w) -> WrapperB {
       return WrapperB{};
       // return w; // rightfully does not compile
@@ -268,7 +260,7 @@ __host__ __device__ void test_conversion()
 
 // Application: conversion of cuda::__restrict_accessor<aligned_accessor<T, N>>
 // to cuda::__restrict_accessor<default_accessor<T>>.
-__host__ __device__ void test_aligned_to_default()
+TEST_FUNC void test_aligned_to_default()
 {
   using WrapperDefault = cuda::__restrict_accessor<cuda::std::default_accessor<float>>;
   using WrapperAligned = cuda::__restrict_accessor<cuda::std::aligned_accessor<float, 16>>;
@@ -281,7 +273,7 @@ __host__ __device__ void test_aligned_to_default()
 
 // Application: Explicit conversion of cuda::__restrict_accessor<default_accessor<T>>
 // to cuda::__restrict_accessor<aligned_accessor<T, N>>.
-__host__ __device__ void test_default_to_aligned()
+TEST_FUNC void test_default_to_aligned()
 {
   using WrapperDefault = cuda::__restrict_accessor<cuda::std::default_accessor<float>>;
   using WrapperAligned = cuda::__restrict_accessor<cuda::std::aligned_accessor<float, 16>>;

@@ -7,8 +7,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include "include/host_device.h"
-
 // we could vary M & N to find the perf sweet spot
 
 __host__ __device__ unsigned int hash(unsigned int a)
@@ -68,15 +66,11 @@ int main()
   int M = 30000;
 
   float estimate = thrust::transform_reduce(
-    thrust::counting_iterator<int>(0),
-    thrust::counting_iterator<int>(M),
-    estimate_pi(),
-    0.0f,
-    ::cuda::std::plus<float>());
+    thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(M), estimate_pi(), 0.0f, cuda::std::plus<float>());
   estimate /= M;
 
   std::cout << std::setprecision(3);
-  std::cout << "pi is approximately " << estimate << std::endl;
+  std::cout << "pi is approximately " << estimate << '\n';
 
   return 0;
 }

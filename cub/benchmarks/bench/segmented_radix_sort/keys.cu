@@ -1,26 +1,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// This benchmark is only used for regression testing and not tuning
+
 #include <cub/device/device_segmented_radix_sort.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
 
 #include <nvbench_helper.cuh>
 
 template <class T, typename OffsetT>
 void seg_radix_sort(nvbench::state& state,
-                    nvbench::type_list<T, OffsetT> ts,
+                    nvbench::type_list<T, OffsetT>,
                     const thrust::device_vector<OffsetT>& offsets,
                     bit_entropy entropy)
 {
-  constexpr bool is_overwrite_ok = false;
-
   using offset_t          = OffsetT;
   using begin_offset_it_t = const offset_t*;
   using end_offset_it_t   = const offset_t*;
   using key_t             = T;
-  using value_t           = cub::NullType;
-  using dispatch_t        = cub::
-    DispatchSegmentedRadixSort<cub::SortOrder::Ascending, key_t, value_t, begin_offset_it_t, end_offset_it_t, offset_t>;
 
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(key_t) * 8;
@@ -29,13 +25,10 @@ void seg_radix_sort(nvbench::state& state,
   const auto segments = offsets.size() - 1;
 
   thrust::device_vector<key_t> buffer_1 = generate(elements, entropy);
-  thrust::device_vector<key_t> buffer_2(elements);
+  thrust::device_vector<key_t> buffer_2(elements, thrust::no_init);
 
-  key_t* d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
-  key_t* d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
-
-  cub::DoubleBuffer<key_t> d_keys(d_buffer_1, d_buffer_2);
-  cub::DoubleBuffer<value_t> d_values;
+  const key_t* d_keys_1 = thrust::raw_pointer_cast(buffer_1.data());
+  key_t* d_keys_2       = thrust::raw_pointer_cast(buffer_2.data());
 
   begin_offset_it_t d_begin_offsets = thrust::raw_pointer_cast(offsets.data());
   end_offset_it_t d_end_offsets     = d_begin_offsets + 1;
@@ -45,43 +38,22 @@ void seg_radix_sort(nvbench::state& state,
   state.add_global_memory_writes<key_t>(elements);
   state.add_global_memory_reads<offset_t>(segments + 1);
 
-  std::size_t temp_storage_bytes{};
-  std::uint8_t* d_temp_storage{};
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_keys,
-    d_values,
-    elements,
-    segments,
-    d_begin_offsets,
-    d_end_offsets,
-    begin_bit,
-    end_bit,
-    is_overwrite_ok,
-    0);
-
-  thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cub::DoubleBuffer<key_t> keys     = d_keys;
-               cub::DoubleBuffer<value_t> values = d_values;
-
-               dispatch_t::Dispatch(
-                 d_temp_storage,
-                 temp_storage_bytes,
-                 keys,
-                 values,
+               const auto env = cub_bench_env(alloc, launch);
+               _CCCL_TRY_CUDA_API(
+                 cub::DeviceSegmentedRadixSort::SortKeys,
+                 "SortKeys failed",
+                 d_keys_1,
+                 d_keys_2,
                  elements,
                  segments,
                  d_begin_offsets,
                  d_end_offsets,
                  begin_bit,
                  end_bit,
-                 is_overwrite_ok,
-                 launch.get_stream());
+                 env);
              });
 }
 

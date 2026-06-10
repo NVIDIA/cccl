@@ -27,12 +27,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  define _CCCL_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
+#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#  define _CCCL_PREFERRED_ALIGNOF(_Tp) alignof(_Tp)
+#endif // ^^^^ _CCCL_COMPILER(NVRTC) ^^^
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __align_type
 {
-  static const size_t value = _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp);
+  static const size_t value = _CCCL_PREFERRED_ALIGNOF(_Tp);
   using type                = _Tp;
 };
 
@@ -76,12 +82,12 @@ struct __find_pod
     : public __type_front<__type_find_if<__type_push_back<_TL, __fallback_overaligned<_Align>>, __has_align<_Align>>>
 {};
 
-_CCCL_HOST_DEVICE constexpr size_t __select_align_fn_2_(size_t __len, size_t __min, size_t __max)
+_CCCL_API constexpr size_t __select_align_fn_2_(size_t __len, size_t __min, size_t __max)
 {
   return __len < __max ? __min : __max;
 }
 
-_CCCL_HOST_DEVICE constexpr size_t __select_align_fn_(size_t __len, size_t __a1, size_t __a2)
+_CCCL_API constexpr size_t __select_align_fn_(size_t __len, size_t __a1, size_t __a2)
 {
   return __select_align_fn_2_(__len, __a2 < __a1 ? __a2 : __a1, __a1 < __a2 ? __a2 : __a1);
 }

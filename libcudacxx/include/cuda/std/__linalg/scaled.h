@@ -41,7 +41,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
-
 template <class _ScalingFactor, class _NestedAccessor>
 class scaled_accessor
 {
@@ -105,10 +104,8 @@ private:
 
 namespace __detail
 {
-
 template <class _ScalingFactor, class _NestedAccessor>
 using __scaled_element_type = add_const_t<typename scaled_accessor<_ScalingFactor, _NestedAccessor>::element_type>;
-
 } // namespace __detail
 
 template <class _ScalingFactor, class _ElementType, class _Extents, class _Layout, class _Accessor>
@@ -122,7 +119,6 @@ scaled(_ScalingFactor __scaling_factor, mdspan<_ElementType, _Extents, _Layout, 
   using __acc_type = scaled_accessor<_ScalingFactor, _Accessor>;
   return {__x.data_handle(), __x.mapping(), __acc_type{__scaling_factor, __x.accessor()}};
 }
-
 } // end namespace linalg
 
 _CCCL_END_NAMESPACE_CUDA_STD

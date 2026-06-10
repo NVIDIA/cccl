@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -41,6 +42,7 @@ typedef struct cccl_device_radix_sort_build_result_t
   CUkernel exclusive_sum_kernel;
   CUkernel onesweep_kernel;
   cccl_sort_order_t order;
+  void* runtime_policy;
 } cccl_device_radix_sort_build_result_t;
 
 CCCL_C_API CUresult cccl_device_radix_sort_build(
@@ -92,3 +94,4 @@ CCCL_C_API CUresult cccl_device_radix_sort(
 CCCL_C_API CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

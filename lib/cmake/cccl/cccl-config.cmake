@@ -12,8 +12,10 @@ else()
   set(cccl_quiet_flag "")
 endif()
 
-if (DEFINED ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS AND
-    ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+if (
+  DEFINED ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS
+  AND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS
+)
   set(components ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
 else()
   set(components Thrust CUB libcudacxx)
@@ -27,9 +29,9 @@ if (NOT TARGET CCCL::CCCL)
 endif()
 
 message(STATUS "Finding CCCL components: ${components}")
-message(STATUS "cccl_cmake_dir: ${cccl_cmake_dir}")
+message(VERBOSE "cccl_cmake_dir: ${cccl_cmake_dir}")
 
-foreach(component IN LISTS components)
+foreach (component IN LISTS components)
   string(TOLOWER "${component}" component_lower)
 
   unset(req)
@@ -37,8 +39,12 @@ foreach(component IN LISTS components)
     set(cccl_comp_required_flag "REQUIRED")
   endif()
 
-  if(component_lower STREQUAL "libcudacxx")
-    find_package(libcudacxx ${CCCL_VERSION} EXACT CONFIG
+  if (component_lower STREQUAL "libcudacxx")
+    find_package(
+      libcudacxx
+      ${CCCL_VERSION}
+      EXACT
+      CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
@@ -50,21 +56,32 @@ foreach(component IN LISTS components)
       add_library(CCCL::libcudacxx ALIAS _libcudacxx_libcudacxx)
       target_link_libraries(CCCL::CCCL INTERFACE CCCL::libcudacxx)
     endif()
-  elseif(component_lower STREQUAL "cub")
-    find_package(CUB ${CCCL_VERSION} EXACT CONFIG
+  elseif (component_lower STREQUAL "cub")
+    find_package(
+      CUB
+      ${CCCL_VERSION}
+      EXACT
+      CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
       HINTS "${cccl_cmake_dir}/../cub/"
     )
-    # Can't alias other alias targets, so use the uglified target name instead
-    # of CUB::CUB:
     if (TARGET _CUB_CUB AND NOT TARGET CCCL::CUB)
-      add_library(CCCL::CUB ALIAS _CUB_CUB)
+      # Create CCCL::CUB as an IMPORTED target (not an ALIAS) so that downstream
+      # projects can install(EXPORT ...) their own targets that link to CCCL::CUB
+      # without CMake requiring _CUB_CUB to be in the export set.
+      # See: https://github.com/NVIDIA/cccl/issues/8069
+      add_library(CCCL::CUB INTERFACE IMPORTED GLOBAL)
+      target_link_libraries(CCCL::CUB INTERFACE CUB::CUB)
       target_link_libraries(CCCL::CCCL INTERFACE CCCL::CUB)
     endif()
-  elseif(component_lower STREQUAL "thrust")
-    find_package(Thrust ${CCCL_VERSION} EXACT CONFIG
+  elseif (component_lower STREQUAL "thrust")
+    find_package(
+      Thrust
+      ${CCCL_VERSION}
+      EXACT
+      CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
@@ -73,27 +90,32 @@ foreach(component IN LISTS components)
 
     if (TARGET Thrust::Thrust AND NOT TARGET CCCL::Thrust)
       # By default, configure a CCCL::Thrust target with host=cpp device=cuda
-      option(CCCL_ENABLE_DEFAULT_THRUST_TARGET
+      option(
+        CCCL_ENABLE_DEFAULT_THRUST_TARGET
         "Create a CCCL::Thrust target using CCCL_THRUST_[HOST|DEVICE]_SYSTEM."
         ON
       )
       mark_as_advanced(CCCL_ENABLE_DEFAULT_THRUST_TARGET)
       if (CCCL_ENABLE_DEFAULT_THRUST_TARGET)
-        thrust_create_target(CCCL::Thrust FROM_OPTIONS
+        thrust_create_target(
+          CCCL::Thrust
+          FROM_OPTIONS
           HOST_OPTION CCCL_THRUST_HOST_SYSTEM
           DEVICE_OPTION CCCL_THRUST_DEVICE_SYSTEM
-          HOST_OPTION_DOC
-            "Host system for CCCL::Thrust target."
-          DEVICE_OPTION_DOC
-            "Device system for CCCL::Thrust target."
+          HOST_OPTION_DOC "Host system for CCCL::Thrust target."
+          DEVICE_OPTION_DOC "Device system for CCCL::Thrust target."
           ADVANCED
           GLOBAL
         )
         target_link_libraries(CCCL::CCCL INTERFACE CCCL::Thrust)
       endif()
     endif()
-  elseif(component_lower STREQUAL "cudax")
-    find_package(cudax ${CCCL_VERSION} EXACT CONFIG
+  elseif (component_lower STREQUAL "cudax")
+    find_package(
+      cudax
+      ${CCCL_VERSION}
+      EXACT
+      CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:

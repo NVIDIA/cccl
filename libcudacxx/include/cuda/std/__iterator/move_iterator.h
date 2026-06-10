@@ -45,6 +45,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 
@@ -62,9 +63,9 @@ template <class _Iter>
 struct __move_iter_category_base<_Iter>
 {
   using iterator_category =
-    _If<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
+    _If<derived_from<__iterator_traits_category_or_concept_t<_Iter>, random_access_iterator_tag>,
         random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+        __iterator_traits_category_or_concept_t<_Iter>>;
 };
 
 template <class _Iter, class _Sent>
@@ -74,7 +75,7 @@ concept __move_iter_comparable = requires {
 
 template <class _Iter>
 inline constexpr bool __noexcept_move_iter_iter_move =
-  noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>()));
+  noexcept(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<const _Iter&>()));
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter, class = void>
 struct __move_iter_category_base
@@ -84,9 +85,9 @@ template <class _Iter>
 struct __move_iter_category_base<_Iter, enable_if_t<__has_iter_category<iterator_traits<_Iter>>>>
 {
   using iterator_category =
-    _If<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
+    _If<derived_from<__iterator_traits_category_or_concept_t<_Iter>, random_access_iterator_tag>,
         random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+        __iterator_traits_category_or_concept_t<_Iter>>;
 };
 
 template <class _Iter, class _Sent>
@@ -99,7 +100,7 @@ _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _
 
 template <class _Iter>
 inline constexpr bool __noexcept_move_iter_iter_move =
-  noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>()));
+  noexcept(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<const _Iter&>()));
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
@@ -131,7 +132,6 @@ private:
     {
       return input_iterator_tag{};
     }
-    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -188,16 +188,16 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
   {
-    return ::cuda::std::ranges::iter_move(__current_);
+    return ::cuda::std::ranges::__iter_move_cpo{}(__current_);
   }
 
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
   {
-    return ::cuda::std::ranges::iter_move(__current_ + __n);
+    return ::cuda::std::ranges::__iter_move_cpo{}(__current_ + __n);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
+  [[nodiscard]] _CCCL_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
   {
     return __current_;
   }
@@ -396,7 +396,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter>
   iter_move(const move_iterator& __i) noexcept(__noexcept_move_iter_iter_move<_Iter>)
   {
-    return ::cuda::std::ranges::iter_move(__i.__current_);
+    return ::cuda::std::ranges::__iter_move_cpo{}(__i.__current_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -405,17 +405,16 @@ public:
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
-    return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
+    return ::cuda::std::ranges::__iter_swap_cpo{}(__x.__current_, __y.__current_);
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(move_iterator)
 
-// Some compilers have issues determining _IsFancyPointer
+// Some compilers have issues determining __is_fancy_pointer
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 template <class _Iter>
-struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
-{};
+inline constexpr bool __is_fancy_pointer<move_iterator<_Iter>> = __is_fancy_pointer<_Iter>;
 #endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 
 _CCCL_EXEC_CHECK_DISABLE

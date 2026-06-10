@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// MSVC downgrades the no_specializations attribute to a warning
+// which is currently ignored in .fail
+// FORCE_ALL_WARNINGS.
+
 #include <cuda/std/__cccl/attributes.h>
 
 #if _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS()
@@ -39,14 +43,14 @@ inline constexpr bool variable<int> = false;
 // 3. Attribute applied to a template function
 
 template <class T>
-_CCCL_NO_SPECIALIZATIONS __host__ __device__ T function()
+_CCCL_NO_SPECIALIZATIONS TEST_FUNC T function()
 {
   return T{0};
 }
 
 // This should fail to compile
 template <>
-__host__ __device__ int function<int>()
+TEST_FUNC int function<int>()
 {
   return 1;
 }

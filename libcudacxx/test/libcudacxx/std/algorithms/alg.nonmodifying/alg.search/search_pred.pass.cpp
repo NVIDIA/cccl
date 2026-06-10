@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // <algorithm>
 
 // template<ForwardIterator Iter1, ForwardIterator Iter2>
@@ -13,7 +16,7 @@
 //   constexpr Iter1     // constexpr after C++17
 //   search(Iter1 first1, Iter1 last1, Iter2 first2, Iter2 last2);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
@@ -25,12 +28,12 @@ TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
 struct count_equal
 {
-  __host__ __device__ constexpr count_equal(int& count) noexcept
+  TEST_FUNC constexpr count_equal(int& count) noexcept
       : count(count)
   {}
 
   template <class T>
-  __host__ __device__ constexpr bool operator()(const T& x, const T& y)
+  TEST_FUNC constexpr bool operator()(const T& x, const T& y)
   {
     ++count;
     return x == y;
@@ -40,7 +43,7 @@ struct count_equal
 };
 
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]              = {0, 1, 2, 3, 4, 5};
   const unsigned sa     = sizeof(ia) / sizeof(ia[0]);
@@ -125,7 +128,7 @@ __host__ __device__ constexpr void test()
   assert(count_equal_count <= sh * 3);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>, forward_iterator<const int*>>();
   test<forward_iterator<const int*>, bidirectional_iterator<const int*>>();
@@ -137,13 +140,20 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const int*>>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -3,19 +3,8 @@
 #
 # cccl.compiler_interface
 # - Interface target providing compiler-specific options needed to build
-#   CCCL's tests, examples, etc. This includes warning flags and the like.
-#
-# cccl.compiler_interface_cppXX
-# - Interface targets providing compiler-specific options that should only be
-#   applied to certain dialects of C++. Includes `compiler_interface`, and will
-#   be defined for each supported dialect.
-#
-# cccl.silence_unreachable_code_warnings
-# - Interface target that silences unreachable code warnings.
-# - Used to selectively disable such warnings in unit tests caused by
-#   unconditionally thrown exceptions.
-
-set(CCCL_KNOWN_CXX_DIALECTS 11 14 17 20)
+#   CCCL's tests, examples, etc. for the current CMAKE_CUDA_STANDARD.
+#   This includes warning flags and the like.
 
 # sccache cannot handle the -Fd option generating pdb files
 set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
@@ -23,18 +12,41 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+option(
+  CCCL_ENABLE_PRAGMA_SYSTEM_HEADER
+  "When OFF, disables the system header pragma in CCCL headers so that their warnings are visible."
+  OFF
+)
+option(CCCL_ENABLE_PTXAS_WARNINGS "Enable ptxas warnings" OFF) # currently used only in CUB
 
-function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
+function(
+  cccl_build_compiler_interface
+  interface_target
+  cuda_compile_options
+  cxx_compile_options
+  compile_defs
+)
   # We test to see if C++ compiler options exist using try-compiles in the CXX lang, and then reuse those flags as
   # -Xcompiler flags for CUDA targets. This requires that the CXX compiler and CUDA_HOST compilers are the same when
   # using nvcc.
   if (CCCL_TOPLEVEL_PROJECT AND CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
     set(cuda_host_matches_cxx_compiler FALSE)
     if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
-      set(host_info "${CMAKE_CUDA_HOST_COMPILER} (${CMAKE_CUDA_HOST_COMPILER_ID} ${CMAKE_CUDA_HOST_COMPILER_VERSION})")
-      set(cxx_info "${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
-      if (CMAKE_CUDA_HOST_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID AND
-          CMAKE_CUDA_HOST_COMPILER_VERSION VERSION_EQUAL CMAKE_CXX_COMPILER_VERSION)
+      set(
+        host_info
+        "${CMAKE_CUDA_HOST_COMPILER} (${CMAKE_CUDA_HOST_COMPILER_ID} ${CMAKE_CUDA_HOST_COMPILER_VERSION})"
+      )
+      set(
+        cxx_info
+        "${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})"
+      )
+      if (
+        CMAKE_CUDA_HOST_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID
+        AND
+          CMAKE_CUDA_HOST_COMPILER_VERSION
+            VERSION_EQUAL
+            CMAKE_CXX_COMPILER_VERSION
+      )
         set(cuda_host_matches_cxx_compiler TRUE)
       endif()
     else() # CMake < 3.31 doesn't have the CMAKE_CUDA_HOST_COMPILER_ID/VERSION variables
@@ -46,7 +58,8 @@ function(cccl_build_compiler_interface interface_target cuda_compile_options cxx
     endif()
 
     if (NOT cuda_host_matches_cxx_compiler)
-      message(FATAL_ERROR
+      message(
+        FATAL_ERROR
         "CCCL developer builds require that CMAKE_CUDA_HOST_COMPILER matches "
         "CMAKE_CXX_COMPILER when using nvcc:\n"
         "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}\n"
@@ -61,21 +74,22 @@ function(cccl_build_compiler_interface interface_target cuda_compile_options cxx
   add_library(${interface_target} INTERFACE)
 
   foreach (cuda_option IN LISTS cuda_compile_options)
-    target_compile_options(${interface_target} INTERFACE
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:${cuda_option}>
+    target_compile_options(
+      ${interface_target}
+      INTERFACE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:${cuda_option}>
     )
   endforeach()
 
   foreach (cxx_option IN LISTS cxx_compile_options)
-    target_compile_options(${interface_target} INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:${cxx_option}>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${cxx_option}>
+    target_compile_options(
+      ${interface_target}
+      INTERFACE
+        $<$<COMPILE_LANGUAGE:CXX>:${cxx_option}>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${cxx_option}>
     )
   endforeach()
 
-  target_compile_definitions(${interface_target} INTERFACE
-    ${compile_defs}
-  )
+  target_compile_definitions(${interface_target} INTERFACE ${compile_defs})
 endfunction()
 
 function(cccl_build_compiler_targets)
@@ -89,8 +103,10 @@ function(cccl_build_compiler_targets)
     list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   endif()
 
-  # Ensure that we build our tests without treating ourself as system header
-  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+  if (NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)
+    # Ensure that we build our tests without treating ourself as system header
+    list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+  endif()
 
   if (NOT CCCL_ENABLE_EXCEPTIONS)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")
@@ -99,6 +115,11 @@ function(cccl_build_compiler_targets)
   if (NOT CCCL_ENABLE_RTTI)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
   endif()
+
+  #  if (CCCL_USE_LIBCXX)
+  #    list(APPEND cxx_compile_options "-stdlib=libc++")
+  #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
+  #  endif()
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cuda_compile_options "--use-local-env")
@@ -131,12 +152,6 @@ function(cccl_build_compiler_targets)
     # unintentional assignments and suppress all such warnings on MSVC.
     append_option_if_available("/wd4706" cxx_compile_options)
 
-    # Disabled loss-of-data conversion warnings.
-    # append_option_if_available("/wd4244" cxx_compile_options)
-
-    # Disable warning about applying unary operator- to unsigned type.
-    # append_option_if_available("/wd4146" cxx_compile_options)
-
     # MSVC STL assumes that `allocator_traits`'s allocator will use raw pointers,
     # and the `__DECLSPEC_ALLOCATOR` macro causes issues with thrust's universal
     # allocators:
@@ -146,13 +161,13 @@ function(cccl_build_compiler_targets)
     # See https://github.com/microsoft/STL/issues/696
     append_option_if_available("/wd4494" cxx_compile_options)
 
-    # Require the conforming preprocessor
-    append_option_if_available("/Zc:preprocessor" cxx_compile_options)
+    # Get error messages with a little arrow indicating the error location more exactly
+    append_option_if_available("/diagnostics:caret" cxx_compile_options)
+
     if (MSVC_TOOLSET_VERSION LESS 143)
       # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
       append_option_if_available("/wd5105" cxx_compile_options)
     endif()
-
   else()
     list(APPEND cuda_compile_options "-Wreorder")
 
@@ -167,16 +182,53 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Woverloaded-virtual" cxx_compile_options)
     append_option_if_available("-Wcast-qual" cxx_compile_options)
     append_option_if_available("-Wpointer-arith" cxx_compile_options)
-    append_option_if_available("-Wunused-local-typedef" cxx_compile_options)
+    append_option_if_available("-Wunused-local-typedefs" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
 
+    # Clang-only
+    append_option_if_available("-Wnvcc-compat" cxx_compile_options)
+    append_option_if_available("-Wimplicit-fallthrough" cxx_compile_options)
+    append_option_if_available(
+      "-fdiagnostics-show-template-tree"
+      cxx_compile_options
+    )
+    append_option_if_available("-Wignored-qualifiers" cxx_compile_options)
+    append_option_if_available(
+      "-Wmissing-field-initializers"
+      cxx_compile_options
+    )
+    # Inundated with error: ISO C++11 requires at least one argument for the "..." in a
+    # variadic macro for _CCCL_REQUIRES_EXPR(), so cannot enable this.
+    #
+    # append_option_if_available("-pedantic" cxx_compile_options)
+    append_option_if_available("-Wsign-compare" cxx_compile_options)
+    append_option_if_available(
+      "-Warray-bounds-pointer-arithmetic"
+      cxx_compile_options
+    )
+    append_option_if_available("-Wassign-enum" cxx_compile_options)
+    append_option_if_available("-Wformat-pedantic" cxx_compile_options)
+    append_option_if_available("-Walloc-size" cxx_compile_options)
+    append_option_if_available("-Walloc-zero" cxx_compile_options)
+    append_option_if_available("-Wtsan" cxx_compile_options)
+    append_option_if_available("-Wenum-conversion" cxx_compile_options)
+    append_option_if_available("-Wpacked" cxx_compile_options)
+    # Clang and GCC
+    append_option_if_available(
+      "-ftemplate-backtrace-limit=0"
+      cxx_compile_options
+    )
+    append_option_if_available("-fmacro-backtrace-limit=0" cxx_compile_options)
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)
     append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
     # Calling a variadic macro with zero args is a GNU extension until C++20,
     # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
     # is a real problem worth fixing.
-    append_option_if_available("-Wno-gnu-zero-variadic-macro-arguments" cxx_compile_options)
+    append_option_if_available(
+      "-Wno-gnu-zero-variadic-macro-arguments"
+      cxx_compile_options
+    )
 
     # This complains about functions in CUDA system headers when used with nvcc.
     append_option_if_available("-Wno-unused-function" cxx_compile_options)
@@ -190,33 +242,18 @@ function(cccl_build_compiler_targets)
     endif()
   endif()
 
-  cccl_build_compiler_interface(cccl.compiler_interface
+  cccl_build_compiler_interface(
+    cccl.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
   )
 
   # Clang-cuda only:
-  target_compile_options(cccl.compiler_interface INTERFACE
-    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
-    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
+  target_compile_options(
+    cccl.compiler_interface
+    INTERFACE
+      $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
+      $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
   )
-
-  # These targets are used for dialect-specific options:
-  foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
-    add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
-    target_link_libraries(cccl.compiler_interface_cpp${dialect} INTERFACE cccl.compiler_interface)
-  endforeach()
-
-  # Some of our unit tests unconditionally throw exceptions, and compilers will
-  # detect that the following instructions are unreachable. This is intentional
-  # and unavoidable in these cases. This target can be used to silence
-  # unreachable code warnings.
-  add_library(cccl.silence_unreachable_code_warnings INTERFACE)
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(cccl.silence_unreachable_code_warnings INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4702>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4702>
-    )
-  endif()
 endfunction()

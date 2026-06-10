@@ -1,33 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
-#include <cub/device/device_reduce.cuh>
+#include <cub/device/device_segmented_reduce.cuh>
+
+#include <cuda/std/type_traits>
 
 #ifndef TUNE_BASE
 #  define TUNE_ITEMS_PER_VEC_LOAD (1 << TUNE_ITEMS_PER_VEC_LOAD_POW2)
@@ -35,70 +13,40 @@
 
 #if !TUNE_BASE
 template <typename AccumT>
-struct policy_hub_t
+struct policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> ::cub::segmented_reduce_policy
   {
-    static constexpr int items_per_vec_load = TUNE_ITEMS_PER_VEC_LOAD;
+    constexpr int accum_size = int{sizeof(AccumT)};
 
-    static constexpr int small_threads_per_warp  = TUNE_S_THREADS_PER_WARP;
-    static constexpr int medium_threads_per_warp = TUNE_M_THREADS_PER_WARP;
+    const auto [l_items, l_threads] =
+      cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_L_NOMINAL_4B_ITEMS_PER_THREAD, accum_size);
+    const auto s_items =
+      cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD, accum_size)
+        .items_per_thread;
+    const auto m_items =
+      cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD, accum_size)
+        .items_per_thread;
 
-    static constexpr int nominal_4b_large_threads_per_block = TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK;
-
-    static constexpr int nominal_4b_small_items_per_thread  = TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD;
-    static constexpr int nominal_4b_medium_items_per_thread = TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD;
-    static constexpr int nominal_4b_large_items_per_thread  = TUNE_L_NOMINAL_4B_ITEMS_PER_THREAD;
-
-    using ReducePolicy =
-      cub::AgentReducePolicy<nominal_4b_large_threads_per_block,
-                             nominal_4b_large_items_per_thread,
-                             AccumT,
-                             items_per_vec_load,
-                             cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-                             cub::LOAD_LDG>;
-
-    using SmallReducePolicy =
-      cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
-                                 small_threads_per_warp,
-                                 nominal_4b_small_items_per_thread,
-                                 AccumT,
-                                 items_per_vec_load,
-                                 cub::LOAD_LDG>;
-
-    using MediumReducePolicy =
-      cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
-                                 medium_threads_per_warp,
-                                 nominal_4b_medium_items_per_thread,
-                                 AccumT,
-                                 items_per_vec_load,
-                                 cub::LOAD_LDG>;
-  };
-
-  using MaxPolicy = policy_t;
+    const auto rp = cub::agent_reduce_policy{
+      l_threads, l_items, TUNE_ITEMS_PER_VEC_LOAD, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
+    return {
+      rp,
+      cub::warp_reduce_policy{rp.threads_per_block, TUNE_S_THREADS_PER_WARP, s_items, rp.vec_size, rp.load_modifier},
+      cub::warp_reduce_policy{rp.threads_per_block, TUNE_M_THREADS_PER_WARP, m_items, rp.vec_size, rp.load_modifier}};
+  }
 };
 #endif // !TUNE_BASE
 
 template <typename T>
 void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
-  using accum_t     = T;
-  using input_it_t  = const T*;
-  using output_it_t = T*;
-  using init_t      = T;
+  static constexpr bool is_argmin = std::is_same_v<op_t, cub::detail::arg_min>;
 
-  using dispatch_t = cub::detail::reduce::DispatchFixedSizeSegmentedReduce<
-    input_it_t,
-    output_it_t,
-    int,
-    op_t,
-    init_t,
-    accum_t
-#if !TUNE_BASE
-    ,
-    policy_hub_t<accum_t>
-#endif // TUNE_BASE
-    >;
+  using output_t     = cuda::std::conditional_t<is_argmin, cuda::std::pair<int, T>, T>;
+  using accum_t      = output_t;
+  using init_value_t = cuda::std::conditional_t<is_argmin, cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
 
   // Retrieve axis parameters
   const size_t num_elements = static_cast<size_t>(state.get_int64("Elements{io}"));
@@ -107,35 +55,50 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
   const size_t elements     = num_segments * segment_size;
 
   thrust::device_vector<T> in = generate(elements);
-  thrust::device_vector<T> out(num_segments);
+  thrust::device_vector<output_t> out(num_segments);
 
-  input_it_t d_in   = thrust::raw_pointer_cast(in.data());
-  output_it_t d_out = thrust::raw_pointer_cast(out.data());
+  const T* d_in   = thrust::raw_pointer_cast(in.data());
+  output_t* d_out = thrust::raw_pointer_cast(out.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements, "Size");
-  state.add_global_memory_writes<T>(num_segments);
+  state.add_global_memory_writes<output_t>(num_segments);
 
-  // Allocate temporary storage:
-  std::size_t temp_size;
-  dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_out, num_segments, static_cast<int>(segment_size), op_t{}, init_t{}, 0 /* stream */);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      temp_storage,
-      temp_size,
-      d_in,
-      d_out,
-      num_segments,
-      static_cast<int>(segment_size),
-      op_t{},
-      init_t{},
-      launch.get_stream());
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<accum_t>{})
+#endif
+    );
+    if constexpr (is_argmin)
+    {
+      _CCCL_TRY_CUDA_API(
+        cub::DeviceSegmentedReduce::ArgMin,
+        "Segmented ArgMin failed",
+        d_in,
+        d_out,
+        static_cast<::cuda::std::int64_t>(num_segments),
+        static_cast<int>(segment_size),
+        env);
+    }
+    else
+    {
+      _CCCL_TRY_CUDA_API(
+        cub::DeviceSegmentedReduce::Reduce,
+        "Segmented reduce failed",
+        d_in,
+        d_out,
+        static_cast<::cuda::std::int64_t>(num_segments),
+        static_cast<int>(segment_size),
+        op_t{},
+        init_value_t{},
+        env);
+    }
   });
 }
 

@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -38,6 +14,7 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
+#include <c2h/generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
@@ -150,7 +127,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -181,7 +158,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -213,7 +190,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -242,22 +219,28 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
     auto d_values_out_it = thrust::raw_pointer_cast(out_values.data());
-    using init_t         = cub::detail::it_value_t<decltype(unwrap_it(d_values_out_it))>;
+    using init_value_t   = cub::detail::it_value_t<decltype(unwrap_it(d_values_out_it))>;
     device_exclusive_scan_by_key(
-      d_keys_it, unwrap_it(d_values_it), unwrap_it(d_values_out_it), scan_op, init_t{}, num_items, eq_op_t{});
+      d_keys_it, unwrap_it(d_values_it), unwrap_it(d_values_out_it), scan_op, init_value_t{}, num_items, eq_op_t{});
 
     // Verify result
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
       out_values            = in_values;
       auto values_in_out_it = thrust::raw_pointer_cast(out_values.data());
       device_exclusive_scan_by_key(
-        d_keys_it, unwrap_it(values_in_out_it), unwrap_it(values_in_out_it), scan_op, init_t{}, num_items, eq_op_t{});
+        d_keys_it,
+        unwrap_it(values_in_out_it),
+        unwrap_it(values_in_out_it),
+        scan_op,
+        init_value_t{},
+        num_items,
+        eq_op_t{});
 
       // Verify result
       REQUIRE(expected_result == out_values);
@@ -381,9 +364,9 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    using init_t         = value_t;
+    using init_value_t   = value_t;
     device_exclusive_scan_by_key(
-      d_keys_it, d_values_it, d_values_out_it, scan_op, init_t{}, num_items, cuda::std::equal_to<>{});
+      d_keys_it, d_values_it, d_values_out_it, scan_op, init_value_t{}, num_items, cuda::std::equal_to<>{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);

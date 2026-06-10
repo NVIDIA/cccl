@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -60,27 +36,25 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 #  endif // TUNE_LOAD_ALGORITHM_ID
 
 template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
-struct policy_hub_t
+struct bench_policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> cub::detail::histogram::histogram_policy
   {
-    static constexpr cub::BlockLoadAlgorithm load_algorithm =
+    constexpr cub::BlockLoadAlgorithm load_algorithm =
       (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
         : TUNE_LOAD_ALGORITHM;
 
-    using AgentHistogramPolicyT = cub::AgentHistogramPolicy<
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      load_algorithm,
-      TUNE_LOAD_MODIFIER,
-      TUNE_RLE_COMPRESS,
-      MEM_PREFERENCE,
-      TUNE_WORK_STEALING,
-      TUNE_VEC_SIZE>;
-  };
-
-  using MaxPolicy = policy_t;
+    return {TUNE_THREADS,
+            TUNE_ITEMS,
+            load_algorithm,
+            TUNE_LOAD_MODIFIER,
+            TUNE_RLE_COMPRESS,
+            MEM_PREFERENCE,
+            TUNE_WORK_STEALING,
+            TUNE_VEC_SIZE,
+            2048}; // TODO(bgruber): make tunable
+  }
 };
 #endif // !TUNE_BASE
 

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file discard_block_engine.h
  *  \brief A random number engine which adapts a base engine and produces
@@ -33,15 +20,14 @@
 
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_engine_adaptors Random Number Engine Adaptor Class Templates
  *  \ingroup random
  *  \{
@@ -74,7 +60,7 @@ namespace random
  *    thrust::discard_block_engine<thrust::minstd_rand, 13, 10> rng;
  *
  *    // print a random number to standard output
- *    std::cout << rng() << std::endl;
+ *    std::cout << rng() << '\n';
  *
  *    return 0;
  *  }
@@ -152,7 +138,7 @@ public:
   /*! This member function produces a new random value and updates this \p discard_block_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p discard_block_engine's state a given number of times
    *  and discards the results.
@@ -229,7 +215,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, discard_block_engine<Engine, p
 
 /*! \} // end random_number_engine_adaptors
  */
-
 } // namespace random
 
 // import names into thrust::

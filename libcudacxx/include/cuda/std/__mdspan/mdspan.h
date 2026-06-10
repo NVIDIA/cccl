@@ -51,6 +51,7 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/as_const.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
@@ -63,6 +64,44 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+template <class _Extents, class _LayoutPolicy, class _AccessorPolicy>
+struct __mdspan_constraints
+{
+  using extents_type     = _Extents;
+  using layout_type      = _LayoutPolicy;
+  using accessor_type    = _AccessorPolicy;
+  using mapping_type     = typename layout_type::template mapping<extents_type>;
+  using index_type       = typename extents_type::index_type;
+  using data_handle_type = typename accessor_type::data_handle_type;
+
+  static constexpr bool __can_default_construct =
+    (_Extents::rank_dynamic() > 0) && is_default_constructible_v<data_handle_type>
+    && is_default_constructible_v<mapping_type> && is_default_constructible_v<accessor_type>;
+
+  template <class... _OtherIndexTypes>
+  static constexpr bool __can_construct_from_handle_and_variadic =
+    (__mdspan_detail::__matches_dynamic_rank<extents_type, sizeof...(_OtherIndexTypes)>
+     || __mdspan_detail::__matches_static_rank<extents_type, sizeof...(_OtherIndexTypes)>)
+    && __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>
+    && is_constructible_v<mapping_type, extents_type> && is_default_constructible_v<accessor_type>;
+
+  template <class _OtherIndexType>
+  static constexpr bool __is_constructible_from_index_type =
+    is_convertible_v<const _OtherIndexType&, index_type>
+    && is_nothrow_constructible_v<index_type, const _OtherIndexType&> && is_constructible_v<mapping_type, extents_type>
+    && is_default_constructible_v<accessor_type>;
+
+  template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
+  static constexpr bool __is_convertible_from =
+    is_constructible_v<mapping_type, const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&>
+    && is_constructible_v<accessor_type, const _OtherAccessor&>;
+
+  template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
+  static constexpr bool __is_implicit_convertible_from =
+    is_convertible_v<const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&, mapping_type>
+    && is_convertible_v<const _OtherAccessor&, accessor_type>;
+};
+
 template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
 class mdspan
     : private __mdspan_ebco<typename _AccessorPolicy::data_handle_type,
@@ -70,7 +109,7 @@ class mdspan
                             _AccessorPolicy>
 {
 private:
-  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
+  static_assert(__is_cuda_std_extents_v<_Extents>,
                 "mdspan: Extents template parameter must be a specialization of extents.");
   static_assert(!is_array_v<_ElementType>, "mdspan: ElementType template parameter may not be an array type");
   static_assert(!is_abstract_v<_ElementType>, "mdspan: ElementType template parameter may not be an abstract class");
@@ -82,6 +121,8 @@ private:
 
   template <class, class, class, class>
   friend class mdspan;
+
+  using __constraints = __mdspan_constraints<_Extents, _LayoutPolicy, _AccessorPolicy>;
 
 public:
   using extents_type     = _Extents;
@@ -116,105 +157,139 @@ public:
     return mapping().extents().extent(__r);
   }
 
-public:
   //--------------------------------------------------------------------------------
   // [mdspan.mdspan.cons], mdspan constructors, assignment, and destructor
 
-  template <class _Extents2>
-  static constexpr bool __can_default_construct =
-    (_Extents2::rank_dynamic() > 0) && is_default_constructible_v<data_handle_type>
-    && is_default_constructible_v<mapping_type> && is_default_constructible_v<accessor_type>;
-
   _CCCL_TEMPLATE(class _Extents2 = _Extents)
-  _CCCL_REQUIRES(__can_default_construct<_Extents2>)
+  _CCCL_REQUIRES(__mdspan_constraints<_Extents2, _LayoutPolicy, _AccessorPolicy>::__can_default_construct)
   _CCCL_API constexpr mdspan() noexcept(
     is_nothrow_default_constructible_v<data_handle_type> && is_nothrow_default_constructible_v<mapping_type>
     && is_nothrow_default_constructible_v<accessor_type>)
       : __base()
-  {}
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_HIDE_FROM_ABI constexpr mdspan(const mdspan&) = default;
   _CCCL_HIDE_FROM_ABI constexpr mdspan(mdspan&&)      = default;
 
-  template <size_t _Size>
-  static constexpr bool __matches_dynamic_rank = (_Size == extents_type::rank_dynamic());
-
-  template <size_t _Size>
-  static constexpr bool __matches_static_rank =
-    (_Size == extents_type::rank()) && (_Size != extents_type::rank_dynamic());
-
-  template <class... _OtherIndexTypes>
-  static constexpr bool __can_construct_from_handle_and_variadic =
-    (__matches_dynamic_rank<sizeof...(_OtherIndexTypes)> || __matches_static_rank<sizeof...(_OtherIndexTypes)>)
-    && __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>
-    && is_constructible_v<mapping_type, extents_type> && is_default_constructible_v<accessor_type>;
-
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
-  _CCCL_REQUIRES(__can_construct_from_handle_and_variadic<_OtherIndexTypes...>)
+  _CCCL_REQUIRES(__constraints::template __can_construct_from_handle_and_variadic<_OtherIndexTypes...>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, _OtherIndexTypes... __exts)
       : __base(::cuda::std::move(__p), extents_type(static_cast<index_type>(::cuda::std::move(__exts))...))
-  {}
-
-  template <class _OtherIndexType>
-  static constexpr bool __is_constructible_from_index_type =
-    is_convertible_v<const _OtherIndexType&, index_type>
-    && is_nothrow_constructible_v<index_type, const _OtherIndexType&> && is_constructible_v<mapping_type, extents_type>
-    && is_default_constructible_v<accessor_type>;
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
-  _CCCL_REQUIRES(__matches_dynamic_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
+  _CCCL_REQUIRES(__mdspan_detail::__matches_dynamic_rank<extents_type, _Size> _CCCL_AND
+                   __constraints::template __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const array<_OtherIndexType, _Size>& __exts)
       : __base(::cuda::std::move(__p), extents_type{__exts})
-  {}
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
-  _CCCL_REQUIRES(__matches_static_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
+  _CCCL_REQUIRES(__mdspan_detail::__matches_static_rank<extents_type, _Size> _CCCL_AND
+                   __constraints::template __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, const array<_OtherIndexType, _Size>& __exts)
       : __base(::cuda::std::move(__p), extents_type{__exts})
-  {}
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
-  _CCCL_REQUIRES(__matches_dynamic_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
+  _CCCL_REQUIRES(__mdspan_detail::__matches_dynamic_rank<extents_type, _Size> _CCCL_AND
+                   __constraints::template __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API constexpr mdspan(data_handle_type __p, span<_OtherIndexType, _Size> __exts)
       : __base(::cuda::std::move(__p), extents_type{__exts})
-  {}
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
-  _CCCL_REQUIRES(__matches_static_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
+  _CCCL_REQUIRES(__mdspan_detail::__matches_static_rank<extents_type, _Size> _CCCL_AND
+                   __constraints::template __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, span<_OtherIndexType, _Size> __exts)
       : __base(::cuda::std::move(__p), extents_type{__exts})
-  {}
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_TEMPLATE(class _AccessorPolicy2 = _AccessorPolicy, class _Mapping2 = mapping_type)
   _CCCL_REQUIRES(
     is_default_constructible_v<_AccessorPolicy2> _CCCL_AND is_constructible_v<_Mapping2, const extents_type&>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const extents_type& __exts)
       : __base(::cuda::std::move(__p), __exts)
-  {}
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_TEMPLATE(class _AccessorPolicy2 = _AccessorPolicy)
   _CCCL_REQUIRES(is_default_constructible_v<_AccessorPolicy2>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const mapping_type& __m)
       : __base(::cuda::std::move(__p), __m)
-  {}
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_API constexpr mdspan(data_handle_type __p, const mapping_type& __m, const accessor_type& __a)
       : __base(::cuda::std::move(__p), __m, __a)
-  {}
-
-  template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
-  static constexpr bool __is_convertible_from =
-    is_constructible_v<mapping_type, const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&>
-    && is_constructible_v<accessor_type, const _OtherAccessor&>;
-
-  template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
-  static constexpr bool __is_implicit_convertible_from =
-    is_convertible_v<const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&, mapping_type>
-    && is_convertible_v<const _OtherAccessor&, accessor_type>;
+  {
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
+  }
 
   _CCCL_TEMPLATE(class _OtherElementType, class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor)
-  _CCCL_REQUIRES(__is_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor> //
-                   _CCCL_AND __is_implicit_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor>)
+  _CCCL_REQUIRES(
+    __constraints::template __is_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor> //
+      _CCCL_AND
+        __constraints::template __is_implicit_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor>)
   _CCCL_API constexpr mdspan(const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
       : __base(__other.data_handle(), __other.mapping(), __other.accessor())
   {
@@ -222,7 +297,12 @@ public:
                   "mdspan: incompatible data_handle_type for mdspan construction");
     static_assert(is_constructible_v<extents_type, _OtherExtents>,
                   "mdspan: incompatible extents for mdspan construction");
-
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
     if constexpr (extents_type::rank() != 0)
     {
       // The following precondition is part of the standard, but is unlikely to be triggered.
@@ -235,16 +315,17 @@ public:
         // Not catching this could lead to out of bounds errors later
         // e.g. mdspan<int, dextents<char,1>, non_checking_layout> m =
         //        mdspan<int, dextents<unsigned, 1>, non_checking_layout>(ptr, 200); leads to an extent of -56 on m
-        _CCCL_ASSERT((static_extent(__r) == dynamic_extent)
-                       || (static_cast<index_type>(__other.extent(__r)) == static_cast<index_type>(static_extent(__r))),
-                     "mdspan: conversion mismatch of source dynamic extents with static extents");
+        _CCCL_ASSERT(
+          (static_extent(__r) == dynamic_extent) || ::cuda::std::cmp_equal(__other.extent(__r), static_extent(__r)),
+          "mdspan: conversion mismatch of source dynamic extents with static extents");
       }
     }
   }
 
   _CCCL_TEMPLATE(class _OtherElementType, class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor)
-  _CCCL_REQUIRES(__is_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor> _CCCL_AND(
-    !__is_implicit_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor>))
+  _CCCL_REQUIRES(
+    __constraints::template __is_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor> _CCCL_AND(
+      !__constraints::template __is_implicit_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor>))
   _CCCL_API explicit constexpr mdspan(
     const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
       : __base(__other.data_handle(), __other.mapping(), __other.accessor())
@@ -253,7 +334,12 @@ public:
                   "mdspan: incompatible data_handle_type for mdspan construction");
     static_assert(is_constructible_v<extents_type, _OtherExtents>,
                   "mdspan: incompatible extents for mdspan construction");
-
+    if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
+    {
+      [[maybe_unused]] const auto& __tmp = mapping(); // workaround for clang with nodiscard
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
+                   "mdspan: invalid data handle");
+    }
     if constexpr (extents_type::rank() != 0)
     {
       // The following precondition is part of the standard, but is unlikely to be triggered.
@@ -266,9 +352,9 @@ public:
         // Not catching this could lead to out of bounds errors later
         // e.g. mdspan<int, dextents<char,1>, non_checking_layout> m =
         //        mdspan<int, dextents<unsigned, 1>, non_checking_layout>(ptr, 200); leads to an extent of -56 on m
-        _CCCL_ASSERT((static_extent(__r) == dynamic_extent)
-                       || (static_cast<index_type>(__other.extent(__r)) == static_cast<index_type>(static_extent(__r))),
-                     "mdspan: conversion mismatch of source dynamic extents with static extents");
+        _CCCL_ASSERT(
+          (static_extent(__r) == dynamic_extent) || ::cuda::std::cmp_equal(__other.extent(__r), static_extent(__r)),
+          "mdspan: conversion mismatch of source dynamic extents with static extents");
       }
     }
   }
@@ -279,7 +365,7 @@ public:
   //--------------------------------------------------------------------------------
   // [mdspan.mdspan.members], members
 
-#if defined(_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS)
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) == extents_type::rank())
                    _CCCL_AND __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>)
@@ -299,7 +385,7 @@ public:
   {
     return accessor().access(data_handle(), mapping()(static_cast<index_type>(::cuda::std::move(__index))));
   }
-#endif // _LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS
 
   template <class _OtherIndexType, size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
@@ -352,24 +438,24 @@ public:
     return accessor().access(data_handle(), mapping()(__indices...));
   }
 
-  [[nodiscard]] _CCCL_API static constexpr bool __mul_overflow(size_t x, size_t y, size_t* res) noexcept
-  {
-    *res = x * y;
-    return x && ((*res / x) != y);
-  }
-
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __check_size() const noexcept
   {
-    size_t __prod = 1;
-    for (size_t __r = 0; __r != extents_type::rank(); ++__r)
+    bool __result = true;
+    if constexpr (extents_type::rank() > 0) // MSVC raises a warning even with __r != extents_type::rank()
     {
-      if (__mul_overflow(__prod, mapping().extents().extent(__r), &__prod))
+      size_t __prod = 1;
+      for (size_t __r = 0; __r < extents_type::rank(); ++__r)
       {
-        return false;
+        const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
+        if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
+        {
+          __result = false;
+          break;
+        }
       }
     }
-    return true;
+    return __result;
   }
 
   template <size_t... _Idxs>
@@ -433,60 +519,68 @@ public:
     return mapping_type::is_always_strided();
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool is_unique() const
-    noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_unique()))
+  [[nodiscard]]
+  _CCCL_API constexpr bool is_unique() const noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_unique()))
   {
-    return mapping().is_unique();
+    const auto& __tmp = mapping(); // workaround for clang with nodiscard
+    return __tmp.is_unique();
   }
   [[nodiscard]] _CCCL_API constexpr bool is_exhaustive() const
     noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_exhaustive()))
   {
-    return mapping().is_exhaustive();
+    const auto& __tmp = mapping(); // workaround for clang with nodiscard
+    return __tmp.is_exhaustive();
   }
   [[nodiscard]] _CCCL_API constexpr bool is_strided() const
     noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_strided()))
   {
-    return mapping().is_strided();
+    const auto& __tmp = mapping(); // workaround for clang with nodiscard
+    return __tmp.is_strided();
   }
   [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const
   {
-    return mapping().stride(__r);
+    const auto& __tmp = mapping(); // workaround for clang with nodiscard
+    return static_cast<index_type>(__tmp.stride(__r));
   }
 };
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
 _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0) _CCCL_AND(is_convertible_v<_OtherIndexTypes, size_t>&&... && true))
-_CCCL_HOST_DEVICE explicit mdspan(_ElementType*, _OtherIndexTypes...)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES explicit mdspan(_ElementType*, _OtherIndexTypes...)
   -> mdspan<_ElementType, extents<size_t, __maybe_static_ext<_OtherIndexTypes>...>>;
 
 _CCCL_TEMPLATE(class _Pointer)
 _CCCL_REQUIRES(is_pointer_v<remove_reference_t<_Pointer>>)
-_CCCL_HOST_DEVICE mdspan(_Pointer&&) -> mdspan<remove_pointer_t<remove_reference_t<_Pointer>>, extents<size_t>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_Pointer&&)
+  -> mdspan<remove_pointer_t<remove_reference_t<_Pointer>>, extents<size_t>>;
 
 _CCCL_TEMPLATE(class _CArray)
 _CCCL_REQUIRES(is_array_v<_CArray> _CCCL_AND(rank_v<_CArray> == 1))
-_CCCL_HOST_DEVICE mdspan(_CArray&) -> mdspan<remove_all_extents_t<_CArray>, extents<size_t, extent_v<_CArray, 0>>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_CArray&)
+  -> mdspan<remove_all_extents_t<_CArray>, extents<size_t, extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const array<_OtherIndexType, _Size>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const array<_OtherIndexType, _Size>&)
   -> mdspan<_ElementType, dextents<size_t, _Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, span<_OtherIndexType, _Size>) -> mdspan<_ElementType, dextents<size_t, _Size>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, span<_OtherIndexType, _Size>)
+  -> mdspan<_ElementType, dextents<size_t, _Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
 // seems to throw off automatic deduction guides.
 template <class _ElementType, class _OtherIndexType, size_t... _ExtentsPack>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const extents<_OtherIndexType, _ExtentsPack...>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const extents<_OtherIndexType, _ExtentsPack...>&)
   -> mdspan<_ElementType, extents<_OtherIndexType, _ExtentsPack...>>;
 
 template <class _ElementType, class _MappingType>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const _MappingType&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const _MappingType&)
   -> mdspan<_ElementType, typename _MappingType::extents_type, typename _MappingType::layout_type>;
 
 template <class _MappingType, class _AccessorType>
-_CCCL_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type,
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,

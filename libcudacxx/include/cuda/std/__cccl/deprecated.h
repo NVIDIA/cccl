@@ -1,4 +1,3 @@
-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -12,7 +11,9 @@
 #ifndef __CCCL_DEPRECATED_H
 #define __CCCL_DEPRECATED_H
 
+#include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/dialect.h>
 #include <cuda/std/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -54,16 +55,33 @@
 #  endif
 #endif // suppress all API deprecation warnings
 
-#ifdef CCCL_IGNORE_DEPRECATED_API
+#if defined(CCCL_IGNORE_DEPRECATED_API) || defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS)
 //! deprecated [Since 2.8]
 #  define CCCL_DEPRECATED
 //! deprecated [Since 2.8]
 #  define CCCL_DEPRECATED_BECAUSE(MSG)
-#else // ^^^ CCCL_IGNORE_DEPRECATED_API ^^^ / vvv !CCCL_IGNORE_DEPRECATED_API vvv
+#elif _CCCL_HAS_ATTRIBUTE(deprecated)
+//! deprecated [Since 2.8]
+#  define CCCL_DEPRECATED              __attribute__((deprecated))
+//! deprecated [Since 2.8]
+#  define CCCL_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
+#else // ^^^ attribute deprecated ^^^ / vvv standard deprecated attribute vvv
 //! deprecated [Since 2.8]
 #  define CCCL_DEPRECATED              [[deprecated]]
 //! deprecated [Since 2.8]
 #  define CCCL_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
-#endif // !CCCL_IGNORE_DEPRECATED_API
+#endif // ^^^ standard deprecated attribute ^^^
+
+#if _CCCL_STD_VER >= 2020
+#  define _CCCL_DEPRECATED_IN_CXX20 CCCL_DEPRECATED
+#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER < 2020 vvv
+#  define _CCCL_DEPRECATED_IN_CXX20
+#endif // ^^^ _CCCL_STD_VER < 2020 ^^^
+
+#if _CCCL_STD_VER >= 2023
+#  define _CCCL_DEPRECATED_IN_CXX23 CCCL_DEPRECATED
+#else // ^^^ _CCCL_STD_VER >= 2023 ^^^ / vvv _CCCL_STD_VER < 2023 vvv
+#  define _CCCL_DEPRECATED_IN_CXX23
+#endif // ^^^ _CCCL_STD_VER < 2023 ^^^
 
 #endif // __CCCL_DEPRECATED_H

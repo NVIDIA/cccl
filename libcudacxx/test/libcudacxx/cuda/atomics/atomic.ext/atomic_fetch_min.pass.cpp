@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 //
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -25,11 +28,11 @@ template <class T,
           bool Signed = cuda::std::is_signed<T>::value>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     // Test lesser
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(5);
@@ -37,7 +40,7 @@ struct TestFn
       assert(t.load() == T(4));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(5);
@@ -46,7 +49,7 @@ struct TestFn
     }
     // Test not lesser
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(3);
@@ -54,7 +57,7 @@ struct TestFn
       assert(t.load() == T(3));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(3);
@@ -67,13 +70,13 @@ struct TestFn
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFn<T, Selector, ThreadScope, true>
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     // Call unsigned tests
     TestFn<T, Selector, ThreadScope, false>()();
     // Test lesser, but with signed math
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(-1);
@@ -81,7 +84,7 @@ struct TestFn<T, Selector, ThreadScope, true>
       assert(t.load() == T(-5));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(-1);
@@ -90,7 +93,7 @@ struct TestFn<T, Selector, ThreadScope, true>
     }
     // Test not lesser
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(-1);
@@ -98,7 +101,7 @@ struct TestFn<T, Selector, ThreadScope, true>
       assert(t.load() == T(-1));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(-1);
@@ -111,7 +114,7 @@ struct TestFn<T, Selector, ThreadScope, true>
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFnDispatch
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     TestFn<T, Selector, ThreadScope>()();
   }

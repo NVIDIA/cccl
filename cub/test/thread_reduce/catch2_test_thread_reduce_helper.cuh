@@ -13,83 +13,11 @@
 #include <ostream>
 
 /***********************************************************************************************************************
- * CUB operator to identity
- **********************************************************************************************************************/
-
-// Replace with identity_v once #4312 lands
-template <typename T, typename Operator, typename = void>
-struct cub_operator_to_identity;
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::plus<>>
-{
-  static constexpr T value()
-  {
-    return T{};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::multiplies<>>
-{
-  static constexpr T value()
-  {
-    return T{1};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_and<>>
-{
-  static constexpr T value()
-  {
-    return static_cast<T>(~T{0});
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_or<>>
-{
-  static constexpr T value()
-  {
-    return T{0};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_xor<>>
-{
-  static constexpr T value()
-  {
-    return T{0};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::minimum<>>
-{
-  static constexpr T value()
-  {
-    return cuda::std::numeric_limits<T>::max();
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::maximum<>>
-{
-  static constexpr T value()
-  {
-    return cuda::std::numeric_limits<T>::lowest();
-  }
-};
-
-/***********************************************************************************************************************
  * Sensible Distribution Intervals for Test Data
  **********************************************************************************************************************/
 
 namespace detail
 {
-
 template <typename T, typename Operator, cuda::std::ptrdiff_t MaxReductionLength, typename = void>
 struct dist_interval
 {
@@ -143,7 +71,6 @@ struct dist_interval<
     return static_cast<T>(cuda::std::exp2(log2_max / MaxReductionLength));
   }
 };
-
 } // namespace detail
 
 template <typename Input,

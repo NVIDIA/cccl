@@ -45,7 +45,7 @@ struct __cccl_is_member_pointer<_Tp _Up::*>
   enum
   {
     __is_member = true,
-    __is_func   = is_function<_Tp>::value,
+    __is_func   = is_function_v<_Tp>,
     __is_obj    = !__is_func,
   };
 };

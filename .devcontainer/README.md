@@ -67,7 +67,7 @@ Follow the instructions in the prompt as below and enter the one-time code at ht
 
 To manually trigger this authentication, execute the `devcontainer-utils-vault-s3-init` script within the container.
 
-For more information about the sccache configuration and authentication, see the documentation at [`rapidsai/devcontainers`](https://github.com/rapidsai/devcontainers/blob/branch-23.10/USAGE.md#build-caching-with-sccache).
+For more information about the sccache configuration and authentication, see the documentation at [`rapidsai/devcontainers`](https://github.com/rapidsai/devcontainers/blob/main/USAGE.md#build-caching-with-sccache).
 
 ## Quickstart: VSCode on WSL (Recommended for Windows) <a name="wsl"></a>
 
@@ -79,9 +79,10 @@ Apart from the initial setup of WSL, the process for using CCCL's Dev Containers
 - Windows OS that supports WSL 2 (Windows 11 or newer)
 - [Windows Subsystem for Linux v2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install)
 - [Visual Studio Code](https://code.visualstudio.com/) (installed on Windows host)
+- [Docker](https://docs.docker.com/desktop/setup/install/windows-install/)
+    - Required for [VSCode / Dev Container integration](https://code.visualstudio.com/docs/devcontainers/containers#_installation)
 - [VSCode Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) (installed on Windows host)
     - Includes [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) extensions
-- [Docker](https://docs.docker.com/engine/install/) - (Will be installed automatically by the Remote Development extension)
 
 #### GPU Prerequisites (only needed for executing tests that require a GPU)
 - Supported NVIDIA GPU

@@ -11,7 +11,8 @@
 #ifndef __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__
 #define __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
+
 #include <cuda/__driver/driver_api.h>
 
 #include <nv/target>
@@ -19,61 +20,27 @@
 #include <exception> // IWYU pragma: keep
 #include <sstream>
 
+#include "test_macros.h"
+#include "utility.cuh"
 #include <c2h/catch2_test_helper.h>
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
-__device__ inline void ccclrt_require_impl(
-  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
-{
-  if (!condition)
-  {
-#if !_CCCL_CUDA_COMPILER(CLANG)
-    // TODO do warp aggregate prints for easier readability?
-    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
-           filename,
-           linenum,
-           funcname,
-           blockIdx.x,
-           blockIdx.y,
-           blockIdx.z,
-           threadIdx.x,
-           threadIdx.y,
-           threadIdx.z,
-           condition_text);
-#endif
-    __trap();
-  }
-}
+#define CCCLRT_REQUIRE(condition) REQUIRE(condition)
 
-// There is a problem with clang-cuda and nv/target, but we don't need the device side macros yet,
-// disable them for now
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  define CCCLRT_REQUIRE(condition)     REQUIRE(condition)
-#  define CCCLRT_CHECK(condition)       CHECK(condition)
-#  define CCCLRT_FAIL(message)          FAIL(message)
-#  define CCCLRT_CHECK_FALSE(condition) CCCLRT_CHECK(!(condition))
+#define CCCLRT_CHECK(condition) CHECK(condition)
 
-#else // _CCCL_CUDA_COMPILER(CLANG)
-#  define CCCLRT_REQUIRE(condition)                                                                           \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                           \
-                      (ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                      (REQUIRE(condition);))
+#define CCCLRT_FAIL(message) FAIL(message)
 
-#  define CCCLRT_CHECK(condition)                                                                             \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                           \
-                      (ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                      (CHECK(condition);))
+#define CCCLRT_CHECK_FALSE(condition) CHECK_FALSE(condition)
 
-#  define CCCLRT_FAIL(message) /*                                                                   */ \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, /*                                                             */  \
-                      (ccclrt_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-                      (FAIL(message);))
+// Explicit device side require macros for clang-cuda
+#define CCCLRT_REQUIRE_DEVICE(condition)     REQUIRE_DEVICE(condition)
+#define CCCLRT_CHECK_DEVICE(condition)       CHECK(condition)
+#define CCCLRT_FAIL_DEVICE(message)          FAIL(message)
+#define CCCLRT_CHECK_FALSE_DEVICE(condition) CHECK_FALSE(condition)
 
-#  define CCCLRT_CHECK_FALSE(condition) CCCLRT_CHECK(!(condition))
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
-__host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
+TEST_FUNC constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
 }
@@ -90,7 +57,6 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
-
 } // namespace Catch
 
 namespace
@@ -138,7 +104,6 @@ struct ccclrt_test_fixture
     CCCLRT_CHECK(count_driver_stack() == 0);
   }
 };
-
 } // namespace test
 } // namespace
 
@@ -148,5 +113,8 @@ struct ccclrt_test_fixture
 // we don't accidentally initialize device 0 through CUDART usage and makes sure
 // our APIs work with empty driver stack.
 #define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
+
+#define C2H_CCCLRT_TEST_LIST(NAME, TAGS, ...) \
+  C2H_TEST_LIST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 
 #endif // __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__

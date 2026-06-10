@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__memory/uses_allocator.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -46,7 +47,7 @@ struct __uses_alloc_ctor_imp
 {
   using _RawAlloc _CCCL_NODEBUG_ALIAS = remove_cvref_t<_Alloc>;
   static const bool __ua              = uses_allocator<_Tp, _RawAlloc>::value;
-  static const bool __ic              = is_constructible<_Tp, allocator_arg_t, _Alloc, _Args...>::value;
+  static const bool __ic              = is_constructible_v<_Tp, allocator_arg_t, _Alloc, _Args...>;
   static const int value              = __ua ? 2 - __ic : 0;
 };
 

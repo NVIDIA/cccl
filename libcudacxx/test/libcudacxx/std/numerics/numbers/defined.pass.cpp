@@ -18,7 +18,7 @@
 #include <test_macros.h>
 
 template <class ExpectedT, class T>
-__host__ __device__ constexpr bool test_defined(const T& value)
+TEST_FUNC constexpr bool test_defined(const T& value)
 {
   static_assert(cuda::std::is_same_v<ExpectedT, T>);
 
@@ -29,7 +29,7 @@ __host__ __device__ constexpr bool test_defined(const T& value)
 }
 
 template <class T>
-__host__ __device__ constexpr bool test_type()
+TEST_FUNC constexpr bool test_type()
 {
   test_defined<T>(cuda::std::numbers::e_v<T>);
   test_defined<T>(cuda::std::numbers::log2e_v<T>);
@@ -48,7 +48,7 @@ __host__ __device__ constexpr bool test_type()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_defined<double>(cuda::std::numbers::e);
   test_defined<double>(cuda::std::numbers::log2e);
@@ -90,7 +90,7 @@ __global__ void test_kernel()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

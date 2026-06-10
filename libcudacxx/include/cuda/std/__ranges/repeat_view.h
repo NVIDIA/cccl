@@ -40,21 +40,21 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
-#include <cuda/std/detail/libcxx/include/tuple>
+#include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
-_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__take)
 struct __fn;
 _CCCL_END_NAMESPACE_CPO
-_CCCL_END_NAMESPACE_VIEWS
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CPO(__drop)
+struct __fn;
+_CCCL_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CUDA_STD_VIEWS
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Tp>
 _CCCL_CONCEPT __integer_like_with_usable_difference_type =
@@ -79,6 +79,7 @@ template <
 class repeat_view : public view_interface<repeat_view<_Tp, _Bound>>
 {
   friend ::cuda::std::ranges::views::__take::__fn;
+  friend ::cuda::std::ranges::views::__drop::__fn;
 
 public:
   class __iterator
@@ -237,7 +238,7 @@ public:
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES((!same_as<_Tp2, repeat_view>) _CCCL_AND copy_constructible<_Tp2>)
   _CCCL_API constexpr explicit repeat_view(const _Tp2& __value, _Bound __bound_sentinel = _Bound())
-      : __value_(in_place, __value)
+      : __value_(in_place_t{}, __value)
       , __bound_(__bound_sentinel)
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
@@ -247,7 +248,7 @@ public:
   }
 
   _CCCL_API constexpr explicit repeat_view(_Tp&& __value, _Bound __bound_sentinel = _Bound())
-      : __value_(in_place, ::cuda::std::move(__value))
+      : __value_(in_place_t{}, ::cuda::std::move(__value))
       , __bound_(__bound_sentinel)
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
@@ -260,7 +261,7 @@ public:
   _CCCL_REQUIRES(constructible_from<_Tp, _TpArgs...> _CCCL_AND constructible_from<_Bound, _BoundArgs...>)
   _CCCL_API constexpr explicit repeat_view(
     piecewise_construct_t, tuple<_TpArgs...> __value_args, tuple<_BoundArgs...> __bound_args = tuple<>{})
-      : __value_(in_place, ::cuda::std::make_from_tuple<_Tp>(::cuda::std::move(__value_args)))
+      : __value_(in_place_t{}, ::cuda::std::make_from_tuple<_Tp>(::cuda::std::move(__value_args)))
       , __bound_(::cuda::std::make_from_tuple<_Bound>(::cuda::std::move(__bound_args)))
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
@@ -300,12 +301,12 @@ private:
 };
 
 template <class _Tp, class _Bound>
-_CCCL_HOST_DEVICE repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _Bound>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _Bound>;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 // clang-format off
-_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__repeat)
 struct __fn {
   template <class _Tp>
@@ -328,9 +329,9 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto repeat = __repeat::__fn{};
 } // namespace __cpo
-_CCCL_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Tp>
 inline constexpr bool __is_repeat_specialization = false;
@@ -338,7 +339,7 @@ inline constexpr bool __is_repeat_specialization = false;
 template <class _Tp, class _Bound>
 inline constexpr bool __is_repeat_specialization<repeat_view<_Tp, _Bound>> = true;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

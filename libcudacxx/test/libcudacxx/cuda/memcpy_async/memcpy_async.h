@@ -21,7 +21,7 @@ template <class T,
           template <typename, typename> class BarrierSelector,
           cuda::thread_scope BarrierScope,
           typename... CompletionF>
-__host__ __device__ __noinline__ void test_fully_specialized()
+TEST_FUNC __noinline__ void test_fully_specialized()
 {
   SourceSelector<T, constructor_initializer> source_sel;
   typename DestSelector<T, constructor_initializer>::template offsetted<decltype(source_sel)::shared_offset> dest_sel;
@@ -53,14 +53,14 @@ __host__ __device__ __noinline__ void test_fully_specialized()
 
 struct completion
 {
-  __host__ __device__ void operator()() const {}
+  TEST_FUNC void operator()() const {}
 };
 
 template <class T,
           template <typename, typename> class SourceSelector,
           template <typename, typename> class DestSelector,
           template <typename, typename> class BarrierSelector>
-__host__ __device__ __noinline__ void test_select_scope()
+TEST_FUNC __noinline__ void test_select_scope()
 {
   test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_system>();
   test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_device>();
@@ -74,7 +74,7 @@ __host__ __device__ __noinline__ void test_select_scope()
 }
 
 template <class T, template <typename, typename> class SourceSelector, template <typename, typename> class DestSelector>
-__host__ __device__ __noinline__ void test_select_barrier()
+TEST_FUNC __noinline__ void test_select_barrier()
 {
   test_select_scope<T, SourceSelector, DestSelector, local_memory_selector>();
   NV_IF_TARGET(NV_IS_DEVICE,
@@ -83,7 +83,7 @@ __host__ __device__ __noinline__ void test_select_barrier()
 }
 
 template <class T, template <typename, typename> class SourceSelector>
-__host__ __device__ __noinline__ void test_select_destination()
+TEST_FUNC __noinline__ void test_select_destination()
 {
   test_select_barrier<T, SourceSelector, local_memory_selector>();
   NV_IF_TARGET(NV_IS_DEVICE,
@@ -92,7 +92,7 @@ __host__ __device__ __noinline__ void test_select_destination()
 }
 
 template <class T>
-__host__ __device__ __noinline__ void test_select_source()
+TEST_FUNC __noinline__ void test_select_source()
 {
   test_select_destination<T, local_memory_selector>();
   NV_IF_TARGET(

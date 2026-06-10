@@ -88,7 +88,7 @@ def generate_guids():
     i = 0
     while True:
         # Generates a base64 hash of an incrementing 16-bit integer:
-        hash = base64.b64encode(struct.pack(">H", i)).decode("ascii")
+        hash = base64.urlsafe_b64encode(struct.pack(">H", i)).decode("ascii")
         # Strips off up-to 2 leading 'A' characters and a single trailing '=' characters, if they exist:
         guid = re.sub(r"^A{0,2}", "", hash).removesuffix("=")
         yield guid
@@ -112,6 +112,11 @@ def write_text_file(filename, text):
 
 def error_message_with_matrix_job(matrix_job, message):
     return f"{matrix_job['origin']['workflow_location']}: {message}\n  Input: {matrix_job['origin']['original_matrix_job']}"
+
+
+@memoize_result
+def workflow_exists(workflow_name):
+    return workflow_name in matrix_yaml["workflows"]
 
 
 @memoize_result
@@ -428,6 +433,11 @@ def generate_dispatch_job_name(matrix_job, job_type):
     cmake_options = (
         (" " + matrix_job["cmake_options"]) if "cmake_options" in matrix_job else ""
     )
+    extra_args = (
+        (" " + matrix_job["args"])
+        if "args" in matrix_job and matrix_job["args"]
+        else ""
+    )
 
     ctk = matrix_job["ctk"]
     host_compiler = get_host_compiler(matrix_job["cxx"])
@@ -441,8 +451,8 @@ def generate_dispatch_job_name(matrix_job, job_type):
     )
 
     extra_info = (
-        f":{cuda_compile_arch}{cmake_options}"
-        if cuda_compile_arch or cmake_options
+        f":{cuda_compile_arch}{cmake_options}{extra_args}"
+        if cuda_compile_arch or cmake_options or extra_args
         else ""
     )
 
@@ -491,6 +501,10 @@ def generate_dispatch_job_image(matrix_job, job_type):
     return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
 
+def generate_dispatch_job_environment(matrix_job, job_type):
+    return json.dumps(matrix_job.get("environment") or [])
+
+
 def generate_dispatch_job_command(matrix_job, job_type):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
     script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
@@ -510,6 +524,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
     cmake_options = matrix_job["cmake_options"] if "cmake_options" in matrix_job else ""
 
     py_version = matrix_job["py_version"] if "py_version" in matrix_job else ""
+    extra_args = matrix_job["args"] if "args" in matrix_job else ""
 
     command = f'"{script_name}"'
     if job_args:
@@ -524,6 +539,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f' -cmake-options "{cmake_options}"'
     if py_version:
         command += f' -py-version "{py_version}"'
+    if extra_args:
+        command += f" {extra_args}"
 
     return command
 
@@ -562,6 +579,9 @@ def generate_dispatch_job_origin(matrix_job, job_type):
         origin_job["cudacxx"] = device_compiler["id"] + device_compiler["version"]
         origin_job["cudacxx_family"] = device_compiler["name"]
 
+    if "args" in origin_job and not origin_job["args"]:
+        del origin_job["args"]
+
     origin["matrix_job"] = origin_job
 
     return origin
@@ -574,6 +594,7 @@ def generate_dispatch_job_json(matrix_job, job_type):
         "name": generate_dispatch_job_name(matrix_job, job_type),
         "runner": generate_dispatch_job_runner(matrix_job, job_type),
         "image": generate_dispatch_job_image(matrix_job, job_type),
+        "environment": generate_dispatch_job_environment(matrix_job, job_type),
         "command": generate_dispatch_job_command(matrix_job, job_type),
         "origin": generate_dispatch_job_origin(matrix_job, job_type),
     }
@@ -679,12 +700,13 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
 
 
 def compare_dispatch_jobs(job1, job2):
-    "Compare two dispatch job specs for equality. Considers only name/runner/image/command."
+    "Compare two dispatch job specs for equality. Considers only name/runner/image/environment/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
     return (
         job1["name"] == job2["name"]
         and job1["runner"] == job2["runner"]
         and job1["image"] == job2["image"]
+        and job1["environment"] == job2["environment"]
         and job1["command"] == job2["command"]
     )
 
@@ -911,7 +933,7 @@ def get_matrix_job_origin(matrix_job, workflow_name, workflow_location):
 
 @static_result
 def get_excluded_matrix_jobs():
-    return parse_workflow_matrix_jobs(None, "exclude")
+    return parse_workflow_matrix_jobs("exclude")
 
 
 def apply_matrix_job_exclusion(matrix_job, exclusion):
@@ -1079,7 +1101,7 @@ def set_derived_tags(matrix_job):
 
 
 def next_explode_tag(matrix_job):
-    non_exploded_tags = ["jobs"]
+    non_exploded_tags = ["jobs", "environment"]
 
     for tag in matrix_job:
         if tag not in non_exploded_tags and isinstance(matrix_job[tag], list):
@@ -1123,7 +1145,7 @@ def preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix=False):
     return result
 
 
-def parse_workflow_matrix_jobs(args, workflow_name):
+def parse_workflow_matrix_jobs(workflow_name, filter_projects=None):
     # Special handling for exclusion matrix: don't validate, add default, etc. Only explode.
     is_exclusion_matrix = workflow_name == "exclude"
 
@@ -1154,10 +1176,8 @@ def parse_workflow_matrix_jobs(args, workflow_name):
     # Fill in default values, explode lists.
     matrix_jobs = preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix)
 
-    if args and args.dirty_projects is not None and workflow_name != "override":
-        matrix_jobs = [
-            job for job in matrix_jobs if job["project"] in args.dirty_projects
-        ]
+    if filter_projects is not None and workflow_name != "override":
+        matrix_jobs = [job for job in matrix_jobs if job["project"] in filter_projects]
 
     # Don't remove excluded jobs if we're currently parsing them:
     if not is_exclusion_matrix:
@@ -1174,9 +1194,26 @@ def parse_workflow_matrix_jobs(args, workflow_name):
 
 
 def parse_workflow_dispatch_groups(args, workflow_name):
+    full_build_projects = args.full_build_projects
+    lite_build_projects = args.lite_build_projects
+    lite_workflow_name = f"{workflow_name}_lite"
+
+    # If no lite workflow exists, pull all projects from the full workflow:
+    if (
+        full_build_projects
+        and lite_build_projects
+        and not workflow_exists(lite_workflow_name)
+    ):
+        full_build_projects += lite_build_projects
+        lite_build_projects = []
+
     # Add origin information to each matrix job, explode, filter, add defaults, etc.
     # The resulting matrix_jobs list is a complete and standardized list of jobs for the dispatch_group builder.
-    matrix_jobs = parse_workflow_matrix_jobs(args, workflow_name)
+    matrix_jobs = parse_workflow_matrix_jobs(workflow_name, full_build_projects)
+    if lite_build_projects:
+        matrix_jobs += parse_workflow_matrix_jobs(
+            lite_workflow_name, lite_build_projects
+        )
 
     # If we're printing multiple workflows, add a prefix to the group name to differentiate them.
     group_prefix = f"[{workflow_name}] " if len(args.workflows) > 1 else ""
@@ -1284,7 +1321,7 @@ def print_devcontainer_info(args):
         key for key in matrix_yaml["workflows"].keys() if key not in ignored_matrix_keys
     ]
     for workflow_name in workflow_names:
-        matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
+        matrix_jobs.extend(parse_workflow_matrix_jobs(workflow_name))
 
     # Explode jobs to ensure that the cuda_ext tags are correctly handled:
     exploded_jobs = []
@@ -1367,7 +1404,18 @@ def main():
         help="Print devcontainer info instead of GHA workflows.",
     )
     parser.add_argument(
-        "--dirty-projects", nargs="*", help="Filter jobs to only these projects"
+        "--full-build-projects",
+        nargs="*",
+        help="Run jobs in the requested workflows for these projects.",
+    )
+    parser.add_argument(
+        "--lite-build-projects",
+        nargs="*",
+        help=(
+            "If a '_lite' version of a workflow exists, run jobs in that workflow for these projects. "
+            "Otherwise use the full workflow. Used to reduce testing for unchanged projects with "
+            "modified dependencies."
+        ),
     )
     parser.add_argument(
         "--allow-override",

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // constexpr explicit
@@ -15,13 +18,14 @@
 
 #include <cuda/std/__format_>
 #include <cuda/std/cassert>
+#include <cuda/std/cstring>
 #include <cuda/std/string_view>
 #include <cuda/std/type_traits>
 
 #include "literal.h"
 
 template <class CharT>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   // Validate the constructor is explicit.
   static_assert(
@@ -36,7 +40,8 @@ __host__ __device__ constexpr void test()
   static_assert(noexcept(cuda::std::basic_format_parse_context{cuda::std::basic_string_view<CharT>{}}));
   static_assert(noexcept(cuda::std::basic_format_parse_context{cuda::std::basic_string_view<CharT>{}, 42}));
 
-  constexpr const CharT* fmt = TEST_STRLIT(CharT, "abc");
+  CharT fmt[4]{};
+  cuda::std::__cccl_strcpy(fmt, TEST_STRLIT(CharT, "abc"));
 
   {
     cuda::std::basic_format_parse_context<CharT> context(fmt);
@@ -51,7 +56,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<char>();
 #if _CCCL_HAS_CHAR8_T()

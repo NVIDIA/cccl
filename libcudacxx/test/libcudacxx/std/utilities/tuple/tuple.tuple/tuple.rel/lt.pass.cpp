@@ -195,15 +195,29 @@ int main(int, char**)
     assert(!(t1 > t2));
     assert(!(t1 >= t2));
   }
+  { // ensure we can compare references fine
+    long val1   = 1;
+    double val2 = 3.0;
+    double val3 = 1.0;
+    long val4   = 2;
+    using T1    = cuda::std::tuple<long&, int, double&>;
+    using T2    = cuda::std::tuple<double&, long&, int>;
+    const T1 t1(val1, 2, val2);
+    const T2 t2(val3, val4, 4);
+    assert((t1 < t2));
+    assert((t1 <= t2));
+    assert(!(t1 > t2));
+    assert(!(t1 >= t2));
+  }
   {
     using T1 = cuda::std::tuple<long, int, double>;
     using T2 = cuda::std::tuple<double, long, int>;
     constexpr T1 t1(1, 2, 3);
     constexpr T2 t2(1, 2, 4);
-    static_assert((t1 < t2), "");
-    static_assert((t1 <= t2), "");
-    static_assert(!(t1 > t2), "");
-    static_assert(!(t1 >= t2), "");
+    static_assert((t1 < t2));
+    static_assert((t1 <= t2));
+    static_assert(!(t1 > t2));
+    static_assert(!(t1 >= t2));
   }
 
   return 0;

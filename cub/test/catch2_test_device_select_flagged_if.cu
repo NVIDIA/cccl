@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -32,6 +8,8 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
+
+#include <cuda/functional>
 
 #include <algorithm>
 
@@ -43,9 +21,9 @@ struct predicate_op_wrapper_t
 {
   PredOpT if_pred;
   template <typename FlagT, typename ItemT>
-  __host__ __device__ bool operator()(thrust::tuple<FlagT, ItemT> tuple) const
+  __host__ __device__ bool operator()(cuda::std::tuple<FlagT, ItemT> tuple) const
   {
-    const auto flag = thrust::get<0>(tuple);
+    const auto flag = cuda::std::get<0>(tuple);
     return static_cast<bool>(if_pred(flag));
   }
 };
@@ -89,33 +67,6 @@ struct is_even_t<custom_t>
   __host__ __device__ bool operator()(custom_t elem) const
   {
     return !(elem.key % 2);
-  }
-};
-
-struct equal_to_default_t
-{
-  template <typename T>
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a == T{};
-  }
-};
-
-struct always_false_t
-{
-  template <typename T>
-  __device__ bool operator()(const T&) const
-  {
-    return false;
-  }
-};
-
-struct always_true_t
-{
-  template <typename T>
-  __device__ bool operator()(const T&) const
-  {
-    return true;
   }
 };
 
@@ -165,7 +116,7 @@ C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_fl
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, always_true_t{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -184,7 +135,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, always_true_t{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(out == in);
@@ -205,7 +156,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, always_false_t{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::always_false{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -244,7 +195,7 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
 
   // Ensure that we did not overwrite other elements
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{input_type{}}));
 
   out.resize(num_selected_out[0]);
   REQUIRE(reference_out == out);

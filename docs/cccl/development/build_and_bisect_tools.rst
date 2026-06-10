@@ -68,20 +68,20 @@ Build and run a single CUB test in a devcontainer with specific CTK and host::
 Precompile the libcudacxx lit suite::
 
   ci/util/build_and_test_targets.sh \
-    --preset libcudacxx-cpp20 \
+    --preset libcudacxx \
     --build-targets libcudacxx.test.lit.precompile
 
 Precompile a single libcudacxx lit test (no execution)::
 
   ci/util/build_and_test_targets.sh \
-    --preset libcudacxx-cpp20 \
+    --preset libcudacxx \
     --lit-precompile-tests \
       "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
 
 Execute one or more libcudacxx lit tests::
 
   ci/util/build_and_test_targets.sh \
-    --preset libcudacxx-cpp20 \
+    --preset libcudacxx \
     --lit-tests \
       "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
 

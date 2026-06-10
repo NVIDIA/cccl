@@ -1,5 +1,5 @@
 #include <thrust/binary_search.h>
-#include <thrust/detail/allocator/allocator_traits.h>
+#include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
@@ -16,7 +16,7 @@ template <class ExampleVector, typename NewType>
 struct vector_like
 {
   using alloc        = typename ExampleVector::allocator_type;
-  using alloc_traits = typename thrust::detail::allocator_traits<alloc>;
+  using alloc_traits = typename cuda::std::allocator_traits<alloc>;
   using new_alloc    = typename alloc_traits::template rebind_alloc<NewType>;
   using type         = thrust::detail::vector_base<NewType, new_alloc>;
 };

@@ -1,7 +1,7 @@
 .. _stf:
 
 CUDASTF
-=======
+========
 
 .. contents::
    :depth: 2
@@ -209,9 +209,9 @@ consumption and system instability.
 
     mkdir -p build
     cd build
-    cmake .. --preset cudax-cpp17
-    cd cudax-cpp17
-    ninja cudax.cpp17.examples.stf -j4
+    cmake .. --preset cudax
+    cd cudax
+    ninja cudax.examples.stf -j4
 
 To launch examples, simply run binaries under the `bin/`
 subdirectory in the current directory. For instance, to launch the `01-axpy`
@@ -798,20 +798,17 @@ This mechanism is illustrated in the dot product example of the
 Places
 ------
 
-To assist users with managing data and execution affinity, CUDASTF
-provides the notion of *place*. Places can represent either *execution
-places*, which determine where code is executed, or *data places*,
-specifying the location of data across the machine’s non-uniform memory.
-One of CUDASTF’s goals is to ensure efficient data placement in line
-with the execution place by default, while also providing users the
-option to easily customize placement if necessary. Execution places
-allow users to express where computation occurs without directly
-engaging with the underlying CUDA APIs or dealing with the complex
-synchronization that emerges from combining various execution places
-asynchronously.
+CUDASTF uses :ref:`places <cudax-places>` to manage data and execution
+affinity. Places can represent either *execution places*, which determine
+where code is executed, or *data places*, specifying the location of data
+across the machine’s non-uniform memory. See :ref:`cudax-places` for the
+full places API reference, including stream management, memory allocation,
+grid of places, and partitioning policies.
 
-Execution places
-^^^^^^^^^^^^^^^^
+This section describes how places are used with CUDASTF tasks.
+
+Execution places in tasks
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A task’s constructor allows choosing an execution place. The example
 below creates a logical data variable that describes an integer as a
@@ -881,14 +878,15 @@ the entire workload. Since no explicit synchronization with the
 underlying CUDA stream is needed, ``ctx.host_launch`` is thus compatible
 with the CUDA graph backend (i.e., a context of type ``graph_ctx``).
 
-Data places
-^^^^^^^^^^^
+Data places in tasks
+^^^^^^^^^^^^^^^^^^^^
 
 By default, logical data is associated with the device where it is
 currently processed. A task launched on a device should therefore have
 its data loaded into the global memory of that device, whereas a task
 executed on the host would access data in host memory (RAM). These are
-defined as the *affine* data places of an execution place.
+defined as the *affine* data places of an execution place (see
+:ref:`places-data-places`).
 
 In the example below, data places are not specified for the two tasks
 created. Consequently, the affine data places will be chosen for the two
@@ -971,183 +969,6 @@ accessing large data sets. They however assume that the system can
 perform such accesses, which may depend on the hardware (NVLINK, UVM, …)
 and the OS (WSL has limited support and lower performance when accessing
 host memory from CUDA kernels, for example).
-
-Grid of places
-^^^^^^^^^^^^^^
-
-CUDASTF also makes it possible to manipulate places which are a
-collection of multiple places. In particular, it is possible an
-execution place which corresponds to multiple device execution places.
-
-Creating grids of places
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Grid of execution places are described with the ``exec_place_grid``
-class. This class is templated by two parameters : a scalar_view execution
-place type which represents the type of each individual element, and a
-partitioning class which defines how data and indexes are spread across
-the different places of the grid.
-
-The scalar_view execution place can be for example be ``exec_place_device``
-if all entries are devices, or it can be the base ``exec_place`` class
-if the type of the places is not homogeneous in the grid, or if the type
-is not known statically, for example.
-
-It is possible to generate a 1D grid from a vector of places :
-
-.. code:: c++
-
-       exec_place exec_place::grid(std::vector<exec_place> places);
-
-For example, this is used to implement the ``exec_place::all_devices()``
-helper which creates a grid of all devices.
-
-.. code:: c++
-
-   template <typename partitioner_t>
-   inline exec_place_grid<exec_place_device, partitioner_t> exec_place::all_devices() {
-       int ndevs;
-       cuda_safe_call(cudaGetDeviceCount(&ndevs));
-
-       std::vector<exec_place> devices;
-       devices.reserve(ndevs);
-       for (int d = 0; d < ndevs; d++) {
-           devices.push_back(exec_place::device(d));
-       }
-
-       return exec_place::grid<exec_place_device, partitioner_t>(std::move(devices));
-   }
-
-The default partitioner class associated to
-``exec_place::all_devices()`` is ``null_partition``, which means there
-is no partitioning operator defined if none is provided.
-
-It is possible to retrieve the total number of elements in a grid using
-the ``size_t size()`` method. For ``exec_place::all_devices()``, this
-will correspond to the total number of devices.
-
-Shaped grids
-~~~~~~~~~~~~
-
-To fit the needs of the applications, grid of places need not be 1D
-arrays, and can be structured as a multi-dimensional grid described with
-a ``dim4`` class. There is indeed another constructor which takes such a
-``dim4`` parameter :
-
-.. code:: c++
-
-       exec_place::grid(std::vector<exec_place> places, dim4 dims);
-
-Note that the total size of ``dims`` must match the size of the vector
-of places.
-
-It is possible to query the *shape* of the grid using the following
-methods : - ``dim4 get_dims()`` returns the shape of the grid -
-``int get_dim(int axis_id)`` returns the number of elements along
-direction ``axis_id``
-
-Given an ``exec_place_grid``, it is also possible to create a new grid
-with a different shape using the reshape member of the
-``exec_place_grid``. In this example, a grid of 8 devices is reshaped
-into a cube of size 2.
-
-.. code:: c++
-
-       // This assumes places.size() == 8
-       auto places = exec_place::all_devices();
-       auto places_reshaped = places.reshape(dim4(2, 2, 2));
-
-Partitioning policies
-~~~~~~~~~~~~~~~~~~~~~
-
-Partitioning policies makes it possible to express how data are
-dispatched over the different places of a grid, or how the index space
-of a ``parallel_loop`` will be scattered across places too.
-
-.. code:: c++
-
-   class MyPartition : public partitioner_base {
-   public:
-       template <typename S_out, typename S_in>
-       static const S_out apply(const S_in& in, pos4 position, dim4 grid_dims);
-
-       pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims);
-   };
-
-A partitioning class must implement a ``apply`` method which takes :
-
-- a reference to a shape of type ``S_in`` - a position within a grid of
-  execution places. This position is described using an object of type ``pos4``
-- the dimension of this grid express as a ``dim4`` object.
-
-``apply`` returns a shape which corresponds to the subset of the ``in``
-shape associated to this entry of the grid. Note that the output shape
-type ``S_out`` may be different from the ``S_in`` type of the input
-shape.
-
-To support different types of shapes, appropriate overloads of the
-``apply`` method should be implemented.
-
-This ``apply`` method is typically used by the ``parallel_for``
-construct in order to dispatch indices over the different places.
-
-A partitioning class must also implement the ``get_executor`` virtual
-method which allows CUDASTF to use localized data allocators. This
-method indicates, for each entry of a shape, on which place this entry
-should *preferably* be allocated.
-
-``get_executor`` returns a ``pos4`` coordinate in the execution place
-grid, and its arguments are :
-
-- a coordinate within the shape described as a ``pos4`` object
-- the dimension of the shape expressed as a ``dim4`` object
-- the dimension of the execution place grid expressed as a ``dim4`` object
-
-Defining the ``get_executor`` makes it possible to map a piece of data
-over a execution place grid. The ``get_executor`` method of partitioning
-policy in an execution place grid therefore defines the *affine data
-place* of a logical data accessed on that grid.
-
-Predefined partitioning policies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are currently two policies readily available in CUDASTF : -
-``tiled_partition<TILE_SIZE>`` dispatches entries of a shape using a
-*tiled* layout. For multi-dimensional shapes, the outermost dimension is
-dispatched into contiguous tiles of size ``TILE_SIZE``. -
-``blocked_partition`` dispatches entries of the shape using a *blocked*
-layout, where each entry of the grid of places receive approximately
-the same contiguous portion of the shape, dispatched along the outermost
-dimension.
-
-This illustrates how a 2D shape is dispatched over 3 places using the
-blocked layout :
-
-.. code:: text
-
-    __________________________________
-   |           |           |         |
-   |           |           |         |
-   |           |           |         |
-   |    P 0    |    P 1    |   P 2   |
-   |           |           |         |
-   |           |           |         |
-   |___________|___________|_________|
-
-This illustrates how a 2D shape is dispatched over 3 places using a
-tiled layout, where the dimension of the tiles is indicated by the
-``TILE_SIZE`` parameter :
-
-.. code:: text
-
-    ________________________________
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   | P 0 | P 1 | P 2 | P 0 | P 1 |P2|
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   |_____|_____|_____|_____|_____|__|
 
 .. _parallel_for_construct:
 
@@ -1894,6 +1715,12 @@ in existing code.
   the application take care of synchronization.
 - ``Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
+- :ref:`Execution places <cudax-places>` can be used without tasks for example to
+  automate the management of CUDA streams, set the current execution context,
+  or allocate memory. See the :ref:`cudax-places` documentation for details on
+  standalone usage including :ref:`stream management <places-stream-management>`,
+  :ref:`device activation <places-activate>`, and
+  :ref:`memory allocation <places-memory-allocation>`.
 
 Freezing logical data
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1926,7 +1753,7 @@ when calling ``get``.
     auto dX1 = frozen_ld.get(data_place::device(1), stream);
     auto hX = frozen_ld.get(data_place::host(), stream);
 
-    fx.unfreeze(stream);
+    frozen_ld.unfreeze(stream);
 
 While data are frozen, it is still possible to launch tasks which access
 them. CUDASTF will allow tasks with a read access modes to run
@@ -1939,7 +1766,7 @@ until data is made is made modifiable again, after ``unfreeze``.
     auto dX = frozen_ld.get(data_place::current_device(), stream);
     // kernel can modify dX
     kernel<<<..., stream>>>(dX);
-    fx.unfreeze(stream);
+    frozen_ld.unfreeze(stream);
 
 As shown above, it is also possible to create a modifiable frozen logical data,
 allowing an application to temporarily transfer ownership of the logical data
@@ -2015,6 +1842,47 @@ or an ``rw()`` access. There is no need to set any content in the token
 A token corresponds to a ``logical_data<void_interface>`` object, so that the
 ``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
 returns an object with a ``token`` type.
+
+Debugging
+---------
+
+Enabling internal checks
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+CUDASTF includes internal assertions (``_CCCL_ASSERT``) that help detect
+programming errors and invalid usage patterns during development. These checks
+are disabled by default for performance but can be enabled to aid debugging.
+
+**With CMake:**
+
+When building in Debug mode, assertions are enabled automatically:
+
+.. code:: bash
+
+   cmake -DCMAKE_BUILD_TYPE=Debug ..
+
+To explicitly enable assertions for any build type, add the compile definition
+to your target:
+
+.. code:: cmake
+
+   target_compile_definitions(your_target PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+**With Makefile or manual compilation:**
+
+Add the ``-DCCCL_ENABLE_ASSERTIONS`` flag to your compiler invocation:
+
+.. code:: bash
+
+   # For nvcc
+   nvcc -DCCCL_ENABLE_ASSERTIONS ...
+
+   # For host compiler
+   g++ -DCCCL_ENABLE_ASSERTIONS ...
+
+Note that this flag enables the assertion checks themselves. For full debugging
+support (setting breakpoints, inspecting variables), you may also want to add
+debug symbol flags (``-g`` for host code, ``-G`` for device code).
 
 Tools
 -----
@@ -2361,7 +2229,7 @@ Syntax:
 
     logicalData.accessMode([data place])
 
-- **Data Places**: Specify where a logical data in the data dependencies should be located:
+- **Data Places** (see :ref:`cudax-places`): Specify where a logical data in the data dependencies should be located:
 
   - `data_place::affine()` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
   - `data_place::managed()`: Use managed memory.
@@ -2387,7 +2255,7 @@ Syntax:
             // Task implementation using stream
         };
 
-- **Execution Place**: Specify where the task should be executed:
+- **Execution Place** (see :ref:`cudax-places`): Specify where the task should be executed:
 
   - `exec_place::current_device()` (default): Run on current CUDA device.
   - `exec_place::device(ID)`: Run on CUDA device identified by its index.

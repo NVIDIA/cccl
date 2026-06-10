@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // #include <memory>
 
 // void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
@@ -17,14 +20,14 @@
 
 #include "test_macros.h"
 
-#if TEST_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 struct MyStruct
 {
   int v;
 };
 
-__device__ int global_var;
+TEST_GLOBAL_VARIABLE int global_var;
 __constant__ int constant_var;
 
 __global__ void test_kernel(const _CCCL_GRID_CONSTANT MyStruct grid_constant_var)
@@ -62,7 +65,7 @@ __global__ void test_kernel(const _CCCL_GRID_CONSTANT MyStruct grid_constant_var
   // todo: test address_space::cluster_shared
 }
 
-#endif // TEST_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 int main(int, char**)
 {
@@ -132,9 +135,9 @@ int main(int, char**)
   assert(r == nullptr);
   assert(s == N);
 
-#if TEST_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
   NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 1>>>(MyStruct{}); assert(cudaDeviceSynchronize() == cudaSuccess);))
-#endif // TEST_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
   return 0;
 }

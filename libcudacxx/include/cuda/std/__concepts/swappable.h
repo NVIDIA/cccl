@@ -43,7 +43,7 @@
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 // [concept.swappable]
 
@@ -158,25 +158,28 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto swap = __swap::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __swap_cpo = __swap::__fn;
 } // namespace __cpo
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
-concept swappable = requires(_Tp& __a, _Tp& __b) { ::cuda::std::ranges::swap(__a, __b); };
+concept swappable = requires(_Tp& __a, _Tp& __b) { ::cuda::std::ranges::__swap_cpo{}(__a, __b); };
 
 template <class _Tp, class _Up>
 concept swappable_with = common_reference_with<_Tp, _Up> && requires(_Tp&& __t, _Up&& __u) {
-  ::cuda::std::ranges::swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Tp>(__t));
-  ::cuda::std::ranges::swap(::cuda::std::forward<_Up>(__u), ::cuda::std::forward<_Up>(__u));
-  ::cuda::std::ranges::swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u));
-  ::cuda::std::ranges::swap(::cuda::std::forward<_Up>(__u), ::cuda::std::forward<_Tp>(__t));
+  ::cuda::std::ranges::__swap_cpo{}(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Tp>(__t));
+  ::cuda::std::ranges::__swap_cpo{}(::cuda::std::forward<_Up>(__u), ::cuda::std::forward<_Up>(__u));
+  ::cuda::std::ranges::__swap_cpo{}(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u));
+  ::cuda::std::ranges::__swap_cpo{}(::cuda::std::forward<_Up>(__u), ::cuda::std::forward<_Tp>(__t));
 };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__swappable_, requires(_Tp& __a, _Tp& __b)((::cuda::std::ranges::swap(__a, __b))));
+_CCCL_CONCEPT_FRAGMENT(__swappable_, requires(_Tp& __a, _Tp& __b)((::cuda::std::ranges::__swap_cpo{}(__a, __b))));
 
 template <class _Tp>
 _CCCL_CONCEPT swappable = _CCCL_FRAGMENT(__swappable_, _Tp);
@@ -186,10 +189,10 @@ _CCCL_CONCEPT_FRAGMENT(
   __swappable_with_,
   requires(_Tp&& __t, _Up&& __u)(
     requires(common_reference_with<_Tp, _Up>),
-    (::cuda::std::ranges::swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Tp>(__t))),
-    (::cuda::std::ranges::swap(::cuda::std::forward<_Up>(__u), ::cuda::std::forward<_Up>(__u))),
-    (::cuda::std::ranges::swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u))),
-    (::cuda::std::ranges::swap(::cuda::std::forward<_Up>(__u), ::cuda::std::forward<_Tp>(__t)))));
+    (::cuda::std::ranges::__swap_cpo{}(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Tp>(__t))),
+    (::cuda::std::ranges::__swap_cpo{}(::cuda::std::forward<_Up>(__u), ::cuda::std::forward<_Up>(__u))),
+    (::cuda::std::ranges::__swap_cpo{}(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u))),
+    (::cuda::std::ranges::__swap_cpo{}(::cuda::std::forward<_Up>(__u), ::cuda::std::forward<_Tp>(__t)))));
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT swappable_with = _CCCL_FRAGMENT(__swappable_with_, _Tp, _Up);

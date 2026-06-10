@@ -1,7 +1,9 @@
 # This test should always use per-thread streams on NVCC.
-set_target_properties(${test_target} PROPERTIES
-  COMPILE_OPTIONS
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--default-stream=per-thread>
+set_target_properties(
+  ${test_target}
+  PROPERTIES
+    COMPILE_OPTIONS
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--default-stream=per-thread>
 )
 
 # NVC++ does not have an equivalent option, and will always

@@ -26,11 +26,11 @@ struct Tuple
   T max = cuda::std::numeric_limits<T>::max();
   T mid = cuda::std::is_signed<T>::value ? T(-1) : max >> 1;
 
-  __host__ __device__ constexpr Tuple() noexcept {}
+  TEST_FUNC constexpr Tuple() noexcept {}
 };
 
 template <typename T>
-__host__ __device__ constexpr void test_in_range1()
+TEST_FUNC constexpr void test_in_range1()
 {
   constexpr Tuple<T> tup{};
   assert(cuda::std::in_range<T>(tup.min));
@@ -42,7 +42,7 @@ __host__ __device__ constexpr void test_in_range1()
   assert(cuda::std::in_range<T>(tup.mid + 1));
 }
 
-__host__ __device__ constexpr void test_in_range()
+TEST_FUNC constexpr void test_in_range()
 {
   constexpr Tuple<uint8_t> utup8{};
   constexpr Tuple<int8_t> stup8{};
@@ -54,7 +54,7 @@ __host__ __device__ constexpr void test_in_range()
   assert(!cuda::std::in_range<uint8_t>(-1));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_in_range();
 #if _CCCL_HAS_INT128()
@@ -78,6 +78,6 @@ int main(int, char**)
 {
   static_assert(noexcept(cuda::std::in_range<int>(-1)));
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

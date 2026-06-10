@@ -23,10 +23,12 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif
+
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -78,17 +80,20 @@ private:
   [[nodiscard]] _CCCL_API static constexpr int
   __compare_(char const* __s1, size_t __len1, char const* __s2, size_t __len2, size_t __n) noexcept
   {
+    int __result = int(__len1) - int(__len2);
     if (__n)
     {
       for (;; ++__s1, ++__s2)
       {
         if (*__s1 < *__s2)
         {
-          return -1;
+          __result = -1;
+          break;
         }
         if (*__s2 < *__s1)
         {
-          return 1;
+          __result = 1;
+          break;
         }
         if (0 == --__n)
         {
@@ -96,14 +101,15 @@ private:
         }
       }
     }
-    return int(__len1) - int(__len2);
+    return __result;
   }
 
   template <bool _Forward>
   [[nodiscard]] _CCCL_API static constexpr ptrdiff_t
   __find(const char* __needle, size_t __needle_size, const char* __haystack_begin, const char* __haystack_end) noexcept
   {
-    char const* __it = __haystack_begin;
+    ptrdiff_t __result = -1;
+    char const* __it   = __haystack_begin;
     for (; __it != __haystack_end; (_Forward ? ++__it : --__it))
     {
       size_t __i = 0;
@@ -116,10 +122,11 @@ private:
       }
       if (__i == __needle_size)
       {
-        return _Forward ? __it - __haystack_begin : __it - __haystack_end - 1;
+        __result = _Forward ? __it - __haystack_begin : __it - __haystack_end - 1;
+        break;
       }
     }
-    return -1;
+    return __result;
   }
 
 public:
@@ -170,16 +177,16 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr auto operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) <=> 0;
   }
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
@@ -228,9 +235,11 @@ private:
 
   [[nodiscard]] _CCCL_API static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)
   {
-    return __diff < 0 || static_cast<size_t>(__diff) > __len
-           ? (::cuda::std::__throw_out_of_range("__string_view index out of range"), size_t(0))
-           : static_cast<size_t>(__diff);
+    if (__diff < 0 || static_cast<size_t>(__diff) > __len)
+    {
+      _CCCL_THROW(::std::out_of_range, "__string_view index out of range");
+    }
+    return static_cast<size_t>(__diff);
   }
 
   char const* __str_;

@@ -24,6 +24,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if __cpp_lib_format >= 201907L
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class, class>
+struct formatter;
+
+_CCCL_END_NAMESPACE_STD
+
+#endif // __cpp_lib_format >= 201907L
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT>

@@ -11,7 +11,7 @@
 #ifndef _CUDA_ALGORITHM
 #define _CUDA_ALGORITHM
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,5 +23,6 @@
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__algorithm/fill.h>
+#include <cuda/std/algorithm>
 
 #endif // _CUDA_ALGORITHM

@@ -14,21 +14,21 @@
 //   pair<const T&, const T&>
 //   minmax(const T& a, const T& b);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test(const T& a, const T& b, const T& x, const T& y)
+TEST_FUNC constexpr void test(const T& a, const T& b, const T& x, const T& y)
 {
   cuda::std::pair<const T&, const T&> p = cuda::std::minmax(a, b);
   assert(&p.first == &x);
   assert(&p.second == &y);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int x = 0;
@@ -55,7 +55,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

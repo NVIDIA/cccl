@@ -7,7 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// test rel_ops
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
+// test rel_ops, deprecated in c++20
 
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
@@ -18,17 +20,17 @@ struct A
 {
   int data_;
 
-  __host__ __device__ explicit A(int data = -1)
+  TEST_FUNC explicit A(int data = -1)
       : data_(data)
   {}
 };
 
-inline __host__ __device__ bool operator==(const A& x, const A& y)
+inline TEST_FUNC bool operator==(const A& x, const A& y)
 {
   return x.data_ == y.data_;
 }
 
-inline __host__ __device__ bool operator<(const A& x, const A& y)
+inline TEST_FUNC bool operator<(const A& x, const A& y)
 {
   return x.data_ < y.data_;
 }

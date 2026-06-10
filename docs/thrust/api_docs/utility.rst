@@ -1,7 +1,7 @@
 .. _thrust-module-api-utility:
 
 Utility
-=======
+========
 
 .. toctree::
    :glob:

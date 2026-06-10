@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-#include "../include/host_device.h"
-
 // This example demonstrates the use of a view: a non-owning wrapper for an
 // iterator range which presents a container-like interface to the user.
 //
@@ -36,11 +34,11 @@ public:
       : first(first)
       , last(last)
   {}
-  __host__ __device__ ~range_view() {}
+  ~range_view() = default;
 
   __host__ __device__ difference_type size() const
   {
-    return ::cuda::std::distance(first, last);
+    return cuda::std::distance(first, last);
   }
 
   __host__ __device__ reference operator[](difference_type n)
@@ -178,7 +176,6 @@ struct f1
 int main()
 {
   using std::cout;
-  using std::endl;
 
   // initialize host arrays
   float x[4] = {1.0, 1.0, 1.0, 1.0};
@@ -196,7 +193,7 @@ int main()
     make_range_view(thrust::make_transform_iterator(X.cbegin(), f1()), thrust::make_transform_iterator(X.cend(), f1())),
 
     // range view of normal_iterators
-    make_range_view(Y.begin(), ::cuda::std::distance(Y.begin(), Y.end())),
+    make_range_view(Y.begin(), cuda::std::distance(Y.begin(), Y.end())),
 
     // range view of naked pointers
     make_range_view(Z.data().get(), 4));
@@ -205,7 +202,7 @@ int main()
   // to ensure that range view was mapped to this vector
   for (std::size_t i = 0, n = Z.size(); i < n; ++i)
   {
-    cout << "z[" << i << "]= " << Z[i] << endl;
+    cout << "z[" << i << "]= " << Z[i] << '\n';
   }
 
   return 0;

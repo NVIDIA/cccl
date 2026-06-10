@@ -1,6 +1,7 @@
-#include <thrust/pair.h>
 #include <thrust/scan.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/utility>
 
 #include <unittest/unittest.h>
 
@@ -11,9 +12,9 @@
 struct make_pair_functor
 {
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE thrust::pair<T1, T2> operator()(const T1& x, const T2& y)
+  _CCCL_HOST_DEVICE cuda::std::pair<T1, T2> operator()(const T1& x, const T2& y)
   {
-    return thrust::make_pair(x, y);
+    return cuda::std::make_pair(x, y);
   } // end operator()()
 }; // end make_pair_functor
 
@@ -22,7 +23,7 @@ struct add_pairs
   template <typename Pair1, typename Pair2>
   _CCCL_HOST_DEVICE Pair1 operator()(const Pair1& x, const Pair2& y)
   {
-    return thrust::make_pair(x.first + y.first, x.second + y.second);
+    return cuda::std::make_pair(x.first + y.first, x.second + y.second);
   } // end operator()
 }; // end add_pairs
 
@@ -31,7 +32,7 @@ struct TestPairScan
 {
   void operator()(const size_t n)
   {
-    using P = thrust::pair<T, T>;
+    using P = cuda::std::pair<T, T>;
 
     thrust::host_vector<T> h_p1 = unittest::random_integers<T>(n);
     thrust::host_vector<T> h_p2 = unittest::random_integers<T>(n);
@@ -46,7 +47,7 @@ struct TestPairScan
     thrust::device_vector<P> d_pairs = h_pairs;
     thrust::device_vector<P> d_output(n);
 
-    P init = thrust::make_pair(13, 13);
+    P init = cuda::std::make_pair(13, 13);
 
     // scan with plus
     thrust::inclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), add_pairs());

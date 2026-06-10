@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/arithmetic.h>
+#include <cuda/std/__floating_point/decompose.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/mask.h>
 #include <cuda/std/__floating_point/native_type.h>
@@ -162,8 +163,7 @@ template <__fp_format _Fmt>
   }
   else
   {
-    return static_cast<_Storage>(
-      (_Storage(__fp_exp_max_v<_Fmt> + __fp_exp_bias_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>) | __fp_mant_mask_v<_Fmt>);
+    return ::cuda::std::__fp_set_exp<_Fmt>(__fp_mant_mask_v<_Fmt>, __fp_exp_max_v<_Fmt>);
   }
 }
 
@@ -213,7 +213,7 @@ template <__fp_format _Fmt>
   }
   else
   {
-    return static_cast<_Storage>((_Storage{1} << __fp_mant_nbits_v<_Fmt>) | __fp_explicit_bit_mask_v<_Fmt>);
+    return ::cuda::std::__fp_set_exp<_Fmt>(_Storage{0}, __fp_exp_min_v<_Fmt>);
   }
 }
 
@@ -352,8 +352,7 @@ template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_one() noexcept
 {
   using _Storage = __fp_storage_t<_Fmt>;
-  return static_cast<_Storage>(
-    (static_cast<_Storage>(__fp_exp_bias_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>) | __fp_explicit_bit_mask_v<_Fmt>);
+  return ::cuda::std::__fp_set_exp<_Fmt>(_Storage{0}, 0);
 }
 
 template <class _Tp>

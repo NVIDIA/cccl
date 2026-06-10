@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief A class that ensures a function is executed only once for a given set of arguments (including none).
  *
@@ -104,5 +103,4 @@ private:
   // Stores the arguments used to invoke the function.
   [[no_unique_address]] ::std::tuple<Ts...> val;
 };
-
 } // end namespace cuda::experimental::stf

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2019 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -27,12 +14,8 @@
 #endif // no system header
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
+namespace cuda_cub::detail
 {
-
-namespace detail
-{
-
 template <typename Size>
 struct make_unsigned_special;
 
@@ -55,7 +38,5 @@ struct make_unsigned_special<long long>
 {
   using type = unsigned long long;
 };
-
-} // namespace detail
-} // namespace cuda_cub
+} // namespace cuda_cub::detail
 THRUST_NAMESPACE_END

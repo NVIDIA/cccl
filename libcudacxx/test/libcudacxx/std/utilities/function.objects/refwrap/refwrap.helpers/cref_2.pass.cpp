@@ -23,10 +23,10 @@ namespace adl
 {
 struct A
 {};
-__host__ __device__ void cref(A) {}
+TEST_FUNC void cref(A) {}
 } // namespace adl
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     const int i                                = 0;
@@ -46,9 +46,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
   static_assert(test());
-#endif // TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
 
   return 0;
 }

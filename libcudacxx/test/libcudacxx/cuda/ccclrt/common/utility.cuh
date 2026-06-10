@@ -14,20 +14,47 @@
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/atomic>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
-#include <cuda/stream_ref>
 
 #include <new> // IWYU pragma: keep (needed for placement new)
 
-#include "testing.cuh"
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC inline void ccclrt_require_impl(
+  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
+{
+  if (!condition)
+  {
+    // TODO do warp aggregate prints for easier readability?
+    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
+           filename,
+           linenum,
+           funcname,
+           blockIdx.x,
+           blockIdx.y,
+           blockIdx.z,
+           threadIdx.x,
+           threadIdx.y,
+           threadIdx.z,
+           condition_text);
+    __trap();
+  }
+}
 
 namespace
 {
 namespace test
 {
+template <typename T1, typename T2>
+T1& assign(T1& t1, T2&& t2)
+{
+  t1 = ::cuda::std::forward<T2>(t2);
+  return t1;
+}
 
 struct _malloc_pinned
 {
@@ -94,7 +121,7 @@ public:
 template <int N>
 struct assign_n
 {
-  __device__ constexpr void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC constexpr void operator()(int* pi) const noexcept
   {
     *pi = N;
   }
@@ -103,7 +130,7 @@ struct assign_n
 template <int N>
 struct verify_n
 {
-  __device__ void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     // TODO: fix clang CUDA require macro
     // CCCLRT_REQUIRE(*pi == N);
@@ -116,7 +143,7 @@ using verify_42 = verify_n<42>;
 
 struct atomic_add_one
 {
-  __device__ void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_add(1);
@@ -125,7 +152,7 @@ struct atomic_add_one
 
 struct atomic_sub_one
 {
-  __device__ void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_sub(1);
@@ -134,7 +161,7 @@ struct atomic_sub_one
 
 struct spin_until_80
 {
-  __device__ void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     cuda::atomic_ref atomic_pi(*pi);
     while (atomic_pi.load() != 80)
@@ -144,7 +171,7 @@ struct spin_until_80
 
 struct empty_kernel
 {
-  __device__ void operator()() const noexcept {}
+  TEST_DEVICE_FUNC void operator()() const noexcept {}
 };
 
 template <class Fn, class... Args>
@@ -158,9 +185,8 @@ void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
 {
   cuda::__ensure_current_context guard(stream);
   kernel_launcher<<<1, 1, 0, stream.get()>>>(fn, args...);
-  CUDART(cudaGetLastError());
+  assert(cudaGetLastError() == cudaSuccess);
 }
-
 } // namespace test
 } // namespace
 #endif // __COMMON_UTILITY_H__

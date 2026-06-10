@@ -77,10 +77,10 @@ inline constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = tru
 
 namespace __is_convertible_imp
 {
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-volatile")
 
 template <class _Tp>
 _CCCL_API inline void __test_convert(_Tp);
@@ -99,10 +99,7 @@ struct __is_convertible_test<
   decltype(::cuda::std::__is_convertible_imp::__test_convert<_To>(::cuda::std::declval<_From>()))> : public true_type
 {};
 
-template <class _Tp,
-          bool _IsArray    = is_array<_Tp>::value,
-          bool _IsFunction = is_function<_Tp>::value,
-          bool _IsVoid     = is_void<_Tp>::value>
+template <class _Tp, bool _IsArray = is_array_v<_Tp>, bool _IsFunction = is_function_v<_Tp>, bool _IsVoid = is_void_v<_Tp>>
 struct __is_array_function_or_void
 {
   enum

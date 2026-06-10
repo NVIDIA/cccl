@@ -10,8 +10,7 @@
 
 namespace verbose_assert
 {
-
-typedef std::basic_ostream<char>&(EndLType) (std::basic_ostream<char>&);
+using EndLType = std::basic_ostream<char>&(std::basic_ostream<char>&);
 
 template <class Stream, class Tp, class = decltype(std::declval<Stream&>() << std::declval<Tp const&>())>
 std::true_type IsStreamableImp(int);
@@ -105,7 +104,7 @@ public:
   {
     if (!passed)
     {
-      error_log << std::endl;
+      error_log << '\n';
       std::abort();
     }
   }

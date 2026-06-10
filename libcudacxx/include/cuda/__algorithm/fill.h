@@ -11,7 +11,7 @@
 #ifndef __CUDA___ALGORITHM_FILL
 #define __CUDA___ALGORITHM_FILL
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,8 +24,12 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__algorithm/common.h>
+#  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -38,7 +42,7 @@ _CCCL_HOST_API void
 __fill_bytes_impl(stream_ref __stream, ::cuda::std::span<_DstTy, _DstSize> __dst, ::cuda::std::uint8_t __value)
 {
   static_assert(!::cuda::std::is_const_v<_DstTy>, "Fill destination can't be const");
-  static_assert(::cuda::std::is_trivially_copyable_v<_DstTy>);
+  static_assert(::cuda::is_trivially_copyable_v<_DstTy>);
 
   // TODO do a host callback if not device accessible?
   ::cuda::__driver::__memsetAsync(__dst.data(), __value, __dst.size_bytes(), __stream.get());
@@ -52,7 +56,7 @@ _CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
   // Check if the mdspan is exhaustive
   if (!__dst.is_exhaustive())
   {
-    ::cuda::std::__throw_invalid_argument("fill_bytes supports only exhaustive mdspans");
+    _CCCL_THROW(::std::invalid_argument, "fill_bytes supports only exhaustive mdspans");
   }
 
   ::cuda::__detail::__fill_bytes_impl(
@@ -62,7 +66,7 @@ _CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
 
 //! @brief Launches an operation to bytewise fill the memory into the provided stream.
 //!
-//! The destination needs to be a `contiguous_range` and convert to `cuda::std::span`.
+//! The destination needs to be or launch_transform to a `contiguous_range` and convert to `cuda::std::span`.
 //! The element type of the destination is required to be trivially copyable.
 //!
 //! The destination cannot reside in pagable host memory.
@@ -71,31 +75,21 @@ _CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
 _CCCL_TEMPLATE(typename _DstTy)
-_CCCL_REQUIRES(__spannable<_DstTy>)
+_CCCL_REQUIRES(__spannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, ::cuda::std::uint8_t __value)
 {
-  ::cuda::__detail::__fill_bytes_impl(__stream, ::cuda::std::span(::cuda::std::forward<_DstTy>(__dst)), __value);
+  ::cuda::__detail::__fill_bytes_impl(
+    __stream, ::cuda::std::span(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
 
-//! @brief Launches an operation to bytewise fill the memory into the provided stream.
-//!
-//! Destination needs to be an instance of `cuda::std::mdspan`.
-//! It can also convert to `cuda::std::mdspan`, but the type needs to
-//! contain `mdspan` template arguments as member aliases named `value_type`,
-//! `extents_type`, `layout_type` and `accessor_type`. The resulting mdspan is required to
-//! be exhaustive. The element type of the destination is required to be trivially
-//! copyable.
-//!
-//! The destination cannot reside in pagable host memory.
-//!
-//! @param __stream Stream that the copy should be inserted into
-//! @param __dst Destination memory to fill
-//! @param __value Value to fill into every byte in the destination
+//! @overload
+//! @note This overload accepts mdspan-compatible types.
 _CCCL_TEMPLATE(typename _DstTy)
-_CCCL_REQUIRES(__mdspannable<_DstTy>)
+_CCCL_REQUIRES(__mdspannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, ::cuda::std::uint8_t __value)
 {
-  ::cuda::__detail::__fill_bytes_impl(__stream, __as_mdspan(::cuda::std::forward<_DstTy>(__dst)), __value);
+  ::cuda::__detail::__fill_bytes_impl(
+    __stream, __as_mdspan(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
 
 _CCCL_END_NAMESPACE_CUDA

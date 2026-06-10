@@ -25,10 +25,14 @@
 
 #include <vector>
 
+namespace cuda::experimental::places
+{
+class exec_place;
+} // namespace cuda::experimental::places
+
 namespace cuda::experimental::stf
 {
-
-class exec_place;
+using ::cuda::experimental::places::exec_place;
 
 template <auto... spec>
 class thread_hierarchy;
@@ -319,5 +323,4 @@ UNITTEST("interpreted policy")
   p.set_level_sync(1, true);
 };
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf

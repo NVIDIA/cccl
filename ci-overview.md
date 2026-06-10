@@ -9,6 +9,7 @@ The Continuous Integration (CI) process for CCCL ensures code quality and compat
 CCCL's CI jobs use the same Development Containers as described in the [Dev Container setup](.devcontainer/README.md). Follow the instructions in that guide to set up a development container with the same environment as CI.
 
 ### Matrix Testing
+
 To ensure compatibility across various setups, CI tests are performed across a broad matrix of:
 
 - CUDA versions
@@ -30,14 +31,15 @@ Special commands can be included in the most recent commit message to control wh
 These commands can be combined with the [override matrix](#temporarily-overriding-the-pull-request-matrix) for even more fine-grained control.
 
 - `[skip-<component>]`: Skips a subset of the CI jobs. These commands will block the PR from being merged while present in the last commit message of the branch. Recognized components are:
+  - `[bench-only]`: Benchmark-focused shortcut. Equivalent to `[skip-matrix][skip-vdc][skip-docs][skip-tpt]`.
   - `[skip-matrix]`: Skip all build and test jobs specified in `ci/matrix.yaml`.
   - `[skip-vdc]`: Skip all "Validate Devcontainer" jobs.
   - `[skip-docs]`: Skip the documentation verification build.
+  - `[skip-third-party-testing]` (alias `[skip-tpt]`): Skip all third-party canary builds (MatX, PyTorch, and RAPIDS).
   - `[skip-rapids]`: Skip all RAPIDS canary builds.
   - `[skip-matx]`: Skip all MatX canary builds.
-  - **Example:** `git commit -m "Fix RAPIDS failures [skip-matrix][skip-vdc][skip-docs][skip-matx]"`
-
-- `[workflow:<workflow>]`:  Execute jobs from the named workflow. Example: `[workflow:nightly]` runs all jobs defined in `matrix.yaml`'s `workflows.nightly` list.
+  - `[skip-pytorch]`: Skip all PyTorch canary builds.
+  - **Examples:** `git commit -m "Run PR benchmarks [bench-only]"`, `git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs][skip-third-party-testing]"`
 
 ### Temporarily Overriding the Pull Request Matrix
 
@@ -53,7 +55,7 @@ The override matrix can be combined with the `[skip-<...>]` commands detailed in
 
 Example:
 
-```
+```yaml
 workflows:
   override:
     - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'all', cxx: ['msvc14.39', 'gcc10', 'clang14']}
@@ -68,6 +70,17 @@ CCCL's CI uses [`sccache`](https://github.com/mozilla/sccache) to cache compiler
 ### Build and Test Scripts
 
 CI jobs employ the build and test scripts in the `ci/` directory to build and run tests. These scripts provide a consistent entry point for building and testing in both local and CI environments. For more information on using these scripts, see the [CONTRIBUTING.md guide](CONTRIBUTING.md#building-and-testing).
+
+#### Benchmark Comparison Workflow
+
+The benchmark comparison workflow is implemented in `.github/workflows/bench.yml` and uses:
+
+- `ci/bench/bench.sh`
+- `ci/bench/compare_git_refs.sh`
+- `ci/bench/compare_paths.sh`
+
+For benchmark request usage and workflow behavior, see [`ci/bench.yaml`](ci/bench.yaml) first.
+For local usage, argument behavior, and artifact layout, see [`ci/bench/README.md`](ci/bench/README.md).
 
 ### Reproducing CI Failures Locally
 
@@ -84,6 +97,7 @@ If a pull request encounters a failure during CI testing, it is usually helpful 
     CI jobs use the build and test scripts found in the `ci/` directory.
 
     Example:
+
     ```bash
     ./ci/build_cub.sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
     ./ci/test_cub.sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
@@ -124,7 +138,7 @@ Git is now configured to sign commits with your ssh key.
 
 To complete the process, upload the public key to your [Github Signing Keys](https://github.com/settings/keys) in your browser or using the `gh` CLI tool:
 
-```
+```bash
 gh ssh-key add ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub --type signing
 ```
 

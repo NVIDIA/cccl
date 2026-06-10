@@ -54,7 +54,7 @@ _CCCL_API inline
 template <class, class>
 _CCCL_API inline false_type __is_assignable_test(...);
 
-template <class _Tp, class _Arg, bool = is_void<_Tp>::value || is_void<_Arg>::value>
+template <class _Tp, class _Arg, bool = is_void_v<_Tp> || is_void_v<_Arg>>
 struct __is_assignable_imp : public decltype((::cuda::std::__is_assignable_test<_Tp, _Arg>(0)))
 {};
 

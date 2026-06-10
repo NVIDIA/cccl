@@ -1,6 +1,27 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// %RANGE% TUNE_BIF_BIAS bif -16:16:4
+// %RANGE% TUNE_ALGORITHM alg 0:4:1
+// %RANGE% TUNE_THREADS tpb 128:1024:128
+
+// for TUNE_ALGORITHM == 1 (vectorized), this is the number of vectors per thread, which is similar in spirit
+// %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
+
+// those parameters only apply if TUNE_ALGORITHM == 0 (prefetch)
+// %RANGE% TUNE_PREFETCH_MULT pref 1:3:1
+
+// those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
+// %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
+
+#if !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_PREFETCH_MULT != 1)
+#  error "Non-prefetch algorithms require prefetch multiple to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_PREFETCH_MULT != 1)
+
+#if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
+#  error "Non-vectorized algorithms require vector size to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
+
 #include "common.h"
 
 template <typename T>
@@ -29,11 +50,12 @@ struct transform_op_t
   }
 };
 
-template <typename T, typename OffsetT>
-static void grayscale(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T>
+static void grayscale(nvbench::state& state, nvbench::type_list<T>)
+try
 {
   using pixel_t = rgb_t<T>;
-  const auto n  = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n  = state.get_int64("Elements{io}");
 
   // Generate random RGB data by creating separate R, G, B vectors and combining them
   thrust::device_vector<T> r_data = generate(n);
@@ -57,6 +79,10 @@ static void grayscale(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   bench_transform(state, cuda::std::tuple{input.begin()}, output.begin(), n, transform_op_t<T>{});
 }
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
+}
 
 #ifdef TUNE_T
 using value_types = nvbench::type_list<TUNE_T>;
@@ -64,7 +90,7 @@ using value_types = nvbench::type_list<TUNE_T>;
 using value_types = nvbench::type_list<float, double>;
 #endif
 
-NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(value_types, offset_types))
+NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(value_types))
   .set_name("grayscale")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // <algorithm>
 
 // template<ForwardIterator Iter1, ForwardIterator Iter2>
@@ -13,14 +16,14 @@
 //   constexpr Iter1  // constexpr after C++17
 //   find_end(Iter1 first1, Iter1 last1, Iter2 first2, Iter2 last2);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int ia[]          = {0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 0, 1, 0};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -56,15 +59,22 @@ int main(int, char**)
   test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const int*>>();
 
-  static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>(), "");
-  static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
-  static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>(), "");
-  static_assert(test<bidirectional_iterator<const int*>, forward_iterator<const int*>>(), "");
-  static_assert(test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
-  static_assert(test<bidirectional_iterator<const int*>, random_access_iterator<const int*>>(), "");
-  static_assert(test<random_access_iterator<const int*>, forward_iterator<const int*>>(), "");
-  static_assert(test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
-  static_assert(test<random_access_iterator<const int*>, random_access_iterator<const int*>>(), "");
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
+  static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>());
+  static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>());
+  static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>());
+  static_assert(test<bidirectional_iterator<const int*>, forward_iterator<const int*>>());
+  static_assert(test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>>());
+  static_assert(test<bidirectional_iterator<const int*>, random_access_iterator<const int*>>());
+  static_assert(test<random_access_iterator<const int*>, forward_iterator<const int*>>());
+  static_assert(test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>());
+  static_assert(test<random_access_iterator<const int*>, random_access_iterator<const int*>>());
 
   return 0;
 }

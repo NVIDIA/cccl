@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -97,12 +98,16 @@ typedef struct cccl_op_t
 {
   cccl_op_kind_t type;
   const char* name;
-  const char* code; // Renamed from 'ltoir' - can be either LTO-IR or C++ source
-  size_t code_size; // Renamed from 'ltoir_size'
-  cccl_op_code_type code_type; // New field to distinguish content type
+  const char* code;
+  size_t code_size;
+  cccl_op_code_type code_type;
   size_t size;
   size_t alignment;
   void* state;
+  const char** extra_ltoirs;
+  size_t* extra_ltoir_sizes;
+  size_t num_extra_ltoirs;
+  cccl_op_code_type* extra_code_types;
 } cccl_op_t;
 
 typedef struct cccl_build_config
@@ -151,4 +156,25 @@ typedef enum cccl_sort_order_t
   CCCL_DESCENDING = 1,
 } cccl_sort_order_t;
 
+typedef enum cccl_init_kind_t
+{
+  CCCL_VALUE_INIT        = 0,
+  CCCL_FUTURE_VALUE_INIT = 1,
+  CCCL_NO_INIT           = 2,
+} cccl_init_kind_t;
+
+typedef enum cccl_determinism_t
+{
+  CCCL_NOT_GUARANTEED = 0,
+  CCCL_RUN_TO_RUN     = 1,
+  CCCL_GPU_TO_GPU     = 2,
+} cccl_determinism_t;
+
+typedef enum cccl_binary_search_mode_t
+{
+  CCCL_BINARY_SEARCH_LOWER_BOUND = 0,
+  CCCL_BINARY_SEARCH_UPPER_BOUND = 1,
+} cccl_binary_search_mode_t;
+
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

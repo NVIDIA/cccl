@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file extrema.h
  *  \brief Functions for computing computing extremal values
@@ -30,10 +17,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/pair.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -83,6 +70,10 @@ using ::cuda::std::min;
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator min_element(
@@ -120,6 +111,10 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
@@ -184,6 +179,10 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator min_element(
@@ -246,6 +245,10 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
@@ -286,6 +289,10 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator max_element(
@@ -322,6 +329,10 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
@@ -386,6 +397,10 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator max_element(
@@ -448,6 +463,10 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
@@ -475,7 +494,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  #include <thrust/execution_policy.h>
  *  ...
  *  int data[6] = {1, 0, 2, 2, 1, 3};
- *  thrust::pair<int *, int *> result = thrust::minmax_element(thrust::host, data, data + 6);
+ *  cuda::std::pair<int *, int *> result = thrust::minmax_element(thrust::host, data, data + 6);
  *
  *  // result.first is data + 1
  *  // result.second is data + 5
@@ -486,9 +505,13 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \see min_element
  *  \see max_element
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
@@ -509,7 +532,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *  #include <thrust/extrema.h>
  *  ...
  *  int data[6] = {1, 0, 2, 2, 1, 3};
- *  thrust::pair<int *, int *> result = thrust::minmax_element(data, data + 6);
+ *  cuda::std::pair<int *, int *> result = thrust::minmax_element(data, data + 6);
  *
  *  // result.first is data + 1
  *  // result.second is data + 5
@@ -520,9 +543,13 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *  \see min_element
  *  \see max_element
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
-thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
+::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
 
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
  *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
@@ -549,7 +576,7 @@ thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator fi
  *
  *  \code
  *  #include <thrust/extrema.h>
- *  #include <thrust/pair.h>
+ *  #include <cuda/std/__utility/pair.h>
  *  #include <thrust/execution_policy.h>
  *  ...
  *
@@ -571,7 +598,7 @@ thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator fi
  *  ...
  *  key_value data[4] = { {4,5}, {0,7}, {2,3}, {6,1} };
  *
- *  thrust::pair<key_value*,key_value*> extrema = thrust::minmax_element(thrust::host, data, data + 4,
+ *  cuda::std::pair<key_value*,key_value*> extrema = thrust::minmax_element(thrust::host, data, data + 4,
  * compare_key_value());
  *
  *  // extrema.first   == data + 1
@@ -583,9 +610,13 @@ thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator fi
  *  \see min_element
  *  \see max_element
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -612,7 +643,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *
  *  \code
  *  #include <thrust/extrema.h>
- *  #include <thrust/pair.h>
+ *  #include <cuda/std/__utility/pair.h>
  *
  *  struct key_value
  *  {
@@ -632,7 +663,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *  ...
  *  key_value data[4] = { {4,5}, {0,7}, {2,3}, {6,1} };
  *
- *  thrust::pair<key_value*,key_value*> extrema = thrust::minmax_element(data, data + 4, compare_key_value());
+ *  cuda::std::pair<key_value*,key_value*> extrema = thrust::minmax_element(data, data + 4, compare_key_value());
  *
  *  // extrema.first   == data + 1
  *  // *extrema.first  == {0,7}
@@ -643,9 +674,13 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *  \see min_element
  *  \see max_element
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-thrust::pair<ForwardIterator, ForwardIterator>
+::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 /*! \} // end extrema

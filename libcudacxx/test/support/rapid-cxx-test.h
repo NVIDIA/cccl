@@ -530,7 +530,7 @@
 
 namespace rapid_cxx_test
 {
-typedef void (*invoker_t)();
+using invoker_t = void (*)();
 
 ////////////////////////////////////////////////////////////////////////////
 struct test_case
@@ -570,7 +570,7 @@ struct failure_type
   };
 };
 
-typedef failure_type::enum_type failure_type_t;
+using failure_type_t = failure_type::enum_type;
 
 ////////////////////////////////////////////////////////////////////////////
 struct test_outcome
@@ -676,8 +676,8 @@ inline checkpoint const& get_checkpoint()
 class test_suite
 {
 public:
-  typedef test_case const* iterator;
-  typedef iterator const_iterator;
+  using iterator       = test_case const*;
+  using const_iterator = iterator;
 
 public:
   test_suite(const char* xname)
@@ -1005,7 +1005,6 @@ bool check_equal_collections_impl(Iter1 start1, Iter1 const end1, Iter2 start2, 
   return (start1 == end1 && start2 == end2);
 }
 } // namespace detail
-
 } // namespace rapid_cxx_test
 
 #if defined(__GNUC__)

@@ -5,7 +5,7 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
-#include "include/host_device.h"
+#include <iostream>
 
 // compute minimum and maximum values in a single reduction
 
@@ -59,11 +59,12 @@ int main()
   thrust::uniform_int_distribution<int> dist(10, 99);
 
   // initialize data on host
-  thrust::device_vector<int> data(N);
-  for (size_t i = 0; i < data.size(); i++)
+  thrust::host_vector<int> host_data(N);
+  for (auto& e : host_data)
   {
-    data[i] = dist(rng);
+    e = dist(rng);
   }
+  thrust::device_vector<int> data = host_data;
 
   // setup arguments
   minmax_unary_op<int> unary_op;
@@ -77,14 +78,14 @@ int main()
 
   // print results
   std::cout << "[ ";
-  for (size_t i = 0; i < N; i++)
+  for (auto& e : host_data)
   {
-    std::cout << data[i] << " ";
+    std::cout << e << " ";
   }
-  std::cout << "]" << std::endl;
+  std::cout << "]" << '\n';
 
-  std::cout << "minimum = " << result.min_val << std::endl;
-  std::cout << "maximum = " << result.max_val << std::endl;
+  std::cout << "minimum = " << result.min_val << '\n';
+  std::cout << "maximum = " << result.max_val << '\n';
 
   return 0;
 }

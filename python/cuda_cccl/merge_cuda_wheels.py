@@ -5,14 +5,13 @@ Script to merge CUDA-specific wheels into a single multi-CUDA wheel.
 This script takes wheels built for different CUDA versions (cu12, cu13) and merges them
 into a single wheel that supports both CUDA versions.
 
-In particular, each wheel contains a CUDA-specific build of the `cccl.c.parallel` library
-and the associated bindings. These are present in the directory `parallel/experimental/cu<version>`.
-For example, for a wheel built with CUDA 12, the directory is `parallel/experimental/cu12`,
-and for a wheel built with CUDA 13, the directory is `parallel/experimental/cu13`.
-This script merges these directories into a single wheel that supports both CUDA versions, i.e.,
-containing both `parallel/experimental/cu12` and `parallel/experimental/cu13`.
-At runtime, a shim module `parallel/experimental/_bindings.py` is used to import the appropriate
-CUDA-specific bindings. See `parallel/experimental/_bindings.py` for more details.
+Each wheel contains CUDA-specific builds in versioned directories:
+- `cuda/compute/cu<version>` -- cccl.c.parallel and cuda.compute bindings
+- `cuda/stf/_experimental/cu<version>` -- cccl.c.experimental.stf and cuda.stf._experimental bindings (Linux only)
+
+This script merges those directories so the final wheel supports both CUDA versions.
+At runtime, shim modules choose the right extension from the detected CUDA version
+(see `cuda/compute/_bindings.py` and `cuda/stf/_experimental/_stf_bindings.py`).
 """
 
 import argparse
@@ -68,7 +67,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             # Extract wheel - wheel unpack creates the directory itself
             run_command(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "wheel",
                     "unpack",
@@ -100,24 +99,26 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
         # Use the first wheel as the base and merge binaries from others
         base_wheel = extracted_wheels[0]
 
-        # now copy the version-specific directory from other wheels
+        # now copy the version-specific directories from other wheels
         # into the appropriate place in the base wheel
+        version_subdirs = [
+            Path("cuda") / "compute",
+            Path("cuda") / "stf" / "_experimental",
+        ]
         for i, wheel_dir in enumerate(extracted_wheels):
             cuda_version = wheels[i].name.split(".cu")[1].split(".")[0]
             if i == 0:
                 # For base wheel, do nothing
                 continue
-            else:
-                version_dir = (
-                    Path("cuda")
-                    / "cccl"
-                    / "parallel"
-                    / "experimental"
-                    / f"cu{cuda_version}"
-                )
-                # Copy from other wheels
+            for parent in version_subdirs:
+                version_dir = parent / f"cu{cuda_version}"
+                src = wheel_dir / version_dir
+                if not src.is_dir():
+                    # STF is gated off on Windows; the source dir may not exist.
+                    continue
+                dst = base_wheel / version_dir
                 print(f"  Copying {version_dir} to {base_wheel}")
-                shutil.copytree(wheel_dir / version_dir, base_wheel / version_dir)
+                shutil.copytree(src, dst)
 
         # Repack the merged wheel
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -131,7 +132,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
         print(f"Repacking merged wheel as: {base_wheel_name}")
         run_command(
             [
-                "python",
+                sys.executable,
                 "-m",
                 "wheel",
                 "pack",
@@ -188,7 +189,7 @@ def main():
 
     # Check that we have wheel tool available
     try:
-        run_command(["python", "-m", "wheel", "--help"])
+        run_command([sys.executable, "-m", "wheel", "--help"])
     except Exception:
         print("Error: wheel package not available. Install with: pip install wheel")
         sys.exit(1)

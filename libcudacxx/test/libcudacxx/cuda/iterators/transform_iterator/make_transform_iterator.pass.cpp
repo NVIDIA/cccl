@@ -19,17 +19,17 @@
 #include "types.h"
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 
   {
     auto iter = cuda::make_transform_iterator(Iter{buffer}, PlusOne{});
-    static_assert(cuda::std::is_same_v<decltype(iter), cuda::transform_iterator<Iter, PlusOne>>);
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::transform_iterator<PlusOne, Iter>>);
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<forward_iterator<int*>>();
@@ -42,7 +42,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

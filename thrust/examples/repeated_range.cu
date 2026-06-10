@@ -8,8 +8,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // this example illustrates how to make repeated access to a range of values
 // examples:
 //   repeated_range([0, 1, 2, 3], 1) -> [0, 1, 2, 3]
@@ -69,16 +67,12 @@ protected:
 
 int main()
 {
-  thrust::device_vector<int> data(4);
-  data[0] = 10;
-  data[1] = 20;
-  data[2] = 30;
-  data[3] = 40;
+  thrust::device_vector<int> data{10, 20, 30, 40};
 
   // print the initial data
   std::cout << "range        ";
   thrust::copy(data.begin(), data.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   using Iterator = thrust::device_vector<int>::iterator;
 
@@ -86,13 +80,13 @@ int main()
   repeated_range<Iterator> twice(data.begin(), data.end(), 2);
   std::cout << "repeated x2: ";
   thrust::copy(twice.begin(), twice.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // create repeated_range with elements repeated x3
   repeated_range<Iterator> thrice(data.begin(), data.end(), 3);
   std::cout << "repeated x3: ";
   thrust::copy(thrice.begin(), thrice.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   return 0;
 }

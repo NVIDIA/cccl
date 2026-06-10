@@ -1,4 +1,5 @@
 .. _libcudacxx-extended-api-memory-resources-resource:
+.. _libcudacxx-extended-api-memory-resources-synchronous-resource:
 
 The ``cuda::synchronous_resource`` concept
 -------------------------------------------
@@ -18,10 +19,10 @@ For cases where stream-ordered allocation is not possible, ``cuda::mr::synchrono
 The ``cuda::mr::synchronous_resource`` concept provides basic type checks to ensure that a given memory resource provides the
 expected ``allocate_sync`` / ``deallocate_sync`` interface and is also equality comparable, which covers the whole API surface of
 `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__.
-See below for different memory resources and potential pitfals.
+See below for different memory resources and potential pitfalls.
 
 To demonstrate, the following example defines several resources, only some of which are valid implementations of the
-``cuda::mr::synchronous_resource`` concept. The ``static_assertion``'s will result in compile-time errors for the invalid resources.
+``cuda::mr::synchronous_resource`` concept. The ``static_assertions`` will result in compile-time errors for the invalid resources.
 
 .. code:: cpp
 
@@ -33,7 +34,7 @@ To demonstrate, the following example defines several resources, only some of wh
      // However, if compiled with C++14 / C++17, operator != must also be defined.
      bool operator!=(const valid_resource&) const { return false; }
    };
-   static_assert(cuda::mr::resource<valid_resource>, "");
+   static_assert(cuda::mr::synchronous_resource<valid_resource>);
 
    struct invalid_argument {};
    struct invalid_allocate_argument {
@@ -41,34 +42,34 @@ To demonstrate, the following example defines several resources, only some of wh
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
      bool operator==(const invalid_allocate_argument&) { return true; }
    };
-   static_assert(!cuda::mr::resource<invalid_allocate_argument>, "");
+   static_assert(!cuda::mr::resource<invalid_allocate_argument>);
 
    struct invalid_allocate_return {
      int allocate_sync(std::size_t, std::size_t) { return 42; }
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
      bool operator==(const invalid_allocate_return&) { return true; }
    };
-   static_assert(!cuda::mr::resource<invalid_allocate_return>, "");
+   static_assert(!cuda::mr::resource<invalid_allocate_return>);
 
    struct invalid_deallocate_argument {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
      void deallocate_sync(void*, invalid_argument, std::size_t) noexcept {}
      bool operator==(const invalid_deallocate_argument&) { return true; }
    };
-   static_assert(!cuda::mr::resource<invalid_deallocate_argument>, "");
+   static_assert(!cuda::mr::resource<invalid_deallocate_argument>);
 
    struct non_comparable {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
    };
-   static_assert(!cuda::mr::resource<non_comparable>, "");
+   static_assert(!cuda::mr::resource<non_comparable>);
 
    struct non_eq_comparable {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
      void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
      bool operator!=(const non_eq_comparable&) { return false; }
    };
-   static_assert(!cuda::mr::synchronous_resource<non_eq_comparable>, "");
+   static_assert(!cuda::mr::synchronous_resource<non_eq_comparable>);
 
 In addition to the `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`_ interface the
 ``cuda::mr::resource`` concept verifies that a memory resource also satisfies the ``allocate`` /
@@ -84,7 +85,7 @@ In addition to the `std::pmr::memory_resource <https://en.cppreference.com/w/cpp
      bool operator==(const valid_resource&) const { return true; }
      bool operator!=(const valid_resource&) const { return false; }
    };
-   static_assert(cuda::mr::resource<valid_resource>, "");
+   static_assert(cuda::mr::resource<valid_resource>);
 
 A library can easily decide whether to use the async interface:
 

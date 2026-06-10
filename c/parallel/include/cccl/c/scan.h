@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -29,12 +30,16 @@ typedef struct cccl_device_scan_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
+  cccl_type_info input_type;
+  cccl_type_info output_type;
   cccl_type_info accumulator_type;
   CUkernel init_kernel;
   CUkernel scan_kernel;
   bool force_inclusive;
+  cccl_init_kind_t init_kind;
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
+  void* runtime_policy;
 } cccl_device_scan_build_result_t;
 
 CCCL_C_API CUresult cccl_device_scan_build(
@@ -42,8 +47,9 @@ CCCL_C_API CUresult cccl_device_scan_build(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
   bool force_inclusive,
+  cccl_init_kind_t init_kind,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -57,8 +63,9 @@ CCCL_C_API CUresult cccl_device_scan_build_ex(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
   bool force_inclusive,
+  cccl_init_kind_t init_kind,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -89,6 +96,39 @@ CCCL_C_API CUresult cccl_device_inclusive_scan(
   cccl_value_t init,
   CUstream stream);
 
+CCCL_C_API CUresult cccl_device_exclusive_scan_future_value(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_iterator_t init,
+  CUstream stream);
+
+CCCL_C_API CUresult cccl_device_inclusive_scan_future_value(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_iterator_t init,
+  CUstream stream);
+
+CCCL_C_API CUresult cccl_device_inclusive_scan_no_init(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  CUstream stream);
+
 CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

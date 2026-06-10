@@ -56,7 +56,12 @@ struct device_only_iterator
     return *this;
   }
 
-  _CCCL_DEVICE friend bool operator-(const device_only_iterator& a, const device_only_iterator& b)
+  _CCCL_DEVICE friend device_only_iterator operator+(device_only_iterator it, difference_type d)
+  {
+    return it += d;
+  }
+
+  _CCCL_DEVICE friend difference_type operator-(const device_only_iterator& a, const device_only_iterator& b)
   {
     return a.m_ptr - b.m_ptr;
   }

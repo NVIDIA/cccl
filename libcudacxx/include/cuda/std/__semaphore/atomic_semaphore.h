@@ -20,8 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/atomic>
-#include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -33,7 +34,7 @@ class __atomic_semaphore
 {
   __atomic_impl<ptrdiff_t, _Sco> __count;
 
-  [[nodiscard]] _CCCL_API inline bool __fetch_sub_if_slow(ptrdiff_t __old)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool __fetch_sub_if_slow(ptrdiff_t __old)
   {
     while (__old != 0)
     {
@@ -45,7 +46,7 @@ class __atomic_semaphore
     return false;
   }
 
-  [[nodiscard]] _CCCL_API inline bool __fetch_sub_if()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool __fetch_sub_if()
   {
     ptrdiff_t __old = __count.load(memory_order_acquire);
     if (__old == 0)
@@ -59,7 +60,7 @@ class __atomic_semaphore
     return __fetch_sub_if_slow(__old); // fail only if not __available
   }
 
-  _CCCL_API inline void __wait_slow()
+  _CCCL_HOST_DEVICE_API inline void __wait_slow()
   {
     while (1)
     {
@@ -72,7 +73,7 @@ class __atomic_semaphore
     }
   }
 
-  [[nodiscard]] _CCCL_API inline bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
     return ::cuda::std::__cccl_thread_poll_with_backoff(
       [this]() {
@@ -83,12 +84,12 @@ class __atomic_semaphore
   }
 
 public:
-  [[nodiscard]] _CCCL_API static constexpr ptrdiff_t max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ptrdiff_t max() noexcept
   {
     return numeric_limits<ptrdiff_t>::max();
   }
 
-  _CCCL_API constexpr __atomic_semaphore(ptrdiff_t __count) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __atomic_semaphore(ptrdiff_t __count) noexcept
       : __count(__count)
   {}
 
@@ -97,7 +98,7 @@ public:
   __atomic_semaphore(__atomic_semaphore const&)            = delete;
   __atomic_semaphore& operator=(__atomic_semaphore const&) = delete;
 
-  _CCCL_API inline void release(ptrdiff_t __update = 1)
+  _CCCL_HOST_DEVICE_API inline void release(ptrdiff_t __update = 1)
   {
     __count.fetch_add(__update, memory_order_release);
     if (__update > 1)
@@ -110,7 +111,7 @@ public:
     }
   }
 
-  _CCCL_API inline void acquire()
+  _CCCL_HOST_DEVICE_API inline void acquire()
   {
     while (!try_acquire())
     {
@@ -118,13 +119,14 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_API inline bool try_acquire() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool try_acquire() noexcept
   {
     return __fetch_sub_if();
   }
 
   template <class Clock, class Duration>
-  [[nodiscard]] _CCCL_API inline bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool
+  try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
   {
     if (try_acquire())
     {
@@ -137,7 +139,7 @@ public:
   }
 
   template <class Rep, class Period>
-  [[nodiscard]] _CCCL_API inline bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
   {
     if (try_acquire())
     {
@@ -155,7 +157,7 @@ class __atomic_semaphore<_Sco, 1>
 {
   __atomic_impl<int, _Sco> __available;
 
-  [[nodiscard]] _CCCL_API inline bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
     return ::cuda::std::__cccl_thread_poll_with_backoff(
       [this]() {
@@ -165,12 +167,12 @@ class __atomic_semaphore<_Sco, 1>
   }
 
 public:
-  [[nodiscard]] _CCCL_API static constexpr ptrdiff_t max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ptrdiff_t max() noexcept
   {
     return 1;
   }
 
-  _CCCL_API constexpr __atomic_semaphore(ptrdiff_t __available)
+  _CCCL_HOST_DEVICE_API constexpr __atomic_semaphore(ptrdiff_t __available)
       : __available(__available)
   {}
 
@@ -179,14 +181,14 @@ public:
   __atomic_semaphore(__atomic_semaphore const&)            = delete;
   __atomic_semaphore& operator=(__atomic_semaphore const&) = delete;
 
-  _CCCL_API inline void release([[maybe_unused]] ptrdiff_t __update = 1)
+  _CCCL_HOST_DEVICE_API inline void release([[maybe_unused]] ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(__update == 1, "");
     __available.store(1, memory_order_release);
     __available.notify_one();
   }
 
-  _CCCL_API inline void acquire()
+  _CCCL_HOST_DEVICE_API inline void acquire()
   {
     while (!try_acquire())
     {
@@ -194,13 +196,14 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_API inline bool try_acquire() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool try_acquire() noexcept
   {
     return 1 == __available.exchange(0, memory_order_acquire);
   }
 
   template <class Clock, class Duration>
-  [[nodiscard]] _CCCL_API inline bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool
+  try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
   {
     if (try_acquire())
     {
@@ -213,7 +216,7 @@ public:
   }
 
   template <class Rep, class Period>
-  [[nodiscard]] _CCCL_API inline bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
   {
     if (try_acquire())
     {

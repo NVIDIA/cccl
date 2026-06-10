@@ -38,7 +38,7 @@ static bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
 static bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
 {
   cudaDeviceProp props;
-  CUDART(cudaGetDeviceProperties(&props, 0));
+  REQUIRE_CUDART(cudaGetDeviceProperties(&props, 0));
   return filter(props);
 }
 
@@ -67,12 +67,12 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     cudaLaunchAttribute attrs[1];
     config.attrs = &attrs[0];
 
-    config.blockDim = dims.extents(cudax::thread, cudax::block);
-    config.gridDim  = dims.extents(cudax::block, cudax::grid);
+    config.blockDim = dims.extents(cuda::gpu_thread, cuda::block);
+    config.gridDim  = dims.extents(cuda::block, cuda::grid);
 
-    if constexpr (cudax::has_level<cudax::cluster_level, decltype(dims)>)
+    if constexpr (Dims::has_level(cluster))
     {
-      dim3 cluster_dims                            = dims.extents(cudax::block, cudax::cluster);
+      dim3 cluster_dims                            = dims.extents(cuda::block, cuda::cluster);
       config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
       config.attrs[config.numAttrs].val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
       config.numAttrs                              = 1;
@@ -83,8 +83,8 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     }
 
     // device testing
-    CUDART(cudaLaunchKernelEx(&config, lambda_launcher<Dims, Lambda>, dims, lambda));
-    CUDART(cudaDeviceSynchronize());
+    REQUIRE_CUDART(cudaLaunchKernelEx(&config, lambda_launcher<Dims, Lambda>, dims, lambda));
+    REQUIRE_CUDART(cudaDeviceSynchronize());
   }
 }
 

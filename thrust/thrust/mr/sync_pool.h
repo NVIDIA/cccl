@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A mutex-synchronized version of \p unsynchronized_pool_resource.
@@ -36,7 +23,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
-
 /*! \addtogroup memory_resources Memory Resources
  *  \ingroup memory_management
  *  \{
@@ -50,7 +36,7 @@ template <typename Upstream>
 struct synchronized_pool_resource : public memory_resource<typename Upstream::pointer>
 {
   using unsync_pool = unsynchronized_pool_resource<Upstream>;
-  using lock_t      = std::lock_guard<std::mutex>;
+  using lock_t      = std::scoped_lock<std::mutex>;
 
   using void_ptr = typename Upstream::pointer;
 
@@ -89,14 +75,13 @@ public:
     upstream_pool.release();
   }
 
-  [[nodiscard]] virtual void_ptr
-  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] void_ptr do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     lock_t lock(mtx);
     return upstream_pool.do_allocate(bytes, alignment);
   }
 
-  virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     lock_t lock(mtx);
     upstream_pool.do_deallocate(p, n, alignment);
@@ -109,6 +94,5 @@ private:
 
 /*! \} // memory_resources
  */
-
 } // namespace mr
 THRUST_NAMESPACE_END

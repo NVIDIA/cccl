@@ -21,7 +21,8 @@ __global__ void test_mbarrier_arrive_no_complete(void** fn_ptr)
     NV_PROVIDES_SM_80,
     (
         // mbarrier.arrive.noComplete.shared.b64                       state,  [addr], count;    // 5.
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)(cuda::std::uint64_t*, const cuda::std::uint32_t&)>(
-          cuda::ptx::mbarrier_arrive_no_complete));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<cuda::std::uint64_t (*)(cuda::std::uint64_t*, const cuda::std::uint32_t&)>(
+            cuda::ptx::mbarrier_arrive_no_complete));));
 #endif // __cccl_ptx_isa >= 700
 }

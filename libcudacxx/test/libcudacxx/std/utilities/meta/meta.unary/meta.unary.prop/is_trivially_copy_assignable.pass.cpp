@@ -17,17 +17,17 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_has_trivially_copy_assignable()
+TEST_FUNC void test_has_trivially_copy_assignable()
 {
-  static_assert(cuda::std::is_trivially_copy_assignable<T>::value, "");
-  static_assert(cuda::std::is_trivially_copy_assignable_v<T>, "");
+  static_assert(cuda::std::is_trivially_copy_assignable<T>::value);
+  static_assert(cuda::std::is_trivially_copy_assignable_v<T>);
 }
 
 template <class T>
-__host__ __device__ void test_has_not_trivially_copy_assignable()
+TEST_FUNC void test_has_not_trivially_copy_assignable()
 {
-  static_assert(!cuda::std::is_trivially_copy_assignable<T>::value, "");
-  static_assert(!cuda::std::is_trivially_copy_assignable_v<T>, "");
+  static_assert(!cuda::std::is_trivially_copy_assignable<T>::value);
+  static_assert(!cuda::std::is_trivially_copy_assignable_v<T>);
 }
 
 class Empty
@@ -35,7 +35,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -48,12 +48,12 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 struct A
 {
-  __host__ __device__ A& operator=(const A&);
+  TEST_FUNC A& operator=(const A&);
 };
 
 int main(int, char**)

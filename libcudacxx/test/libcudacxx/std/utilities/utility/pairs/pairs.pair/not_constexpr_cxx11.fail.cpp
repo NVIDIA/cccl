@@ -17,10 +17,10 @@
 
 struct ExplicitT
 {
-  __host__ __device__ constexpr explicit ExplicitT(int x)
+  TEST_FUNC constexpr explicit ExplicitT(int x)
       : value(x)
   {}
-  __host__ __device__ constexpr explicit ExplicitT(ExplicitT const& o)
+  TEST_FUNC constexpr explicit ExplicitT(ExplicitT const& o)
       : value(o.value)
   {}
   int value;
@@ -28,10 +28,10 @@ struct ExplicitT
 
 struct ImplicitT
 {
-  __host__ __device__ constexpr ImplicitT(int x)
+  TEST_FUNC constexpr ImplicitT(int x)
       : value(x)
   {}
-  __host__ __device__ constexpr ImplicitT(ImplicitT const& o)
+  TEST_FUNC constexpr ImplicitT(ImplicitT const& o)
       : value(o.value)
   {}
   int value;

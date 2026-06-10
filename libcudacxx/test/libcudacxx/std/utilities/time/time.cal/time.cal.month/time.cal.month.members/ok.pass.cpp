@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,18 +16,19 @@
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
   using month = cuda::std::chrono::month;
 
   static_assert(noexcept(cuda::std::declval<const month>().ok()));
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const month>().ok())>);
 
-  static_assert(!month{0}.ok(), "");
-  static_assert(month{1}.ok(), "");
+  static_assert(!month{0}.ok());
+  static_assert(month{1}.ok());
 
   assert(!month{0}.ok());
   for (unsigned i = 1; i <= 12; ++i)
@@ -37,6 +39,14 @@ int main(int, char**)
   {
     assert(!month{i}.ok());
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

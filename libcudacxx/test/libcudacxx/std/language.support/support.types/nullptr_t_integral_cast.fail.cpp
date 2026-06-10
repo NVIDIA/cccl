@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// typedef decltype(nullptr) nullptr_t;
+// using nullptr_t = decltype(nullptr);
 
 #include <cuda/std/cstddef>
 

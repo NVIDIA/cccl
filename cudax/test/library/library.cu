@@ -105,8 +105,8 @@ C2H_CCCLRT_TEST("Library", "[library]")
   constexpr char const_symbol_name[]   = "const_data";
   constexpr char managed_symbol_name[] = "managed_data";
 
-  CUlibrary lib1_native = _CUDA_DRIVER::__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
-  CUlibrary lib2_native = _CUDA_DRIVER::__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  CUlibrary lib1_native = ::cuda::__driver::__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  CUlibrary lib2_native = ::cuda::__driver::__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
 
   const cuda::device_ref device{0};
 
@@ -120,7 +120,7 @@ C2H_CCCLRT_TEST("Library", "[library]")
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cudax::library::from_native_handle(CUlibrary{})), cudax::library>);
 
     cudax::library lib = cudax::library::from_native_handle(lib1_native);
-    CUDAX_REQUIRE(lib1_native == lib.get());
+    REQUIRE(lib1_native == lib.get());
 
     (void) lib.release(); // prevent library unload in destructor
   }
@@ -134,7 +134,7 @@ C2H_CCCLRT_TEST("Library", "[library]")
   {
     STATIC_REQUIRE(cuda::std::is_nothrow_constructible_v<cudax::library, cudax::no_init_t>);
     cudax::library lib{cudax::no_init};
-    CUDAX_REQUIRE(lib.get() == CUlibrary{});
+    REQUIRE(lib.get() == CUlibrary{});
 
     // lib is in a moved-from state
   }
@@ -149,11 +149,11 @@ C2H_CCCLRT_TEST("Library", "[library]")
     STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cudax::library>);
 
     cudax::library lib1 = cudax::library::from_native_handle(lib1_native);
-    CUDAX_REQUIRE(lib1.get() == lib1_native);
+    REQUIRE(lib1.get() == lib1_native);
 
     cudax::library lib2{cuda::std::move(lib1)};
-    CUDAX_REQUIRE(lib1.get() == CUlibrary{});
-    CUDAX_REQUIRE(lib2.get() == lib1_native);
+    REQUIRE(lib1.get() == CUlibrary{});
+    REQUIRE(lib2.get() == lib1_native);
 
     // lib1 is in a moved-from state
     (void) lib2.release(); // prevent library unload in destructor
@@ -169,14 +169,14 @@ C2H_CCCLRT_TEST("Library", "[library]")
     STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cudax::library>);
 
     cudax::library lib1 = cudax::library::from_native_handle(lib1_native);
-    CUDAX_REQUIRE(lib1.get() == lib1_native);
+    REQUIRE(lib1.get() == lib1_native);
 
     cudax::library lib2{cudax::no_init};
-    CUDAX_REQUIRE(lib2.get() == CUlibrary{});
+    REQUIRE(lib2.get() == CUlibrary{});
 
     lib2 = cuda::std::move(lib1);
-    CUDAX_REQUIRE(lib1.get() == CUlibrary{});
-    CUDAX_REQUIRE(lib2.get() == lib1_native);
+    REQUIRE(lib1.get() == CUlibrary{});
+    REQUIRE(lib2.get() == lib1_native);
 
     // lib1 is in a moved-from state
     (void) lib2.release(); // prevent library unload in destructor
@@ -187,8 +187,8 @@ C2H_CCCLRT_TEST("Library", "[library]")
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library>().has_kernel(kernel_name)), bool>);
 
     cudax::library lib = cudax::library::from_native_handle(lib1_native);
-    CUDAX_REQUIRE(lib.has_kernel(kernel_name));
-    CUDAX_REQUIRE(!lib.has_kernel("non_existent_kernel"));
+    REQUIRE(lib.has_kernel(kernel_name));
+    REQUIRE(!lib.has_kernel("non_existent_kernel"));
 
     (void) lib.release(); // prevent library unload in destructor
   }
@@ -203,8 +203,8 @@ C2H_CCCLRT_TEST("Library", "[library]")
     auto kernel        = lib.kernel<void(int*, int)>(kernel_name);
 
     CUkernel kernel_handle;
-    CUDAX_REQUIRE(_CUDA_DRIVER::__libraryGetKernelNoThrow(kernel_handle, lib1_native, kernel_name) == cudaSuccess);
-    CUDAX_REQUIRE(kernel.get() == kernel_handle);
+    REQUIRE_CUDART(::cuda::__driver::__libraryGetKernelNoThrow(kernel_handle, lib1_native, kernel_name));
+    REQUIRE(kernel.get() == kernel_handle);
 
     (void) lib.release(); // prevent library unload in destructor
   }
@@ -215,9 +215,9 @@ C2H_CCCLRT_TEST("Library", "[library]")
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library>().has_global(global_symbol_name, device)), bool>);
 
     cudax::library lib = cudax::library::from_native_handle(lib1_native);
-    CUDAX_REQUIRE(lib.has_global(global_symbol_name, device));
-    CUDAX_REQUIRE(lib.has_global(const_symbol_name, device));
-    CUDAX_REQUIRE(!lib.has_global("non_existent_global", device));
+    REQUIRE(lib.has_global(global_symbol_name, device));
+    REQUIRE(lib.has_global(const_symbol_name, device));
+    REQUIRE(!lib.has_global("non_existent_global", device));
 
     (void) lib.release(); // prevent library unload in destructor
   }
@@ -238,13 +238,12 @@ C2H_CCCLRT_TEST("Library", "[library]")
 
       CUdeviceptr global_symbol_ptr;
       cuda::std::size_t global_symbol_size;
-      CUDAX_REQUIRE(
-        _CUDA_DRIVER::__libraryGetGlobalNoThrow(global_symbol_ptr, global_symbol_size, lib1_native, global_symbol_name)
-        == cudaSuccess);
+      REQUIRE_CUDART(::cuda::__driver::__libraryGetGlobalNoThrow(
+        global_symbol_ptr, global_symbol_size, lib1_native, global_symbol_name));
 
-      CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(global_sym.ptr) == global_symbol_ptr);
-      CUDAX_REQUIRE(global_sym.size == global_symbol_size);
-      CUDAX_REQUIRE(global_sym.size == sizeof(int));
+      REQUIRE(reinterpret_cast<CUdeviceptr>(global_sym.ptr) == global_symbol_ptr);
+      REQUIRE(global_sym.size == global_symbol_size);
+      REQUIRE(global_sym.size == sizeof(int));
     }
 
     // Test const_symbol_name
@@ -255,13 +254,12 @@ C2H_CCCLRT_TEST("Library", "[library]")
 
       CUdeviceptr const_symbol_ptr;
       cuda::std::size_t const_symbol_size;
-      CUDAX_REQUIRE(
-        _CUDA_DRIVER::__libraryGetGlobalNoThrow(const_symbol_ptr, const_symbol_size, lib1_native, const_symbol_name)
-        == cudaSuccess);
+      REQUIRE_CUDART(::cuda::__driver::__libraryGetGlobalNoThrow(
+        const_symbol_ptr, const_symbol_size, lib1_native, const_symbol_name));
 
-      CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(const_sym.ptr) == const_symbol_ptr);
-      CUDAX_REQUIRE(const_sym.size == const_symbol_size);
-      CUDAX_REQUIRE(const_sym.size == sizeof(int));
+      REQUIRE(reinterpret_cast<CUdeviceptr>(const_sym.ptr) == const_symbol_ptr);
+      REQUIRE(const_sym.size == const_symbol_size);
+      REQUIRE(const_sym.size == sizeof(int));
     }
 
     (void) lib.release(); // prevent library unload in destructor
@@ -273,8 +271,8 @@ C2H_CCCLRT_TEST("Library", "[library]")
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library>().has_managed(managed_symbol_name)), bool>);
 
     cudax::library lib = cudax::library::from_native_handle(lib1_native);
-    CUDAX_REQUIRE(lib.has_managed(managed_symbol_name));
-    CUDAX_REQUIRE(!lib.has_managed("non_existent_managed"));
+    REQUIRE(lib.has_managed(managed_symbol_name));
+    REQUIRE(!lib.has_managed("non_existent_managed"));
 
     (void) lib.release(); // prevent library unload in destructor
   }
@@ -289,13 +287,12 @@ C2H_CCCLRT_TEST("Library", "[library]")
 
     CUdeviceptr managed_symbol_ptr;
     cuda::std::size_t managed_symbol_size;
-    CUDAX_REQUIRE(
-      _CUDA_DRIVER::__libraryGetManagedNoThrow(managed_symbol_ptr, managed_symbol_size, lib1_native, managed_symbol_name)
-      == cudaSuccess);
+    REQUIRE_CUDART(::cuda::__driver::__libraryGetManagedNoThrow(
+      managed_symbol_ptr, managed_symbol_size, lib1_native, managed_symbol_name));
 
-    CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(managed_sym.ptr) == managed_symbol_ptr);
-    CUDAX_REQUIRE(managed_sym.size == managed_symbol_size);
-    CUDAX_REQUIRE(managed_sym.size == sizeof(int));
+    REQUIRE(reinterpret_cast<CUdeviceptr>(managed_sym.ptr) == managed_symbol_ptr);
+    REQUIRE(managed_sym.size == managed_symbol_size);
+    REQUIRE(managed_sym.size == sizeof(int));
 
     (void) lib.release(); // prevent library unload in destructor
   }
@@ -305,7 +302,7 @@ C2H_CCCLRT_TEST("Library", "[library]")
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library>().get()), CUlibrary>);
 
     cudax::library lib = cudax::library::from_native_handle(lib1_native);
-    CUDAX_REQUIRE(lib.get() == lib1_native);
+    REQUIRE(lib.get() == lib1_native);
 
     (void) lib.release(); // prevent library unload in destructor
   }
@@ -315,11 +312,11 @@ C2H_CCCLRT_TEST("Library", "[library]")
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library>().release()), CUlibrary>);
 
     cudax::library lib = cudax::library::from_native_handle(lib1_native);
-    CUDAX_REQUIRE(lib.get() == lib1_native);
+    REQUIRE(lib.get() == lib1_native);
 
     CUlibrary released_handle = lib.release();
-    CUDAX_REQUIRE(released_handle == lib1_native);
-    CUDAX_REQUIRE(lib.get() == CUlibrary{});
+    REQUIRE(released_handle == lib1_native);
+    REQUIRE(lib.get() == CUlibrary{});
 
     // lib is in a moved-from state
   }
@@ -329,8 +326,8 @@ C2H_CCCLRT_TEST("Library", "[library]")
     cudax::library lib1 = cudax::library::from_native_handle(lib1_native);
     cudax::library lib2 = cudax::library::from_native_handle(lib2_native);
 
-    CUDAX_REQUIRE(lib1 == lib1);
-    CUDAX_REQUIRE(lib1 != lib2);
+    REQUIRE(lib1 == lib1);
+    REQUIRE(lib1 != lib2);
 
     (void) lib1.release(); // prevent library unload in destructor
     (void) lib2.release(); // prevent library unload in destructor

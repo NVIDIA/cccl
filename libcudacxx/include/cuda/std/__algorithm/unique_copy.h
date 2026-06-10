@@ -35,14 +35,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __unique_copy_tags
 {
-
 struct __reread_from_input_tag
 {};
 struct __reread_from_output_tag
 {};
 struct __read_from_tmp_value_tag
 {};
-
 } // namespace __unique_copy_tags
 
 _CCCL_EXEC_CHECK_DISABLE
