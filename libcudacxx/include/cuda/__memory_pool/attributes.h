@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MEMORY_RESOURCE_ATTRIBUTES_H
-#define _CUDA___MEMORY_RESOURCE_ATTRIBUTES_H
+#ifndef _CUDA___MEMORY_POOL_ATTRIBUTES_H
+#define _CUDA___MEMORY_POOL_ATTRIBUTES_H
 
 #include <cuda/std/detail/__config>
 
@@ -269,4 +269,4 @@ _CCCL_DIAG_POP
 
 #endif // _CCCL_HAS_CTK()
 
-#endif // _CUDA___MEMORY_RESOURCE_ATTRIBUTES_H
+#endif // _CUDA___MEMORY_POOL_ATTRIBUTES_H
