@@ -1459,6 +1459,10 @@ cdef class task:
         cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
         cdef data_place dp
 
+        # Only the dep *type* is validated here, not its owning context. A dep
+        # whose logical_data belongs to a different context is rejected later by
+        # the C++ core when the task acquires its deps (it aborts with a
+        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
         if d.dplace is None:
             stf_task_add_dep(self._t, ldata._ld, mode_ce)
         else:
@@ -1635,6 +1639,10 @@ cdef class cuda_kernel:
         cdef logical_data ldata = <logical_data>d.ld
         cdef int mode_int = int(d.mode)
         cdef stf_access_mode mode_ce = <stf_access_mode>mode_int
+        # Only the dep *type* is validated here, not its owning context. A dep
+        # whose logical_data belongs to a different context is rejected later by
+        # the C++ core when the task acquires its deps (it aborts with a
+        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
         stf_cuda_kernel_add_dep(self._k, ldata._ld, mode_ce)
         self._lds_args.append(ldata)
 
@@ -2318,6 +2326,10 @@ cdef class context:
 
         cdef logical_data ldata
         dep_meta = []
+        # Only the dep *type* is validated here, not its owning context. A dep
+        # whose logical_data belongs to a different context is rejected later by
+        # the C++ core when the host launch acquires its deps (it aborts with a
+        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
         for d in deps:
             if not isinstance(d, dep):
                 raise TypeError(
@@ -2530,6 +2542,10 @@ cdef class stackable_task:
         cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
         cdef data_place dp
 
+        # Only the dep *type* is validated here, not its owning context. A dep
+        # whose logical_data belongs to a different context is rejected later by
+        # the C++ core when the task acquires its deps (it aborts with a
+        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
         if d.dplace is None:
             stf_stackable_task_add_dep(self._ctx, self._t, ldata._ld, mode_ce)
         else:
@@ -3291,6 +3307,10 @@ cdef class stackable_context:
 
         cdef stackable_logical_data sldata
         dep_meta = []
+        # Only the dep *type* is validated here, not its owning context. A dep
+        # whose logical_data belongs to a different context is rejected later by
+        # the C++ core when the host launch acquires its deps (it aborts with a
+        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
         for d in deps:
             if not isinstance(d, dep):
                 raise TypeError(
