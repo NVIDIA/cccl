@@ -27,7 +27,9 @@
 
 #  include <cuda/__device/compute_capability.h>
 #  include <cuda/cmath>
+#  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__cstddef/types.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -46,17 +48,17 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
   constexpr int max_items_per_thread = 32;
   constexpr int max_occupancy        = 16;
 
-  constexpr int min_elem      = ::cuda::std::min({int(sizeof(Out)), int(sizeof(Ins))...});
+  constexpr auto min_elem     = ::cuda::std::min({sizeof(Out), sizeof(Ins)...});
   constexpr int items_for_vec = static_cast<int>(::cuda::ceil_div(vector_bytes, min_elem));
 
   // Fill (zero inputs) keeps the same latency target by counting output bytes.
-  constexpr int bytes_per_iter = (sizeof...(Ins) > 0) ? (int(sizeof(Ins)) + ... + 0) : int(sizeof(Out));
-  const int target             = cc_to_min_bytes_in_flight(cc);
+  constexpr auto bytes_per_iter = (sizeof...(Ins) > 0) ? (sizeof(Ins) + ... + ::cuda::std::size_t{0}) : sizeof(Out);
+  const int target              = cc_to_min_bytes_in_flight(cc);
   const int items_for_latency =
     static_cast<int>(::cuda::ceil_div(target, max_occupancy * threads_per_block * bytes_per_iter));
 
-  int items = items_for_vec > items_for_latency ? items_for_vec : items_for_latency;
-  items     = static_cast<int>(::cuda::next_power_of_two(static_cast<unsigned int>(items)));
+  int items = ::cuda::std::max(items_for_vec, items_for_latency);
+  items     = static_cast<int>(::cuda::next_power_of_two(static_cast<unsigned>(items)));
   if (items > max_items_per_thread)
   {
     items = max_items_per_thread;
@@ -64,10 +66,10 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
 
   if (mufu_heavy && min_elem < 4)
   {
-    const int byte_cap = vector_bytes / min_elem; // 16 for I8, 8 for I16/half/bf16
-    if (items > byte_cap)
+    const auto byte_cap = vector_bytes / min_elem; // 16 for I8, 8 for I16/half/bf16
+    if (static_cast<decltype(byte_cap)>(items) > byte_cap)
     {
-      items = byte_cap;
+      items = static_cast<int>(byte_cap);
     }
   }
 
