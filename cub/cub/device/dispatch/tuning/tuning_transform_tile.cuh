@@ -27,22 +27,12 @@
 
 #  include <cuda/__device/compute_capability.h>
 #  include <cuda/cmath>
+#  include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform::tile
 {
-
-constexpr int min_size(int a)
-{
-  return a;
-}
-template <class... Ts>
-constexpr int min_size(int a, int b, Ts... rest)
-{
-  int m = a < b ? a : b;
-  return min_size(m, rest...);
-}
 
 // mufu_heavy=true tells the policy the functor body has heavy MUFU usage.
 // for small data types, vectorized load will make them arrive packed in
@@ -56,7 +46,7 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
   constexpr int max_items_per_thread = 32;
   constexpr int max_occupancy        = 16;
 
-  constexpr int min_elem      = min_size(int(sizeof(Out)), int(sizeof(Ins))...);
+  constexpr int min_elem      = ::cuda::std::min({int(sizeof(Out)), int(sizeof(Ins))...});
   constexpr int items_for_vec = static_cast<int>(::cuda::ceil_div(vector_bytes, min_elem));
 
   // Fill (zero inputs) keeps the same latency target by counting output bytes.
