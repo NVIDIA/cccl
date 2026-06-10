@@ -41,17 +41,19 @@ public:
 //! `cuda::std::extents` so a static slot count folds the reduction to a constant.
 //!
 //! @tparam _CapacityExtent Capacity extent type (total slots), a `cuda::std::extents`
-template <class _CapacityExtent>
+//! @tparam _StepExtent Probe-step extent type, a `cuda::std::extents` (static for linear probing)
+template <class _CapacityExtent, class _StepExtent>
 class __probing_iterator
 {
 public:
   using __capacity_extent_type = _CapacityExtent;
+  using __step_extent_type     = _StepExtent;
   using __size_type            = typename _CapacityExtent::index_type;
 
   _CCCL_HOST_DEVICE_API constexpr __probing_iterator(
-    __size_type __start, __size_type __step, _CapacityExtent __capacity) noexcept
+    __size_type __start, _StepExtent __step, _CapacityExtent __capacity) noexcept
       : __curr_index{__start}
-      , __step_size{__step}
+      , __step_{__step}
       , __capacity_{__capacity}
   {}
 
@@ -62,7 +64,7 @@ public:
 
   _CCCL_DEVICE constexpr auto operator++() noexcept
   {
-    __curr_index = (__curr_index + __step_size) % __capacity_.extent(0);
+    __curr_index = (__curr_index + __step_.extent(0)) % __capacity_.extent(0);
     return *this;
   }
 
@@ -75,7 +77,7 @@ public:
 
 private:
   __size_type __curr_index;
-  __size_type __step_size;
+  _CCCL_NO_UNIQUE_ADDRESS _StepExtent __step_;
   _CCCL_NO_UNIQUE_ADDRESS _CapacityExtent __capacity_;
 };
 } // namespace cuda::experimental::cuco::__detail

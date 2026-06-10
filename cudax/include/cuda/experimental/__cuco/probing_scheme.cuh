@@ -85,8 +85,10 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
   {
     using __size_type        = typename _Capacity::index_type;
+    using __step_extent      = ::cuda::std::extents<__size_type, _BucketSize>;
     const __size_type __init = __hash(__probe_key) % (__cap.extent(0) / _BucketSize) * _BucketSize;
-    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{__init, __size_type{_BucketSize}, __cap};
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity, __step_extent>{
+      __init, __step_extent{}, __cap};
   }
 
   //! @brief Returns a cooperative group based probing iterator.
@@ -109,9 +111,11 @@ public:
   {
     using __size_type              = typename _Capacity::index_type;
     constexpr __size_type __stride = cg_size * _BucketSize;
+    using __step_extent            = ::cuda::std::extents<__size_type, __stride>;
     const __size_type __init =
       __hash(__probe_key) % (__cap.extent(0) / __stride) * __stride + __size_type{__group.thread_rank() * _BucketSize};
-    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{__init, __stride, __cap};
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity, __step_extent>{
+      __init, __step_extent{}, __cap};
   }
 
   //! @brief Gets the function used to hash keys.
@@ -198,10 +202,11 @@ public:
   template <int _BucketSize, class _ProbeKey, class _Capacity>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
   {
-    using __size_type = typename _Capacity::index_type;
-    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{
+    using __size_type   = typename _Capacity::index_type;
+    using __step_extent = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity, __step_extent>{
       __size_type{__hash1(__probe_key)} % (__cap.extent(0) / _BucketSize) * _BucketSize,
-      __size_type{(__hash2(__probe_key) % (__cap.extent(0) / _BucketSize - 1) + 1) * _BucketSize},
+      __step_extent{__size_type{(__hash2(__probe_key) % (__cap.extent(0) / _BucketSize - 1) + 1) * _BucketSize}},
       __cap};
   }
 
@@ -225,11 +230,12 @@ public:
   {
     using __size_type              = typename _Capacity::index_type;
     constexpr __size_type __stride = cg_size * _BucketSize;
+    using __step_extent            = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
 
-    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity, __step_extent>{
       __size_type{__hash1(__probe_key)} % (__cap.extent(0) / __stride) * __stride
         + __size_type{__group.thread_rank() * _BucketSize},
-      __size_type{(__hash2(__probe_key) % (__cap.extent(0) / __stride - 1) + 1) * __stride},
+      __step_extent{__size_type{(__hash2(__probe_key) % (__cap.extent(0) / __stride - 1) + 1) * __stride}},
       __cap};
   }
 
