@@ -121,21 +121,6 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   }
 }
 
-//! @brief Fills a slot array with a given value.
-template <int _BlockSize, class _Value>
-_CCCL_KERNEL_ATTRIBUTES void
-__fill(_Value* __slots, ::cuda::experimental::cuco::__detail::__index_type __n, _Value __sentinel)
-{
-  const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride();
-  auto __idx               = ::cuda::experimental::cuco::__detail::__global_thread_id();
-
-  while (__idx < __n)
-  {
-    __slots[__idx] = __sentinel;
-    __idx += __loop_stride;
-  }
-}
-
 //! @brief Contains test with predicate.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES void __contains_if_n(

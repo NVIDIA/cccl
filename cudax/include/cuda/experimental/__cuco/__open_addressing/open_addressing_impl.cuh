@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/device_transform.cuh>
+
 #include <cuda/__container/buffer.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
@@ -239,14 +241,12 @@ public:
     {
       return;
     }
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(
-      static_cast<::cuda::experimental::cuco::__detail::__index_type>(__n));
-    __open_addressing::__fill<::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<static_cast<unsigned int>(__grid_size),
-         ::cuda::experimental::cuco::__detail::__default_block_size(),
-         0,
-         __stream.get()>>>(
-        __slots.data(), static_cast<::cuda::experimental::cuco::__detail::__index_type>(__n), __empty_slot_sentinel);
+    [[maybe_unused]] const auto __status = ::cub::DeviceTransform::Fill(
+      __slots.data(),
+      static_cast<::cuda::experimental::cuco::__detail::__index_type>(__n),
+      __empty_slot_sentinel,
+      __stream);
+    _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to clear slot storage");
   }
 
   //! @brief Inserts keys in `[first, last)` and returns the number of successful insertions.
