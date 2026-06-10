@@ -267,6 +267,12 @@ struct is_double_hashing : ::cuda::std::false_type
 template <int _CgSize, class _Hash1, class _Hash2>
 struct is_double_hashing<double_hashing<_CgSize, _Hash1, _Hash2>> : ::cuda::std::true_type
 {};
+
+//! @brief Trait value indicating whether a probing scheme is double hashing.
+//!
+//! @tparam _Tp Input probing scheme type
+template <class _Tp>
+inline constexpr bool is_double_hashing_v = is_double_hashing<_Tp>::value;
 } // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
