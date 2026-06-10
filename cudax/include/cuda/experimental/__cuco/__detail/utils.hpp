@@ -111,7 +111,7 @@ constexpr auto __max_occupancy_grid_size(
 //! @brief Distance helper requiring random access iterators.
 
 template <class _Iterator>
-_CCCL_HOST_DEVICE constexpr __index_type __distance(_Iterator __begin, _Iterator __end)
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr __index_type __distance(_Iterator __begin, _Iterator __end)
 {
   static_assert(::cuda::std::random_access_iterator<_Iterator>, "Input iterator should be a random access iterator.");
   return static_cast<__index_type>(::cuda::std::distance(__begin, __end));

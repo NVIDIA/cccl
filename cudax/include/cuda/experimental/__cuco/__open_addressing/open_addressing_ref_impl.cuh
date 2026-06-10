@@ -584,7 +584,7 @@ public:
   //! @param __probing_idx The current probing index
   //! @param __intra_bucket_idx The index within the bucket (0 for flat storage)
   //! @return Pointer to the slot
-  _CCCL_DEVICE __value_type*
+  [[nodiscard]] _CCCL_DEVICE __value_type*
   __get_slot_ptr(__size_type __probing_idx, ::cuda::std::int32_t __intra_bucket_idx) const noexcept
   {
     return __storage_ref.data() + __probing_idx + __intra_bucket_idx;

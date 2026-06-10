@@ -80,7 +80,7 @@ struct __equal_wrapper
   //!
   //! @return `__equal` if `__lhs` and `__rhs` are equivalent, `__unequal` otherwise
   template <class _Lhs, class _Rhs>
-  _CCCL_DEVICE constexpr __equal_result __equal_to(const _Lhs& __lhs, const _Rhs& __rhs) const noexcept
+  [[nodiscard]] _CCCL_DEVICE constexpr __equal_result __equal_to(const _Lhs& __lhs, const _Rhs& __rhs) const noexcept
   {
     return __equal(__lhs, __rhs) ? __equal_result::__equal : __equal_result::__unequal;
   }
@@ -101,7 +101,7 @@ struct __equal_wrapper
   //!
   //! @return Three-way equality comparison result
   template <__is_insert _IsInsert, class _Lhs, class _Rhs>
-  _CCCL_DEVICE constexpr __equal_result operator()(const _Lhs& __lhs, const _Rhs& __rhs) const noexcept
+  [[nodiscard]] _CCCL_DEVICE constexpr __equal_result operator()(const _Lhs& __lhs, const _Rhs& __rhs) const noexcept
   {
     if constexpr (_IsInsert == __is_insert::__yes)
     {

@@ -82,7 +82,7 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity>
-  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
   {
     using __size_type        = typename _Capacity::index_type;
     const __size_type __init = __hash(__probe_key) % (__cap.extent(0) / _BucketSize) * _BucketSize;
@@ -103,7 +103,7 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
-  _CCCL_HOST_DEVICE_API constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                 _ProbeKey __probe_key,
                 _Capacity __cap) const noexcept
@@ -118,7 +118,7 @@ public:
   //! @brief Gets the function used to hash keys.
   //!
   //! @return The function used to hash keys
-  _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
   {
     return __hash;
   }
@@ -197,7 +197,7 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity>
-  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
   {
     using __size_type = typename _Capacity::index_type;
     return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{
@@ -219,7 +219,7 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
-  _CCCL_HOST_DEVICE_API constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                 _ProbeKey __probe_key,
                 _Capacity __cap) const noexcept
@@ -237,7 +237,7 @@ public:
   //! @brief Gets the functions used to hash keys.
   //!
   //! @return The functions used to hash keys
-  _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
   {
     return {__hash1, __hash2};
   }

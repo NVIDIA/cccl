@@ -35,7 +35,7 @@ namespace cuda::experimental::cuco::__detail
 template <::cuda::std::size_t _TypeSize>
 struct __bitwise_compare_impl
 {
-  _CCCL_HOST_DEVICE static bool compare(const char* __lhs, const char* __rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE static bool compare(const char* __lhs, const char* __rhs)
   {
     return ::cuda::std::memcmp(__lhs, __rhs, _TypeSize) == 0;
   }
@@ -44,7 +44,7 @@ struct __bitwise_compare_impl
 template <>
 struct __bitwise_compare_impl<4>
 {
-  _CCCL_HOST_DEVICE static bool compare(const char* __lhs, const char* __rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE static bool compare(const char* __lhs, const char* __rhs)
   {
     return *reinterpret_cast<const ::cuda::std::uint32_t*>(__lhs)
         == *reinterpret_cast<const ::cuda::std::uint32_t*>(__rhs);
@@ -54,7 +54,7 @@ struct __bitwise_compare_impl<4>
 template <>
 struct __bitwise_compare_impl<8>
 {
-  _CCCL_HOST_DEVICE static bool compare(const char* __lhs, const char* __rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE static bool compare(const char* __lhs, const char* __rhs)
   {
     return *reinterpret_cast<const ::cuda::std::uint64_t*>(__lhs)
         == *reinterpret_cast<const ::cuda::std::uint64_t*>(__rhs);
@@ -65,7 +65,7 @@ struct __bitwise_compare_impl<8>
 //!
 //! @tparam _Tp Type to align
 template <class _Tp>
-_CCCL_HOST_DEVICE constexpr ::cuda::std::size_t __alignment() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::size_t __alignment() noexcept
 {
   constexpr ::cuda::std::size_t __align = ::cuda::std::bit_ceil(sizeof(_Tp));
   return ::cuda::std::min(::cuda::std::size_t{16}, __align);
@@ -75,7 +75,7 @@ _CCCL_HOST_DEVICE constexpr ::cuda::std::size_t __alignment() noexcept
 //!
 //! @tparam _Tp Value type
 template <class _Tp>
-_CCCL_HOST_DEVICE constexpr bool __bitwise_compare(_Tp __lhs, _Tp __rhs)
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr bool __bitwise_compare(_Tp __lhs, _Tp __rhs)
 {
   static_assert(::cuda::is_bitwise_comparable_v<_Tp>,
                 "Bitwise compared objects must have unique object representations or be explicitly declared safe.");

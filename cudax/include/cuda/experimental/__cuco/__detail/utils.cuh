@@ -28,7 +28,7 @@
 namespace cuda::experimental::cuco::__detail
 {
 //! @brief Counts least significant bits in a 32-bit value.
-_CCCL_DEVICE inline ::cuda::std::int32_t
+[[nodiscard]] _CCCL_DEVICE inline ::cuda::std::int32_t
 __count_least_significant_bits(::cuda::std::uint32_t __x, ::cuda::std::int32_t __n)
 {
   if (__n <= 0)
