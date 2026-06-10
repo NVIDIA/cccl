@@ -47,19 +47,19 @@ public:
   ctx_resource& operator=(const ctx_resource&) = delete;
 
   //! Release asynchronously (only called if can_release_in_callback() returns false)
-  virtual void release(cudaStream_t)
+  virtual void release(cudaStream_t) noexcept
   { /* Default implementation does nothing */
   }
   //! Returns true if this resource can be released in a host callback without using the stream
   //! Resources that return true will be batched together into a single callback to avoid
   //! the overhead of creating individual host callbacks for each resource release
-  virtual bool can_release_in_callback() const
+  virtual bool can_release_in_callback() const noexcept
   {
     return false;
   }
   //! Release synchronously on the host (only called if can_release_in_callback() returns true)
   //! This will be called from within a batched host callback to minimize callback overhead
-  virtual void release_in_callback()
+  virtual void release_in_callback() noexcept
   { /* Default implementation does nothing */
   }
 };
@@ -115,16 +115,15 @@ public:
       // Add a single host callback using lambda that will release all callback resources
       auto release_lambda = [](cudaStream_t /*stream*/, cudaError_t /*status*/, void* userData) -> void {
         auto* resources = static_cast<decltype(callback_list.get())>(userData);
-        SCOPE(exit)
-        {
-          delete resources;
-        };
 
         // Release all callback resources
         for (auto& resource : *resources)
         {
+          // This is noexcept code
           resource->release_in_callback();
         }
+
+        delete resources;
       };
 
       cuda_try<cudaStreamAddCallback>(stream, release_lambda, callback_list.get(), 0);

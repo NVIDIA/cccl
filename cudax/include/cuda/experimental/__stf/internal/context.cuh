@@ -1143,11 +1143,11 @@ UNITTEST("context resources released on finalize")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
@@ -1172,11 +1172,11 @@ UNITTEST("context resources released on finalize non blocking")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
@@ -1208,11 +1208,11 @@ UNITTEST("context import_resources_from")
     explicit dummy_released_resource(bool* released)
         : released_(released)
     {}
-    bool can_release_in_callback() const override
+    bool can_release_in_callback() const noexcept override
     {
       return true;
     }
-    void release_in_callback() override
+    void release_in_callback() noexcept override
     {
       if (released_)
       {
