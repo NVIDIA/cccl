@@ -31,7 +31,7 @@ namespace cuda::experimental::cuco
 //!
 //! @tparam _Key The key type
 template <class _Key>
-struct empty_key : public ::cuda::experimental::cuco::__strong_type<_Key>
+struct empty_key : ::cuda::experimental::cuco::__strong_type<_Key>
 {
   _CCCL_HOST_DEVICE_API explicit constexpr empty_key(_Key __value) noexcept
       : ::cuda::experimental::cuco::__strong_type<_Key>(__value)
@@ -42,7 +42,7 @@ struct empty_key : public ::cuda::experimental::cuco::__strong_type<_Key>
 //!
 //! @tparam _Tp The mapped value type
 template <class _Tp>
-struct empty_value : public ::cuda::experimental::cuco::__strong_type<_Tp>
+struct empty_value : ::cuda::experimental::cuco::__strong_type<_Tp>
 {
   _CCCL_HOST_DEVICE_API explicit constexpr empty_value(_Tp __value) noexcept
       : ::cuda::experimental::cuco::__strong_type<_Tp>(__value)
@@ -53,7 +53,7 @@ struct empty_value : public ::cuda::experimental::cuco::__strong_type<_Tp>
 //!
 //! @tparam _Key The key type
 template <class _Key>
-struct erased_key : public ::cuda::experimental::cuco::__strong_type<_Key>
+struct erased_key : ::cuda::experimental::cuco::__strong_type<_Key>
 {
   _CCCL_HOST_DEVICE_API explicit constexpr erased_key(_Key __value) noexcept
       : ::cuda::experimental::cuco::__strong_type<_Key>(__value)

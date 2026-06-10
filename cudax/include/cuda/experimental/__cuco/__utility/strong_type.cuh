@@ -51,12 +51,12 @@ struct __strong_type
 } // namespace cuda::experimental::cuco
 
 //! Convenience wrapper for defining a strong type
-#define CUDAX_CUCO_DEFINE_STRONG_TYPE(Name, Type)                      \
-  struct Name : public ::cuda::experimental::cuco::__strong_type<Type> \
-  {                                                                    \
-    _CCCL_HOST_DEVICE_API explicit constexpr Name(Type __value)        \
-        : ::cuda::experimental::cuco::__strong_type<Type>(__value)     \
-    {}                                                                 \
+#define CUDAX_CUCO_DEFINE_STRONG_TYPE(Name, Type)                  \
+  struct Name : ::cuda::experimental::cuco::__strong_type<Type>    \
+  {                                                                \
+    _CCCL_HOST_DEVICE_API explicit constexpr Name(Type __value)    \
+        : ::cuda::experimental::cuco::__strong_type<Type>(__value) \
+    {}                                                             \
   };
 
 #include <cuda/std/__cccl/epilogue.h>
