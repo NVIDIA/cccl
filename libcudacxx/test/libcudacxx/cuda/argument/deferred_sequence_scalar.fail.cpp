@@ -10,7 +10,7 @@
 
 #include <cuda/argument>
 
-[[maybe_unused]] constexpr auto invalid_bounds = cuda::args::static_bounds<0, 1L>{};
+[[maybe_unused]] cuda::args::deferred_sequence<int> invalid_arg{0};
 
 int main(int, char**)
 {
