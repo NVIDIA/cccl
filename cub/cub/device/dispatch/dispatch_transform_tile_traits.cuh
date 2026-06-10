@@ -60,6 +60,8 @@ struct tile_eligible : ::cuda::std::false_type
 template <typename Op, typename T, ::cuda::std::size_t NIn>
 inline constexpr bool tile_eligible_v = tile_eligible<Op, T, NIn>::value;
 
+// Hint that Op uses MUFU (multi-function unit, sin/cos/exp/log/tanh/rcp/rsq). Setting this makes
+// the tile policy picker cap items/thread so MUFU pipes are not oversaturated.
 template <typename Op>
 struct tile_mufu_heavy : ::cuda::std::false_type
 {};
