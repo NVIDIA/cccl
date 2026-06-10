@@ -105,7 +105,7 @@ public:
   static ::std::mutex __mutex;
   static ::std::vector<::cuda::std::optional<device_memory_pool_ref>> __pools(::cuda::devices.size());
 
-  const ::std::lock_guard<::std::mutex> __guard(__mutex);
+  const ::std::scoped_lock __guard(__mutex);
   const auto __device_id = static_cast<::cuda::std::size_t>(__device.get());
   auto& __pool           = __pools[__device_id];
   if (!__pool.has_value())
