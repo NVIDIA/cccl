@@ -46,12 +46,12 @@ Warp
      - CCCL 3.1.0
      - CUDA 13.1
 
-   * - :ref:`warp_match_any <libcudacxx-extended-api-warp-warp-match-any>`
-     - Get the mask of lanes with the same value
-     - CCCL 3.5.0
-     - CUDA 13.5
-
    * - :ref:`lane_mask <libcudacxx-extended-api-warp-lane-mask>`
      - Class to represent a mask of lanes in a warp
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`warp_match_any <libcudacxx-extended-api-warp-warp-match-any>`
+     - Get the mask of lanes with the same value
+     - CCCL 3.5.0
+     - CUDA 13.5
