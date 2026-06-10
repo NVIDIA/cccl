@@ -47,8 +47,8 @@ struct __get_output_ordering_t;
 enum class __output_ordering_t
 {
   __sorted,
-  __stable_sorted,
-  __unsorted
+  __unsorted,
+  __stable_sorted
 };
 
 template <__output_ordering_t _Guarantee>
