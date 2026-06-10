@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -213,5 +213,18 @@
 #else // ^^^ has long double ^^^ / vvv no long double vvv
 #  define _CCCL_HAS_LONG_DOUBLE() 0
 #endif // ^^^ no long double ^^^
+
+// clang-21+ and gcc-16+ allow structured bindings to introduce a pack since C++17.
+#if __cpp_structured_bindings >= 202411L || _CCCL_COMPILER(CLANG, >=, 21) || _CCCL_COMPILER(GCC, >=, 16)
+#  define _CCCL_HAS_STRUCTURED_BINDINGS_PACK() 1
+#else // ^^^ has structured bindings with pack ^^^ / vvv no structured bindings with pack vvv
+#  define _CCCL_HAS_STRUCTURED_BINDINGS_PACK() 0
+#endif // ^^^ no structured bindings with pack ^^^
+
+// nvcc doesn't implement structured bindings pack yet.
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_HAS_STRUCTURED_BINDINGS_PACK
+#  define _CCCL_HAS_STRUCTURED_BINDINGS_PACK() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #endif // __CCCL_DIALECT_H
