@@ -31,6 +31,7 @@
 #  include <cub/device/dispatch/dispatch_transform_tile_traits.cuh>
 #  include <cub/device/dispatch/kernels/kernel_transform_tile.cuh>
 #  include <cub/device/dispatch/tuning/tuning_transform_tile.cuh>
+#  include <cub/util_debug.cuh>
 
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
@@ -69,7 +70,7 @@ template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std:
   transform_kernel<TileSize, Fn><<<static_cast<unsigned int>(num_blocks), 1, 0, stream>>>(
     num_items, output, ::cuda::std::get<Idx>(inputs)...);
 
-  return cudaGetLastError();
+  return CubDebug(cudaGetLastError());
 }
 
 struct DeviceTransform
@@ -93,7 +94,7 @@ struct DeviceTransform
     constexpr int chosen     = (TileSize > 0) ? TileSize : pick_tile_size<T>();
     const int64_t num_blocks = (num_items + chosen - 1) / chosen;
     fill_kernel<chosen, T><<<static_cast<unsigned int>(num_blocks), 1, 0, stream>>>(num_items, output, value);
-    return cudaGetLastError();
+    return CubDebug(cudaGetLastError());
   }
 };
 
