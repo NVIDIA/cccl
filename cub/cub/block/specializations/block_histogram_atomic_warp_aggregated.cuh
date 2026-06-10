@@ -20,11 +20,9 @@
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__cmath/ilog.h>
-#include <cuda/__memory/address_space.h>
 #include <cuda/__ptx/instructions/bfind.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/atomic>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/cstdint>
 
@@ -97,16 +95,7 @@ struct BlockHistogramAtomicWarpAggregated
   template <typename CounterT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Add(CounterT& counter_ref, CounterT count) const
   {
-    if (::cuda::device::is_address_from(&counter_ref, ::cuda::device::address_space::shared))
-    {
-      ::cuda::atomic_ref<CounterT, ::cuda::thread_scope_block> counter(counter_ref);
-      counter.fetch_add(count, ::cuda::memory_order_relaxed);
-    }
-    else
-    {
-      ::cuda::atomic_ref<CounterT, ::cuda::thread_scope_device> counter(counter_ref);
-      counter.fetch_add(count, ::cuda::memory_order_relaxed);
-    }
+    atomicAdd(&counter_ref, count);
   }
 
   //! @brief Composite data onto an existing histogram
@@ -117,12 +106,15 @@ struct BlockHistogramAtomicWarpAggregated
   //! @param[out] histogram
   //!   Reference to shared or global memory histogram
   template <typename T, typename CounterT, int ItemsPerThread>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins]) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Composite(const T (&items)[ItemsPerThread], CounterT histogram[Bins]) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      const auto bin       = static_cast<unsigned>(items[i]);
+      const auto bin_value = static_cast<::cuda::std::uint64_t>(items[i]);
+      _CCCL_ASSERT(bin_value < static_cast<::cuda::std::uint64_t>(Bins), "sample value must be in [0, Bins)");
+
+      const auto bin       = static_cast<unsigned>(bin_value);
       const auto peer_mask = this->PeerMask(bin);
 
       if (IsLeader(peer_mask))

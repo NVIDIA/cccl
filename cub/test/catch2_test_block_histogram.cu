@@ -56,7 +56,7 @@ __global__ void block_histogram_composite_kernel(T* d_samples, HistoCounter* d_h
   __shared__ typename block_histogram_t::TempStorage temp_storage;
 
   T data[ItemsPerThread];
-  const int block_offset = blockIdx.x * BlockThreads * ItemsPerThread;
+  int block_offset = blockIdx.x * BlockThreads * ItemsPerThread;
   cub::LoadDirectStriped<BlockThreads>(threadIdx.x, d_samples + block_offset, data);
 
   block_histogram_t(temp_storage).Composite(data, d_histogram);
@@ -257,7 +257,7 @@ C2H_TEST("Block histogram warp-aggregated composite updates a global histogram f
   c2h::host_vector<sample_t> h_samples(num_samples);
   for (int i = 0; i < num_samples; ++i)
   {
-    h_samples[static_cast<std::size_t>(i)] = static_cast<sample_t>(i % params::bins);
+    h_samples[i] = static_cast<sample_t>(i % params::bins);
   }
 
   auto h_reference = compute_host_reference(params::bins, h_samples);
@@ -287,7 +287,7 @@ C2H_TEST("Block histogram warp-aggregated composite updates a shared histogram f
   c2h::host_vector<sample_t> h_samples(num_samples);
   for (int i = 0; i < num_samples; ++i)
   {
-    h_samples[static_cast<std::size_t>(i)] = static_cast<sample_t>(i % params::bins);
+    h_samples[i] = static_cast<sample_t>(i % params::bins);
   }
 
   auto h_reference = compute_host_reference(params::bins, h_samples);
