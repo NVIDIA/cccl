@@ -75,24 +75,37 @@ BINARY_META = {
 # distinguishable: the candidate algorithms often collapse onto nearly the same
 # curve (e.g. cuckoo vs single-probe), so they must differ in BOTH marker shape and
 # dash pattern -- where two lines coincide you then see a dashed line riding over a
-# solid one rather than one hiding the other. Markers are also dodged horizontally
-# per series in draw_perf so coincident points fan out instead of stacking.
+# solid one rather than one hiding the other. Markers are drawn semi-transparent and
+# on top of all lines so coincident points blend visibly instead of one hiding another.
 # (color, marker, label, linestyle, linewidth)
 ALGO_STYLE = {
-    "default": ("#000000", "*", "selector default (ships)", "-", 2.2),
-    "main": ("#e6194B", "X", "UPSTREAM main (default)", "-.", 2.2),
-    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv gather (no cache)", "-", 1.1),
+    "default": ("#000000", "*", "selected default", "-", 2.2),
+    "main": ("#e6194B", "X", "baseline (upstream main)", "-.", 2.2),
+    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv + no cache", "-", 1.1),
     "gmem_privatized_cuckoo": ("#1f77b4", "o", "gmem-priv + cuckoo", "--", 1.1),
     "gmem_privatized_single_probe": ("#17becf", "s", "gmem-priv + single-probe", ":", 1.1),
     "direct_cuckoo": ("#2ca02c", "D", "direct-atomic + cuckoo", "--", 1.1),
     "direct_single_probe": ("#8c8c00", "P", "direct-atomic + single-probe", ":", 1.1),
-    "direct_nocache": ("#ff7f0e", "v", "direct atomics (no cache)", "-", 1.1),
-    # On-chip privatized-SMEM kernel. The CUB_HISTO_FORCE_ALGO hook does not force it
-    # (and gates forcing to the high-bin tier), but it IS what the selector runs at
-    # bins <= ON_CHIP_MAX_BINS -- so the plotter synthesizes this series from the
-    # `default` values over that range (see perf_series). Drawn so the low-bin region
-    # is a named algorithm, not two unlabeled reference lines.
-    "smem_privatized": ("#8c564b", "h", "smem privatized (on-chip)", "-", 1.3),
+    "direct_nocache": ("#ff7f0e", "v", "direct-atomic + no cache", "-", 1.1),
+    # Privatized-SMEM kernel. The CUB_HISTO_FORCE_ALGO hook does not force it (and
+    # gates forcing to the high-bin tier), but it IS what the selector runs at bins
+    # <= SMEM_PRIVATIZED_MAX_BINS -- so the plotter synthesizes this series from the `default`
+    # values over that range (see perf_series). Drawn so the low-bin region is a
+    # named algorithm, not two unlabeled reference lines.
+    "smem_privatized": ("#8c564b", "h", "smem privatized", "-", 1.3),
+}
+# 3-letter tag per algorithm, used to label each point of the `default` series with
+# the algorithm the selector actually picked there.
+ALGO_TAG = {
+    "smem_privatized": "SMP",
+    "gmem_privatized_nocache": "GPN",
+    "gmem_privatized_cuckoo": "GPC",
+    "gmem_privatized_single_probe": "GPS",
+    "direct_cuckoo": "DAC",
+    "direct_single_probe": "DAS",
+    "direct_nocache": "DAN",
+    "main": "MAIN",
+    "default": "DEF",
 }
 # Draw order: reference series last (on top). gmem/direct candidates first.
 ALGO_ORDER = [
@@ -113,12 +126,12 @@ ALGO_ORDER = [
 # genuinely measured down to the smallest swept bin count.
 MIN_PLOT_BINS = 0
 
-# At or below this bin count the whole histogram fits on-chip, so the selector
-# always runs the privatized-SMEM kernel (`smem_privatized`) and the high-bin
+# At or below this bin count the whole histogram fits in privatized SMEM, so the
+# selector always runs the smem_privatized kernel and the high-bin
 # CUB_HISTO_FORCE_ALGO override is a no-op -- the forced gmem-priv / direct-atomic
 # series therefore have NO distinct data here (only `default` and `main` are drawn,
 # and `default` IS smem_privatized). cub/.../dispatch_histogram.cuh: max_dynamic_smem_bins.
-ON_CHIP_MAX_BINS = 16384
+SMEM_PRIVATIZED_MAX_BINS = 16384
 
 
 def fmt_elements(e: int) -> str:
@@ -139,6 +152,41 @@ def fmt_bins(b: int) -> str:
     return f"{b // 1024}K" if b % 1024 == 0 else str(b)
 
 
+def selected_algo_tags(per_algo_cells, sample, elements, shape):
+    """Best-effort: which candidate algorithm the selector's `default` matched at
+    each bin, for labeling the default series. Returns {bins: 3-letter tag}.
+
+    The sweep does not record the selector's choice directly, so we recover it: at
+    bins <= SMEM_PRIVATIZED_MAX_BINS the selector always runs smem_privatized (SMP); above
+    that, `default`'s measured GiB/s equals whichever forced algo it dispatched, so
+    we match default to the forced series whose value is closest (ties broken by
+    ALGO_ORDER -- the forced variants that tie are perf-equivalent anyway, so the tag
+    is representative). Cells with no usable match are left untagged."""
+    deflt = per_algo_cells.get("default", {})
+    forced = ["gmem_privatized_nocache", "gmem_privatized_cuckoo", "gmem_privatized_single_probe",
+              "direct_cuckoo", "direct_single_probe", "direct_nocache"]
+    tags = {}
+    for key, dv in deflt.items():
+        s, e, b, sh = key.split("|")
+        if s != sample or int(e) != elements or sh != shape or dv <= 0:
+            continue
+        bins = int(b)
+        if bins <= SMEM_PRIVATIZED_MAX_BINS:
+            tags[bins] = ALGO_TAG["smem_privatized"]
+            continue
+        best, best_err = None, None
+        for a in forced:  # forced is in ALGO_ORDER order -> deterministic tiebreak
+            av = per_algo_cells.get(a, {}).get(key)
+            if av is None or av <= 0:
+                continue
+            err = abs(av - dv) / dv
+            if best_err is None or err < best_err - 1e-9:
+                best, best_err = a, err
+        if best is not None and best_err is not None and best_err < 0.03:
+            tags[bins] = ALGO_TAG[best]
+    return tags
+
+
 def perf_series(per_algo_cells, sample, elements, shape, algos):
     """For a fixed (sample, elements, shape): {algo: (bins[], gibs[])}."""
     out = {}
@@ -154,25 +202,27 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
             out[algo] = (np.array([p[0] for p in pts]), np.array([p[1] for p in pts]))
     # Synthesize the `smem_privatized` series: it is never measured under that name
     # (the force hook neither accepts nor needs it), but it IS exactly what the
-    # selector `default` runs for bins <= ON_CHIP_MAX_BINS -- so derive it from the
-    # default points over the on-chip range. Makes the low-bin region a named
+    # selector `default` runs for bins <= SMEM_PRIVATIZED_MAX_BINS -- so derive it from the
+    # default points over the smem-privatized range. Makes the low-bin region a named
     # algorithm instead of an unexplained `default`/`main`-only stretch. (Only added
     # when not already an explicit series, so a future real measurement would win.)
     if "smem_privatized" in algos and "smem_privatized" not in out and "default" in out:
         db, dv = out["default"]
-        mask = [j for j, b in enumerate(db) if int(b) <= ON_CHIP_MAX_BINS]
+        mask = [j for j, b in enumerate(db) if int(b) <= SMEM_PRIVATIZED_MAX_BINS]
         if mask:
             out["smem_privatized"] = (np.array([db[j] for j in mask]), np.array([dv[j] for j in mask]))
     return out
 
 
-def draw_perf(ax, series, title):
-    """Plot speedup-vs-upstream-`main` for each algorithm: y = (algo GiB/s) / (main
-    GiB/s) at each bin count, on a LOG2 y-axis (so 0.5x and 2x sit symmetrically
-    about the 1x baseline and a wide speedup range stays legible), tick-labelled in
-    plain multiples (1x, 2x, 4x, ...). main is the y=1 baseline line and the shipping
-    `default`'s gain is shaded. If no `main` baseline is present for this cell, fall
-    back to absolute GiB/s (log y)."""
+def draw_perf(ax, series, title, default_tags=None):
+    """Plot speedup-vs-`baseline` (upstream main) for each algorithm: y = (algo GiB/s)
+    / (main GiB/s) at each bin count, on a LOG2 y-axis (so 0.5x and 2x sit
+    symmetrically about the 1x baseline and a wide speedup range stays legible),
+    tick-labelled in plain multiples (1x, 2x, 4x, ...). main is the y=1 baseline line
+    and the `default`'s gain is shaded; each default point is annotated with the
+    3-letter tag of the algorithm the selector picked there (`default_tags`: {bins:
+    tag}). If no baseline is present for this cell, fall back to absolute GiB/s."""
+    default_tags = default_tags or {}
     ax.set_title(title, fontsize=9)
     ax.set_xlabel("# bins")
     ax.set_xscale("log", base=2)
@@ -186,7 +236,7 @@ def draw_perf(ax, series, title):
 
     if baseline:
         ax.set_yscale("log", base=2)
-        ax.set_ylabel("speedup vs upstream main (×, log2)")
+        ax.set_ylabel("speedup vs baseline (×, log2)")
         # Every algorithm EXCEPT main, divided by main at the shared bin points.
         drawn = [a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])]
         for i, algo in enumerate(drawn):
@@ -204,15 +254,27 @@ def draw_perf(ax, series, title):
             # (two coincident markers read darker / show both colors) rather than one
             # opaque marker hiding another. Distinct marker shapes + dash patterns
             # still tell coincident series apart; no x-dodge (true data positions).
+            # The `default` series is also semi-transparent (both line and marker) so
+            # the candidate series it rides on top of remain visible underneath.
+            line_alpha = 0.5 if is_ref else 0.85
+            mark_alpha = 0.5 if is_ref else 0.6
             ax.plot(xs, sp, color=color, lw=lw, linestyle=ls, marker="",
-                    alpha=1.0 if is_ref else 0.85, label=label, zorder=(20 if is_ref else 3 + i))
+                    alpha=line_alpha, label=label, zorder=(20 if is_ref else 3 + i))
             ax.plot(xs, sp, color=color, marker=marker, markersize=8 if is_ref else 5.5,
-                    linestyle="none", alpha=0.6,
+                    linestyle="none", alpha=mark_alpha,
                     zorder=(32 if is_ref else 30 + i))
+            # Annotate each default point with the selected algorithm's 3-letter tag.
+            if is_ref and default_tags:
+                for x, y in zip(xs, sp):
+                    tag = default_tags.get(int(round(x)))
+                    if tag:
+                        ax.annotate(tag, (x, y), textcoords="offset points", xytext=(0, 7),
+                                    ha="center", va="bottom", fontsize=6, fontweight="bold",
+                                    color="#000000", zorder=40)
         # Baseline reference: main is 1x by definition. Draw it as the styled main line.
         b_color, _, _, b_ls, b_lw = ALGO_STYLE["main"]
         ax.axhline(1.0, color=b_color, linestyle=b_ls, lw=b_lw, alpha=1.0,
-                   zorder=19, label="upstream main (baseline, 1×)")
+                   zorder=19, label="baseline (upstream main), 1×")
         # Shade the shipping default's gain over the baseline (between 1x and default).
         if "default" in series and len(series["default"][0]):
             db, dv = series["default"]
@@ -307,14 +369,17 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     gs = fig.add_gridspec(nrows, ncols)
 
     transform, channels = BINARY_META[binary_label]
-    head = f"{transform.upper()} · {channels}-channel · {sample}  —  InputShape: {shape}  ({C.SHAPE_BLURB.get(shape, '')})"
+    blurb = C.SHAPE_BLURB.get(shape, "")
+    head = f"{transform.upper()} · {channels}-channel · {sample}  —  InputShape: {shape}"
+    if blurb:  # only add the parenthetical when a description exists (no empty "()")
+        head += f"  ({blurb})"
     head = "\n".join(textwrap.wrap(head, width=120))
     hr_note = "   bottom row: SMEM-cache hit rate vs #bins (series = #elements)" if has_hr else ""
     fig.suptitle(
         f"{head}\n"
         f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})   "
-        f"middle: speedup vs upstream main (×, log2) vs #bins per input size — one line per algorithm, "
-        f"main = 1× baseline{hr_note}",
+        f"middle: speedup vs baseline (×, log2) vs #bins per input size — one line per algorithm, "
+        f"baseline (upstream main) = 1×; default points tagged with the selected algorithm{hr_note}",
         fontsize=12,
     )
 
@@ -333,7 +398,8 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
         r, c = 1 + i // ncols, i % ncols
         ax = fig.add_subplot(gs[r, c])
         series = perf_series(per_algo_cells, sample, elements, shape, algos)
-        if not draw_perf(ax, series, f"N = {fmt_elements(elements)} elements"):
+        tags = selected_algo_tags(per_algo_cells, sample, elements, shape)
+        if not draw_perf(ax, series, f"N = {fmt_elements(elements)} elements", default_tags=tags):
             ax.text(0.5, 0.5, "no data\n(all cells skipped)", ha="center", va="center",
                     transform=ax.transAxes, fontsize=9, color="gray")
 
