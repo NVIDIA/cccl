@@ -745,12 +745,12 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> histogram_policy
   return histogram_policy{
     ap::BLOCK_THREADS,
     ap::PIXELS_PER_THREAD,
+    ap::VEC_SIZE,
     ap::LOAD_ALGORITHM,
     ap::LOAD_MODIFIER,
     ap::IS_RLE_COMPRESS,
     ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
-    ap::VEC_SIZE,
     convert_pdl_trigger<ActivePolicy>(0)};
 }
 

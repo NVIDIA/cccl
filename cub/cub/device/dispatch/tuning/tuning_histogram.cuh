@@ -233,21 +233,21 @@ struct histogram_policy
 {
   int threads_per_block;
   int pixels_per_thread;
+  int vec_size;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
   bool rle_compress;
   BlockHistogramMemoryPreference mem_preference;
   bool work_stealing;
-  int vec_size;
   int pdl_trigger_next_launch_in_init_kernel_max_bin_count;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const histogram_policy& lhs, const histogram_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
-        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.rle_compress == rhs.rle_compress && lhs.mem_preference == rhs.mem_preference
-        && lhs.work_stealing == rhs.work_stealing && lhs.vec_size == rhs.vec_size
+        && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
+        && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
+        && lhs.mem_preference == rhs.mem_preference && lhs.work_stealing == rhs.work_stealing
         && lhs.pdl_trigger_next_launch_in_init_kernel_max_bin_count
              == rhs.pdl_trigger_next_launch_in_init_kernel_max_bin_count;
   }
@@ -263,10 +263,10 @@ struct histogram_policy
   {
     return os
         << "histogram_policy { .threads_per_block = " << p.threads_per_block
-        << ", .pixels_per_thread = " << p.pixels_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
-        << ", .mem_preference = " << p.mem_preference << ", .work_stealing = " << p.work_stealing
-        << ", .vec_size = " << p.vec_size << ", .pdl_trigger_next_launch_in_init_kernel_max_bin_count = "
+        << ", .pixels_per_thread = " << p.pixels_per_thread << ", .vec_size = " << p.vec_size
+        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = " << p.mem_preference
+        << ", .work_stealing = " << p.work_stealing << ", .pdl_trigger_next_launch_in_init_kernel_max_bin_count = "
         << p.pdl_trigger_next_launch_in_init_kernel_max_bin_count << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -304,12 +304,12 @@ public:
         if (is_even)
         {
           // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
-          return histogram_policy{928, 12, BLOCK_LOAD_DIRECT, LOAD_CA, false, SMEM, false, 1 << 2, 2048};
+          return histogram_policy{928, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_CA, false, SMEM, false, 2048};
         }
         else
         {
           // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-          return histogram_policy{448, 12, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 1 << 2, 2048};
+          return histogram_policy{448, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
         }
       }
 
@@ -323,17 +323,17 @@ public:
       {
         if (sample_size == 1)
         {
-          return histogram_policy{768, 12, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 1 << 2, 2048};
+          return histogram_policy{768, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
         }
         else if (sample_size == 2)
         {
-          return histogram_policy{960, 10, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 1 << 2, 2048};
+          return histogram_policy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
         }
       }
     }
 
     // fallback from SM50
-    return histogram_policy{384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
+    return histogram_policy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0};
   }
 };
 
