@@ -58,10 +58,6 @@ readonly cuda12_image
 # shellcheck disable=SC2034
 readonly cuda13_image
 
-if ${set_git_safe_directory:-false}; then
-    git config --global --add safe.directory "$(realpath -m "$ci_dir/..")"
-fi
-
 mkdir -p wheelhouse
 
 # Shared caches across the cu12 + cu13 wheel builds. Both jobs compile an
@@ -90,7 +86,6 @@ for ctk in 12 13; do
         --mount "type=bind,source=${host_cpm_cache_dir},target=/root/.cpm-cache" \
         "${action_mounts[@]}" \
         --env "py_version=${py_version}" \
-        --env "set_git_safe_directory=${set_git_safe_directory}" \
         --env "GITHUB_ACTIONS=${GITHUB_ACTIONS:-}" \
         --env "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}" \
         --env "JOB_ID=${JOB_ID:-}" \

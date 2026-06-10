@@ -38,10 +38,6 @@
     Actions artifact even when the script detects it is running inside an
     Action.
 
-.PARAMETER SetGitSafeDirectory
-    Run `git config --global --add safe.directory $RepoRoot`
-    before building
-
 .EXAMPLE
     # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
     # 12 and 13 versions), and, if in CI, upload the resulting wheel as an
@@ -64,21 +60,10 @@ Param(
     [string]$Cuda13Image = "rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022",
 
     [Parameter(Mandatory = $false)]
-    [switch]$SkipUpload,
-
-    [Parameter(Mandatory = $false)]
-    [Alias("set-git-safe-directory")]
-    [switch]$SetGitSafeDirectory
+    [switch]$SkipUpload
 )
 
 $ErrorActionPreference = "Stop"
-
-# Resolve repo root from this script's location.
-$RepoRoot = Resolve-Path "$PSScriptRoot/../.."
-
-if ($SetGitSafeDirectory) {
-    git config --global --add safe.directory $RepoRoot
-}
 
 # Import shared helpers.
 Import-Module "$PSScriptRoot/build_common.psm1"
@@ -233,8 +218,7 @@ function Invoke-Cuda13NestedBuild {
         '-File', $targetFile,
         '-py-version', $PyVersion,
         '-OnlyCudaMajor', '13',
-        '-SkipUpload',
-        '-SetGitSafeDirectory'
+        '-SkipUpload'
     )
 
     Write-Host ("About to invoke: docker " + ($dockerArgs -join ' '))

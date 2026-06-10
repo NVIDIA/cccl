@@ -63,10 +63,6 @@ export CUDACXX
 CUDAHOSTCXX="$(command -v g++)"
 export CUDAHOSTCXX
 
-if ${set_git_safe_directory:-false}; then
-    git config --global --add safe.directory /workspace
-fi
-
 # When CCCL_PYTHON_USE_V2 is set (=1/true/on), build the wheel against the
 # HostJIT-based cccl.c.parallel.v2 library instead of the default v1.
 if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
