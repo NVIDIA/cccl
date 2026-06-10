@@ -5,10 +5,12 @@
 // share. Two macros:
 //
 //   _CCCL_CUB_HAS_TILE_TRANSFORM()
-//     True when CUB's tile transform machinery is available: CTK 13.3 or newer,
-//     C++20 (tile DSL requires it), and the tile compilation trajectory
-//     (--enable-tile). When false, the tile headers (kernel / tuning / dispatch
-//     / traits) are skipped entirely.
+//     True when nvcc is compiling in tile mode (--enable-tile, i.e.
+//     _CCCL_TILE_COMPILATION()). The other preconditions tile needs are
+//     enforced where they belong: CTK 13.3+ is implied because --enable-tile
+//     is a 13.3+ nvcc flag, and C++20 is enforced by cuda_tile.h itself with
+//     an explicit #error. When false, the tile headers (kernel / tuning /
+//     dispatch / traits) are skipped entirely.
 //
 //   _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 //     True when the dispatch hook in cub::DeviceTransform should fire. Same as
@@ -27,8 +29,7 @@
 #  pragma system_header
 #endif // no system header
 
-#define _CCCL_CUB_HAS_TILE_TRANSFORM() \
-  (_CCCL_CTK_AT_LEAST(13, 3) && _CCCL_STD_VER >= 2020 && _CCCL_TILE_COMPILATION())
+#define _CCCL_CUB_HAS_TILE_TRANSFORM() _CCCL_TILE_COMPILATION()
 
 #define _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED() \
   (_CCCL_CUB_HAS_TILE_TRANSFORM() && defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH))
