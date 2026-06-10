@@ -5,6 +5,8 @@
 import numpy as np
 import pytest
 
+# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
+pytest.importorskip("cuda.stf._experimental._stf_bindings")
 from cuda.stf._experimental import fill_utils
 
 
