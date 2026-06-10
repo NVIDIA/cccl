@@ -170,14 +170,14 @@ public:
     _MemoryResource __mr,
     ::cuda::stream_ref __stream)
       : __empty_slot_sentinel{__empty_slot_sentinel}
-      , __erased_key_sentinel{this->__extract_key(__empty_slot_sentinel)}
+      , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
       , __num_buckets{__compute_num_buckets(__capacity)}
       , __slots{__stream, __mr, __num_buckets * _BucketSize, ::cuda::no_init}
   {
-    this->clear_async(__stream);
+    clear_async(__stream);
   }
 
   //! @brief Constructs an open addressing implementation with capacity derived from desired load
@@ -191,14 +191,14 @@ public:
     _MemoryResource __mr,
     ::cuda::stream_ref __stream)
       : __empty_slot_sentinel{__empty_slot_sentinel}
-      , __erased_key_sentinel{this->__extract_key(__empty_slot_sentinel)}
+      , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
       , __num_buckets{__compute_num_buckets(__n, __desired_load_factor)}
       , __slots{__stream, __mr, __num_buckets * _BucketSize, ::cuda::no_init}
   {
-    this->clear_async(__stream);
+    clear_async(__stream);
   }
 
   //! @brief Constructs an open addressing implementation with erasure support.
@@ -218,11 +218,11 @@ public:
       , __num_buckets{__compute_num_buckets(__capacity)}
       , __slots{__stream, __mr, __num_buckets * _BucketSize, ::cuda::no_init}
   {
-    if (this->empty_key_sentinel() == this->erased_key_sentinel())
+    if (empty_key_sentinel() == erased_key_sentinel())
     {
       _CCCL_THROW(::std::invalid_argument, "The empty key sentinel and erased key sentinel cannot be the same value.");
     }
-    this->clear_async(__stream);
+    clear_async(__stream);
   }
 
   //! @brief Fills all slots with the empty sentinel.
@@ -235,7 +235,7 @@ public:
   //! @brief Asynchronously fills all slots with the empty sentinel.
   _CCCL_HOST void clear_async(::cuda::stream_ref __stream) noexcept
   {
-    const auto __n = this->capacity();
+    const auto __n = capacity();
     if (__n == 0)
     {
       return;
@@ -342,7 +342,7 @@ public:
   //! @brief Returns the empty key sentinel.
   [[nodiscard]] _CCCL_HOST constexpr __key_type empty_key_sentinel() const noexcept
   {
-    return this->__extract_key(__empty_slot_sentinel);
+    return __extract_key(__empty_slot_sentinel);
   }
 
   //! @brief Returns the erased key sentinel.
@@ -366,13 +366,13 @@ public:
   //! @brief Returns the hash function.
   [[nodiscard]] _CCCL_HOST constexpr __hasher hash_function() const noexcept
   {
-    return this->probing_scheme().hash_function();
+    return probing_scheme().hash_function();
   }
 
   //! @brief Returns a non-owning reference to the stored slots.
   [[nodiscard]] _CCCL_HOST constexpr __storage_ref_type storage_ref() const noexcept
   {
-    return __storage_ref_type{const_cast<__value_type*>(__slots.data()), this->capacity()};
+    return __storage_ref_type{const_cast<__value_type*>(__slots.data()), capacity()};
   }
 };
 } // namespace cuda::experimental::cuco::__open_addressing

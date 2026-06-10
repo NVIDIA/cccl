@@ -156,7 +156,7 @@ public:
     const __probing_scheme_type& __probing_scheme,
     __storage_ref_type __storage_ref) noexcept
       : __empty_slot_sentinel{__empty_slot_sentinel}
-      , __predicate{this->__extract_key(__empty_slot_sentinel), this->__extract_key(__empty_slot_sentinel), __predicate}
+      , __predicate{__extract_key(__empty_slot_sentinel), __extract_key(__empty_slot_sentinel), __predicate}
       , __probing_scheme{__probing_scheme}
       , __storage_ref{__storage_ref}
   {}
@@ -175,7 +175,7 @@ public:
     const __probing_scheme_type& __probing_scheme,
     __storage_ref_type __storage_ref) noexcept
       : __empty_slot_sentinel{__empty_slot_sentinel}
-      , __predicate{this->__extract_key(__empty_slot_sentinel), __erased_key_sentinel, __predicate}
+      , __predicate{__extract_key(__empty_slot_sentinel), __erased_key_sentinel, __predicate}
       , __probing_scheme{__probing_scheme}
       , __storage_ref{__storage_ref}
   {}
@@ -185,7 +185,7 @@ public:
   //! @return The sentinel value used to represent an empty __key slot
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __key_type empty_key_sentinel() const noexcept
   {
-    return this->__predicate.__empty_sentinel;
+    return __predicate.__empty_sentinel;
   }
 
   //! @brief Gets the sentinel value used to represent an empty payload slot.
@@ -194,7 +194,7 @@ public:
   template <bool _Dummy = true, class _Enable = ::cuda::std::enable_if_t<__has_payload and _Dummy>>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto empty_value_sentinel() const noexcept
   {
-    return this->__extract_payload(this->empty_slot_sentinel());
+    return __extract_payload(empty_slot_sentinel());
   }
 
   //! @brief Gets the sentinel value used to represent an erased __key slot.
@@ -202,7 +202,7 @@ public:
   //! @return The sentinel value used to represent an erased __key slot
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __key_type erased_key_sentinel() const noexcept
   {
-    return this->__predicate.__erased_sentinel;
+    return __predicate.__erased_sentinel;
   }
 
   //! @brief Gets the sentinel used to represent an empty slot.
@@ -220,7 +220,7 @@ public:
     __equal_wrapper<__key_type, __key_equal, __allows_duplicates>
     predicate() const noexcept
   {
-    return this->__predicate;
+    return __predicate;
   }
 
   //! @brief Gets the key comparator.
@@ -228,7 +228,7 @@ public:
   //! @return The comparator used to compare keys
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __key_equal key_eq() const noexcept
   {
-    return this->predicate().__equal;
+    return predicate().__equal;
   }
 
   //! @brief Gets the probing scheme.
@@ -244,7 +244,7 @@ public:
   //! @return The function(s) used to hash keys
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __hasher hash_function() const noexcept
   {
-    return this->probing_scheme().hash_function();
+    return probing_scheme().hash_function();
   }
 
   //! @brief Gets the non-owning storage ref.
@@ -295,8 +295,8 @@ public:
   {
     static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
 
-    const auto __val = this->__heterogeneous_value(__value);
-    const auto __key = this->__extract_key(__val);
+    const auto __val = __heterogeneous_value(__value);
+    const auto __key = __extract_key(__val);
 
     auto __probing_iter =
       __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_extent());
@@ -308,9 +308,8 @@ public:
 
       for (auto& __slot_content : __bucket_slots)
       {
-        const auto __eq_res =
-          this->__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
-            __key, this->__extract_key(__slot_content));
+        const auto __eq_res = __predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
+          __key, __extract_key(__slot_content));
 
         if constexpr (not __allows_duplicates)
         {
@@ -323,7 +322,7 @@ public:
         if (__eq_res == ::cuda::experimental::cuco::__detail::__equal_result::__available)
         {
           const auto __intra_bucket_index = &__slot_content - __bucket_slots.data();
-          switch (__attempt_insert(this->__get_slot_ptr(*__probing_iter, __intra_bucket_index), __slot_content, __val))
+          switch (__attempt_insert(__get_slot_ptr(*__probing_iter, __intra_bucket_index), __slot_content, __val))
           {
             case __insert_result::__duplicate: {
               if constexpr (__allows_duplicates)
@@ -364,8 +363,8 @@ public:
   _CCCL_DEVICE bool insert(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group,
                            _Value __value) noexcept
   {
-    const auto __val = this->__heterogeneous_value(__value);
-    const auto __key = this->__extract_key(__val);
+    const auto __val = __heterogeneous_value(__value);
+    const auto __key = __extract_key(__val);
     auto __probing_iter =
       __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
     const auto __init_idx = *__probing_iter;
@@ -374,7 +373,7 @@ public:
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
 
-      const auto [__state, __intra_bucket_index] = this->__find_insert_slot(__key, __bucket_slots);
+      const auto [__state, __intra_bucket_index] = __find_insert_slot(__key, __bucket_slots);
 
       if constexpr (not __allows_duplicates)
       {
@@ -393,8 +392,8 @@ public:
         auto __status         = __insert_result::__continue;
         if (__group.thread_rank() == __src_lane)
         {
-          __status = __attempt_insert(
-            this->__get_slot_ptr(*__probing_iter, __intra_bucket_index), this->empty_slot_sentinel(), __val);
+          __status =
+            __attempt_insert(__get_slot_ptr(*__probing_iter, __intra_bucket_index), empty_slot_sentinel(), __val);
         }
 
         switch (__group.shfl(__status, __src_lane))
@@ -452,8 +451,8 @@ public:
 
       for (auto i = 0; i < __bucket_size; ++i)
       {
-        switch (this->__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__no>(
-          __key, this->__extract_key(__bucket_slots[i])))
+        switch (__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__no>(
+          __key, __extract_key(__bucket_slots[i])))
         {
           case ::cuda::experimental::cuco::__detail::__equal_result::__unequal:
             continue;
@@ -496,7 +495,7 @@ public:
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
 
-      const auto __state = this->__probe_bucket(__key, __bucket_slots);
+      const auto __state = __probe_bucket(__key, __bucket_slots);
 
       if (__group.any(__state == ::cuda::experimental::cuco::__detail::__equal_result::__equal))
       {
@@ -533,8 +532,8 @@ public:
   {
     for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
     {
-      switch (this->__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
-        __key, this->__extract_key(__bucket_slots[__i])))
+      switch (__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
+        __key, __extract_key(__bucket_slots[__i])))
       {
         case ::cuda::experimental::cuco::__detail::__equal_result::__available:
           return __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__available, __i};
@@ -568,8 +567,8 @@ public:
     auto __res = ::cuda::experimental::cuco::__detail::__equal_result::__unequal;
     for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
     {
-      __res = this->__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__no>(
-        __key, this->__extract_key(__bucket_slots[__i]));
+      __res = __predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__no>(
+        __key, __extract_key(__bucket_slots[__i]));
       if (__res != ::cuda::experimental::cuco::__detail::__equal_result::__unequal)
       {
         return __res;
@@ -614,7 +613,7 @@ public:
   //!
   //! @brief Extracts the payload from a given value type.
   //!
-  //! @note This function is only available if `this->__has_payload == true`
+  //! @note This function is only available if `__has_payload == true`
   //!
   //! @tparam Value Input type which is convertible to '__value_type'
   //!
@@ -640,7 +639,7 @@ public:
   {
     if constexpr (__has_payload)
     {
-      return {static_cast<__key_type>(this->__extract_key(__value)), this->__extract_payload(__value)};
+      return {static_cast<__key_type>(__extract_key(__value)), __extract_payload(__value)};
     }
     else
     {
@@ -662,7 +661,7 @@ public:
   {
     if constexpr (__has_payload and not ::cuda::std::is_same_v<_Value, __value_type>)
     {
-      using mapped_type = decltype(this->empty_value_sentinel());
+      using mapped_type = decltype(empty_value_sentinel());
       if constexpr (::cuda::experimental::cuco::__detail::__is_pair_like<_Value>::value)
       {
         return ::cuda::std::pair{::cuda::std::get<0>(__value), static_cast<mapped_type>(::cuda::std::get<1>(__value))};
@@ -687,11 +686,11 @@ public:
   {
     if constexpr (__has_payload)
     {
-      return ::cuda::std::pair{this->erased_key_sentinel(), this->empty_value_sentinel()};
+      return ::cuda::std::pair{erased_key_sentinel(), empty_value_sentinel()};
     }
     else
     {
-      return this->erased_key_sentinel();
+      return erased_key_sentinel();
     }
   }
 
@@ -727,7 +726,7 @@ public:
     }
     else
     {
-      return this->__predicate.__equal_to(this->__extract_key(__desired), this->__extract_key(__expected))
+      return __predicate.__equal_to(__extract_key(__desired), __extract_key(__expected))
               == ::cuda::experimental::cuco::__detail::__equal_result::__equal
              ? __insert_result::__duplicate
              : __insert_result::__continue;
@@ -750,10 +749,10 @@ public:
   [[nodiscard]] _CCCL_DEVICE constexpr __insert_result
   back_to_back_cas(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
-    using mapped_type = ::cuda::std::decay_t<decltype(this->empty_value_sentinel())>;
+    using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
 
     auto __expected_key     = __expected.first;
-    auto __expected_payload = this->empty_value_sentinel();
+    auto __expected_payload = empty_value_sentinel();
 
     ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
     ::cuda::atomic_ref<mapped_type, _Scope> payload_ref(__address->second);
@@ -769,19 +768,19 @@ public:
       while (not payload_cas_success)
       {
         payload_cas_success = payload_ref.compare_exchange_strong(
-          __expected_payload = this->empty_value_sentinel(), __desired.second, ::cuda::memory_order_relaxed);
+          __expected_payload = empty_value_sentinel(), __desired.second, ::cuda::memory_order_relaxed);
       }
       return __insert_result::__success;
     }
     else if (payload_cas_success)
     {
       // This is insert-specific, cannot for `erase` operations
-      payload_ref.store(this->empty_value_sentinel(), ::cuda::memory_order_relaxed);
+      payload_ref.store(empty_value_sentinel(), ::cuda::memory_order_relaxed);
     }
 
     // Our __key was already present in the slot, so our __key is a duplicate
     // Shouldn't use `predicate` operator directly since it includes a redundant bitwise compare
-    if (this->__predicate.__equal_to(__desired.first, __expected_key)
+    if (__predicate.__equal_to(__desired.first, __expected_key)
         == ::cuda::experimental::cuco::__detail::__equal_result::__equal)
     {
       return __insert_result::__duplicate;
@@ -804,7 +803,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE constexpr __insert_result
   cas_dependent_write(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
-    using mapped_type = ::cuda::std::decay_t<decltype(this->empty_value_sentinel())>;
+    using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
 
     ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
     auto __expected_key = __expected.first;
@@ -821,7 +820,7 @@ public:
 
     // Our __key was already present in the slot, so our __key is a duplicate
     // Shouldn't use `predicate` operator directly since it includes a redundant bitwise compare
-    if (this->__predicate.__equal_to(__desired.first, __expected_key)
+    if (__predicate.__equal_to(__desired.first, __expected_key)
         == ::cuda::experimental::cuco::__detail::__equal_result::__equal)
     {
       return __insert_result::__duplicate;

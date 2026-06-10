@@ -305,7 +305,7 @@ public:
   template <class _InputIt>
   size_type insert(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = cudaStream_t{nullptr})
   {
-    return __impl->insert(__first, __last, this->ref(), __stream);
+    return __impl->insert(__first, __last, ref(), __stream);
   }
 
   //! @brief Asynchronously inserts all keys in the range `[__first, __last)`.
@@ -319,7 +319,7 @@ public:
   template <class _InputIt>
   void insert_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = cudaStream_t{nullptr}) noexcept
   {
-    __impl->insert_async(__first, __last, this->ref(), __stream);
+    __impl->insert_async(__first, __last, ref(), __stream);
   }
 
   // ===== Contains =====
@@ -361,7 +361,7 @@ public:
                       _OutputIt __output_begin,
                       ::cuda::stream_ref __stream = cudaStream_t{nullptr}) const noexcept
   {
-    __impl->contains_async(__first, __last, __output_begin, this->ref(), __stream);
+    __impl->contains_async(__first, __last, __output_begin, ref(), __stream);
   }
 
   // ===== Accessors =====
@@ -431,16 +431,15 @@ public:
   [[nodiscard]] auto ref() const noexcept -> ref_type
   {
     auto __slots = typename ref_type::storage_span_type{__impl->storage_ref().data(), __impl->capacity()};
-    return ::cuda::experimental::cuco::__detail::__bitwise_compare(
-             this->empty_key_sentinel(), this->erased_key_sentinel())
-           ? ref_type{empty_key{this->empty_key_sentinel()},
-                      empty_value{this->empty_value_sentinel()},
+    return ::cuda::experimental::cuco::__detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? ref_type{empty_key{empty_key_sentinel()},
+                      empty_value{empty_value_sentinel()},
                       __impl->key_eq(),
                       __impl->probing_scheme(),
                       __slots}
-           : ref_type{empty_key{this->empty_key_sentinel()},
-                      empty_value{this->empty_value_sentinel()},
-                      erased_key{this->erased_key_sentinel()},
+           : ref_type{empty_key{empty_key_sentinel()},
+                      empty_value{empty_value_sentinel()},
+                      erased_key{erased_key_sentinel()},
                       __impl->key_eq(),
                       __impl->probing_scheme(),
                       __slots};

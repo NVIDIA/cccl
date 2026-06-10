@@ -115,14 +115,12 @@ struct __equal_wrapper
       }
       else
       {
-        return this->__equal_to(__lhs, __rhs);
+        return __equal_to(__lhs, __rhs);
       }
     }
     else
     {
-      return __detail::__bitwise_compare(__rhs, __empty_sentinel)
-             ? __equal_result::__empty
-             : this->__equal_to(__lhs, __rhs);
+      return __detail::__bitwise_compare(__rhs, __empty_sentinel) ? __equal_result::__empty : __equal_to(__lhs, __rhs);
     }
   }
 };
