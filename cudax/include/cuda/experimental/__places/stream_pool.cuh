@@ -115,14 +115,10 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
   // ``cuStreamGetId`` is not capture-safe: during
   // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` it rejects the query
   // *and* invalidates the capture itself. Gate on ``cudaStreamIsCapturing``
-  // (which is safe) and use the ``cudaStream_t`` pointer value as a stable,
-  // unique-per-process stream identifier while capture is in flight. STF only
-  // uses this ID to key its internal per-stream tracking; the pointer is just
-  // as suitable as ``cuStreamGetId``'s nonce for that purpose, and cannot
-  // collide with a valid ID because ``k_no_stream_id`` is ``~0ULL``.
+  // (which is safe) and conservatively report an unknown stream ID while
+  // capture is in flight.
   if (is_stream_capturing(stream))
   {
-    // return static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(stream));
     return k_no_stream_id;
   }
   unsigned long long id = cuda_try<cuStreamGetId>(reinterpret_cast<CUstream>(stream));
