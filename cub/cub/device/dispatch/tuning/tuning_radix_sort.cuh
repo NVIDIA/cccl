@@ -1000,13 +1000,13 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
     using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
@@ -1093,13 +1093,13 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
     using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
@@ -1185,13 +1185,13 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
     using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
@@ -1276,13 +1276,13 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
     using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
@@ -1353,13 +1353,13 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
     using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
@@ -1447,13 +1447,13 @@ struct policy_hub
 
     // ScanPolicy
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     // Downsweep policies
     using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
@@ -1569,13 +1569,13 @@ struct policy_hub
     // below to set the launch bounds. The device compiler pass will also compile all kernels for SM70 **and** SM90,
     // even though only the Onesweep kernel is used on SM90.
     using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
+      agent_scan_policy<512,
+                        23,
+                        OffsetT,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_RAKING_MEMOIZE>;
 
     using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
       512,

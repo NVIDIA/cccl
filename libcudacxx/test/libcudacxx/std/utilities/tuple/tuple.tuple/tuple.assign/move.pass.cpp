@@ -144,5 +144,7 @@ int main(int, char**)
 #endif // !_CCCL_TILE_COMPILATION()
   }
 
+  static_assert(cuda::std::is_trivially_move_assignable_v<cuda::std::tuple<>>);
+
   return 0;
 }

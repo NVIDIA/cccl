@@ -344,8 +344,7 @@ public:
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -590,8 +589,7 @@ public:
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -778,8 +776,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -981,8 +978,7 @@ public:
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1148,8 +1144,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1362,8 +1357,7 @@ public:
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1548,8 +1542,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1798,8 +1791,7 @@ public:
   //!   (having value type `cuda::std::pair<int, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1941,8 +1933,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2156,8 +2147,7 @@ public:
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2342,9 +2332,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2595,9 +2583,7 @@ public:
   //!   (having value type `cuda::std::pair<int, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
