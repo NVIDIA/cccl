@@ -6,12 +6,12 @@
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
+#include <cuda/__argument_>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/iterator>
 #include <cuda/std/__execution/env.h>
-#include <cuda/stream>
 
 #include <algorithm>
 #include <vector>
@@ -58,6 +58,9 @@ struct tuned_policy_selector
 };
 #endif // !TUNE_BASE
 
+// Env-based dispatch over the selected backend. The cluster and baseline backends route through their respective
+// `dispatch_with_env` entry points (temporary storage is allocated from the memory resource carried by `env`); the
+// device backend issues one `cub::DeviceTopK::MaxKeys` per segment, reading the host-side segment sizes.
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
@@ -65,71 +68,46 @@ template <typename KeyInputItItT,
           typename SelectDirectionParamT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT,
-          typename HostSegSizeT>
+          typename HostSegSizeT,
+          typename EnvT>
 CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
   KeyInputItItT d_keys_in,
   KeyOutputItItT d_keys_out,
   SegmentSizeParamT segment_sizes,
   KParamT k,
-  SelectDirectionParamT select_directions,
+  SelectDirectionParamT select_direction,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items,
-  const HostSegSizeT* h_segment_sizes,
-  cudaStream_t stream = nullptr)
+  [[maybe_unused]] const HostSegSizeT* h_segment_sizes,
+  EnvT env)
 {
   if constexpr (selected_backend == topk_backend::cluster)
   {
-    (void) h_segment_sizes;
-    return cub::detail::batched_topk_cluster::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      segment_sizes,
-      k,
-      select_directions,
-      num_segments,
-      total_num_items,
-      stream);
+    return cub::detail::batched_topk_cluster::dispatch_with_env(
+      d_keys_in, d_keys_out, segment_sizes, k, select_direction, num_segments, total_num_items, env);
   }
   else if constexpr (selected_backend == topk_backend::device)
   {
-    using num_segments_val_t = typename NumSegmentsParameterT::value_type;
-    const auto num_segs      = num_segments.get_param(num_segments_val_t{0});
+    using num_segments_val_t = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
+    const auto num_segs      = cub::detail::params::get_param(num_segments, num_segments_val_t{0});
 
-    auto requirements = cuda::execution::require(
-      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+    // The per-segment device backend uses the unsorted / not-guaranteed-determinism fast path. Layer the requirement
+    // on top of the benchmark environment (which carries the stream and the caching memory resource).
+    auto seg_env = cuda::std::execution::env{
+      env,
+      cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                               cuda::execution::output_ordering::unsorted)};
 
-    if (d_temp_storage == nullptr)
-    {
-      const auto max_size = *std::max_element(h_segment_sizes, h_segment_sizes + num_segs);
-      const auto k_value  = k.get_param(num_segments_val_t{0});
-      return cub::DeviceTopK::MaxKeys(
-        nullptr,
-        temp_storage_bytes,
-        d_keys_in[num_segments_val_t{0}],
-        d_keys_out[num_segments_val_t{0}],
-        static_cast<cuda::std::int64_t>(max_size),
-        static_cast<cuda::std::int64_t>(k_value),
-        cuda::std::execution::env{requirements});
-    }
-
-    cuda::stream_ref stream_ref{stream};
-    auto env = cuda::std::execution::env{stream_ref, requirements};
     for (num_segments_val_t i = 0; i < num_segs; ++i)
     {
-      const auto k_value  = k.get_param(i);
+      const auto k_value  = cub::detail::params::get_param(k, i);
       const auto seg_size = h_segment_sizes[i];
       if (const auto err = cub::DeviceTopK::MaxKeys(
-            d_temp_storage,
-            temp_storage_bytes,
             d_keys_in[i],
             d_keys_out[i],
             static_cast<cuda::std::int64_t>(seg_size),
             static_cast<cuda::std::int64_t>(k_value),
-            env);
+            seg_env);
           err != cudaSuccess)
       {
         return err;
@@ -139,25 +117,17 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
   }
   else
   {
-    (void) h_segment_sizes;
-    return cub::detail::batched_topk::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    return cub::detail::batched_topk::dispatch_with_env(
       d_keys_in,
       d_keys_out,
       static_cast<cub::NullType**>(nullptr),
       static_cast<cub::NullType**>(nullptr),
       segment_sizes,
       k,
-      select_directions,
+      select_direction,
       num_segments,
       total_num_items,
-      stream
-#if !TUNE_BASE
-      ,
-      tuned_policy_selector{}
-#endif // !TUNE_BASE
-    );
+      env);
   }
 }
 
@@ -166,33 +136,13 @@ void fixed_seg_size_topk_keys(
   nvbench::state& state,
   nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<MaxNumSelected>>)
 {
-  // Range of guaranteed total number of items
-  constexpr auto min_num_total_items = 1;
-  constexpr auto max_num_total_items = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-
-  // Static segment size
-  using seg_size_t = cub::detail::batched_topk::segment_size_static<MaxSegmentSize>;
-
-  // Static k (number of selected output elements per segment)
-  using k_value_t = cub::detail::batched_topk::k_static<MaxNumSelected>;
-
-  // Static selection direction (max)
-  using select_direction_value_t = cub::detail::batched_topk::select_direction_static<cub::detail::topk::select::max>;
-
-  // Number of segments is a host-accessible value
-  using num_segments_uniform_t = cub::detail::batched_topk::num_segments_uniform<>;
-
-  // Total number of items guarantee type
-  using total_num_items_guarantee_t =
-    cub::detail::batched_topk::total_num_items_guarantee<min_num_total_items, max_num_total_items>;
-
   // Retrieve axis parameters
   const auto max_elements      = static_cast<size_t>(state.get_int64("Elements{io}"));
   const auto segment_size      = static_cast<::cuda::std::ptrdiff_t>(MaxSegmentSize);
   const auto selected_elements = static_cast<::cuda::std::ptrdiff_t>(MaxNumSelected);
   const auto num_segments      = ::cuda::std::max<std::size_t>(1, (max_elements / segment_size));
   const auto elements          = num_segments * segment_size;
-  const auto total_num_items   = total_num_items_guarantee_t{static_cast<::cuda::std::int64_t>(elements)};
+  const auto total_num_items   = ::cuda::__argument::__immediate{static_cast<::cuda::std::int64_t>(elements)};
   const bit_entropy entropy    = str_to_entropy(state.get_string("Entropy"));
 
   // Skip workloads where k exceeds the segment size
@@ -209,9 +159,10 @@ void fixed_seg_size_topk_keys(
   auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
   auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), selected_elements);
 
-  auto segment_sizes     = seg_size_t{};
-  auto k                 = k_value_t{};
-  auto select_directions = select_direction_value_t{};
+  auto segment_sizes      = ::cuda::__argument::__constant<MaxSegmentSize>{};
+  auto k                  = ::cuda::__argument::__constant<MaxNumSelected>{};
+  auto select_direction   = ::cuda::__argument::__constant<cub::detail::topk::select::max>{};
+  auto num_segments_param = ::cuda::__argument::__immediate{static_cast<::cuda::std::int64_t>(num_segments)};
 
   state.add_element_count(elements, "NumElements");
   state.add_element_count(segment_size, "SegmentSize");
@@ -219,41 +170,33 @@ void fixed_seg_size_topk_keys(
   state.add_global_memory_reads<KeyT>(elements, "InputKeys");
   state.add_global_memory_writes<KeyT>(selected_elements * num_segments, "OutputKeys");
 
-  // Host copy of segment sizes — all entries equal MaxSegmentSize for fixed-size segments.
+  // Host copy of segment sizes — all entries equal MaxSegmentSize for fixed-size segments. Consumed only by the
+  // per-segment device backend.
   std::vector<cuda::std::int64_t> h_segment_sizes(num_segments, static_cast<cuda::std::int64_t>(MaxSegmentSize));
 
-  // allocate temporary storage
-  size_t temp_size;
-  batched_topk_keys(
-    nullptr,
-    temp_size,
-    d_keys_in,
-    d_keys_out,
-    segment_sizes,
-    k,
-    select_directions,
-    num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
-    total_num_items,
-    h_segment_sizes.data(),
-    nullptr);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
-  // run the algorithm
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    batched_topk_keys(
-      temp_storage,
-      temp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(tuned_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    // TODO(bgruber): call the public API once available
+    _CCCL_TRY_CUDA_API(
+      batched_topk_keys,
+      "batched topk failed",
       d_keys_in,
       d_keys_out,
       segment_sizes,
       k,
-      select_directions,
-      num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
+      select_direction,
+      num_segments_param,
       total_num_items,
       h_segment_sizes.data(),
-      launch.get_stream());
+      env);
   });
 }
 

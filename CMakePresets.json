@@ -23,6 +23,7 @@
         "CCCL_ENABLE_EXAMPLES": false,
         "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
+        "CCCL_ENABLE_CUDA_SMOKE_TESTS": true,
         "CCCL_SKIP_BUILD_CHECKS": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
@@ -35,6 +36,7 @@
       "displayName": "Installation / Packaging (only stable libraries)",
       "inherits": "base",
       "cacheVariables": {
+        "CCCL_ENABLE_CUDA_SMOKE_TESTS": false,
         "cudax_ENABLE_INSTALL_RULES": false,
         "CCCL_SKIP_BUILD_CHECKS": true
       }
@@ -416,11 +418,12 @@
       }
     },
     {
-      "name": "cccl-c-parallel-hostjit",
-      "displayName": "CCCL C Parallel Library (HostJIT)",
-      "inherits": "cccl-c-parallel",
+      "name": "cccl-c-parallel-v2",
+      "displayName": "CCCL C Parallel Library v2 (HostJIT)",
+      "inherits": "base",
       "cacheVariables": {
-        "CCCL_C_Parallel_ENABLE_HOSTJIT": true
+        "CCCL_ENABLE_C_PARALLEL_V2": true,
+        "CCCL_C_Parallel_V2_ENABLE_TESTING": true
       }
     },
     {
@@ -517,12 +520,14 @@
       "name": "libcudacxx",
       "configurePreset": "libcudacxx",
       "targets": [
+        "cccl.test.cuda_runtime_smoke",
         "libcudacxx.test.internal_headers",
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
         "libcudacxx.test.lit.precompile",
         "libcudacxx.test.nvtarget",
         "libcudacxx.test.atomics.ptx",
+        "libcudacxx.test.simd.ptx",
         "libcudacxx.test.c2h_all"
       ]
     },
@@ -656,8 +661,8 @@
       "configurePreset": "cccl-c-parallel"
     },
     {
-      "name": "cccl-c-parallel-hostjit",
-      "configurePreset": "cccl-c-parallel-hostjit"
+      "name": "cccl-c-parallel-v2",
+      "configurePreset": "cccl-c-parallel-v2"
     },
     {
       "name": "cccl-c-stf",
@@ -939,8 +944,8 @@
       "inherits": "base"
     },
     {
-      "name": "cccl-c-parallel-hostjit",
-      "configurePreset": "cccl-c-parallel-hostjit",
+      "name": "cccl-c-parallel-v2",
+      "configurePreset": "cccl-c-parallel-v2",
       "inherits": "base"
     },
     {

@@ -113,8 +113,7 @@ template <class IncompleteT = IncompleteType, class Del = cuda::std::default_del
 struct StoresIncomplete
 {
   static_assert((cuda::std::is_same<IncompleteT, IncompleteType>::value
-                 || cuda::std::is_same<IncompleteT, IncompleteType[]>::value),
-                "");
+                 || cuda::std::is_same<IncompleteT, IncompleteType[]>::value));
 
   cuda::std::unique_ptr<IncompleteT, Del> m_ptr;
 

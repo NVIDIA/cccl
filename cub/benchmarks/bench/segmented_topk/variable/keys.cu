@@ -6,13 +6,23 @@
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
+#include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/reduce.h>
+
+#include <cuda/__argument_>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
+#include <cuda/iterator>
 #include <cuda/std/__execution/env.h>
-#include <cuda/stream>
 
 #include <algorithm>
+#include <vector>
+
+#include <nvbench_helper.cuh>
+
+#include "common.cuh"
 
 enum class topk_backend
 {
@@ -23,6 +33,9 @@ enum class topk_backend
 
 inline constexpr topk_backend selected_backend = topk_backend::baseline;
 
+// Env-based dispatch over the selected backend. The cluster and baseline backends route through their respective
+// `dispatch_with_env` entry points (temporary storage is allocated from the memory resource carried by `env`); the
+// device backend issues one `cub::DeviceTopK::MaxKeys` per segment, reading the host-side segment sizes.
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
@@ -30,71 +43,46 @@ template <typename KeyInputItItT,
           typename SelectDirectionParamT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT,
-          typename HostSegSizeT>
+          typename HostSegSizeT,
+          typename EnvT>
 CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
   KeyInputItItT d_keys_in,
   KeyOutputItItT d_keys_out,
   SegmentSizeParamT segment_sizes,
   KParamT k,
-  SelectDirectionParamT select_directions,
+  SelectDirectionParamT select_direction,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items,
-  const HostSegSizeT* h_segment_sizes,
-  cudaStream_t stream = nullptr)
+  [[maybe_unused]] const HostSegSizeT* h_segment_sizes,
+  EnvT env)
 {
   if constexpr (selected_backend == topk_backend::cluster)
   {
-    (void) h_segment_sizes;
-    return cub::detail::batched_topk_cluster::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      segment_sizes,
-      k,
-      select_directions,
-      num_segments,
-      total_num_items,
-      stream);
+    return cub::detail::batched_topk_cluster::dispatch_with_env(
+      d_keys_in, d_keys_out, segment_sizes, k, select_direction, num_segments, total_num_items, env);
   }
   else if constexpr (selected_backend == topk_backend::device)
   {
-    using num_segments_val_t = typename NumSegmentsParameterT::value_type;
-    const auto num_segs      = num_segments.get_param(num_segments_val_t{0});
+    using num_segments_val_t = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
+    const auto num_segs      = cub::detail::params::get_param(num_segments, num_segments_val_t{0});
 
-    auto requirements = cuda::execution::require(
-      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+    // The per-segment device backend uses the unsorted / not-guaranteed-determinism fast path. Layer the requirement
+    // on top of the benchmark environment (which carries the stream and the caching memory resource).
+    auto seg_env = cuda::std::execution::env{
+      env,
+      cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                               cuda::execution::output_ordering::unsorted)};
 
-    if (d_temp_storage == nullptr)
-    {
-      const auto max_size = *std::max_element(h_segment_sizes, h_segment_sizes + num_segs);
-      const auto k_value  = k.get_param(num_segments_val_t{0});
-      return cub::DeviceTopK::MaxKeys(
-        nullptr,
-        temp_storage_bytes,
-        d_keys_in[num_segments_val_t{0}],
-        d_keys_out[num_segments_val_t{0}],
-        static_cast<cuda::std::int64_t>(max_size),
-        static_cast<cuda::std::int64_t>(k_value),
-        cuda::std::execution::env{requirements});
-    }
-
-    cuda::stream_ref stream_ref{stream};
-    auto env = cuda::std::execution::env{stream_ref, requirements};
     for (num_segments_val_t i = 0; i < num_segs; ++i)
     {
-      const auto k_value  = k.get_param(i);
+      const auto k_value  = cub::detail::params::get_param(k, i);
       const auto seg_size = h_segment_sizes[i];
       if (const auto err = cub::DeviceTopK::MaxKeys(
-            d_temp_storage,
-            temp_storage_bytes,
             d_keys_in[i],
             d_keys_out[i],
             static_cast<cuda::std::int64_t>(seg_size),
             static_cast<cuda::std::int64_t>(k_value),
-            env);
+            seg_env);
           err != cudaSuccess)
       {
         return err;
@@ -104,175 +92,23 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
   }
   else
   {
-    (void) h_segment_sizes;
-    return cub::detail::batched_topk::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    return cub::detail::batched_topk::dispatch_with_env(
       d_keys_in,
       d_keys_out,
       static_cast<cub::NullType**>(nullptr),
       static_cast<cub::NullType**>(nullptr),
       segment_sizes,
       k,
-      select_directions,
+      select_direction,
       num_segments,
       total_num_items,
-      stream);
+      env);
   }
 }
-
-#include <thrust/device_vector.h>
-#include <thrust/reduce.h>
-#include <thrust/tabulate.h>
-
-#include <cuda/iterator>
-#include <cuda/random>
-#include <cuda/std/algorithm>
-#include <cuda/std/cmath>
-#include <cuda/std/random>
-
-#include <stdexcept>
-#include <string>
-#include <vector>
-
-#include <nvbench_helper.cuh>
-
-namespace
-{
-enum class pattern_kind : int
-{
-  random = 0,
-  quantized_random,
-  relu_quantized,
-  tie_heavy,
-  pivot_tie
-};
-
-[[nodiscard]] pattern_kind string_to_pattern(const std::string& pattern)
-{
-  if (pattern == "random")
-  {
-    return pattern_kind::random;
-  }
-  if (pattern == "quantized_random")
-  {
-    return pattern_kind::quantized_random;
-  }
-  if (pattern == "relu_quantized")
-  {
-    return pattern_kind::relu_quantized;
-  }
-  if (pattern == "tie_heavy")
-  {
-    return pattern_kind::tie_heavy;
-  }
-  if (pattern == "pivot_tie")
-  {
-    return pattern_kind::pivot_tie;
-  }
-  throw std::runtime_error("Invalid Pattern axis value: " + pattern);
-}
-
-template <int MaxSegmentSize, int K>
-[[nodiscard]] thrust::device_vector<float>
-gen_data(int num_segments, pattern_kind pattern, const cuda::std::int64_t* d_seg_sizes)
-{
-  const auto num_keys = static_cast<std::size_t>(num_segments) * static_cast<std::size_t>(MaxSegmentSize);
-  auto d_keys         = thrust::device_vector<float>{num_keys, thrust::no_init};
-
-  // gt_count == "greater-than count": number of 2.0 values placed at the tail of each segment's live region.
-  constexpr int gt_count = cuda::std::max(1, cuda::std::min(K / 4, MaxSegmentSize / 8));
-
-  thrust::tabulate(d_keys.begin(), d_keys.end(), [pattern, d_seg_sizes] __device__(std::size_t idx) -> float {
-    auto quantize = [](float base) -> float {
-      const auto r         = cuda::std::rint(base);
-      const auto scaled_fr = cuda::std::rint((base - r) * 32.0f);
-      return r + (scaled_fr / 32.0f);
-    };
-
-    auto random_value = [](unsigned long long idx) -> float {
-      cuda::pcg64 rng(42);
-      rng.discard(idx);
-      cuda::std::normal_distribution<float> normal(0.f, 1.f);
-      return normal(rng);
-    };
-
-    const auto j = static_cast<int>(idx % MaxSegmentSize);
-    switch (pattern)
-    {
-      //               ##
-      //              ####
-      //            ########
-      //          ############
-      //        ################
-      //     ######################
-      //  ##############################
-      //  ------------------------------
-      //  -3             0             3
-      case pattern_kind::random:
-        return random_value(idx);
-
-      //                |
-      //                |
-      //            |   |   |
-      //        |   |   |   |   |
-      //    |   |   |   |   |   |   |
-      //  ----------------------------
-      //  -3            0            3
-      case pattern_kind::quantized_random:
-        return quantize(random_value(idx));
-
-      //  |
-      //  |
-      //  |
-      //  |
-      //  |
-      //  |   |
-      //  |   |   |
-      //  |   |   |   |   |
-      //  |   |   |   |   |   |   |
-      //  ----------------------------
-      //  0                          3
-      case pattern_kind::relu_quantized:
-        return quantize(cuda::std::max(random_value(idx), 0.f));
-
-      //  |   |   |   |   |   |   |   |
-      //  |   |   |   |   |   |   |   |
-      //  |   |   |   |   |   |   |   |
-      //  --------------------------------
-      //  0/64                      63/64
-      case pattern_kind::tie_heavy:
-        return static_cast<float>(j % 64) / 64.f;
-
-      //  |
-      //  |
-      //  |
-      //  |
-      //  |
-      //  |
-      //  |
-      //  |                         |
-      //  ----------------------------
-      //  1.0                       2.0
-      case pattern_kind::pivot_tie: {
-        const auto seg_size = static_cast<int>(d_seg_sizes[idx / MaxSegmentSize]);
-        return (j >= seg_size - gt_count) ? 2.f : 1.f;
-      }
-      default:
-        _CCCL_UNREACHABLE();
-    }
-  });
-
-  return d_keys;
-}
-} // namespace
-
-const std::vector<std::string> valid_patterns = {
-  "random", "quantized_random", "relu_quantized", "tie_heavy", "pivot_tie"};
 
 template <typename KeyT, int MaxSegmentSize, int K>
-void variable_seg_size_topk_keys(nvbench::state& state,
-                                 nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
+void decode_style_variable_topk_keys(
+  nvbench::state& state, nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
 {
   if constexpr (K > MaxSegmentSize)
   {
@@ -288,21 +124,17 @@ void variable_seg_size_topk_keys(nvbench::state& state,
     static_cast<cuda::std::int64_t>(MaxSegmentSize));
   const auto input_elements  = thrust::reduce(d_segment_sizes.begin(), d_segment_sizes.end());
   const auto output_elements = static_cast<std::size_t>(num_segments) * K;
-  const auto total_num_items =
-    cub::detail::batched_topk::total_num_items_guarantee<1, cuda::std::numeric_limits<cuda::std::int64_t>::max()>{
-      static_cast<cuda::std::int64_t>(input_elements)};
+  const auto total_num_items = ::cuda::__argument::__immediate{static_cast<cuda::std::int64_t>(input_elements)};
 
   auto in_keys_buffer = gen_data<MaxSegmentSize, K>(
     num_segments, string_to_pattern(state.get_string("Pattern")), thrust::raw_pointer_cast(d_segment_sizes.data()));
   auto out_keys_buffer = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
 
-  cub::detail::batched_topk::segment_size_per_segment<const cuda::std::int64_t*, 1, MaxSegmentSize> segment_sizes_param{
-    thrust::raw_pointer_cast(d_segment_sizes.data())};
-  cub::detail::batched_topk::k_static<K> k_param{};
-  cub::detail::batched_topk::select_direction_static<cub::detail::topk::select::max> select_directions{
-    cub::detail::topk::select::max};
-  cub::detail::batched_topk::num_segments_uniform<> num_segments_uniform_param{
-    static_cast<cuda::std::int64_t>(num_segments)};
+  auto segment_sizes_param = ::cuda::__argument::__deferred_sequence{
+    thrust::raw_pointer_cast(d_segment_sizes.data()), ::cuda::__argument::__bounds<1, MaxSegmentSize>()};
+  auto k_param            = ::cuda::__argument::__constant<K>{};
+  auto select_direction   = ::cuda::__argument::__constant<cub::detail::topk::select::max>{};
+  auto num_segments_param = ::cuda::__argument::__immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
   auto d_keys_in = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(in_keys_buffer.data())),
@@ -313,69 +145,34 @@ void variable_seg_size_topk_keys(nvbench::state& state,
 
   state.add_element_count(input_elements, "NumElements");
   state.add_global_memory_reads<KeyT>(input_elements, "InputKeys");
+  state.add_global_memory_reads<cuda::std::int64_t>(num_segments, "SegmentSizes");
   state.add_global_memory_writes<KeyT>(output_elements, "OutputKeys");
 
-  // Host copy of segment sizes — consumed by the per-segment device backend.
+  // Host copy of segment sizes — consumed only by the per-segment device backend.
   std::vector<cuda::std::int64_t> h_segment_sizes(static_cast<std::size_t>(num_segments));
   thrust::copy(d_segment_sizes.begin(), d_segment_sizes.end(), h_segment_sizes.begin());
 
-  size_t temp_size{};
-  batched_topk_keys(
-    nullptr,
-    temp_size,
-    d_keys_in,
-    d_keys_out,
-    segment_sizes_param,
-    k_param,
-    select_directions,
-    num_segments_uniform_param,
-    total_num_items,
-    h_segment_sizes.data(),
-    nullptr);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    batched_topk_keys(
-      temp_storage,
-      temp_size,
+    auto env = cub_bench_env(alloc, launch);
+    // TODO(bgruber): call the public API once available
+    _CCCL_TRY_CUDA_API(
+      batched_topk_keys,
+      "batched topk failed",
       d_keys_in,
       d_keys_out,
       segment_sizes_param,
       k_param,
-      select_directions,
-      num_segments_uniform_param,
+      select_direction,
+      num_segments_param,
       total_num_items,
       h_segment_sizes.data(),
-      launch.get_stream());
+      env);
   });
 }
 
-using key_type_list = nvbench::type_list<float>;
-
-using max_segment_size_list = nvbench::enum_type_list< //
-  512,
-  1024,
-  2048,
-  4096,
-  8192
-#if 0 // need these, waiting for implementation to catch up
-  ,
-  16384,
-  32768,
-  65536,
-  131072,
-  262144,
-  524288,
-  1048576
-#endif
-  >;
-
-using k_list = nvbench::enum_type_list<512, 1024, 2048>;
-
-NVBENCH_BENCH_TYPES(variable_seg_size_topk_keys, NVBENCH_TYPE_AXES(key_type_list, max_segment_size_list, k_list))
-  .set_name("decode_style_variable_topk")
+NVBENCH_BENCH_TYPES(decode_style_variable_topk_keys, NVBENCH_TYPE_AXES(key_type_list, max_segment_size_list, k_list))
+  .set_name("decode_style_variable_topk_keys")
   .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "K{ct}"})
   .add_int64_axis("NumSegments", {1, 2, 4, 8, 16, 32})
   .add_string_axis("Pattern", valid_patterns);

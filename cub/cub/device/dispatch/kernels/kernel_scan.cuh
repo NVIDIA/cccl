@@ -66,8 +66,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  constexpr scan_policy policy = current_policy<PolicySelectorT>();
-  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
+  constexpr ScanPolicy policy = current_policy<PolicySelectorT>();
+  if constexpr (policy.algorithm == ScanAlgorithm::warpspeed)
   {
     device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
   }
@@ -116,9 +116,9 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
-  constexpr scan_policy policy = current_policy<PolicySelector>();
+  constexpr ScanPolicy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
+  if constexpr (policy.algorithm == ScanAlgorithm::warpspeed)
   {
     return num_total_threads(policy.warpspeed);
   }
@@ -185,13 +185,14 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           bool ForceInclusive,
-          typename RealInitValueT = typename InitValueT::value_type>
+          bool StableReductionOrder = false,
+          typename RealInitValueT   = typename InitValueT::value_type>
 __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATTRIBUTES void DeviceScanKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
   _CCCL_GRID_CONSTANT const int start_tile,
-  ScanOpT scan_op,
+  _CCCL_GRID_CONSTANT const ScanOpT scan_op,
 // nvcc 12.0 gets stuck compiling some TUs like `cub.bench.scan.exclusive.sum.base`, so only enable for newer versions
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   _CCCL_GRID_CONSTANT
@@ -200,8 +201,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   _CCCL_GRID_CONSTANT const int num_stages)
 {
-  static constexpr scan_policy active_policy = current_policy<PolicySelector>();
-  if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
+  static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
+  if constexpr (active_policy.algorithm == ScanAlgorithm::warpspeed)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
@@ -217,10 +218,10 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   }
   else
   {
-    static constexpr scan_lookback_policy policy = active_policy.lookback;
+    static constexpr ScanLookbackPolicy policy = active_policy.lookback;
     static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                   "The memory consistency model does not apply to texture accesses");
-    using ScanPolicyT = AgentScanPolicy<
+    using ScanPolicyT = agent_scan_policy<
       0,
       0,
       void,
@@ -229,9 +230,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       policy.store_algorithm,
       policy.scan_algorithm,
       NoScaling<policy.threads_per_block, policy.items_per_thread>,
-      delay_constructor_t<policy.delay_constructor.kind,
-                          policy.delay_constructor.delay,
-                          policy.delay_constructor.l2_write_latency>>;
+      delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
     // Thread block type for scanning input tiles
     using AgentScanT = detail::scan::AgentScan<
@@ -243,7 +242,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       OffsetT,
       AccumT,
       ForceInclusive,
-      /* UsePDL */ true>;
+      /* UsePDL */ true,
+      StableReductionOrder>;
 
     // Shared memory for AgentScan
     __shared__ typename AgentScanT::TempStorage temp_storage;

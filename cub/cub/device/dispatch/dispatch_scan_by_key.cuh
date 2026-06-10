@@ -136,7 +136,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
-  static constexpr scan_by_key_policy policy = current_policy<PolicySelector>();
+  static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
 
   using scan_by_key_policy_t = AgentScanByKeyPolicy<
     policy.threads_per_block,
@@ -145,9 +145,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     policy.load_modifier,
     policy.scan_algorithm,
     policy.store_algorithm,
-    delay_constructor_t<policy.delay_constructor.kind,
-                        policy.delay_constructor.delay,
-                        policy.delay_constructor.l2_write_latency>>;
+    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
   // Thread block type for scanning input tiles
   using AgentScanByKeyT = detail::scan_by_key::AgentScanByKey<
@@ -284,7 +282,7 @@ template <
 struct DispatchScanByKey
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
-                "DispatchScan only supports unsigned offset types of at least 4-bytes");
+                "DispatchScanByKey only supports unsigned offset types of at least 4-bytes");
 
   //---------------------------------------------------------------------
   // Constants and Types
@@ -408,7 +406,7 @@ struct DispatchScanByKey
       , launcher_factory(launcher_factory)
   {}
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(detail::scan_by_key::scan_by_key_policy active_policy)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(ScanByKeyPolicy active_policy)
   {
     // Get device ordinal
     int device_ordinal;
@@ -653,7 +651,7 @@ struct DispatchScanByKey
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(cc);
+    const ScanByKeyPolicy active_policy = policy_selector(cc);
 
     return DispatchScanByKey<KeysInputIteratorT,
                              ValuesInputIteratorT,
@@ -687,6 +685,7 @@ struct DispatchScanByKey
 namespace detail::scan_by_key
 {
 template <
+  typename OverrideAccumT = use_default,
   typename KeysInputIteratorT,
   typename ValuesInputIteratorT,
   typename ValuesOutputIteratorT,
@@ -694,11 +693,14 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT = ::cuda::std::__accumulator_t<
-    ScanOpT,
-    cub::detail::it_value_t<ValuesInputIteratorT>,
-    ::cuda::std::
-      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
+  typename AccumT = ::cuda::std::conditional_t<
+    !::cuda::std::is_same_v<OverrideAccumT, use_default>,
+    OverrideAccumT,
+    ::cuda::std::__accumulator_t<
+      ScanOpT,
+      cub::detail::it_value_t<ValuesInputIteratorT>,
+      ::cuda::std::
+        _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>>,
   typename PolicySelector = policy_selector_from_types<cub::detail::it_value_t<KeysInputIteratorT>,
                                                        AccumT,
                                                        cub::detail::it_value_t<ValuesInputIteratorT>,
@@ -714,6 +716,9 @@ template <
       OffsetT,
       AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+#if _CCCL_HAS_CONCEPTS()
+  requires scan_by_key_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -730,7 +735,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelLauncherFactory launcher_factory = {}) -> cudaError_t
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
-                "DispatchScan only supports unsigned offset types of at least 4-bytes");
+                "scan_by_key::dispatch only supports unsigned offset types of at least 4-bytes");
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
@@ -754,7 +759,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     using MaxPolicy = void;
   };
 
-  const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(cc);
+  const ScanByKeyPolicy active_policy = policy_selector(cc);
 
   return DispatchScanByKey<KeysInputIteratorT,
                            ValuesInputIteratorT,

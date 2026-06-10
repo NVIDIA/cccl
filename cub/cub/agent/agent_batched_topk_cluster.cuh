@@ -161,8 +161,8 @@ struct agent_batched_topk_cluster
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
 
-  using segment_size_val_t = typename SegmentSizeParameterT::value_type;
-  using num_segments_val_t = typename NumSegmentsParameterT::value_type;
+  using segment_size_val_t = typename ::cuda::__argument::__traits<SegmentSizeParameterT>::element_type;
+  using num_segments_val_t = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
 
   using offset_t     = ::cuda::std::uint32_t;
   using out_offset_t = ::cuda::std::uint32_t;
@@ -1350,13 +1350,13 @@ private:
     const unsigned int cluster_blocks = cluster.num_blocks();
     const auto segment_id             = static_cast<num_segments_val_t>(blockIdx.x / cluster_blocks);
 
-    if (segment_id >= num_segments.get_param(0))
+    if (segment_id >= detail::params::get_param(num_segments, num_segments_val_t{0}))
     {
       return;
     }
 
-    const auto segment_size = static_cast<segment_size_val_t>(segment_sizes.get_param(segment_id));
-    const auto k_requested  = static_cast<out_offset_t>(k_param.get_param(segment_id));
+    const auto segment_size = static_cast<segment_size_val_t>(detail::params::get_param(segment_sizes, segment_id));
+    const auto k_requested  = static_cast<out_offset_t>(detail::params::get_param(k_param, segment_id));
     const auto k =
       static_cast<out_offset_t>((::cuda::std::min) (static_cast<segment_size_val_t>(k_requested), segment_size));
 

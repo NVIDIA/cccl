@@ -123,8 +123,7 @@ struct DeviceSelect
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -249,10 +248,7 @@ struct DeviceSelect
             typename FlagIterator,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<
-              !::cuda::std::is_same_v<InputIteratorT, void*> && !::cuda::std::is_same_v<FlagIterator, size_t&>,
-              int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
     FlagIterator d_flags,
@@ -340,13 +336,10 @@ struct DeviceSelect
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename IteratorT,
-    typename FlagIterator,
-    typename NumSelectedIteratorT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*> && !::cuda::std::is_same_v<FlagIterator, size_t&>,
-                             int> = 0>
+  template <typename IteratorT,
+            typename FlagIterator,
+            typename NumSelectedIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Flagged(IteratorT d_data,
           FlagIterator d_flags,
@@ -448,8 +441,7 @@ struct DeviceSelect
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      OutputIteratorT d_out,
@@ -538,8 +530,7 @@ struct DeviceSelect
   template <typename IteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename EnvT                                                            = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(IteratorT d_data,
      NumSelectedIteratorT d_num_selected_out,
@@ -632,8 +623,7 @@ struct DeviceSelect
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -760,8 +750,7 @@ struct DeviceSelect
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -886,8 +875,7 @@ struct DeviceSelect
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -986,8 +974,7 @@ struct DeviceSelect
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1095,8 +1082,7 @@ struct DeviceSelect
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1227,8 +1213,7 @@ struct DeviceSelect
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     InputIteratorT d_in,
     FlagIterator d_flags,
@@ -1329,8 +1314,7 @@ struct DeviceSelect
             typename FlagIterator,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename EnvT                                                            = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     IteratorT d_data,
     FlagIterator d_flags,
@@ -1424,13 +1408,12 @@ struct DeviceSelect
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>
-                                       && !::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>,
-                                     int> = 0>
+  template <
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename EnvT = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Unique(InputIteratorT d_in,
          OutputIteratorT d_out,
@@ -1523,18 +1506,14 @@ struct DeviceSelect
   //!   Binary equality operator
   //!
   //! @param[in] env
-  //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename EqualityOpT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>
-                               && ::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
-                             int> = 0>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename EqualityOpT,
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1617,8 +1596,7 @@ struct DeviceSelect
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename IteratorT,
             typename NumSelectedIteratorT,
-            typename EnvT                                                            = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, IteratorT, IteratorT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Unique(IteratorT d_data, NumSelectedIteratorT d_num_selected_out, ::cuda::std::int64_t num_items, EnvT env = {})
@@ -1704,14 +1682,11 @@ struct DeviceSelect
   //!   Binary equality operator
   //!
   //! @param[in] env
-  //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <typename IteratorT,
             typename NumSelectedIteratorT,
             typename EqualityOpT,
-            typename EnvT                                                            = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, IteratorT, IteratorT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Unique(IteratorT d_data,
@@ -1834,11 +1809,10 @@ struct DeviceSelect
             typename NumSelectedIteratorT,
             typename NumItemsT,
             typename EqualityOpT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<
-              ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<KeyInputIteratorT, void*>
-                && ::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
-              int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>&& ::cuda::std::
+                                       indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
     KeyInputIteratorT d_keys_in,
     ValueInputIteratorT d_values_in,
@@ -1957,7 +1931,7 @@ struct DeviceSelect
     typename NumSelectedIteratorT,
     typename NumItemsT,
     typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<KeyInputIteratorT, void*>
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>
                                && !::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>,
                              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
@@ -2037,8 +2011,7 @@ struct DeviceSelect
   //!   **[inferred]** Type of equality_op
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2157,8 +2130,7 @@ struct DeviceSelect
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2240,8 +2212,7 @@ struct DeviceSelect
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2328,8 +2299,7 @@ struct DeviceSelect
   //!   **[inferred]** Type of equality_op
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2468,8 +2438,7 @@ struct DeviceSelect
   //!   **[inferred]** Type of equality_op
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2623,8 +2592,7 @@ struct DeviceSelect
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

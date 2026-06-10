@@ -30,6 +30,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_batched_topk_cluster.cuh>
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -38,10 +39,12 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__argument_>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__numeric/narrow.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -65,24 +68,13 @@ inline constexpr int max_supported_cluster_blocks = 16;
 // -----------------------------------------------------------------------------
 // Cluster-size / dynamic-SMEM selection
 // -----------------------------------------------------------------------------
-// Tightest upper bound carried by `SegmentSizeParameterT`. For
-// `per_segment_param` this can be the loose `numeric_limits<T>::max()`.
+// Tightest upper bound carried by the segment-size argument. Mirrors `__argument::__traits<>::highest` semantics:
+// the compile-time bound for `__constant`/bounded sequence arguments and the runtime value for a uniform
+// `__immediate`. For a per-segment sequence with only a static bound this can be the loose `numeric_limits<T>::max()`.
 template <typename SegmentSizeParameterT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-runtime_max_segment_size([[maybe_unused]] const SegmentSizeParameterT& segment_sizes) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto runtime_max_segment_size(SegmentSizeParameterT segment_sizes) noexcept
 {
-  if constexpr (detail::params::is_static_param_v<SegmentSizeParameterT>)
-  {
-    return detail::params::static_max_value_v<SegmentSizeParameterT>;
-  }
-  else if constexpr (detail::params::is_per_segment_param_v<SegmentSizeParameterT>)
-  {
-    return segment_sizes.max_value;
-  }
-  else
-  {
-    return segment_sizes.value;
-  }
+  return ::cuda::__argument::__highest_(segment_sizes);
 }
 
 struct launch_config
@@ -302,7 +294,7 @@ template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParameterT,
           typename KParameterT,
-          typename SelectDirectionParameterT,
+          typename SelectDirectionT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT,
           typename PolicySelector = policy_selector>
@@ -313,12 +305,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   KeyOutputItItT d_key_segments_out_it,
   SegmentSizeParameterT segment_sizes,
   KParameterT k_param,
-  SelectDirectionParameterT select_directions,
+  SelectDirectionT select_direction,
   NumSegmentsParameterT num_segments,
   [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
+  // The selection direction is a compile-time constant carried as `::cuda::__argument::__constant<Dir>`. Wrap it into
+  // the internal discrete param the kernel/agent expect, exactly as the baseline `batched_topk::dispatch` does.
+  auto select_directions          = batched_topk::wrap_select_direction(select_direction);
+  using SelectDirectionParameterT = decltype(select_directions);
   // Clusters are SM 9.0+ only and the tuning is currently identical across
   // CCs, so pin the selector query to the minimum supported CC.
   constexpr cluster_topk_policy policy = PolicySelector{}(::cuda::compute_capability{9, 0});
@@ -370,11 +366,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return cudaSuccess;
   }
 
-  static_assert(!detail::params::is_per_segment_param_v<NumSegmentsParameterT>,
+  static_assert(::cuda::__argument::__traits<NumSegmentsParameterT>::is_single_value,
                 "Number of segments must be resolved on the host.");
 
-  using num_segments_val_t = typename NumSegmentsParameterT::value_type;
-  const auto num_seg_val   = num_segments.get_param(num_segments_val_t{0});
+  using num_segments_val_t = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
+  const auto num_seg_val   = detail::params::get_param(num_segments, num_segments_val_t{0});
   if (num_seg_val == 0)
   {
     return cudaSuccess;
@@ -666,6 +662,46 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 }
 
 #undef CUB_TOPK_CLUSTER_DEVICE_LAUNCH
+
+// Env-based dispatch that also handles temporary-storage allocation. This is usually done by the device-layer, but
+// there is no public API for cluster segmented top-k yet. Mirrors `batched_topk::dispatch_with_env`: the cluster
+// algorithm is single-phase (one kernel launch over a placeholder allocation), but routing it through the shared
+// env-based machinery keeps the call shape identical to the baseline backend and lets it pick up the stream, memory
+// resource, and tuning carried by the environment.
+template <typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename SegmentSizeParameterT,
+          typename KParameterT,
+          typename SelectDirectionT,
+          typename NumSegmentsParameterT,
+          typename TotalNumItemsGuaranteeT,
+          typename EnvT = ::cuda::std::execution::env<>>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_env(
+  KeyInputItItT d_key_segments_it,
+  KeyOutputItItT d_key_segments_out_it,
+  SegmentSizeParameterT segment_sizes,
+  KParameterT k_param,
+  SelectDirectionT select_direction,
+  NumSegmentsParameterT num_segments,
+  TotalNumItemsGuaranteeT total_num_items_guarantee,
+  EnvT env = {})
+{
+  return detail::dispatch_with_env_and_tuning<policy_selector>(
+    env, [&](auto policy_sel, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+      return dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_key_segments_it,
+        d_key_segments_out_it,
+        segment_sizes,
+        k_param,
+        select_direction,
+        num_segments,
+        total_num_items_guarantee,
+        stream,
+        policy_sel);
+    });
+}
 } // namespace detail::batched_topk_cluster
 
 CUB_NAMESPACE_END

@@ -14,6 +14,7 @@
 #include <cuda/barrier>
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -75,6 +76,11 @@ struct ThreadsInWarpMappingResult
   __device__ unsigned rank() const
   {
     return cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
+  }
+
+  __device__ cuda::device::lane_mask lane_mask() const noexcept
+  {
+    return cuda::device::lane_mask::all();
   }
 
   __device__ bool is_valid() const

@@ -42,7 +42,7 @@ template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
           typename KParamT,
-          typename SelectDirectionParamT,
+          typename SelectDirectionT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
@@ -52,7 +52,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   KeyOutputItItT d_key_segments_out_it,
   SegmentSizeParamT segment_sizes,
   KParamT k,
-  SelectDirectionParamT select_directions,
+  SelectDirectionT select_direction,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = nullptr)
@@ -66,7 +66,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
       d_key_segments_out_it,
       segment_sizes,
       k,
-      select_directions,
+      select_direction,
       num_segments,
       total_num_items_guarantee,
       stream);
@@ -83,7 +83,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
       values_it,
       segment_sizes,
       k,
-      select_directions,
+      select_direction,
       num_segments,
       total_num_items_guarantee,
       stream);
@@ -117,11 +117,16 @@ using key_types = c2h::type_list<float>;
 #endif
 // clang-format on
 
+// Selection direction is a compile-time option; cover both as a static test axis.
+using select_direction_list =
+  c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
+
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
          key_types,
          max_segment_size_list,
-         max_num_k_list)
+         max_num_k_list,
+         select_direction_list)
 {
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
@@ -132,9 +137,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
   constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
 
-  // Test both directions (as runtime value)
-  const auto direction = cub::detail::topk::select::max; // GENERATE_COPY(cub::detail::topk::select::min,
-                                                         // cub::detail::topk::select::max);
+  // Selection direction comes from the compile-time test axis.
+  constexpr auto direction = c2h::get<3, TestType>::value;
 
   // Generate segment size
   constexpr segment_size_t min_segment_size = 1;
@@ -184,11 +188,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
-    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::batched_topk::select_direction_uniform{direction},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+    ::cuda::__argument::__immediate{segment_size, ::cuda::__argument::__bounds<segment_size_t{1}, max_segment_size>()},
+    ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<direction>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_segments * segment_size});
   // Prepare expected results
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -239,11 +243,12 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::batched_topk::segment_size_uniform<1, static_max_segment_size>{segment_size},
-    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::batched_topk::select_direction_uniform{direction},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+    ::cuda::__argument::__immediate{
+      segment_size, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
+    ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<cub::detail::topk::select::max>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_segments * segment_size});
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -318,11 +323,12 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::batched_topk::segment_size_uniform<1, static_max_segment_size>{segment_size},
-    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::batched_topk::select_direction_uniform{direction},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_items});
+    ::cuda::__argument::__immediate{
+      segment_size, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
+    ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<cub::detail::topk::select::max>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_items});
 
   // The flattened input is the identity sequence, so build the expected keys directly and reuse the standard
   // sort + compact verification.
@@ -342,7 +348,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
          "[keys][segmented][topk][device]",
          key_types,
          max_segment_size_list,
-         max_num_k_list)
+         max_num_k_list,
+         select_direction_list)
 {
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
@@ -353,9 +360,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
   constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
 
-  // Test both directions (as runtime value)
-  const auto direction = cub::detail::topk::select::max; // GENERATE_COPY(cub::detail::topk::select::min,
-                                                         // cub::detail::topk::select::max);
+  // Selection direction comes from the compile-time test axis.
+  constexpr auto direction = c2h::get<3, TestType>::value;
 
   constexpr segment_size_t min_items = 1;
   constexpr segment_size_t max_items = 1'000'000;
@@ -423,12 +429,12 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::batched_topk::segment_size_per_segment<decltype(segment_size_it), 1, static_max_segment_size>{
-      segment_size_it},
-    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::batched_topk::select_direction_uniform{direction},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_items});
+    ::cuda::__argument::__deferred_sequence{
+      segment_size_it, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
+    ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<direction>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_items});
 
   // Verify keys are returned correctly: sort each segment of the expected input, then compact the top-k
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
@@ -503,12 +509,12 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalig
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::batched_topk::segment_size_per_segment<decltype(segment_size_it), 1, static_max_segment_size>{
-      segment_size_it},
-    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::batched_topk::select_direction_uniform{direction},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_items});
+    ::cuda::__argument::__deferred_sequence{
+      segment_size_it, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
+    ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<cub::detail::topk::select::max>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_items});
 
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
   expected_keys = compact_to_topk_batched(expected_keys, segment_offsets, k);
@@ -523,13 +529,13 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalig
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
 C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
 {
-  constexpr cuda::std::int64_t segment_size    = 8;
-  constexpr cuda::std::int64_t k               = 5;
-  constexpr cuda::std::int64_t num_segments    = 1;
-  constexpr cuda::std::size_t max_segment_size = 64;
+  constexpr cuda::std::int64_t segment_size                      = 8;
+  constexpr cuda::std::int64_t k                                 = 5;
+  constexpr cuda::std::int64_t num_segments                      = 1;
+  [[maybe_unused]] constexpr cuda::std::int64_t max_segment_size = 64; // msvc warns, only used in nttp
 
   // Input: one segment containing -0.0f and +0.0f; top-5 min should include both zeros.
-  c2h::device_vector<float> d_keys_in{-3.0f, -0.0f, -1.0f, -2.0f, 0.0f, -1.0f, -4.0f, -5.0f};
+  c2h::device_vector<float> d_keys_in{3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f};
   c2h::device_vector<float> d_keys_out(k, thrust::no_init);
 
   auto d_keys_in_it =
@@ -540,11 +546,12 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
   batched_topk_keys(
     d_keys_in_it,
     d_keys_out_it,
-    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
-    cub::detail::batched_topk::k_uniform<1, static_cast<cuda::std::size_t>(k)>{k},
-    cub::detail::batched_topk::select_direction_uniform{cub::detail::topk::select::max},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+    ::cuda::__argument::__immediate{
+      segment_size, ::cuda::__argument::__bounds<cuda::std::int64_t{1}, max_segment_size>()},
+    ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<cuda::std::int64_t{1}, k>()},
+    ::cuda::__argument::__constant<cub::detail::topk::select::min>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_segments * segment_size});
 
   const int num_minus_zero = static_cast<int>(thrust::count_if(d_keys_out.begin(), d_keys_out.end(), is_minus_zero{}));
   REQUIRE(num_minus_zero >= 1);

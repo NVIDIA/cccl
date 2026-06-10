@@ -153,8 +153,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -339,8 +338,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -434,7 +432,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -580,7 +579,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -804,8 +804,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -995,8 +994,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1090,7 +1088,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -1236,7 +1235,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -1456,8 +1456,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage.
-  //!   When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1628,9 +1627,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1722,7 +1719,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
@@ -1857,7 +1855,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -2065,8 +2064,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2236,8 +2234,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2328,7 +2325,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -2461,7 +2459,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is

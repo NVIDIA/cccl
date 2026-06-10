@@ -137,8 +137,7 @@ public:
   //!   @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -224,6 +223,14 @@ public:
   //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
+  //! Preconditions
+  //! +++++++++++++
+  //!
+  //! - When ``d_in`` and ``d_out`` are equal, the segmented scan is performed in-place.
+  //!   The range ``[d_in, d_in + num_items_in)`` and ``[d_out, d_out + num_items_out)``
+  //!   shall not overlap in any other way.
+  //! - ``d_in`` and ``d_out`` must not be null pointers
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -306,8 +313,13 @@ public:
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<scan_op_t, detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -321,7 +333,8 @@ public:
           detail::InputValue<init_value_t>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -368,8 +381,7 @@ public:
   //!   @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -506,13 +518,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -548,8 +574,13 @@ public:
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<scan_op_t, detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -563,7 +594,8 @@ public:
           detail::InputValue<init_value_t>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -616,8 +648,7 @@ public:
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -707,7 +738,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -803,8 +835,13 @@ public:
 
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -818,7 +855,8 @@ public:
           detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -862,8 +900,7 @@ public:
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -964,6 +1001,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -1014,13 +1053,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -1060,8 +1113,13 @@ public:
                                             EndOffsetIteratorInputT,
                                             BeginOffsetIteratorOutputT>();
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -1075,7 +1133,8 @@ public:
           detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -1121,8 +1180,7 @@ public:
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1284,8 +1342,12 @@ public:
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::deduced_accum_t<scan_op_t, NullType, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -1299,7 +1361,8 @@ public:
           NullType(),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -1349,8 +1412,7 @@ public:
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1440,6 +1502,8 @@ public:
   //!
   //! - Results are not deterministic for computation of prefix sum on floating-point types
   //!   and may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -1484,13 +1548,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -1523,8 +1601,12 @@ public:
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::deduced_accum_t<scan_op_t, NullType, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -1538,7 +1620,8 @@ public:
           NullType(),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -1573,8 +1656,7 @@ public:
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1657,7 +1739,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -1745,8 +1828,12 @@ public:
 
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::deduced_accum_t<ScanOpT, NullType, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -1760,7 +1847,8 @@ public:
           NullType(),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -1812,8 +1900,7 @@ public:
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1908,6 +1995,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -1955,13 +2044,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -1996,8 +2099,12 @@ public:
                                             EndOffsetIteratorInputT,
                                             BeginOffsetIteratorOutputT>();
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::deduced_accum_t<ScanOpT, NullType, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -2011,7 +2118,8 @@ public:
           NullType(),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -2065,8 +2173,7 @@ public:
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2157,7 +2264,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -2204,10 +2312,20 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in`` and in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -2244,8 +2362,13 @@ public:
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
           d_temp_storage,
           temp_storage_bytes,
@@ -2259,7 +2382,8 @@ public:
           detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -2304,8 +2428,7 @@ public:
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2408,6 +2531,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -2458,13 +2583,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -2505,10 +2644,13 @@ public:
                                             BeginOffsetIteratorOutputT>();
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
-    using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
           d_temp_storage,
           temp_storage_bytes,
@@ -2522,7 +2664,8 @@ public:
           detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 };

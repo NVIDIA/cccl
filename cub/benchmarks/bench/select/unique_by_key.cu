@@ -37,7 +37,7 @@ struct bench_unique_by_key_policy_selector
             TUNE_LOAD_ALGORITHM,
             TUNE_LOAD_MODIFIER,
             cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+            lookback_delay_policy};
   }
 };
 #endif // !TUNE_BASE
@@ -45,13 +45,7 @@ struct bench_unique_by_key_policy_selector
 template <class KeyT, class ValueT, class OffsetT>
 static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using keys_input_it_t            = const KeyT*;
-  using keys_output_it_t           = KeyT*;
-  using vals_input_it_t            = const ValueT*;
-  using vals_output_it_t           = ValueT*;
-  using num_runs_output_iterator_t = OffsetT*;
-  using equality_op_t              = ::cuda::std::equal_to<>;
-  using offset_t                   = OffsetT;
+  using equality_op_t = cuda::std::equal_to<>;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
@@ -69,36 +63,20 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   ValueT* d_out_vals      = thrust::raw_pointer_cast(out_vals.data());
   OffsetT* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
 
-  std::uint8_t* d_temp_storage{};
-  std::size_t temp_storage_bytes{};
-  const offset_t num_items = static_cast<offset_t>(elements);
+  const auto num_items = static_cast<OffsetT>(elements);
 
-  auto dispatch_on_stream = [&](cudaStream_t stream) {
-    return cub::detail::unique_by_key::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in_keys,
-      d_in_vals,
-      d_out_keys,
-      d_out_vals,
-      d_num_runs_out,
-      equality_op_t{},
-      num_items,
-      stream
-#if !TUNE_BASE
-      ,
-      bench_unique_by_key_policy_selector{}
-#endif
-    );
-  };
-
-  dispatch_on_stream(nullptr);
-
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  dispatch_on_stream(nullptr);
-  cudaDeviceSynchronize();
+  // Pre-computation to get num_runs for statistics
+  _CCCL_TRY_CUDA_API(
+    cub::DeviceSelect::UniqueByKey,
+    "UniqueByKey failed",
+    d_in_keys,
+    d_in_vals,
+    d_out_keys,
+    d_out_vals,
+    d_num_runs_out,
+    num_items,
+    equality_op_t{});
+  _CCCL_TRY_CUDA_API(cudaDeviceSynchronize, "Sync failed");
   const OffsetT num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
@@ -108,8 +86,27 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   state.add_global_memory_writes<KeyT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_on_stream(launch.get_stream());
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_unique_by_key_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceSelect::UniqueByKey,
+      "UniqueByKey failed",
+      d_in_keys,
+      d_in_vals,
+      d_out_keys,
+      d_out_vals,
+      d_num_runs_out,
+      num_items,
+      equality_op_t{},
+      env);
   });
 }
 

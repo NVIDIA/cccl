@@ -38,7 +38,7 @@ struct SmemResource : SmemResourceRaw
       : SmemResourceRaw(makeSmemResourceRaw(syncHandler, smemAllocator, stages, elems))
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API SmemStage<_Tp> popStage() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API SmemStage<_Tp> nextStage() noexcept
   {
     return SmemStage<_Tp>(*this);
   }
