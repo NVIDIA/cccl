@@ -553,15 +553,27 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {},
-  // When the caller already picked between the direct-atomic-to-output
-  // (cuckoo) path and the cooperative gather-merge path via the unified
-  // algorithm selector, this overrides the legacy `direct_atomic_bin_threshold`
-  // heuristic. Set true to force the gather-merge / Init+Sweep path regardless
-  // of bin count.
-  bool disable_direct_atomic = false,
-  // Cache policy for the direct-atomic-to-output kernel (only consulted when
-  // the direct-atomic path is taken, i.e. !disable_direct_atomic). Both select
-  // the same DeviceHistogramDirectKernel with a different probe op:
+  // How dispatch decides between the direct-atomic-to-output path and the
+  // cooperative gather-merge / Init+Sweep path:
+  //   0 (kHeuristic)   -- no explicit algorithm choice was made; apply the
+  //                       `direct_atomic_bin_threshold` bin-count heuristic. Used by
+  //                       the C-parallel host-init entry, which does not run
+  //                       select_algorithm.
+  //   1 (kForceDirect) -- the caller (select_algorithm / dispatch_by_algorithm /
+  //                       the force hook) explicitly chose a direct-atomic algorithm;
+  //                       run it UNCONDITIONALLY (no bin-count veto). This is what
+  //                       makes a forced/selected direct_cuckoo actually run cuckoo
+  //                       even below the heuristic threshold.
+  //   2 (kForceGather) -- the caller explicitly chose the gather/hybrid path; never
+  //                       take direct-atomic.
+  // (Replaces the old ambiguous `disable_direct_atomic` bool, where cache_mode==0
+  // could not distinguish "selector chose direct_cuckoo" from "no choice -> apply
+  // heuristic", so an explicitly-chosen direct_cuckoo was silently vetoed below the
+  // threshold and ran gather instead.)
+  int direct_atomic_choice = 0,
+  // Cache policy for the direct-atomic-to-output kernel (only consulted when the
+  // direct-atomic path is taken). Both select the same DeviceHistogramDirectKernel
+  // with a different probe op:
   //   0 -> 2-hash cuckoo cache (cuckoo_cache_probe)
   //   1 -> single-probe direct-mapped cache (single_probe_cache)
   // The two share the same dynamic-SMEM cache layout and the dispatch-chosen
@@ -722,31 +734,32 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // does not, and because warp-level coalescing is more effective when
   // the same warp scans more samples (i.e. more chances for matching
   // bins per warp scan).
-  // Caller may have already picked sweep over direct-atomic via the unified
-  // algorithm selector; honour that. Otherwise fall back to the bin-count-
-  // based heuristic for backwards compatibility.
+  // The direct-atomic-vs-gather decision. When the caller made an EXPLICIT choice
+  // (direct_atomic_choice != kHeuristic), honour it unconditionally -- this is the
+  // whole point of selecting/forcing an algorithm. Only when no explicit choice was
+  // made (kHeuristic, i.e. the C-parallel host-init entry that does not run
+  // select_algorithm) do we fall back to the bin-count heuristic.
   //
-  // Single-channel threshold is 1<<16 (65536): because the cuckoo cache lives in
-  // dynamic SMEM and grows to use all free shared memory, the direct-atomic +
-  // per-block SMEM cache path is competitive with the gather-merge persistent
-  // kernel down to 65536 bins, and it avoids the gather-merge's
-  // O(num_blocks * num_bins) cross-block reduction. This routes the 262144-bin
-  // single-channel cells (the weakest high-bin cells, gather-merge-bound on
-  // uniform input) through the larger cache.
+  // Bin-count heuristic (kHeuristic only). Single-channel threshold is 1<<16
+  // (65536): the cuckoo cache lives in dynamic SMEM and grows to use all free shared
+  // memory, so the direct-atomic + per-block SMEM cache path is competitive with the
+  // gather-merge persistent kernel down to 65536 bins and avoids the gather-merge's
+  // O(num_blocks * num_bins) cross-block reduction.
+  enum : int
+  {
+    kHeuristic   = 0,
+    kForceDirect = 1,
+    kForceGather = 2
+  };
   constexpr int direct_atomic_bin_threshold_single = 1 << 16;
   constexpr int direct_atomic_bin_threshold_multi  = 16384;
   const int direct_atomic_bin_threshold =
     (NUM_ACTIVE_CHANNELS > 1) ? direct_atomic_bin_threshold_multi : direct_atomic_bin_threshold_single;
-  // Any non-default cache mode (1=single-probe, 2=no-cache, 3/4=private-spill) is an
-  // explicit selector/dispatch request for the DirectKernel family, so the legacy
-  // bin-count threshold must not veto it. (Mode 0 = cuckoo output-spill keeps the
-  // threshold gate for callers that don't route through select_algorithm.) The
-  // PRIVATIZED_SMEM_BINS==0 / disable_direct_atomic guards still apply.
-  const bool selector_forces_direct_atomic = (direct_atomic_cache_mode != 0);
   const bool use_direct_atomic_to_output =
 #if _CCCL_HOSTED()
-    (PRIVATIZED_SMEM_BINS == 0 && !disable_direct_atomic
-     && (selector_forces_direct_atomic || max_num_output_bins >= direct_atomic_bin_threshold));
+    (PRIVATIZED_SMEM_BINS == 0
+     && (direct_atomic_choice == kForceDirect
+         || (direct_atomic_choice == kHeuristic && max_num_output_bins >= direct_atomic_bin_threshold)));
 #else
     false;
 #endif
@@ -1473,6 +1486,30 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         if (coop_status == cudaSuccess)
         {
           launched_persistent = true;
+#if _CCCL_HOSTED()
+          // Sweep-only: emit the canonical name of the algorithm that ACTUALLY ran,
+          // so the force sweep can drop cells where the requested algo was not the
+          // one launched (e.g. a forced direct_cuckoo that fell back to gather below
+          // the direct-atomic bin threshold). Host-only, env-gated -> zero device SASS
+          // impact. This cooperative block ran either the direct-atomic kernel (by
+          // cache_mode) or the pure-gather kernel.
+          NV_IF_TARGET(NV_IS_HOST, ({
+                         if (::std::getenv("CUB_HISTO_LOG_LAUNCH"))
+                         {
+                           const char* ran = "gmem_privatized_nocache"; // the gather branch
+                           if (use_direct_atomic_to_output)
+                           {
+                             ran = (direct_atomic_cache_mode == 1)   ? "direct_single_probe"
+                                   : (direct_atomic_cache_mode == 2) ? "direct_nocache"
+                                   : (direct_atomic_cache_mode == 3) ? "gmem_privatized_cuckoo"
+                                   : (direct_atomic_cache_mode == 4) ? "gmem_privatized_single_probe"
+                                                                     : "direct_cuckoo"; // mode 0
+                           }
+                           ::std::fprintf(stderr, "[launch] bins=%d ch=%d ran=%s\n",
+                                          max_num_output_bins, NUM_ACTIVE_CHANNELS, ran);
+                         }
+                       }));
+#endif
 #if CUB_HISTO_TRACK_HITRATE
           // Read back the grid-wide cache hit/miss totals for this launch (cached
           // kernels only; gather / no_cache report 0 hits). Sync first so the kernel
@@ -1584,6 +1621,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     {
       return error;
     }
+#if _CCCL_HOSTED()
+    // Sweep-only launch tag (see the cooperative block above): the non-cooperative
+    // path ran the privatized-SMEM sweep kernel. Host-only, env-gated.
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   if (::std::getenv("CUB_HISTO_LOG_LAUNCH"))
+                   {
+                     ::std::fprintf(stderr, "[launch] bins=%d ch=%d ran=smem_privatized\n",
+                                    max_num_output_bins, NUM_ACTIVE_CHANNELS);
+                   }
+                 }));
+#endif
   }
 
   // Check for failure to launch
@@ -1969,6 +2017,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
     return error;
   }
 
+#  if _CCCL_HOSTED()
+  // Sweep-only launch tag: the hybrid (smem_split>0) member of the GmemPrivatized
+  // kernel ran. It serves the `gmem_privatized_nocache` enum, so the sweep validator
+  // (which forces by enum name) accepts `gmem_privatized_nocache`; the `:hybrid`
+  // suffix records the member for diagnostics. Host-only, env-gated.
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 if (::std::getenv("CUB_HISTO_LOG_LAUNCH"))
+                 {
+                   ::std::fprintf(stderr, "[launch] bins=%d ch=%d ran=gmem_privatized_nocache:hybrid\n",
+                                  max_num_output_bins, NUM_ACTIVE_CHANNELS);
+                 }
+               }));
+#  endif
   return cudaSuccess;
 #else
   // Device-side dispatch is not supported for the cooperative hybrid path.
@@ -2146,6 +2207,26 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
                  }
                }));
 #endif // _CCCL_HOSTED()
+
+  // Sweep-only: the gmem_privatized_nocache enum covers BOTH the hybrid (smem_split>0)
+  // and pure-gather (smem_split==0) members; the force hook lets a sweep pin one
+  // member so they can be measured as distinct algorithms. `hybrid` -> hybrid member
+  // only (no gather fallback, so a failed setup is dropped, not silently mislabeled);
+  // `gmem_privatized_nocache` / `gmem_priv_gather` -> pure-gather member only. With no
+  // force (normal dispatch) both stay false -> the default try-hybrid-then-gather.
+  bool force_hybrid_member = false;
+  bool force_gather_member = false;
+#if _CCCL_HOSTED()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 if (const char* env = ::std::getenv("CUB_HISTO_FORCE_ALGO"))
+                 {
+                   force_hybrid_member = (::std::strcmp(env, "hybrid") == 0);
+                   force_gather_member = (::std::strcmp(env, "gmem_privatized_nocache") == 0
+                                          || ::std::strcmp(env, "gmem_priv_gather") == 0);
+                 }
+               }));
+#endif // _CCCL_HOSTED()
+
   switch (algo)
   {
     case algorithm::smem_privatized: {
@@ -2197,37 +2278,50 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
     case algorithm::gmem_privatized_nocache: {
       // GmemPrivatized<NoCache>. smem_split>0 (hybrid) is the single-channel
       // SMEM-primary + GMEM-tail staging path; smem_split==0 (pure gather) is the
-      // whole-histogram-in-GMEM fallback. Try the hybrid (smem_split>0) member for
-      // single-channel; on setup failure, fall through to the pure-gather member.
+      // whole-histogram-in-GMEM fallback. Default (no force): try the hybrid member
+      // for single-channel, fall through to pure-gather on setup failure.
+      // Force `gmem_privatized_nocache`/`gmem_priv_gather` -> skip hybrid (pure gather
+      // only). Force `hybrid` -> hybrid only, NO gather fallback (so a failed setup is
+      // reported and the sweep drops the cell rather than recording gather under the
+      // hybrid label).
       if constexpr (NUM_ACTIVE_CHANNELS == 1)
       {
-        const auto status =
-          dispatch_gmem_privatized_hybrid<NUM_CHANNELS,
-                                                   NUM_ACTIVE_CHANNELS,
-                                                   hybrid_smem_split_bin_single_channel,
-                                                   hybrid_smem_bins_max_single_channel>(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            output_decode_op,
-            privatized_decode_op,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            policy_selector,
-            kernel_source,
-            launcher_factory);
-        if (status == cudaSuccess || status != cudaErrorNotSupported)
+        if (!force_gather_member)
         {
-          return status;
+          const auto status =
+            dispatch_gmem_privatized_hybrid<NUM_CHANNELS,
+                                                     NUM_ACTIVE_CHANNELS,
+                                                     hybrid_smem_split_bin_single_channel,
+                                                     hybrid_smem_bins_max_single_channel>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              output_decode_op,
+              privatized_decode_op,
+              max_num_output_bins,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory);
+          if (status == cudaSuccess || status != cudaErrorNotSupported || force_hybrid_member)
+          {
+            return status; // success, a hard error, or hybrid was force-pinned (no fallback)
+          }
+          // hybrid setup unsupported here; fall through to the pure-gather member.
         }
-        // hybrid setup failed; fall through to the pure-gather (smem_split==0) member.
       }
-      // Pure-gather member: disable_direct_atomic=true routes dispatch<> to the
-      // GmemPrivatized gather kernel (HybridSplit=false).
+      else if (force_hybrid_member)
+      {
+        // Hybrid is single-channel-only; a multi-channel force-hybrid request cannot
+        // run -> report unsupported so the sweep drops it (never silently gather).
+        return cudaErrorNotSupported;
+      }
+      // Pure-gather member: kForceGather routes dispatch<> to the GmemPrivatized
+      // gather kernel (HybridSplit=false), never direct-atomic.
       constexpr int PRIVATIZED_SMEM_BINS = 0;
       return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS>(
         d_temp_storage,
@@ -2246,7 +2340,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
         policy_selector,
         kernel_source,
         launcher_factory,
-        /*disable_direct_atomic=*/true,
+        /*direct_atomic_choice=*/2 /*kForceGather*/,
         /*direct_atomic_cache_mode=*/0);
     }
     case algorithm::direct_nocache:
@@ -2264,7 +2358,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       //   2 -> no-cache,     output spill   (direct_nocache)
       //   3 -> cuckoo,       private spill  (gmem_privatized_cuckoo)
       //   4 -> single-probe, private spill  (gmem_privatized_single_probe)
-      // disable_direct_atomic stays false (these are not the pure-gather path).
+      // kForceDirect: these are explicit direct-atomic choices, so dispatch<> runs
+      // the direct-atomic kernel UNCONDITIONALLY (no bin-count veto) -- a forced or
+      // selected direct_cuckoo therefore actually runs cuckoo at any high-bin count.
       constexpr int PRIVATIZED_SMEM_BINS = 0;
       const int direct_atomic_cache_mode =
         (algo == algorithm::direct_cuckoo)                  ? 0
@@ -2289,7 +2385,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
         policy_selector,
         kernel_source,
         launcher_factory,
-        /*disable_direct_atomic=*/false,
+        /*direct_atomic_choice=*/1 /*kForceDirect*/,
         direct_atomic_cache_mode);
     }
   }
