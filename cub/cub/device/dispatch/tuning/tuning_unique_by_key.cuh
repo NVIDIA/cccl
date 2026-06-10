@@ -29,42 +29,43 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::unique_by_key
+//! The tuning policy for all algorithms in @ref DeviceSelect that operate UniqueByKey.
+struct UniqueByKeyPolicy
 {
-struct unique_by_key_policy
-{
-  int threads_per_block;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockScanAlgorithm scan_algorithm;
-  LookbackDelayPolicy delay_constructor;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
+  LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const UniqueByKeyPolicy& lhs, const UniqueByKeyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const UniqueByKeyPolicy& lhs, const UniqueByKeyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const unique_by_key_policy& p)
+  friend ::std::ostream& operator<<(::std::ostream& os, const UniqueByKeyPolicy& p)
   {
     return os
-        << "unique_by_key_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << "UniqueByKeyPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
         << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
+namespace detail::unique_by_key
+{
 enum class primitive_key
 {
   no,
@@ -790,12 +791,12 @@ struct policy_hub
   {
     static constexpr int items_per_thread = Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
     using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<Threads,
-                             items_per_thread,
-                             BLOCK_LOAD_WARP_TRANSPOSE,
-                             LOAD_LDG,
-                             BLOCK_SCAN_WARP_SCANS,
-                             detail::default_delay_constructor_t<int>>;
+      agent_unique_by_key_policy<Threads,
+                                 items_per_thread,
+                                 BLOCK_LOAD_WARP_TRANSPOSE,
+                                 LOAD_LDG,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 detail::default_delay_constructor_t<int>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
@@ -809,12 +810,12 @@ struct policy_hub
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
   static _CCCL_HOST_DEVICE auto select_agent_policy(int)
-    -> AgentUniqueByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              Tuning::load_modifier,
-                              BLOCK_SCAN_WARP_SCANS,
-                              typename Tuning::delay_constructor>;
+    -> agent_unique_by_key_policy<Tuning::threads,
+                                  Tuning::items,
+                                  Tuning::load_algorithm,
+                                  Tuning::load_modifier,
+                                  BLOCK_SCAN_WARP_SCANS,
+                                  typename Tuning::delay_constructor>;
   template <typename Tuning>
   static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename DefaultPolicy<11, 64>::UniqueByKeyPolicyT;
 
@@ -849,12 +850,12 @@ struct policy_hub
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     static _CCCL_HOST_DEVICE auto select_agent_policy100(int)
-      -> AgentUniqueByKeyPolicy<Tuning::threads,
-                                Tuning::items,
-                                Tuning::load_algorithm,
-                                Tuning::load_modifier,
-                                BLOCK_SCAN_WARP_SCANS,
-                                typename Tuning::delay_constructor>;
+      -> agent_unique_by_key_policy<Tuning::threads,
+                                    Tuning::items,
+                                    Tuning::load_algorithm,
+                                    Tuning::load_modifier,
+                                    BLOCK_SCAN_WARP_SCANS,
+                                    typename Tuning::delay_constructor>;
     template <typename Tuning>
     static _CCCL_HOST_DEVICE auto select_agent_policy100(long) -> typename Policy900::UniqueByKeyPolicyT;
 
@@ -877,7 +878,7 @@ private:
     return cub::detail::nominal_4B_items_to_items(11, key_size);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_default_policy() const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_default_policy() const -> UniqueByKeyPolicy
   {
     return {64,
             default_items_per_thread(),
@@ -888,7 +889,7 @@ private:
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning() const
-    -> ::cuda::std::optional<unique_by_key_policy>
+    -> ::cuda::std::optional<UniqueByKeyPolicy>
   {
     if (!primitive_key)
     {
@@ -904,7 +905,7 @@ private:
           {
             case 1:
               // ipt_12.tpb_512.trp_0.ld_0.ns_948.dcid_5.l2w_955 1.121279  1.000000  1.114566  1.43765
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -913,7 +914,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 948, 955}};
             case 2:
               // ipt_14.tpb_512.trp_0.ld_0.ns_1228.dcid_7.l2w_320 1.151229  1.007229  1.151131  1.443520
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_DIRECT,
@@ -922,7 +923,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1228, 320}};
             case 4:
               // ipt_14.tpb_512.trp_0.ld_0.ns_2016.dcid_7.l2w_620 1.165300  1.095238  1.164478  1.266667
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_DIRECT,
@@ -931,7 +932,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 2016, 620}};
             case 8:
               // ipt_10.tpb_384.trp_0.ld_0.ns_1728.dcid_5.l2w_980 1.118716  0.997167  1.116537  1.400000
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -946,7 +947,7 @@ private:
           {
             case 1:
               // ipt_14.tpb_512.trp_0.ld_0.ns_508.dcid_7.l2w_1020 1.171886  0.906530  1.157128  1.457933
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_DIRECT,
@@ -955,7 +956,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 508, 1020}};
             case 2:
               // ipt_12.tpb_384.trp_0.ld_0.ns_928.dcid_7.l2w_605 1.166564  0.997579  1.154805  1.406709
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -964,7 +965,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 928, 605}};
             case 4:
               // ipt_11.tpb_384.trp_0.ld_1.ns_1620.dcid_7.l2w_810 1.144483  1.011085  1.152798  1.393750
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 11,
                 BLOCK_LOAD_DIRECT,
@@ -973,7 +974,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1620, 810}};
             case 8:
               // ipt_10.tpb_384.trp_0.ld_0.ns_1984.dcid_5.l2w_935 1.605554  1.177083  1.564488  1.946224
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -988,7 +989,7 @@ private:
           {
             case 1:
               // ipt_14.tpb_512.trp_0.ld_0.ns_1136.dcid_7.l2w_605 1.148057  0.848558  1.133064  1.451074
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_DIRECT,
@@ -997,7 +998,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1136, 605}};
             case 2:
               // ipt_11.tpb_384.trp_0.ld_0.ns_656.dcid_7.l2w_825 1.216312  1.090485  1.211800  1.535714
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 11,
                 BLOCK_LOAD_DIRECT,
@@ -1006,7 +1007,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 656, 825}};
             case 8:
               // ipt_10.tpb_384.trp_0.ld_0.ns_1012.dcid_5.l2w_800 1.164713  1.014819  1.174307  1.526042
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -1021,7 +1022,7 @@ private:
           {
             case 2:
               // ipt_10.tpb_384.trp_0.ld_0.ns_864.dcid_5.l2w_1130 1.124095  0.985748  1.120262  1.391304
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -1030,7 +1031,7 @@ private:
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 864, 1130}};
             case 4:
               // ipt_10.tpb_384.trp_0.ld_0.ns_772.dcid_5.l2w_665 1.152243  1.019816  1.166636  1.517526
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -1048,8 +1049,7 @@ private:
     return {};
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm90_tuning() const
-    -> ::cuda::std::optional<unique_by_key_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm90_tuning() const -> ::cuda::std::optional<UniqueByKeyPolicy>
   {
     if (!primitive_key)
     {
@@ -1064,7 +1064,7 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1072,7 +1072,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 550}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 448,
                 14,
                 BLOCK_LOAD_DIRECT,
@@ -1080,7 +1080,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 725}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1088,7 +1088,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1130}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -1102,7 +1102,7 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1110,7 +1110,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 640}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 288,
                 14,
                 BLOCK_LOAD_DIRECT,
@@ -1118,7 +1118,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 404, 710}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1126,7 +1126,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 525}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 23,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1140,7 +1140,7 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 448,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1148,7 +1148,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 348, 580}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 9,
                 BLOCK_LOAD_DIRECT,
@@ -1156,7 +1156,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1060}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1164,7 +1164,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1045}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 11,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1178,7 +1178,7 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 9,
                 BLOCK_LOAD_DIRECT,
@@ -1186,7 +1186,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1060}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 9,
                 BLOCK_LOAD_DIRECT,
@@ -1194,7 +1194,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 964, 1125}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 640,
                 7,
                 BLOCK_LOAD_DIRECT,
@@ -1202,7 +1202,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1070}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 448,
                 11,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1222,7 +1222,7 @@ private:
       switch (key_size)
       {
         case 1:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             288,
             7,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1230,7 +1230,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 344, 1165}};
         case 2:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             224,
             9,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1238,7 +1238,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 424, 1055}};
         case 4:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             384,
             7,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1246,7 +1246,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1025}};
         case 8:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             256,
             9,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1261,8 +1261,7 @@ private:
     return {};
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm80_tuning() const
-    -> ::cuda::std::optional<unique_by_key_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm80_tuning() const -> ::cuda::std::optional<UniqueByKeyPolicy>
   {
     if (!primitive_key)
     {
@@ -1277,7 +1276,7 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1285,7 +1284,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 835}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1293,7 +1292,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 765}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1301,7 +1300,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1155}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 224,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -1315,7 +1314,7 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 320,
                 20,
                 BLOCK_LOAD_DIRECT,
@@ -1323,7 +1322,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1020}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 192,
                 22,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1331,7 +1330,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 328, 1080}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1339,7 +1338,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 535}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 10,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1353,7 +1352,7 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
@@ -1361,7 +1360,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1120}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1369,7 +1368,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1185}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 11,
                 BLOCK_LOAD_DIRECT,
@@ -1377,7 +1376,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1115}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 7,
                 BLOCK_LOAD_DIRECT,
@@ -1391,7 +1390,7 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 7,
                 BLOCK_LOAD_DIRECT,
@@ -1399,7 +1398,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 24, 555}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 7,
                 BLOCK_LOAD_DIRECT,
@@ -1407,7 +1406,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 324, 1105}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 7,
                 BLOCK_LOAD_DIRECT,
@@ -1415,7 +1414,7 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 740, 1105}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 192,
                 7,
                 BLOCK_LOAD_DIRECT,
@@ -1435,7 +1434,7 @@ private:
       switch (key_size)
       {
         case 1:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             128,
             15,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1443,7 +1442,7 @@ private:
             BLOCK_SCAN_WARP_SCANS,
             LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 248, 1200}};
         case 8:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             128,
             7,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1460,7 +1459,7 @@ private:
 
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> unique_by_key_policy
+    -> UniqueByKeyPolicy
   {
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -1500,7 +1499,7 @@ template <typename KeyT, typename ValueT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> unique_by_key_policy
+    -> UniqueByKeyPolicy
   {
     return policy_selector{
       static_cast<int>(sizeof(KeyT)),
@@ -1511,7 +1510,7 @@ struct policy_selector_from_types
 };
 
 template <typename ActivePolicyT>
-_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> unique_by_key_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> UniqueByKeyPolicy
 {
   using policy_t = typename ActivePolicyT::UniqueByKeyPolicyT;
   return {policy_t::BLOCK_THREADS,
@@ -1525,7 +1524,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> unique_by_key_policy
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> UniqueByKeyPolicy
   {
     return convert_policy<typename PolicyHub::MaxPolicy>();
   }
@@ -1533,7 +1532,7 @@ struct policy_selector_from_hub
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept unique_by_key_policy_selector = cub::detail::policy_selector<T, unique_by_key_policy>;
+concept unique_by_key_policy_selector = cub::detail::policy_selector<T, UniqueByKeyPolicy>;
 #endif
 } // namespace detail::unique_by_key
 

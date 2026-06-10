@@ -450,4 +450,51 @@ C2H_TEST("cub::DeviceSelect::If env-based API with tuning", "[select][env]")
   REQUIRE(d_num_selected[0] == expected_num_selected);
 }
 
+// example-begin unique-by-key-policy-selector
+struct UniqueByKeyPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::UniqueByKeyPolicy
+  {
+    return {.threads_per_block = 256,
+            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 12 : 10,
+            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+            .load_modifier     = cub::LOAD_DEFAULT,
+            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+            .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+  }
+};
+// example-end unique-by-key-policy-selector
+
+C2H_TEST("cub::DeviceSelect::UniqueByKey accepts a custom policy selector", "[select_unique_by_key][env]")
+{
+  // example-begin unique-by-key-tuning
+  auto keys_in          = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto values_in        = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};
+  auto keys_out         = thrust::device_vector<int>(8, thrust::no_init);
+  auto values_out       = thrust::device_vector<int>(8, thrust::no_init);
+  auto num_selected_out = thrust::device_vector<int>(1, thrust::no_init);
+
+  const auto error = cub::DeviceSelect::UniqueByKey(
+    keys_in.begin(),
+    values_in.begin(),
+    keys_out.begin(),
+    values_out.begin(),
+    num_selected_out.begin(),
+    keys_in.size(),
+    cuda::execution::tune(UniqueByKeyPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::UniqueByKey failed with status: " << error << '\n';
+  }
+
+  const int n = num_selected_out[0];
+  keys_out.resize(n);
+  values_out.resize(n);
+  // example-end unique-by-key-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(keys_out == thrust::device_vector<int>{0, 2, 9, 5, 8});
+  REQUIRE(values_out == thrust::device_vector<int>{0, 1, 3, 4, 7});
+}
+
 #endif // _CCCL_STD_VER >= 2020

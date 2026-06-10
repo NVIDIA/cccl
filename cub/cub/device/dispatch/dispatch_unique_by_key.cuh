@@ -122,7 +122,7 @@ template <
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
   typename KeyT                  = detail::it_value_t<KeyInputIteratorT>,
   typename ValueT                = detail::it_value_t<ValueInputIteratorT>>
-struct DispatchUniqueByKey
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect::UniqueByKey") DispatchUniqueByKey
 {
   /******************************************************************************
    * Types and constants
@@ -232,7 +232,7 @@ struct DispatchUniqueByKey
    * Dispatch entrypoints
    ******************************************************************************/
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
-  __invoke(detail::unique_by_key::unique_by_key_policy policy, ::cuda::std::size_t vsmem_per_block)
+  __invoke(UniqueByKeyPolicy policy, ::cuda::std::size_t vsmem_per_block)
   {
     // Number of input tiles
     const auto threads_per_block = policy.threads_per_block;
@@ -361,7 +361,7 @@ struct DispatchUniqueByKey
   {
     struct policy_getter
     {
-      _CCCL_HOST_DEVICE constexpr auto operator()() const -> detail::unique_by_key::unique_by_key_policy
+      _CCCL_HOST_DEVICE constexpr auto operator()() const -> UniqueByKeyPolicy
       {
         return detail::unique_by_key::convert_policy<ActivePolicyT>();
       }
@@ -463,6 +463,154 @@ struct DispatchUniqueByKey
 
 namespace detail::unique_by_key
 {
+template <typename PolicyGetter,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t dispatch_policy(
+  [[maybe_unused]] PolicyGetter policy_getter,
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputIteratorT d_keys_in,
+  ValueInputIteratorT d_values_in,
+  KeyOutputIteratorT d_keys_out,
+  ValueOutputIteratorT d_values_out,
+  NumSelectedIteratorT d_num_selected_out,
+  EqualityOpT equality_op,
+  OffsetT num_items,
+  cudaStream_t stream,
+  KernelSource kernel_source,
+  KernelLauncherFactory launcher_factory)
+{
+  static_assert(::cuda::std::is_empty_v<PolicyGetter>);
+
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
+  const UniqueByKeyPolicy active_policy     = policy_getter();
+  const ::cuda::std::size_t vsmem_per_block = 0;
+#else
+  using vsmem_adapted_agents = unique_by_key_vsmem_helper_t<
+    PolicyGetter,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    EqualityOpT,
+    OffsetT>;
+  constexpr UniqueByKeyPolicy active_policy = vsmem_adapted_agents::policy;
+  const ::cuda::std::size_t vsmem_per_block =
+    detail::vsmem_helper_impl<typename vsmem_adapted_agents::agent_t>::vsmem_per_block;
+#endif
+
+  const auto threads_per_block = active_policy.threads_per_block;
+  const auto items_per_thread  = active_policy.items_per_thread;
+  int tile_size                = threads_per_block * items_per_thread;
+  int num_tiles                = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+  const auto vsmem_size        = num_tiles * vsmem_per_block;
+
+  size_t allocation_sizes[2] = {0, vsmem_size};
+  auto tile_state            = kernel_source.TileState();
+
+  if (const auto error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0])))
+  {
+    return error;
+  }
+
+  void* allocations[2] = {nullptr, nullptr};
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  if (d_temp_storage == nullptr)
+  {
+    return cudaSuccess;
+  }
+
+  if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
+  {
+    return error;
+  }
+
+  static constexpr int init_kernel_threads = 128;
+  num_tiles                                = ::cuda::std::max(1, num_tiles);
+  const int init_grid_size                 = ::cuda::ceil_div(num_tiles, init_kernel_threads);
+
+#ifdef CUB_DEBUG_LOG
+  _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+#endif // CUB_DEBUG_LOG
+
+  launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
+    .doit(kernel_source.CompactInitKernel(), tile_state, num_tiles, d_num_selected_out);
+
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  {
+    return error;
+  }
+
+  if (num_items == 0)
+  {
+    return cudaSuccess;
+  }
+
+  constexpr int max_dim_x = INT_MAX;
+
+  dim3 scan_grid_size;
+  scan_grid_size.z = 1;
+  scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
+  scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
+
+#ifdef CUB_DEBUG_LOG
+  {
+    int sweep_sm_occupancy;
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          sweep_sm_occupancy, kernel_source.UniqueByKeySweepKernel(), threads_per_block)))
+    {
+      return error;
+    }
+    _CubLog("Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
+            "%lld>>>(), %d items per thread, %d SM occupancy\n",
+            scan_grid_size.x,
+            scan_grid_size.y,
+            scan_grid_size.z,
+            threads_per_block,
+            (long long) stream,
+            items_per_thread,
+            sweep_sm_occupancy);
+  }
+#endif // CUB_DEBUG_LOG
+
+  if (const auto error = CubDebug(
+        launcher_factory(scan_grid_size, threads_per_block, 0, stream)
+          .doit(kernel_source.UniqueByKeySweepKernel(),
+                d_keys_in,
+                d_values_in,
+                d_keys_out,
+                d_values_out,
+                d_num_selected_out,
+                tile_state,
+                equality_op,
+                num_items,
+                num_tiles,
+                cub::detail::vsmem_t{allocations[1]})))
+  {
+    return error;
+  }
+
+  return CubDebug(detail::DebugSyncStream(stream));
+}
+
 template <typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyOutputIteratorT,
@@ -519,42 +667,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  struct fake_policy
-  {
-    using MaxPolicy = void;
-  };
-
   return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-#ifdef CUB_DEFINE_RUNTIME_POLICIES
-    const unique_by_key_policy active_policy  = policy_getter();
-    const ::cuda::std::size_t vsmem_per_block = 0;
-#else
-    using vsmem_adapted_agents = detail::unique_by_key::unique_by_key_vsmem_helper_t<
-      decltype(policy_getter),
-      KeyInputIteratorT,
-      ValueInputIteratorT,
-      KeyOutputIteratorT,
-      ValueOutputIteratorT,
-      EqualityOpT,
-      OffsetT>;
-    constexpr unique_by_key_policy active_policy = vsmem_adapted_agents::policy;
-    const ::cuda::std::size_t vsmem_per_block =
-      detail::vsmem_helper_impl<typename vsmem_adapted_agents::agent_t>::vsmem_per_block;
-#endif
-
-    return DispatchUniqueByKey<
-             KeyInputIteratorT,
-             ValueInputIteratorT,
-             KeyOutputIteratorT,
-             ValueOutputIteratorT,
-             NumSelectedIteratorT,
-             EqualityOpT,
-             OffsetT,
-             fake_policy,
-             KernelSource,
-             KernelLauncherFactory,
-             KeyT,
-             ValueT>{
+    return dispatch_policy(
+      policy_getter,
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -566,8 +681,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       num_items,
       stream,
       kernel_source,
-      launcher_factory}
-      .__invoke(active_policy, vsmem_per_block);
+      launcher_factory);
   });
 }
 } // namespace detail::unique_by_key

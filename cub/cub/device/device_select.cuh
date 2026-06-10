@@ -1770,6 +1770,24 @@ struct DeviceSelect
   //!     :start-after: example-begin select-uniquebykey-env
   //!     :end-before: example-end select-uniquebykey-env
   //!
+  //! @par Tuning
+  //! @rst
+  //! All algorithms in DeviceSelect that operate on key-value pairs and accept an environment can be tuned by passing a
+  //! custom :ref:`policy selector <cub-policy-selectors>` that returns a @ref UniqueByKeyPolicy, as shown in the
+  //! example below:
+  //!
+  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!      :language: c++
+  //!      :dedent:
+  //!      :start-after: example-begin unique-by-key-policy-selector
+  //!      :end-before: example-end unique-by-key-policy-selector
+  //!
+  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!      :language: c++
+  //!      :dedent:
+  //!      :start-after: example-begin unique-by-key-tuning
+  //!      :end-before: example-end unique-by-key-tuning
+  //!
   //! @endrst
   //!
   //! @tparam KeyInputIteratorT
