@@ -23,7 +23,6 @@
 
 #if _CCCL_HAS_CTK()
 
-#  include <cuda/__memory_pool/attributes.h>
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
@@ -31,14 +30,9 @@
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-
-#  if _CCCL_HOSTED()
-#    include <cuda/__device/all_devices.h>
-#    include <cuda/std/optional>
-
-#    include <mutex>
-#    include <vector>
-#  endif // _CCCL_HOSTED()
+#  include <cuda/std/__memory/construct_at.h>
+#  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/optional>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -98,28 +92,26 @@ public:
 //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
 //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
 //! @returns The default memory pool of the specified device.
-[[nodiscard]] _CCCL_HOST_API inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
+[[nodiscard]] inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
 {
-#  if _CCCL_HOSTED()
-  // TODO: Move this per-device storage into __physical_device once that can be done without pulling memory pool
-  // definitions into device headers.
-  static ::std::mutex __mutex;
-  static ::std::vector<::cuda::std::optional<device_memory_pool_ref>> __pools(::cuda::devices.size());
+  static ::cuda::std::unique_ptr<::cuda::std::optional<device_memory_pool_ref>[]> __pools_ = []() {
+    const size_t __device_count = ::cuda::__physical_devices().size();
+    ::cuda::std::unique_ptr<::cuda::std::optional<device_memory_pool_ref>[]> __pools{
+      static_cast<::cuda::std::optional<device_memory_pool_ref>*>(
+        ::operator new[](sizeof(::cuda::std::optional<device_memory_pool_ref>) * __device_count))};
+    for (size_t __device = 0; __device < __device_count; ++__device)
+    {
+      ::cuda::std::__construct_at(__pools.get() + __device, ::cuda::std::nullopt);
+    }
+    return __pools;
+  }();
 
-  const ::std::scoped_lock __guard(__mutex);
-  const auto __device_id = static_cast<::cuda::std::size_t>(__device.get());
-  auto& __pool           = __pools[__device_id];
+  auto& __pool = __pools_[__device.get()];
   if (!__pool.has_value())
   {
-    __pool.emplace(::cuda::__get_default_memory_pool(
-      ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED));
+    __pool.emplace(::cuda::__physical_devices()[__device.get()].__get_default_memory_pool());
   }
   return *__pool;
-#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
-  (void) __device;
-  _CCCL_ASSERT(false, "device_default_memory_pool is not supported in freestanding");
-  _CCCL_UNREACHABLE();
-#  endif // _CCCL_FREESTANDING()
 }
 
 //! @rst
