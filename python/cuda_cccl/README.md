@@ -38,7 +38,7 @@ Install from conda-forge:
 conda install -c conda-forge cccl-python
 ```
 
-**Requirements:** Python 3.10+, CUDA Toolkit 12.x or 13.x, NVIDIA GPU with Compute Capability 6.0+
+**Requirements:** Python 3.10+, CUDA Toolkit 12.x or 13.x, NVIDIA GPU with Compute Capability 7.5+
 
 ## Documentation
 
