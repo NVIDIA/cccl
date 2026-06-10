@@ -42,12 +42,16 @@ wp = pytest.importorskip("warp")
 # ---------------------------------------------------------------------------
 
 
-_wp_stream_cache: dict[tuple[int, int], wp.Stream] = {}
+_wp_stream_cache: dict[tuple[int | str, int], wp.Stream] = {}
+
+
+def _device_cache_key(device):
+    return getattr(device, "ordinal", str(device))
 
 
 def wrap_stream(raw_ptr: int, device) -> wp.Stream:
     """Return a cached ``wp.Stream`` wrapping ``raw_ptr`` on ``device``."""
-    key = (id(device), int(raw_ptr))
+    key = (_device_cache_key(device), int(raw_ptr))
     s = _wp_stream_cache.get(key)
     if s is None:
         s = wp.Stream(device, cuda_stream=int(raw_ptr))
