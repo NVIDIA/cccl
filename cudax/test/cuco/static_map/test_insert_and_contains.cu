@@ -81,11 +81,11 @@ C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, b
   map.insert(__pairs, __pairs + num_keys);
 
   // Query present keys [0, num_keys) and absent keys [num_keys, 2 * num_keys)
-  thrust::device_vector<int> found(2 * num_keys, 0);
+  ::thrust::device_vector<int> found(2 * num_keys, 0);
   map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
-  thrust::host_vector<int> h_found(found);
+  ::thrust::host_vector<int> h_found(found);
   int mismatches = 0;
   for (int i = 0; i < 2 * num_keys; ++i)
   {
@@ -96,10 +96,10 @@ C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, b
 
   // After clear the map is empty, so none of the previously inserted keys are found
   map.clear();
-  thrust::fill(found.begin(), found.end(), 1);
+  ::thrust::fill(found.begin(), found.end(), 1);
   map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
-  REQUIRE(thrust::none_of(found.begin(), found.begin() + num_keys, [] __device__(int v) {
+  REQUIRE(::thrust::none_of(found.begin(), found.begin() + num_keys, [] __device__(int v) {
     return v != 0;
   }));
 }

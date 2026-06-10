@@ -57,10 +57,10 @@ C2H_TEST("static_map — empty and erased key sentinels", "[sentinel]")
   auto __pairs = cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<::cuda::std::pair<int, int>>{});
   map.insert(__pairs, __pairs + num_keys);
 
-  thrust::device_vector<int> found(num_keys, 0);
+  ::thrust::device_vector<int> found(num_keys, 0);
   map.contains(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
-  REQUIRE(thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
+  REQUIRE(::thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
     return v != 0;
   }));
 }

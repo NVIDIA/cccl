@@ -82,10 +82,10 @@ C2H_TEST("static_map static extent — shared memory sizing via capacity_v", "[s
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
   // Verify the insertions actually landed in the global map
-  thrust::device_vector<int> found(num_keys, 0);
+  ::thrust::device_vector<int> found(num_keys, 0);
   map.contains(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
-  REQUIRE(thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
+  REQUIRE(::thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
     return v != 0;
   }));
 }

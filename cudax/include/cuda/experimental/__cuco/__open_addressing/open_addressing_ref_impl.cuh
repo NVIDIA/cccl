@@ -601,11 +601,11 @@ public:
   {
     if constexpr (__has_payload)
     {
-      return thrust::raw_reference_cast(__value).first;
+      return ::thrust::raw_reference_cast(__value).first;
     }
     else
     {
-      return thrust::raw_reference_cast(__value);
+      return ::thrust::raw_reference_cast(__value);
     }
   }
 
@@ -622,7 +622,7 @@ public:
   template <class _Value, class _Enable = ::cuda::std::enable_if_t<__has_payload and sizeof(_Value)>>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __extract_payload(_Value __value) const noexcept
   {
-    return thrust::raw_reference_cast(__value).second;
+    return ::thrust::raw_reference_cast(__value).second;
   }
 
   //!
@@ -668,12 +668,12 @@ public:
       else
       {
         // hail mary (convert using .first/.second members)
-        return ::cuda::std::pair{thrust::raw_reference_cast(__value.first), mapped_type{__value.second}};
+        return ::cuda::std::pair{::thrust::raw_reference_cast(__value.first), mapped_type{__value.second}};
       }
     }
     else
     {
-      return thrust::raw_reference_cast(__value);
+      return ::thrust::raw_reference_cast(__value);
     }
   }
 
