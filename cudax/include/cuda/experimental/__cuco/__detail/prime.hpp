@@ -80,8 +80,8 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   ::cuda::std::uint64_t __n, ::cuda::std::uint64_t __a, ::cuda::std::uint64_t __d, ::cuda::std::uint32_t __s) noexcept
 {
   ::cuda::std::uint64_t __x             = ::cuda::experimental::cuco::__detail::__mod_pow(__a % __n, __d, __n);
-  const ::cuda::std::uint64_t __neg_one = __n - 1;
-  if (__x == 1 || __x == __neg_one)
+  const ::cuda::std::uint64_t __neg_one = __n - ::cuda::std::uint64_t{1};
+  if (__x == ::cuda::std::uint64_t{1} || __x == __neg_one)
   {
     return true;
   }
@@ -104,7 +104,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 //! Bases from https://cp-algorithms.com/algebra/primality_tests.html.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __is_prime(::cuda::std::uint64_t __n) noexcept
 {
-  if (__n < 2)
+  if (__n < ::cuda::std::uint64_t{2})
   {
     return false;
   }
@@ -121,7 +121,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   }
 
   // Decompose `__n - 1 == 2^__s * __d`.
-  ::cuda::std::uint64_t __d = __n - 1;
+  ::cuda::std::uint64_t __d = __n - ::cuda::std::uint64_t{1};
   ::cuda::std::uint32_t __s = 0;
   while ((__d & 1) == 0)
   {
