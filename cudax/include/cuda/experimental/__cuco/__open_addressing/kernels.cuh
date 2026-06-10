@@ -60,7 +60,7 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   {
     if (__pred(*(__stencil + __idx)))
     {
-      typename ::cuda::std::iterator_traits<_InputIt>::value_type const __insert_element{*(__first + __idx)};
+      const typename ::cuda::std::iterator_traits<_InputIt>::value_type __insert_element{*(__first + __idx)};
       if constexpr (_CgSize == 1)
       {
         if (__ref.insert(__insert_element))
@@ -105,7 +105,7 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   {
     if (__pred(*(__stencil + __idx)))
     {
-      typename ::cuda::std::iterator_traits<_InputIt>::value_type const __insert_element{*(__first + __idx)};
+      const typename ::cuda::std::iterator_traits<_InputIt>::value_type __insert_element{*(__first + __idx)};
       if constexpr (_CgSize == 1)
       {
         __ref.insert(__insert_element);
@@ -159,7 +159,7 @@ _CCCL_KERNEL_ATTRIBUTES void __contains_if_n(
     {
       if (__idx < __n)
       {
-        typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key = *(__first + __idx);
+        const typename ::cuda::std::iterator_traits<_InputIt>::value_type __key = *(__first + __idx);
         /*
          * The ld.relaxed.gpu instruction causes L1 to flush more frequently, causing increased
          * sector stores from L2 to global memory. By writing results to shared memory and then
@@ -179,7 +179,7 @@ _CCCL_KERNEL_ATTRIBUTES void __contains_if_n(
       const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
       if (__idx < __n)
       {
-        typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key = *(__first + __idx);
+        const typename ::cuda::std::iterator_traits<_InputIt>::value_type __key = *(__first + __idx);
         const auto __found = __pred(*(__stencil + __idx)) ? __ref.contains(__tile, __key) : false;
         if (__tile.thread_rank() == 0)
         {

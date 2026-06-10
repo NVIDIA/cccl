@@ -96,7 +96,7 @@ public:
   using size_type           = ::cuda::std::size_t; ///< Size type
   using key_equal           = _KeyEqual; ///< Key equality comparator type
   using iterator            = value_type*; ///< Slot iterator
-  using const_iterator      = value_type const*; ///< Const slot iterator
+  using const_iterator      = const value_type*; ///< Const slot iterator
 
   static constexpr auto cg_size      = probing_scheme_type::cg_size; ///< Cooperative-group size for probing
   static constexpr auto bucket_size  = _BucketSize; ///< Number of slots per bucket
@@ -148,8 +148,8 @@ public:
   _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
-    _KeyEqual const& __predicate,
-    _ProbingScheme const& __probing_scheme,
+    const _KeyEqual& __predicate,
+    const _ProbingScheme& __probing_scheme,
     storage_span_type __slots) noexcept
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                __predicate,
@@ -169,8 +169,8 @@ public:
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     erased_key<_Key> __erased_key_sentinel,
-    _KeyEqual const& __predicate,
-    _ProbingScheme const& __probing_scheme,
+    const _KeyEqual& __predicate,
+    const _ProbingScheme& __probing_scheme,
     storage_span_type __slots) noexcept
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                key_type(__erased_key_sentinel),

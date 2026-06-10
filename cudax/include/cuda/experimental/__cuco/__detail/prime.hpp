@@ -78,7 +78,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   ::cuda::std::uint64_t __n, ::cuda::std::uint64_t __a, ::cuda::std::uint64_t __d, ::cuda::std::uint32_t __s) noexcept
 {
   ::cuda::std::uint64_t __x             = __mod_pow(__a % __n, __d, __n);
-  ::cuda::std::uint64_t const __neg_one = __n - 1;
+  const ::cuda::std::uint64_t __neg_one = __n - 1;
   if (__x == 1 || __x == __neg_one)
   {
     return true;

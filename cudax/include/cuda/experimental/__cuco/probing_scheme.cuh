@@ -85,7 +85,7 @@ public:
   _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
   {
     using __size_type        = typename _Capacity::index_type;
-    __size_type const __init = __hash(__probe_key) % (__cap.extent(0) / _BucketSize) * _BucketSize;
+    const __size_type __init = __hash(__probe_key) % (__cap.extent(0) / _BucketSize) * _BucketSize;
     return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{
       __init, static_cast<__size_type>(_BucketSize), __cap};
   }
@@ -110,7 +110,7 @@ public:
   {
     using __size_type              = typename _Capacity::index_type;
     constexpr __size_type __stride = cg_size * _BucketSize;
-    __size_type const __init       = __hash(__probe_key) % (__cap.extent(0) / __stride) * __stride
+    const __size_type __init       = __hash(__probe_key) % (__cap.extent(0) / __stride) * __stride
                              + static_cast<__size_type>(__group.thread_rank() * _BucketSize);
     return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{__init, __stride, __cap};
   }
@@ -180,7 +180,7 @@ public:
       ::cuda::experimental::cuco::is_tuple_like<_NewHash>::value && ::cuda::std::tuple_size<_NewHash>::value == 2,
       "The given hasher must be a tuple-like object with exactly two elements");
 
-    auto const& [__hash1, __hash2] = __hash;
+    const auto& [__hash1, __hash2] = __hash;
     using __hash1_type             = ::cuda::std::decay_t<decltype(__hash1)>;
     using __hash2_type             = ::cuda::std::decay_t<decltype(__hash2)>;
     return double_hashing<cg_size, __hash1_type, __hash2_type>{__hash1, __hash2};
