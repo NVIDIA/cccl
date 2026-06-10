@@ -156,7 +156,29 @@ set -u
 
 N_CPUS="$(nproc --all --ignore=1)"
 readonly N_CPUS
-readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
+declare PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
+
+# If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
+# concurrent preprocessor calls we think we can do without OOM'ing the machine
+if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
+    # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
+    # * 1.5Mb for the shell launched by ninja
+    # * 6MiB for each sccache client process
+    # * round up
+    mem_per_sccache_client="$((1024 * 8))"
+    # It's usually around 400-600MiB, but be conservative
+    # and assume the sccache daemon will use 1GiB of RAM
+    mem_for_sccache_daemon="$((1 * 1024 * 1024))"
+    # Preprocessor invocations take ~250Mb or so
+    mem_for_preprocessor="$((N_CPUS * 250 * 1024))"
+    # Available memory (in KB), for more details see free(1).
+    mem_avail="$(cat /proc/meminfo | grep MemAvailable | tr -s '[:space:]' | cut -d' ' -f2)"
+    # Total job count is available memory after accounting for `nproc` preprocessor calls
+    # divided by the amount of memory required to invoke the sccache thin client process.
+    PARALLEL_LEVEL="$(((mem_avail - mem_for_preprocessor - mem_for_sccache_daemon) / mem_per_sccache_client))"
+fi
+
+export PARALLEL_LEVEL
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
@@ -220,6 +242,7 @@ print_environment_details() {
       CUDACXX \
       CUDAHOSTCXX \
       NVCC_VERSION \
+      PARALLEL_LEVEL \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
       CCCL_CI_COMMAND_TIMEOUT \
