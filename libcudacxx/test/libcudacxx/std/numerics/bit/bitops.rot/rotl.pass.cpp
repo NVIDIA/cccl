@@ -1,9 +1,10 @@
 //===----------------------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.TXT for details.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,101 +17,69 @@
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
-class A
-{};
-enum E1 : unsigned char
-{
-  rEd
-};
-enum class E2 : unsigned char
-{
-  red
-};
-
 template <typename T>
-TEST_FUNC constexpr bool constexpr_test()
+TEST_FUNC constexpr T expected_rotl(T value, int count)
 {
-  using nl = cuda::std::numeric_limits<T>;
-  return cuda::std::rotl(T(1), 0) == T(1) && cuda::std::rotl(T(1), 1) == T(2) && cuda::std::rotl(T(1), 2) == T(4)
-      && cuda::std::rotl(T(1), 3) == T(8) && cuda::std::rotl(T(1), 4) == T(16) && cuda::std::rotl(T(1), 5) == T(32)
-      && cuda::std::rotl(T(1), 6) == T(64) && cuda::std::rotl(T(1), 7) == T(128)
-      && cuda::std::rotl(nl::max(), 0) == nl::max() && cuda::std::rotl(nl::max(), 1) == nl::max()
-      && cuda::std::rotl(nl::max(), 2) == nl::max() && cuda::std::rotl(nl::max(), 3) == nl::max()
-      && cuda::std::rotl(nl::max(), 4) == nl::max() && cuda::std::rotl(nl::max(), 5) == nl::max()
-      && cuda::std::rotl(nl::max(), 6) == nl::max() && cuda::std::rotl(nl::max(), 7) == nl::max();
+  constexpr int digits = cuda::std::numeric_limits<T>::digits;
+  int count_mod        = count % digits;
+  if (count_mod < 0)
+  {
+    count_mod += digits;
+  }
+  return count_mod == 0 ? value : static_cast<T>((value << count_mod) | (value >> (digits - count_mod)));
 }
 
 template <typename T>
-TEST_FUNC void runtime_test()
+TEST_FUNC constexpr void test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::rotl(T(0), 0))>);
   static_assert(noexcept(cuda::std::rotl(T(0), 0)));
-  const T val = cuda::std::numeric_limits<T>::max() - 1;
 
-  assert(cuda::std::rotl(val, 0) == val);
-  assert(cuda::std::rotl(val, 1) == static_cast<T>((val << 1) + 1));
-  assert(cuda::std::rotl(val, 2) == static_cast<T>((val << 2) + 3));
-  assert(cuda::std::rotl(val, 3) == static_cast<T>((val << 3) + 7));
-  assert(cuda::std::rotl(val, 4) == static_cast<T>((val << 4) + 15));
-  assert(cuda::std::rotl(val, 5) == static_cast<T>((val << 5) + 31));
-  assert(cuda::std::rotl(val, 6) == static_cast<T>((val << 6) + 63));
-  assert(cuda::std::rotl(val, 7) == static_cast<T>((val << 7) + 127));
+  T values[] = {
+    T(0),
+    T(1),
+    T(0xB3),
+    cuda::std::numeric_limits<T>::max(),
+    T{cuda::std::numeric_limits<T>::max() - 1},
+  };
+  for (const auto& value : values)
+  {
+    for (int count = -34; count <= 34; ++count)
+    {
+      assert(cuda::std::rotl(value, count) == expected_rotl(value, count));
+    }
+  }
+}
+
+TEST_FUNC constexpr bool test()
+{
+  test<unsigned char>();
+  test<unsigned short>();
+  test<unsigned>();
+  test<unsigned long>();
+  test<unsigned long long>();
+  test<uint8_t>();
+  test<uint16_t>();
+  test<uint32_t>();
+  test<uint64_t>();
+  test<size_t>();
+  test<uintmax_t>();
+  test<uintptr_t>();
+#if _CCCL_HAS_INT128()
+  test<__uint128_t>();
+#endif // _CCCL_HAS_INT128()
+  return true;
 }
 
 int main(int, char**)
 {
-  static_assert(constexpr_test<unsigned char>());
-  static_assert(constexpr_test<unsigned short>());
-  static_assert(constexpr_test<unsigned>());
-  static_assert(constexpr_test<unsigned long>());
-  static_assert(constexpr_test<unsigned long long>());
-
-  static_assert(constexpr_test<uint8_t>());
-  static_assert(constexpr_test<uint16_t>());
-  static_assert(constexpr_test<uint32_t>());
-  static_assert(constexpr_test<uint64_t>());
-  static_assert(constexpr_test<size_t>());
-  static_assert(constexpr_test<uintmax_t>());
-  static_assert(constexpr_test<uintptr_t>());
-
-#if _CCCL_HAS_INT128()
-  static_assert(constexpr_test<__uint128_t>());
-#endif // _CCCL_HAS_INT128()
-
-  runtime_test<unsigned char>();
-  runtime_test<unsigned short>();
-  runtime_test<unsigned>();
-  runtime_test<unsigned long>();
-  runtime_test<unsigned long long>();
-
-  runtime_test<uint8_t>();
-  runtime_test<uint16_t>();
-  runtime_test<uint32_t>();
-  runtime_test<uint64_t>();
-  runtime_test<size_t>();
-  runtime_test<uintmax_t>();
-  runtime_test<uintptr_t>();
-
-#if _CCCL_HAS_INT128()
-  runtime_test<__uint128_t>();
-
-  {
-    __uint128_t val = 168; // 0xA8 (aka 10101000)
-
-    assert(cuda::std::rotl(val, 128) == 168);
-    val <<= 32;
-    assert(cuda::std::rotl(val, 96) == 168);
-    val <<= 2;
-    assert(cuda::std::rotl(val, 95) == 336);
-    val <<= 3;
-    assert(cuda::std::rotl(val, 90) == 84);
-    assert(cuda::std::rotl(val, 218) == 84);
-  }
-#endif // _CCCL_HAS_INT128()
+  static_assert(test());
+  assert(test());
 
   return 0;
 }
