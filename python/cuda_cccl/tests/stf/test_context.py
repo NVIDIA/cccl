@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import gc
+
 import numpy as np
 import pytest
 
@@ -222,6 +224,8 @@ def test_unfinalized_context_warns():
     with pytest.warns(ResourceWarning, match="without an explicit finalize"):
         ctx = stf.context()
         del ctx
+        # Force destruction while pytest is still checking for the warning.
+        gc.collect()
 
 
 if __name__ == "__main__":
