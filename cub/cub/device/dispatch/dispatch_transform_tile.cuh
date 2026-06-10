@@ -39,9 +39,6 @@
 #  include <cuda/std/__tuple_dir/apply.h>
 #  include <cuda/std/__type_traits/is_empty.h>
 #  include <cuda/std/__type_traits/is_trivially_default_constructible.h>
-#  include <cuda/std/__utility/declval.h>
-#  include <cuda/std/__type_traits/remove_cv.h>
-#  include <cuda/std/__type_traits/remove_pointer.h>
 #  include <cuda/std/tuple>
 #  include <cuda/std/utility>
 
@@ -100,11 +97,6 @@ struct DeviceTransform
   }
 };
 
-template <typename Iter>
-using __unwrapped_value_t =
-  ::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<decltype(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(
-    ::cuda::std::declval<Iter>()))>>;
-
 // Combined compile-time predicate used by cub::DeviceTransform's __transform_internal
 // to decide whether to route a given (Op, OutIter, InIters...) to the tile path.
 // The call site lifts this into an `if constexpr`: when this is true the hook
@@ -115,8 +107,7 @@ template <typename Op, typename OutIter, typename... InIters>
 inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
   && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
-  && CUB_NS_QUALIFIER::transform::tile_eligible_v<
-       Op, __unwrapped_value_t<OutIter>, sizeof...(InIters)>;
+  && CUB_NS_QUALIFIER::transform::tile_eligible_v<Op, it_value_t<OutIter>, sizeof...(InIters)>;
 
 // Runtime predicate consulted by the cub::DeviceTransform tile hook before
 // it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
@@ -166,9 +157,8 @@ template <typename TransformOp, typename OutIter, typename... InIters, typename 
       return ::cuda::std::make_tuple(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(iters)...);
     },
     inputs);
-  using out_value_t = ::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<decltype(out_ptr)>>;
-  using tile_op_t   =
-    typename CUB_NS_QUALIFIER::transform::tile_eligible<TransformOp, out_value_t, sizeof...(InIters)>::tile_op_type;
+  using tile_op_t =
+    typename CUB_NS_QUALIFIER::transform::tile_eligible<TransformOp, it_value_t<OutIter>, sizeof...(InIters)>::tile_op_type;
   static_assert(::cuda::std::is_empty_v<tile_op_t>,
                 "tile_op_type must be stateless (the tile kernel default-constructs it)");
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
