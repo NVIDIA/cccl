@@ -1104,7 +1104,7 @@ struct select_tuning
             cub::BLOCK_LOAD_DIRECT,
             cub::LOAD_DEFAULT,
             cub::BLOCK_SCAN_WARP_SCANS,
-            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450}};
+            cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   }
 };
 
@@ -1119,7 +1119,7 @@ struct unique_by_key_tuning
             cub::BLOCK_LOAD_DIRECT,
             cub::LOAD_DEFAULT,
             cub::BLOCK_SCAN_WARP_SCANS,
-            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450}};
+            cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   }
 };
 

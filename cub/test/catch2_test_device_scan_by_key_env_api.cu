@@ -129,3 +129,49 @@ C2H_TEST("cub::DeviceScan::InclusiveScanByKey accepts stream environment", "[sca
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin exclusive-sum-by-key-policy-selector
+struct ScanByKeyPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanByKeyPolicy
+  {
+    return {.threads_per_block = 256,
+            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 15 : 12,
+            .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+            .load_modifier     = cub::LOAD_DEFAULT,
+            .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+            .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
+  }
+};
+// example-end exclusive-sum-by-key-policy-selector
+
+C2H_TEST("cub::DeviceScan::ExclusiveSumByKey env-based API with tuning", "[scan][by_key][env]")
+{
+  // example-begin exclusive-sum-by-key-tuning
+  auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
+  auto input  = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
+  auto output = thrust::device_vector<float>(7, thrust::no_init);
+
+  const auto error = cub::DeviceScan::ExclusiveSumByKey(
+    keys.begin(),
+    input.begin(),
+    output.begin(),
+    static_cast<int>(input.size()),
+    cuda::std::equal_to<>{},
+    cuda::execution::tune(ScanByKeyPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveSumByKey failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
+  // example-end exclusive-sum-by-key-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

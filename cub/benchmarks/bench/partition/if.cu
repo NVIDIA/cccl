@@ -43,7 +43,7 @@ struct policy_selector
             TUNE_LOAD_ALGORITHM,
             TUNE_LOAD_MODIFIER,
             cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+            lookback_delay_policy};
   }
 };
 #endif // !TUNE_BASE

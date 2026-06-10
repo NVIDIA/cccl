@@ -38,6 +38,27 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! @rst
+//! DeviceFor provides device-wide, parallel operations for iterating over data elements.
+//!
+//! @par Tuning
+//! All algorithms in DeviceFor that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ForPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin bulk-policy-selector
+//!      :end-before: example-end bulk-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin bulk-tuning
+//!      :end-before: example-end bulk-tuning
+//!
+//! @endrst
 struct DeviceFor
 {
   //! `__op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
@@ -108,8 +129,8 @@ struct DeviceFor
     [[maybe_unused]] const auto tuning_env =
       ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
     using default_policy_selector = detail::for_each::policy_selector;
-    using policy_selector         = ::cuda::std::execution::
-      __query_result_or_t<decltype(tuning_env), detail::for_each::for_policy, default_policy_selector>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), ForPolicy, default_policy_selector>;
     return detail::for_each::dispatch(num_items, op, stream.get(), policy_selector{});
   }
 
@@ -197,8 +218,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -267,8 +287,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -340,8 +359,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -419,8 +437,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -495,8 +512,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1078,8 +1094,7 @@ public:
   //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

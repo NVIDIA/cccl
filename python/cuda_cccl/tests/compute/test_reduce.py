@@ -9,6 +9,7 @@ import cupy as cp
 import numba.cuda
 import numpy as np
 import pytest
+from cupy.cuda import runtime
 
 import cuda.compute
 from cuda.compute import (
@@ -957,3 +958,40 @@ def test_reduce_bool():
 
     expected = True
     assert d_output.get()[0] == expected
+
+
+def test_reduce_input_and_accumulator_type_mismatch():
+    @gpu_struct
+    class AccumulatorType:
+        x: np.int32
+        y: np.int32
+
+    def op(foo1: AccumulatorType, foo2: AccumulatorType):
+        return AccumulatorType(foo1.x + foo2.x, foo1.y + foo2.y)
+
+    def to_cupy_record(h_array):
+        # a helper function to copy a numpy array of record type
+        # into a cupy array. The cupy `asarray` function doesn't
+        # work for record types.
+        d_array = cp.empty(h_array.nbytes, dtype=np.uint8)
+        runtime.memcpy(
+            d_array.data.ptr,
+            h_array.ctypes.data,
+            h_array.nbytes,
+            runtime.memcpyHostToDevice,
+        )
+        return d_array.view(h_array.dtype).reshape(h_array.shape)
+
+    # input data is {int32, int64}
+    dtype = np.dtype([("x", np.int32), ("y", np.int64)], align=True)
+    h_data = np.asarray([(1, 2), (3, 4), (5, 6)], dtype=dtype)
+    d_data = to_cupy_record(h_data)
+
+    # output and h_init, both are AccumulatorType
+    d_out = cp.empty(1, AccumulatorType.dtype)
+    h_init = AccumulatorType(0, 0)  # Init is AccumulatorType
+
+    with pytest.raises(TypeError, match="reduce_into dtype mismatch: input dtype"):
+        cuda.compute.reduce_into(
+            d_in=d_data, d_out=d_out, op=op, num_items=d_data.size, h_init=h_init
+        )

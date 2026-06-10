@@ -96,6 +96,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 template <int UnrollFactor, typename F>
 _CCCL_DEVICE _CCCL_FORCEINLINE void unrolled_for(int count, F&& body)
 {
+  static_assert(UnrollFactor >= 0,
+                "unroll_factor must be zero (ignore unroll hint) or positive (unroll with the given factor)");
   if constexpr (UnrollFactor > 0)
   {
     _CCCL_PRAGMA_UNROLL(UnrollFactor)
@@ -218,20 +220,16 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-// FIXME(bgruber): nvcc 12.0 - 13.1 crash with `error: Internal Compiler Error (codegen): "unexpected error in codegen
-// for function: found previous definition of same function!"` when we pass a const& as template parameter (and the
-// function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
-// TODO(bgruber): In C++20, we should just pass transform_policy by value.
-template < // const transform_policy& Policy,
-  int threads_per_block,
-  int items_per_thread,
-  int vec_size,
-  int PrefetchByteStride,
-  int PrefetchUnrollFactor,
-  typename Offset,
-  typename F,
-  typename RandomAccessIteratorOut,
-  typename... RandomAccessIteratorsIn>
+// TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
+template <int threads_per_block,
+          int items_per_thread,
+          int vec_size,
+          int PrefetchByteStride,
+          int PrefetchUnrollFactor,
+          typename Offset,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... RandomAccessIteratorsIn>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
   int num_elem_per_thread_prefetch,
@@ -568,19 +566,15 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return reinterpret_cast<T*>(dst);
 }
 
-// FIXME(bgruber): nvcc 12.0 - 13.1 crash with `error: Internal Compiler Error (codegen): "unexpected error in codegen
-// for function: found previous definition of same function!"` when we pass a const& as template parameter (and the
-// function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
-// TODO(bgruber): In C++20, we should just pass transform_policy by value.
+// TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
-template < // const transform_policy& Policy,
-  int threads_per_block,
-  int UnrollFactor,
-  typename Offset,
-  typename Predicate,
-  typename F,
-  typename RandomAccessIteratorOut,
-  typename... InTs>
+template <int threads_per_block,
+          int UnrollFactor,
+          typename Offset,
+          typename Predicate,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... InTs>
 _CCCL_DEVICE void transform_kernel_ldgsts(
   Offset num_items,
   int num_elem_per_thread,
@@ -712,27 +706,18 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
     dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = tail_byte;
   }
 }
-// FIXME(bgruber): nvcc 12.0 - 13.1 error with `function "void
-// cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::transform_kernel_ublkcp< ::policy, int,
-// ::cuda::always_true,
-// ::cuda::std::__4::logical_and<int> , bool *, int, int > (T2, int, T3, T4, T5,
-// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::aligned_base_ptr<T6> ...)::[lambda(T1) (instance
-// 3)]::operator ()< ::cuda::std::__4::integral_constant<bool, (bool)1> >  const" has already been defined` when we pass
-// a const& as template parameter (and the function template body contains a lambda). As a workaround, we pass the parts
-// of the policy by value.
-// TODO(bgruber): In C++20, we should just pass transform_policy by value.
+
+// TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
 // Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
 // https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
-template < // const transform_policy& Policy,
-  int threads_per_block,
-  int bulk_copy_alignment,
-  int UnrollFactor,
-  typename Offset,
-  typename Predicate,
-  typename F,
-  typename RandomAccessIteratorOut,
-  typename... InTs>
+template <int threads_per_block,
+          int UnrollFactor,
+          typename Offset,
+          typename Predicate,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items,
   int num_elem_per_thread,
@@ -742,7 +727,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
   // constexpr int threads_per_block       = Policy.async_copy.threads_per_block;
-  // constexpr int bulk_copy_alignment = Policy.async_copy.bulk_copy_alignment;
+  constexpr int bulk_copy_alignment = transform::bulk_copy_alignment(current_tuning_cc());
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
   constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
@@ -993,12 +978,12 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_threads_per_block_helper() noexcept
 {
-  constexpr transform_policy policy = current_policy<PolicySelector>();
-  if constexpr (policy.algorithm == Algorithm::prefetch)
+  constexpr TransformPolicy policy = current_policy<PolicySelector>();
+  if constexpr (policy.algorithm == TransformAlgorithm::prefetch)
   {
     return policy.prefetch.threads_per_block;
   }
-  else if constexpr (policy.algorithm == Algorithm::vectorized)
+  else if constexpr (policy.algorithm == TransformAlgorithm::vectorized)
   {
     return policy.vectorized.threads_per_block;
   }
@@ -1036,9 +1021,9 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
 
-  static constexpr transform_policy policy = current_policy<PolicySelector>();
+  static constexpr TransformPolicy policy = current_policy<PolicySelector>();
 
-  if constexpr (policy.algorithm == Algorithm::prefetch)
+  if constexpr (policy.algorithm == TransformAlgorithm::prefetch)
   {
     transform_kernel_prefetch<policy.prefetch.threads_per_block,
                               policy.prefetch.prefetch_byte_stride,
@@ -1050,7 +1035,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
       ::cuda::std::move(out),
       ::cuda::std::move(ins.iterator)...);
   }
-  else if constexpr (policy.algorithm == Algorithm::vectorized)
+  else if constexpr (policy.algorithm == TransformAlgorithm::vectorized)
   {
     static_assert(::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
                   "Cannot vectorize transform with a predicate");
@@ -1067,7 +1052,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
       ::cuda::std::move(out),
       ::cuda::std::move(ins.iterator)...);
   }
-  else if constexpr (policy.algorithm == Algorithm::memcpy_async)
+  else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
@@ -1079,13 +1064,11 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
          ::cuda::std::move(out),
          ::cuda::std::move(ins.aligned_ptr)...);));
   }
-  else if constexpr (policy.algorithm == Algorithm::ublkcp)
+  else if constexpr (policy.algorithm == TransformAlgorithm::ublkcp)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp</*policy*/ policy.async_copy.threads_per_block,
-                               policy.async_copy.bulk_copy_alignment,
-                               policy.async_copy.unroll_factor>(
+      (transform_kernel_ublkcp</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

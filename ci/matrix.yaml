@@ -20,6 +20,7 @@ workflows:
   #   - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtx2080',
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
+  # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
 
   pull_request:
@@ -72,6 +73,10 @@ workflows:
     # entire matrix. Currently blocked on libnvfatbin availability on
     # Windows containers, and for CUDA <12.4.
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
+    # Python against c.parallel v2 (HostJIT-based). Single point of coverage
+    # for the v2 Python path; the main `python` matrix continues to test
+    # against v1 until v2 replaces it.
+    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
@@ -147,6 +152,8 @@ workflows:
     - {project: 'nvbench_helper', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
     # c.parallel v2 (HostJIT-based)
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
+    # Python against c.parallel v2 (HostJIT-based)
+    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
@@ -194,7 +201,7 @@ workflows:
     - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'max', gpu: 'h100' }
       # RTX PRO 6000 coverage (limited due to small number of runners):
-    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
+    - {jobs: ['test_nolid', 'test_lid0'], project: ['cub', 'thrust'], std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang']}
@@ -231,7 +238,9 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100;120'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 'all', sm: '75;80;90;100;120'}
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
+    - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 23, sm: '75;80;90;100;120'}
     # clang-tidy
     - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
     # arch-specific and family-specific arch builds
@@ -284,7 +293,7 @@ workflows:
     - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 'minmax', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'minmax', gpu: 'h100' }
     # RTX PRO 6000 coverage (limited due to small number of runners):
-    - {jobs: ['test'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
+    - {jobs: ['test'], project: ['cub', 'thrust'], std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang']}
@@ -324,7 +333,9 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100;120'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 'all', sm: '75;80;90;100;120'}
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
+    - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 23, sm: '75;80;90;100;120'}
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
     # clang-tidy
@@ -352,6 +363,8 @@ workflows:
     # Clang21+CTK12.9 is currently only used for cuda-clang testing. nvcc 12.9 doesn't support clang21.
     - {jobs: ['dc_ext'], ctk: [        '12.X',         '13.X'], cxx: ['clang21']}
     - {jobs: ['dc_ext'], ctk: [                        '13.X'], cxx: ['gcc15']}
+    # Clang22+CTK12.9 is currently only used for clang-cuda testing. nvcc 12.9 doesn't support clang22.
+    - {jobs: ['dc_ext'], ctk: [        '12.X'                ], cxx: ['clang_preview22']}
     # 12.0 python image, pinned at gcc13 for simplicity. CTK 12.0 doesn't really play nice with gcc13, but
     # that doesn't matter for running python tests.
     - {jobs: ['dc'], ctk: ['12.0'], cxx: 'gcc13'}
@@ -388,7 +401,7 @@ all_stds: [17, 20]
 # - pybuild: Selects image to use for python wheel builds' outer docker instance
 ctk_versions:
   12.0: { stds: [17, 20] }
-  12.9: { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda'] }
+  12.9: { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda', 'clang_preview-cuda'] }
   13.0: { stds: [17, 20] }
   13.1: { stds: [17, 20], alias: ['nvhpc-prev', 'nvhpc']}
   13.3: { stds: [17, 20], alias: ['13.X'] }
@@ -429,6 +442,12 @@ host_compilers:
       19: { stds: [17, 20] }
       20: { stds: [17, 20] }
       21: { stds: [17, 20], alias: 'cuda' }
+  clang_preview:
+    name: 'Clang'
+    container_tag: 'llvm'
+    exe: 'clang++'
+    versions:
+      22: { stds: [17, 20], alias: 'cuda' }
   msvc:
     name: 'MSVC'
     container_tag: 'cl'
@@ -579,6 +598,15 @@ projects:
     job_map:
       build: ['build_py_wheel']
       test:  ['test_py_headers', 'test_py_coop', 'test_py_par', 'test_py_examples']
+  python_v2:
+    name: "Python (cuda.compute on v2/HostJIT)"
+    # Only the cuda.compute path differs between v1 and v2; cccl.headers and
+    # cuda.coop are unaffected so we don't re-run them here. Examples ARE
+    # exercised: this PR adds a v2-specific raw_op example and touches
+    # test_examples.py, so test_py_examples must run here.
+    job_map:
+      build: ['build_py_wheel']
+      test:  ['test_py_par', 'test_py_examples']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

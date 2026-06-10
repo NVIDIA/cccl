@@ -454,6 +454,10 @@ public:
     // We either use a child graph or task nodes, not both
     _CCCL_ASSERT(task_nodes.empty(), "cannot use both get_graph() and get_node()");
     _CCCL_ASSERT(chained_task_nodes.empty(), "cannot use both get_graph() and get_node_chain()");
+    // The explicit-graph path is mutually exclusive with stream capture: with
+    // capture enabled, end_uncleared() takes the done_nodes path and never
+    // embeds this child graph, so nodes added here would be silently dropped.
+    _CCCL_VERIFY(!is_capture_enabled(), "cannot use both get_graph() and enable_capture()");
 
     // Lazy creation
     if (child_graph == nullptr)
