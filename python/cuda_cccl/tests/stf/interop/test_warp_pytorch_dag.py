@@ -34,6 +34,8 @@ torch = pytest.importorskip("torch")
 wp = pytest.importorskip("warp")
 wp_stf = pytest.importorskip("warp.stf_experimental")
 
+# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
+pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.pytorch import pytorch_task  # noqa: E402
 

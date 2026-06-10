@@ -27,6 +27,7 @@ import ctypes
 import sys
 
 import numpy as np
+import pytest
 
 try:
     import cupy as cp
@@ -43,7 +44,9 @@ except ImportError:
         "This example requires nvmath-python. Install it with: pip install 'nvmath-python[cu13]'"
     ) from None
 
-import cuda.stf._experimental as stf
+# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
+pytest.importorskip("cuda.stf._experimental._stf_bindings")
+import cuda.stf._experimental as stf  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Direct cuBLAS / cuSOLVER helpers
