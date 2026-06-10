@@ -33,6 +33,41 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! The tuning policy for DeviceRunLengthEncode::Encode
+struct RleEncodePolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
+  LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const RleEncodePolicy& lhs, const RleEncodePolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const RleEncodePolicy& p)
+  {
+    return os
+        << "RleEncodePolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 namespace detail::rle::encode
 {
 // TODO(bgruber): remove in CCCL 4.0 when we drop the CUB dispatchers
@@ -245,12 +280,12 @@ struct policy_hub
         : ::cuda::std::clamp(
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
     using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<128,
-                             items,
-                             BLOCK_LOAD_DIRECT,
-                             LoadModifier,
-                             BLOCK_SCAN_WARP_SCANS,
-                             default_reduce_by_key_delay_constructor_t<LengthT, int>>;
+      agent_reduce_by_key_policy<128,
+                                 items,
+                                 BLOCK_LOAD_DIRECT,
+                                 LoadModifier,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 default_reduce_by_key_delay_constructor_t<LengthT, int>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
@@ -264,12 +299,12 @@ struct policy_hub
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
   static auto select_agent_policy(int)
-    -> AgentReduceByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              LOAD_DEFAULT,
-                              BLOCK_SCAN_WARP_SCANS,
-                              typename Tuning::delay_constructor>;
+    -> agent_reduce_by_key_policy<Tuning::threads,
+                                  Tuning::items,
+                                  Tuning::load_algorithm,
+                                  LOAD_DEFAULT,
+                                  BLOCK_SCAN_WARP_SCANS,
+                                  typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
@@ -296,12 +331,12 @@ struct policy_hub
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     static auto select_agent_policy100(int)
-      -> AgentReduceByKeyPolicy<Tuning::threads,
-                                Tuning::items,
-                                Tuning::load_algorithm,
-                                Tuning::load_modifier,
-                                BLOCK_SCAN_WARP_SCANS,
-                                typename Tuning::delay_constructor>;
+      -> agent_reduce_by_key_policy<Tuning::threads,
+                                    Tuning::items,
+                                    Tuning::load_algorithm,
+                                    Tuning::load_modifier,
+                                    BLOCK_SCAN_WARP_SCANS,
+                                    typename Tuning::delay_constructor>;
     template <typename Tuning>
     static auto select_agent_policy100(long) -> typename Policy900::ReduceByKeyPolicyT;
 
@@ -311,12 +346,9 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-// DeviceRunLengthEncode::Encode delegates to reduce by key
-using rle_encode_policy = reduce_by_key::reduce_by_key_policy;
-
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept rle_encode_policy_selector = reduce_by_key::reduce_by_key_policy_selector<T>;
+concept rle_encode_policy_selector = detail::policy_selector<T, RleEncodePolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the RLE dispatchers
@@ -335,7 +367,7 @@ struct policy_selector
   bool length_is_trivially_copyable;
   bool key_is_primitive;
 
-  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> rle_encode_policy
+  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> RleEncodePolicy
   {
     constexpr int nominal_4B_items_per_thread = 6;
     const int combined_input_bytes            = length_size + key_size;
@@ -345,7 +377,7 @@ struct policy_selector
         ? 6
         : ::cuda::std::clamp(
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
-    return rle_encode_policy{
+    return RleEncodePolicy{
       128,
       items_per_thread,
       BLOCK_LOAD_DIRECT,
@@ -355,15 +387,14 @@ struct policy_selector
         length_size, int{sizeof(int)}, length_is_primitive || length_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> rle_encode_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RleEncodePolicy
   {
     // if we don't have a tuning for SM100, fall back to SM90
     if (cc >= ::cuda::compute_capability{10, 0} && length_is_primitive && length_size == 4 && key_is_primitive)
     {
       if (key_size == 1)
       {
-        return rle_encode_policy{
+        return RleEncodePolicy{
           256,
           14,
           BLOCK_LOAD_DIRECT,
@@ -373,7 +404,7 @@ struct policy_selector
       }
       if (key_size == 2)
       {
-        return rle_encode_policy{
+        return RleEncodePolicy{
           224,
           14,
           BLOCK_LOAD_DIRECT,
@@ -383,7 +414,7 @@ struct policy_selector
       }
       if (key_size == 4)
       {
-        return rle_encode_policy{
+        return RleEncodePolicy{
           256,
           14,
           BLOCK_LOAD_DIRECT,
@@ -393,7 +424,7 @@ struct policy_selector
       }
       if (key_size == 8)
       {
-        return rle_encode_policy{
+        return RleEncodePolicy{
           224,
           9,
           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -409,17 +440,17 @@ struct policy_selector
       {
         if (key_is_primitive && key_size == 1)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 620}};
         }
         if (key_is_primitive && key_size == 2)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             128, 22, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 775}};
         }
         if (key_is_primitive && key_size == 4)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             192,
             14,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -429,7 +460,7 @@ struct policy_selector
         }
         if (key_is_primitive && key_size == 8)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             128,
             19,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -439,7 +470,7 @@ struct policy_selector
         }
         if (key_t == type_t::int128 || key_t == type_t::uint128)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             128,
             11,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -464,17 +495,17 @@ struct policy_selector
       {
         if (key_is_primitive && key_size == 1)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             256, 14, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 640}};
         }
         if (key_is_primitive && key_size == 2)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 900}};
         }
         if (key_is_primitive && key_size == 4)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             256,
             13,
             BLOCK_LOAD_DIRECT,
@@ -484,7 +515,7 @@ struct policy_selector
         }
         if (key_is_primitive && key_size == 8)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             224,
             9,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -494,7 +525,7 @@ struct policy_selector
         }
         if (key_t == type_t::int128 || key_t == type_t::uint128)
         {
-          return rle_encode_policy{
+          return RleEncodePolicy{
             128,
             7,
             BLOCK_LOAD_WARP_TRANSPOSE,
@@ -520,8 +551,7 @@ static_assert(rle_encode_policy_selector<policy_selector>);
 template <class LengthT, class KeyT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> rle_encode_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RleEncodePolicy
   {
     constexpr policy_selector selector{
       int{sizeof(LengthT)},
