@@ -23,7 +23,7 @@ void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
   const int usable_bytes = dynamic_smem_bytes - layout_t::base_padding_bytes;
   REQUIRE(usable_bytes > 0);
 
-  const int slots = usable_bytes / layout_t::slot_stride_bytes;
+  const int slots = usable_bytes / layout_t::chunk_bytes;
   REQUIRE(slots > 0);
 
   const auto block_tile_capacity = layout_t::block_tile_capacity(dynamic_smem_bytes);

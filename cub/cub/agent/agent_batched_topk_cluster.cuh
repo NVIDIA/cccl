@@ -68,6 +68,8 @@
 
 #include <cooperative_groups.h>
 
+#define CUB_ENABLE_CLUSTER_TOPK_BLOCKED_CHUNKS
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk_cluster
@@ -393,6 +395,48 @@ struct agent_batched_topk_cluster
            : offset_t{0};
   }
 
+  // Assignment of the cluster's global chunk indices `[0, chunks)` to its CTAs. A rank owns `count` chunks; its i-th
+  // owned chunk has global index `global_index(i) = first + i * stride`. The single mapping point lets the rest of the
+  // agent (resident load, streamer, per-pass scans) stay agnostic to the layout chosen by `make_chunk_partition`.
+  struct chunk_partition
+  {
+    offset_t first; // global index of this rank's first owned chunk
+    offset_t stride; // distance between consecutive owned chunks (`cluster_size` strided, `1` blocked)
+    offset_t count; // number of chunks owned by this rank
+
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t global_index(offset_t local) const
+    {
+      return first + local * stride;
+    }
+  };
+
+  // Decides which global chunks a cluster rank owns. Both layouts keep the unaligned head (chunk 0) on rank 0 and the
+  // unaligned tail (chunk `chunks-1`) on a single rank, and leave the per-chunk alignment, the resident/streaming
+  // split, and the streamer ping-pong untouched, because all of those depend only on the global chunk index, not on
+  // which rank owns it.
+  //
+  //   * Strided (default): chunk `i` goes to rank `i % cluster_size`, so each CTA walks `first, first+S, first+2S,
+  //   ...`.
+  //   * Blocked (`CUB_ENABLE_CLUSTER_TOPK_BLOCKED_CHUNKS`): each CTA owns a contiguous run of `ceil_div(chunks, S)`
+  //     chunks (the last non-empty rank gets the short remainder). Chunks are large enough that the per-CTA contiguous
+  //     gmem footprint does not change L2/cache locality versus the strided walk.
+  //
+  // The macro is an off-by-default opt-in so the two layouts can be A/B benchmarked without touching call sites.
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_partition
+  make_chunk_partition(offset_t chunks, unsigned int cluster_rank, unsigned int cluster_size) const
+  {
+#if defined(CUB_ENABLE_CLUSTER_TOPK_BLOCKED_CHUNKS)
+    const offset_t chunks_per_cta = ::cuda::ceil_div(chunks, static_cast<offset_t>(cluster_size));
+    const offset_t first          = static_cast<offset_t>(cluster_rank) * chunks_per_cta;
+    const offset_t count = (first < chunks) ? (::cuda::std::min) (chunks_per_cta, chunks - first) : offset_t{0};
+    return {first, offset_t{1}, count};
+#else
+    return {static_cast<offset_t>(cluster_rank),
+            static_cast<offset_t>(cluster_size),
+            num_rank_chunks(chunks, cluster_rank, cluster_size)};
+#endif
+  }
+
   // Hand-rolled per-thread copy of a small (`< load_align_items` items) unaligned edge from gmem to smem. Used for
   // the head prefix and tail suffix, which cannot go through the aligned (16-byte-aligned dst, guard-free)
   // BlockLoadToShared path. Each thread copies the same indices it later reads in the first-pass histogram, so no
@@ -686,8 +730,7 @@ private:
     const key_t* block_keys_base; // unwrapped contiguous base (pipeline path only; null otherwise)
     offset_t segment_size;
     offset_t head_items;
-    unsigned int cluster_rank;
-    unsigned int cluster_size;
+    chunk_partition part; // rank -> global chunk index mapping (strided or blocked)
     offset_t resident_chunks; // number of rank-local chunks kept resident
     offset_t overflow_base; // rank-local chunk index of the first overflow (streamed) chunk
     int stream_slot_base; // SMEM slot index at which the streaming region begins
@@ -709,8 +752,7 @@ private:
       const key_t* block_keys_base_,
       offset_t segment_size_,
       offset_t head_items_,
-      unsigned int cluster_rank_,
-      unsigned int cluster_size_,
+      chunk_partition part_,
       offset_t resident_chunks_,
       offset_t overflow_base_,
       int stream_slot_base_,
@@ -720,8 +762,7 @@ private:
         , block_keys_base(block_keys_base_)
         , segment_size(segment_size_)
         , head_items(head_items_)
-        , cluster_rank(cluster_rank_)
-        , cluster_size(cluster_size_)
+        , part(part_)
         , resident_chunks(resident_chunks_)
         , overflow_base(overflow_base_)
         , stream_slot_base(stream_slot_base_)
@@ -733,7 +774,7 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE offset_t chunk_index_of(offset_t overflow_idx) const
     {
-      return cluster_rank + (overflow_base + overflow_idx) * static_cast<offset_t>(cluster_size);
+      return part.global_index(overflow_base + overflow_idx);
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void issue_load(int stage, offset_t overflow_idx)
@@ -889,8 +930,9 @@ private:
     // The generic fallback does not use BlockLoadToShared's alignment hint or peeling path, so it can keep a simple
     // uniform chunking (`head_items == 0`). The two chunkings may assign keys to CTAs differently, but top-k only
     // depends on the multiset of keys covered by the cluster.
-    const offset_t chunks    = num_chunks(segment_size_u32, head_items);
-    const offset_t my_chunks = num_rank_chunks(chunks, cluster_rank, cluster_size);
+    const offset_t chunks      = num_chunks(segment_size_u32, head_items);
+    const chunk_partition part = make_chunk_partition(chunks, cluster_rank, cluster_size);
+    const offset_t my_chunks   = part.count;
 
     // Resident vs. streaming split. Segments that fit the all-resident coverage behave exactly as before
     // (`resident_slots_cap == full_slots`, no streaming). Larger segments reserve the last `PipelineStages` slots of
@@ -926,10 +968,11 @@ private:
     bool force_tail_resident      = false;
     if constexpr (use_block_load_to_shared)
     {
-      if (overflow_count > 0
-          && (chunks - offset_t{1}) % static_cast<offset_t>(cluster_size) == static_cast<offset_t>(cluster_rank))
+      // This rank owns the global tail iff its last owned chunk is chunk `chunks-1`; that chunk is then this rank's
+      // local index `my_chunks-1` (true for both the strided and blocked partitions).
+      if (overflow_count > 0 && my_chunks > 0 && part.global_index(my_chunks - offset_t{1}) == chunks - offset_t{1})
       {
-        tail_local                 = (chunks - offset_t{1}) / static_cast<offset_t>(cluster_size);
+        tail_local                 = my_chunks - offset_t{1};
         const auto tail_chunk      = get_chunk(chunks - offset_t{1}, segment_size_u32, head_items);
         const bool tail_has_suffix = split_chunk(block_keys_base, tail_chunk).suffix != offset_t{0};
         force_tail_resident        = tail_has_suffix && (tail_local >= my_resident_chunks);
@@ -947,8 +990,7 @@ private:
       block_keys_base,
       segment_size_u32,
       head_items,
-      cluster_rank,
-      cluster_size,
+      part,
       my_resident_chunks,
       overflow_base,
       static_cast<int>(resident_slots_cap),
@@ -998,10 +1040,9 @@ private:
           };
           // Aligned bulk of the resident chunk in `slot`; empty when the chunk has no aligned interior.
           const auto bulk_src = [&](offset_t slot) -> ::cuda::std::span<const key_t> {
-            const offset_t chunk_idx =
-              static_cast<offset_t>(cluster_rank) + resident_local(slot) * static_cast<offset_t>(cluster_size);
-            const auto chunk = get_chunk(chunk_idx, segment_size_u32, head_items);
-            const auto split = split_chunk(block_keys_base, chunk);
+            const offset_t chunk_idx = part.global_index(resident_local(slot));
+            const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+            const auto split         = split_chunk(block_keys_base, chunk);
             if (split.bulk == 0)
             {
               return {};
@@ -1011,10 +1052,8 @@ private:
 
           // First resident slot's unaligned front edge (the head prefix on rank 0). Reserve an aligned-up gap in
           // front of its bulk so the bulk stays `load_align`-aligned and the edge sits contiguously right before it.
-          const auto first_chunk = get_chunk(
-            static_cast<offset_t>(cluster_rank) + resident_local(offset_t{0}) * static_cast<offset_t>(cluster_size),
-            segment_size_u32,
-            head_items);
+          const auto first_chunk =
+            get_chunk(part.global_index(resident_local(offset_t{0})), segment_size_u32, head_items);
           const auto first_split = split_chunk(block_keys_base, first_chunk);
           const int front_edge   = static_cast<int>(first_split.prefix);
           const int front_bytes  = front_edge * int{sizeof(key_t)};
@@ -1071,10 +1110,7 @@ private:
 
           // Tail suffix: append right after the last (tail) bulk. Nothing follows, so its non-16 length is harmless.
           const offset_t last_slot = my_resident_chunks - offset_t{1};
-          const auto last_chunk    = get_chunk(
-            static_cast<offset_t>(cluster_rank) + resident_local(last_slot) * static_cast<offset_t>(cluster_size),
-            segment_size_u32,
-            head_items);
+          const auto last_chunk = get_chunk(part.global_index(resident_local(last_slot)), segment_size_u32, head_items);
           const auto last_split = split_chunk(block_keys_base, last_chunk);
           if (last_split.suffix > 0)
           {
@@ -1097,7 +1133,7 @@ private:
       {
         for (offset_t p = 0; p < my_resident_chunks; ++p)
         {
-          const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+          const offset_t chunk_idx = part.global_index(p);
           const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
           key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
           const int iterations     = ::cuda::ceil_div(chunk.count, threads_per_block);
@@ -1191,7 +1227,7 @@ private:
         {
           for (offset_t p = 0; p < my_resident_chunks; ++p)
           {
-            const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+            const offset_t chunk_idx = part.global_index(p);
             const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
             key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
             for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, add_hist);
@@ -1289,7 +1325,7 @@ private:
     {
       for (offset_t p = 0; p < my_resident_chunks; ++p)
       {
-        const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+        const offset_t chunk_idx = part.global_index(p);
         const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
         key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
         for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
