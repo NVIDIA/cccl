@@ -36,7 +36,6 @@
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/equal_wrapper.cuh>
-#include <cuda/experimental/__cuco/__detail/utils.cuh>
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
