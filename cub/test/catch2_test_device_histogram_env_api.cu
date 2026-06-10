@@ -7,6 +7,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/stream>
@@ -409,3 +410,55 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin histogram-even-policy-selector
+struct HistogramPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
+  {
+    return {.threads_per_block                = 128,
+            .pixels_per_thread                = cc > cuda::compute_capability{9, 0} ? 16 : 7,
+            .vec_size                         = 4,
+            .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
+            .load_modifier                    = cub::LOAD_LDG,
+            .rle_compress                     = false,
+            .mem_preference                   = cub::SMEM,
+            .work_stealing                    = false,
+            .init_kernel_pdl_trigger_max_bins = 2048};
+  }
+};
+// example-end histogram-even-policy-selector
+
+C2H_TEST("cub::DeviceHistogram::HistogramEven env-based API with tuning", "[histogram][env]")
+{
+  // example-begin histogram-even-tuning
+  auto d_samples   = thrust::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
+  int num_samples  = static_cast<int>(d_samples.size());
+  int num_levels   = 6;
+  int lower_level  = 0;
+  int upper_level  = 5;
+  auto d_histogram = thrust::device_vector<int>(num_levels - 1, 0);
+
+  const auto error = cub::DeviceHistogram::HistogramEven(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    lower_level,
+    upper_level,
+    num_samples,
+    cuda::execution::tune(HistogramPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceHistogram::HistogramEven failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{2, 2, 2, 1, 1};
+  // example-end histogram-even-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_histogram == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020
