@@ -328,26 +328,31 @@ def main():
                         tagnote = f" ran={ran}" if not algo_env else ""
                         print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
                               f"{akey:28}{tagnote} {line}", flush=True)
-                # main baseline column for this (sample, elements): default dispatch only.
-                if main_dir and main_shapes:
-                    main_bin = main_dir / target
-                    if main_bin.exists():
-                        for elements in args.elements:
-                            for bins in args.bins:
-                                med, _ran, ok = run_cell(main_bin, "", sample, elements, bins,
-                                                         main_shapes, args.repeats, args.min_time, args.timeout)
-                                total_calls += 1
-                                if not ok:
-                                    print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                          f"{'main':28} ABORT", flush=True)
-                                    continue
-                                for sh, v in med.items():
-                                    algo_cells.setdefault("main", {})[cell_key(sample, elements, bins, sh)] = v
-                                line = "  ".join(f"{sh.split(':')[0][:5]}={med[sh]:.0f}" for sh in sorted(med))
+            # main baseline column for this sample: default dispatch only, computed
+            # ONCE per sample over the full elements x bins grid. (This block lives at
+            # the `for sample` level, NOT inside `for elements` -- when it was nested in
+            # `for elements` it re-ran the whole main grid once per element size, i.e.
+            # len(elements)x redundantly, recomputing the slow 1G/2G cells each time and
+            # ~doubling total wall time. Data was correct, just wastefully recomputed.)
+            if main_dir and main_shapes:
+                main_bin = main_dir / target
+                if main_bin.exists():
+                    for elements in args.elements:
+                        for bins in args.bins:
+                            med, _ran, ok = run_cell(main_bin, "", sample, elements, bins,
+                                                     main_shapes, args.repeats, args.min_time, args.timeout)
+                            total_calls += 1
+                            if not ok:
                                 print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                      f"{'main':28}      {line}", flush=True)
-                    else:
-                        print(f"!! missing main binary {main_bin}; no main column for {blabel}", flush=True)
+                                      f"{'main':28} ABORT", flush=True)
+                                continue
+                            for sh, v in med.items():
+                                algo_cells.setdefault("main", {})[cell_key(sample, elements, bins, sh)] = v
+                            line = "  ".join(f"{sh.split(':')[0][:5]}={med[sh]:.0f}" for sh in sorted(med))
+                            print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                  f"{'main':28}      {line}", flush=True)
+                else:
+                    print(f"!! missing main binary {main_bin}; no main column for {blabel}", flush=True)
         results[blabel] = algo_cells
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
