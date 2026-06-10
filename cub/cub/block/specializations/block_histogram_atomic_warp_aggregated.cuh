@@ -105,6 +105,9 @@ struct BlockHistogramAtomicWarpAggregated
   //!
   //! @param[out] histogram
   //!   Reference to shared or global memory histogram
+  //!
+  //! @tparam CounterT
+  //!   Counter type accepted by CUDA atomicAdd
   template <typename T, typename CounterT, int ItemsPerThread>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Composite(const T (&items)[ItemsPerThread], CounterT histogram[Bins]) const
   {

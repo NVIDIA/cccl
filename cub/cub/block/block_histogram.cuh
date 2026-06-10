@@ -85,6 +85,10 @@ enum BlockHistogramAlgorithm
   //! relatively few bins. In that case, reducing multiple contended atomic updates to one update can reduce
   //! global-memory atomic pressure.
   //!
+  //! Like :cpp:enumerator:`cub::BLOCK_HISTO_ATOMIC`, this algorithm updates histogram counters with CUDA
+  //! ``atomicAdd``. The counter type must be supported by ``atomicAdd`` for the target memory space and
+  //! architecture.
+  //!
   //! The extra warp-level peer-mask, leader-election, and population-count work adds instruction overhead. If the
   //! counters are in shared memory, prefer cub::BLOCK_HISTO_ATOMIC. If most lanes update different bins, the direct
   //! atomic algorithm is also the better starting point. In the most contended case, where every lane in a warp

@@ -30,6 +30,7 @@ enum class benchmark_mode
 {
   occupancy,
   fixed,
+  // Used by the separate latency benchmark, not by the BenchmarkMode axis.
   latency,
   full_bounds,
 };
@@ -194,8 +195,9 @@ void run_algorithm(nvbench::state& state)
 
     if constexpr (Mode == benchmark_mode::full_bounds)
     {
-      constexpr int max_sm_warps              = 48;
-      constexpr int full_bounds_max_sm_blocks = (max_sm_warps * cub::detail::warp_threads) / BlockThreads;
+      // Use a launch-bound target that is valid for the oldest SMs in the benchmark matrix.
+      constexpr int resident_threads_per_sm   = 1024;
+      constexpr int full_bounds_max_sm_blocks = resident_threads_per_sm / BlockThreads;
       const auto& full_bounds_kernel =
         kernel_full_bounds<BlockThreads, full_bounds_max_sm_blocks, unroll_factor, action_t, SampleT>;
 
@@ -373,6 +375,7 @@ void dispatch_mode(
         state, algorithm, pattern, bins, items_per_thread, block_threads);
       return;
     case benchmark_mode::latency:
+      // The latency benchmark bypasses dispatch_mode and dispatches this mode directly with one warp.
       break;
   }
 
