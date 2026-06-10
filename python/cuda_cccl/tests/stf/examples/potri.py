@@ -964,8 +964,7 @@ def PDSYMM(ctx, A, B, C, side="L", uplo="L", alpha=1.0, beta=1.0):
                                     beta=zbeta,
                                 )
             else:  # side == 'R'
-                # Similar logic for right multiplication
-                pass
+                raise NotImplementedError("PDSYMM with side='R' not implemented")
 
     print("[PDSYMM] Completed")
 
