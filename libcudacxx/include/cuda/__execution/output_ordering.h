@@ -35,10 +35,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 //! elements of cub::DeviceBatchedTopK).
 //!
 //! The available options are:
-//! - cuda::execution::output_ordering::unsorted: the results may be written in any order.
-//! - cuda::execution::output_ordering::sorted: the results are written sorted by key. Among elements that compare
+//! - output_ordering::unsorted: the results may be written in any order.
+//! - output_ordering::sorted: the results are written sorted by key. Among elements that compare
 //!   equal, their relative order is unspecified.
-//! - cuda::execution::output_ordering::stable_sorted: the results are written sorted by key and, among elements that
+//! - output_ordering::stable_sorted: the results are written sorted by key and, among elements that
 //!   compare equal, their relative order matches the order of their source indices (smaller source index first).
 namespace output_ordering
 {
