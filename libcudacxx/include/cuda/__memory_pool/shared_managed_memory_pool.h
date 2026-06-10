@@ -23,6 +23,7 @@
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
 
+#  include <cuda/__memory_pool/attributes.h>
 #  include <cuda/__memory_pool/managed_memory_pool.h>
 #  include <cuda/__memory_pool/shared_memory_pool_base.h>
 #  include <cuda/__memory_resource/properties.h>

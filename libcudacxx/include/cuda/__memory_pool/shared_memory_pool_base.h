@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__memory_pool/attributes.h>
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/shared_block_ptr.h>
