@@ -53,14 +53,14 @@ __tile_global__ void
 transform_kernel(const ::cuda::std::int64_t num_items, Out* __restrict__ out, const Ins* __restrict__... ins)
 {
   namespace ct  = ::cuda::tiles;
+  using cub::detail::transform::tile::make_partition_view;
   const auto bx = ct::bid().x;
-  Fn fn{};
 
   const auto n     = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
   auto out_view    = make_partition_view<TileSize>(out, n);
   auto load_one    = [bx, n](auto* ptr) { return make_partition_view<TileSize>(ptr, n).load_masked(bx); };
 
-  out_view.store_masked(fn(load_one(ins)...), bx);
+  out_view.store_masked(Fn{}(load_one(ins)...), bx);
 }
 
 template <int TileSize, typename T>
