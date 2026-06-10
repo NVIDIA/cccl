@@ -29,7 +29,6 @@
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>
-#include <cuda/experimental/__cuco/__detail/types.cuh>
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_impl.cuh>
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -89,7 +88,7 @@ public:
   static constexpr auto bucket_size  = _BucketSize; ///< Number of slots per bucket
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope for atomic operations
 
-  static_assert(_Capacity == ::cuda::experimental::cuco::dynamic_extent
+  static_assert(_Capacity == ::cuda::std::dynamic_extent
                   || ::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(_Capacity),
                 "Capacity must be a valid open-addressing capacity; obtain it via cuco::make_valid_capacity");
 

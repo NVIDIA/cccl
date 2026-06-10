@@ -64,7 +64,7 @@ C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, b
   using map_type =
     cudax::cuco::static_map<key_type,
                             key_type,
-                            cudax::cuco::dynamic_extent,
+                            ::cuda::std::dynamic_extent,
                             ::cuda::thread_scope_device,
                             ::cuda::std::equal_to<key_type>,
                             probing_type,

@@ -28,7 +28,6 @@
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>
-#include <cuda/experimental/__cuco/__detail/types.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -83,7 +82,7 @@ class static_map_ref
 
   static constexpr bool __allows_duplicates = false;
 
-  static_assert(_Capacity == ::cuda::experimental::cuco::dynamic_extent
+  static_assert(_Capacity == ::cuda::std::dynamic_extent
                   || ::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(_Capacity),
                 "Capacity must be a valid open-addressing capacity; obtain it via cuco::make_valid_capacity");
 
@@ -124,7 +123,7 @@ private:
   //! @return The total slot count
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr size_type __checked_capacity(storage_span_type __slots) noexcept
   {
-    if constexpr (_Capacity == ::cuda::experimental::cuco::dynamic_extent)
+    if constexpr (_Capacity == ::cuda::std::dynamic_extent)
     {
       _CCCL_ASSERT((::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(__slots.size())),
                    "storage size is not a valid capacity");

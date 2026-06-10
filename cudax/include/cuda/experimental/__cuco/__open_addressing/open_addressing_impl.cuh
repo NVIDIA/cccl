@@ -30,7 +30,6 @@
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__cuco/__detail/types.cuh>
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/__open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
