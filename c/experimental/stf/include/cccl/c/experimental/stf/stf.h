@@ -106,6 +106,12 @@ typedef struct stf_exec_place_opaque_t* stf_exec_place_handle;
 //! \brief Opaque handle to a \c data_place.
 typedef struct stf_data_place_opaque_t* stf_data_place_handle;
 
+//! \brief Opaque handle to a \c green_context_helper.
+typedef struct stf_green_context_helper_opaque_t* stf_green_context_helper_handle;
+
+//! \brief Opaque handle to an active exec_place_scope (RAII context activation).
+typedef struct stf_exec_place_scope_opaque_t* stf_exec_place_scope_handle;
+
 //! \brief Opaque handle to an \c exec_place_resources registry.
 //!
 //! Handles returned by stf_exec_place_resources_create() are owned by the
@@ -150,6 +156,19 @@ stf_exec_place_handle stf_exec_place_device(int dev_id);
 //! \brief Create execution place for the current CUDA device.
 stf_exec_place_handle stf_exec_place_current_device(void);
 
+//! \brief Create a green-context helper for \p dev_id with \p sm_count SMs per green context.
+//! Requires CUDA 12.4+. Returns NULL on failure.
+stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id);
+
+//! \brief Destroy a green-context helper handle.
+void stf_green_context_helper_destroy(stf_green_context_helper_handle h);
+
+//! \brief Number of green contexts created by \p h.
+size_t stf_green_context_helper_get_count(stf_green_context_helper_handle h);
+
+//! \brief Device ordinal used by this green-context helper.
+int stf_green_context_helper_get_device_id(stf_green_context_helper_handle h);
+
 //! \brief Deep copy of an execution place handle (caller must stf_exec_place_destroy the result).
 stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h);
 
@@ -181,7 +200,20 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
 //! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
 
-//! \brief Create a fresh exec_place_resources registry for standalone place-layer use.
+//! \brief Activate the sub-place at linear index \p idx (0 for scalar places).
+//! Saves the current CUDA context; call stf_exec_place_scope_exit to restore.
+//! \return Opaque scope handle, or NULL on failure (including when \p idx is out of bounds).
+stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx);
+
+//! \brief Restore the CUDA context saved by stf_exec_place_scope_enter and destroy the scope.
+//! \p scope may be NULL (no-op).
+void stf_exec_place_scope_exit(stf_exec_place_scope_handle scope);
+
+//! \brief Get the affine data_place associated with this exec_place.
+//! Caller must stf_data_place_destroy the result.
+stf_data_place_handle stf_exec_place_get_affine_data_place(stf_exec_place_handle h);
+
+//! \brief Create a fresh, empty exec_place_resources registry.
 //!
 //! The registry lazily creates and owns stream pools for places used with
 //! stf_exec_place_pick_stream(). Destroying it releases every stream it owns.
@@ -202,6 +234,23 @@ void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
 //! finalized for a borrowed registry.
 CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation);
 
+//! \brief Get the sub-place at linear index \p idx.
+//! For scalar places, \p idx must be 0. Returns NULL if \p idx is out of bounds.
+//! Caller must stf_exec_place_destroy the result.
+stf_exec_place_handle stf_exec_place_get_place(stf_exec_place_handle h, size_t idx);
+
+//! \brief Create an exec_place from green-context helper \p helper and view index \p idx.
+//! If \p use_green_ctx_data_place is non-zero, set the affine data_place to a green-context data place.
+//! Returns NULL on failure or if \p idx is out of range.
+stf_exec_place_handle
+stf_exec_place_green_ctx(stf_green_context_helper_handle helper, size_t idx, int use_green_ctx_data_place);
+
+//! \brief Initialize the machine singleton (P2P access, memory pool setup, topology).
+//! Safe to call multiple times; only the first call has effect. Any C++ exception
+//! raised during initialization is caught and reported to stderr (never propagated
+//! across the C boundary).
+void stf_machine_init(void);
+
 //! \brief Host (CPU/pinned) data placement.
 stf_data_place_handle stf_data_place_host(void);
 
@@ -220,6 +269,10 @@ stf_data_place_handle stf_data_place_current_device(void);
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
 
+//! \brief Create a data_place from green-context helper \p helper and view index \p idx.
+//! Returns NULL on failure or if \p idx is out of range.
+stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx);
+
 //! \brief Deep copy (caller must stf_data_place_destroy).
 stf_data_place_handle stf_data_place_clone(stf_data_place_handle h);
 
@@ -231,6 +284,45 @@ int stf_data_place_get_device_ordinal(stf_data_place_handle h);
 
 //! \brief Human-readable description; pointer valid until the next call on this thread.
 const char* stf_data_place_to_string(stf_data_place_handle h);
+
+//! \brief Allocate \p size bytes at this data place.
+//!
+//! For device places the allocation is stream-ordered (cudaMallocAsync).
+//! For host/managed places \p stream is ignored.
+//! Returns NULL on failure (e.g. unsupported place type or out of memory).
+//!
+//! \note \p size is signed (ptrdiff_t) to mirror the underlying C++ allocator
+//! interface, where the requested size is passed by reference and negated to
+//! signal allocation failure while preserving the requested amount. The matching
+//! stf_data_place_deallocate() takes an unsigned size_t because at deallocation
+//! the size is a known-good quantity with no error to signal.
+//!
+//! \param h     Data place handle (must not be NULL)
+//! \param size  Allocation size in bytes (must be non-negative)
+//! \param stream CUDA stream for stream-ordered allocation (may be NULL)
+//! \return Pointer to allocated memory, or NULL on failure
+void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream);
+
+//! \brief Deallocate memory previously obtained from stf_data_place_allocate().
+//!
+//! For device places the deallocation is stream-ordered (cudaFreeAsync).
+//! For host/managed places \p stream is ignored.
+//!
+//! \note \p size is unsigned (size_t) on purpose: unlike stf_data_place_allocate(),
+//! deallocation never signals failure through the size argument (see that
+//! function's note), so it mirrors the unsigned C++ deallocate() signature.
+//!
+//! \param h      Data place handle (must not be NULL)
+//! \param ptr    Pointer returned by stf_data_place_allocate()
+//! \param size   Size of the original allocation in bytes
+//! \param stream CUDA stream for stream-ordered deallocation (may be NULL)
+void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream);
+
+//! \brief Query whether allocations on this place are stream-ordered.
+//!
+//! \param h Data place handle (must not be NULL)
+//! \return 1 if stream-ordered, 0 otherwise
+int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h);
 
 //! \}
 
@@ -973,11 +1065,20 @@ void stf_task_end(stf_task_handle t);
 //! Returns CUDA stream associated with the task. All CUDA operations
 //! within task must use this stream for proper synchronization.
 //!
+//! \note In a graph context (including a stackable graph scope) the task has no
+//!       stream unless \c stf_task_enable_capture() was called before
+//!       \c stf_task_start(). Calling this function without capture enabled in a
+//!       graph context is a usage error and aborts (in debug builds) rather than
+//!       silently returning a null stream, which would launch work outside the
+//!       STF graph. If you want to populate the task's graph explicitly instead
+//!       of capturing a stream, use \c stf_task_get_graph().
+//!
 //! \param t Task handle
 //! \return CUDA stream for launching operations
 //!
 //! \pre t must be valid task handle
 //! \pre stf_task_start() must have been called
+//! \pre in a graph context, stf_task_enable_capture() must have been called
 //!
 //! \par Example:
 //! \code
@@ -988,9 +1089,41 @@ void stf_task_end(stf_task_handle t);
 //! my_kernel<<<grid, block, 0, (cudaStream_t)stream>>>(args...);
 //! \endcode
 //!
-//! \see stf_task_start(), stf_task_get()
+//! \see stf_task_start(), stf_task_get(), stf_task_enable_capture(), stf_task_get_graph()
 
 CUstream stf_task_get_custream(stf_task_handle t);
+
+//!
+//! \brief Get the task's child CUDA graph for explicit node insertion.
+//!
+//! Advanced/expert alternative to \c stf_task_get_custream() for tasks running
+//! in a graph context: instead of capturing a stream, the caller adds nodes
+//! directly into the returned \c cudaGraph_t (e.g. via \c cudaGraphAddKernelNode).
+//! STF wires the task's dependencies around this child graph.
+//!
+//! This is mutually exclusive with the capture path: do \b not call
+//! \c stf_task_enable_capture() / \c stf_task_get_custream() on a task for which
+//! you use \c stf_task_get_graph().
+//!
+//! \note This is primarily a C/C++ affordance. In C++ the returned handle can be
+//!       adopted with \c cuda::experimental::graph_builder::from_native_handle()
+//!       to add nodes ergonomically. There is currently \b no equivalent in the
+//!       Python \c cuda.core graph API (its \c GraphBuilder is created only from a
+//!       device/stream and builds via stream capture; it cannot adopt an existing
+//!       \c cudaGraph_t), so this entry point may not be backed by a Python
+//!       interface. From Python, prefer the capture path
+//!       (\c stf_task_enable_capture() + \c stf_task_get_custream()).
+//!
+//! \param t Task handle
+//! \return The task's child \c cudaGraph_t (owned by STF; do not destroy).
+//!
+//! \pre t must be valid task handle
+//! \pre stf_task_start() must have been called
+//! \pre the task must run in a graph context (aborts otherwise in debug builds)
+//!
+//! \see stf_task_get_custream(), stf_task_start()
+
+cudaGraph_t stf_task_get_graph(stf_task_handle t);
 
 //!
 //! \brief Get data pointer for task dependency
@@ -1061,6 +1194,66 @@ void stf_task_destroy(stf_task_handle t);
 //! \note Used internally for CUDA graph backend optimization
 
 void stf_task_enable_capture(stf_task_handle t);
+
+//! \brief Get grid dimensions of a task's exec place
+//!
+//! When the task's execution place is a grid (size > 1), writes its
+//! shape to \p out_dims. Returns 0 on success, non-zero if the task's
+//! exec place is not a grid or \p out_dims is NULL.
+//!
+//! \param t Task handle
+//! \param[out] out_dims On success, the grid shape (x, y, z, t) is written here. Must not be NULL.
+//! \return 0 on success; non-zero if task exec place is not a grid or \p out_dims is NULL
+//!
+//! \pre t must be valid task handle
+//! \pre stf_task_start() must have been called
+//!
+//! \note Total number of grid entries is out_dims->x * out_dims->y * out_dims->z * out_dims->t.
+//! \note A single-element exec place (size 1) is intentionally not treated as a grid: this
+//! returns non-zero for it, consistent with stf_task_get_custream_at_index().
+//!
+//! \par Example:
+//! \code
+//! stf_task_start(task);
+//! stf_dim4 dims;
+//! if (stf_task_get_grid_dims(task, &dims) == 0) {
+//!     printf("Grid: %lu x %lu\n", dims.x, dims.y);
+//! }
+//! \endcode
+//!
+//! \see stf_task_get_custream_at_index()
+int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims);
+
+//! \brief Get the CUDA stream for a specific grid index
+//!
+//! When the task's exec place is a grid, returns the CUstream for the
+//! given linear index (0 to product of grid dims - 1).
+//!
+//! \param t Task handle (must have been started; exec place must be a grid)
+//! \param place_index Linear index in the grid (0-based; use stf_task_get_grid_dims to get shape)
+//! \param[out] out_stream On success, the stream for that index is written here. Must not be NULL.
+//! \return 0 on success; non-zero if task is not a grid, index out of range, or no per-index streams
+//!
+//! \pre t must be valid task handle
+//! \pre stf_task_start() must have been called
+//!
+//! \note On success \p out_stream is set to the grid index's stream; on failure it is left
+//! untouched and a non-zero code is returned. STF grids always use non-default streams, so a
+//! valid result is never the legacy default stream (CUstream 0).
+//!
+//! \par Example:
+//! \code
+//! stf_dim4 dims;
+//! stf_task_get_grid_dims(task, &dims);
+//! for (size_t i = 0; i < dims.x; ++i) {
+//!     CUstream s;
+//!     stf_task_get_custream_at_index(task, i, &s);
+//!     // launch work on stream s
+//! }
+//! \endcode
+//!
+//! \see stf_task_get_grid_dims()
+int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream);
 
 //! \}
 
@@ -1395,7 +1588,577 @@ void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps);
 
 //! \}
 
+//! \defgroup StackableContext Stackable Context
+//! \brief Hierarchical context with nested graph scopes, while loops, and repeat loops
+//!
+//! \details
+//! A stackable context exposes the same task / logical-data programming model
+//! as the regular STF context, but allows pushing nested scopes that capture
+//! work into CUDA child graphs. Three flavours of scope are supported:
+//!  - \c stf_stackable_push_graph / \c stf_stackable_pop : a plain nested graph,
+//!  - \c stf_stackable_push_while / \c stf_stackable_pop_while : a CUDA 12.4+
+//!    conditional while loop (the loop body re-executes while a CUDA conditional
+//!    handle is set to non-zero),
+//!  - \c stf_stackable_push_repeat / \c stf_stackable_pop_repeat : a fixed
+//!    iteration counter built on top of the while-scope primitive.
+//!
+//! A stackable context handle is interchangeable with a regular
+//! \c stf_ctx_handle for typing purposes (it points at a different C++ object
+//! internally). The user must always pair a \c stf_stackable_ctx_create
+//! with \c stf_stackable_ctx_finalize, and pair every \c push with the matching
+//! \c pop in LIFO order.
+//!
+//! Stackable logical data is allocated with \c stf_stackable_logical_data*
+//! and consumed by \c stf_stackable_task_create / \c stf_stackable_task_add_dep
+//! and \c stf_stackable_host_launch_create / \c stf_stackable_host_launch_add_dep.
+//! Crossing a scope boundary is handled implicitly: when a logical data is
+//! first accessed inside a deeper scope STF auto-pushes the value through the
+//! intermediate contexts.
+//!
+//! \par Stackable Usage Pattern:
+//! \code
+//! stf_ctx_handle sctx = stf_stackable_ctx_create();
+//!
+//! float buf[N];
+//! stf_logical_data_handle lA = stf_stackable_logical_data(sctx, buf, sizeof(buf));
+//!
+//! stf_stackable_push_graph(sctx);                        // Begin nested graph scope
+//! {
+//!   stf_task_handle t = stf_stackable_task_create(sctx);
+//!   stf_stackable_task_add_dep(sctx, t, lA, STF_RW);
+//!   stf_task_enable_capture(t);                          // Required before launching work in a graph scope
+//!   stf_task_start(t);
+//!   /* launch CUDA work on stf_task_get_custream(t) */
+//!   stf_task_end(t);
+//!   stf_task_destroy(t);
+//! }
+//! stf_stackable_pop(sctx);                               // Instantiate child graph
+//!
+//! stf_stackable_logical_data_destroy(lA);
+//! stf_stackable_ctx_finalize(sctx);
+//! \endcode
+//!
+//! \warning This API is experimental and subject to change.
+//! \{
+
+//! \brief Create a stackable context (root is the stream backend)
+//!
+//! \return Stackable context handle (typed as \c stf_ctx_handle), or NULL on
+//!         allocation failure.
+//! \post On success, caller must release with \c stf_stackable_ctx_finalize().
+//!
+//! \note A handle returned by \c stf_stackable_ctx_create() must \b only be
+//!       passed to \c stf_stackable_* entry points; mixing it with the
+//!       regular \c stf_ctx_* surface is undefined behaviour.
+//!
+//! \see stf_stackable_ctx_finalize()
+stf_ctx_handle stf_stackable_ctx_create(void);
+
+//! \brief Finalize a stackable context and release all associated resources.
+//!
+//! All nested scopes must already have been popped so the context stack is back
+//! at the root (every \c stf_stackable_push_graph() / \c stf_stackable_push_while()
+//! / \c stf_stackable_push_repeat() must have a matching pop). Calling this while
+//! a scope is still open is not supported and results in undefined behavior. Once at
+//! the root, it blocks until all pending root-level work has completed and releases
+//! the root resources.
+//!
+//! \param ctx Stackable context handle (must have been popped back to the root).
+//!
+//! \see stf_stackable_ctx_create()
+void stf_stackable_ctx_finalize(stf_ctx_handle ctx);
+
+//! \brief Get a fence stream for a stackable context (must be at root level).
+//!
+//! \param ctx Stackable context handle
+//! \return CUDA stream that becomes ready when all pending root-level work has
+//!         been issued.
+//!
+//! \warning Calling \c stf_stackable_ctx_fence() inside a nested scope is not
+//!          supported and will fail.
+cudaStream_t stf_stackable_ctx_fence(stf_ctx_handle ctx);
+
+//! \brief Push a plain nested graph scope onto the context stack.
+//!
+//! Subsequent tasks/host_launches submitted on \p ctx are captured into a
+//! CUDA child graph. The graph is instantiated and launched on the parent
+//! scope when \c stf_stackable_pop() is called.
+//!
+//! \param ctx Stackable context handle
+//!
+//! \see stf_stackable_pop()
+void stf_stackable_push_graph(stf_ctx_handle ctx);
+
+//! \brief Pop the innermost graph scope (must match \c stf_stackable_push_graph()).
+//!
+//! Use \c stf_stackable_pop_while() / \c stf_stackable_pop_repeat() to close
+//! while/repeat scopes instead.
+//!
+//! \param ctx Stackable context handle
+void stf_stackable_pop(stf_ctx_handle ctx);
+
+//! \brief Opaque handle for a re-launchable graph produced by
+//!        \c stf_stackable_pop_prologue().
+//!
+//! The handle remains valid between a matching \c stf_stackable_pop_prologue()
+//! and \c stf_stackable_pop_epilogue() pair. Calling \c stf_launchable_graph_launch(),
+//! \c stf_launchable_graph_exec() or \c stf_launchable_graph_stream() after the
+//! epilogue aborts with a clear message (the underlying C++ layer invalidates
+//! every outstanding copy of the handle in one shot).
+//!
+//! The handle wrapper itself must be released with \c stf_launchable_graph_destroy()
+//! to reclaim the small heap allocation made by \c stf_stackable_pop_prologue().
+typedef struct stf_launchable_graph_handle_t* stf_launchable_graph_handle;
+
+//! \brief First phase of a two-phase pop of a top-level graph scope.
+//!
+//! Runs the same prologue as \c stf_stackable_pop() (pops any pushed data and
+//! finalises the child graph) but does not launch the graph and does not
+//! release resources. Instantiation is lazy: the prologue does \b not build a
+//! \c cudaGraphExec_t -- that happens on demand on the first
+//! \c stf_launchable_graph_launch() / \c stf_launchable_graph_exec() call (the
+//! \c cudaGraph_t exposed by \c stf_launchable_graph_graph() is available
+//! without any instantiation). Returns a handle the caller can use to launch
+//! the graph one or more times (via \c stf_launchable_graph_launch()) before
+//! finishing the pop with \c stf_stackable_pop_epilogue().
+//!
+//! Only legal when the innermost scope is a top-level graph (its parent is
+//! the stream-backed root). Aborts otherwise.
+//!
+//! \param ctx Stackable context handle (must not be NULL).
+//! \return Launchable graph handle (non-NULL on success; NULL only on
+//!         heap-allocation failure, in which case an explanatory message
+//!         is printed to stderr). Release with \c stf_launchable_graph_destroy().
+//!
+//! \see stf_stackable_pop_epilogue()
+//! \see stf_launchable_graph_launch()
+stf_launchable_graph_handle stf_stackable_pop_prologue(stf_ctx_handle ctx);
+
+//! \brief Second phase of a two-phase pop: release resources and unfreeze data.
+//!
+//! Runs the deferred portion of \c stf_stackable_pop() that was skipped by
+//! \c stf_stackable_pop_prologue(). Invalidates every outstanding
+//! \c stf_launchable_graph_handle produced by the matching prologue; the
+//! handle wrapper itself is not freed and must still be released with
+//! \c stf_launchable_graph_destroy().
+//!
+//! \param ctx Stackable context handle (must not be NULL).
+//!
+//! \see stf_stackable_pop_prologue()
+void stf_stackable_pop_epilogue(stf_ctx_handle ctx);
+
+//! \brief Launch the graph once.
+//!
+//! On the first call, lazily instantiates the \c cudaGraphExec_t (the prologue
+//! does not do it) and syncs the context's prerequisite events into the support
+//! stream. Subsequent calls reuse the executable graph, skip the sync, and
+//! issue the launch directly. Aborts if the handle has been invalidated by
+//! \c stf_stackable_pop_epilogue().
+//!
+//! \param h Launchable graph handle (must not be NULL).
+void stf_launchable_graph_launch(stf_launchable_graph_handle h);
+
+//! \brief Return the underlying \c cudaGraphExec_t for advanced use
+//!        (e.g. launching on a user-supplied stream).
+//!
+//! Triggers lazy instantiation on the first call (the prologue does not build
+//! the executable graph) and orders the support stream behind the nested
+//! context's freeze/get events. Aborts if \p h has been invalidated by
+//! \c stf_stackable_pop_epilogue().
+//!
+//! \param h Launchable graph handle (must not be NULL).
+//! \return \c cudaGraphExec_t owned by the STF graph cache.
+cudaGraphExec_t stf_launchable_graph_exec(stf_launchable_graph_handle h);
+
+//! \brief Return the internal support stream the graph was prepared against.
+//!
+//! Aborts if \p h has been invalidated by \c stf_stackable_pop_epilogue().
+//!
+//! \param h Launchable graph handle (must not be NULL).
+//! \return \c cudaStream_t used by the default \c stf_launchable_graph_launch().
+cudaStream_t stf_launchable_graph_stream(stf_launchable_graph_handle h);
+
+//! \brief Return the underlying (non-executable) CUDA graph topology.
+//!
+//! Intended for callers who want to embed the graph as a child node into
+//! another graph (via \c cudaGraphAddChildGraphNode) rather than launching
+//! the pre-instantiated executable graph returned by
+//! \c stf_launchable_graph_exec(). Unlike that function, this accessor does
+//! NOT trigger \c cudaGraphInstantiate.
+//!
+//! On the first call it does, however, perform the same lazy dependency
+//! synchronization as \c stf_launchable_graph_exec() / \c
+//! stf_launchable_graph_launch(): it orders the support stream returned by
+//! \c stf_launchable_graph_stream() behind the nested context's freeze/get
+//! events. This makes that support stream a valid event source for
+//! ordering an outer launch stream: record an event on
+//! \c stf_launchable_graph_stream() and wait on it from your launch stream
+//! before launching the outer graph that embeds this child.
+//!
+//! Ordering caveat: \c stf_stackable_pop_epilogue() only synchronizes that
+//! support stream; it does NOT wait on whatever stream you launch the
+//! embedding outer graph on. You are therefore responsible for ensuring the
+//! embedded work has completed (e.g. via \c cudaStreamSynchronize on your
+//! launch stream) before calling \c stf_stackable_pop_epilogue(), otherwise
+//! the unfreeze of the pushed data will race the child graph.
+//!
+//! The graph stays valid only until \c stf_stackable_pop_epilogue() is
+//! called. Clone it with \c cudaGraphClone if you need it to outlive the
+//! epilogue.
+//!
+//! Aborts if \p h has been invalidated by \c stf_stackable_pop_epilogue().
+//!
+//! \param h Launchable graph handle (must not be NULL).
+//! \return \c cudaGraph_t owned by the nested stackable context.
+cudaGraph_t stf_launchable_graph_graph(stf_launchable_graph_handle h);
+
+//! \brief Release the heap-allocated handle wrapper.
+//!
+//! Does not affect graph validity (that is driven by
+//! \c stf_stackable_pop_epilogue()). NULL is a no-op.
+//!
+//! \param h Launchable graph handle (or NULL).
+void stf_launchable_graph_destroy(stf_launchable_graph_handle h);
+
+//! \brief Opaque handle for a shared-ownership, storable launchable graph.
+//!
+//! Returned by \c stf_stackable_pop_prologue_shared(). Every call to
+//! \c stf_launchable_graph_shared_dup() produces a new opaque handle that
+//! shares ownership of the same underlying CUDA graph; each of these
+//! handles must be released independently with
+//! \c stf_launchable_graph_shared_free(). The final \c _free call runs
+//! \c stf_stackable_pop_epilogue() automatically, so users do not call the
+//! epilogue manually.
+//!
+//! Typical use:
+//! \code
+//!   stf_stackable_push_graph(ctx);
+//!   // ... submit tasks ...
+//!   stf_launchable_graph_shared h;
+//!   stf_stackable_pop_prologue_shared(ctx, &h);
+//!
+//!   for (int i = 0; i < 1000; ++i) {
+//!     stf_launchable_graph_shared_launch(h);
+//!   }
+//!
+//!   stf_launchable_graph_shared_free(h);   // last ref -> pop_epilogue
+//! \endcode
+typedef struct stf_launchable_graph_shared_t* stf_launchable_graph_shared;
+
+//! \brief Shared-ownership flavor of \c stf_stackable_pop_prologue().
+//!
+//! Runs the prologue and wraps the resulting handle into a shared-ownership
+//! opaque. Copies made via \c stf_launchable_graph_shared_dup() share the
+//! same underlying graph; the epilogue runs when the last copy is freed.
+//!
+//! \param ctx Stackable context handle (must not be NULL).
+//! \param out Receives the new shared handle on success (non-NULL).
+//! \return Zero on success, non-zero on allocation failure.
+int stf_stackable_pop_prologue_shared(stf_ctx_handle ctx, stf_launchable_graph_shared* out);
+
+//! \brief Duplicate a shared launchable-graph handle (bumps the shared count).
+//!
+//! The new handle must be released separately with
+//! \c stf_launchable_graph_shared_free(). Aborts if \p h is NULL.
+//!
+//! \param h Shared handle to duplicate (must not be NULL).
+//! \param out Receives the duplicated handle on success (non-NULL).
+//! \return Zero on success, non-zero on allocation failure.
+int stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchable_graph_shared* out);
+
+//! \brief Release one shared reference. When this was the last one,
+//!        runs \c stf_stackable_pop_epilogue() automatically.
+//!
+//! NULL is a no-op, matching the pattern used by other destroy entry points.
+//!
+//! \warning Releasing the last reference is not a pure refcount drop: it runs
+//!          the epilogue, which unfreezes the pushed data and synchronizes only
+//!          the support stream (not the stream you launch any embedding outer
+//!          graph on). If you embedded the graph returned by
+//!          \c stf_launchable_graph_shared_graph() into an outer graph launched
+//!          on your own stream, make sure that launch has completed (e.g. via
+//!          \c cudaStreamSynchronize) before freeing the final reference, or the
+//!          unfreeze will race the still-executing child graph.
+//!
+//! \param h Shared handle (or NULL).
+void stf_launchable_graph_shared_free(stf_launchable_graph_shared h);
+
+//! \brief Query whether the shared handle still refers to a live graph.
+//!
+//! Returns 0 for a NULL handle or after some other code path
+//! (for example a manual \c stf_stackable_pop_epilogue()) has released the
+//! underlying state.
+int stf_launchable_graph_shared_valid(stf_launchable_graph_shared h);
+
+//! \brief Launch the graph once. Aborts if \p h is NULL or invalid.
+void stf_launchable_graph_shared_launch(stf_launchable_graph_shared h);
+
+//! \brief Return the executable graph. Triggers lazy instantiation on the first
+//!        call and orders the support stream behind the nested context's
+//!        freeze/get events. Aborts if \p h is NULL or invalid.
+cudaGraphExec_t stf_launchable_graph_shared_exec(stf_launchable_graph_shared h);
+
+//! \brief Return the support stream. Purely observational. Aborts if \p h
+//!        is NULL or invalid.
+cudaStream_t stf_launchable_graph_shared_stream(stf_launchable_graph_shared h);
+
+//! \brief Return the underlying \c cudaGraph_t topology (for embedding as a
+//!        child graph). Aborts if \p h is NULL or invalid.
+//!
+//! Like \c stf_launchable_graph_graph(), this does NOT trigger
+//! \c cudaGraphInstantiate but on the first call orders the support stream
+//! behind the nested context's freeze/get events.
+//!
+//! Lifetime caveat (mirror of \c stf_launchable_graph_graph()): on the shared
+//! path the epilogue is not an explicit call -- it runs automatically when the
+//! \b last shared reference is released via
+//! \c stf_launchable_graph_shared_free(). That epilogue unfreezes the pushed
+//! data and only synchronizes the support stream, \b not the stream you
+//! launch the embedding outer graph on. You are therefore responsible for
+//! keeping at least one shared handle alive -- and ensuring the embedded work
+//! has completed (e.g. via \c cudaStreamSynchronize on your launch stream) --
+//! before freeing the final reference, otherwise the unfreeze will race the
+//! child graph.
+//!
+//! \code
+//!   stf_stackable_push_graph(ctx);
+//!   // ... submit tasks ...
+//!   stf_launchable_graph_shared h;
+//!   stf_stackable_pop_prologue_shared(ctx, &h);
+//!
+//!   // Embed the child graph into a user-built outer graph (no instantiation).
+//!   cudaGraph_t body = stf_launchable_graph_shared_graph(h);
+//!   cudaGraphNode_t child{};
+//!   cudaGraphAddChildGraphNode(&child, outer, nullptr, 0, body);
+//!
+//!   // Order the outer launch behind the freeze/get events via the support stream.
+//!   cudaStream_t launch_stream = ...;
+//!   cudaEvent_t dep_a = ...;
+//!   cudaEventRecord(dep_a, stf_launchable_graph_shared_stream(h));
+//!   cudaStreamWaitEvent(launch_stream, dep_a, 0);
+//!   cudaGraphLaunch(outer_exec, launch_stream);
+//!
+//!   // The embedded work must finish before the final free unfreezes data.
+//!   cudaStreamSynchronize(launch_stream);
+//!   stf_launchable_graph_shared_free(h); // last ref -> pop_epilogue (unfreeze)
+//! \endcode
+cudaGraph_t stf_launchable_graph_shared_graph(stf_launchable_graph_shared h);
+
+//! \brief Opaque handle for a while-loop scope (CUDA 12.4+).
+typedef struct stf_while_scope_handle_t* stf_while_scope_handle;
+
+//! \brief Opaque handle for a repeat-loop scope (CUDA 12.4+).
+typedef struct stf_repeat_scope_handle_t* stf_repeat_scope_handle;
+
+// Public C header: avoid libcudacxx-only macros so Python bindings (and other
+// pure-C users) can include this without pulling in <cuda/std/__cccl/...>.
+// CUDART_VERSION is provided by <cuda_runtime.h> already included above.
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 12040
+
+//! \brief Push a while-loop scope (CUDA conditional graph node).
+//!
+//! The loop body executes at least once. Use \c stf_stackable_while_cond_scalar()
+//! or fetch the raw conditional handle via \c stf_while_scope_get_cond_handle()
+//! to set the per-iteration continuation flag.
+//!
+//! \param ctx Stackable context handle
+//! \return While-scope handle, or NULL on allocation failure (caller must
+//!         release with \c stf_stackable_pop_while()).
+stf_while_scope_handle stf_stackable_push_while(stf_ctx_handle ctx);
+
+//! \brief Pop (destroy) a while-loop scope opened by \c stf_stackable_push_while().
+//!
+//! \param scope While scope handle (NULL is a no-op).
+void stf_stackable_pop_while(stf_while_scope_handle scope);
+
+//! \brief Get the underlying \c cudaGraphConditionalHandle as a 64-bit integer.
+//!
+//! Useful when launching a custom kernel that calls \c cudaGraphSetConditional()
+//! directly. For the common case of "continue while a scalar satisfies a
+//! comparison" use \c stf_stackable_while_cond_scalar() instead.
+//!
+//! \param scope While scope handle
+//! \return The conditional handle bit-cast to \c uint64_t.
+uint64_t stf_while_scope_get_cond_handle(stf_while_scope_handle scope);
+
+//! \brief Push a repeat scope that runs the body \p count times.
+//!
+//! Internally creates a counter logical data, decrements it on every
+//! iteration, and feeds the result into the underlying while-scope condition.
+//! The user only has to fill the body between push and pop.
+//!
+//! \param ctx   Stackable context handle
+//! \param count Number of iterations (must be > 0)
+//! \return Repeat-scope handle, or NULL on allocation failure (release with
+//!         \c stf_stackable_pop_repeat()).
+stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t count);
+
+//! \brief Pop (destroy) a repeat scope opened by \c stf_stackable_push_repeat().
+//!
+//! \param scope Repeat scope handle (NULL is a no-op).
+void stf_stackable_pop_repeat(stf_repeat_scope_handle scope);
+
+//! \brief Comparison operator for built-in while conditions.
+typedef enum stf_compare_op
+{
+  STF_CMP_GT = 0, //!< Greater than (>)
+  STF_CMP_LT = 1, //!< Less than (<)
+  STF_CMP_GE = 2, //!< Greater than or equal (>=)
+  STF_CMP_LE = 3, //!< Less than or equal (<=)
+} stf_compare_op;
+
+//! \brief Scalar element type for \c stf_stackable_while_cond_scalar().
+typedef enum stf_dtype
+{
+  STF_DTYPE_FLOAT32 = 0,
+  STF_DTYPE_FLOAT64 = 1,
+  STF_DTYPE_INT32   = 2,
+  STF_DTYPE_INT64   = 3,
+} stf_dtype;
+
+//! \brief Set a built-in while-loop condition: continue while \p ld <op> \p threshold.
+//!
+//! Schedules an internal task that reads the scalar logical data, evaluates
+//! the comparison, and updates the conditional handle accordingly. Call
+//! exactly once per iteration after the loop body tasks of the current scope.
+//!
+//! \param ctx       Stackable context handle
+//! \param scope     While scope handle
+//! \param ld        Logical data handle for the scalar (1 element of \p dtype)
+//! \param op        Comparison operator
+//! \param threshold Right-hand side compared against the scalar
+//! \param dtype     Element type of \p ld
+void stf_stackable_while_cond_scalar(
+  stf_ctx_handle ctx,
+  stf_while_scope_handle scope,
+  stf_logical_data_handle ld,
+  stf_compare_op op,
+  double threshold,
+  stf_dtype dtype);
+
+#endif // CUDART_VERSION >= 12040
+
+//! \brief Create stackable logical data from existing memory and a data place.
+//!
+//! \param ctx    Stackable context handle
+//! \param addr   Pointer to existing buffer
+//! \param sz     Size of the buffer in bytes
+//! \param dplace Data place describing where the buffer lives
+//! \return Stackable logical data handle (typed as \c stf_logical_data_handle),
+//!         or NULL on allocation failure (release with
+//!         \c stf_stackable_logical_data_destroy()).
+stf_logical_data_handle
+stf_stackable_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz, stf_data_place_handle dplace);
+
+//! \brief Convenience: \c stf_stackable_logical_data_with_place() with host placement.
+stf_logical_data_handle stf_stackable_logical_data(stf_ctx_handle ctx, void* addr, size_t sz);
+
+//! \brief Create empty stackable logical data of \p length bytes (no host backing).
+stf_logical_data_handle stf_stackable_logical_data_empty(stf_ctx_handle ctx, size_t length);
+
+//! \brief Create empty stackable logical data that is local to the current stackable scope.
+//!
+//! The underlying logical data is created at the current head context and is
+//! not exported to parent scopes. Intended for temporaries whose lifetime is
+//! bounded by the enclosing stackable scope (e.g. bodies of while/repeat).
+stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handle ctx, size_t length);
+
+//! \brief Create a stackable synchronization token (no payload).
+stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx);
+
+//! \brief Set the symbolic name of stackable logical data (debug / DOT output).
+void stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
+
+//! \brief Mark stackable logical data as read-only (enables concurrent reads across scopes).
+void stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld);
+
+//! \brief Explicitly import (push) a stackable logical data into the current
+//!        (innermost) scope with the given access mode and, optionally, data
+//!        place.
+//!
+//! By default, the very first task that touches a piece of data inside a
+//! nested scope auto-pushes it through the intermediate contexts with a
+//! conservative mode (typically \c STF_RW), which in turn serialises sibling
+//! scopes that only need to read it. \c stf_stackable_logical_data_push() gives
+//! the caller control over that import: the data is made visible in the
+//! current scope with exactly \c m, so e.g. calling it with \c STF_READ from
+//! inside each of several sibling graph scopes lets those scopes execute
+//! concurrently without having to mark the data globally read-only via
+//! \c stf_stackable_logical_data_set_read_only().
+//!
+//! Must be called while a stackable scope is open on \c ctx (i.e. after
+//! \c stf_stackable_push_graph() / \c stf_stackable_push_while() /
+//! \c stf_stackable_push_repeat() and before the matching pop).
+//!
+//! \param ld     Stackable logical data handle.
+//! \param m      Desired access mode in the current scope.
+//! \param dplace Optional data place; pass \c NULL for the default placement.
+void stf_stackable_logical_data_push(stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle dplace);
+
+//! \brief Destroy stackable logical data created by \c stf_stackable_logical_data*().
+void stf_stackable_logical_data_destroy(stf_logical_data_handle ld);
+
+//! \brief Destroy a stackable token created by \c stf_stackable_token().
+//!
+//! Tokens use a \c void_interface internally, so they require a dedicated
+//! destroyer that knows the right C++ pointee type.
+void stf_stackable_token_destroy(stf_logical_data_handle ld);
+
+//! \brief Create a task on the head (innermost) scope of a stackable context.
+//!
+//! After creation, configure with \c stf_stackable_task_add_dep() (use the
+//! stackable variant — \c stf_task_add_dep() will not auto-push data across
+//! scopes), then call \c stf_task_start() / \c stf_task_end() and use
+//! \c stf_task_get_custream() / \c stf_task_get() as usual.
+//!
+//! \note Inside a nested graph scope (\c stf_stackable_push_graph()), call
+//!       \c stf_task_enable_capture() before \c stf_task_start() if you launch
+//!       work through \c stf_task_get_custream(); otherwise use
+//!       \c stf_task_get_graph() for the explicit-graph path.
+//!
+//! \param ctx Stackable context handle
+//! \return Task handle, or NULL on allocation failure (release with
+//!         \c stf_task_destroy()).
+stf_task_handle stf_stackable_task_create(stf_ctx_handle ctx);
+
+//! \brief Add a dependency to a stackable task (validates and auto-pushes data).
+//!
+//! \param ctx Stackable context handle (needed for auto-push validation).
+//! \param t   Task handle returned by \c stf_stackable_task_create().
+//! \param ld  Stackable logical data handle.
+//! \param m   Access mode.
+void stf_stackable_task_add_dep(stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
+
+//! \brief Variant of \c stf_stackable_task_add_dep() with an explicit data place.
+void stf_stackable_task_add_dep_with_dplace(
+  stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p);
+
+//! \brief Create a host launch scope on the head (innermost) scope of a stackable context.
+//!
+//! Configure with \c stf_stackable_host_launch_add_dep() and submit with
+//! \c stf_stackable_host_launch_submit(). Other configuration (symbol,
+//! user data) goes through the regular \c stf_host_launch_set_* functions.
+//!
+//! \param ctx Stackable context handle
+//! \return Host launch handle, or NULL on allocation failure.
+stf_host_launch_handle stf_stackable_host_launch_create(stf_ctx_handle ctx);
+
+//! \brief Add a dependency to a stackable host launch scope (auto-pushes data).
+void stf_stackable_host_launch_add_dep(
+  stf_ctx_handle ctx, stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m);
+
+//! \brief Submit the host callback on a stackable host launch scope.
+//!
+//! Equivalent to \c stf_host_launch_submit() but matched to
+//! \c stf_stackable_host_launch_create() / \c stf_stackable_host_launch_destroy().
+void stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback);
+
+//! \brief Destroy a stackable host launch handle.
+void stf_stackable_host_launch_destroy(stf_host_launch_handle h);
+
+//! \}
+
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 // NOLINTEND(modernize-use-using)

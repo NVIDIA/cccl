@@ -180,7 +180,10 @@ function(
       )
     endif()
 
-    if ("${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$")
+    if (
+      "${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_find_env_api\\.cu$"
+    )
       if (
         "Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
         AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13
@@ -274,6 +277,14 @@ function(
 
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+  # Disable clang-cuda >= 22 warnings regarding failed loop unrolling.
+  if (
+    "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang"
+    AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "22.0.0"
+  )
+    target_compile_options(${test_target} PRIVATE "-Wno-pass-failed")
+  endif()
 endfunction()
 
 # Sets out_var to launch id if the label contains launch variants

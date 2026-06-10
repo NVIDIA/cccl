@@ -66,15 +66,15 @@ TEST_FUNC void test()
   {
     constexpr auto sa = cuda::__argument::__constant<42>{};
     static_assert(cuda::__argument::__lowest_(sa) == 42);
-    static_assert(cuda::__argument::__max_(sa) == 42);
+    static_assert(cuda::__argument::__highest_(sa) == 42);
   }
 
 #if TEST_HAS_CLASS_NTTP
-  // Bounds: array sequence computes min/max of elements
+  // Bounds: array sequence computes lowest/highest of elements
   {
     constexpr auto sa = cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{128, 256, 512}>{};
     static_assert(cuda::__argument::__lowest_(sa) == 128);
-    static_assert(cuda::__argument::__max_(sa) == 512);
+    static_assert(cuda::__argument::__highest_(sa) == 512);
   }
 #endif // TEST_HAS_CLASS_NTTP
 
@@ -83,7 +83,7 @@ TEST_FUNC void test()
   {
     constexpr auto sa = cuda::__argument::__constant_sequence<cuda::std::array<int, 0>{}>{};
     static_assert(cuda::__argument::__lowest_(sa) == cuda::std::numeric_limits<int>::lowest());
-    static_assert(cuda::__argument::__max_(sa) == cuda::std::numeric_limits<int>::max());
+    static_assert(cuda::__argument::__highest_(sa) == (cuda::std::numeric_limits<int>::max)());
   }
 #endif // TEST_HAS_CLASS_NTTP
 
@@ -95,7 +95,7 @@ TEST_FUNC void test()
     static_assert(traits::is_single_value);
     static_assert(cuda::std::is_same_v<traits::value_type, int>);
     static_assert(traits::lowest == 42);
-    static_assert(traits::max == 42);
+    static_assert(traits::highest == 42);
   }
 
 #if TEST_HAS_CLASS_NTTP
@@ -113,7 +113,7 @@ TEST_FUNC void test()
   // Single value: scalar is single, sequence is not
   {
     static_assert(
-      cuda::__argument::__is_single_value_v<cuda::__argument::__traits<cuda::__argument::__constant<42>>::value_type>);
+      !cuda::__argument::__is_sequence_v<cuda::__argument::__traits<cuda::__argument::__constant<42>>::value_type>);
 #if TEST_HAS_CLASS_NTTP
     static_assert(!cuda::__argument::__traits<
                   cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_single_value);
