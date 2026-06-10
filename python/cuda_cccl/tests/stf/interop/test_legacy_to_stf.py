@@ -66,7 +66,10 @@ from numba import cuda  # noqa: E402
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 
-numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+@pytest.fixture(autouse=True)
+def _disable_low_occupancy_warnings(monkeypatch):
+    monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)
+
 
 N = 128 * 1024
 NITER = 128

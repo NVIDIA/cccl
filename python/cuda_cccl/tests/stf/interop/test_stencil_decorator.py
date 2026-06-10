@@ -14,8 +14,6 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.numba import jit  # noqa: E402
 
-numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
 
 @jit
 def laplacian_5pt_kernel(u_in, u_out, dx, dy):
@@ -43,7 +41,9 @@ def laplacian_5pt_kernel(u_in, u_out, dx, dy):
         u_out[i, j] = u_in[i, j]
 
 
-def test_numba2d():
+def test_numba2d(monkeypatch):
+    monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)
+
     nx, ny = 1024, 1024
     dx = 2.0 * np.pi / (nx - 1)
     dy = 2.0 * np.pi / (ny - 1)

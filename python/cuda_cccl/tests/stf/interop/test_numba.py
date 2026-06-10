@@ -19,7 +19,9 @@ from cuda.stf._experimental.interop.numba import (  # noqa: E402
     numba_arguments,
 )
 
-numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+@pytest.fixture(autouse=True)
+def _disable_low_occupancy_warnings(monkeypatch):
+    monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)
 
 
 @cuda.jit

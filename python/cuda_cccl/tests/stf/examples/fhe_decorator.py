@@ -19,9 +19,6 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.numba import jit  # noqa: E402
 
-numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-
 class Plaintext:
     def __init__(self, ctx, values=None, ld=None, key=0x42, name=None):
         self.ctx = ctx
@@ -101,7 +98,9 @@ def circuit(a, b):
     return (a + b) + (b - a)
 
 
-def test_fhe_decorator():
+def test_fhe_decorator(monkeypatch):
+    monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)
+
     """Exercise the decorator integration variant of the FHE example."""
     ctx = stf.context(use_graph=False)
 

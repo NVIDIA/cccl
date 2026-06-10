@@ -14,9 +14,6 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.numba import jit  # noqa: E402
 
-numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-
 @jit
 def axpy(a, x, y):
     i = cuda.grid(1)
@@ -32,7 +29,9 @@ def scale(a, x):
 
 
 @pytest.mark.parametrize("use_graph", [True, False])
-def test_decorator(use_graph):
+def test_decorator(monkeypatch, use_graph):
+    monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)
+
     X, Y, Z = (np.ones(16, np.float32) for _ in range(3))
 
     ctx = stf.context(use_graph=use_graph)
