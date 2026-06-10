@@ -57,8 +57,10 @@ BINARIES = {
 # separately (a different binary, no force hook).
 # `hybrid` and `gmem_privatized_nocache` both live under the GmemPrivatized<NoCache>
 # kernel (hybrid = smem_split>0 member, gmem_privatized_nocache = pure-gather member);
-# forcing pins one member. hybrid is single-channel only (the driver records nothing
-# for it on multi-channel, where dispatch reports unsupported -> the cell is dropped).
+# forcing pins one member. hybrid is single-channel only and needs a non-empty GMEM
+# secondary tail (bins > HYBRID_MIN_BINS); cells outside that domain are SKIPPED up
+# front via _forced_algo_applicable (running them would abort, not fall back). The
+# post-run DROP check on the [launch] tag remains as a safety net if the floor drifts.
 FORCED_ALGOS = [
     "",  # default (selector)
     "hybrid",
@@ -91,6 +93,33 @@ EXPECTED_RAN = {
 # only where they actually take effect, bins > 16384 (32768, 65536, ...).
 # MUST stay in sync with cub/.../dispatch_histogram.cuh:max_dynamic_smem_bins.
 HIGH_BIN_THRESHOLD = 16384
+
+# Per-algorithm STRUCTURAL validity floor (a forced algo that cannot run at a cell
+# would make dispatch return cudaErrorNotSupported, which the bench escalates to a
+# FATAL temp-size abort + core dump -- not a silent fallback). We therefore SKIP such
+# cells outright rather than run-then-abort them, the same way we skip all forced
+# algos at bins <= HIGH_BIN_THRESHOLD. Knowing the domain beats discovering it by crash.
+#
+# `hybrid` is the smem_split>0 member of GmemPrivatized<NoCache>: bins in
+# [0, split) accumulate in dyn-SMEM, bins in [split, N) in a per-block GMEM secondary
+# tail. Dispatch requires that secondary tail to be non-empty, i.e.
+# max_num_output_bins > hybrid_smem_split_bin_single_channel (49152), and the member
+# is single-channel only. So forcing hybrid at bins <= 49152 OR on a multi-channel
+# binary aborts; we skip those. (For single-channel even/range, max_num_output_bins
+# == Bins, so the grid's 32768 cell is below the floor and 65536+ is above it.)
+# MUST stay in sync with dispatch_histogram.cuh:hybrid_smem_split_bin_single_channel.
+HYBRID_MIN_BINS = 49152
+
+
+def _forced_algo_applicable(akey: str, bins: int, multichannel: bool) -> bool:
+    """Whether forcing `akey` at this (bins, channels) cell can structurally run in
+    dispatch. False => dispatch returns cudaErrorNotSupported and the bench aborts, so
+    the sweep skips the cell (no run, no abort, no column). All forced algos except
+    `hybrid` are valid across the whole high-bin tier; `hybrid` needs a GMEM secondary
+    tail (bins > HYBRID_MIN_BINS) and is single-channel only."""
+    if akey == "hybrid":
+        return (not multichannel) and bins > HYBRID_MIN_BINS
+    return True
 
 # Default sweep grid. Bin counts straddle the SMEM tier (<=4096), the gather tier
 # (8192..65535), and the direct-atomic tiers (>=65536 cuckoo, >=262144 noprobe2).
@@ -258,8 +287,15 @@ def main():
             for elements in args.elements:
                 for bins in args.bins:
                     high = bins > HIGH_BIN_THRESHOLD
+                    multichannel = blabel.startswith("multi")
                     # Below the high-bin threshold forcing is a no-op; record only default.
-                    algos = FORCED_ALGOS if high else [""]
+                    # Above it, restrict each forced algo to cells where it can
+                    # structurally run -- skipping a cell where dispatch would return
+                    # cudaErrorNotSupported (which the bench escalates to a FATAL abort,
+                    # not a fallback). `default` ("") is always kept.
+                    algos = ([a for a in FORCED_ALGOS
+                              if a == "" or _forced_algo_applicable(ALGO_KEY.get(a, a), bins, multichannel)]
+                             if high else [""])
                     for algo_env in algos:
                         akey = ALGO_KEY.get(algo_env, algo_env)
                         med, ran, ok = run_cell(branch_bin, algo_env, sample, elements, bins,

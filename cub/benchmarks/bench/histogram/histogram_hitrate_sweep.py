@@ -38,15 +38,22 @@ BINARIES = [("even", "cub.bench.histogram.even.base.hitrate"),
 # Match the main perf sweep's shape set (current taxonomy: zipf:1.0, the swept
 # concentrated/powerlaw knobs, strided_sweep, sawtooth).
 # Match the main perf sweep's full shape set (concentrated/powerlaw swept across
-# their entropy knob, not just endpoints).
-SHAPES = ["concentrated:1.0", "concentrated:0.75", "concentrated:0.5", "concentrated:0.25",
-          "concentrated:0.0", "powerlaw:0.75", "powerlaw:0.5", "powerlaw:0.25", "zipf:1.0",
-          "hash_synonym", "stale_resident", "temporal_phases", "strided_sweep", "sawtooth"]
-BINS = [32768, 65536, 131072, 262144, 524288, 1048576]
+# their entropy knob, not just endpoints). Each axis is overridable via an env var
+# (space-separated) so a quick smoke run can shrink the grid without editing.
+def _env_list(name, default, cast=str):
+    v = os.environ.get(name)
+    return [cast(x) for x in v.split()] if v else default
+
+SHAPES = _env_list("HIST_HR_SHAPES",
+                   ["concentrated:1.0", "concentrated:0.75", "concentrated:0.5", "concentrated:0.25",
+                    "concentrated:0.0", "powerlaw:0.75", "powerlaw:0.5", "powerlaw:0.25", "zipf:1.0",
+                    "hash_synonym", "stale_resident", "temporal_phases", "strided_sweep", "sawtooth"])
+BINS = _env_list("HIST_HR_BINS", [32768, 65536, 131072, 262144, 524288, 1048576], int)
 # All input sizes (matching the perf sweep's element axis), so the hit-rate panels
 # carry one series per element count over the full small->large range. (Hit rate is
 # largely N-invariant once N >> bins, but we sweep every size so nothing is dropped.)
-ELEMENTS = [1048576, 16777216, 67108864, 268435456, 1073741824, 2000000000]
+ELEMENTS = _env_list("HIST_HR_ELEMENTS",
+                     [1048576, 16777216, 67108864, 268435456, 1073741824, 2000000000], int)
 # Current CUB_HISTO_FORCE_ALGO names for the two cached high-bin kernels (the old
 # direct_atomic_* spellings are no longer recognized -> forcing would silently
 # no-op and report no cached launch). These keys are also what histogram_algo_perf.py
