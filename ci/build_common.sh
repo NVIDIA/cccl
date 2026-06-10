@@ -172,7 +172,7 @@ if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
     # Preprocessor invocations take ~250Mb or so
     mem_for_preprocessor="$((N_CPUS * 250 * 1024))"
     # Available memory (in KB), for more details see free(1).
-    mem_avail="$(cat /proc/meminfo | grep MemAvailable | tr -s '[:space:]' | cut -d' ' -f2)"
+    mem_avail="$(grep MemAvailable /proc/meminfo | tr -s '[:space:]' | cut -d' ' -f2)"
     # Total job count is available memory after accounting for `nproc` preprocessor calls
     # divided by the amount of memory required to invoke the sccache thin client process.
     PARALLEL_LEVEL="$(((mem_avail - mem_for_preprocessor - mem_for_sccache_daemon) / mem_per_sccache_client))"
