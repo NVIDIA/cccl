@@ -46,7 +46,7 @@
 
 #  include <cuda_runtime.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -54,49 +54,54 @@ namespace detail::transform::tile
 {
 
 template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std::size_t... Idx>
-[[nodiscard]] cudaError_t launch_impl(
+[[nodiscard]] ::cudaError_t launch_impl(
   ::cuda::std::tuple<Ins*...> inputs,
   Out* output,
-  int64_t num_items,
-  cudaStream_t stream,
+  ::cuda::std::int64_t num_items,
+  ::cudaStream_t stream,
   ::cuda::std::index_sequence<Idx...>)
 {
   if (num_items <= 0)
   {
-    return cudaSuccess;
+    return ::cudaSuccess;
   }
 
-  const int64_t num_blocks = ::cuda::ceil_div(num_items, int64_t{TileSize});
+  const ::cuda::std::int64_t num_blocks = ::cuda::ceil_div(num_items, ::cuda::std::int64_t{TileSize});
 
-  CUB_NS_QUALIFIER::detail::transform::tile::transform_kernel<TileSize, Fn>
+  cub::detail::transform::tile::transform_kernel<TileSize, Fn>
     <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, ::cuda::std::get<Idx>(inputs)...);
 
-  return CubDebug(cudaGetLastError());
+  return CubDebug(::cudaGetLastError());
 }
 
 struct DeviceTransform
 {
   template <int TileSize = 0, bool MufuHeavy = false, typename Fn, typename Out, typename... Ins>
-  [[nodiscard]] static cudaError_t
-  Transform(::cuda::std::tuple<Ins*...> inputs, Out* output, int64_t num_items, Fn, cudaStream_t stream = 0)
+  [[nodiscard]] static ::cudaError_t Transform(
+    ::cuda::std::tuple<Ins*...> inputs,
+    Out* output,
+    ::cuda::std::int64_t num_items,
+    Fn,
+    ::cudaStream_t stream = nullptr)
   {
-    constexpr int chosen = (TileSize > 0) ? TileSize : pick_tile_size<Out, Ins...>(MufuHeavy);
+    constexpr int chosen = (TileSize > 0) ? TileSize : cub::detail::transform::tile::pick_tile_size<Out, Ins...>(MufuHeavy);
     return launch_impl<chosen, Fn>(inputs, output, num_items, stream, ::cuda::std::index_sequence_for<Ins...>{});
   }
 
   // Fill
   template <int TileSize = 0, typename T>
-  [[nodiscard]] static cudaError_t Fill(T* output, int64_t num_items, T value, cudaStream_t stream = 0)
+  [[nodiscard]] static ::cudaError_t
+  Fill(T* output, ::cuda::std::int64_t num_items, T value, ::cudaStream_t stream = nullptr)
   {
     if (num_items <= 0)
     {
-      return cudaSuccess;
+      return ::cudaSuccess;
     }
-    constexpr int chosen     = (TileSize > 0) ? TileSize : pick_tile_size<T>();
-    const int64_t num_blocks = ::cuda::ceil_div(num_items, int64_t{chosen});
-    CUB_NS_QUALIFIER::detail::transform::tile::fill_kernel<chosen, T>
+    constexpr int chosen                  = (TileSize > 0) ? TileSize : cub::detail::transform::tile::pick_tile_size<T>();
+    const ::cuda::std::int64_t num_blocks = ::cuda::ceil_div(num_items, ::cuda::std::int64_t{chosen});
+    cub::detail::transform::tile::fill_kernel<chosen, T>
       <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, value);
-    return CubDebug(cudaGetLastError());
+    return CubDebug(::cudaGetLastError());
   }
 };
 
@@ -110,7 +115,7 @@ template <typename Op, typename OutIter, typename... InIters>
 inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
   && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
-  && CUB_NS_QUALIFIER::transform::tile_eligible_v<Op, it_value_t<OutIter>, sizeof...(InIters)>;
+  && cub::transform::tile_eligible_v<Op, cub::detail::it_value_t<OutIter>, sizeof...(InIters)>;
 
 // Runtime predicate consulted by the cub::DeviceTransform tile hook before
 // it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
@@ -151,8 +156,8 @@ runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIte
 // mirror of Op with __tile__ operator), NOT the user's Op instance -- the
 // user's scalar functor cannot be invoked on ct::tile arguments.
 template <typename TransformOp, typename OutIter, typename... InIters, typename OffsetT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch(
-  ::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_items, cudaStream_t stream)
+[[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t dispatch(
+  ::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_items, ::cudaStream_t stream)
 {
   auto out_ptr = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
   auto in_ptrs = ::cuda::std::apply(
@@ -161,13 +166,13 @@ template <typename TransformOp, typename OutIter, typename... InIters, typename 
     },
     inputs);
   using tile_op_t =
-    typename CUB_NS_QUALIFIER::transform::tile_eligible<TransformOp, it_value_t<OutIter>, sizeof...(InIters)>::tile_op_type;
+    typename cub::transform::tile_eligible<TransformOp, cub::detail::it_value_t<OutIter>, sizeof...(InIters)>::tile_op_type;
   static_assert(::cuda::std::is_empty_v<tile_op_t>,
                 "tile_op_type must be stateless (the tile kernel default-constructs it)");
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_op_type must be trivially default constructible");
 
-  return DeviceTransform::Transform<0, CUB_NS_QUALIFIER::transform::tile_mufu_heavy_v<TransformOp>, tile_op_t>(
+  return DeviceTransform::Transform<0, cub::transform::tile_mufu_heavy_v<TransformOp>, tile_op_t>(
     in_ptrs, out_ptr, static_cast<::cuda::std::int64_t>(num_items), tile_op_t{}, stream);
 }
 

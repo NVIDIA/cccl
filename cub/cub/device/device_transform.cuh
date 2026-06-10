@@ -113,14 +113,15 @@ struct DeviceTransform
     // not an error.
     if constexpr (StableAddress == detail::transform::requires_stable_address::no
                   && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
-                  && detail::transform::tile::tile_dispatch_eligible_v<
+                  && cub::detail::transform::tile::tile_dispatch_eligible_v<
                        TransformOp,
                        RandomAccessIteratorOut,
                        RandomAccessIteratorsIn...>)
     {
-      if (detail::transform::tile::runtime_preconditions_valid(inputs, output, static_cast<offset_t>(num_items)))
+      if (cub::detail::transform::tile::runtime_preconditions_valid(
+            inputs, output, static_cast<offset_t>(num_items)))
       {
-        return detail::transform::tile::dispatch<TransformOp>(
+        return cub::detail::transform::tile::dispatch<TransformOp>(
           inputs, output, static_cast<offset_t>(num_items), stream);
       }
     }

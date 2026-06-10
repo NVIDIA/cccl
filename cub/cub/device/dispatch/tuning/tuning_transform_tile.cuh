@@ -53,7 +53,7 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
 
   // Fill (zero inputs) keeps the same latency target by counting output bytes.
   constexpr auto bytes_per_iter = (sizeof...(Ins) > 0) ? (sizeof(Ins) + ... + ::cuda::std::size_t{0}) : sizeof(Out);
-  const int target              = cc_to_min_bytes_in_flight(cc);
+  const int target              = cub::detail::transform::cc_to_min_bytes_in_flight(cc);
   const int items_for_latency =
     static_cast<int>(::cuda::ceil_div(target, max_occupancy * threads_per_block * bytes_per_iter));
 
