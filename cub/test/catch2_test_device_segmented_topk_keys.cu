@@ -27,11 +27,11 @@ struct is_minus_zero
   }
 };
 
-template <typename KeyInputItItT,
+template <cub::detail::topk::select Direction,
+          typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
           typename KParamT,
-          typename SelectDirectionT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
@@ -41,7 +41,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   KeyOutputItItT d_key_segments_out_it,
   SegmentSizeParamT segment_sizes,
   KParamT k,
-  SelectDirectionT select_direction,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = nullptr)
@@ -56,14 +55,15 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
     values_it,
     segment_sizes,
     k,
-    select_direction,
+    ::cuda::args::constant<Direction>{},
     num_segments,
     total_num_items_guarantee,
     stream);
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(dispatch_batched_topk_keys, batched_topk_keys);
+DECLARE_TMPL_LAUNCH_WRAPPER(
+  dispatch_batched_topk_keys, batched_topk_keys, cub::detail::topk::select Direction, Direction);
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
@@ -153,12 +153,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
   // Run the top-k algorithm
-  batched_topk_keys(
+  batched_topk_keys<direction>(
     d_keys_in,
     d_keys_out,
     ::cuda::args::immediate{segment_size, ::cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
     ::cuda::args::immediate{k, ::cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    ::cuda::args::constant<direction>{},
     ::cuda::args::immediate{num_segments},
     ::cuda::args::immediate{num_segments * segment_size});
   // Prepare expected results
@@ -251,13 +250,12 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
   // Run the top-k algorithm
-  batched_topk_keys(
+  batched_topk_keys<direction>(
     d_keys_in,
     d_keys_out,
     ::cuda::args::__immediate_sequence{
       segment_size_it, ::cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     ::cuda::args::immediate{k, ::cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    ::cuda::args::constant<direction>{},
     ::cuda::args::immediate{num_segments},
     ::cuda::args::immediate{num_items});
 
@@ -289,12 +287,11 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
   auto d_keys_out_it =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(d_keys_out.data())), k);
 
-  batched_topk_keys(
+  batched_topk_keys<cub::detail::topk::select::min>(
     d_keys_in_it,
     d_keys_out_it,
     ::cuda::args::immediate{segment_size, ::cuda::args::bounds<cuda::std::int64_t{1}, max_segment_size>()},
     ::cuda::args::immediate{k, ::cuda::args::bounds<cuda::std::int64_t{1}, k>()},
-    ::cuda::args::constant<cub::detail::topk::select::min>{},
     ::cuda::args::immediate{num_segments},
     ::cuda::args::immediate{num_segments * segment_size});
 
