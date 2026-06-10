@@ -108,9 +108,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
-                                                           "all active lanes must have the same delta");))
+
   if constexpr (_Width == 1)
   {
     _CCCL_ASSERT(__delta == 0, "delta must be 0 when Width == 1");
@@ -118,7 +116,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   }
   else
   {
-    _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
+    _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "delta must be in the range [0, _Width)");
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (__warp_size - _Width) << 8;
     bool __pred;
@@ -157,17 +155,15 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
-                                                           "all active lanes must have the same delta");))
+
   if constexpr (_Width == 1)
   {
-    _CCCL_ASSERT(__delta == 0, "delta must be 0 when Width == 1");
+    _CCCL_ASSERT(__delta == 0, "__delta must be 0 when Width == 1");
     return warp_shuffle_result<_Up>{__data, true};
   }
   else
   {
-    _CCCL_ASSERT(__delta >= 1 && __delta < _Width, "delta must be in the range [1, _Width)");
+    _CCCL_ASSERT(__delta >= 0 && __delta < _Width, "__delta must be in the range [0, _Width)");
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (_Width - 1u) | ((__warp_size - _Width) << 8);
     bool __pred;
