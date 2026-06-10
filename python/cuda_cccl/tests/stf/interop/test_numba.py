@@ -43,6 +43,69 @@ def copy(src, dst):
         dst[i] = src[i]
 
 
+def axpy_chain_example():
+    """Submit four interdependent GPU tasks; STF infers the ordering.
+
+    Each task only declares how it accesses its logical data
+    (``read``/``write``/``rw``).  From those annotations STF derives the
+    dependency graph -- so no explicit synchronization is written -- moves the
+    data to and from the device, and copies the results back into ``X``, ``Y``,
+    and ``Z`` when the context is finalized.
+
+    ``scale`` and ``axpy`` are ordinary Numba CUDA kernels; ``t.stream_ptr()``
+    and ``numba_arguments(t)`` bridge each task to its kernel launch.
+    """
+
+    @cuda.jit
+    def scale(a, x):
+        i = cuda.grid(1)
+        if i < x.size:
+            x[i] = a * x[i]
+
+    @cuda.jit
+    def axpy(a, x, y):
+        i = cuda.grid(1)
+        if i < x.size:
+            y[i] = a * x[i] + y[i]
+
+    X, Y, Z = (np.ones(16, dtype=np.float32) for _ in range(3))
+
+    ctx = stf.context()
+    lX = ctx.logical_data(X)
+    lY = ctx.logical_data(Y)
+    lZ = ctx.logical_data(Z)
+
+    with ctx.task(lX.rw()) as t:  # X = 2*X
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        scale[1, 16, nb_stream](2.0, dX)
+
+    with ctx.task(lX.read(), lY.rw()) as t:  # Y += 2*X  (waits for the writer of X)
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX, dY = numba_arguments(t)
+        axpy[1, 16, nb_stream](2.0, dX, dY)
+
+    with ctx.task(lX.read(), lZ.rw()) as t:  # Z += 2*X  (independent of Y; may overlap)
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX, dZ = numba_arguments(t)
+        axpy[1, 16, nb_stream](2.0, dX, dZ)
+
+    with ctx.task(lY.read(), lZ.rw()) as t:  # Z += 2*Y  (waits for both writers above)
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dY, dZ = numba_arguments(t)
+        axpy[1, 16, nb_stream](2.0, dY, dZ)
+
+    ctx.finalize()  # results copied back into X, Y, Z
+
+    assert np.allclose(X, 2.0)
+    assert np.allclose(Y, 5.0)
+    assert np.allclose(Z, 15.0)
+
+
+def test_axpy_chain_example():
+    axpy_chain_example()
+
+
 # One test with a single kernel in a CUDA graph
 def test_numba_graph():
     X = np.ones(16, dtype=np.float32)

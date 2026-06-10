@@ -17,15 +17,19 @@ without notice.
 Example
 -------
 
-The following example creates a context, registers three arrays as logical data, and
-submits four tasks with different read/write annotations. STF orders the tasks so that
-dependencies are respected (for example, the task that reads ``Y`` runs only after the
-earlier task that writes ``Y``).
+The following example registers three arrays as logical data and submits four GPU tasks
+that scale and combine them. Each task only declares how it accesses its data
+(``read()``, ``write()``, ``rw()``); from those annotations STF infers the dependency
+graph, orders the tasks accordingly without any explicit synchronization, moves the data
+to and from the device, and copies the results back into ``X``, ``Y``, and ``Z`` when the
+context is finalized. ``scale`` and ``axpy`` are ordinary Numba CUDA kernels;
+``t.stream_ptr()`` and ``numba_arguments(t)`` (described in *Tasks and interop* below)
+bridge each task to its kernel launch.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/stf/test_context.py
+.. literalinclude:: ../../python/cuda_cccl/tests/stf/interop/test_numba.py
    :language: python
-   :pyobject: test_ctx3
-   :caption: Context, logical data, and tasks. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/test_context.py>`__
+   :pyobject: axpy_chain_example
+   :caption: Real tasks with dependencies inferred from data accesses. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/interop/test_numba.py>`__
 
 Context and logical data
 -------------------------
