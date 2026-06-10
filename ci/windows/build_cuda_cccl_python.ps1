@@ -69,6 +69,8 @@ $ErrorActionPreference = "Stop"
 Import-Module "$PSScriptRoot/build_common.psm1"
 Import-Module "$PSScriptRoot/build_common_python.psm1" -Force
 
+# Resolve repo root from this script's location.
+$RepoRoot = Resolve-Path "$PSScriptRoot/../.."
 Write-Host "Repo root: $RepoRoot"
 
 # Get the full path to the python.exe for the version we need.
