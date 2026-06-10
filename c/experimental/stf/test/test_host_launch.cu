@@ -261,4 +261,3 @@ C2H_TEST("host_launch inside a stackable nested graph scope", "[host_launch][sta
 
   REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
-
