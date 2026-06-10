@@ -132,10 +132,7 @@ private:
   //! @brief Allocates and zero-initializes an RAII device counter.
   [[nodiscard]] _CCCL_HOST ::cuda::device_buffer<__size_type> __make_counter(::cuda::stream_ref __stream) const
   {
-    ::cuda::device_buffer<__size_type> __counter{__stream, __memory_resource, 1, ::cuda::no_init};
-    _CCCL_TRY_CUDA_API(
-      cudaMemsetAsync, "Failed to zero device counter", __counter.data(), 0, sizeof(__size_type), __stream.get());
-    return __counter;
+    return ::cuda::device_buffer<__size_type>{__stream, __memory_resource, {__size_type{0}}};
   }
 
   //! @brief Reads a device counter to host.
@@ -153,12 +150,6 @@ private:
       __stream.get());
     __stream.sync();
     return __result;
-  }
-
-  //! @brief Returns a device pointer to a counter as a `cuda::atomic*`.
-  [[nodiscard]] _CCCL_HOST static auto __as_atomic(__size_type* __ptr) noexcept
-  {
-    return reinterpret_cast<::cuda::atomic<__size_type, _Scope>*>(__ptr);
   }
 
 public:
@@ -269,7 +260,7 @@ public:
         __num_keys,
         ::cuda::constant_iterator<bool>{true},
         ::cuda::std::identity{},
-        __as_atomic(__counter.data()),
+        __counter.data(),
         __container_ref);
 
     return __read_counter(__counter, __stream);

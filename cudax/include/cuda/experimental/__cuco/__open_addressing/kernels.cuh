@@ -74,13 +74,13 @@ struct __contains_if_fn
 
 //! @brief Inserts all elements in the range `[first, first + n)` and returns the number of
 //! successful insertions if `pred` of the corresponding stencil returns true.
-template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _AtomicT, class _Ref>
+template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   _InputIt __first,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   _StencilIt __stencil,
   _Predicate __pred,
-  _AtomicT* __num_successes,
+  typename _Ref::size_type* __num_successes,
   _Ref __ref)
 {
   using __block_reduce = cub::BlockReduce<typename _Ref::size_type, _BlockSize>;
@@ -118,7 +118,8 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   const auto __block_num_successes = __block_reduce(__temp_storage).Sum(__thread_num_successes);
   if (threadIdx.x == 0)
   {
-    __num_successes->fetch_add(__block_num_successes, ::cuda::std::memory_order_relaxed);
+    ::cuda::atomic_ref<typename _Ref::size_type, _Ref::thread_scope>{*__num_successes}.fetch_add(
+      __block_num_successes, ::cuda::std::memory_order_relaxed);
   }
 }
 
