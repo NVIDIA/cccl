@@ -716,12 +716,15 @@ void ValidateDistributionCharacteristic()
 
     // test host
     typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
-    thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
+    typename Distribution::result_type smaller_min  = engine_range / 3;
+    typename Distribution::result_type smaller_max  = engine_range - smaller_min;
+
+    thrust::generate(h.begin(), h.end(), Validator(Distribution(smaller_min, smaller_max)));
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
+    thrust::generate(d.begin(), d.end(), Validator(Distribution(smaller_min, smaller_max)));
 
     ASSERT_EQUAL(true, d[0]);
   }
