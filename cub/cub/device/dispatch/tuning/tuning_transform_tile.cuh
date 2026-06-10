@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Policy picker for cub::DeviceTransform's tile path. Mirrors the
-// bytes-in-flight target used by CUB's non-tile algorithms (see
+// Policy picker for cub::DeviceTransform's tile path. Shares the
+// bytes-in-flight target used by CUB's non-tile algorithms (calls
 // tuning_transform.cuh's cc_to_min_bytes_in_flight) but expresses the
 // answer as a TileSize, since tile kernels partition by compile-time
 // shape rather than threads*items.
@@ -23,29 +23,15 @@
 
 #if _CCCL_CUB_HAS_TILE_TRANSFORM()
 
+#  include <cub/device/dispatch/tuning/tuning_transform.cuh>
+
+#  include <cuda/__device/compute_capability.h>
 #  include <cuda/cmath>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform::tile
 {
-
-constexpr int min_bytes_in_flight_per_sm(int cc_x10)
-{
-  if (cc_x10 >= 1000)
-  {
-    return 64 * 1024; // B200
-  }
-  if (cc_x10 >= 900)
-  {
-    return 48 * 1024; // H100/H200
-  }
-  if (cc_x10 >= 800)
-  {
-    return 16 * 1024; // A100
-  }
-  return 12 * 1024;
-}
 
 constexpr int min_size(int a)
 {
@@ -63,7 +49,7 @@ constexpr int min_size(int a, int b, Ts... rest)
 // registers and the compiler unpacks them and packs them back. reducing the
 // compute work per thread helps here. need profiling to know the exact cause.
 template <typename Out, typename... Ins>
-constexpr int pick_tile_size(bool mufu_heavy = false, int cc_x10 = 1000)
+constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability cc = {10, 0})
 {
   constexpr int threads_per_block    = 128;
   constexpr int vector_bytes         = 16; // LDG.E.128 -> 16 bytes
@@ -75,7 +61,7 @@ constexpr int pick_tile_size(bool mufu_heavy = false, int cc_x10 = 1000)
 
   // Fill (zero inputs) keeps the same latency target by counting output bytes.
   constexpr int bytes_per_iter = (sizeof...(Ins) > 0) ? (int(sizeof(Ins)) + ... + 0) : int(sizeof(Out));
-  const int target             = min_bytes_in_flight_per_sm(cc_x10);
+  const int target             = cc_to_min_bytes_in_flight(cc);
   const int items_for_latency =
     static_cast<int>(::cuda::ceil_div(target, max_occupancy * threads_per_block * bytes_per_iter));
 
