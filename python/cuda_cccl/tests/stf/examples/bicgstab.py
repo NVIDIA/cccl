@@ -193,7 +193,7 @@ def test_bicgstab_solver():
     lA.set_read_only()
     lB.set_read_only()
 
-    bicgstab_solver(ctx, lA, lX, lB, N, tol=1e-10, maxiter=600)
+    bicgstab_solver(ctx, lA, lX, lB, N, tol=1e-10, maxiter=400)
     ctx.finalize()
 
     error = np.max(np.abs(X_host - X_ref))
