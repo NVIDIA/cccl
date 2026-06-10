@@ -27,12 +27,12 @@ namespace detail::transform::tile
 {
 
 // Build a tile partition_view for a 1D contiguous buffer. The two annotations are load-bearing:
-//   assume_aligned<16>      -- promises the pointer is 16-byte aligned, so the compiler can pick
-//                              LDG.E.128 vectorized loads/stores.
-//   ct::extents<int64_t,..> -- explicit element type on the extent; CTAD would deduce uint32_t and
-//                              wrap at 2^32. int64_t lets us cover the full num_items range.
-// The caller is responsible for honoring assume_aligned<16>; the dispatch header's
-// runtime_preconditions_valid enforces this before launching either kernel.
+//   assume_aligned<16>      -- promises the pointer is 16-byte aligned, so the compiler can pick LDG.E.128 vectorized
+//                              loads/stores.
+//   ct::extents<int64_t,..> -- explicit element type on the extent; CTAD would deduce uint32_t and wrap at 2^32.
+//                              int64_t lets us cover the full num_items range.
+// The caller is responsible for honoring assume_aligned<16>; the dispatch header's runtime_preconditions_valid
+// enforces this before launching either kernel.
 template <int TileSize, typename T, typename N>
 [[nodiscard]] __tile__ auto make_partition_view(T* ptr, N n)
 {
@@ -42,9 +42,9 @@ template <int TileSize, typename T, typename N>
   return ct::partition_view{span, ct::shape<TileSize>{}};
 }
 
-// Tile DSL kernels backing cub::DeviceTransform's tile path. The kernels assume 16-byte alignment on
-// every pointer and 16-byte divisibility on num_items so the compiler can pick LDG.E.128. Callers in
-// the dispatch header are responsible for honoring those preconditions.
+// Tile DSL kernels backing cub::DeviceTransform's tile path. The kernels assume 16-byte alignment on every pointer
+// and 16-byte divisibility on num_items so the compiler can pick LDG.E.128. Callers in the dispatch header are
+// responsible for honoring those preconditions.
 //
 // assume_divisible<16>      -- promises num_items % 16 == 0, so the tile DSL can elide tail handling.
 // assume_bounded_below<0>   -- promises num_items >= 0; enables sign-comparison simplifications.
