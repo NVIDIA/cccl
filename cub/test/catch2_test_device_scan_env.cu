@@ -602,8 +602,8 @@ C2H_TEST("ScanPolicy", "[scan][device]")
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ScanLookbackPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ScanLookbackPolicy>);
 
-  STATIC_REQUIRE(::cuda::std::semiregular<cub::ScanWarpspeedPolicy>);
-  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ScanWarpspeedPolicy>);
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ScanLookaheadPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ScanLookaheadPolicy>);
 
   // aggregate init
   constexpr auto p1 = cub::ScanPolicy{
@@ -616,7 +616,7 @@ C2H_TEST("ScanPolicy", "[scan][device]")
       cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
       cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
       cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
-    cub::ScanWarpspeedPolicy{}};
+    cub::ScanLookaheadPolicy{}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -631,7 +631,7 @@ C2H_TEST("ScanPolicy", "[scan][device]")
         .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
         .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
         .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
-    .warpspeed = cub::ScanWarpspeedPolicy{}};
+    .lookahead = cub::ScanLookaheadPolicy{}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
