@@ -100,7 +100,6 @@ private:
   __key_equal __predicate;
   __probing_scheme_type __probing_scheme;
   mutable _MemoryResource __memory_resource;
-  __size_type __num_buckets;
   ::cuda::device_buffer<__value_type> __slots;
 
   //! @brief Computes the number of buckets for a requested capacity.
@@ -176,8 +175,7 @@ public:
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __num_buckets{__compute_num_buckets(__capacity)}
-      , __slots{__stream, __mr, __num_buckets * _BucketSize, ::cuda::no_init}
+      , __slots{__stream, __mr, __compute_num_buckets(__capacity) * _BucketSize, ::cuda::no_init}
   {
     clear_async(__stream);
   }
@@ -197,8 +195,7 @@ public:
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __num_buckets{__compute_num_buckets(__n, __desired_load_factor)}
-      , __slots{__stream, __mr, __num_buckets * _BucketSize, ::cuda::no_init}
+      , __slots{__stream, __mr, __compute_num_buckets(__n, __desired_load_factor) * _BucketSize, ::cuda::no_init}
   {
     clear_async(__stream);
   }
@@ -217,8 +214,7 @@ public:
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __num_buckets{__compute_num_buckets(__capacity)}
-      , __slots{__stream, __mr, __num_buckets * _BucketSize, ::cuda::no_init}
+      , __slots{__stream, __mr, __compute_num_buckets(__capacity) * _BucketSize, ::cuda::no_init}
   {
     if (empty_key_sentinel() == erased_key_sentinel())
     {
@@ -350,7 +346,7 @@ public:
   //! @brief Returns the total number of slots.
   [[nodiscard]] _CCCL_HOST constexpr __size_type capacity() const noexcept
   {
-    return __num_buckets * _BucketSize;
+    return static_cast<__size_type>(__slots.size());
   }
 
   //! @brief Returns a pointer to the underlying slot array.
@@ -378,7 +374,7 @@ public:
   }
 
   //! @brief Returns the probing scheme.
-  [[nodiscard]] _CCCL_HOST constexpr const __probing_scheme_type& probing_scheme() const noexcept
+  [[nodiscard]] _CCCL_HOST constexpr __probing_scheme_type probing_scheme() const noexcept
   {
     return __probing_scheme;
   }
