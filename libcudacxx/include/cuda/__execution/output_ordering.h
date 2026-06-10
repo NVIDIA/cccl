@@ -31,6 +31,15 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
+//! @brief Requirement describing the order in which an algorithm writes its results to the output (e.g. the top-k
+//! elements of cub::DeviceBatchedTopK).
+//!
+//! The available options are:
+//! - cuda::execution::output_ordering::unsorted: the results may be written in any order.
+//! - cuda::execution::output_ordering::sorted: the results are written sorted by key. Among elements that compare
+//!   equal, their relative order is unspecified.
+//! - cuda::execution::output_ordering::stable_sorted: the results are written sorted by key and, among elements that
+//!   compare equal, their relative order matches the order of their source indices (smaller source index first).
 namespace output_ordering
 {
 struct __get_output_ordering_t;
@@ -38,6 +47,7 @@ struct __get_output_ordering_t;
 enum class __output_ordering_t
 {
   __sorted,
+  __stable_sorted,
   __unsorted
 };
 
@@ -53,10 +63,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __output_ordering_holder_t
   }
 };
 
-using sorted_t   = __output_ordering_holder_t<__output_ordering_t::__sorted>;
-using unsorted_t = __output_ordering_holder_t<__output_ordering_t::__unsorted>;
+using sorted_t        = __output_ordering_holder_t<__output_ordering_t::__sorted>;
+using stable_sorted_t = __output_ordering_holder_t<__output_ordering_t::__stable_sorted>;
+using unsorted_t      = __output_ordering_holder_t<__output_ordering_t::__unsorted>;
 
 _CCCL_GLOBAL_CONSTANT sorted_t sorted{};
+_CCCL_GLOBAL_CONSTANT stable_sorted_t stable_sorted{};
 _CCCL_GLOBAL_CONSTANT unsorted_t unsorted{};
 
 struct __get_output_ordering_t
