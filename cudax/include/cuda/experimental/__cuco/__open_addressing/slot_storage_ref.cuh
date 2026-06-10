@@ -71,7 +71,7 @@ struct __slot_storage_ref
   //! @brief Returns the bucket at position `__i`.
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __bucket_type operator[](__size_type __i) const noexcept
   {
-    return __bucket_type{__data_ + __i, static_cast<typename __bucket_type::size_type>(_BucketSize)};
+    return __bucket_type{__data_ + __i, typename __bucket_type::size_type{_BucketSize}};
   }
 
   //! @brief Returns the total number of slots.
@@ -83,7 +83,7 @@ struct __slot_storage_ref
   //! @brief Returns the number of buckets.
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __size_type num_buckets() const noexcept
   {
-    return capacity() / static_cast<__size_type>(_BucketSize);
+    return capacity() / __size_type{_BucketSize};
   }
 
   //! @brief Returns the total slot count as a `cuda::std::extents` (the probing reduction bound).

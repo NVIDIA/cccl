@@ -61,8 +61,8 @@ inline constexpr bool is_double_hashing_v = ::cuda::experimental::cuco::is_doubl
 template <class _ProbingScheme, int _BucketSize, class _Size>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Size make_valid_capacity(_Size __requested)
 {
-  constexpr auto __stride = static_cast<_Size>(_ProbingScheme::cg_size * _BucketSize);
-  const auto __cycles     = ::cuda::ceil_div(::cuda::std::max(__requested, static_cast<_Size>(1)), __stride);
+  constexpr auto __stride = _Size{_ProbingScheme::cg_size * _BucketSize};
+  const auto __cycles     = ::cuda::ceil_div(::cuda::std::max(__requested, _Size{1}), __stride);
   _Size __capacity{};
   if constexpr (::cuda::experimental::cuco::is_double_hashing_v<_ProbingScheme>)
   {
@@ -75,7 +75,7 @@ template <class _ProbingScheme, int _BucketSize, class _Size>
   }
   else
   {
-    const auto __num_buckets = __cycles + static_cast<_Size>(__requested == 0);
+    const auto __num_buckets = __cycles + _Size{__requested == 0};
     if (::cuda::mul_overflow(__capacity, __num_buckets, __stride))
     {
       _CCCL_THROW(::std::logic_error, "Invalid input capacity");

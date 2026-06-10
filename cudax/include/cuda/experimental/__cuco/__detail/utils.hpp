@@ -36,12 +36,12 @@ using __index_type = ::cuda::std::int64_t;
 
 [[nodiscard]] _CCCL_DEVICE inline __index_type __global_thread_id() noexcept
 {
-  return static_cast<__index_type>(blockDim.x) * blockIdx.x + threadIdx.x;
+  return __index_type{blockDim.x} * blockIdx.x + threadIdx.x;
 }
 
 [[nodiscard]] _CCCL_DEVICE inline __index_type __grid_stride() noexcept
 {
-  return static_cast<__index_type>(gridDim.x) * blockDim.x;
+  return __index_type{gridDim.x} * blockDim.x;
 }
 
 constexpr _CCCL_HOST_DEVICE ::cuda::std::int32_t __default_block_size() noexcept
@@ -114,7 +114,7 @@ template <class _Iterator>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr __index_type __distance(_Iterator __begin, _Iterator __end)
 {
   static_assert(::cuda::std::random_access_iterator<_Iterator>, "Input iterator should be a random access iterator.");
-  return static_cast<__index_type>(::cuda::std::distance(__begin, __end));
+  return __index_type{::cuda::std::distance(__begin, __end)};
 }
 } // namespace cuda::experimental::cuco::__detail
 

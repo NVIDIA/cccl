@@ -638,11 +638,11 @@ public:
   {
     if constexpr (__has_payload)
     {
-      return {static_cast<__key_type>(__extract_key(__value)), __extract_payload(__value)};
+      return {__key_type{__extract_key(__value)}, __extract_payload(__value)};
     }
     else
     {
-      return static_cast<__value_type>(__value);
+      return __value_type{__value};
     }
   }
 
@@ -663,12 +663,12 @@ public:
       using mapped_type = decltype(empty_value_sentinel());
       if constexpr (::cuda::experimental::cuco::__detail::__is_pair_like<_Value>::value)
       {
-        return ::cuda::std::pair{::cuda::std::get<0>(__value), static_cast<mapped_type>(::cuda::std::get<1>(__value))};
+        return ::cuda::std::pair{::cuda::std::get<0>(__value), mapped_type{::cuda::std::get<1>(__value)}};
       }
       else
       {
         // hail mary (convert using .first/.second members)
-        return ::cuda::std::pair{thrust::raw_reference_cast(__value.first), static_cast<mapped_type>(__value.second)};
+        return ::cuda::std::pair{thrust::raw_reference_cast(__value.first), mapped_type{__value.second}};
       }
     }
     else
@@ -756,8 +756,8 @@ public:
     ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
     ::cuda::atomic_ref<mapped_type, _Scope> payload_ref(__address->second);
 
-    const auto key_cas_success = key_ref.compare_exchange_strong(
-      __expected_key, static_cast<__key_type>(__desired.first), ::cuda::memory_order_relaxed);
+    const auto key_cas_success =
+      key_ref.compare_exchange_strong(__expected_key, __key_type{__desired.first}, ::cuda::memory_order_relaxed);
     auto payload_cas_success =
       payload_ref.compare_exchange_strong(__expected_payload, __desired.second, ::cuda::memory_order_relaxed);
 
@@ -806,8 +806,8 @@ public:
 
     ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
     auto __expected_key = __expected.first;
-    const auto success  = key_ref.compare_exchange_strong(
-      __expected_key, static_cast<__key_type>(__desired.first), ::cuda::memory_order_relaxed);
+    const auto success =
+      key_ref.compare_exchange_strong(__expected_key, __key_type{__desired.first}, ::cuda::memory_order_relaxed);
 
     // if __key success
     if (success)
