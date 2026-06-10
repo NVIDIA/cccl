@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/cmath>
+#include <cuda/hierarchy>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/cstdint>
@@ -36,12 +38,12 @@ using __index_type = ::cuda::std::int64_t;
 
 [[nodiscard]] _CCCL_DEVICE inline __index_type __global_thread_id() noexcept
 {
-  return __index_type{blockDim.x} * blockIdx.x + threadIdx.x;
+  return ::cuda::gpu_thread.rank_as<__index_type>(::cuda::grid);
 }
 
 [[nodiscard]] _CCCL_DEVICE inline __index_type __grid_stride() noexcept
 {
-  return __index_type{gridDim.x} * blockDim.x;
+  return ::cuda::gpu_thread.count_as<__index_type>(::cuda::grid);
 }
 
 constexpr _CCCL_HOST_DEVICE ::cuda::std::int32_t __default_block_size() noexcept
@@ -77,7 +79,7 @@ constexpr _CCCL_HOST_DEVICE __index_type __grid_size(
   ::cuda::std::int32_t __stride     = __default_stride(),
   ::cuda::std::int32_t __block_size = __default_block_size()) noexcept
 {
-  return (__cg_size * __num + __stride * __block_size - 1) / (__stride * __block_size);
+  return ::cuda::ceil_div(__cg_size * __num, __stride * __block_size);
 }
 
 #if !_CCCL_COMPILER(NVRTC)
