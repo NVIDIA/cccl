@@ -14,6 +14,7 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.numba import jit  # noqa: E402
 
+
 @jit
 def axpy(a, x, y):
     i = cuda.grid(1)

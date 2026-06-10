@@ -20,6 +20,7 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.numba import numba_arguments  # noqa: E402
 
+
 @pytest.fixture(autouse=True)
 def _disable_low_occupancy_warnings(monkeypatch):
     monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)

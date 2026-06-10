@@ -36,6 +36,7 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.numba import numba_arguments  # noqa: E402
 
+
 class Plaintext:
     def __init__(self, ctx, values=None, ld=None, key=0x42, name=None):
         self.ctx = ctx
