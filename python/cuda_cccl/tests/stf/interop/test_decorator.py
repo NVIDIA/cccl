@@ -32,7 +32,7 @@ def scale(a, x):
 def test_decorator(monkeypatch, use_graph):
     monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)
 
-    X, Y, Z = (np.ones(16, np.float32) for _ in range(3))
+    X, Y, Z = (np.ones(32 * 64, np.float32) for _ in range(3))
 
     ctx = stf.context(use_graph=use_graph)
     lX = ctx.logical_data(X)

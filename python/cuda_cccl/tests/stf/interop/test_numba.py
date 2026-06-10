@@ -110,7 +110,7 @@ def test_axpy_chain_example():
 
 # One test with a single kernel in a CUDA graph
 def test_numba_graph():
-    X = np.ones(16, dtype=np.float32)
+    X = np.ones(32 * 64, dtype=np.float32)
     ctx = stf.context(use_graph=True)
     lX = ctx.logical_data(X)
     with ctx.task(lX.rw()) as t:
@@ -339,9 +339,9 @@ def test_numba2d():
 
 
 def test_numba_exec_place():
-    X = np.ones(16, dtype=np.float32)
-    Y = np.ones(16, dtype=np.float32)
-    Z = np.ones(16, dtype=np.float32)
+    X = np.ones(32 * 64, dtype=np.float32)
+    Y = np.ones(32 * 64, dtype=np.float32)
+    Z = np.ones(32 * 64, dtype=np.float32)
 
     ctx = stf.context()
     lX = ctx.logical_data(X)
@@ -396,9 +396,9 @@ def test_numba_places():
         pytest.skip("Need at least 2 GPUs")
         return
 
-    X = np.ones(16, dtype=np.float32)
-    Y = np.ones(16, dtype=np.float32)
-    Z = np.ones(16, dtype=np.float32)
+    X = np.ones(32 * 64, dtype=np.float32)
+    Y = np.ones(32 * 64, dtype=np.float32)
+    Z = np.ones(32 * 64, dtype=np.float32)
 
     ctx = stf.context()
     lX = ctx.logical_data(X)
