@@ -84,7 +84,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import cuda.stf._experimental as stf
+# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
+pytest.importorskip("cuda.stf._experimental._stf_bindings")
+import cuda.stf._experimental as stf  # noqa: E402
 
 wp = pytest.importorskip("warp")
 wp_stf = pytest.importorskip("warp.stf_experimental")

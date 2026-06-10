@@ -28,10 +28,13 @@ operations without exposing CUDA streams or events to the user.
 """
 
 import numba
+import pytest
 from numba import cuda
 
-import cuda.stf._experimental as stf
-from cuda.stf._experimental.interop.numba import numba_arguments
+# Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
+pytest.importorskip("cuda.stf._experimental._stf_bindings")
+import cuda.stf._experimental as stf  # noqa: E402
+from cuda.stf._experimental.interop.numba import numba_arguments  # noqa: E402
 
 numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
