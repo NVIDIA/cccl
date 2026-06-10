@@ -83,17 +83,19 @@ When implementing CUB headers, tests, or benchmarks:
 * Follow the CUB Catch2 typed-test pattern from nearby tests. Prefer `C2H_TEST`, `params_t<TestType>`,
   `c2h::host_vector`, `c2h::device_vector`, and the compile-time parameter-list style described in
   `docs/cub/test_overview.rst`.
-* Copy device outputs to `c2h::host_vector` before comparing against host references. Avoid comparing
-  `c2h::host_vector` directly with `c2h::device_vector`, which can hide expensive element-wise device reads.
+* When comparing host references with device outputs, make any device-to-host copy intentional and easy to
+  see. Direct `c2h::host_vector` / `c2h::device_vector` comparisons are used in existing tests and bulk-copy
+  mismatched systems to host, but an explicit host copy is clearer when data movement matters to the test.
 * Use CUB architecture constants such as `cub::detail::warp_threads` instead of hard-coded architectural
   values like `32`, and make public documentation match any row-major or multidimensional thread
   linearization used by the implementation.
 * For fixed-size range APIs, mirror sibling contracts: use `static_size_v` and
-  `::cuda::std::iter_value_t`-based element checks, and allow zero-sized instantiations when the sibling API
+  `cuda::std::iter_value_t`-based element checks, and allow zero-sized instantiations when the sibling API
   does.
 * When inactive lanes, partial tiles, or output-parameter overloads are part of the contract, initialize
-  outputs with an impossible sentinel and verify every overload family across the important type categories
-  used by the primitive, including 64-bit floating-point and custom or multi-word types where applicable.
+  outputs with a sentinel value that the operation cannot produce, and verify every overload family across the
+  important type categories used by the primitive, including 64-bit floating-point and custom or multi-word
+  types where applicable.
 * Let `clang-format` format code, then manually scan documentation comments and prose for readable wrapping
   consistent with surrounding files and reviewer expectations. Avoid artificial narrow wrapping in comments.
 
@@ -104,13 +106,14 @@ thread/warp/block primitive:
   of the algorithm contract.
 * Thread, warp, and block primitive microbenchmarks should measure the primitive itself. Avoid measured-path
   global input/output traffic unless the primitive requires it. Prefer device-side benchmarking with
-  `nvbench_helper/nvbench_helper/device_side_benchmark.cuh`; use
-  `cub/benchmarks/bench/reduce/warp_reduce_base.cuh` as a reference pattern.
+  `<device_side_benchmark.cuh>`; use `cub/benchmarks/bench/reduce/warp_reduce_base.cuh` as a reference
+  pattern.
 * Keep benchmark axes sliceable and comparable. Put the algorithm or implementation choice on its own axis,
   and keep workload knobs such as value type, items, batches, logical warp threads, rows, and synchronization
   mode on separate axes instead of folding them into a single variant string.
 * Generate benchmark inputs in-device or keep setup outside the measured path. If using the device-side
-  benchmark helper, account for the helper's unroll factor in reported element counts.
+  benchmark helper, account for the helper's unroll factor in reported element counts, for example with
+  `state.add_element_count(items * batches * unroll_factor)`.
 * Guard occupancy-derived launches. If `cudaOccupancyMaxActiveBlocksPerMultiprocessor` or equivalent sizing
   produces a zero-sized grid for a benchmark configuration, call `state.skip(...)` with a clear reason rather
   than launching an invalid kernel.

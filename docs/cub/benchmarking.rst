@@ -148,11 +148,20 @@ When benchmarking thread-, warp-, or block-level primitives:
 * Generate input data on the device, or keep setup outside the measured path.
 * Use shared memory for primitive-local state when that matches the primitive usage.
 * If the helper kernel unrolls the measured operation, include that unroll factor in
-  the reported element count.
+  the reported element count, for example with
+  ``state.add_element_count(items * batches * unroll_factor)``.
 * Guard occupancy-derived launch sizes. If
   ``cudaOccupancyMaxActiveBlocksPerMultiprocessor`` or equivalent sizing returns
   zero active blocks for a configuration, skip that state with a clear
   ``state.skip(...)`` message instead of launching a zero-sized grid.
+
+  .. code-block:: c++
+
+     if (max_blocks_per_SM == 0)
+     {
+       state.skip("Occupancy returns zero active blocks for this configuration");
+       return;
+     }
 
 If a benchmark changes from a global-memory-driven method to a device-side method,
 record that change when reporting results. The two methodologies answer different

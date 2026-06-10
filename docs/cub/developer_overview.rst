@@ -143,7 +143,8 @@ CUB headers follow the established CUB header shape: SPDX/file comments,
 ``#pragma once``, ``<cub/config.cuh>``, and the implicit system-header pragma
 block. Do not apply libcu++'s explicit include guard and
 ``<cuda/std/__cccl/prologue.h>`` / ``<cuda/std/__cccl/epilogue.h>`` pattern to
-CUB headers unless the surrounding CUB subsystem has already adopted that shape.
+CUB headers unless sibling headers in the same subsystem already consistently use
+that shape.
 
 Before adding a low-level CUDA device helper to a CUB utility header, search for
 an existing CUB or libcu++ facility. Prefer existing ``cuda::device`` helpers,

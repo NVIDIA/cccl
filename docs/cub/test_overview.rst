@@ -116,10 +116,11 @@ At this point, we have a reference solution on the CPU and a CUB solution on the
 The two can be compared using Catch2's ``REQUIRE`` macro, which stops execution upon failure (preferred).
 Catch2 also offers the ``CHECK`` macro, which continues test execution if the check fails.
 
-If the reference lives in host memory, copy the device output into a
-``c2h::host_vector`` before comparing. Do not compare a ``c2h::host_vector``
-directly with a ``c2h::device_vector``; that can turn the comparison into
-element-wise device reads and makes the test unlike the rest of the CUB suite.
+If the reference lives in host memory, make any device-to-host transfer explicit
+when that data movement matters to the test. Direct comparisons between
+``c2h::host_vector`` and ``c2h::device_vector`` are common in existing tests and
+bulk-copy mismatched systems to host; copying the device output into a
+``c2h::host_vector`` first can make the transfer easier to see and control.
 
 If your test has to cover floating point types,
 it's sufficient to replace ``REQUIRE( a == b )`` with ``REQUIRE_APPROX_EQ(a, b)``.
@@ -307,12 +308,13 @@ Coverage checks for new collectives
 When adding a new thread, warp, or block collective, check the sibling API before
 choosing the test matrix. For fixed-size range APIs, mirror the sibling
 contract: use ``static_size_v`` for the size check and
-``::cuda::std::iter_value_t`` for element-type constraints, and allow zero-sized
+``cuda::std::iter_value_t`` for element-type constraints, and allow zero-sized
 instantiations if the sibling API allows them.
 
 For partial participation, inactive lanes, or guarded output paths, initialize
-outputs with an impossible sentinel and verify that inactive elements remain
-unwritten. Avoid sentinels that can also be valid reduction results.
+outputs with an impossible sentinel, meaning a value the operation cannot
+produce, and verify that inactive elements remain unwritten. Avoid sentinels
+that can also be valid reduction results.
 
 Exercise every overload family that is part of the public contract. If a
 primitive supports both return-value and output-parameter APIs, cover both. If it
