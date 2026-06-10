@@ -58,7 +58,7 @@ namespace cuda::experimental::cuco
 //! slot count, or `cuda::std::dynamic_extent` (the default) for runtime-sized maps. Obtain a valid
 //! value with `cuco::make_valid_capacity`.
 //!
-//! @tparam _Key Key type. Requires `cuda::experimental::cuco::is_bitwise_comparable_v<_Key>`
+//! @tparam _Key Key type. Requires `cuda::is_bitwise_comparable_v<_Key>`
 //! @tparam _Tp Mapped value type
 //! @tparam _Capacity Requested slot count, or `cuda::std::dynamic_extent` for runtime sizing
 //! @tparam _Scope Thread scope for atomic operations

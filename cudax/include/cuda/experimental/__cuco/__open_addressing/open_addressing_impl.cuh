@@ -24,6 +24,7 @@
 #include <cuda/__container/buffer.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/atomic>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/functional>
@@ -35,7 +36,6 @@
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
-#include <cuda/experimental/__cuco/traits.hpp>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -48,11 +48,11 @@ namespace cuda::experimental::cuco::__open_addressing
 //! @throw If the size of the given key type is larger than 8 bytes
 //! @throw If the size of the given slot type is larger than 16 bytes
 //! @throw If the given key type doesn't have unique object representations, i.e.,
-//! `cuda::experimental::cuco::is_bitwise_comparable_v<_Key> == false`
+//! `cuda::is_bitwise_comparable_v<_Key> == false`
 //! @throw If the probing scheme type is not inherited from
 //! `cuda::experimental::cuco::__detail::__probing_scheme_base`
 //!
-//! @tparam _Key Type used for keys. Requires `cuda::experimental::cuco::is_bitwise_comparable_v<_Key>`
+//! @tparam _Key Type used for keys. Requires `cuda::is_bitwise_comparable_v<_Key>`
 //! @tparam _Value Type used for storage values
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _KeyEqual Binary callable type used to compare two keys for equality
@@ -84,9 +84,9 @@ public:
 
   static_assert(sizeof(_Key) <= 8, "Container does not support key types larger than 8 bytes.");
   static_assert(sizeof(_Value) <= 16, "Container does not support slot types larger than 16 bytes.");
-  static_assert(::cuda::experimental::cuco::is_bitwise_comparable_v<_Key>,
+  static_assert(::cuda::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
-                "bitwise comparison via specialization of cuda::experimental::cuco::is_bitwise_comparable_v<Key>.");
+                "bitwise comparison via specialization of cuda::is_bitwise_comparable_v<Key>.");
   static_assert(
     ::cuda::std::is_base_of_v<::cuda::experimental::cuco::__detail::__probing_scheme_base<_ProbingScheme::cg_size>,
                               _ProbingScheme>,

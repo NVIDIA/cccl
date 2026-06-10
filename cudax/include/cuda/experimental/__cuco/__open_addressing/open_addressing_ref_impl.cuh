@@ -27,6 +27,7 @@
 #include <thrust/reduce.h>
 
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/atomic>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -88,7 +89,7 @@ struct __bucket_probing_results
 //! @throw If the probing scheme type is not inherited from
 //! `::cuda::experimental::cuco::__detail::__probing_scheme_base`
 //!
-//! @tparam Key Type used for keys. Requires `::cuda::experimental::cuco::is_bitwise_comparable_v<Key>` returning true
+//! @tparam Key Type used for keys. Requires `::cuda::is_bitwise_comparable_v<Key>` returning true
 //! @tparam Scope The scope in which operations will be performed by individual threads.
 //! @tparam KeyEqual Binary callable type used to compare two keys for equality
 //! @tparam ProbingScheme Probing scheme (see `cuda/experimental/__cuco/probing_scheme.cuh` for options)
@@ -104,9 +105,9 @@ class __open_addressing_ref_impl
 {
   static_assert(sizeof(_Key) <= 8, "Container does not support __key types larger than 8 bytes.");
 
-  static_assert(::cuda::experimental::cuco::is_bitwise_comparable_v<_Key>,
+  static_assert(::cuda::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
-                "bitwise comparison via specialization of ::cuda::experimental::cuco::is_bitwise_comparable_v<_Key>.");
+                "bitwise comparison via specialization of ::cuda::is_bitwise_comparable_v<_Key>.");
 
   static_assert(
     ::cuda::std::is_base_of_v<::cuda::experimental::cuco::__detail::__probing_scheme_base<_ProbingScheme::cg_size>,

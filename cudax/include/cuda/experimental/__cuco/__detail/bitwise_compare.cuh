@@ -21,13 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
-
-#include <cuda/experimental/__cuco/traits.hpp>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -78,7 +77,7 @@ _CCCL_HOST_DEVICE constexpr ::cuda::std::size_t __alignment() noexcept
 template <class _Tp>
 _CCCL_HOST_DEVICE constexpr bool __bitwise_compare(_Tp __lhs, _Tp __rhs)
 {
-  static_assert(::cuda::experimental::cuco::is_bitwise_comparable_v<_Tp>,
+  static_assert(::cuda::is_bitwise_comparable_v<_Tp>,
                 "Bitwise compared objects must have unique object representations or be explicitly declared safe.");
 
   alignas(__alignment<_Tp>()) _Tp __lhs_aligned{__lhs};

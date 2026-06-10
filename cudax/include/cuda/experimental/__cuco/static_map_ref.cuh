@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/atomic>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/span>
@@ -33,7 +34,6 @@
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
-#include <cuda/experimental/__cuco/traits.hpp>
 #include <cuda/experimental/__cuco/types.cuh>
 
 #include <cooperative_groups.h>
@@ -77,9 +77,9 @@ class static_map_ref
 {
   static_assert(sizeof(_Key) <= 8, "Container does not support key types larger than 8 bytes.");
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "sizeof(mapped_type) must be either 4 bytes or 8 bytes.");
-  static_assert(::cuda::experimental::cuco::is_bitwise_comparable_v<_Key>,
+  static_assert(::cuda::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
-                "bitwise comparison via specialization of cuda::experimental::cuco::is_bitwise_comparable_v<Key>.");
+                "bitwise comparison via specialization of cuda::is_bitwise_comparable_v<Key>.");
 
   static constexpr bool __allows_duplicates = false;
 

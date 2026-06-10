@@ -31,24 +31,6 @@
 
 namespace cuda::experimental::cuco
 {
-//! @brief Trait indicating a type is safe for bitwise comparison.
-//!
-//! @tparam _Tp Type to inspect
-//! @tparam _Enable SFINAE hook
-template <class _Tp, class _Enable = void>
-struct is_bitwise_comparable : ::cuda::std::false_type
-{};
-
-//! @brief Default specialization using unique object representation.
-template <class _Tp>
-struct is_bitwise_comparable<_Tp, ::cuda::std::enable_if_t<::cuda::std::has_unique_object_representations_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
-
-//! @brief Convenience alias for `is_bitwise_comparable`.
-template <class _Tp>
-inline constexpr bool is_bitwise_comparable_v = is_bitwise_comparable<_Tp>::value;
-
 //! @brief Trait indicating if a type is tuple-like.
 //!
 //! @tparam _Tp Type to inspect
