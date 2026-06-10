@@ -141,10 +141,18 @@ When benchmarking thread-, warp-, or block-level primitives:
   ``<device_side_benchmark.cuh>``.
 * Use an existing device-side benchmark, such as
   ``cub/benchmarks/bench/reduce/warp_reduce_base.cuh``, as the reference pattern.
+* Keep the implementation choice on its own NVBench axis. Workload knobs such as
+  value type, logical warp size, batch count, rows per block, warps per row, item
+  count, and synchronization mode should be separate axes so ``-a`` filters and
+  result comparisons can slice one dimension at a time.
 * Generate input data on the device, or keep setup outside the measured path.
 * Use shared memory for primitive-local state when that matches the primitive usage.
 * If the helper kernel unrolls the measured operation, include that unroll factor in
   the reported element count.
+* Guard occupancy-derived launch sizes. If
+  ``cudaOccupancyMaxActiveBlocksPerMultiprocessor`` or equivalent sizing returns
+  zero active blocks for a configuration, skip that state with a clear
+  ``state.skip(...)`` message instead of launching a zero-sized grid.
 
 If a benchmark changes from a global-memory-driven method to a device-side method,
 record that change when reporting results. The two methodologies answer different

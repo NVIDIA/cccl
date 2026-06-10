@@ -116,6 +116,11 @@ At this point, we have a reference solution on the CPU and a CUB solution on the
 The two can be compared using Catch2's ``REQUIRE`` macro, which stops execution upon failure (preferred).
 Catch2 also offers the ``CHECK`` macro, which continues test execution if the check fails.
 
+If the reference lives in host memory, copy the device output into a
+``c2h::host_vector`` before comparing. Do not compare a ``c2h::host_vector``
+directly with a ``c2h::device_vector``; that can turn the comparison into
+element-wise device reads and makes the test unlike the rest of the CUB suite.
+
 If your test has to cover floating point types,
 it's sufficient to replace ``REQUIRE( a == b )`` with ``REQUIRE_APPROX_EQ(a, b)``.
 
@@ -124,6 +129,9 @@ it's sufficient to replace ``REQUIRE( a == b )`` with ``REQUIRE_APPROX_EQ(a, b)`
 
 Do not use ``assert`` in tests, which is usually only enabled in Debug mode,
 and we run CUB tests in Release mode.
+
+When a test needs the architectural warp size, use CUB's architecture constants,
+such as ``cub::detail::warp_threads``, instead of hard-coded values like ``32``.
 
 If a custom (non-fundamental) type has to be tested, the following helper class template should be used:
 
@@ -283,6 +291,35 @@ It leads to multiple executables being produced from a single test source.
     bin/cub.test.scope_algorithm.bs_256
 
 Multiple ``%PARAM%`` comments can be specified forming another Cartesian product.
+
+API and documentation examples
+=====================================
+
+Public CUB documentation snippets should be compiled and tested. Prefer putting
+the snippet in a small API/example test and include it from the public
+documentation with ``.. literalinclude::`` and start/end markers. This is the
+pattern used by existing CUB API docs and keeps examples synchronized with the
+actual API.
+
+Coverage checks for new collectives
+=====================================
+
+When adding a new thread, warp, or block collective, check the sibling API before
+choosing the test matrix. For fixed-size range APIs, mirror the sibling
+contract: use ``static_size_v`` for the size check and
+``::cuda::std::iter_value_t`` for element-type constraints, and allow zero-sized
+instantiations if the sibling API allows them.
+
+For partial participation, inactive lanes, or guarded output paths, initialize
+outputs with an impossible sentinel and verify that inactive elements remain
+unwritten. Avoid sentinels that can also be valid reduction results.
+
+Exercise every overload family that is part of the public contract. If a
+primitive supports both return-value and output-parameter APIs, cover both. If it
+supports custom or multi-word shuffle types, include those types in the
+output-parameter overload tests too. Include 64-bit floating-point coverage when
+the primitive supports floating-point reductions, not just integer and
+single-precision cases.
 
 Final Test
 =====================================
