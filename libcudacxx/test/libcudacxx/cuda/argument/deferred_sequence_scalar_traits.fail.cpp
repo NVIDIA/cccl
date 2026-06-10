@@ -10,7 +10,9 @@
 
 #include <cuda/argument>
 
-[[maybe_unused]] constexpr auto invalid_bounds = cuda::args::static_bounds<0, 1L>{};
+using traits = cuda::args::__traits<cuda::args::deferred_sequence<int>>;
+
+[[maybe_unused]] constexpr bool invalid_traits = traits::is_deferred;
 
 int main(int, char**)
 {

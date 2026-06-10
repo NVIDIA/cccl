@@ -10,7 +10,9 @@
 
 #include <cuda/argument>
 
-[[maybe_unused]] constexpr auto invalid_bounds = cuda::args::static_bounds<0, 1L>{};
+using arg_t = cuda::args::immediate<int, cuda::args::runtime_bounds<int>>;
+
+[[maybe_unused]] arg_t invalid_arg{0};
 
 int main(int, char**)
 {
