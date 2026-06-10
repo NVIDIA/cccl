@@ -445,9 +445,8 @@ private:
   BackingUnitT data[NUM_TOTAL_UNITS] = {};
 };
 
-/**
- * Parameterizable tuning policy type for AgentBatchMemcpy
- */
+namespace detail
+{
 template <uint32_t ThreadsPerBlock,
           uint32_t BuffersPerThread,
           uint32_t TlevBytesPerThread,
@@ -457,7 +456,7 @@ template <uint32_t ThreadsPerBlock,
           uint32_t BlockLevelThreshold,
           class BuffDelayConstructor,
           class BlockDelayConstructor>
-struct AgentBatchMemcpyPolicy
+struct agent_batch_memcpy_policy
 {
   /// Threads per thread block
   static constexpr uint32_t BLOCK_THREADS = ThreadsPerBlock;
@@ -479,6 +478,29 @@ struct AgentBatchMemcpyPolicy
   using buff_delay_constructor  = BuffDelayConstructor;
   using block_delay_constructor = BlockDelayConstructor;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <uint32_t ThreadsPerBlock,
+          uint32_t BuffersPerThread,
+          uint32_t TlevBytesPerThread,
+          bool PreferPow2Bits,
+          uint32_t BlockLevelTileSize,
+          uint32_t WarpLevelThreshold,
+          uint32_t BlockLevelThreshold,
+          class BuffDelayConstructor,
+          class BlockDelayConstructor>
+using AgentBatchMemcpyPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceMemcpy") = detail::agent_batch_memcpy_policy<
+    ThreadsPerBlock,
+    BuffersPerThread,
+    TlevBytesPerThread,
+    PreferPow2Bits,
+    BlockLevelTileSize,
+    WarpLevelThreshold,
+    BlockLevelThreshold,
+    BuffDelayConstructor,
+    BlockDelayConstructor>;
 
 template <typename AgentMemcpySmallBuffersPolicyT,
           typename InputBufferIt,

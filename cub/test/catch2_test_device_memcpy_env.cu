@@ -135,8 +135,7 @@ TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]")
 template <int BlockThreads>
 struct batch_memcpy_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const
-    -> cub::detail::batch_memcpy::batch_memcpy_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedMemcpyPolicy
   {
     return {
       {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
@@ -180,3 +179,52 @@ C2H_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", block_sizes)
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("BatchedMemcpyPolicy", "[memcpy][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::BatchedMemcpyPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::BatchedMemcpyPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::BatchedMemcpyPolicy{
+    cub::BatchMemcpySmallBufferPolicy{
+      128,
+      4,
+      8,
+      false,
+      256 * 32,
+      128,
+      8 * 1024,
+      cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450},
+      cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}},
+    cub::BatchMemcpyLargeBufferPolicy{256, 32}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::BatchedMemcpyPolicy{
+    .small_buffer =
+      cub::BatchMemcpySmallBufferPolicy{
+        .threads_per_block     = 128,
+        .buffers_per_thread    = 4,
+        .tlev_bytes_per_thread = 8,
+        .prefer_pow2_bits      = false,
+        .block_level_tile_size = 256 * 32,
+        .warp_level_threshold  = 128,
+        .block_level_threshold = 8 * 1024,
+        .buff_lookback_delay =
+          cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
+        .block_lookback_delay =
+          cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}},
+    .large_buffer = cub::BatchMemcpyLargeBufferPolicy{.threads_per_block = 256, .bytes_per_thread = 32}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)
