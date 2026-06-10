@@ -207,7 +207,7 @@ class stf_kernel_decorator:
 
 
 def jit(*jit_args, **jit_kwargs):
-    """STF-aware ``@jit`` decorator wrapping :func:`numba.cuda.jit`.
+    """STF-aware ``@jit`` decorator wrapping ``numba.cuda.jit``.
 
     A decorated function can be invoked as ``kernel[grid, block](*args)`` where
     arguments that are STF ``dep`` objects are transparently converted into

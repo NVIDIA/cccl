@@ -236,6 +236,11 @@ autodoc_mock_imports = [
     "cupy",
     "cuda.compute._bindings",
     "cuda.compute._bindings_impl",
+    # STF's public API lives in a compiled Cython extension that is not built
+    # at docs time; mock it so the pure-Python helper layers in stf_api.rst
+    # (task_graph, interop.numba, interop.pytorch) can still be imported by autodoc.
+    "cuda.stf._experimental._stf_bindings",
+    "cuda.stf._experimental._stf_bindings_impl",
 ]
 
 # External links configuration

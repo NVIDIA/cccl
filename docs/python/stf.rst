@@ -19,8 +19,8 @@ Example
 
 The following example creates a context, registers three arrays as logical data, and
 submits four tasks with different read/write annotations. STF orders the tasks so that
-dependencies are respected (e.g. the task that writes ``Y`` runs after the one that
-reads ``X`` and writes ``Y``).
+dependencies are respected (for example, the task that reads ``Y`` runs only after the
+earlier task that writes ``Y``).
 
 .. literalinclude:: ../../python/cuda_cccl/tests/stf/test_context.py
    :language: python
@@ -30,59 +30,76 @@ reads ``X`` and writes ``Y``).
 Context and logical data
 -------------------------
 
-Create a **context** with :func:`context() <cuda.stf._experimental.context>` (optionally
-``use_graph=True`` for CUDA graph execution). All logical data and tasks belong to
-one context. When you are done submitting tasks, call :meth:`finalize() <context.finalize>`
-to run the graph and synchronize (or let the context be destroyed; ``finalize`` is
-called automatically).
+Create a **context** with ``context()`` (optionally ``use_graph=True`` for CUDA graph
+execution). All logical data and tasks belong to one context.
+
+When you are done submitting tasks, call ``finalize()`` to run the graph and
+synchronize. A context does **not** finalize automatically when it is garbage
+collected: it abandons its STF/CUDA resources and emits a ``ResourceWarning`` instead.
+Always finalize explicitly, or -- preferably -- use the context as a context manager,
+which finalizes on exit::
+
+    with stf.context() as ctx:
+        lX = ctx.logical_data(X)
+        with ctx.task(lX.rw()) as t:
+            ...
+    # ctx.finalize() runs automatically here
 
 **Logical data** represents a buffer that tasks access. Create it from existing
 buffers or allocate new ones:
 
-* :meth:`logical_data(buf, ...) <context.logical_data>` — from a NumPy array or any
-  object implementing the **CUDA Array Interface** (CuPy, PyTorch, Numba device arrays)
-  or the Python buffer protocol. For GPU arrays, pass :ref:`data_place <stf-data-place>`
+* ``logical_data(buf, ...)`` -- from a NumPy array or any object implementing the
+  **CUDA Array Interface** (CuPy, PyTorch, Numba device arrays) or the Python buffer
+  protocol. For GPU arrays, pass a :ref:`data_place <stf-data-place>`
   (e.g. ``data_place.device(0)``).
-* :meth:`logical_data_empty(shape, dtype, ...) <context.logical_data_empty>` —
-  uninitialized allocation.
-* :meth:`logical_data_full(shape, fill_value, ...) <context.logical_data_full>` —
-  allocated and filled with a constant (like ``numpy.full()``).
-* :meth:`logical_data_zeros` / :meth:`logical_data_ones` — convenience wrappers.
+* ``logical_data_empty(shape, dtype, ...)`` -- uninitialized allocation.
+* ``logical_data_full(shape, fill_value, ...)`` -- allocated and filled with a constant
+  (like ``numpy.full()``).
+* ``logical_data_zeros(...)`` / ``logical_data_ones(...)`` -- convenience wrappers.
 
-Pass each logical data into a task with an access mode: :meth:`read()`, :meth:`write()`,
-or :meth:`rw()`. Example: ``ctx.task(lX.read(), lY.rw())``.
+Pass each logical data into a task with an access mode: ``read()``, ``write()``,
+or ``rw()``. Example: ``ctx.task(lX.read(), lY.rw())``.
 
 Tasks and interop
 -----------------
 
 Use ``with ctx.task(...) as t:`` to get a task handle. Inside the block:
 
-* **Stream** — :meth:`t.stream_ptr() <task.stream_ptr>` returns the task’s CUDA stream
-  (as an integer). Wrap it for your framework (e.g. ``numba.cuda.external_stream(t.stream_ptr())``
-  or ``torch.cuda.ExternalStream(t.stream_ptr())``).
-* **Buffer views** — :meth:`t.get_arg_cai(index) <task.get_arg_cai>` and
-  :meth:`t.args_cai() <task.args_cai>` return object(s) that implement the
-  **CUDA Array Interface**, so you can pass them to Numba (``cuda.from_cuda_array_interface(...)``),
-  PyTorch (``torch.as_tensor(...)``), or CuPy (``cp.asarray(...)``).
-* **Host callbacks** — :meth:`ctx.host_launch(...) <context.host_launch>` schedules a
-  Python callback with dependency tracking; the dependencies are unpacked as NumPy
-  arrays and passed to the callback (e.g.
-  ``ctx.host_launch(lX.read(), fn=lambda x: print(x.sum()))``).
+* **Stream** -- ``t.stream_ptr()`` returns a ``CudaStream`` object for the task's CUDA
+  stream. It implements the ``__cuda_stream__`` protocol (and also behaves like an
+  integer raw pointer), so you can pass it straight to ``cuda.compute`` algorithms or
+  wrap it for your framework (e.g. ``numba.cuda.external_stream(t.stream_ptr())`` or
+  ``torch.cuda.ExternalStream(t.stream_ptr())``).
+* **Buffer views** -- ``t.get_arg_cai(index)`` and ``t.args_cai()`` return object(s)
+  that implement the **CUDA Array Interface**, so you can pass them to Numba
+  (``cuda.from_cuda_array_interface(...)``), PyTorch (``torch.as_tensor(...)``), or
+  CuPy (``cp.asarray(...)``).
+* **Host callbacks** -- ``ctx.host_launch(...)`` schedules a Python callback with
+  dependency tracking; the dependencies are unpacked as NumPy arrays and passed to the
+  callback (e.g. ``ctx.host_launch(lX.read(), fn=lambda x: print(x.sum()))``).
+
+For kernels that should become native CUDA graph nodes (instead of being captured from
+a stream), use ``ctx.cuda_kernel(...)``. It accepts the same dependency and
+``exec_place`` arguments as ``ctx.task(...)``, and the resulting object exposes a
+``launch()`` method that describes the kernel to STF directly::
+
+    with ctx.cuda_kernel(lX.read(), lY.rw(), symbol="axpy") as k:
+        dX, dY = k.get_arg(0), k.get_arg(1)
+        k.launch(kernel, grid=(4,), block=(256,),
+                 args=[ctypes.c_int(N), ctypes.c_double(alpha), dX, dY])
 
 Interop adapters
 ----------------
 
 On top of the raw CUDA Array Interface, ``cuda.stf._experimental`` ships small,
-**opt-in** adapters for Numba and PyTorch under
-:mod:`cuda.stf._experimental.interop`. Importing ``cuda.stf._experimental`` does
-**not** import Numba or PyTorch; the optional runtime is imported lazily inside
-each adapter, and a missing dependency raises a clear ``ImportError`` at first
-use. You import only the adapter you need.
+**opt-in** adapters for Numba and PyTorch under ``cuda.stf._experimental.interop``.
+Importing ``cuda.stf._experimental`` does **not** import Numba or PyTorch; the optional
+runtime is imported lazily inside each adapter, and a missing dependency raises a clear
+``ImportError`` at first use. You import only the adapter you need.
 
-**PyTorch** (:mod:`cuda.stf._experimental.interop.pytorch`) —
-:func:`pytorch_task` opens a task, makes the task's CUDA stream the current
-PyTorch stream for the duration of the block, and yields the task arguments as
-``torch.Tensor`` views::
+**PyTorch** (``cuda.stf._experimental.interop.pytorch``) -- ``pytorch_task`` opens a
+task, makes the task's CUDA stream the current PyTorch stream for the duration of the
+block, and yields the task arguments as ``torch.Tensor`` views::
 
     from cuda.stf._experimental.interop.pytorch import pytorch_task
 
@@ -92,16 +109,16 @@ PyTorch stream for the duration of the block, and yields the task arguments as
 ``tensor_arg(task, index)`` and ``tensor_arguments(task)`` convert one or all
 task arguments to tensors if you manage the task block yourself.
 
-**Numba** (:mod:`cuda.stf._experimental.interop.numba`) — :func:`numba_task`
-opens a task and yields ``(numba_arrays, stream)``, where ``stream`` can be
-passed straight to ``cuda.compute`` algorithms::
+**Numba** (``cuda.stf._experimental.interop.numba``) -- ``numba_task`` opens a task and
+yields ``(numba_arrays, stream)``, where ``stream`` can be passed straight to
+``cuda.compute`` algorithms::
 
     from cuda.stf._experimental.interop.numba import numba_task
 
     with numba_task(ctx, lA.read(), lB.read(), lC.rw()) as (args, stream):
         cuda.compute.binary_transform(args[0], args[1], args[2], OpKind.PLUS, N, stream=stream)
 
-The :func:`jit` decorator wraps ``numba.cuda.jit`` so a kernel can be launched
+The ``jit`` decorator wraps ``numba.cuda.jit`` so a kernel can be launched
 directly with STF ``dep`` arguments; the conversion into device arrays (and the
 task that scopes them) happens automatically::
 
@@ -123,16 +140,20 @@ converters used by these helpers.
 Record-once task graphs
 -----------------------
 
-For repeated work, use :func:`task_graph() <cuda.stf._experimental.task_graph>` to
-record an STF task DAG once and launch it many times. The graph owns a
-``stackable_context`` exposed as ``graph.context``. Declare logical data before
-recording, enter ``with graph:`` exactly once to submit tasks, then call
-``graph.launch()`` whenever the recorded graph should replay.
+For repeated work, use ``task_graph()`` to record an STF task DAG once and launch it
+many times. The graph owns a ``stackable_context`` exposed as ``graph.context``. Declare
+logical data before recording, enter ``with graph:`` exactly once to submit tasks, then
+call ``graph.launch()`` whenever the recorded graph should replay.
+
+.. literalinclude:: ../../python/cuda_cccl/tests/stf/test_task_graph.py
+   :language: python
+   :pyobject: _record_add_graph
+   :caption: Record a task graph once. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/test_task_graph.py>`__
 
 .. literalinclude:: ../../python/cuda_cccl/tests/stf/test_task_graph.py
    :language: python
    :pyobject: test_task_graph_relaunch
-   :caption: Record once and replay with ``stf.task_graph()``. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/test_task_graph.py>`__
+   :caption: Replay the recorded graph many times.
 
 ``graph.context.task(...)`` is intentionally valid only while ``with graph:``
 is active. This catches the common mistake of submitting a task to the owned
@@ -155,23 +176,22 @@ Places
 
 .. _stf-exec-place:
 
-* **Execution place** (``exec_place``) — where the task runs. Pass as the first
+* **Execution place** (``exec_place``) -- where the task runs. Pass as the first
   argument to ``ctx.task(...)``: ``exec_place.device(device_id)`` or ``exec_place.host()``.
   Example: ``ctx.task(exec_place.device(0), lX.read(), lY.rw())``.
 
 .. _stf-data-place:
 
-* **Data place** (``data_place``) — where logical data lives: ``data_place.affine()``
-  (the default — lets the runtime place data near the task's execution place),
+* **Data place** (``data_place``) -- where logical data lives: ``data_place.affine()``
+  (the default -- lets the runtime place data near the task's execution place),
   ``data_place.host()``, ``data_place.device(device_id)``, ``data_place.managed()``.
   Use when creating logical data or in a dependency, e.g. ``lZ.rw(data_place.device(1))``.
 
 Tokens
 ------
 
-:meth:`ctx.token() <context.token>` creates a **token** (logical data with no buffer)
-for ordering tasks without data transfer. Use ``token.read()`` or ``token.rw()`` in
-task dependencies.
+``ctx.token()`` creates a **token** (logical data with no buffer) for ordering tasks
+without data transfer. Use ``token.read()`` or ``token.rw()`` in task dependencies.
 
 Example collections
 -------------------
@@ -184,3 +204,8 @@ tokens, multi-GPU, FDTD), and ``examples/`` holds larger end-to-end programs
 
 For the full STF programming model, graph visualization, and C++ API, see
 :ref:`CUDASTF (C++) <stf>`.
+
+API Reference
+-------------
+
+- :ref:`cuda_stf_experimental-module`
