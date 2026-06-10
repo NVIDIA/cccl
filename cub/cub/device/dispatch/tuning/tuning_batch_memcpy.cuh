@@ -35,7 +35,7 @@ struct BatchMemcpySmallBufferPolicy
   int block_level_tile_size; //!< Tile size granularity for block-level buffers
   int warp_level_threshold; //!< Buffer size threshold above which warp-level collaboration is used
   int block_level_threshold; //!< Buffer size threshold above which block-level collaboration is used
-  LookbackDelayPolicy buff_lookback_delay; //!< The @ref LookbackDelayPolicy for the buffer offset scan
+  LookbackDelayPolicy buffer_lookback_delay; //!< The @ref LookbackDelayPolicy for the buffer offset scan
   LookbackDelayPolicy block_lookback_delay; //!< The @ref LookbackDelayPolicy for the block offset scan
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -45,7 +45,8 @@ struct BatchMemcpySmallBufferPolicy
         && lhs.tlev_bytes_per_thread == rhs.tlev_bytes_per_thread && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits
         && lhs.block_level_tile_size == rhs.block_level_tile_size
         && lhs.warp_level_threshold == rhs.warp_level_threshold
-        && lhs.block_level_threshold == rhs.block_level_threshold && lhs.buff_lookback_delay == rhs.buff_lookback_delay
+        && lhs.block_level_threshold == rhs.block_level_threshold
+        && lhs.buffer_lookback_delay == rhs.buffer_lookback_delay
         && lhs.block_lookback_delay == rhs.block_lookback_delay;
   }
 
@@ -64,7 +65,7 @@ struct BatchMemcpySmallBufferPolicy
         << policy.tlev_bytes_per_thread << ", .prefer_pow2_bits = " << policy.prefer_pow2_bits
         << ", .block_level_tile_size = " << policy.block_level_tile_size << ", .warp_level_threshold = "
         << policy.warp_level_threshold << ", .block_level_threshold = " << policy.block_level_threshold
-        << ", .buff_lookback_delay = " << policy.buff_lookback_delay
+        << ", .buffer_lookback_delay = " << policy.buffer_lookback_delay
         << ", .block_lookback_delay = " << policy.block_lookback_delay << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -150,7 +151,7 @@ struct policy_selector
         /* .warp_level_threshold = */ 128,
         /* .block_level_threshold = */ 8 * 1024,
         // BufferOffsetT and BlockOffsetT are primitive/trivially copyable
-        /* .buff_lookback_delay = */ default_delay_constructor_policy(true),
+        /* .buffer_lookback_delay = */ default_delay_constructor_policy(true),
         /* .block_lookback_delay = */ default_delay_constructor_policy(true)},
       large,
     };

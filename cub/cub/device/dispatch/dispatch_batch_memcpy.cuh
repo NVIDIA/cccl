@@ -237,9 +237,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
     policy.block_level_tile_size,
     policy.warp_level_threshold,
     policy.block_level_threshold,
-    delay_constructor_t<policy.buff_lookback_delay.kind,
-                        policy.buff_lookback_delay.delay,
-                        policy.buff_lookback_delay.l2_write_latency>,
+    delay_constructor_t<policy.buffer_lookback_delay.kind,
+                        policy.buffer_lookback_delay.delay,
+                        policy.buffer_lookback_delay.l2_write_latency>,
     delay_constructor_t<policy.block_lookback_delay.kind,
                         policy.block_lookback_delay.delay,
                         policy.block_lookback_delay.l2_write_latency>>;

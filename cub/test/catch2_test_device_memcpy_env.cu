@@ -212,7 +212,7 @@ C2H_TEST("BatchedMemcpyPolicy", "[memcpy][device]")
         .block_level_tile_size = 256 * 32,
         .warp_level_threshold  = 128,
         .block_level_threshold = 8 * 1024,
-        .buff_lookback_delay =
+        .buffer_lookback_delay =
           cub::LookbackDelayPolicy{
             .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
         .block_lookback_delay =
