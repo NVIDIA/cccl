@@ -7,9 +7,10 @@ Warp
    :hidden:
    :maxdepth: 1
 
-   warp/warp_shuffle
-   warp/warp_match_all
    warp/lane_mask
+   warp/warp_broadcast
+   warp/warp_match_all
+   warp/warp_shuffle
 
 .. list-table::
    :widths: 25 45 30 30
@@ -49,3 +50,8 @@ Warp
      - Class to represent a mask of lanes in a warp
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`warp_broadcast <libcudacxx-extended-api-warp-warp-broadcast>`
+     - Broadcast a value within a warp
+     - CCCL 3.5.0
+     - CUDA 13.5
