@@ -40,10 +40,6 @@
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
 
-#if defined(CUCO_HAS_CUDA_BARRIER)
-#  include <cuda/barrier>
-#endif
-
 #include <cooperative_groups.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -215,7 +211,7 @@ public:
   //! @brief Returns the function that compares keys for equality.
   //!
   //! @return The key equality predicate
-  [[nodiscard]] _CCCL_HOST _CCCL_DEVICE constexpr ::cuda::experimental::cuco::__detail::
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::experimental::cuco::__detail::
     __equal_wrapper<__key_type, __key_equal, __allows_duplicates>
     predicate() const noexcept
   {
