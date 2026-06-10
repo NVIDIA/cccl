@@ -156,7 +156,7 @@ if (CCCL_ENABLE_EXAMPLES)
 endif()
 
 if (CCCL_ENABLE_NVBENCH_HELPER)
-  add_subdirectory(nvbench_helper)
+  cccl_get_nvbench_helper()
 endif()
 
 # Must stay at the end of this file.
