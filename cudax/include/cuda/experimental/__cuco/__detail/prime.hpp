@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -32,7 +33,7 @@ namespace cuda::experimental::cuco::__detail
 __mod_mul(::cuda::std::uint64_t __n1, ::cuda::std::uint64_t __n2, ::cuda::std::uint64_t __m) noexcept
 {
 #if _CCCL_HAS_INT128()
-  auto __r = static_cast<unsigned __int128>(__n1) * __n2;
+  auto __r = static_cast<__uint128_t>(__n1) * __n2;
   return static_cast<::cuda::std::uint64_t>(__r % __m);
 #else
   // Fallback: Russian-peasant multiplication in modular arithmetic.
@@ -41,11 +42,12 @@ __mod_mul(::cuda::std::uint64_t __n1, ::cuda::std::uint64_t __n2, ::cuda::std::u
   __n2 %= __m;
   while (__n2 > 0)
   {
+    const ::cuda::std::uint64_t __mod_diff = __m - __n1;
     if (__n2 & 1)
     {
-      __r = (__r >= __m - __n1) ? __r - (__m - __n1) : __r + __n1;
+      __r = (__r >= __mod_diff) ? __r - __mod_diff : __r + __n1;
     }
-    __n1 = (__n1 >= __m - __n1) ? __n1 - (__m - __n1) : __n1 + __n1;
+    __n1 = (__n1 >= __mod_diff) ? __n1 - __mod_diff : __n1 + __n1;
     __n2 >>= 1;
   }
   return __r;
@@ -62,9 +64,9 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   {
     if (__e & 1)
     {
-      __r = __mod_mul(__r, __b, __m);
+      __r = ::cuda::experimental::cuco::__detail::__mod_mul(__r, __b, __m);
     }
-    __b = __mod_mul(__b, __b, __m);
+    __b = ::cuda::experimental::cuco::__detail::__mod_mul(__b, __b, __m);
     __e >>= 1;
   }
   return __r;
@@ -72,12 +74,12 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
 //! @brief Single Miller-Rabin witness test.
 //!
-//! Given `__n - 1 == 2^__s * __d`, checks whether `__a^__d == 1 (mod __n)` or
-//! `__a^(2^__r * __d) == __n - 1 (mod __n)` for some `0 <= __r < __s`.
+//! Given `n - 1 == 2^s * d`, checks whether `a^d == 1 (mod n)` or
+//! `a^(2^r * d) == n - 1 (mod n)` for some `0 <= r < s`.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __miller_rabin_test(
   ::cuda::std::uint64_t __n, ::cuda::std::uint64_t __a, ::cuda::std::uint64_t __d, ::cuda::std::uint32_t __s) noexcept
 {
-  ::cuda::std::uint64_t __x             = __mod_pow(__a % __n, __d, __n);
+  ::cuda::std::uint64_t __x             = ::cuda::experimental::cuco::__detail::__mod_pow(__a % __n, __d, __n);
   const ::cuda::std::uint64_t __neg_one = __n - 1;
   if (__x == 1 || __x == __neg_one)
   {
@@ -86,7 +88,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
   for (::cuda::std::uint32_t __i = 1; __i < __s; ++__i)
   {
-    __x = __mod_mul(__x, __x, __n);
+    __x = ::cuda::experimental::cuco::__detail::__mod_mul(__x, __x, __n);
     if (__x == __neg_one)
     {
       return true;
@@ -108,7 +110,9 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   }
 
   // Trial division by small primes.
-  for (::cuda::std::uint64_t __p : {2ull, 3ull, 5ull, 7ull, 11ull, 13ull, 17ull, 19ull, 23ull, 29ull, 31ull, 37ull})
+  constexpr ::cuda::std::array<::cuda::std::uint64_t, 12> __small_primes{
+    2ull, 3ull, 5ull, 7ull, 11ull, 13ull, 17ull, 19ull, 23ull, 29ull, 31ull, 37ull};
+  for (::cuda::std::uint64_t __p : __small_primes)
   {
     if (__n % __p == 0)
     {
@@ -126,9 +130,11 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   }
 
   // Deterministic witness bases for all `uint64_t` values.
-  for (::cuda::std::uint64_t __a : {2ull, 325ull, 9375ull, 28178ull, 450775ull, 9780504ull, 1795265022ull})
+  constexpr ::cuda::std::array<::cuda::std::uint64_t, 7> __witnesses{
+    2ull, 325ull, 9375ull, 28178ull, 450775ull, 9780504ull, 1795265022ull};
+  for (::cuda::std::uint64_t __a : __witnesses)
   {
-    if (!__miller_rabin_test(__n, __a, __d, __s))
+    if (!::cuda::experimental::cuco::__detail::__miller_rabin_test(__n, __a, __d, __s))
     {
       return false;
     }
@@ -143,20 +149,20 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 //! `__n` (or `__n + 1` if `__n` is even).
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t __next_prime(::cuda::std::uint64_t __n) noexcept
 {
-  if (__n <= 2ull)
+  if (__n <= ::cuda::std::uint64_t{2})
   {
-    return 2ull;
+    return ::cuda::std::uint64_t{2};
   }
 
-  __n |= 1ull; // make odd
+  __n |= ::cuda::std::uint64_t{1}; // make odd
 
-  while (!__is_prime(__n))
+  while (!::cuda::experimental::cuco::__detail::__is_prime(__n))
   {
-    if (__n > ~0ull - 2ull)
+    if (__n > ~::cuda::std::uint64_t{0} - ::cuda::std::uint64_t{2})
     {
       return __n;
     }
-    __n += 2ull;
+    __n += ::cuda::std::uint64_t{2};
   }
 
   return __n;
