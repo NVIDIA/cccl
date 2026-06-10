@@ -67,8 +67,8 @@ template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std:
 
   const int64_t num_blocks = (num_items + TileSize - 1) / TileSize;
 
-  transform_kernel<TileSize, Fn><<<static_cast<unsigned int>(num_blocks), 1, 0, stream>>>(
-    num_items, output, ::cuda::std::get<Idx>(inputs)...);
+  CUB_NS_QUALIFIER::detail::transform::tile::transform_kernel<TileSize, Fn>
+    <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, ::cuda::std::get<Idx>(inputs)...);
 
   return CubDebug(cudaGetLastError());
 }
@@ -93,7 +93,8 @@ struct DeviceTransform
     }
     constexpr int chosen     = (TileSize > 0) ? TileSize : pick_tile_size<T>();
     const int64_t num_blocks = (num_items + chosen - 1) / chosen;
-    fill_kernel<chosen, T><<<static_cast<unsigned int>(num_blocks), 1, 0, stream>>>(num_items, output, value);
+    CUB_NS_QUALIFIER::detail::transform::tile::fill_kernel<chosen, T>
+      <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, value);
     return CubDebug(cudaGetLastError());
   }
 };
