@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__container/buffer.h>
@@ -289,14 +290,24 @@ public:
       return;
     }
 
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
+    if constexpr (__cg_size == 1)
+    {
+      __open_addressing::__insert_if_fn __op{
+        __first, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref};
+      [[maybe_unused]] const auto __status = ::cub::DeviceFor::Bulk(__num_keys, __op, __stream);
+      _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to insert keys");
+    }
+    else
+    {
+      const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
-    __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<static_cast<unsigned int>(__grid_size),
-         ::cuda::experimental::cuco::__detail::__default_block_size(),
-         0,
-         __stream.get()>>>(
-        __first, __num_keys, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
+      __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
+        <<<static_cast<unsigned int>(__grid_size),
+           ::cuda::experimental::cuco::__detail::__default_block_size(),
+           0,
+           __stream.get()>>>(
+          __first, __num_keys, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
+    }
   }
 
   //! @brief Asynchronously checks if keys in `[first, last)` exist in the container.
@@ -311,19 +322,29 @@ public:
       return;
     }
 
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
+    if constexpr (__cg_size == 1)
+    {
+      __open_addressing::__contains_if_fn __op{
+        __first, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __output_begin, __container_ref};
+      [[maybe_unused]] const auto __status = ::cub::DeviceFor::Bulk(__num_keys, __op, __stream);
+      _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to query keys");
+    }
+    else
+    {
+      const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
-    __open_addressing::__contains_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<static_cast<unsigned int>(__grid_size),
-         ::cuda::experimental::cuco::__detail::__default_block_size(),
-         0,
-         __stream.get()>>>(
-        __first,
-        __num_keys,
-        ::cuda::constant_iterator<bool>{true},
-        ::cuda::std::identity{},
-        __output_begin,
-        __container_ref);
+      __open_addressing::__contains_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
+        <<<static_cast<unsigned int>(__grid_size),
+           ::cuda::experimental::cuco::__detail::__default_block_size(),
+           0,
+           __stream.get()>>>(
+          __first,
+          __num_keys,
+          ::cuda::constant_iterator<bool>{true},
+          ::cuda::std::identity{},
+          __output_begin,
+          __container_ref);
+    }
   }
 
   //! @brief Returns the total number of slots.
