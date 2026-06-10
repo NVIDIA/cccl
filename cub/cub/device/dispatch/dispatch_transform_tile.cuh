@@ -36,6 +36,7 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/cmath>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__tuple_dir/apply.h>
 #  include <cuda/std/__type_traits/is_empty.h>
@@ -65,7 +66,7 @@ template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std:
     return cudaSuccess;
   }
 
-  const int64_t num_blocks = (num_items + TileSize - 1) / TileSize;
+  const int64_t num_blocks = ::cuda::ceil_div(num_items, int64_t{TileSize});
 
   CUB_NS_QUALIFIER::detail::transform::tile::transform_kernel<TileSize, Fn>
     <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, ::cuda::std::get<Idx>(inputs)...);
@@ -92,7 +93,7 @@ struct DeviceTransform
       return cudaSuccess;
     }
     constexpr int chosen     = (TileSize > 0) ? TileSize : pick_tile_size<T>();
-    const int64_t num_blocks = (num_items + chosen - 1) / chosen;
+    const int64_t num_blocks = ::cuda::ceil_div(num_items, int64_t{chosen});
     CUB_NS_QUALIFIER::detail::transform::tile::fill_kernel<chosen, T>
       <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, value);
     return CubDebug(cudaGetLastError());
