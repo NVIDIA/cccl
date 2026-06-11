@@ -82,17 +82,18 @@ EXPECTED_RAN = {
     "gmem_privatized_nocache": "gmem_privatized_nocache",
 }
 
-# At or below this bin count the whole histogram fits on-chip and the selector
-# ALWAYS runs smem_privatized; the CUB_HISTO_FORCE_ALGO override is gated OFF there
-# (dispatch: `force_legal_here = max_num_output_bins > max_dynamic_smem_bins`, and
-# max_dynamic_smem_bins == 16384). So forcing a high-bin algo at bins <= 16384 is a
-# silent no-op -- every "forced" run just re-executes smem_privatized and reports the
-# same number as `default`. We therefore record ONLY `default` at bins <= 16384
-# (running the forced variants there would log bogus duplicate columns -- the bug
-# that made every algorithm look identical at 16384). The forced algos are recorded
-# only where they actually take effect, bins > 16384 (32768, 65536, ...).
-# MUST stay in sync with cub/.../dispatch_histogram.cuh:max_dynamic_smem_bins.
-HIGH_BIN_THRESHOLD = 16384
+# Smallest bin count at which we sweep the FORCED high-bin algorithms. Below this we
+# record ONLY `default` (which the selector runs as smem_privatized across the whole
+# low-bin tier). This is a SWEEP-SCOPE policy, not a dispatch limit: forcing is now
+# honored at every bin count (the old "forcing is a no-op below the on-chip cap" gate
+# was removed -- a forced request that is silently ignored is a bug). But below 32768
+# smem_privatized is the only competitive algorithm -- the gather / direct-atomic /
+# gmem-privatized kernels lose decisively there -- so force-measuring them at 256..16384
+# just burns GPU time for columns that are never selected and never win. We therefore
+# start the forced set AT 32768 (the first tier where an off-chip algorithm can matter)
+# to keep the sweep tractable. `default` is still recorded at every bin, so the low-bin
+# smem_privatized curve is fully covered.
+HIGH_BIN_THRESHOLD = 32768
 
 # Per-algorithm STRUCTURAL validity floor (a forced algo that cannot run at a cell
 # would make dispatch return cudaErrorNotSupported, which the bench escalates to a
@@ -286,13 +287,14 @@ def main():
         for sample in args.samples:
             for elements in args.elements:
                 for bins in args.bins:
-                    high = bins > HIGH_BIN_THRESHOLD
+                    high = bins >= HIGH_BIN_THRESHOLD  # forced set starts AT 32768
                     multichannel = blabel.startswith("multi")
-                    # Below the high-bin threshold forcing is a no-op; record only default.
-                    # Above it, restrict each forced algo to cells where it can
-                    # structurally run -- skipping a cell where dispatch would return
-                    # cudaErrorNotSupported (which the bench escalates to a FATAL abort,
-                    # not a fallback). `default` ("") is always kept.
+                    # Below 32768 record only `default` (smem_privatized is the only
+                    # competitive algorithm there -- see HIGH_BIN_THRESHOLD). At/above it,
+                    # restrict each forced algo to cells where it can structurally run --
+                    # skipping a cell where dispatch would return cudaErrorNotSupported
+                    # (which the bench escalates to a FATAL abort, not a fallback).
+                    # `default` ("") is always kept.
                     algos = ([a for a in FORCED_ALGOS
                               if a == "" or _forced_algo_applicable(ALGO_KEY.get(a, a), bins, multichannel)]
                              if high else [""])

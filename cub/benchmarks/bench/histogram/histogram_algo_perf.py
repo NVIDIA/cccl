@@ -133,11 +133,13 @@ ALGO_ORDER = [
 # genuinely measured down to the smallest swept bin count.
 MIN_PLOT_BINS = 0
 
-# At or below this bin count the whole histogram fits in privatized SMEM, so the
-# selector always runs the smem_privatized kernel and the high-bin
-# CUB_HISTO_FORCE_ALGO override is a no-op -- the forced gmem-priv / direct-atomic
-# series therefore have NO distinct data here (only `default` and `main` are drawn,
-# and `default` IS smem_privatized). cub/.../dispatch_histogram.cuh: max_dynamic_smem_bins.
+# LEGACY-ONLY fallback bin cap for the smem_privatized region, used only when a sweep
+# JSON predates the `_selected` ground-truth map (both the synthesized smem_privatized
+# series and the legacy tag inference prefer `_selected` when present). The real on-chip
+# cap is now a per-arch BYTE budget derived at runtime (dispatch_histogram.cuh:
+# max_dynamic_smem_bins(counter_bytes, channels, optin)), which on B200 admits up to
+# ~57344 single-channel bins -- NOT a fixed 16384 -- so this constant is no longer the
+# source of truth, just a best-effort guess for pre-`_selected` data.
 SMEM_PRIVATIZED_MAX_BINS = 16384
 
 
@@ -217,13 +219,29 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
             out[algo] = (np.array([p[0] for p in pts]), np.array([p[1] for p in pts]))
     # Synthesize the `smem_privatized` series: it is never measured under that name
     # (the force hook neither accepts nor needs it), but it IS exactly what the
-    # selector `default` runs for bins <= SMEM_PRIVATIZED_MAX_BINS -- so derive it from the
-    # default points over the smem-privatized range. Makes the low-bin region a named
+    # selector `default` runs wherever it chose smem_privatized -- so derive it from the
+    # default points over precisely those bins. Makes the low-bin region a named
     # algorithm instead of an unexplained `default`/`main`-only stretch. (Only added
     # when not already an explicit series, so a future real measurement would win.)
+    #
+    # Ground truth: the `_selected` map records the algorithm the selector actually
+    # launched per cell (from the dispatch launch tag). Use it to pick exactly the bins
+    # where default == smem_privatized -- robust to the on-chip cap being a per-arch
+    # byte budget (no hardcoded bin threshold). For legacy JSON without `_selected`,
+    # fall back to the static SMEM_PRIVATIZED_MAX_BINS cap.
     if "smem_privatized" in algos and "smem_privatized" not in out and "default" in out:
         db, dv = out["default"]
-        mask = [j for j, b in enumerate(db) if int(b) <= SMEM_PRIVATIZED_MAX_BINS]
+        selected = per_algo_cells.get("_selected", {})
+        if selected:
+            smem_bins = {
+                int(b)
+                for key, ran in selected.items()
+                for s, e, b, sh in [key.split("|")]
+                if s == sample and int(e) == elements and sh == shape and ran == "smem_privatized"
+            }
+            mask = [j for j, b in enumerate(db) if int(b) in smem_bins]
+        else:
+            mask = [j for j, b in enumerate(db) if int(b) <= SMEM_PRIVATIZED_MAX_BINS]
         if mask:
             out["smem_privatized"] = (np.array([db[j] for j in mask]), np.array([dv[j] for j in mask]))
     return out
