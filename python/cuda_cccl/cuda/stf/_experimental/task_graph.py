@@ -144,11 +144,13 @@ class TaskGraph:
             return
         if self._recording:
             raise RuntimeError("cannot finalize a task graph while recording")
-        if self._raw_graph is not None and not self._reset:
-            self._raw_graph.reset()
-            self._reset = True
-        self.context.raw.finalize()
-        self._finalized = True
+        try:
+            if self._raw_graph is not None and not self._reset:
+                self._raw_graph.reset()
+                self._reset = True
+        finally:
+            self.context.raw.finalize()
+            self._finalized = True
 
 
 def task_graph() -> TaskGraph:

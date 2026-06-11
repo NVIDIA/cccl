@@ -89,8 +89,14 @@ def pytorch_task(ctx, *args):
                 tensors = tensor_arguments(t)
             except Exception as e:
                 if self._stream_ctx is not None:
-                    self._stream_ctx.__exit__(type(e), e, e.__traceback__)
-                t.end()
+                    try:
+                        self._stream_ctx.__exit__(type(e), e, e.__traceback__)
+                    except Exception:
+                        pass
+                try:
+                    t.end()
+                except Exception:
+                    pass
                 raise
             if tensors is None:
                 return None

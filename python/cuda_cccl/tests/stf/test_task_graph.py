@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import importlib
+
 import numpy as np
 import pytest
 
@@ -248,3 +250,30 @@ def test_task_graph_finalize_while_recording_raises():
             graph.finalize()
 
     graph.finalize()
+
+
+def test_task_graph_finalize_finalizes_context_if_reset_raises(monkeypatch):
+    task_graph_module = importlib.import_module("cuda.stf._experimental.task_graph")
+
+    class FakeRawContext:
+        def __init__(self):
+            self.finalized = False
+
+        def finalize(self):
+            self.finalized = True
+
+    class FakeRawGraph:
+        def reset(self):
+            raise RuntimeError("reset failed")
+
+    raw_context = FakeRawContext()
+    monkeypatch.setattr(task_graph_module, "stackable_context", lambda: raw_context)
+
+    graph = task_graph_module.TaskGraph()
+    graph._raw_graph = FakeRawGraph()
+
+    with pytest.raises(RuntimeError, match="reset failed"):
+        graph.finalize()
+
+    assert raw_context.finalized
+    assert graph._finalized

@@ -21,8 +21,6 @@ require Numba to be installed; calling a function that uses Numba without
 
 from __future__ import annotations
 
-from cuda.stf._experimental import context, dep, exec_place
-
 _NUMBA_INSTALL_HINT = (
     "This functionality requires ``numba-cuda`` to be installed. "
     "Install it with e.g. ``pip install cuda-cccl[cu13]``."
@@ -36,6 +34,16 @@ def _import_numba_cuda():
     except ImportError as exc:
         raise ImportError(_NUMBA_INSTALL_HINT) from exc
     return cuda
+
+
+def _import_stf_types():
+    from cuda.stf._experimental._stf_bindings import (  # noqa: PLC0415
+        context,
+        dep,
+        exec_place,
+    )
+
+    return context, dep, exec_place
 
 
 def get_arg_numba(task, index):
@@ -150,10 +158,12 @@ class stf_kernel_decorator:
         if n == 4:
             ctx = cfg[3]
 
-        if exec_pl is not None and not isinstance(exec_pl, exec_place):
+        context_type, _, exec_place_type = _import_stf_types()
+
+        if exec_pl is not None and not isinstance(exec_pl, exec_place_type):
             raise TypeError("3rd item must be an exec_place")
 
-        if ctx is not None and not isinstance(ctx, context):
+        if ctx is not None and not isinstance(ctx, context_type):
             raise TypeError("4th item must be an STF context (or None to infer)")
 
         self._launch_cfg = (grid_dim, block_dim, ctx, exec_pl)
@@ -169,9 +179,10 @@ class stf_kernel_decorator:
 
         gridDim, blockDim, ctx, exec_pl = self._launch_cfg
 
+        _, dep_type, _ = _import_stf_types()
         dep_items = []
         for i, a in enumerate(args):
-            if isinstance(a, dep):
+            if isinstance(a, dep_type):
                 if ctx is None:
                     ld = a.get_ld()
                     ctx = ld.borrow_ctx_handle()

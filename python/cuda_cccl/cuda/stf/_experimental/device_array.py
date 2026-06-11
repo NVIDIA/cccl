@@ -197,7 +197,11 @@ class DeviceArray:
         return host
 
     def copy_to_device(self, host_array: np.ndarray) -> None:
-        """Copy *host_array* into this device buffer (synchronous H2D)."""
+        """Copy *host_array* into this device buffer (synchronous H2D).
+
+        If *host_array* is smaller than this buffer, only the leading bytes are
+        overwritten. This supports copying into sliced ``DeviceArray`` views.
+        """
         host_array = np.ascontiguousarray(host_array, dtype=self._dtype)
         nbytes = host_array.nbytes
         if nbytes == 0:

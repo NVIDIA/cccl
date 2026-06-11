@@ -19,6 +19,20 @@ Record-once task graphs
   :members:
   :undoc-members:
 
+Device allocations
+------------------
+
+.. automodule:: cuda.stf._experimental.device_array
+  :members:
+  :undoc-members:
+
+Path discovery
+--------------
+
+.. automodule:: cuda.stf._experimental.paths
+  :members:
+  :undoc-members:
+
 Numba interop
 -------------
 

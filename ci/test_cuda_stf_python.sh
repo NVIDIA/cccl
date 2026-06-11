@@ -8,6 +8,10 @@ source "$ci_dir/pyenv_helper.sh"
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
 cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
+if [[ -z "${cuda_major_version}" ]]; then
+  echo "Failed to detect CUDA major version from nvcc" >&2
+  exit 1
+fi
 
 setup_python_env "${py_version}"
 

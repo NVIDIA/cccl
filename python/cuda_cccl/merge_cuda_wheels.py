@@ -15,12 +15,15 @@ At runtime, shim modules choose the right extension from the detected CUDA versi
 """
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import List
+
+_CUDA_WHEEL_SUFFIX_RE = re.compile(r"\.cu(?P<version>\d+)(?=\.whl$)")
 
 
 def run_command(
@@ -42,6 +45,17 @@ def run_command(
     return result
 
 
+def cuda_version_from_wheel_name(wheel_name: str) -> str:
+    match = _CUDA_WHEEL_SUFFIX_RE.search(wheel_name)
+    if match is None:
+        raise ValueError(f"Could not find CUDA suffix in wheel name: {wheel_name}")
+    return match.group("version")
+
+
+def strip_cuda_suffix(wheel_name: str) -> str:
+    return _CUDA_WHEEL_SUFFIX_RE.sub("", wheel_name)
+
+
 def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
     """Merge multiple wheels into a single wheel with version-specific binaries."""
     print("\n=== Merging wheels ===")
@@ -50,9 +64,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
     if len(wheels) == 1:
         # Single wheel, just copy it and remove CUDA version suffix
         output_dir.mkdir(parents=True, exist_ok=True)
-        final_wheel = output_dir / wheels[0].name.replace(
-            f".cu{wheels[0].name.split('.cu')[1].split('.')[0]}.whl", ".whl"
-        )
+        final_wheel = output_dir / strip_cuda_suffix(wheels[0].name)
         shutil.copy2(wheels[0], final_wheel)
         print(f"Single wheel copied to: {final_wheel}")
         return final_wheel
@@ -106,7 +118,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             Path("cuda") / "stf" / "_experimental",
         ]
         for i, wheel_dir in enumerate(extracted_wheels):
-            cuda_version = wheels[i].name.split(".cu")[1].split(".")[0]
+            cuda_version = cuda_version_from_wheel_name(wheels[i].name)
             if i == 0:
                 # For base wheel, do nothing
                 continue
@@ -124,10 +136,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Create a clean wheel name without CUDA version suffixes
-        base_wheel_name = wheels[0].name
-        # Remove any .cu* suffix from the wheel name
-        if ".cu" in base_wheel_name:
-            base_wheel_name = base_wheel_name.split(".cu")[0] + ".whl"
+        base_wheel_name = strip_cuda_suffix(wheels[0].name)
 
         print(f"Repacking merged wheel as: {base_wheel_name}")
         run_command(
