@@ -23,5 +23,6 @@
 
 #include <cuda/experimental/__coop/reduce.cuh>
 #include <cuda/experimental/__coop/shuffle.cuh>
+#include <cuda/experimental/__coop/shuffle_down.cuh>
 
 #endif // _CUDA_EXPERIMENTAL_COOP
