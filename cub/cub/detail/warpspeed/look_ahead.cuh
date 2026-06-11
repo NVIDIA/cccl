@@ -12,11 +12,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/reduce_op_sync.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
 #include <cub/thread/thread_store.cuh>
+#include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>

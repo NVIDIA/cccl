@@ -19,7 +19,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/reduce_op_sync.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_reduce.cuh>
@@ -30,9 +29,11 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <nv/target>
 
@@ -81,21 +82,11 @@ CUB_NAMESPACE_BEGIN
 //! The code snippet below illustrates a sum reduction within a single 32-thread warp, with the aggregate returned to
 //! every lane:
 //!
-//! .. code-block:: c++
-//!
-//!    #include <cub/cub.cuh>
-//!
-//!    __global__ void ExampleKernel(int *d_out)
-//!    {
-//!        using WarpReduceBroadcast = cub::WarpReduceBroadcast<int>;
-//!
-//!        __shared__ typename WarpReduceBroadcast::TempStorage temp_storage;
-//!
-//!        int thread_data = threadIdx.x;
-//!        int aggregate = WarpReduceBroadcast(temp_storage).Sum(thread_data);
-//!
-//!        d_out[threadIdx.x] = aggregate;
-//!    }
+//! .. literalinclude:: ../../../cub/test/warp/catch2_test_warp_reduce_broadcast_api.cu
+//!     :language: c++
+//!     :dedent:
+//!     :start-after: example-begin warp-reduce-broadcast-overview
+//!     :end-before: example-end warp-reduce-broadcast-overview
 //!
 //! @endrst
 //!
@@ -120,7 +111,10 @@ class WarpReduceBroadcast
 
   template <typename ReductionT, typename ReductionOp>
   static constexpr bool is_commutative_associative_integral_reduction_v =
-    ::cuda::std::is_integral_v<ReductionT> && detail::is_cuda_redux_operator_v<ReductionOp, ReductionT>;
+    ::cuda::std::is_integral_v<ReductionT>
+    && (detail::is_cuda_minimum_maximum_v<::cuda::std::remove_cvref_t<ReductionOp>, ReductionT>
+        || detail::is_cuda_std_plus_v<::cuda::std::remove_cvref_t<ReductionOp>, ReductionT>
+        || detail::is_cuda_std_bitwise_v<::cuda::std::remove_cvref_t<ReductionOp>, ReductionT>);
 
   template <typename ReductionT, typename ReductionOp>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ReductionT
@@ -140,7 +134,7 @@ class WarpReduceBroadcast
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int offset = LogicalWarpThreads / 2; offset > 0; offset >>= 1)
       {
-        const ReductionT peer = cub::ShuffleXor<LogicalWarpThreads>(input, offset, member_mask);
+        const ReductionT peer = ::cuda::device::warp_shuffle_xor<LogicalWarpThreads>(input, offset, member_mask);
         input                 = reduction_op(input, peer);
       }
 
@@ -177,13 +171,10 @@ class WarpReduceBroadcast
       NV_IF_TARGET(NV_PROVIDES_SM_80,
                    (const auto logical_warp_id = cub::detail::logical_warp_id<LogicalWarpThreads>();
                     const auto member_mask     = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
-                    return cub::detail::reduce_op_sync(input, member_mask, reduction_op);),
-                   (return commutative_associative_all_reduce(input, reduction_op);))
+                    return cub::detail::reduce_op_sync(input, member_mask, reduction_op);))
     }
-    else
-    {
-      return commutative_associative_all_reduce(input, reduction_op);
-    }
+
+    return commutative_associative_all_reduce(input, reduction_op);
   }
 
   template <typename InputT, typename ReductionOp>

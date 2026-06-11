@@ -17,11 +17,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/reduce_op_sync.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+// Next two for REDUX helpers
+#include <cub/thread/thread_operators.cuh>
+#include <cub/warp/specializations/warp_reduce_shfl.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
