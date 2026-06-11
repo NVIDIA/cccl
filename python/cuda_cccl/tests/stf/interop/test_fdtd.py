@@ -225,6 +225,9 @@ def test_fdtd_3d_pytorch_simplified_compiled(
     FDTD 3D with per-task stencils compiled via ``torch.compile`` and
     the time loop running inside ``ctx.repeat(chunk)`` CUDA-graph scopes.
     """
+    if output_freq > 0 and not has_matplotlib:
+        raise ImportError("matplotlib is required when output_freq > 0")
+
     ctx = stf.stackable_context()
 
     shape = (size_x, size_y, size_z)
