@@ -53,6 +53,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
