@@ -63,7 +63,11 @@ def copy_kernel(dst, src):
 def diffusion_step_kernel(u_new, u_old, n, nu_dt_over_h2):
     """Simple 1D diffusion: u_new[i] = u_old[i] + nu*dt/h^2 * (u[i-1] - 2*u[i] + u[i+1])"""
     i = cuda.grid(1)
-    if i <= 0 or i >= n - 1:
+    if i >= n:
+        return
+    if i == 0 or i == n - 1:
+        # Preserve fixed boundary values; the copy-back task writes all elements.
+        u_new[i] = u_old[i]
         return
     u_new[i] = u_old[i] + nu_dt_over_h2 * (u_old[i - 1] - 2.0 * u_old[i] + u_old[i + 1])
 
