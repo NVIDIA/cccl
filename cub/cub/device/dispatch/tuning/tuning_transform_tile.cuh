@@ -50,7 +50,7 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
   constexpr int max_occupancy        = 16;
 
   constexpr auto min_elem     = ::cuda::std::min({sizeof(Out), sizeof(Ins)...});
-  constexpr int items_for_vec = static_cast<int>(::cuda::ceil_div(vector_bytes, min_elem));
+  constexpr int items_for_vec = ::cuda::ceil_div(vector_bytes, min_elem);
 
   // Fill (zero inputs) keeps the same latency target by counting output bytes.
   constexpr auto bytes_per_iter = (sizeof...(Ins) > 0) ? (sizeof(Ins) + ... + ::cuda::std::size_t{0}) : sizeof(Out);
