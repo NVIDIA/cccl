@@ -71,19 +71,29 @@ using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
 // Segment size: static, uniform
 using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 32, 4 * 1024>;
 
+// %PARAM% TEST_TYPES types 0:1:2
+
+#if TEST_TYPES == 0
 using key_types =
-  c2h::type_list<cuda::std::uint8_t,
-                 float,
-                 cuda::std::uint64_t
+  c2h::type_list<cuda::std::uint8_t
 // clang-format off
-#if TEST_HALF_T()
-                , half_t
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
-                , bfloat16_t
-#endif // TEST_BF_T()
->;
+  #if TEST_HALF_T()
+  , half_t
+  #endif // TEST_HALF_T()
+  >;
 // clang-format on
+#elif TEST_TYPES == 1
+using key_types = c2h::type_list<float>;
+#elif TEST_TYPES == 2
+using key_types =
+  c2h::type_list<cuda::std::uint64_t
+// clang-format off
+  #if TEST_BF_T()
+  , bfloat16_t
+  #endif // TEST_BF_T()
+  >;
+// clang-format on
+#endif
 
 // Selection direction is a compile-time option; cover both as a static test axis.
 using select_direction_list =

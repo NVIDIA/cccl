@@ -354,6 +354,8 @@ void segmented_sort_keys(
   OffsetItT d_segment_offsets_end_it,
   cub::detail::topk::select direction)
 {
+  // TODO: switch this reference sort to cub::DeviceSegmentedRadixSort in a follow-up PR: it compiles ~30% faster
+  // than cub::DeviceSegmentedSort at negligible runtime cost.
   cuda::std::int64_t num_items = d_keys_in.size();
 
   // Prepare alternate buffer for double buffering

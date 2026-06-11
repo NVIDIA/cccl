@@ -103,15 +103,19 @@ using key_types =
   #if TEST_HALF_T()
   , half_t
   #endif // TEST_HALF_T()
-  #if TEST_BF_T()
-  , bfloat16_t
-  #endif // TEST_BF_T()
   >;
 // clang-format on
 #elif TEST_TYPES == 1
 using key_types = c2h::type_list<float>;
 #elif TEST_TYPES == 2
-using key_types = c2h::type_list<cuda::std::uint64_t>;
+using key_types =
+  c2h::type_list<cuda::std::uint64_t
+// clang-format off
+  #if TEST_BF_T()
+  , bfloat16_t
+  #endif // TEST_BF_T()
+  >;
+// clang-format on
 #endif
 
 // Unsigned integer types used for the radix-pass boundary distribution test
