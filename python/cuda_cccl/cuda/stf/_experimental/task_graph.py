@@ -131,7 +131,11 @@ class TaskGraph:
             return
         if self._reset:
             return
-        self._require_ready().reset()
+        if self._recording:
+            raise RuntimeError("cannot reset a task graph while recording")
+        if self._raw_graph is None or self._failed:
+            return
+        self._raw_graph.reset()
         self._reset = True
 
     def finalize(self) -> None:

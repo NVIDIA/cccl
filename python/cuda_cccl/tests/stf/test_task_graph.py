@@ -89,6 +89,26 @@ def test_task_graph_reset_then_finalize():
     graph.finalize()
 
 
+def test_task_graph_reset_before_recording_is_noop():
+    graph = stf.task_graph()
+
+    graph.reset()
+    graph.reset()
+    graph.finalize()
+
+
+def test_task_graph_reset_after_failed_recording_is_noop():
+    graph = stf.task_graph()
+
+    with pytest.raises(ValueError):
+        with graph:
+            raise ValueError("record failed")
+
+    graph.reset()
+    graph.reset()
+    graph.finalize()
+
+
 def test_task_graph_launch_before_recording_raises():
     graph = stf.task_graph()
     try:
