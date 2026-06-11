@@ -3,17 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Optimized PyTorch reference implementation of the viscous Burger solver.
+Optimized PyTorch baseline for the viscous Burger solver.
 
-NOTE: this is the only file under ``stf/examples/`` that intentionally
-does **not** use CUDASTF. It is the non-STF baseline kept here for
-direct, side-by-side comparison with :mod:`burger`, which solves the
-exact same problem through STF stackable contexts and graph_scope /
-while_loop / repeat composition.
-
-This is an "as fast as we can make it without STF" implementation with
-the same discretisation, parameters, and validation checks as the STF
-Burger variants.
+This module solves the same discretized problem as :mod:`burger`, but uses
+plain PyTorch control flow instead of CUDASTF task orchestration. It provides a
+direct baseline with matching parameters and validation checks, so changes to
+the STF version can be compared against a non-STF implementation.
 
   * every numerical kernel (spmv, residual, Jacobian, ...) is
     wrapped with ``@torch.compile`` so TorchInductor can fuse the small
