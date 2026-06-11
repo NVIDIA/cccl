@@ -57,7 +57,10 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
                                            cuda_safe_call(cudaGraphExecDestroy(*p));
                                          }};
 
-  *res = cuda_try<cudaGraphInstantiateWithFlags>(g, 0);
+  // Automatically free graph-owned async allocations between launches. This
+  // lets graphs containing cudaMallocAsync / cudaMemAllocNode allocations be
+  // relaunched even when the corresponding free is outside the captured graph.
+  *res = cuda_try<cudaGraphInstantiateWithFlags>(g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
   return res;
 }
