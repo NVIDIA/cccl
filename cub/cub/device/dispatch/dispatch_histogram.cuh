@@ -125,7 +125,7 @@ static constexpr int hybrid_smem_split_bin_single_channel = 49152;
 // Histogram algorithm taxonomy, named by (on-chip structure) × (where increments
 // land), per cached_privatized_spill_design.md. Three kernel families:
 //   * smem_privatized   — whole histogram on chip, atomic-merge to output (low bins).
-//   * direct_*          — DirectKernel<Combiner>: device-scope atomics to the SHARED
+//   * direct_*          — CacheSpillKernel<Combiner>: device-scope atomics to the SHARED
 //                         output (the honest meaning of the old "direct atomic"),
 //                         fronted by a Combiner ∈ {NoCache, Cuckoo, SingleProbe}.
 //   * gmem_privatized_* — GmemPrivatizedKernel: per-block GMEM-privatized histogram +
@@ -144,7 +144,7 @@ enum class algorithm : unsigned char
   smem_privatized,
 
   // --- High-bin algorithms (bins > max_dynamic_smem_bins) ---
-  // DirectKernel<Combiner>: combiner-fronted device-scope atomics to the shared output.
+  // CacheSpillKernel<Combiner>: combiner-fronted device-scope atomics to the shared output.
 
   // No on-chip cache: warp-coalesce then device-scope atomicAdd straight to the
   // output. The honest "pure direct atomic". (Not auto-selected; reachable via
@@ -213,7 +213,7 @@ struct selector_features
 //      >3-channel cells past the relevant cap fall through to the high-bin region.
 //
 //   2. High-bin region: the single-channel SMEM+GMEM `gmem_privatized_nocache`
-//      (smem_split>0, the merged hybrid member) and the two DirectKernel caches
+//      (smem_split>0, the merged hybrid member) and the two CacheSpillKernel caches
 //      (`direct_single_probe` / `direct_cuckoo`). Single-channel uses the on-chip
 //      hybrid where the histogram fits AND the input amortizes its setup (the 65536
 //      and 131072 tiers above their per-transform pixel floors); above 131072 (the
@@ -275,7 +275,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // 262144 / 1048576).
   //
   // The choice is among: the single-channel SMEM+GMEM hybrid (the smem_split>0
-  // member of `gmem_privatized_nocache`); the two DirectKernel caches
+  // member of `gmem_privatized_nocache`); the two CacheSpillKernel caches
   // (`direct_cuckoo`, `direct_single_probe`); and the cooperative pure-gather (the
   // smem_split==0 member of `gmem_privatized_nocache`). The selector cannot observe input entropy (a runtime
   // data property), so each rule picks the algorithm with the best GiB/s GEOMEAN
@@ -495,7 +495,7 @@ struct DeviceHistogramKernelSource
       /*HybridSplit=*/false>;
   }
 
-  /// The cooperative DirectKernel<Combiner, SpillOp> family (cuckoo / single-probe /
+  /// The cooperative CacheSpillKernel<Combiner, SpillOp> family (cuckoo / single-probe /
   /// no-cache cache front-end x output / private spill). One accessor parameterized
   /// by the probe + spill ops covers all six combinations the dispatch can launch;
   /// C-parallel overrides it to return the matching JIT CUkernel.
@@ -505,9 +505,9 @@ struct DeviceHistogramKernelSource
             typename OutputDecodeOpT,
             typename ProbeOp,
             typename SpillOp>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramDirectKernel()
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramCacheSpillKernel()
   {
-    return &DeviceHistogramDirectKernel<
+    return &DeviceHistogramCacheSpillKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -634,7 +634,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // threshold and ran gather instead.)
   int direct_atomic_choice = 0,
   // Cache policy for the direct-atomic-to-output kernel (only consulted when the
-  // direct-atomic path is taken). Both select the same DeviceHistogramDirectKernel
+  // direct-atomic path is taken). Both select the same DeviceHistogramCacheSpillKernel
   // with a different probe op:
   //   0 -> 2-hash cuckoo cache (cuckoo_cache_probe)
   //   1 -> single-probe direct-mapped cache (single_probe_cache)
@@ -972,7 +972,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
       auto direct_atomic_kernel_ptr =
-        kernel_source.template HistogramDirectKernel<PolicySelector,
+        kernel_source.template HistogramCacheSpillKernel<PolicySelector,
                                                      PRIVATIZED_SMEM_BINS,
                                                      privatized_decode_op_t,
                                                      output_decode_op_t,
@@ -993,7 +993,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // it). The 2-probe kernel above is kept for the moderate-bin tier where the
       // secondary slot raises the hit rate.
       auto direct_atomic_noprobe2_kernel_ptr =
-        kernel_source.template HistogramDirectKernel<PolicySelector,
+        kernel_source.template HistogramCacheSpillKernel<PolicySelector,
                                                      PRIVATIZED_SMEM_BINS,
                                                      privatized_decode_op_t,
                                                      output_decode_op_t,
@@ -1011,7 +1011,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `direct_atomic_cache_mode == 1` (the huge-N single-channel high-bin
       // route picked by the unified selector as direct_atomic_single_probe).
       auto direct_atomic_single_probe_kernel_ptr =
-        kernel_source.template HistogramDirectKernel<PolicySelector,
+        kernel_source.template HistogramCacheSpillKernel<PolicySelector,
                                                      PRIVATIZED_SMEM_BINS,
                                                      privatized_decode_op_t,
                                                      output_decode_op_t,
@@ -1034,14 +1034,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // are selectable-but-unselected -- a normal dispatch is byte-identical to
       // before. See cached_privatized_spill_design.md.
       auto direct_atomic_priv_cuckoo_kernel_ptr =
-        kernel_source.template HistogramDirectKernel<PolicySelector,
+        kernel_source.template HistogramCacheSpillKernel<PolicySelector,
                                                      PRIVATIZED_SMEM_BINS,
                                                      privatized_decode_op_t,
                                                      output_decode_op_t,
                                                      cuckoo_cache_probe<>,
                                                      private_block_spill>();
       auto direct_atomic_priv_single_probe_kernel_ptr =
-        kernel_source.template HistogramDirectKernel<PolicySelector,
+        kernel_source.template HistogramCacheSpillKernel<PolicySelector,
                                                      PRIVATIZED_SMEM_BINS,
                                                      privatized_decode_op_t,
                                                      output_decode_op_t,
@@ -1051,7 +1051,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // warp-coalesce then device-scope atomicAdd straight to the output, no SMEM
       // cache. Isolates the combiner's contribution.
       auto direct_atomic_no_cache_kernel_ptr =
-        kernel_source.template HistogramDirectKernel<PolicySelector,
+        kernel_source.template HistogramCacheSpillKernel<PolicySelector,
                                                      PRIVATIZED_SMEM_BINS,
                                                      privatized_decode_op_t,
                                                      output_decode_op_t,
@@ -1292,7 +1292,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       {
         if (false)
         {
-          DeviceHistogramDirectKernel<PolicySelector,
+          DeviceHistogramCacheSpillKernel<PolicySelector,
                                             PRIVATIZED_SMEM_BINS,
                                             NUM_CHANNELS,
                                             NUM_ACTIVE_CHANNELS,
@@ -1311,7 +1311,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
               num_rows,
               row_stride_samples,
               cache_slots_per_channel);
-          DeviceHistogramDirectKernel<PolicySelector,
+          DeviceHistogramCacheSpillKernel<PolicySelector,
                                             PRIVATIZED_SMEM_BINS,
                                             NUM_CHANNELS,
                                             NUM_ACTIVE_CHANNELS,
@@ -1332,7 +1332,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
               cache_slots_per_channel);
           // Force device-side emission of the second-probe-gated cuckoo variant so
           // `cudaLaunchCooperativeKernel` can resolve its device entry.
-          DeviceHistogramDirectKernel<PolicySelector,
+          DeviceHistogramCacheSpillKernel<PolicySelector,
                                             PRIVATIZED_SMEM_BINS,
                                             NUM_CHANNELS,
                                             NUM_ACTIVE_CHANNELS,
@@ -1487,7 +1487,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           // Parallel Library (CUDA-driver launcher + JIT CUkernels) can run these
           // kernels too -- regular CUB's runtime launcher reinterprets the host
           // function pointer; the driver launcher resolves the CUkernel handle.
-          // `DeviceHistogramDirectKernel` has 9 parameters; the 9th
+          // `DeviceHistogramCacheSpillKernel` has 9 parameters; the 9th
           // (`d_private_histograms_wrapper`) is a C++ default arg used only by the
           // private-spill variant. cudaLaunchCooperativeKernel / cuLaunchCooperative
           // marshal args POSITIONALLY by the kernel's true parameter count and
@@ -2441,7 +2441,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
     case algorithm::direct_single_probe:
     case algorithm::gmem_privatized_cuckoo:
     case algorithm::gmem_privatized_single_probe: {
-      // DirectKernel<Combiner> family, PRIVATIZED_SMEM_BINS=0. The deeper dispatch<>
+      // CacheSpillKernel<Combiner> family, PRIVATIZED_SMEM_BINS=0. The deeper dispatch<>
       // picks the kernel from `direct_atomic_cache_mode`, which now encodes BOTH the
       // combiner (cuckoo / single-probe / no-cache) AND the spill policy (device-scope
       // to the shared output = direct_*; block-scope to a per-block private slab +

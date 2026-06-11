@@ -85,7 +85,7 @@ struct histogram_kernel_source
             typename OutputDecodeOpT,
             typename ProbeOp,
             typename SpillOp>
-  CUkernel HistogramDirectKernel() const
+  CUkernel HistogramCacheSpillKernel() const
   {
     using ::cuda::std::is_same_v;
     if constexpr (is_same_v<ProbeOp, cub::detail::histogram::cuckoo_cache_probe</*DisableSecondProbe=*/true>>
@@ -246,7 +246,7 @@ std::string get_gather_kernel_name(
     offset_t);
 }
 
-// Direct-atomic cuckoo-cache kernel: DeviceHistogramDirectKernel<Policy, 0,
+// Direct-atomic cuckoo-cache kernel: DeviceHistogramCacheSpillKernel<Policy, 0,
 // NumChannels, NumActiveChannels, SampleItr, Counter, PrivDecode, OutDecode,
 // Offset, cuckoo_cache_probe<DisableSecondProbe>, output_atomic_spill>.
 std::string get_direct_cuckoo_kernel_name(
@@ -262,7 +262,7 @@ std::string get_direct_cuckoo_kernel_name(
   const auto names = get_histogram_kernel_type_names(
     d_samples, level_t, offset_t, is_evenly_segmented, /*is_byte_sample=*/false);
   return std::format(
-    "cub::detail::histogram::DeviceHistogramDirectKernel<{0}, 0, {1}, {2}, {3}, {4}, {5}, {6}, {7}, "
+    "cub::detail::histogram::DeviceHistogramCacheSpillKernel<{0}, 0, {1}, {2}, {3}, {4}, {5}, {6}, {7}, "
     "cub::detail::histogram::cuckoo_cache_probe<{8}>, cub::detail::histogram::output_atomic_spill>",
     names.chained_policy_t,
     num_channels,

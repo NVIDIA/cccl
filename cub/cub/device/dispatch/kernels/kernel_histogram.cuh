@@ -76,7 +76,7 @@ namespace detail::histogram
 // Set-associativity for the SINGLE-PROBE direct-atomic SMEM cache.
 //
 // The single-probe cache (the `single_probe_cache` probe op of
-// DeviceHistogramDirectKernel) is direct-mapped: each bin hashes to exactly
+// DeviceHistogramCacheSpillKernel) is direct-mapped: each bin hashes to exactly
 // ONE slot, and a slot collision (slot owned by another bin) is an IMMEDIATE GMEM
 // spill -- no second chance. That
 // single-slot conflict miss is the residual loss once Fibonacci hashing and
@@ -1984,7 +1984,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
 }
 
 //! Per-block SMEM cache update operators for the direct-atomic histogram kernel.
-//! `DeviceHistogramDirectKernel` is templated on one of these and calls
+//! `DeviceHistogramCacheSpillKernel` is templated on one of these and calls
 //! `ProbeOp::apply(...)` for each (bin, contribution); the cache policy is thus a
 //! pluggable op rather than a branch in the kernel. Each operator receives this
 //! channel's key array, this warp's replica count array, this channel's GMEM
@@ -1998,7 +1998,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
 //!
 //!   output_atomic_spill  -- device-scope atomicAdd straight to the SHARED output
 //!     histogram. This is the "direct atomic" commit; a hot-bin spill contends
-//!     across every block. Used by DeviceHistogramDirectKernel.
+//!     across every block. Used by DeviceHistogramCacheSpillKernel.
 //!
 //!   private_block_spill  -- block-scope atomicAdd_block into THIS block's PRIVATE
 //!     GMEM histogram (a per-block slab). Uncontended across blocks; a later
@@ -2314,7 +2314,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramDirectKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramCacheSpillKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
