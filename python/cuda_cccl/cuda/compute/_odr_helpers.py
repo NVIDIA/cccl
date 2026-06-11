@@ -33,7 +33,6 @@ low-level builder work.
 from __future__ import annotations
 
 import itertools
-import textwrap
 import threading
 
 from ._mlir import cuda, types
@@ -62,22 +61,54 @@ def _make_wrapper_name(name: str) -> str:
     return f"wrapped_{sanitized_name}_{unique_suffix}"
 
 
-def _build_wrapper(wrapper_name: str, params: list[str], body: str, op_device):
+def _build_wrapper(
+    wrapper_name: str, params: list[str], body_stmts, op_device, extra_namespace=None
+):
     """exec a generated wrapper source and return the resulting function.
 
-    ``params`` are the wrapper's parameter names and ``body`` is its (already
-    indented) function body.  ``op_device`` is injected as ``_op`` so the body
-    can call the compiled user operator.
+    ``params`` are the wrapper's parameter names and ``body_stmts`` is a list of
+    (unindented) statement lines for its body.  ``op_device`` is injected as
+    ``_op`` so the body can call the compiled user operator; ``extra_namespace``
+    injects any other globals the body references.
     """
-    src = textwrap.dedent(
-        f"""
-        def {wrapper_name}({", ".join(params)}):
-        {body}
-        """
-    )
+    indented_body = "\n".join(f"    {stmt}" for stmt in body_stmts)
+    src = f"def {wrapper_name}({', '.join(params)}):\n{indented_body}\n"
     namespace: dict = {"_op": op_device}
+    if extra_namespace:
+        namespace.update(extra_namespace)
     exec(src, namespace)
     return namespace[wrapper_name]
+
+
+def _is_gpu_struct_type(numba_type):
+    """True if ``numba_type`` is a registered gpu_struct type (see _jit)."""
+    return hasattr(numba_type, "_field_spec") and hasattr(numba_type, "python_type")
+
+
+def _op_returns_tuple(op_device, arg_types) -> bool:
+    """Whether ``op`` naturally returns a tuple for the given argument types."""
+    _, op_return_type = cuda.compile(
+        op_device, tuple(arg_types), device=True, output="ltoir"
+    )
+    return isinstance(op_return_type, (types.Tuple, types.UniTuple))
+
+
+def _result_store_body(loads: str, return_type, reconstruct_from_tuple: bool):
+    """Build the wrapper body that computes the op result and stores it.
+
+    A struct-returning operator usually returns the struct directly, which is
+    stored as-is.  But an operator can also return a *tuple* of the struct's
+    field values (e.g. a scan op feeding a zip output iterator returns a tuple);
+    numba-cuda-mlir cannot store a tuple directly into a struct pointer, so when
+    the op returns a tuple we reconstruct the struct field-by-field and let the
+    gpu_struct constructor pack it.  Returns ``(body_stmts, extra_namespace)``.
+    """
+    if reconstruct_from_tuple and _is_gpu_struct_type(return_type):
+        num_fields = len(return_type._field_spec)
+        fields = ", ".join(f"_r[{i}]" for i in range(num_fields))
+        stmts = [f"_r = _op({loads})", f"result[0] = _ResultStruct({fields})"]
+        return stmts, {"_ResultStruct": return_type.python_type}
+    return [f"result[0] = _op({loads})"], {}
 
 
 def create_op_void_ptr_wrapper(op, sig):
@@ -98,9 +129,14 @@ def create_op_void_ptr_wrapper(op, sig):
 
     # result[0] = _op(arg_0[0], arg_1[0], ...)
     loads = ", ".join(f"{name}[0]" for name in arg_names)
-    body = f"    result[0] = _op({loads})"
+    reconstruct = _is_gpu_struct_type(return_type) and _op_returns_tuple(
+        op_device, arg_types
+    )
+    body, extra_namespace = _result_store_body(loads, return_type, reconstruct)
 
-    wrapper_func = _build_wrapper(wrapper_name, arg_names + ["result"], body, op_device)
+    wrapper_func = _build_wrapper(
+        wrapper_name, arg_names + ["result"], body, op_device, extra_namespace
+    )
 
     wrapper_sig = types.void(
         *(types.CPointer(t) for t in arg_types),
@@ -157,10 +193,17 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes):
     state_args = ", ".join(f"states[{j}]" for j in range(num_states))
     input_args = ", ".join(f"{name}[0]" for name in input_names)
     call_args = ", ".join(a for a in (state_args, input_args) if a)
-    body = f"    result[0] = _op({call_args})"
+    reconstruct = _is_gpu_struct_type(return_type) and _op_returns_tuple(
+        op_device, sig.args
+    )
+    body, extra_namespace = _result_store_body(call_args, return_type, reconstruct)
 
     wrapper_func = _build_wrapper(
-        wrapper_name, ["states", *input_names, "result"], body, op_device
+        wrapper_name,
+        ["states", *input_names, "result"],
+        body,
+        op_device,
+        extra_namespace,
     )
 
     wrapper_sig = types.void(

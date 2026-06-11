@@ -194,15 +194,18 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
 
     # Data model: the struct lowers to an LLVM struct whose members are the MLIR
     # value types of the fields (numba-cuda-mlir builds backend types as MLIR).
+    # Use a *literal* (structural) struct rather than new_identified: the same
+    # logical gpu_struct is registered more than once (input type, constructed
+    # value, h_init, ...), and new_identified mints a fresh uniquely-named type
+    # each call, so casts between two registrations of the same struct fail. A
+    # literal struct compares equal by body, so all registrations agree.
     @_mlir.register_model(StructType)
     class StructModel(_mlir.PrimitiveModel):
         def __init__(self, dmm, fe_type):
             member_mlir_types = [
                 dmm.lookup(typ).get_value_type() for typ in field_spec.values()
             ]
-            be_type = _mlir.llvm.StructType.new_identified(
-                fe_type.name, member_mlir_types
-            )
+            be_type = _mlir.llvm.StructType.get_literal(member_mlir_types)
             super().__init__(dmm, fe_type, be_type)
 
     field_names_list = list(field_spec.keys())
@@ -312,9 +315,26 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
     )
 
     # Constructor typing: StructClass(field0, field1, ...) -> struct.
-    class StructConstructor(_mlir.ConcreteTemplate):
+    # Use an AbstractTemplate (rather than a ConcreteTemplate keyed on the exact
+    # field types) so a call whose argument types merely *convert* to the field
+    # types still matches -- numba-cuda-mlir promotes e.g. int32 + int32 to
+    # int64, so `Struct(a.x + b.x, ...)` arrives with wider arg types.  The
+    # lowering converts each argument to its field type.
+    _struct_field_types = list(field_spec.values())
+
+    class StructConstructor(_mlir.AbstractTemplate):
         key = struct_class
-        cases = [_mlir.signature(numba_type, *list(field_spec.values()))]
+
+        def generic(self, args, kws):
+            # Match on arity only and accept the actual argument types: numba
+            # promotes arithmetic (int32 + int32 -> int64), so a field built
+            # from an expression arrives wider than its declared type, and a
+            # narrowing conversion (int64 -> int32) is not an *implicit* numba
+            # conversion.  The constructor lowering converts each argument to
+            # its field type explicitly.
+            if kws or len(args) != len(_struct_field_types):
+                return None
+            return _mlir.signature(numba_type, *args)
 
     _mlir.typing_registry.register_global(
         struct_class, _mlir.types.Function(StructConstructor)
@@ -331,19 +351,46 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
             )
         return result
 
-    # Constructor lowering: load each argument, convert to the field type, and
-    # pack into the LLVM struct (replaces cgutils.create_struct_proxy).
+    def _coerce_to_field(builder, value, field_numba_type):
+        """Coerce a constructor argument value to its declared field type.
+
+        Scalars are converted directly.  A struct field may be supplied as a
+        tuple of its own field values (tuple-construction syntax, e.g.
+        ``Outer(x, (a, b))``); numba-cuda-mlir represents such a tuple as a
+        Python sequence of MLIR values, which we pack into the field's struct
+        (recursively, so nested tuple-construction works).
+        """
+        field_mlir_ty = builder.get_mlir_type(field_numba_type)
+        if isinstance(value, (tuple, list)):
+            sub_field_types = list(field_numba_type._field_spec.values())
+            sub_values = [
+                _coerce_to_field(builder, v, t) for v, t in zip(value, sub_field_types)
+            ]
+            return _pack_fields(
+                builder, _mlir.llvm.StructType(field_mlir_ty), sub_values
+            )
+        return _mlir.convert(value, field_mlir_ty)
+
+    # Constructor lowering: coerce each argument to its field type and pack into
+    # the LLVM struct (replaces cgutils.create_struct_proxy).
     def struct_constructor(builder, target, args, kwargs):
         struct_mlir_ty = _mlir.llvm.StructType(
             builder.get_mlir_type(builder.get_numba_type(target.name))
         )
         field_values = [
-            _mlir.convert(builder.load_var(arg), builder.get_mlir_type(field_type))
+            _coerce_to_field(builder, builder.load_var(arg), field_type)
             for arg, field_type in zip(args, field_spec.values())
         ]
         builder.store_var(target, _pack_fields(builder, struct_mlir_ty, field_values))
 
-    _mlir.lowering_registry.lower(struct_class, *list(field_spec.values()))(
+    # Register the constructor lowering as a catch-all on the struct class
+    # (variadic, any argument types) so it matches calls whose argument types
+    # were promoted (e.g. `Struct(a.x + b.x, ...)` arrives as int64 even though
+    # the field is int32).  The body converts each argument to its declared
+    # field type.  Registering for the exact field types (or for no arguments)
+    # would miss those promoted calls and fail with
+    # "NotImplemented lowering call to <struct>".
+    _mlir.lowering_registry.lower(struct_class, _mlir.types.VarArg(_mlir.types.Any))(
         struct_constructor
     )
 
