@@ -65,9 +65,28 @@ TEST_DEVICE_FUNC void test_grouped(T valueA = T{}, T valueB = T{1})
   }
 }
 
+TEST_DEVICE_FUNC void test_bool()
+{
+  for (unsigned i = 1; i <= 32; ++i)
+  {
+    if (threadIdx.x < i)
+    {
+      auto mask = cuda::device::lane_mask{make_low_mask(i)};
+      assert(cuda::device::warp_match_any(false, mask) == mask);
+      assert(cuda::device::warp_match_any(true, mask) == mask);
+
+      auto value    = threadIdx.x % 2 == 0;
+      auto expected = cuda::device::lane_mask{make_stride_mask(i, 2, threadIdx.x % 2)};
+      assert(cuda::device::warp_match_any(value, mask) == expected);
+    }
+  }
+}
+
 TEST_DEVICE_FUNC void test()
 {
   using array_t = cuda::std::array<char, 6>;
+  test_bool();
+
   test_all_equal<uint8_t>();
   test_all_equal<uint16_t>();
   test_all_equal<uint32_t>();

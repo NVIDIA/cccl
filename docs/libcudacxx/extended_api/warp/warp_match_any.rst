@@ -50,6 +50,7 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 
 - The function calls the PTX instruction ``match.sync`` :math:`ceil\left(\frac{sizeof(data)}{4}\right)` times.
 - The function is faster when called with a mask representing all active lanes in a warp (default value of the second parameter ``lane_mask``).
+- The function uses ``__ballot_sync`` when ``T`` is ``bool``.
 
 **References**
 
