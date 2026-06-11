@@ -285,7 +285,7 @@ public:
 
       dump_algorithm(gctx_graph);
 
-      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, 0);
+      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
       cached_exec_graphs[stream].push_back(eg);
     }
@@ -341,7 +341,7 @@ public:
 
       dump_algorithm(gctx_graph);
 
-      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, 0);
+      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
       cached_exec_graphs[stream].push_back(eg);
     }
