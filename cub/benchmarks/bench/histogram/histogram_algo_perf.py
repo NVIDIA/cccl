@@ -402,12 +402,20 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     C.draw_sequence(fig.add_subplot(gs[0, 1]), bins, char_bins, shape=shape)
     legend_ax = fig.add_subplot(gs[0, 2])
     legend_ax.axis("off")
+    # Prefix each entry with its 3-letter tag so the legend decodes the tags
+    # annotated on the `default` series points (e.g. a "DAC" on the black line maps
+    # to "DAC — direct-atomic + cuckoo" here). Without this the tags are unexplained.
+    def _legend_label(a):
+        tag = ALGO_TAG.get(a)
+        return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
+
     handles = [
         plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1],
-                   linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=ALGO_STYLE[a][2])
+                   linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=_legend_label(a))
         for a in algos
     ]
-    legend_ax.legend(handles=handles, loc="center", fontsize=11, title="algorithms", frameon=True)
+    legend_ax.legend(handles=handles, loc="center", fontsize=10, title="algorithms (tag — name)",
+                     title_fontsize=10, frameon=True)
 
     for i, elements in enumerate(elements_list):
         r, c = 1 + i // ncols, i % ncols
