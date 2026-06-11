@@ -53,25 +53,11 @@ get_param(const ::cuda::args::constant<_Value, _Tp>& __arg, [[maybe_unused]] _Se
   return ::cuda::args::__unwrap(__arg);
 }
 
-template <auto _Value, class _SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::args::__constant_sequence<_Value>& __arg, _SegmentIndexT __index) noexcept
-{
-  return ::cuda::args::__unwrap(__arg)[__index];
-}
-
 template <class _Arg, class _StaticBounds, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::immediate<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
   return ::cuda::args::__unwrap(__arg);
-}
-
-template <class _Arg, class _StaticBounds, class _SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::args::__immediate_sequence<_Arg, _StaticBounds>& __arg, _SegmentIndexT __index) noexcept
-{
-  return ::cuda::args::__unwrap(__arg)[__index];
 }
 
 template <class _Arg, class _StaticBounds, class _SegmentIndexT>
