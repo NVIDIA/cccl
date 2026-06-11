@@ -234,6 +234,7 @@ struct AgentRadixSortHistogram
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     // Within a portion, avoid overflowing (u)int32 counters.
     // Between portions, accumulate results in global memory.
     constexpr OffsetT MAX_PORTION_SIZE = 1 << 30;
