@@ -270,8 +270,6 @@ def test_pop_prologue_shared_reset_is_idempotent():
     assert not g.valid
 
     # launch() / accessors must refuse a reset handle.
-    import pytest
-
     with pytest.raises(RuntimeError):
         g.launch()
     with pytest.raises(RuntimeError):

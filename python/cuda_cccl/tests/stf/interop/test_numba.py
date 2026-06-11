@@ -434,4 +434,3 @@ def test_numba_places():
     assert np.allclose(X, 2.0)
     assert np.allclose(Y, 5.0)
     assert np.allclose(Z, 15.0)
-    # test_numba()

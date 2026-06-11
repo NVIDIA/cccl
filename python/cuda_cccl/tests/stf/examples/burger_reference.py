@@ -220,6 +220,10 @@ def _run_burger(N=None, nsteps=None, substeps=None, nu=0.05):
         nsteps = int(os.environ.get("BURGER_NSTEPS", "300"))
     if substeps is None:
         substeps = int(os.environ.get("BURGER_SUBSTEPS", "10"))
+    if substeps <= 0:
+        raise ValueError("BURGER_SUBSTEPS must be positive")
+    if nsteps % substeps != 0:
+        raise ValueError("BURGER_NSTEPS must be divisible by BURGER_SUBSTEPS")
     outer_iters = nsteps // substeps
     h = 1.0 / (N - 1)
     dt = max(0.5 * h * h / nu, 0.001)
