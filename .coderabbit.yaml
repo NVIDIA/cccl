@@ -76,14 +76,13 @@ reviews:
         Focus on correctness, ABI/API stability, standard-library conformance, host/device availability,
         NVRTC compatibility, supported C++ standards, tests, and portability across supported CUDA toolchains.
         Avoid style comments unless the requirement is explicitly mentioned in
-        .agent/skills/libcudacxx-style/SKILL.md.
+        .agent/skills/cccl-style/SKILL.md.
 
     - path: "cudax/**/*"
       instructions: |
         Focus on correctness, lifetime/resource ownership, stream ordering, host/device annotations, experimental
-        API clarity, tests, and compatibility with the supported CUDA toolchains. Use
-        .agent/skills/libcudacxx-style/SKILL.md as style context for cudax/include. Avoid style comments unless
-        the requirement is explicitly mentioned in that skill file.
+        API clarity, tests, and compatibility with the supported CUDA toolchains. Avoid style comments unless
+        the requirement is explicitly mentioned in .agent/skills/cccl-style/SKILL.md.
 
     - path: "cub/**/*"
       instructions: |
@@ -135,7 +134,9 @@ knowledge_base:
     filePatterns:
       - "AGENTS.md"
       - "CONTRIBUTING.md"
-      - ".agent/skills/libcudacxx-style/SKILL.md"
+      - ".agent/skills/cccl-style/SKILL.md"
+      - ".agent/skills/cccl-style/references/common.md"
+      - ".agent/skills/cccl-style/references/libcudacxx.md"
       - "docs/cccl/config_macros.rst"
       - "docs/cccl/development/macro.rst"
       - "docs/cccl/development/visibility.rst"
