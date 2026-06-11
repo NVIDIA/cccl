@@ -1007,13 +1007,6 @@ private:
         },
         static_cast<Mid&&>(mid));
     }
-
-    // Overload with no interleaved work (resident keys are processed before the streamer in the pair final filter).
-    template <typename F>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_indexed(F&& f)
-    {
-      process_pass_indexed(static_cast<F&&>(f), [] {});
-    }
   };
 
   // -------------------------------------------------------------------------
@@ -1789,30 +1782,37 @@ private:
           }
         }
       };
-      if constexpr (use_block_load_to_shared)
-      {
-        key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
-        for_each_chunk_key({rk, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, write_selected);
-      }
-      else
-      {
-        for (offset_t p = 0; p < my_resident_chunks; ++p)
+      // Fold the resident keys as the streamer's `mid` work so they overlap the first wave of overflow reloads. The
+      // writes are order-independent atomics, so interleaving resident and overflow output is safe, and the resident
+      // SMEM slots are disjoint from the streaming slots, so `mid` reads never race the in-flight loads.
+      const auto fold_resident = [&] {
+        if constexpr (use_block_load_to_shared)
         {
-          const offset_t chunk_idx = part.global_index(p);
-          const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
-          key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
-          for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
+          key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+          for_each_chunk_key({rk, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, write_selected);
         }
-      }
-      streamer.process_pass(write_selected);
+        else
+        {
+          for (offset_t p = 0; p < my_resident_chunks; ++p)
+          {
+            const offset_t chunk_idx = part.global_index(p);
+            const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+            key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
+            for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
+          }
+        }
+      };
+      streamer.process_pass(write_selected, fold_resident);
     }
     else
     {
-      // Pair (key + value) path. The key write order and `out_cnt`/`out_back_cnt` atomics are unchanged; for each
-      // written key we additionally load its value payload from gmem at the key's segment-local index `seg_idx` and
-      // store it at the same output slot. Keys are reused exactly as in the keys-only path - resident keys from SMEM,
-      // overflow keys from the streaming SMEM pipeline via `process_pass_indexed` (the generic fallback re-reads them
-      // from gmem); only the values are fetched from gmem (no value streaming).
+      // Pair (key + value) path. The `out_cnt`/`out_back_cnt` atomics are unchanged; for each written key we
+      // additionally load its value payload from gmem at the key's segment-local index `seg_idx` and store it at the
+      // same output slot. Keys are reused exactly as in the keys-only path - resident keys from SMEM, overflow keys
+      // from the streaming SMEM pipeline via `process_pass_indexed` (the generic fallback re-reads them from gmem);
+      // only the values are fetched from gmem (no value streaming). As in the keys-only path the output order is not
+      // preserved (the resident keys are folded in as the streamer's `mid` work), which the non-deterministic path
+      // permits.
       auto write_selected_idx = [&](const key_t& key, offset_t seg_idx) {
         const auto res = identify_op(key);
         if (res == detail::topk::candidate_class::selected)
@@ -1846,47 +1846,52 @@ private:
         });
       };
 
-      if constexpr (use_block_load_to_shared)
-      {
-        // Resident keys are densely packed in slot order; each chunk's keys are contiguous, so a running cursor over
-        // the packed region recovers per-chunk spans. The last slot holds the forced-resident tail when applicable.
-        key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
-        int cursor      = 0;
-        for (offset_t s = 0; s < my_resident_chunks; ++s)
+      // Fold the resident keys (and their values) as the streamer's `mid` work so they overlap the first wave of
+      // overflow reloads, exactly as in the keys-only path: order-independent atomic writes into a disjoint output, and
+      // resident SMEM slots disjoint from the streaming slots, so `mid` never races the in-flight loads.
+      const auto fold_resident = [&] {
+        if constexpr (use_block_load_to_shared)
         {
-          const offset_t rl       = (force_tail_resident && s == my_resident_chunks - offset_t{1}) ? tail_local : s;
-          const auto chunk        = get_chunk(part.global_index(rl), segment_size_u32, head_items);
-          const offset_t base_off = chunk.offset;
-          const int cc            = chunk.count;
-          write_run(
-            [&](int local) {
-              return rk[cursor + local];
-            },
-            base_off,
-            cc);
-          cursor += cc;
+          // Resident keys are densely packed in slot order; each chunk's keys are contiguous, so a running cursor over
+          // the packed region recovers per-chunk spans. The last slot holds the forced-resident tail when applicable.
+          key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+          int cursor      = 0;
+          for (offset_t s = 0; s < my_resident_chunks; ++s)
+          {
+            const offset_t rl       = (force_tail_resident && s == my_resident_chunks - offset_t{1}) ? tail_local : s;
+            const auto chunk        = get_chunk(part.global_index(rl), segment_size_u32, head_items);
+            const offset_t base_off = chunk.offset;
+            const int cc            = chunk.count;
+            write_run(
+              [&](int local) {
+                return rk[cursor + local];
+              },
+              base_off,
+              cc);
+            cursor += cc;
+          }
         }
-      }
-      else
-      {
-        for (offset_t p = 0; p < my_resident_chunks; ++p)
+        else
         {
-          const auto chunk        = get_chunk(part.global_index(p), segment_size_u32, head_items);
-          const offset_t base_off = chunk.offset;
-          key_t* const chunk_keys = slot_keys_unpadded(static_cast<int>(p));
-          write_run(
-            [&](int local) {
-              return chunk_keys[local];
-            },
-            base_off,
-            chunk.count);
+          for (offset_t p = 0; p < my_resident_chunks; ++p)
+          {
+            const auto chunk        = get_chunk(part.global_index(p), segment_size_u32, head_items);
+            const offset_t base_off = chunk.offset;
+            key_t* const chunk_keys = slot_keys_unpadded(static_cast<int>(p));
+            write_run(
+              [&](int local) {
+                return chunk_keys[local];
+              },
+              base_off,
+              chunk.count);
+          }
         }
-      }
+      };
 
       // Overflow chunks: reuse the keys from the streaming SMEM pipeline (block-load path; only the generic fallback
-      // re-reads them from gmem), and fetch each selected key's value at its segment-local index `seg_idx`. `write_run`
-      // already wrote out resident chunks above, so no interleaved `mid` work is left to overlap here.
-      streamer.process_pass_indexed(write_selected_idx);
+      // re-reads them from gmem), and fetch each selected key's value at its segment-local index `seg_idx`. The
+      // resident keys above are folded in as the streamer's `mid` work to hide the first reload wave's latency.
+      streamer.process_pass_indexed(write_selected_idx, fold_resident);
     }
 #  endif // CUB_ENABLE_CLUSTER_TOPK_DETERMINISM
 
