@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// This test is a minimal reproducer of an illegal memory access error observed in warpspeed scan.
+// This test is a minimal reproducer of an illegal memory access error observed in lookahead scan.
 // More details here: https://github.com/NVIDIA/cccl/issues/8838
 
 // Assertions hide the bug, so we need to disable them

@@ -37,6 +37,7 @@
 - Use `cuda::std` names, not `std::` names, unless the test is intentionally checking interoperability with host standard library types.
 - Do not fully qualify names in header includes unless the test is intentionally checking interoperability with host standard library types.
 - Mark helper functions that may run on host and device with `TEST_FUNC`; use `TEST_DEVICE_FUNC` for device-only helpers.
+  use `TEST_TILE_FUNC` for tile only helpers and `TEST_TILE_DEVICE_FUNC` for functions that can run on tile and device
 - `const`-qualification is discouraged.
 - Don't use `noexcept` for helper functions unless strictly necessary.
 - Do not use lambda expressions in host/device test code unless nearby tests already prove the pattern is supported.
