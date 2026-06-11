@@ -57,21 +57,26 @@ struct TripleChevronFactory
   // hard-coded `cudaLaunchCooperativeKernel`.
   template <typename Kernel, typename... Args>
   CUB_RUNTIME_FUNCTION ::cudaError_t doit_cooperative(
-    dim3 grid,
-    dim3 block,
-    ::cuda::std::size_t shared_mem,
-    ::cudaStream_t stream,
-    Kernel kernel,
-    Args const&... args) const
+    [[maybe_unused]] dim3 grid,
+    [[maybe_unused]] dim3 block,
+    [[maybe_unused]] ::cuda::std::size_t shared_mem,
+    [[maybe_unused]] ::cudaStream_t stream,
+    [[maybe_unused]] Kernel kernel,
+    [[maybe_unused]] Args const&... args) const
   {
-    void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
-    return ::cudaLaunchCooperativeKernel(
-      reinterpret_cast<const void*>(kernel),
-      grid,
-      block,
-      kernel_args,
-      shared_mem,
-      stream);
+    // cudaLaunchCooperativeKernel is a host-only runtime API: it cannot be called
+    // from a device-side (CDP) launch. Guard the body so this __host__ __device__
+    // method still compiles when instantiated under device-side launch (the
+    // cooperative path is not supported there -> cudaErrorNotSupported), mirroring
+    // thrust::cuda_cub::detail::triple_chevron::doit_host/doit_device.
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({
+        void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
+        return ::cudaLaunchCooperativeKernel(
+          reinterpret_cast<const void*>(kernel), grid, block, kernel_args, shared_mem, stream);
+      }),
+      ({ return cudaErrorNotSupported; }));
   }
 
   template <class T = void>
@@ -163,9 +168,16 @@ struct TripleChevronFactory
   }
 
   template <typename Kernel>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t set_max_dynamic_smem_size_for(Kernel kernel_ptr, int smem_size)
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  set_max_dynamic_smem_size_for([[maybe_unused]] Kernel kernel_ptr, [[maybe_unused]] int smem_size)
   {
-    return CubDebug(::cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
+    // cudaFuncSetAttribute is host-only; guard so this __host__ __device__ method
+    // compiles under device-side (CDP) launch (where raising the dynamic-SMEM cap is
+    // not supported -> cudaErrorNotSupported).
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({ return CubDebug(::cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size)); }),
+      ({ return cudaErrorNotSupported; }));
   }
 };
 } // namespace detail
