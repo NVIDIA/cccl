@@ -988,15 +988,27 @@ private:
     const chunk_partition part = make_chunk_partition(chunks, cluster_rank, cluster_size);
     const offset_t my_chunks   = part.count;
 
-    // Resident vs. streaming split. Segments that fit the all-resident coverage behave exactly as before
-    // (`resident_slots_cap == full_slots`, no streaming). Larger segments reserve the last `PipelineStages` slots of
-    // the block_tile as a round-robin streaming region and keep `full_slots - PipelineStages` slots resident; the
-    // overflow chunks are re-streamed from gmem on every pass by `streamer`. The launch coverage check still reserves
-    // one extra chunk for the possible unaligned head.
-    const offset_t full_slots = block_tile_capacity / static_cast<offset_t>(chunk_items);
-    const offset_t all_resident_capacity =
-      smem_layout_t::template cluster_tile_capacity<offset_t>(static_cast<int>(cluster_size), block_tile_capacity);
-    const bool needs_streaming = segment_size_u32 > all_resident_capacity;
+    // Resident vs. streaming split, decided independently per CTA. A CTA whose owned-chunk count fits its resident
+    // slots (`my_chunks <= full_slots`) keeps every chunk resident and streams nothing; only a CTA that actually
+    // overflows reserves the last `PipelineStages` slots of its block_tile as a round-robin streaming region (keeping
+    // `full_slots - PipelineStages` resident) and re-streams its overflow chunks from gmem on every pass via
+    // `streamer`.
+    //
+    // This is purely a local decision: each CTA only ever loads/scans its own chunks (resident SMEM or its own gmem
+    // overflow), and the cross-CTA traffic (histogram fold, leader `state`, the deterministic `cand_prefix` scan) plus
+    // every `cluster.sync()` are reached uniformly regardless of how many chunks any CTA streams - so CTAs need not
+    // agree on the split. `my_chunks` already folds in this segment's actual base alignment (an unaligned head costs
+    // exactly one extra chunk via `num_chunks`/`head_chunk_items`), so no head reserve is needed here; that differs
+    // from the host-side launch selection, which must provision a one-chunk margin (`cluster_tile_capacity`) because it
+    // picks a single launch-wide `(cluster_size, smem)` from only the segment-size *upper bound*.
+    //
+    // Versus a cluster-uniform split (`chunks > full_slots * cluster_size`, which forces every CTA to stream): the
+    // busiest rank streams the same amount either way, but every other rank now stays fully resident, cutting cluster
+    // gmem traffic and SMEM pressure. Both schemes stream under the exact same global condition (some rank overflows
+    // iff `ceil_div(chunks, cluster_size) > full_slots`), so the `full_slots > PipelineStages` reservation guarantee
+    // the dispatch already provisions for is unchanged.
+    const offset_t full_slots  = block_tile_capacity / static_cast<offset_t>(chunk_items);
+    const bool needs_streaming = my_chunks > full_slots;
     _CCCL_ASSERT(!needs_streaming || full_slots > static_cast<offset_t>(PipelineStages),
                  "block_tile too small to reserve a streaming region");
     const offset_t resident_slots_cap =
