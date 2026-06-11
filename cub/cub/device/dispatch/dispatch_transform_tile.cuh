@@ -85,7 +85,8 @@ struct DeviceTransform
     ::cudaStream_t stream = nullptr)
   {
     constexpr int chosen = (TileSize > 0) ? TileSize : cub::detail::transform::tile::pick_tile_size<Out, Ins...>(MufuHeavy);
-    return launch_impl<chosen, Fn>(inputs, output, num_items, stream, ::cuda::std::index_sequence_for<Ins...>{});
+    return cub::detail::transform::tile::launch_impl<chosen, Fn>(
+      inputs, output, num_items, stream, ::cuda::std::index_sequence_for<Ins...>{});
   }
 
   // Fill

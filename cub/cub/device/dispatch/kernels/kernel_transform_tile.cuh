@@ -67,6 +67,7 @@ template <int TileSize, typename T>
 __tile_global__ void fill_kernel(const ::cuda::std::int64_t num_items, T* __restrict__ out, const T value)
 {
   namespace ct  = ::cuda::tiles;
+  using cub::detail::transform::tile::make_partition_view;
   const auto bx = ct::bid().x;
 
   const auto n  = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
