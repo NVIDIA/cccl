@@ -1471,10 +1471,9 @@ struct _Sorter
     //
     // s_j/s_{j-1} = (2 ln p / eps)^{1/k}
     //
-    // is constant across rounds. So the per-PROCESSOR sample size is bounded
-    // (w.h.p.) by
+    // is constant across rounds. So the GLOBAL sample size is bounded (w.h.p.) by
     //
-    // Z_j/p = 5*(2 ln p/eps)^{1/k}.
+    // Z_j = 5*p*(2 ln p/eps)^{1/k}.
     //
     // This is only a w.h.p. bound on a Bernoulli draw, not a hard cap, so it is
     // used as a reserve() hint -- an unlucky overshoot just costs a realloc.

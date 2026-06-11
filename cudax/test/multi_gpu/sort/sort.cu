@@ -626,5 +626,5 @@ C2H_TEST_WITH_FIXTURE(InitNCCL, "nonstandard comparator", "[multi_gpu][sort]", )
     }
   }
 
-  check_sort_case(comms, input, abs_less{});
+  check_sort_case(comms, input, abs_less<int>{});
 }
