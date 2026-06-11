@@ -110,7 +110,7 @@ ALGO_TAG = {
     "direct_cuckoo": "DAC",
     "direct_single_probe": "DAS",
     "direct_nocache": "DAN",
-    "main": "MAIN",
+    "main": "BAS",  # baseline (upstream main); 3 letters like the rest, ties to "speedup vs baseline"
     "default": "DEF",
 }
 # Draw order: reference series last (on top). gmem/direct candidates first.
