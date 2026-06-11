@@ -343,9 +343,9 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  const bool kernel_only = (decomposer.code_size == 0) && (decomposer.name != nullptr) && (decomposer.name[0] != '\0');
+  const bool kernel_only = is_custom_op(decomposer);
 
-  // Collect all LTO-IRs to be linked (empty when decomposer.code_size == 0 — kernel-only mode).
+  // Collect all LTO-IRs to be linked (empty in kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
   appender.append_operation(decomposer);

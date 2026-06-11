@@ -116,9 +116,7 @@ try
 
   std::string lowered_name;
 
-  // kernel-only mode: extract kernel LTOIR without linking the operator in.
-  // Only custom ops (non-empty name) with no LTOIR trigger this; well-known ops (name="") do not.
-  const bool kernel_only = (op.code_size == 0) && (op.name != nullptr) && (op.name[0] != '\0');
+  const bool kernel_only = is_custom_op(op);
 
   auto post_build =
     begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)

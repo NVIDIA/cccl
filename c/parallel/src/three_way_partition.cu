@@ -249,10 +249,7 @@ static_assert(
 
   cccl::detail::extend_args_with_build_config(args, config);
 
-  const bool kernel_only =
-    select_first_part_op.code_size == 0 && select_first_part_op.name != nullptr && select_first_part_op.name[0] != '\0'
-    && select_second_part_op.code_size == 0 && select_second_part_op.name != nullptr
-    && select_second_part_op.name[0] != '\0';
+  const bool kernel_only = is_custom_op(select_first_part_op) && is_custom_op(select_second_part_op);
 
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};

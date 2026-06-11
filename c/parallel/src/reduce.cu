@@ -326,7 +326,7 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked (empty when op.code_size == 0 — kernel-only mode).
+  // Collect all LTO-IRs to be linked (empty in kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
@@ -335,8 +335,7 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   appender.add_iterator_definition(output_it);
 
   // kernel-only mode: extract kernel LTOIR without linking the operator in.
-  // Only custom ops (non-empty name) with no LTOIR trigger this; well-known ops (name="") do not.
-  const bool kernel_only = (op.code_size == 0) && (op.name != nullptr) && (op.name[0] != '\0');
+  const bool kernel_only = is_custom_op(op);
 
   auto post_build =
     begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)

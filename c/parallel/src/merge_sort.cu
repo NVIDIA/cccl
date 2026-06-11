@@ -312,9 +312,9 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  const bool kernel_only = (op.code_size == 0) && (op.name != nullptr) && (op.name[0] != '\0');
+  const bool kernel_only = is_custom_op(op);
 
-  // Collect all LTO-IRs to be linked (empty when op.code_size == 0 — kernel-only mode).
+  // Collect all LTO-IRs to be linked (empty in kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender list_appender{linkable_list};
 

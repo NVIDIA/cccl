@@ -154,6 +154,12 @@ inline char* duplicate_c_string(std::string_view s)
   return p.release();
 }
 
+// A custom op has a name but no LTOIR — kernel-only compile mode leaves the op unresolved.
+inline bool is_custom_op(cccl_op_t op)
+{
+  return op.code_size == 0 && op.name != nullptr && op.name[0] != '\0';
+}
+
 inline constexpr cub::detail::op_kind_t cccl_op_kind_to_cub_op(cccl_op_kind_t type)
 {
   switch (type)
