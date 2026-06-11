@@ -41,6 +41,7 @@ from numba_cuda_mlir.models import OpaqueModel, PrimitiveModel, register_model
 from numba_cuda_mlir.numba_cuda.core import errors
 from numba_cuda_mlir.numba_cuda.extending import as_numba_type, typeof_impl
 from numba_cuda_mlir.numba_cuda.np import numpy_support
+from numba_cuda_mlir.numba_cuda.typeconv import Conversion
 from numba_cuda_mlir.numba_cuda.typing.templates import (
     AbstractTemplate,
     AttributeTemplate,
@@ -60,6 +61,7 @@ __all__ = [
     "typing_registry",
     "as_numba_type",
     "typeof_impl",
+    "Conversion",
     "AbstractTemplate",
     "AttributeTemplate",
     "ConcreteTemplate",
