@@ -1598,9 +1598,32 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 #endif // _CCCL_HOSTED()
 
+  // For the high-bin path (PRIVATIZED_SMEM_BINS == 0: GMEM-privatized gather and the
+  // direct-atomic caches) the ONLY correct kernel is the cooperative one launched
+  // above -- it relies on a grid-wide `grid.sync()` to order init -> sweep -> gather.
+  // The non-cooperative fallback below launches `sweep_kernel`, which for
+  // PRIVATIZED_SMEM_BINS == 0 is the STATIC <=256-bin privatized kernel -- running it
+  // on a high-bin problem would neither gather the per-block slabs nor size the
+  // histogram correctly. So if the cooperative launch did not happen (occupancy query
+  // failed, or the grid did not fit the co-resident capacity -- `coop_query_ok` /
+  // `selected_fits` false above), the requested high-bin algorithm genuinely cannot
+  // run here: return cudaErrorNotSupported rather than silently launching the wrong
+  // (smem-privatized) kernel. Previously this fell through and the launch tag
+  // mislabeled the run as `ran=smem_privatized` (the sweep-only DROP(ran=smem_privatized)
+  // anomaly), and for a FORCED algorithm it silently substituted a different one --
+  // a forced request must error, never substitute. The smem-privatized tiers
+  // (PRIVATIZED_SMEM_BINS > 0) legitimately use the non-cooperative path below.
+  if constexpr (PRIVATIZED_SMEM_BINS == 0)
+  {
+    if (!launched_persistent)
+    {
+      return cudaErrorNotSupported;
+    }
+  }
+
   // Non-cooperative path: a standalone init kernel followed by the sweep kernel.
   // Taken when the cooperative GMEM-privatized gather-merge above did not launch
-  // (every privatized-SMEM tier, plus the direct-atomic and legacy fallbacks).
+  // (every privatized-SMEM tier; the high-bin path errored out just above).
   if (!launched_persistent)
   {
     constexpr int histogram_init_threads_per_block = 256;
