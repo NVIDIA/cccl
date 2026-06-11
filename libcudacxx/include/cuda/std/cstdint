@@ -28,14 +28,24 @@
 #elif _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/climits>
 
-using int8_t   = signed char;
-using int16_t  = signed short;
-using int32_t  = signed int;
-using int64_t  = signed long long;
+// NVRTC aliases should be aligned with what the platform types.
+
+using int8_t  = signed char;
+using int16_t = signed short;
+using int32_t = signed int;
+#  if defined(__LP64__)
+using int64_t = signed long;
+#  else // ^^^ __LP64__ ^^^ / vvv !__LP64__ vvv
+using int64_t = signed long long;
+#  endif // ^^^ !__LP64__ ^^^
 using uint8_t  = unsigned char;
 using uint16_t = unsigned short;
 using uint32_t = unsigned int;
+#  if defined(__LP64__)
+using uint64_t = unsigned long;
+#  else // ^^^ __LP64__ ^^^ / vvv !__LP64__ vvv
 using uint64_t = unsigned long long;
+#  endif // ^^^ !__LP64__ ^^^
 
 using int_fast8_t   = int8_t;
 using int_fast16_t  = int16_t;
