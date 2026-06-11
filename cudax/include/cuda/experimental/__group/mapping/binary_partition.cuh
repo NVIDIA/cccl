@@ -45,7 +45,7 @@ class binary_partition
 {
   static_assert(::cuda::std::is_move_constructible_v<_Fn>, "_Fn must be move constructible");
 
-  _Fn __fn_;
+  mutable _Fn __fn_;
 
 public:
   _CCCL_DEVICE_API explicit binary_partition(_Fn __fn) noexcept(::cuda::std::is_nothrow_move_constructible_v<_Fn>)
@@ -54,8 +54,8 @@ public:
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept(
-    ::cuda::std::is_nothrow_invocable_v<_Fn, const _PrevMappingResult&>)
+  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const
+    noexcept(::cuda::std::is_nothrow_invocable_v<_Fn, const _PrevMappingResult&>)
   {
     static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "binary_partition can only group threads");
     static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, warp_level>,
