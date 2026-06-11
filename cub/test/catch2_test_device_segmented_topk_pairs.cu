@@ -500,12 +500,12 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
     d_keys_out,
     d_values_in,
     d_values_out,
-    cuda::__argument::__immediate{segment_size, cuda::__argument::__bounds<segment_size_t{1}, max_segment_size>()},
-    cuda::__argument::deferred_sequence{
-      thrust::raw_pointer_cast(segment_k.data()), cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
-    cuda::__argument::__constant<direction>{},
-    cuda::__argument::__immediate{num_segments},
-    cuda::__argument::__immediate{num_segments * segment_size});
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
+    cuda::args::deferred_sequence{
+      thrust::raw_pointer_cast(segment_k.data()), cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::constant<direction>{},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_segments * segment_size});
 
   // Verification:
   // - We verify correct top-k selection through the keys
@@ -621,13 +621,12 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
     d_keys_out,
     d_values_in,
     d_values_out,
-    cuda::__argument::deferred_sequence{
-      segment_size_it, cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
-    cuda::__argument::deferred_sequence{
-      thrust::raw_pointer_cast(segment_k.data()), cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
-    cuda::__argument::__constant<direction>{},
-    cuda::__argument::__immediate{num_segments},
-    cuda::__argument::__immediate{num_items});
+    cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::deferred_sequence{
+      thrust::raw_pointer_cast(segment_k.data()), cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::constant<direction>{},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_items});
 
   // Verification:
   // - We verify correct top-k selection through the keys
