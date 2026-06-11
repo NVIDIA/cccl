@@ -42,6 +42,10 @@ struct cluster_topk_policy
   // configurations already have an occupancy of 1 due to their shared-memory usage, so allowing the compiler to
   // optimize for higher occupancy (fewer registers per thread) provides no benefit.
   int min_blocks_per_sm;
+  // Items-per-thread for the deterministic tie-break BlockScan sweep (final filter). Independent of `chunk_bytes`; the
+  // sweep tiles each region by `threads_per_block * tie_break_items_per_thread`. Only used when the deterministic
+  // tie-break path is enabled (`CUB_ENABLE_CLUSTER_TOPK_DETERMINISM`).
+  int tie_break_items_per_thread;
   ::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_configs> launch_configs;
 };
 
@@ -66,6 +70,7 @@ make_policy(::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_c
     /*load_align_bytes=*/128,
     /*bits_per_pass=*/11,
     /*min_blocks_per_sm=*/1,
+    /*tie_break_items_per_thread=*/4,
     launch_configs};
 }
 

@@ -96,6 +96,7 @@ template <int ThreadsPerBlock,
           int ChunkBytes,
           int LoadAlignBytes,
           int BitsPerPass,
+          int TieBreakItemsPerThread,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParameterT,
@@ -118,6 +119,7 @@ __launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void 
     ChunkBytes,
     LoadAlignBytes,
     BitsPerPass,
+    TieBreakItemsPerThread,
     KeyInputItItT,
     KeyOutputItItT,
     SegmentSizeParameterT,
@@ -160,6 +162,7 @@ template <int ThreadsPerBlock,
           int ChunkBytes,
           int LoadAlignBytes,
           int BitsPerPass,
+          int TieBreakItemsPerThread,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParameterT,
@@ -183,6 +186,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
     ChunkBytes,
     LoadAlignBytes,
     BitsPerPass,
+    TieBreakItemsPerThread,
     KeyInputItItT,
     KeyOutputItItT,
     SegmentSizeParameterT,
@@ -268,6 +272,7 @@ struct force_emit_kernel<Kernel>
       ChunkBytes,                                                                       \
       LoadAlignBytes,                                                                   \
       BitsPerPass,                                                                      \
+      TieBreakItemsPerThread,                                                           \
       KeyInputItItT,                                                                    \
       KeyOutputItItT,                                                                   \
       SegmentSizeParameterT,                                                            \
@@ -325,6 +330,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   constexpr int ChunkBytes             = policy.chunk_bytes;
   constexpr int LoadAlignBytes         = policy.load_align_bytes;
   constexpr int BitsPerPass            = policy.bits_per_pass;
+  constexpr int TieBreakItemsPerThread = policy.tie_break_items_per_thread;
 
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
@@ -336,6 +342,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
      ChunkBytes,
      LoadAlignBytes,
      BitsPerPass,
+     TieBreakItemsPerThread,
      KeyInputItItT,
      KeyOutputItItT,
      SegmentSizeParameterT,
@@ -401,6 +408,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     ChunkBytes,
     LoadAlignBytes,
     BitsPerPass,
+    TieBreakItemsPerThread,
     KeyInputItItT,
     KeyOutputItItT,
     SegmentSizeParameterT,

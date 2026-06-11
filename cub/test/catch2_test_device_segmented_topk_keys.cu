@@ -12,6 +12,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
+#include <thrust/tabulate.h>
 
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
@@ -27,6 +28,20 @@ struct is_minus_zero
   __device__ bool operator()(float x) const
   {
     return x == 0.0f && cuda::std::signbit(x);
+  }
+};
+
+// Maps a flat element index to one of only 8 distinct key values, so a large segment contains many duplicates and the
+// k-th key's bucket holds a large tied-candidate set. Used to stress the cluster agent's candidate/tie-break path (and
+// the deterministic tie-break scan when CUB_ENABLE_CLUSTER_TOPK_DETERMINISM is defined).
+template <typename KeyT>
+struct heavy_tie_key_op
+{
+  template <typename IndexT>
+  __host__ __device__ KeyT operator()(IndexT i) const
+  {
+    const unsigned h = static_cast<unsigned>(static_cast<cuda::std::uint64_t>(i) * 2654435761u);
+    return static_cast<KeyT>((h >> 13) & 7u);
   }
 };
 
@@ -521,6 +536,67 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalig
 
   segmented_sort_keys(
     keys_out_buffer, num_segments, compacted_offsets.cbegin(), compacted_offsets.cbegin() + 1, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+#endif // TEST_LAUNCH != 1
+
+#if TEST_LAUNCH != 1
+// Heavy-tie stress/regression: collapse the keys to only a handful of distinct values so the k-th key's bucket holds a
+// large set of tied candidates. This exercises the cluster agent's candidate path and, when built with
+// CUB_ENABLE_CLUSTER_TOPK_DETERMINISM, the deterministic cross-CTA tie-break scan (cand_prefix + BlockScan ranks). The
+// returned top-k *value* set must be correct in either mode (tied keys are equal, so which tied index is chosen is not
+// observable in keys-only output, but the count of each value at the boundary must be exact).
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundary",
+         "[keys][segmented][topk][device][cluster]",
+         key_types,
+         select_direction_list)
+{
+  using key_t              = c2h::get<0, TestType>;
+  constexpr auto direction = c2h::get<1, TestType>::value;
+
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr segment_size_t static_max_segment_size = 64 * 1024;
+  constexpr segment_size_t static_max_k            = 64 * 1024;
+  constexpr segment_index_t num_segments           = 3;
+
+  const segment_size_t segment_size =
+    GENERATE_COPY(values({segment_size_t{257}, segment_size_t{4096}, segment_size_t{64 * 1024}}));
+  const segment_size_t max_k     = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k         = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
+  const segment_size_t num_items = num_segments * segment_size;
+
+  CAPTURE(c2h::type_name<key_t>(), static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
+
+  // Deterministic, duplicate-heavy input (8 distinct values), materialized into a contiguous buffer so the cluster
+  // agent takes its resident BlockLoadToShared path.
+  c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);
+  thrust::tabulate(keys_in_buffer.begin(), keys_in_buffer.end(), heavy_tie_key_op<key_t>{});
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  batched_topk_keys(
+    d_keys_in,
+    d_keys_out,
+    ::cuda::__argument::__immediate{
+      segment_size, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
+    ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<direction>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_items});
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
 
   REQUIRE(expected_keys == keys_out_buffer);
 }

@@ -20,8 +20,8 @@
 //!      cluster-merged histogram after the second cluster sync.
 //!   3. The leader's thread 0 prefix-scans `hist`, identifies the bucket of
 //!      the k-th key, and updates the cluster-shared `state`. Every block
-//!      reads `state.kth_key_bits` from the leader via DSMEM at the start of
-//!      the next pass.
+//!      reads `state.kth_bucket` from the leader via DSMEM at the end of each
+//!      pass and folds it into its own local splitter key.
 //!
 //! Output cursors live in the same cluster-shared `state` and are reached the
 //! same way (cluster-scope DSMEM atomics).
@@ -68,7 +68,11 @@
 
 #include <cooperative_groups.h>
 
-#define CUB_ENABLE_CLUSTER_TOPK_BLOCKED_CHUNKS
+// Opt-in deterministic tie-break for the cluster top-k final filter. When enabled, candidates tied at the k-th key's
+// prefix are selected by a cluster-wide, index-ordered scan (smallest global indices by default, largest when
+// `CUB_CLUSTER_TOPK_DETERMINISM_PREFER_LARGEST` is also defined) instead of the nondeterministic racing atomics.
+// Enabling it also switches `make_chunk_partition` to the blocked layout, on which the deterministic scan depends
+// (CTA-rank order == ascending contiguous global-index ranges).
 
 CUB_NAMESPACE_BEGIN
 
@@ -85,14 +89,17 @@ struct alignas(16) cluster_topk_state
 
   OffsetT len;
   OutOffsetT k;
-  key_prefix_t kth_key_bits;
+  // Splitter bucket identified by the leader for the current pass. Replaces broadcasting the full multi-word
+  // `kth_key_bits`: every block reads this single digit through DSMEM at the end of each pass and folds it into its own
+  // `kth_key_bits_local` via `set_kth_key_bits`, so the full splitter key is reconstructed locally and never broadcast.
+  ::cuda::std::uint32_t kth_bucket;
   OutOffsetT out_cnt;
   OutOffsetT out_back_cnt;
   // Set by the leader after `leader_identify_kth_bucket` whenever the
   // identified bucket holds exactly `k` items (every candidate is part of
-  // the top-k). Read by every block of the cluster at the top of the next
-  // radix pass through DSMEM. Carried in the cluster-shared state so the
-  // value survives the cluster sync that ends the current pass.
+  // the top-k). Read by every block of the cluster at the end of each radix
+  // pass through DSMEM. Carried in the cluster-shared state so the value
+  // survives the cluster sync that ends the current pass.
   ::cuda::std::uint32_t early_stop;
 };
 
@@ -147,6 +154,7 @@ template <int ThreadsPerBlock,
           int ChunkBytes,
           int LoadAlignBytes,
           int BitsPerPass,
+          int TieBreakItemsPerThread,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParameterT,
@@ -169,14 +177,15 @@ struct agent_batched_topk_cluster
   using state_t      = cluster_topk_state<key_t, offset_t, out_offset_t>;
   using key_prefix_t = typename state_t::key_prefix_t;
 
-  static constexpr int threads_per_block = ThreadsPerBlock;
-  static constexpr int load_align_bytes  = LoadAlignBytes;
-  static constexpr int bits_per_pass     = BitsPerPass;
-  static constexpr int num_buckets       = 1 << bits_per_pass;
-  using smem_layout_t                    = smem_block_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
-  static constexpr int chunk_items       = smem_layout_t::chunk_items;
-  static constexpr int load_align_items  = smem_layout_t::load_align_items;
-  static constexpr int slot_alignment    = smem_layout_t::slot_alignment;
+  static constexpr int threads_per_block          = ThreadsPerBlock;
+  static constexpr int load_align_bytes           = LoadAlignBytes;
+  static constexpr int bits_per_pass              = BitsPerPass;
+  static constexpr int tie_break_items_per_thread = TieBreakItemsPerThread;
+  static constexpr int num_buckets                = 1 << bits_per_pass;
+  using smem_layout_t                             = smem_block_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
+  static constexpr int chunk_items                = smem_layout_t::chunk_items;
+  static constexpr int load_align_items           = smem_layout_t::load_align_items;
+  static constexpr int slot_alignment             = smem_layout_t::slot_alignment;
 
   static_assert(PipelineStages > 0);
   static_assert(ChunkBytes > 0);
@@ -220,14 +229,13 @@ struct agent_batched_topk_cluster
   // sync the non-leader blocks fold their bucket counts into the leader's
   // `hist` through DSMEM atomics. `state` is meaningful only in the leader
   // block; the other blocks reach it exclusively through the DSMEM mapping.
-  // `broadcast_kth` / `broadcast_early_stop` are per-block fan-out slots used
-  // to share the leader-computed values across threads of each block.
+  // `cand_prefix` is each block's own exclusive cross-CTA candidate count for the deterministic tie-break; other blocks
+  // add into it through DSMEM (`add_remote_prefix`), so it must sit at an identical offset in every block's storage.
   struct _TempStorage
   {
     offset_t hist[num_buckets];
     state_t state;
-    key_prefix_t broadcast_kth;
-    ::cuda::std::uint32_t broadcast_early_stop;
+    offset_t cand_prefix;
     typename block_scan_t::TempStorage scan_storage;
     // One mbarrier handle per pipeline stage, shared by the resident load and the overflow streamer and reused
     // (ping-ponged) across radix passes; initialized once by `init_load_barriers`.
@@ -417,15 +425,16 @@ struct agent_batched_topk_cluster
   //
   //   * Strided (default): chunk `i` goes to rank `i % cluster_size`, so each CTA walks `first, first+S, first+2S,
   //   ...`.
-  //   * Blocked (`CUB_ENABLE_CLUSTER_TOPK_BLOCKED_CHUNKS`): each CTA owns a contiguous run of `ceil_div(chunks, S)`
+  //   * Blocked (`CUB_ENABLE_CLUSTER_TOPK_DETERMINISM`): each CTA owns a contiguous run of `ceil_div(chunks, S)`
   //     chunks (the last non-empty rank gets the short remainder). Chunks are large enough that the per-CTA contiguous
   //     gmem footprint does not change L2/cache locality versus the strided walk.
   //
-  // The macro is an off-by-default opt-in so the two layouts can be A/B benchmarked without touching call sites.
+  // The blocked layout is a hard requirement of the deterministic tie-break (its cross-CTA scan assumes CTA-rank order
+  // matches ascending contiguous global-index ranges), so it is selected exactly when the determinism path is enabled.
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_partition
   make_chunk_partition(offset_t chunks, unsigned int cluster_rank, unsigned int cluster_size) const
   {
-#if defined(CUB_ENABLE_CLUSTER_TOPK_BLOCKED_CHUNKS)
+#if defined(CUB_ENABLE_CLUSTER_TOPK_DETERMINISM)
     const offset_t chunks_per_cta = ::cuda::ceil_div(chunks, static_cast<offset_t>(cluster_size));
     const offset_t first          = static_cast<offset_t>(cluster_rank) * chunks_per_cta;
     const offset_t count = (first < chunks) ? (::cuda::std::min) (chunks_per_cta, chunks - first) : offset_t{0};
@@ -652,10 +661,23 @@ private:
   // bucket's address in this block's own window; since every CTA's shared window is laid out identically, `mapa` remaps
   // it to rank 0 to form the leader's `shared::cluster` address (no 64-bit pointer, no memory descriptor). Cluster
   // scope makes it mutually atomic with the leader's `hist_inc` adds.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void hist_fold_remote(::cuda::std::uint32_t own_bucket_addr32, offset_t v)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  hist_fold_remote(::cuda::std::uint32_t own_bucket_addr32, offset_t v, unsigned int leader_rank)
   {
     ::cuda::std::uint32_t remote;
-    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote) : "r"(own_bucket_addr32), "n"(0));
+    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote) : "r"(own_bucket_addr32), "r"(leader_rank));
+    asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;" : : "r"(remote), "r"(v) : "memory");
+  }
+
+  // Adds `v` to the `cand_prefix` of the CTA at cluster rank `target_rank` through DSMEM (mirrors `hist_fold_remote`:
+  // `mapa` this block's own `cand_prefix` address to `target_rank`, then a cluster-scope `red.add`). Used by the
+  // deterministic tie-break's exclusive cross-CTA candidate-count scan.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void add_remote_prefix(unsigned int target_rank, offset_t v)
+  {
+    const ::cuda::std::uint32_t own =
+      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.cand_prefix));
+    ::cuda::std::uint32_t remote;
+    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote) : "r"(own), "r"(target_rank));
     asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;" : : "r"(remote), "r"(v) : "memory");
   }
 
@@ -666,7 +688,7 @@ private:
   // single (thread, slot) pair that owns the k-th bucket writes the per-pass
   // state. The caller must guarantee the leader block has finished its DSMEM
   // merge before invoking this.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void leader_identify_kth_bucket(int pass)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void leader_identify_kth_bucket()
   {
     // Capture `state.k` before the scan: this is the only legal window where
     // every thread is guaranteed to read the previous pass's value. The
@@ -704,7 +726,9 @@ private:
         // items across finer buckets without changing the final result.
         temp_storage.state.early_stop =
           (static_cast<out_offset_t>(new_len) == new_k) ? ::cuda::std::uint32_t{1} : ::cuda::std::uint32_t{0};
-        detail::topk::set_kth_key_bits<key_t, bits_per_pass>(temp_storage.state.kth_key_bits, pass, bucket);
+        // Publish only the splitter bucket; every block folds it into its own `kth_key_bits_local` at the end of the
+        // pass (see the pass loop), so the full splitter key is never broadcast.
+        temp_storage.state.kth_bucket = static_cast<::cuda::std::uint32_t>(bucket);
       }
     }
   }
@@ -906,13 +930,28 @@ private:
     const auto segment_size_u32     = static_cast<offset_t>(segment_size);
     const unsigned int cluster_size = cluster.num_blocks();
 
+    // Leader rank. The leader owns the cluster-merged histogram and the shared `state`. The deterministic tie-break
+    // makes the leader the *last* CTA in scan order so it never needs its own (merged-away) local candidate count:
+    // prefer-smallest scans ascending by rank (leader = last rank), prefer-largest scans descending (leader = rank 0).
+    // The nondeterministic path keeps rank 0 (unchanged codegen).
+#  if defined(CUB_ENABLE_CLUSTER_TOPK_DETERMINISM) && !defined(CUB_CLUSTER_TOPK_DETERMINISM_PREFER_LARGEST)
+    const unsigned int leader_rank = cluster_size - 1u;
+#  else
+    const unsigned int leader_rank = 0u;
+#  endif
+
     // DSMEM pointer into the leader block's shared memory. The Step 2 histogram fold reaches the leader's `hist`
     // through a `mapa`-formed `shared::cluster` address instead (see `hist_fold_remote`).
-    state_t* leader_state = cluster.map_shared_rank(&temp_storage.state, 0);
+    state_t* leader_state = cluster.map_shared_rank(&temp_storage.state, leader_rank);
 
     // Per-block local copy of `kth_key_bits` so each key check hits the
-    // block's own SMEM rather than DSMEM during the histogram loop.
+    // block's own SMEM rather than DSMEM during the histogram loop. Built up one splitter digit per pass from the
+    // leader's published `kth_bucket` (see the pass loop), so the full key is never broadcast.
     key_prefix_t kth_key_bits_local = {};
+
+    // Last splitter bucket folded into `kth_key_bits_local` (the last executed pass's bucket). Used by the
+    // deterministic tie-break to read this CTA's local candidate count from `hist[last_bucket]`.
+    [[maybe_unused]] int last_bucket = 0;
 
     // Tracks the highest pass count that actually executed. Without early
     // stop this stays at `num_passes`; with early stop it captures the pass
@@ -1016,7 +1055,7 @@ private:
     {
       extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
       const ::cuda::std::uint32_t hist_smem32 = hist_base32();
-      const bool is_leader_block              = cluster_rank == 0;
+      const bool is_leader_block              = cluster_rank == leader_rank;
       auto add_first_pass                     = [&](const key_t& key) {
         const int bucket = extract_op(key);
         hist_inc(hist_smem32, bucket, is_leader_block);
@@ -1165,35 +1204,9 @@ private:
     {
       const bool is_first_pass = (pass == 0);
 
-      // Refresh per-block local kth_key_bits from the leader's state. For
-      // pass 0 the bits are all zero (no filtering yet) so we skip the read.
-      // We also pull the leader's `early_stop` flag here so every block has
-      // an opportunity to bail out before doing any more histogram work.
-      if (!is_first_pass)
-      {
-        if (threadIdx.x == 0)
-        {
-          temp_storage.broadcast_kth = leader_state->kth_key_bits;
-#  ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
-          temp_storage.broadcast_early_stop = leader_state->early_stop;
-#  endif
-        }
-        __syncthreads();
-        kth_key_bits_local = temp_storage.broadcast_kth;
-#  ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
-        if (temp_storage.broadcast_early_stop != ::cuda::std::uint32_t{0})
-        {
-          last_pass = pass;
-          // Order the `broadcast_kth` load above against thread 0's
-          // overwrite of `broadcast_kth` in the final filter pass below.
-          // The normal loop exit gets this from the last iteration's
-          // `cluster.sync()`; the early-stop path skips that sync.
-          __syncthreads();
-          break;
-        }
-#  endif
-      }
-
+      // `kth_key_bits_local` already holds the splitter digits for passes `0..pass-1`: each block folded the leader's
+      // published `kth_bucket` into it at the end of the previous pass (see the end of this loop). Pass 0 needs no
+      // filtering (all keys are candidates), so it is handled by the fused first-pass load above.
       if (!is_first_pass)
       {
         // Every block (including the leader) starts each non-first pass with
@@ -1207,7 +1220,7 @@ private:
         // Step 1: block-private histogram via shared-space `red` (see `hist_inc`): leader uses cluster scope to be
         // mutually atomic with the non-leaders' Step 2 DSMEM folds, non-leaders use the cheaper cta scope.
         const ::cuda::std::uint32_t hist_smem32 = hist_base32();
-        const bool is_leader_block              = cluster_rank == 0;
+        const bool is_leader_block              = cluster_rank == leader_rank;
         auto add_hist                           = [&](const key_t& key) {
           if (identify_op(key) == detail::topk::candidate_class::candidate)
           {
@@ -1250,7 +1263,7 @@ private:
       // scans in the scan-then-reduce path) into the leader's `hist`
       // via cluster-scope DSMEM atomics (see `hist_fold_remote`). The
       // leader skips this to avoid double-counting its own contribution.
-      if (cluster_rank != 0)
+      if (cluster_rank != leader_rank)
       {
         const ::cuda::std::uint32_t hist_smem32 = hist_base32();
         for (int i = static_cast<int>(threadIdx.x); i < num_buckets; i += threads_per_block)
@@ -1258,7 +1271,7 @@ private:
           const offset_t v = temp_storage.hist[i];
           if (v != 0)
           {
-            hist_fold_remote(hist_smem32 + static_cast<::cuda::std::uint32_t>(i) * sizeof(offset_t), v);
+            hist_fold_remote(hist_smem32 + static_cast<::cuda::std::uint32_t>(i) * sizeof(offset_t), v, leader_rank);
           }
         }
       }
@@ -1268,37 +1281,311 @@ private:
       // Step 3: the leader walks the merged `hist` (raw counts in the
       // reduce-then-scan path, cluster-wide inclusive scan in the
       // scan-then-reduce path) and updates the cluster-shared `state`.
-      // Subsequent reads (next-pass refresh, last filter) all observe
+      // Subsequent reads (end-of-pass fold, last filter) all observe
       // these writes after the next cluster sync.
-      if (cluster_rank == 0)
+      if (cluster_rank == leader_rank)
       {
-        leader_identify_kth_bucket(pass);
+        leader_identify_kth_bucket();
       }
       cluster.sync();
+
+      // End-of-pass splitter fold. Every thread reads the leader's just-published `kth_bucket` directly through DSMEM
+      // (a single `u32`, ordered by the `cluster.sync()` above) and folds it into its own `kth_key_bits_local`, so the
+      // full splitter key is reconstructed locally without any block-wide broadcast or `__syncthreads`. Runs uniformly
+      // for every pass (including the last), leaving `kth_key_bits_local` complete for the final filter.
+      {
+        const int bucket = static_cast<int>(leader_state->kth_bucket);
+        detail::topk::set_kth_key_bits<key_t, bits_per_pass>(kth_key_bits_local, pass, bucket);
+        last_bucket = bucket;
+        last_pass   = pass + 1;
+      }
+#  ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
+      // Early stop: the leader sets `early_stop` when the splitter bucket holds exactly the remaining `k` candidates,
+      // so no further radix refinement can change the result. Every block reads the same flag from the leader and
+      // breaks together; `last_pass`/`kth_key_bits_local` then match what the original top-of-next-pass break produced.
+      if (leader_state->early_stop != ::cuda::std::uint32_t{0})
+      {
+        break;
+      }
+#  endif
     }
 
     // -----------------------------------------------------------------------
-    // Final filter pass: write strictly-selected items to the front of the
-    // output; back-fill candidates that share the k-th key's prefix bits.
+    // Final filter pass: write the top-k keys for this segment. Strictly-
+    // selected keys go to the front; the `num_kth` tied candidates fill the
+    // back. `kth_key_bits_local` already holds the full splitter key (folded
+    // from each pass's bucket above), so no broadcast is needed here.
     // -----------------------------------------------------------------------
-    if (threadIdx.x == 0)
-    {
-      temp_storage.broadcast_kth = leader_state->kth_key_bits;
-    }
-    __syncthreads();
-    kth_key_bits_local = temp_storage.broadcast_kth;
-
     auto block_keys_out        = d_key_segments_out_it[segment_id];
     const out_offset_t num_kth = leader_state->k; // remaining k after the radix passes
 
-    // The pass argument controls how many radix levels of `kth_key_bits` are
-    // considered significant. After an early-stop break at the start of pass
-    // `last_pass`, only the first `last_pass` digits of the splitter have
-    // been set; comparing all bits would treat the (still-zero) trailing
-    // digits as smaller and erroneously reject candidates that share the
-    // identified prefix.
+    // `last_pass` controls how many radix levels of `kth_key_bits_local` are significant. After an early-stop break,
+    // only the first `last_pass` digits of the splitter were folded; comparing all bits would treat the (still-zero)
+    // trailing digits as smaller and erroneously reject candidates that share the identified prefix.
     identify_candidates_op_t identify_op(&kth_key_bits_local, last_pass, total_bits, decomposer_t{});
 
+#  if defined(CUB_ENABLE_CLUSTER_TOPK_DETERMINISM)
+    // Deterministic tie-break: select the `num_kth` tied candidates with the smallest (default) or largest
+    // (`CUB_CLUSTER_TOPK_DETERMINISM_PREFER_LARGEST`) global indices via a cluster-wide, index-ordered scan instead of
+    // the nondeterministic racing atomics. Strictly-selected keys still go to the front; ties fill the back by rank.
+#    if defined(CUB_CLUSTER_TOPK_DETERMINISM_PREFER_LARGEST)
+    constexpr bool tie_reversed = true;
+#    else
+    constexpr bool tie_reversed = false;
+#    endif
+    const out_offset_t num_selected = k - num_kth;
+
+    // Exclusive cross-CTA candidate-count scan. Each non-leader adds its local candidate count (its surviving
+    // `hist[last_bucket]`) into the `cand_prefix` of every CTA that follows it in scan order; the leader is last in
+    // scan order (see `leader_rank`) so it adds nothing and receives the sum of all preceding CTAs.
+    const offset_t local_count = (cluster_rank == leader_rank) ? offset_t{0} : temp_storage.hist[last_bucket];
+    if (threadIdx.x == 0)
+    {
+      temp_storage.cand_prefix = 0;
+    }
+    cluster.sync();
+    if (threadIdx.x == 0 && local_count != offset_t{0})
+    {
+#    if defined(CUB_CLUSTER_TOPK_DETERMINISM_PREFER_LARGEST)
+      for (unsigned int r = 0; r < cluster_rank; ++r) // descending scan order: lower ranks follow
+      {
+        add_remote_prefix(r, local_count);
+      }
+#    else
+      for (unsigned int r = cluster_rank + 1u; r < cluster_size; ++r) // ascending scan order: higher ranks follow
+      {
+        add_remote_prefix(r, local_count);
+      }
+#    endif
+    }
+    cluster.sync();
+
+    offset_t running = temp_storage.cand_prefix; // candidates owned by preceding CTAs (this CTA's exclusive prefix)
+    bool tie_active  = running < static_cast<offset_t>(num_kth);
+
+    // Process a flat span of `count` keys already in scan order (`get_key(pos)`), tiled by
+    // `threads_per_block * tie_break_items_per_thread`. Selected keys go to the front via `out_cnt`; candidates get a
+    // BlockScan-exclusive index rank (seeded by `running`) and, if `rank < num_kth`, are written in reverse at
+    // `block_keys_out[k - 1 - rank]`. The running aggregate carries across tiles and across regions.
+    auto process_flat = [&](auto get_key, int count) {
+      constexpr int items = tie_break_items_per_thread;
+      constexpr int tile  = threads_per_block * items;
+      for (int tile_base = 0; tile_base < count; tile_base += tile)
+      {
+        key_t keys[items];
+        offset_t flags[items];
+        detail::topk::candidate_class cls[items];
+        bool valid[items];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < items; ++i)
+        {
+          const int pos = tile_base + static_cast<int>(threadIdx.x) * items + i;
+          valid[i]      = pos < count;
+          flags[i]      = offset_t{0};
+          if (valid[i])
+          {
+            keys[i]  = get_key(pos);
+            cls[i]   = identify_op(keys[i]);
+            flags[i] = (cls[i] == detail::topk::candidate_class::candidate) ? offset_t{1} : offset_t{0};
+          }
+        }
+
+        // Strictly-selected keys: atomic into the front. Exactly `num_selected` keys are selected cluster-wide, so
+        // `out_cnt` never overruns the `[0, num_selected)` region.
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < items; ++i)
+        {
+          if (valid[i] && cls[i] == detail::topk::candidate_class::selected)
+          {
+            const out_offset_t pos = atomicAdd(&leader_state->out_cnt, out_offset_t{1});
+            block_keys_out[pos]    = keys[i];
+          }
+        }
+
+        if (tie_active)
+        {
+          offset_t excl[items];
+          offset_t tile_total = 0;
+          block_scan_t(temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int i = 0; i < items; ++i)
+          {
+            if (valid[i] && flags[i] != offset_t{0})
+            {
+              const offset_t global_rank = running + excl[i];
+              if (global_rank < static_cast<offset_t>(num_kth))
+              {
+                block_keys_out[static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank)] = keys[i];
+              }
+            }
+          }
+          running += tile_total;
+          if (running >= static_cast<offset_t>(num_kth))
+          {
+            tie_active = false;
+          }
+          // The next tile reuses `scan_storage`; order this tile's reads against the next ExclusiveSum's writes.
+          __syncthreads();
+        }
+      }
+    };
+
+    // Uniform early-exit between regions: stop once this CTA's ties are placed and all selected are placed
+    // cluster-wide. Lets the common prefer-smallest case skip the (expensive) overflow re-stream entirely.
+    auto should_stop = [&]() -> bool {
+      if (tie_active)
+      {
+        return false;
+      }
+      const out_offset_t out_now = *static_cast<volatile out_offset_t*>(&leader_state->out_cnt);
+      return __syncthreads_or(static_cast<int>(out_now >= num_selected)) != 0;
+    };
+
+    // Resident-front extent (bulk path): the contiguous resident span minus the forced-resident tail chunk, which is
+    // visited separately after the overflow because it is the globally-last chunk.
+    int tail_count  = 0;
+    int front_count = span_size(resident_keys);
+    if constexpr (use_block_load_to_shared)
+    {
+      if (force_tail_resident)
+      {
+        tail_count  = get_chunk(chunks - offset_t{1}, segment_size_u32, head_items).count;
+        front_count = front_count - tail_count;
+      }
+    }
+
+    auto process_resident = [&](bool reversed) {
+      if constexpr (use_block_load_to_shared)
+      {
+        key_t* const rfront = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+        const int fc        = front_count;
+        if (reversed)
+        {
+          process_flat(
+            [&](int pos) {
+              return rfront[fc - 1 - pos];
+            },
+            fc);
+        }
+        else
+        {
+          process_flat(
+            [&](int pos) {
+              return rfront[pos];
+            },
+            fc);
+        }
+      }
+      else
+      {
+        const int rc = static_cast<int>(my_resident_chunks);
+        for (int s = 0; s < rc; ++s)
+        {
+          const int local_slot     = reversed ? (rc - 1 - s) : s;
+          const offset_t chunk_idx = part.global_index(static_cast<offset_t>(local_slot));
+          const int cc             = get_chunk(chunk_idx, segment_size_u32, head_items).count;
+          key_t* const ck          = slot_keys_unpadded(local_slot);
+          if (reversed)
+          {
+            process_flat(
+              [&](int pos) {
+                return ck[cc - 1 - pos];
+              },
+              cc);
+          }
+          else
+          {
+            process_flat(
+              [&](int pos) {
+                return ck[pos];
+              },
+              cc);
+          }
+        }
+      }
+    };
+
+    auto process_overflow = [&](bool reversed) {
+      for (offset_t oo = 0; oo < overflow_count; ++oo)
+      {
+        const offset_t o         = reversed ? (overflow_count - 1 - oo) : oo;
+        const offset_t chunk_idx = part.global_index(overflow_base + o);
+        const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+        const int cc             = chunk.count;
+        const offset_t base_off  = chunk.offset;
+        if (reversed)
+        {
+          process_flat(
+            [&](int pos) {
+              return block_keys_in[static_cast<segment_size_val_t>(base_off + static_cast<offset_t>(cc - 1 - pos))];
+            },
+            cc);
+        }
+        else
+        {
+          process_flat(
+            [&](int pos) {
+              return block_keys_in[static_cast<segment_size_val_t>(base_off + static_cast<offset_t>(pos))];
+            },
+            cc);
+        }
+      }
+    };
+
+    auto process_tail = [&](bool reversed) {
+      if constexpr (use_block_load_to_shared)
+      {
+        if (!force_tail_resident)
+        {
+          return;
+        }
+        key_t* const rfront = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+        key_t* const tptr   = rfront + front_count;
+        const int tc        = tail_count;
+        if (reversed)
+        {
+          process_flat(
+            [&](int pos) {
+              return tptr[tc - 1 - pos];
+            },
+            tc);
+        }
+        else
+        {
+          process_flat(
+            [&](int pos) {
+              return tptr[pos];
+            },
+            tc);
+        }
+      }
+    };
+
+    if constexpr (tie_reversed)
+    {
+      process_tail(true);
+      if (!should_stop())
+      {
+        process_overflow(true);
+      }
+      if (!should_stop())
+      {
+        process_resident(true);
+      }
+    }
+    else
+    {
+      process_resident(false);
+      if (!should_stop())
+      {
+        process_overflow(false);
+      }
+      if (!should_stop())
+      {
+        process_tail(false);
+      }
+    }
+#  else // CUB_ENABLE_CLUSTER_TOPK_DETERMINISM
     auto write_selected = [&](const key_t& key) {
       const auto res = identify_op(key);
       if (res == detail::topk::candidate_class::selected)
@@ -1332,6 +1619,7 @@ private:
       }
     }
     streamer.process_pass(write_selected);
+#  endif // CUB_ENABLE_CLUSTER_TOPK_DETERMINISM
 
     // Final cluster barrier: hold every block in the cluster until all DSMEM
     // atomics into the leader's state are complete. Without this, a fast
@@ -1389,7 +1677,7 @@ private:
     {
       temp_storage.state.len          = static_cast<offset_t>(segment_size);
       temp_storage.state.k            = k;
-      temp_storage.state.kth_key_bits = {};
+      temp_storage.state.kth_bucket   = 0;
       temp_storage.state.out_cnt      = 0;
       temp_storage.state.out_back_cnt = 0;
       temp_storage.state.early_stop   = 0;
