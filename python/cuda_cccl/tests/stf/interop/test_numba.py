@@ -434,8 +434,4 @@ def test_numba_places():
     assert np.allclose(X, 2.0)
     assert np.allclose(Y, 5.0)
     assert np.allclose(Z, 15.0)
-
-
-if __name__ == "__main__":
-    test_numba_graph()
     # test_numba()

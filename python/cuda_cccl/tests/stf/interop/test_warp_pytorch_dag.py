@@ -248,9 +248,3 @@ def test_warp_pytorch_mixed_in_captured_dag():
 # ---------------------------------------------------------------------------
 # CLI runner.
 # ---------------------------------------------------------------------------
-
-
-if __name__ == "__main__":
-    test_warp_pytorch_pipeline()
-    test_warp_pytorch_concurrent_siblings()
-    test_warp_pytorch_mixed_in_captured_dag()

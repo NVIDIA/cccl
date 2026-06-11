@@ -228,22 +228,3 @@ def test_task_graph_finalize_while_recording_raises():
             graph.finalize()
 
     graph.finalize()
-
-
-if __name__ == "__main__":
-    test_task_graph_relaunch()
-    test_task_graph_accessors_after_recording()
-    test_task_graph_context_data_declarations_outside_recording()
-    test_task_graph_reset_then_finalize()
-    test_task_graph_launch_before_recording_raises()
-    test_task_graph_task_outside_recording_raises()
-    test_task_graph_nested_enter_raises()
-    test_task_graph_second_recording_raises()
-    test_task_graph_enter_after_reset_raises()
-    test_task_graph_enter_after_finalize_raises()
-    test_task_graph_failed_recording_locks_graph()
-    test_task_graph_launch_after_reset_raises()
-    test_task_graph_launch_after_finalize_raises()
-    test_task_graph_accessors_before_recording_raise()
-    test_task_graph_accessors_after_reset_raise()
-    test_task_graph_finalize_while_recording_raises()

@@ -450,7 +450,3 @@ def test_simple_pipeline():
 
     expected = sum(i + i * 2 for i in range(N))
     assert abs(result[0] - expected) < 1e-6
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

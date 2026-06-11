@@ -87,7 +87,3 @@ def test_numba2d(monkeypatch):
 
     # compare with the GPU result
     assert np.allclose(u_out, u_out_ref, rtol=1e-6, atol=1e-6)
-
-
-if __name__ == "__main__":
-    test_numba2d()

@@ -385,11 +385,3 @@ def test_fdtd_3d_pytorch_simplified_compiled(
     )
 
     ctx.finalize()
-
-
-if __name__ == "__main__":
-    output_freq = 50 if has_matplotlib else 0
-    if not has_matplotlib and output_freq > 0:
-        print("Warning: matplotlib not available, running without visualization")
-        output_freq = 0
-    test_fdtd_3d_pytorch_simplified_compiled(timesteps=1000, output_freq=output_freq)

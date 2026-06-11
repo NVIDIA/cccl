@@ -312,15 +312,3 @@ def test_pop_prologue_shared_context_manager():
     ctx.finalize()
 
     assert np.allclose(X_host, 3.0), f"Expected 3.0, got {X_host[0]}"
-
-
-if __name__ == "__main__":
-    test_launchable_graph_scope_relaunch()
-    test_launchable_graph_scope_zero_launches()
-    test_launchable_graph_scope_exec_and_stream()
-    test_launchable_graph_scope_graph_only()
-    test_pop_prologue_shared_basic()
-    test_pop_prologue_shared_stored_in_list()
-    test_pop_prologue_shared_reset_is_idempotent()
-    test_pop_prologue_shared_context_manager()
-    print("All launchable_graph_scope tests passed!")

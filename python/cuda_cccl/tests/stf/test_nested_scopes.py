@@ -575,31 +575,3 @@ def test_while_with_repeat_inside_pytorch():
         f"Expected ~2.0, got {X_host[0]}"
     )
     print(f"while > repeat (PyTorch) passed: X = {X_host[0]:.4f}")
-
-
-if __name__ == "__main__":
-    print("=== test_nested_graph_scopes ===")
-    test_nested_graph_scopes()
-
-    print("\n=== test_graph_scope_with_repeat ===")
-    test_graph_scope_with_repeat()
-
-    print("\n=== test_diffusion_timestep_nesting ===")
-    test_diffusion_timestep_nesting()
-
-    print("\n=== test_graph_scope_with_while_loop ===")
-    test_graph_scope_with_while_loop()
-
-    print("\n=== test_repeat_with_while_inside ===")
-    test_repeat_with_while_inside()
-
-    print("\n=== test_while_with_repeat_inside ===")
-    test_while_with_repeat_inside()
-
-    print("\n=== test_repeat_with_while_inside_pytorch ===")
-    test_repeat_with_while_inside_pytorch()
-
-    print("\n=== test_while_with_repeat_inside_pytorch ===")
-    test_while_with_repeat_inside_pytorch()
-
-    print("\nAll nested stackable tests passed!")

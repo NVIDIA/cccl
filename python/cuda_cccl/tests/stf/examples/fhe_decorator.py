@@ -99,9 +99,7 @@ def circuit(a, b):
     return (a + b) + (b - a)
 
 
-def test_fhe_decorator(monkeypatch):
-    monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)
-
+def _run_fhe_decorator():
     """Exercise the decorator integration variant of the FHE example."""
     ctx = stf.context(use_graph=False)
 
@@ -132,8 +130,18 @@ def test_fhe_decorator(monkeypatch):
     )
 
 
+def test_fhe_decorator(monkeypatch):
+    monkeypatch.setattr(numba.cuda.config, "CUDA_LOW_OCCUPANCY_WARNINGS", 0)
+    _run_fhe_decorator()
+
+
 def main():
-    test_fhe_decorator()
+    previous = numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS
+    numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+    try:
+        _run_fhe_decorator()
+    finally:
+        numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = previous
 
 
 if __name__ == "__main__":

@@ -54,8 +54,3 @@ def test_decorator(monkeypatch, use_graph):
     assert np.allclose(X, 2.0)
     assert np.allclose(Y, 5.0)
     assert np.allclose(Z, 15.0)
-
-
-if __name__ == "__main__":
-    test_decorator(False)
-    test_decorator(True)

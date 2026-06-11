@@ -279,8 +279,3 @@ def test_unified_dag_with_local_stf_matches_eager() -> None:
 
     c_got = run_unified_with_local_stf(device)
     _assert_all_equal(c_got, expected, "unified DAG with local STF")
-
-
-if __name__ == "__main__":
-    test_unified_dag_with_local_stf_matches_eager()
-    print("DAG of captured tasks with local STF inside           : OK")

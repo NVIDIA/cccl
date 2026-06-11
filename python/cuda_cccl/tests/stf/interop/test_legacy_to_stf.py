@@ -393,18 +393,3 @@ def _benchmark(sizes=None):
         # and only once all contexts built on top of it have finalized.
         handle = None
     print("\ncorrectness: OK for all sizes")
-
-
-if __name__ == "__main__":
-    import argparse
-
-    p = argparse.ArgumentParser()
-    p.add_argument(
-        "--n",
-        type=int,
-        nargs="*",
-        default=None,
-        help="problem size(s) in elements (default sweeps 128K..128M)",
-    )
-    args = p.parse_args()
-    _benchmark(sizes=args.n)

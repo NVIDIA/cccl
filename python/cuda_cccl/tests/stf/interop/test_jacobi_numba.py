@@ -190,9 +190,3 @@ def test_repeat_numba():
 
     # Expected: 0.0 + 10 * 1.0 = 10.0
     assert np.allclose(X_host, 10.0), f"Expected 10.0, got {X_host[0]}"
-
-
-if __name__ == "__main__":
-    test_graph_scope_numba()
-    test_repeat_numba()
-    test_jacobi_stackable_numba()

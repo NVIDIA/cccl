@@ -226,7 +226,3 @@ def test_unfinalized_context_warns():
         del ctx
         # Force destruction while pytest is still checking for the warning.
         gc.collect()
-
-
-if __name__ == "__main__":
-    test_ctx3()

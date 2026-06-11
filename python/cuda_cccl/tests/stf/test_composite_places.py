@@ -246,7 +246,3 @@ class TestCompositeTask:
             assert dims == (2, 1, 1, 1)
 
         ctx.finalize()
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

@@ -113,7 +113,3 @@ def test_pytorch_task():
     assert np.allclose(X, 2.0)
     assert np.allclose(Y, 4.0)
     assert np.allclose(Z, 5.0)
-
-
-if __name__ == "__main__":
-    test_pytorch()

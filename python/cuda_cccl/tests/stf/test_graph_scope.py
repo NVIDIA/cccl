@@ -209,13 +209,3 @@ def test_fence():
 
     # Expected: 1.0 * 5.0 + 3.0 = 8.0
     assert np.allclose(X_host, 8.0), f"Expected 8.0, got {X_host[0]}"
-
-
-if __name__ == "__main__":
-    test_single_graph_scope()
-    test_nested_graph_scopes()
-    test_multi_data_graph_scope()
-    test_graph_scope_for_loop()
-    test_repeat_scope()
-    test_fence()
-    print("All graph_scope tests passed!")

@@ -86,7 +86,3 @@ def test_numba_token():
     assert np.allclose(Y, 5.0), (
         f"Y should be 5.0 after two axpy operations, but got {Y[0]}"
     )
-
-
-if __name__ == "__main__":
-    test_token()

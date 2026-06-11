@@ -457,10 +457,3 @@ def test_launchable_graph_k_branches_then_while_warp():
         expected = expected + while_iters
 
     assert np.allclose(X_host, expected), f"Expected {expected[0]}, got {X_host[0]}"
-
-
-if __name__ == "__main__":
-    test_graph_scope_warp()
-    test_repeat_warp()
-    test_jacobi_stackable_warp()
-    test_launchable_graph_k_branches_then_while_warp()

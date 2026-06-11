@@ -173,7 +173,3 @@ def test_context_loop_value_capture():
     for i in range(5):
         assert i in results, f"Step {i} was not recorded"
         assert abs(results[i] - n) < 1e-10, f"Step {i}: expected {n}, got {results[i]}"
-
-
-if __name__ == "__main__":
-    test_context_basic()

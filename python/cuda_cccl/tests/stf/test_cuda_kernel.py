@@ -224,7 +224,3 @@ def test_cuda_kernel_multi_launch():
     ctx.finalize()
 
     np.testing.assert_allclose(Y, 3.0 * np.ones(N), rtol=1e-12)
-
-
-if __name__ == "__main__":
-    test_cuda_kernel_axpy()

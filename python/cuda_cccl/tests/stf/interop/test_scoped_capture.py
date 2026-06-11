@@ -186,10 +186,3 @@ def test_stf_local_ctx_inside_relaxed_scoped_capture() -> None:
         f"relaxed-capture fork-join+tail mismatch: got unique values "
         f"{np.unique(h_c)}, expected all == {expected}"
     )
-
-
-if __name__ == "__main__":
-    test_fork_join_inside_warp_scoped_capture_pure_warp()
-    print("pure-warp                                  : OK")
-    test_stf_local_ctx_inside_relaxed_scoped_capture()
-    print("stf-in-capture (Relaxed)                   : OK")
