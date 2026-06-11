@@ -43,7 +43,14 @@ readme = { file = "README.md", content-type = "text/markdown" }
 [project.optional-dependencies]
 minimal-cu12 = [
   "cuda-bindings>=12.9.1,<13.0.0",
-  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==12.*",
+  # nvjitlink is intentionally NOT taken via the cuda-toolkit[...] extra: that
+  # extra hard-pins nvidia-nvjitlink-cu12 to the toolkit's exact version, which
+  # collides with numba-cuda-mlir[cu12]'s nvidia-nvjitlink-cu12>=12.3.0 whenever
+  # the toolkit is pinned older (e.g. CI's PIP_CONSTRAINT=cuda-toolkit==12.0.*).
+  # Requesting it directly lets nvjitlink float to >=12.3 while the rest of the
+  # toolkit stays locked to the pinned version.
+  "cuda-toolkit[nvrtc,cudart,nvcc]==12.*",
+  "nvidia-nvjitlink-cu12>=12.3.0,<13.0.0",
 ]
 minimal-cu13 = [
   "cuda-bindings>=13.0.0,<14.0.0",
@@ -59,31 +66,43 @@ minimal-sysctk13 = [
 ]
 cu12 = [
   "cuda-cccl[minimal-cu12]",
+  # numba / numba-cuda: used by cuda.coop (Numba-CUDA cooperative primitives).
   # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
   "numba>=0.60.0,<0.66",
   "numba-cuda[cu12]>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
+  # numba-cuda-mlir: backend that JIT-compiles cuda.compute user operators and
+  # gpu_struct types (the MLIR-based successor to numba-cuda).
+  "numba-cuda-mlir[cu12]>=0.4.2",
 ]
 cu13 = [
   "cuda-cccl[minimal-cu13]",
+  # numba / numba-cuda: used by cuda.coop (Numba-CUDA cooperative primitives).
   # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
   "numba>=0.60.0,<0.66",
-  "numba-cuda[cu13]>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
+  "numba-cuda[cu13]>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
+  # numba-cuda-mlir: backend that JIT-compiles cuda.compute user operators and
+  # gpu_struct types (the MLIR-based successor to numba-cuda).
+  "numba-cuda-mlir[cu13]>=0.4.2",
 ]
 sysctk12 = [
   "cuda-cccl[minimal-sysctk12]",
   # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
   "numba>=0.60.0,<0.66",
-  # plain numba-cuda (no [cu12]) so it relies on the system-provided CUDA toolkit
-  # instead of pulling the toolkit from pip -- the whole point of the sysctk extra.
-  "numba-cuda>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
+  # plain numba-cuda / numba-cuda-mlir (no [cu12]) so they rely on the
+  # system-provided CUDA toolkit instead of pulling the toolkit from pip --
+  # the whole point of the sysctk extra.
+  "numba-cuda>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
+  "numba-cuda-mlir>=0.4.2",
 ]
 sysctk13 = [
   "cuda-cccl[minimal-sysctk13]",
   # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
   "numba>=0.60.0,<0.66",
-  # plain numba-cuda (no [cu13]) so it relies on the system-provided CUDA toolkit
-  # instead of pulling the toolkit from pip -- the whole point of the sysctk extra.
+  # plain numba-cuda / numba-cuda-mlir (no [cu13]) so they rely on the
+  # system-provided CUDA toolkit instead of pulling the toolkit from pip --
+  # the whole point of the sysctk extra.
   "numba-cuda>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
+  "numba-cuda-mlir>=0.4.2",
 ]
 # The test extras do not include CuPy. The cuda.compute examples (run via
 # tests/test_examples.py) require it; install it separately (e.g.
@@ -173,6 +192,7 @@ module = [
   "numpy",
   "numpy.*",
   "numba.*",
+  "numba_cuda_mlir.*",
   "llvmlite.*",
   "ml_dtypes",
   "cuda.cccl.*",
