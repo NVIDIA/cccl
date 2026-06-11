@@ -14,10 +14,14 @@
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <format>
 #include <mutex>
 #include <sstream>
 #include <vector>
+
+#include <cuda/__type_traits/is_trivially_copyable.h>
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
@@ -335,20 +339,32 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
       ->get_name({partition_kernel_name, partition_kernel_lowered_name})
       ->get_name({merge_kernel_name, merge_kernel_lowered_name});
 
-  auto policy          = std::make_unique<cub::detail::merge_sort::policy_selector>(policy_sel);
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::merge_sort::policy_selector>);
+  const size_t policy_size = sizeof(policy_sel);
+  std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto block_sort_name = std::unique_ptr<char[]>(duplicate_c_string(block_sort_kernel_lowered_name));
   auto partition_name  = std::unique_ptr<char[]>(duplicate_c_string(partition_kernel_lowered_name));
   auto merge_name      = std::unique_ptr<char[]>(duplicate_c_string(merge_kernel_lowered_name));
 
-  build_ptr->cc                             = cc.get();
-  build_ptr->key_type                       = input_keys_it.value_type;
-  build_ptr->item_type                      = input_items_it.value_type;
-  build_ptr->runtime_policy                 = policy.release();
-  build_ptr->runtime_policy_size            = sizeof(cub::detail::merge_sort::policy_selector);
-  build_ptr->block_sort_kernel_lowered_name = block_sort_name.release();
-  build_ptr->partition_kernel_lowered_name  = partition_name.release();
-  build_ptr->merge_kernel_lowered_name      = merge_name.release();
+  build_ptr->cc        = cc.get();
+  build_ptr->key_type  = input_keys_it.value_type;
+  build_ptr->item_type = input_items_it.value_type;
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library           = nullptr;
+  build_ptr->block_sort_kernel = nullptr;
+  build_ptr->partition_kernel  = nullptr;
+  build_ptr->merge_kernel      = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -363,6 +379,12 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
     build_ptr->payload_size  = result.size;
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
+
+  build_ptr->runtime_policy                 = policy_ptr.release();
+  build_ptr->runtime_policy_size            = policy_size;
+  build_ptr->block_sort_kernel_lowered_name = block_sort_name.release();
+  build_ptr->partition_kernel_lowered_name  = partition_name.release();
+  build_ptr->merge_kernel_lowered_name      = merge_name.release();
 
   return CUDA_SUCCESS;
 }
@@ -551,8 +573,7 @@ try
   }
 
   std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
-  std::unique_ptr<cub::detail::merge_sort::policy_selector> policy(
-    static_cast<cub::detail::merge_sort::policy_selector*>(build_ptr->runtime_policy));
+  std::free(build_ptr->runtime_policy);
   if (build_ptr->library != nullptr)
   {
     check(cuLibraryUnload(build_ptr->library));

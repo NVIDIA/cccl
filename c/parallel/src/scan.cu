@@ -17,6 +17,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
+#include <cstdlib>
+#include <cstring>
 #include <format>
 #include <iostream>
 #include <mutex>
@@ -25,6 +27,8 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+
+#include <cuda/__type_traits/is_trivially_copyable.h>
 
 #include <nvrtc.h>
 
@@ -422,7 +426,17 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   auto [description_bytes_per_tile,
         payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args.data(), args.size(), arch);
 
-  auto policy    = std::make_unique<cub::detail::scan::policy_selector>(policy_sel);
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::scan::policy_selector>);
+  const size_t policy_size = sizeof(policy_sel);
+  std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto init_name = std::unique_ptr<char[]>(duplicate_c_string(init_kernel_lowered_name));
   auto scan_name = std::unique_ptr<char[]>(duplicate_c_string(scan_kernel_lowered_name));
 
@@ -434,11 +448,13 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   build_ptr->init_kind                  = init_kind;
   build_ptr->description_bytes_per_tile = description_bytes_per_tile;
   build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
-  build_ptr->runtime_policy             = policy.release();
-  build_ptr->runtime_policy_size        = sizeof(cub::detail::scan::policy_selector);
-  build_ptr->init_kernel_lowered_name   = init_name.release();
-  build_ptr->scan_kernel_lowered_name   = scan_name.release();
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library     = nullptr;
+  build_ptr->init_kernel = nullptr;
+  build_ptr->scan_kernel = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -453,6 +469,11 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
     build_ptr->payload_size  = result.size;
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
+
+  build_ptr->runtime_policy             = policy_ptr.release();
+  build_ptr->runtime_policy_size        = policy_size;
+  build_ptr->init_kernel_lowered_name   = init_name.release();
+  build_ptr->scan_kernel_lowered_name   = scan_name.release();
 
   return CUDA_SUCCESS;
 }
@@ -714,8 +735,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
-  std::unique_ptr<cub::detail::scan::policy_selector> policy(
-    static_cast<cub::detail::scan::policy_selector*>(build_ptr->runtime_policy));
+  std::free(build_ptr->runtime_policy);
   std::unique_ptr<char[]> init_name(build_ptr->init_kernel_lowered_name);
   std::unique_ptr<char[]> scan_name(build_ptr->scan_kernel_lowered_name);
   if (build_ptr->library != nullptr)

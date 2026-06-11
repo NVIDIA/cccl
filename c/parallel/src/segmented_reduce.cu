@@ -13,6 +13,10 @@
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
+#include <cstdlib>
+#include <cstring>
 #include <exception> // std::exception
 #include <format>
 #include <mutex>
@@ -260,15 +264,27 @@ static_assert(
       ->compile_program({args.data(), args.size()})
       ->get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name});
 
-  auto policy      = std::make_unique<cub::detail::segmented_reduce::policy_selector>(policy_sel);
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::segmented_reduce::policy_selector>);
+  const size_t policy_size = sizeof(policy_sel);
+  std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(segmented_reduce_kernel_lowered_name));
 
-  build_ptr->cc                                   = cc_major * 10 + cc_minor;
-  build_ptr->accumulator_size                     = accum_t.size;
-  build_ptr->runtime_policy                       = policy.release();
-  build_ptr->runtime_policy_size                  = sizeof(cub::detail::segmented_reduce::policy_selector);
-  build_ptr->segmented_reduce_kernel_lowered_name = kernel_name.release();
+  build_ptr->cc               = cc_major * 10 + cc_minor;
+  build_ptr->accumulator_size = accum_t.size;
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library                  = nullptr;
+  build_ptr->segmented_reduce_kernel  = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -283,6 +299,10 @@ static_assert(
     build_ptr->payload_size  = result.size;
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
+
+  build_ptr->runtime_policy                       = policy_ptr.release();
+  build_ptr->runtime_policy_size                  = policy_size;
+  build_ptr->segmented_reduce_kernel_lowered_name = kernel_name.release();
 
   return CUDA_SUCCESS;
 }
@@ -463,8 +483,7 @@ try
   }
 
   std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
-  std::unique_ptr<cub::detail::segmented_reduce::policy_selector> policy(
-    static_cast<cub::detail::segmented_reduce::policy_selector*>(build_ptr->runtime_policy));
+  std::free(build_ptr->runtime_policy);
   std::unique_ptr<char[]> kernel_name(build_ptr->segmented_reduce_kernel_lowered_name);
   if (build_ptr->library != nullptr)
   {

@@ -14,6 +14,10 @@
 #include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh> // DeviceThreeWayPartition kernels
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh> // policy_selector
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
+#include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <format>
 #include <mutex>
@@ -275,16 +279,28 @@ static_assert(
       ->get_name({three_way_partition_init_kernel_name, three_way_partition_init_kernel_lowered_name})
       ->get_name({three_way_partition_kernel_name, three_way_partition_kernel_lowered_name});
 
-  auto policy      = std::make_unique<cub::detail::three_way_partition::policy_selector>(policy_sel);
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::three_way_partition::policy_selector>);
+  const size_t policy_size = sizeof(policy_sel);
+  std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto init_name   = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_init_kernel_lowered_name));
   auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_kernel_lowered_name));
 
-  build_ptr->cc                                           = cc.get();
-  build_ptr->runtime_policy                               = policy.release();
-  build_ptr->runtime_policy_size                          = sizeof(cub::detail::three_way_partition::policy_selector);
-  build_ptr->three_way_partition_init_kernel_lowered_name = init_name.release();
-  build_ptr->three_way_partition_kernel_lowered_name      = kernel_name.release();
+  build_ptr->cc = cc.get();
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library                        = nullptr;
+  build_ptr->three_way_partition_init_kernel = nullptr;
+  build_ptr->three_way_partition_kernel      = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -299,6 +315,11 @@ static_assert(
     build_ptr->payload_size  = result.size;
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
+
+  build_ptr->runtime_policy                               = policy_ptr.release();
+  build_ptr->runtime_policy_size                          = policy_size;
+  build_ptr->three_way_partition_init_kernel_lowered_name = init_name.release();
+  build_ptr->three_way_partition_kernel_lowered_name      = kernel_name.release();
 
   return CUDA_SUCCESS;
 }
@@ -464,8 +485,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   std::unique_ptr<char[]> payload(reinterpret_cast<char*>(bld_ptr->payload));
-  std::unique_ptr<cub::detail::three_way_partition::policy_selector> policy(
-    static_cast<cub::detail::three_way_partition::policy_selector*>(bld_ptr->runtime_policy));
+  std::free(bld_ptr->runtime_policy);
   std::unique_ptr<char[]> init_name(bld_ptr->three_way_partition_init_kernel_lowered_name);
   std::unique_ptr<char[]> kernel_name(bld_ptr->three_way_partition_kernel_lowered_name);
   if (bld_ptr->library != nullptr)

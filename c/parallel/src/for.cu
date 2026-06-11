@@ -127,9 +127,13 @@ try
 
   auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(lowered_name));
 
-  build_ptr->cc                         = cc;
-  build_ptr->static_kernel_lowered_name = kernel_name.release();
+  build_ptr->cc = cc;
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library       = nullptr;
+  build_ptr->static_kernel = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -152,6 +156,8 @@ try
     build_ptr->payload_size  = result.size;
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
+
+  build_ptr->static_kernel_lowered_name = kernel_name.release();
 
   return CUDA_SUCCESS;
 }

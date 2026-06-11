@@ -20,6 +20,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/memory>
 
+#include <cstdlib>
 #include <cstring>
 #include <format>
 #include <mutex>
@@ -344,13 +345,14 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
   auto cache_obj        = std::make_unique<transform::cache>();
   auto kernel_name_copy = std::unique_ptr<char[]>(duplicate_c_string(kernel_lowered_name));
 
-  build_ptr->loaded_bytes_per_iteration    = static_cast<int>(input_it.value_type.size);
-  build_ptr->cc                            = cc_major * 10 + cc_minor;
-  build_ptr->cache                         = cache_obj.release();
-  build_ptr->transform_kernel_lowered_name = kernel_name_copy.release();
-  build_ptr->runtime_policy                = runtime_policy.release();
-  build_ptr->runtime_policy_size           = sizeof(policy_sel);
+  build_ptr->loaded_bytes_per_iteration = static_cast<int>(input_it.value_type.size);
+  build_ptr->cc                         = cc_major * 10 + cc_minor;
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library          = nullptr;
+  build_ptr->transform_kernel = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -365,6 +367,11 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
     build_ptr->payload_size  = result.size;
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
+
+  build_ptr->cache                         = cache_obj.release();
+  build_ptr->transform_kernel_lowered_name = kernel_name_copy.release();
+  build_ptr->runtime_policy                = runtime_policy.release();
+  build_ptr->runtime_policy_size           = sizeof(policy_sel);
 
   return CUDA_SUCCESS;
 }
@@ -620,13 +627,14 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
   auto cache_obj        = std::make_unique<transform::cache>();
   auto kernel_name_copy = std::unique_ptr<char[]>(duplicate_c_string(kernel_lowered_name));
 
-  build_ptr->loaded_bytes_per_iteration    = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
-  build_ptr->cc                            = cc_major * 10 + cc_minor;
-  build_ptr->cache                         = cache_obj.release();
-  build_ptr->transform_kernel_lowered_name = kernel_name_copy.release();
-  build_ptr->runtime_policy                = runtime_policy.release();
-  build_ptr->runtime_policy_size           = sizeof(policy_sel);
+  build_ptr->loaded_bytes_per_iteration = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
+  build_ptr->cc                         = cc_major * 10 + cc_minor;
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library          = nullptr;
+  build_ptr->transform_kernel = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -641,6 +649,11 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
     build_ptr->payload_size  = result.size;
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
+
+  build_ptr->cache                         = cache_obj.release();
+  build_ptr->transform_kernel_lowered_name = kernel_name_copy.release();
+  build_ptr->runtime_policy                = runtime_policy.release();
+  build_ptr->runtime_policy_size           = sizeof(policy_sel);
 
   return CUDA_SUCCESS;
 }

@@ -13,11 +13,13 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional> // ::cuda::std::identity
 #include <cuda/std/variant>
 
+#include <cstdlib>
 #include <cstring>
 #include <format>
 #include <memory>
@@ -350,15 +352,25 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
       ->get_name({reduction_kernel_name, reduction_kernel_lowered_name})
       ->get_name_if(build_nondeterministic, {nondeterministic_kernel_name, nondeterministic_kernel_lowered_name});
 
-  std::unique_ptr<cub::detail::reduce::policy_selector> policy;
-  std::unique_ptr<cub::detail::reduce_nondeterministic::policy_selector> policy_nd;
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::reduce::policy_selector>);
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::reduce_nondeterministic::policy_selector>);
+  const size_t policy_size =
+    build_nondeterministic ? sizeof(policy_sel_nd) : sizeof(policy_sel);
+  std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
   if (build_nondeterministic)
   {
-    policy_nd = std::make_unique<cub::detail::reduce_nondeterministic::policy_selector>(policy_sel_nd);
+    std::memcpy(policy_ptr.get(), &policy_sel_nd, sizeof(policy_sel_nd));
   }
   else
   {
-    policy = std::make_unique<cub::detail::reduce::policy_selector>(policy_sel);
+    std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   }
   auto single_tile_name        = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
   auto single_tile_second_name = std::unique_ptr<char[]>(duplicate_c_string(single_tile_second_kernel_lowered_name));
@@ -369,21 +381,15 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   build->cc               = cc_major * 10 + cc_minor;
   build->accumulator_size = accum_t.size;
   build->determinism      = determinism;
-  if (build_nondeterministic)
-  {
-    build->runtime_policy      = policy_nd.release();
-    build->runtime_policy_size = sizeof(cub::detail::reduce_nondeterministic::policy_selector);
-  }
-  else
-  {
-    build->runtime_policy      = policy.release();
-    build->runtime_policy_size = sizeof(cub::detail::reduce::policy_selector);
-  }
-  build->single_tile_kernel_lowered_name        = single_tile_name.release();
-  build->single_tile_second_kernel_lowered_name = single_tile_second_name.release();
-  build->reduction_kernel_lowered_name          = reduction_name.release();
-  build->nondeterministic_kernel_lowered_name   = nondeterministic_name.release();
+  // Zero-init fields set by _load, not _compile.
+  build->library                    = nullptr;
+  build->single_tile_kernel         = nullptr;
+  build->single_tile_second_kernel  = nullptr;
+  build->reduction_kernel           = nullptr;
+  build->nondeterministic_atomic_kernel = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -398,6 +404,13 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
     build->payload_size      = result.size;
     build->payload_kind      = CCCL_PAYLOAD_CUBIN;
   }
+
+  build->runtime_policy                         = policy_ptr.release();
+  build->runtime_policy_size                    = policy_size;
+  build->single_tile_kernel_lowered_name        = single_tile_name.release();
+  build->single_tile_second_kernel_lowered_name = single_tile_second_name.release();
+  build->reduction_kernel_lowered_name          = reduction_name.release();
+  build->nondeterministic_kernel_lowered_name   = nondeterministic_name.release();
 
   return CUDA_SUCCESS;
 }
@@ -612,16 +625,7 @@ try
   }
 
   std::unique_ptr<char[]> payload(static_cast<char*>(build_ptr->payload));
-  std::unique_ptr<cub::detail::reduce::policy_selector> policy;
-  std::unique_ptr<cub::detail::reduce_nondeterministic::policy_selector> policy_nd;
-  if (build_ptr->determinism == CCCL_NOT_GUARANTEED)
-  {
-    policy_nd.reset(static_cast<cub::detail::reduce_nondeterministic::policy_selector*>(build_ptr->runtime_policy));
-  }
-  else
-  {
-    policy.reset(static_cast<cub::detail::reduce::policy_selector*>(build_ptr->runtime_policy));
-  }
+  std::free(build_ptr->runtime_policy);
   if (build_ptr->library != nullptr)
   {
     check(cuLibraryUnload(build_ptr->library));

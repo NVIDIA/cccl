@@ -12,6 +12,10 @@
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_radix_sort.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
+#include <cstdlib>
+#include <cstring>
 #include <format>
 #include <mutex>
 #include <vector>
@@ -377,7 +381,17 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
       ->get_name({init_lookback_kernel_name, init_lookback_kernel_lowered_name})
       ->get_name({onesweep_kernel_name, onesweep_kernel_lowered_name});
 
-  auto policy                      = std::make_unique<cub::detail::radix_sort::policy_selector>(policy_sel);
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::radix_sort::policy_selector>);
+  const size_t policy_size = sizeof(policy_sel);
+  std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto single_tile_name            = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
   auto upsweep_name                = std::unique_ptr<char[]>(duplicate_c_string(upsweep_kernel_lowered_name));
   auto alt_upsweep_name            = std::unique_ptr<char[]>(duplicate_c_string(alt_upsweep_kernel_lowered_name));
@@ -390,24 +404,26 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
   auto init_lookback_name          = std::unique_ptr<char[]>(duplicate_c_string(init_lookback_kernel_lowered_name));
   auto onesweep_name               = std::unique_ptr<char[]>(duplicate_c_string(onesweep_kernel_lowered_name));
 
-  build_ptr->cc                                         = cc_major * 10 + cc_minor;
-  build_ptr->key_type                                   = input_keys_it.value_type;
-  build_ptr->value_type                                 = input_values_it.value_type;
-  build_ptr->order                                      = sort_order;
-  build_ptr->runtime_policy                             = policy.release();
-  build_ptr->runtime_policy_size                        = sizeof(cub::detail::radix_sort::policy_selector);
-  build_ptr->single_tile_kernel_lowered_name            = single_tile_name.release();
-  build_ptr->upsweep_kernel_lowered_name                = upsweep_name.release();
-  build_ptr->alt_upsweep_kernel_lowered_name            = alt_upsweep_name.release();
-  build_ptr->scan_bins_kernel_lowered_name              = scan_bins_name.release();
-  build_ptr->downsweep_kernel_lowered_name              = downsweep_name.release();
-  build_ptr->alt_downsweep_kernel_lowered_name          = alt_downsweep_name.release();
-  build_ptr->histogram_kernel_lowered_name              = histogram_name.release();
-  build_ptr->exclusive_sum_kernel_lowered_name          = exclusive_sum_name.release();
-  build_ptr->init_bins_and_counters_kernel_lowered_name = init_bins_and_counters_name.release();
-  build_ptr->init_lookback_kernel_lowered_name          = init_lookback_name.release();
-  build_ptr->onesweep_kernel_lowered_name               = onesweep_name.release();
+  build_ptr->cc         = cc_major * 10 + cc_minor;
+  build_ptr->key_type   = input_keys_it.value_type;
+  build_ptr->value_type = input_values_it.value_type;
+  build_ptr->order      = sort_order;
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library                       = nullptr;
+  build_ptr->single_tile_kernel            = nullptr;
+  build_ptr->upsweep_kernel                = nullptr;
+  build_ptr->alt_upsweep_kernel            = nullptr;
+  build_ptr->scan_bins_kernel              = nullptr;
+  build_ptr->downsweep_kernel              = nullptr;
+  build_ptr->alt_downsweep_kernel          = nullptr;
+  build_ptr->histogram_kernel              = nullptr;
+  build_ptr->exclusive_sum_kernel          = nullptr;
+  build_ptr->init_bins_and_counters_kernel = nullptr;
+  build_ptr->init_lookback_kernel          = nullptr;
+  build_ptr->onesweep_kernel               = nullptr;
 
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -422,6 +438,20 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
     build_ptr->payload_size  = result.size;
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
+
+  build_ptr->runtime_policy                    = policy_ptr.release();
+  build_ptr->runtime_policy_size               = policy_size;
+  build_ptr->single_tile_kernel_lowered_name   = single_tile_name.release();
+  build_ptr->upsweep_kernel_lowered_name       = upsweep_name.release();
+  build_ptr->alt_upsweep_kernel_lowered_name   = alt_upsweep_name.release();
+  build_ptr->scan_bins_kernel_lowered_name     = scan_bins_name.release();
+  build_ptr->downsweep_kernel_lowered_name     = downsweep_name.release();
+  build_ptr->alt_downsweep_kernel_lowered_name = alt_downsweep_name.release();
+  build_ptr->histogram_kernel_lowered_name     = histogram_name.release();
+  build_ptr->exclusive_sum_kernel_lowered_name          = exclusive_sum_name.release();
+  build_ptr->init_bins_and_counters_kernel_lowered_name = init_bins_and_counters_name.release();
+  build_ptr->init_lookback_kernel_lowered_name          = init_lookback_name.release();
+  build_ptr->onesweep_kernel_lowered_name               = onesweep_name.release();
 
   return CUDA_SUCCESS;
 }
@@ -691,7 +721,7 @@ try
 
   using namespace cub::detail::radix_sort;
   std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
-  std::unique_ptr<policy_selector> policy(static_cast<policy_selector*>(build_ptr->runtime_policy));
+  std::free(build_ptr->runtime_policy);
   for (char* p :
        {build_ptr->single_tile_kernel_lowered_name,
         build_ptr->upsweep_kernel_lowered_name,
