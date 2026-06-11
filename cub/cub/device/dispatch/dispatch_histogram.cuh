@@ -215,13 +215,14 @@ struct selector_features
 //   2. High-bin region: the single-channel SMEM+GMEM `gmem_privatized_nocache`
 //      (smem_split>0, the merged hybrid member) and the two DirectKernel caches
 //      (`direct_single_probe` / `direct_cuckoo`). Single-channel uses the on-chip
-//      hybrid where the histogram fits and the input amortizes its setup (the 65536
-//      cap tier at N>4M, the 262144 mid tier once amortized), and direct atomics
-//      elsewhere. Multi-channel uses the direct caches. The cuckoo and single-probe
-//      caches measure within noise, so single-probe (the leaner probe) is the
-//      default and cuckoo serves the larger multi bin tiers. (The proposed
-//      `gmem_privatized_{cuckoo,single_probe}` are never returned here — they are
-//      reachable-but-unselected; see the design doc's Decision.)
+//      hybrid where the histogram fits AND the input amortizes its setup (the 65536
+//      and 131072 tiers above their per-transform pixel floors); above 131072 (the
+//      262144 and 1048576 tiers) the histogram exceeds the hybrid's on-chip working
+//      set, so direct atomics win. Multi-channel uses the direct caches. The cuckoo
+//      and single-probe caches measure within noise, so single-probe (the leaner
+//      probe) is the default and cuckoo serves the larger multi bin tiers. (The
+//      proposed `gmem_privatized_{cuckoo,single_probe}` are never returned here —
+//      they are reachable-but-unselected; see the design doc's Decision.)
 template <bool IsByteSample>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features const& f)
 {
@@ -270,7 +271,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   }
 
   // -----------------------------------------------------------------------
-  // High-bin region (num_bins > max_dynamic_smem_bins, i.e. one of 65536 /
+  // High-bin region (num_bins above the on-chip privatized cap: 65536 / 131072 /
   // 262144 / 1048576).
   //
   // The choice is among: the single-channel SMEM+GMEM hybrid (the smem_split>0
@@ -286,58 +287,65 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // within noise of each other across the whole single-channel region (both are
   // really direct GMEM atomics once bins far exceed the few-thousand cache
   // slots), so single-probe -- the leaner inner loop -- is the single
-  // direct-atomic default. (2) The on-chip hybrid kernel dominates the 65536 and
-  // 262144 tiers at large input, where keeping the whole modest histogram in
-  // SMEM beats atomics into a large GMEM output; it loses only at small input
-  // (its per-block setup is not amortized) and at the 1M-bin tier (too large to
-  // stay on chip).
+  // direct-atomic default. (2) The on-chip hybrid kernel wins the 65536 and 131072
+  // tiers at large input, where keeping the whole modest histogram in SMEM beats
+  // atomics into a large GMEM output; it loses at small input (its per-block setup
+  // is not amortized), and from the 262144 tier up (the histogram exceeds its
+  // on-chip working set, so the direct-atomic cache wins at every input size --
+  // measured hybrid/direct 0.68..1.00 across the 262144 grid).
   // -----------------------------------------------------------------------
-
-  // Boundary thresholds. ~256M / ~64M / ~16M / ~4M pixels.
-  constexpr long long kSweepPixelThreshold         = 1LL << 28; // 256M
-  constexpr long long kRangeF64SweepPixelThreshold = 1LL << 26; // 64M: EVEN mid-tier flips to hybrid
-  constexpr long long kHybridMidTierPixels         = 1LL << 24; // 16M: cap-tier flips to hybrid
-  constexpr long long kSmallNHighBinPixels         = 1LL << 22; // 4M: below this, setup cost dominates
-  constexpr int kMidHighBinTier                    = 262144;    // the middle high-bin tier
 
   if (f.num_active_channels == 1)
   {
-    // Small input: the privatized/hybrid setup (zeroing + merging a wide
-    // histogram) is not amortized, so atomic straight to the output wins.
-    if (f.num_pixels <= kSmallNHighBinPixels)
+    // --- Single-channel high-bin policy --------------------------------------
+    // Two algorithms compete here: the on-chip SMEM+GMEM hybrid (the smem_split>0
+    // member of gmem_privatized_nocache) and the direct-atomic single-probe cache.
+    // The hybrid keeps a modest histogram on chip and wins once its per-block setup
+    // (zeroing + a grid-wide gather) amortizes over enough pixels; below that N, and
+    // once the histogram is too large to stay on chip, direct GMEM atomics win.
+    // Thresholds are the measured geomean-over-shapes crossovers on B200 (sm_100);
+    // each is named for the exact regime it gates. The amortization N rises with both
+    // the bin count (a wider histogram is costlier to set up) and the classify cost
+    // (RANGE's per-sample SearchTransform is heavier than EVEN's ScaleTransform), so
+    // it is keyed on (bin tier, transform) rather than a single global pixel floor.
+    //
+    //   cap tier  (<= 65536):  hybrid wins from ~16M pixels, both transforms.
+    //   mid tier  (<= 131072): hybrid wins from ~16M (EVEN) / ~64M (RANGE).
+    //   above 131072 (262144, 1048576): the histogram exceeds the hybrid's on-chip
+    //                          working set, so the direct-atomic cache wins at every
+    //                          input size (measured hybrid/direct 0.68..1.00) -- the
+    //                          hybrid mid-tier ends at 131072, NOT 262144.
+    constexpr int hybrid_cap_tier_max_bins = hybrid_smem_bins_max_single_channel; // 65536
+    constexpr int hybrid_mid_tier_max_bins = 131072;
+
+    constexpr long long cap_tier_amortize_pixels      = 1LL << 24; // 16M (both transforms)
+    constexpr long long mid_tier_amortize_pixels_even = 1LL << 24; // 16M
+    constexpr long long mid_tier_amortize_pixels_range = 1LL << 26; // 64M
+
+    if (f.num_bins <= hybrid_cap_tier_max_bins)
     {
-      return algorithm::direct_single_probe;
+      return (f.num_pixels >= cap_tier_amortize_pixels) ? algorithm::gmem_privatized_nocache // hybrid member
+                                                        : algorithm::direct_single_probe;
+    }
+    if (f.num_bins <= hybrid_mid_tier_max_bins)
+    {
+      const long long amortize = f.is_even ? mid_tier_amortize_pixels_even : mid_tier_amortize_pixels_range;
+      return (f.num_pixels >= amortize) ? algorithm::gmem_privatized_nocache // hybrid member
+                                        : algorithm::direct_single_probe;
     }
 
-    // Cap tier (<=65536): the whole histogram fits the on-chip hybrid kernel,
-    // which dominates here for both transforms once N > 4M.
-    if (f.num_bins <= hybrid_smem_bins_max_single_channel)
-    {
-      return algorithm::gmem_privatized_nocache;
-    }
-
-    // Mid tier (<=262144): hybrid wins once its setup is amortized over enough
-    // pixels. EVEN's cheap ScaleTransform classify reaches that point at >=64M;
-    // RANGE's costlier SearchTransform needs >=256M. Below that, direct atomics.
-    if (f.num_bins <= kMidHighBinTier)
-    {
-      const long long hybrid_pixels = f.is_even ? kRangeF64SweepPixelThreshold : kSweepPixelThreshold;
-      return (f.num_pixels >= hybrid_pixels) ? algorithm::gmem_privatized_nocache
-                                             : algorithm::direct_single_probe;
-    }
-
-    // Top tier (1048576): bins far exceed the SMEM cache, so it is effectively a
-    // pure direct GMEM atomic.
+    // High-bin tiers above the hybrid's reach (262144, 1048576): the histogram far
+    // exceeds the on-chip working set, so it is effectively a direct GMEM atomic.
     return algorithm::direct_single_probe;
   }
 
-  // ---- Multi-channel (hybrid is single-channel-only) ----
-  // The per-block privatized intermediate scales with the active channel count,
-  // so the high-bin region is served by the direct-atomic caches. (A cooperative
+  // ---- Multi-channel (hybrid is single-channel-only) ----------------------------
+  // The per-block privatized intermediate scales with the active channel count, so
+  // the high-bin region is served by the direct-atomic caches. (A cooperative
   // gather-merge rule was evaluated for multi-EVEN at the largest inputs but
-  // dropped: it wins a narrow uniform/skew geomean yet collapses on the
-  // adversarial cache-stress distributions -- e.g. ~4x slower at the cache
-  // capacity cliff -- which the direct-atomic caches absorb.)
+  // dropped: it wins a narrow uniform/skew geomean yet collapses on the adversarial
+  // cache-stress distributions -- e.g. ~4x slower at the cache capacity cliff --
+  // which the direct-atomic caches absorb.)
   //
   // EVEN I32 favours the single-probe cache across all N (cheap classify, leaner
   // probe). EVEN F64 at the cap tier is the one place cuckoo's count replicas pay
@@ -346,10 +354,13 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   {
     return algorithm::direct_single_probe;
   }
-  // Cap tier (<=65536) at moderate/large input: single-probe, except the EVEN F64
-  // case handled above. Covers RANGE (both widths) and is a measured tie for the
-  // cells it overlaps, so it never regresses.
-  if (f.num_bins <= hybrid_smem_bins_max_single_channel && f.num_pixels >= kHybridMidTierPixels
+  // Cap tier (<= cap-tier bin bound) at moderate/large input: single-probe, except
+  // the EVEN F64 case handled above. Covers RANGE (both widths) and is a measured
+  // tie for the cells it overlaps, so it never regresses. The pixel floor is the N
+  // above which the cache setup is worth taking; below it the smallest inputs prefer
+  // the cuckoo default.
+  constexpr long long multi_channel_cap_tier_min_pixels = 1LL << 24; // 16M
+  if (f.num_bins <= hybrid_smem_bins_max_single_channel && f.num_pixels >= multi_channel_cap_tier_min_pixels
       && !(f.is_even && f.sample_bytes >= 8))
   {
     return algorithm::direct_single_probe;
