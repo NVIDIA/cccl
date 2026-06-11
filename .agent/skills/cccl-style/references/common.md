@@ -23,10 +23,10 @@ Apply this guidance across CCCL unless a path-specific style reference says othe
 
 ## Function Calls And Types
 
-- In headers, free function calls must be fully qualified from the global namespace, e.g. `::cuda::ceil_div(...)`.
+- In headers, free function calls must be fully qualified from the global namespace, e.g. `::cuda::ceil_div(...)`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`. This does not apply to (static) member functions of classes.
 - This global-qualification rule does not apply to source files such as tests and benchmarks.
 - Type names must be fully qualified except when they are already declared in the current namespace or an enclosing one.
-- Outside those namespaces, fully qualify `cuda::std` and standard integer type aliases such as `::cuda::std::size_t`.
+- Outside those namespaces, fully qualify `cuda::std` and standard integer type aliases such as `::cuda::std::size_t`. A local `using` declaration, e.g. `using ::cuda::std::size_t;`, is acceptable to avoid repetition within a function body.
 - Static member functions of a class template inherit the class's namespace.
 
 ## Comments
