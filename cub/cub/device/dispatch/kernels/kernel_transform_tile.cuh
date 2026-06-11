@@ -34,7 +34,7 @@ namespace detail::transform::tile
 // The caller is responsible for honoring assume_aligned<16>; the dispatch header's runtime_preconditions_valid
 // enforces this before launching either kernel.
 template <int TileSize, typename T, typename N>
-[[nodiscard]] __tile__ auto make_partition_view(T* ptr, N n)
+[[nodiscard]] __tile__ auto make_aligned_partition_view(T* ptr, N n)
 {
   namespace ct        = ::cuda::tiles;
   const auto ptr_align = ct::assume_aligned<16>(ptr);
@@ -53,12 +53,12 @@ __tile_global__ void
 transform_kernel(const ::cuda::std::int64_t num_items, Out* __restrict__ out, const Ins* __restrict__... ins)
 {
   namespace ct  = ::cuda::tiles;
-  using cub::detail::transform::tile::make_partition_view;
+  using cub::detail::transform::tile::make_aligned_partition_view;
   const auto bx = ct::bid().x;
 
   const auto n     = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-  auto out_view    = make_partition_view<TileSize>(out, n);
-  auto load_one    = [bx, n](auto* ptr) { return make_partition_view<TileSize>(ptr, n).load_masked(bx); };
+  auto out_view    = make_aligned_partition_view<TileSize>(out, n);
+  auto load_one    = [bx, n](auto* ptr) { return make_aligned_partition_view<TileSize>(ptr, n).load_masked(bx); };
 
   out_view.store_masked(Fn{}(load_one(ins)...), bx);
 }
@@ -67,11 +67,11 @@ template <int TileSize, typename T>
 __tile_global__ void fill_kernel(const ::cuda::std::int64_t num_items, T* __restrict__ out, const T value)
 {
   namespace ct  = ::cuda::tiles;
-  using cub::detail::transform::tile::make_partition_view;
+  using cub::detail::transform::tile::make_aligned_partition_view;
   const auto bx = ct::bid().x;
 
   const auto n  = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-  auto out_view = make_partition_view<TileSize>(out, n);
+  auto out_view = make_aligned_partition_view<TileSize>(out, n);
   using tile_t  = ct::tile<T, ct::shape<TileSize>>;
   out_view.store_masked(ct::full<tile_t>(value), bx);
 }
