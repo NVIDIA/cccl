@@ -495,7 +495,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
   // Run the top-k algorithm with a per-segment k passed as an immediate sequence
-  batched_topk_pairs(
+  batched_topk_pairs<direction>(
     d_keys_in,
     d_keys_out,
     d_values_in,
@@ -503,7 +503,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
     cuda::args::deferred_sequence{
       thrust::raw_pointer_cast(segment_k.data()), cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::constant<direction>{},
     cuda::args::immediate{num_segments},
     cuda::args::immediate{num_segments * segment_size});
 
@@ -616,7 +615,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
   // Run the top-k algorithm with a per-segment k passed as an immediate sequence
-  batched_topk_pairs(
+  batched_topk_pairs<direction>(
     d_keys_in,
     d_keys_out,
     d_values_in,
@@ -624,7 +623,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::deferred_sequence{
       thrust::raw_pointer_cast(segment_k.data()), cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::constant<direction>{},
     cuda::args::immediate{num_segments},
     cuda::args::immediate{num_items});
 
