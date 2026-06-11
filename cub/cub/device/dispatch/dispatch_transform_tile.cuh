@@ -36,13 +36,13 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#  include <cuda/cmath>
+#  include <cuda/__cmath/ceil_div.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__tuple_dir/apply.h>
 #  include <cuda/std/__type_traits/is_empty.h>
 #  include <cuda/std/__type_traits/is_trivially_default_constructible.h>
+#  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/tuple>
-#  include <cuda/std/utility>
 
 #  include <cuda_runtime.h>
 

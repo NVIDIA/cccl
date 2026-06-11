@@ -25,8 +25,9 @@
 
 #  include <cub/device/dispatch/tuning/tuning_transform.cuh>
 
+#  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__cmath/pow2.h>
 #  include <cuda/__device/compute_capability.h>
-#  include <cuda/cmath>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
