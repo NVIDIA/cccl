@@ -165,7 +165,7 @@ struct __pretty_name_begin
 [[nodiscard]] _CCCL_API constexpr __string_view __find_pretty_name(__string_view __sv) noexcept
 {
   return __sv.substr(::cuda::std::__add_string_view_position(
-                       __sv.find("__pretty_name_begin<"), ptrdiff_t(sizeof("__pretty_name_begin<")) - 1),
+                       __sv.find("__pretty_name_begin<"), static_cast<ptrdiff_t>(sizeof("__pretty_name_begin<")) - 1),
                      __sv.find_end(">::__pretty_name_end"));
 }
 
@@ -190,11 +190,12 @@ template <class _Tp>
 #  define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
 #endif
 
-#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
+#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG) \
+  && defined(_CCCL_ENABLE_DEBUG_MODE)
 // A quick smoke test to ensure that the pretty name extraction is working.
 static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"));
 static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>());
-#endif
+#endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG && _CCCL_ENABLE_DEBUG_MODE
 
 // We find the spelling of a non-type template parameter value _Vp as follows:
 // 1. Wrap the value in the class template __stringof_wrapper and obtain
@@ -218,7 +219,7 @@ struct __stringof_wrapper
 {
   // Trim the surrounding "__stringof_wrapper<" ... ">".
   return __sv.substr(::cuda::std::__add_string_view_position(
-                       __sv.find("__stringof_wrapper<"), ptrdiff_t(sizeof("__stringof_wrapper<")) - 1),
+                       __sv.find("__stringof_wrapper<"), static_cast<ptrdiff_t>(sizeof("__stringof_wrapper<")) - 1),
                      __sv.find_end(">"));
 }
 
@@ -226,6 +227,7 @@ struct __stringof_wrapper
 //! template parameter, e.g. `__stringof<42>()` yields `"42"` and
 //! `__stringof<cudaStreamSynchronize>()` yields `"cudaStreamSynchronize"`.
 //!
+//! @tparam _Vp The value whose compiler spelling is returned.
 //! @return A string view containing the compiler's spelling of `_Vp`.
 //!
 //! This is the value counterpart of `__pretty_nameof` (which spells types). It
@@ -248,13 +250,14 @@ template <auto _Vp>
   {
     if (__sv.size() != 0 && __sv[0] == '&')
     {
-      __sv = __sv.substr(1, ptrdiff_t(__sv.size()));
+      __sv = __sv.substr(1, static_cast<ptrdiff_t>(__sv.size()));
     }
   }
   return __sv;
 }
 
-#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
+#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG) \
+  && defined(_CCCL_ENABLE_DEBUG_MODE)
 // A quick smoke test to ensure that the value spelling extraction is working.
 // An integer literal is spelled identically on every supported compiler.
 static_assert(::cuda::std::__stringof<42>() == __string_view("42"));
@@ -266,7 +269,7 @@ static_assert(::cuda::std::__stringof<42>() != ::cuda::std::__stringof<43>());
 // unqualified name is present rather than matching it exactly.
 static_assert(::cuda::std::__stringof<&::cuda::std::__add_string_view_position>().find("__add_string_view_position")
               != -1);
-#endif
+#endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG && _CCCL_ENABLE_DEBUG_MODE
 
 // There are many complications with defining a unique constexpr global object
 // for each type in device code, particularly on Windows. So rather than try,
