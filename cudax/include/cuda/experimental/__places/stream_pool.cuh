@@ -111,6 +111,12 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
   {
     return k_no_stream_id;
   }
+
+  // ``cuStreamGetId`` is not capture-safe: during
+  // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` it rejects the query
+  // *and* invalidates the capture itself. Gate on ``cudaStreamIsCapturing``
+  // (which is safe) and conservatively report an unknown stream ID while
+  // capture is in flight.
   if (is_stream_capturing(stream))
   {
     return k_no_stream_id;
