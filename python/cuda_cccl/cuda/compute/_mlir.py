@@ -27,6 +27,13 @@ from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir._mlir import ir as mlir_ir
 from numba_cuda_mlir._mlir.dialects import arith, llvm
 
+# The global compilation target.  Its typing/target contexts are built lazily on
+# the first compile and then marked "initialized", after which they are never
+# refreshed automatically.  Extension types (gpu_struct) registered *after* that
+# first compile are therefore invisible until we refresh the contexts by hand
+# (see ``refresh_contexts``).
+from numba_cuda_mlir.descriptor import mlir_target
+
 # --- High-level extension API (typing) -----------------------------------------
 from numba_cuda_mlir.extending import (
     lower_cast,
@@ -41,6 +48,7 @@ from numba_cuda_mlir.models import OpaqueModel, PrimitiveModel, register_model
 from numba_cuda_mlir.numba_cuda.core import errors
 from numba_cuda_mlir.numba_cuda.extending import as_numba_type, typeof_impl
 from numba_cuda_mlir.numba_cuda.np import numpy_support
+from numba_cuda_mlir.numba_cuda.typeconv import Conversion
 from numba_cuda_mlir.numba_cuda.typing.templates import (
     AbstractTemplate,
     AttributeTemplate,
@@ -60,6 +68,7 @@ __all__ = [
     "typing_registry",
     "as_numba_type",
     "typeof_impl",
+    "Conversion",
     "AbstractTemplate",
     "AttributeTemplate",
     "ConcreteTemplate",
@@ -74,7 +83,23 @@ __all__ = [
     "as_numpy_dtype",
     "struct_field_position",
     "compile_to_llvm_ir",
+    "mlir_target",
+    "refresh_contexts",
 ]
+
+
+def refresh_contexts():
+    """Re-read the extension registries into the global typing/target contexts.
+
+    numba-cuda-mlir builds its typing and target contexts lazily on the first
+    compile and then flags them initialized, never refreshing again.  A
+    ``gpu_struct`` type registered after that point (its typing template, data
+    model, attribute/getitem lowering, casts) would otherwise not be picked up,
+    surfacing as ``Untyped global name '<Struct>'`` the next time an operator
+    references it.  Call this once a new struct type has finished registering.
+    """
+    mlir_target.typing_context.refresh()
+    mlir_target.target_context.refresh()
 
 
 def from_numpy_dtype(dtype):
