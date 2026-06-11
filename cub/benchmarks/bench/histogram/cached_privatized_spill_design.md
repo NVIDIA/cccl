@@ -29,7 +29,7 @@ Every item in this doc is implemented in `cub/cub/device/dispatch/` (kernels +
 dispatch) and `c/parallel/src/histogram.cu` (NVRTC name strings):
 
 - **Kernel renames** (Naming scheme table): `DeviceHistogramDirectAtomicKernel →
-  DeviceHistogramDirectKernel`; `DeviceHistogramSmemPriv{,Dynamic,DeviceInit}Kernel
+  DeviceHistogramCacheSpillKernel`; `DeviceHistogramSmemPriv{,Dynamic,DeviceInit}Kernel
   → …SmemPrivatized{,Dynamic,DeviceInit}…`. `DeviceHistogramInitKernel` kept (an
   output-zeroing helper orthogonal to the combiner×commit taxonomy; renaming it
   would only churn the C-parallel NVRTC contract for no clarity gain).
