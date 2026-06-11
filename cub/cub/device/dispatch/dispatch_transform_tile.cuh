@@ -66,6 +66,8 @@ template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std:
     return ::cudaSuccess;
   }
 
+  // One CTA per tile. The cast to the unsigned grid x-dim can't truncate: num_blocks > 2^32-1
+  // would need num_items > TileSize * 2^32 (>= 2^40 elements), more than any device can hold.
   const ::cuda::std::int64_t num_blocks = ::cuda::ceil_div(num_items, ::cuda::std::int64_t{TileSize});
 
   cub::detail::transform::tile::transform_kernel<TileSize, Fn>
@@ -99,6 +101,8 @@ struct DeviceTransform
       return ::cudaSuccess;
     }
     constexpr int chosen                  = (TileSize > 0) ? TileSize : cub::detail::transform::tile::pick_tile_size<T>();
+    // One CTA per tile; see launch_impl -- num_blocks can't exceed the unsigned grid x-dim for
+    // any device-sized num_items.
     const ::cuda::std::int64_t num_blocks = ::cuda::ceil_div(num_items, ::cuda::std::int64_t{chosen});
     cub::detail::transform::tile::fill_kernel<chosen, T>
       <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, value);
