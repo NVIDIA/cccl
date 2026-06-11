@@ -67,7 +67,7 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
 
   if (mufu_heavy && min_elem < 4)
   {
-    const auto byte_cap = vector_bytes / min_elem; // 16 for I8, 8 for I16/half/bf16
+    constexpr auto byte_cap = vector_bytes / min_elem; // 16 for I8, 8 for I16/half/bf16
     if (static_cast<decltype(byte_cap)>(items) > byte_cap)
     {
       items = static_cast<int>(byte_cap);
