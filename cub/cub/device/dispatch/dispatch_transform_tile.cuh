@@ -165,8 +165,8 @@ dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_item
       return ::cuda::std::make_tuple(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(iters)...);
     },
     inputs);
-  using tile_op_t = typename cub::transform::
-    tile_eligible<TransformOp, cub::detail::it_value_t<OutIter>, sizeof...(InIters)>::tile_op_type;
+  using out_value_t = cub::detail::it_value_t<OutIter>;
+  using tile_op_t = typename cub::transform::tile_eligible<TransformOp, out_value_t, sizeof...(InIters)>::tile_op_type;
   static_assert(::cuda::std::is_empty_v<tile_op_t>,
                 "tile_op_type must be stateless (the tile kernel default-constructs it)");
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
