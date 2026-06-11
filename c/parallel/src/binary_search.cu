@@ -396,6 +396,28 @@ CUresult cccl_device_binary_search_build(
     nullptr);
 }
 
+CUresult cccl_device_binary_search_link_ltoir(
+  cccl_device_binary_search_build_result_t* build,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs,
+  const char* /* kernel_lowered_name */,
+  size_t /* values_value_size */,
+  size_t /* output_value_size */,
+  size_t op_state_size,
+  size_t op_state_alignment,
+  int /* cc_major */,
+  int /* cc_minor */)
+{
+  if (build == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  build->op_state_size      = op_state_size;
+  build->op_state_alignment = op_state_alignment;
+  return cccl_device_transform_link_ltoir(&build->transform, input_blobs, input_sizes, num_inputs);
+}
+
 CUresult cccl_device_binary_search_cleanup(cccl_device_binary_search_build_result_t* build_ptr)
 try
 {
