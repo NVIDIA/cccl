@@ -813,7 +813,8 @@ CUresult cccl_device_transform_link_ltoir(
   size_t num_inputs)
 try
 {
-  if (build_ptr == nullptr)
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_LTOIR)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -821,11 +822,8 @@ try
   const int cc_minor = build_ptr->cc % 10;
   std::vector<const void*> all_blobs;
   std::vector<size_t> all_sizes;
-  if (build_ptr->payload != nullptr && build_ptr->payload_size > 0 && build_ptr->payload_kind == CCCL_PAYLOAD_LTOIR)
-  {
-    all_blobs.push_back(build_ptr->payload);
-    all_sizes.push_back(build_ptr->payload_size);
-  }
+  all_blobs.push_back(build_ptr->payload);
+  all_sizes.push_back(build_ptr->payload_size);
   if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
   {
     return CUDA_ERROR_INVALID_VALUE;
