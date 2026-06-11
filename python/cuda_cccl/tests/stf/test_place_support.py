@@ -257,7 +257,9 @@ def test_device_array_from_host_rejects_non_1d_input():
     import numpy as np
 
     with pytest.raises(ValueError, match="1-D"):
-        stf.DeviceArray.from_host(np.zeros((2, 2), dtype=np.float32), stf.data_place.host())
+        stf.DeviceArray.from_host(
+            np.zeros((2, 2), dtype=np.float32), stf.data_place.host()
+        )
 
 
 def test_device_array_roundtrip():
