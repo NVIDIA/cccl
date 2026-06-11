@@ -8,6 +8,11 @@ on:
         required: false
         default: ""
         type: string
+      override_cccl_version:
+        description: "If set, override the version used by rapids-cmake to patch CCCL."
+        required: false
+        default: ""
+        type: string
       enable_slack_alerts:
         description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
         required: false
@@ -17,6 +22,11 @@ on:
     inputs:
       override_cccl_tag:
         description: "If set, override the tag used when pulling the CCCL repository into PyTorch."
+        required: false
+        default: ""
+        type: string
+      override_cccl_version:
+        description: "If set, override the version used by rapids-cmake to patch CCCL."
         required: false
         default: ""
         type: string
@@ -51,11 +61,16 @@ jobs:
         env:
           CCCL_TAG: ${{ inputs.override_cccl_tag }}
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
+          # Only retry once if a build server shuts down while compiling,
+          # otherwise fallback to compiling locally
+          SCCACHE_DIST_MAX_RETRIES: "1"
         run: |
+          set -eo pipefail
+
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
           set -eo pipefail
-
+          ulimit -n $(ulimit -Hn)
           ~/cccl/ci/pytorch/build_pytorch.sh
           sccache --show-adv-stats
           EOF
@@ -80,16 +95,33 @@ jobs:
           chmod 0600 .aws/credentials
           chmod 0664 .aws/config
 
+          SCCACHE_DIST_URL="https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com"
+
+          SCCACHE_DIST_AUTH_TOKEN="$(
+            curl -fsSL -H "Authorization: Bearer $(
+                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com"  |
+                jq -r '.value'
+              )" https://token.rapids.nvidia.com/gh/token/exchange |
+            jq -r '.token'
+          )"
+
+          echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
+
           .devcontainer/launch.sh \
             --docker \
             --cuda 13.3 \
             --host gcc14 \
             --cuda-ext \
+            --env "AWS_ROLE_ARN=" \
+            --env "PARALLEL_LEVEL=$(ulimit -Hn)" \
             --env "CCCL_TAG=${CCCL_TAG}" \
-            --env VAULT_HOST= \
+            --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL" \
+            --env "SCCACHE_DIST_AUTH_TOKEN=$SCCACHE_DIST_AUTH_TOKEN" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
 
