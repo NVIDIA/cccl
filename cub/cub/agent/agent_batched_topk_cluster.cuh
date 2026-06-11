@@ -485,6 +485,24 @@ struct agent_batched_topk_cluster
     });
   }
 
+  // Like `for_each_chunk_key`, but also hands `f` each key's segment-local index `base_off + local`, where `base_off`
+  // is the segment-local offset of the chunk's first element. The pair path uses that index to fetch the key's value
+  // payload from gmem, so overflow keys can be reused from the streaming SMEM pipeline instead of re-read from gmem.
+  template <typename F>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  for_each_chunk_key_indexed(::cuda::std::span<key_t> chunk_keys, offset_t base_off, F&& f) const
+  {
+    const int chunk_count = span_size(chunk_keys);
+    const int iterations  = ::cuda::ceil_div(chunk_count, threads_per_block);
+    detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+      const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
+      if (local < chunk_count)
+      {
+        f(::cuda::std::data(chunk_keys)[local], base_off + static_cast<offset_t>(local));
+      }
+    });
+  }
+
   // A bulk in the block_tile as a 32-bit shared address + length. A spilled 32-bit shared address (rebuilt with
   // `__cvta_shared_to_generic`) keeps the key reads `LDS`; a spilled 64-bit generic pointer would demote them to `LD`.
   struct shared_bulk
@@ -840,13 +858,15 @@ private:
       return agent.bulk_span({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(dst)), chunk.count});
     }
 
-    // Apply `f` to every overflow key once, in the current ping-pong direction. `mid()` is invoked exactly once,
-    // after the prefetch loads for this pass's first reload wave (the first `p_eff` visits) have been issued but before
-    // they are waited on, so the caller's resident-chunk work overlaps those in-flight bulk copies. The histogram is
-    // order-independent, so folding resident keys between the streamer's load issue and its wait is safe. `mid` must be
-    // uniform across the block and contain no unmatched block barrier (`for_each_chunk_key` has none).
-    template <typename F, typename Mid>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
+    // Shared driver for one overflow pass. `block_apply(stage, o)` folds the chunk for visit `o` currently resident in
+    // the streaming slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from
+    // gmem (generic fallback). `mid()` is invoked exactly once, after the prefetch loads for this pass's first reload
+    // wave (the first `p_eff` visits) have been issued but before they are waited on, so the caller's resident-chunk
+    // work overlaps those in-flight bulk copies. The two public entry points (`process_pass` / `process_pass_indexed`)
+    // only differ in whether the applied callable receives the key alone or the key plus its segment-local index, so
+    // they share this loop verbatim. `mid` must be uniform across the block and contain no unmatched block barrier.
+    template <typename BlockApply, typename GenericApply, typename Mid>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void run_pass(BlockApply&& block_apply, GenericApply&& generic_apply, Mid&& mid)
     {
       if (overflow_chunks == 0)
       {
@@ -876,9 +896,9 @@ private:
           primed = true;
         }
 
-        // Consume overflow visit `i`: wait for its slot, fold its keys via `f`, then prefetch the chunk `p_eff` visits
-        // ahead into the slot just freed (a barrier guards the slot before the async copy can overwrite the data the
-        // block was just reading).
+        // Consume overflow visit `i`: wait for its slot, fold its keys via `block_apply`, then prefetch the chunk
+        // `p_eff` visits ahead into the slot just freed (a barrier guards the slot before the async copy can overwrite
+        // the data the block was just reading).
         const auto consume = [&](offset_t i) {
           const offset_t o = forward ? i : (m - 1 - i);
           const int stage  = static_cast<int>(o % pe);
@@ -887,7 +907,7 @@ private:
             agent.wait_stage(stage);
             inflight_mask &= ~(::cuda::std::uint32_t{1} << stage);
           }
-          agent.for_each_chunk_key(stage_span(stage, o), f);
+          block_apply(stage, o);
 
           const offset_t ni = i + pe;
           if (ni < m)
@@ -927,19 +947,32 @@ private:
           const offset_t o         = forward ? i : (m - 1 - i);
           const offset_t chunk_idx = chunk_index_of(o);
           const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
-          const int iterations     = ::cuda::ceil_div(chunk.count, threads_per_block);
+          generic_apply(chunk);
+        }
+        forward = !forward;
+      }
+    }
+
+    // Apply `f(key)` to every overflow key once, in the current ping-pong direction. See `run_pass` for the overlap
+    // semantics of `mid`.
+    template <typename F, typename Mid>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
+    {
+      run_pass(
+        [&](int stage, offset_t o) {
+          agent.for_each_chunk_key(stage_span(stage, o), f);
+        },
+        [&](const auto& chunk) {
+          const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
           detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
             const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
             if (local < chunk.count)
             {
-              const key_t key =
-                block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))];
-              f(key);
+              f(block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))]);
             }
           });
-        }
-        forward = !forward;
-      }
+        },
+        static_cast<Mid&&>(mid));
     }
 
     // Overload with no interleaved work, for the fused first pass where the resident keys are still being streamed in
@@ -948,6 +981,38 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f)
     {
       process_pass(static_cast<F&&>(f), [] {});
+    }
+
+    // Like `process_pass`, but applies `f(key, seg_idx)` where `seg_idx` is the key's segment-local index. The pair
+    // final filter needs that index to fetch each selected key's value payload from gmem, while still reusing the
+    // overflow keys from the streaming SMEM pipeline (block-load path) instead of re-reading them from gmem.
+    template <typename F, typename Mid>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_indexed(F&& f, Mid&& mid)
+    {
+      run_pass(
+        [&](int stage, offset_t o) {
+          const offset_t base_off = agent.get_chunk(chunk_index_of(o), segment_size, head_items).offset;
+          agent.for_each_chunk_key_indexed(stage_span(stage, o), base_off, f);
+        },
+        [&](const auto& chunk) {
+          const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
+          detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+            const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
+            if (local < chunk.count)
+            {
+              const offset_t seg_idx = chunk.offset + static_cast<offset_t>(local);
+              f(block_keys_in[static_cast<segment_size_val_t>(seg_idx)], seg_idx);
+            }
+          });
+        },
+        static_cast<Mid&&>(mid));
+    }
+
+    // Overload with no interleaved work (resident keys are processed before the streamer in the pair final filter).
+    template <typename F>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_indexed(F&& f)
+    {
+      process_pass_indexed(static_cast<F&&>(f), [] {});
     }
   };
 
@@ -1745,9 +1810,9 @@ private:
     {
       // Pair (key + value) path. The key write order and `out_cnt`/`out_back_cnt` atomics are unchanged; for each
       // written key we additionally load its value payload from gmem at the key's segment-local index `seg_idx` and
-      // store it at the same output slot. Resident keys are still reused from SMEM (only the value is fetched from
-      // gmem); overflow keys *and* values are re-read straight from gmem in chunk order, so no value streaming is
-      // needed for this first cut.
+      // store it at the same output slot. Keys are reused exactly as in the keys-only path - resident keys from SMEM,
+      // overflow keys from the streaming SMEM pipeline via `process_pass_indexed` (the generic fallback re-reads them
+      // from gmem); only the values are fetched from gmem (no value streaming).
       auto write_selected_idx = [&](const key_t& key, offset_t seg_idx) {
         const auto res = identify_op(key);
         if (res == detail::topk::candidate_class::selected)
@@ -1818,18 +1883,10 @@ private:
         }
       }
 
-      // Overflow chunks: re-read keys and values straight from gmem in chunk order.
-      for (offset_t o = 0; o < overflow_count; ++o)
-      {
-        const auto chunk        = get_chunk(part.global_index(overflow_base + o), segment_size_u32, head_items);
-        const offset_t base_off = chunk.offset;
-        write_run(
-          [&](int local) {
-            return block_keys_in[static_cast<segment_size_val_t>(base_off + static_cast<offset_t>(local))];
-          },
-          base_off,
-          chunk.count);
-      }
+      // Overflow chunks: reuse the keys from the streaming SMEM pipeline (block-load path; only the generic fallback
+      // re-reads them from gmem), and fetch each selected key's value at its segment-local index `seg_idx`. `write_run`
+      // already wrote out resident chunks above, so no interleaved `mid` work is left to overlap here.
+      streamer.process_pass_indexed(write_selected_idx);
     }
 #  endif // CUB_ENABLE_CLUSTER_TOPK_DETERMINISM
 
