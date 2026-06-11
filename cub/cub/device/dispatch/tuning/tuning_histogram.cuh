@@ -124,7 +124,51 @@ struct cache_tuning
   // falls back to `smem_fallback_bytes`.
   static constexpr int smem_fallback_bytes = 96 * 1024;
   static constexpr int smem_reserve_bytes  = 4096;
+
+  // Per-CTA dynamic-SMEM BYTE budget for the whole-histogram-on-chip privatized
+  // kernel (the "256 < bins <= cap" dyn-SMEM tier). This is the hardware-shaped
+  // knob: the maximum bin count for which the selector keeps the histogram on chip
+  // is DERIVED from this budget and the per-bin counter width at runtime
+  // (`max_dynamic_smem_bins(...)` below), not frozen as a bin count. A bin count is
+  // the wrong unit for a hardware property -- it silently assumes a 4-byte counter
+  // and one active channel. The byte budget is the real per-arch resource; bins
+  // follow from it once the counter width and channel count are known.
+  //
+  // Default 232448 B == the B200/SM100 cudaDevAttrMaxSharedMemoryPerBlockOptin
+  // (227 KiB). At launch the dispatch clamps this to the device's actual opt-in max
+  // (so a smaller-SMEM arch is respected) and subtracts `smem_reserve_bytes`. For a
+  // 4-byte counter, single channel, that yields ~57344 on-chip bins on B200 -- so
+  // 32768 (and below) stay on chip, while 65536 (256 KiB > budget) correctly routes
+  // to the high-bin path. Revisit per architecture alongside the cache budget above.
+  static constexpr int max_dynamic_smem_bytes = 232448;
 };
+
+// Maximum number of bins the whole-histogram-on-chip privatized kernel can hold per
+// channel for a given per-bin counter width, derived from `cache_tuning`'s byte
+// budget. This is the runtime routing cap the selector uses to decide whether a
+// histogram stays on chip; it replaces the old frozen `max_dynamic_smem_bins`
+// integer (which baked in a 4-byte counter and one channel).
+//
+// `device_optin_smem_bytes` is the device's queried cudaDevAttrMaxSharedMemoryPerBlockOptin
+// (0 if the query failed -> fall back to the tuned budget). The on-chip budget is the
+// smaller of the tuned byte budget and what the hardware actually offers, minus the
+// static/driver reserve; the bin cap is that budget divided by the per-CTA footprint
+// of one bin across all active channels (counter_bytes * num_active_channels).
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int
+max_dynamic_smem_bins(int counter_bytes, int num_active_channels, int device_optin_smem_bytes = 0)
+{
+  // Copy the static constexpr members into locals (by value) before doing any
+  // arithmetic: passing a `static constexpr` member by reference (e.g. to
+  // ::cuda::std::min) ODR-uses it, which requires an out-of-line definition and
+  // otherwise fails to link / compile in device code. Plain integer ops are by-value.
+  const int tuned_bytes   = cache_tuning::max_dynamic_smem_bytes;
+  const int reserve_bytes = cache_tuning::smem_reserve_bytes;
+  const int hw_bytes      = device_optin_smem_bytes > 0 ? device_optin_smem_bytes : tuned_bytes;
+  const int capped_bytes  = hw_bytes < tuned_bytes ? hw_bytes : tuned_bytes;
+  const int budget        = capped_bytes - reserve_bytes;
+  const int per_bin       = counter_bytes * num_active_channels;
+  return (budget > 0 && per_bin > 0) ? budget / per_bin : 0;
+}
 
 // TODO(bgruber): drop in CCCL 4.0
 enum class primitive_sample
