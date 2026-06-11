@@ -305,9 +305,8 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
   std::string histogram_kernel_name =
     radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_cpp, offset_t);
   std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t, offset_t);
-  std::string init_bins_and_counters_kernel_name =
-    radix_sort::get_init_kernel_name(chained_policy_t, "int", offset_t);
-  std::string init_lookback_kernel_name = radix_sort::get_init_kernel_name(chained_policy_t, "int", "int");
+  std::string init_bins_and_counters_kernel_name = radix_sort::get_init_kernel_name(chained_policy_t, "int", offset_t);
+  std::string init_lookback_kernel_name          = radix_sort::get_init_kernel_name(chained_policy_t, "int", "int");
   std::string onesweep_kernel_name =
     radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
   std::string single_tile_kernel_lowered_name;

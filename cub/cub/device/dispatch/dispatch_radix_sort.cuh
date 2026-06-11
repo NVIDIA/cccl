@@ -79,11 +79,9 @@ struct DeviceRadixSortKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<PolicySelector, OffsetT>);
 
-  CUB_DEFINE_KERNEL_GETTER(RadixSortInitBinsAndCountersKernel,
-                           DeviceRadixSortInitKernel<PolicySelector, int, OffsetT>);
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitBinsAndCountersKernel, DeviceRadixSortInitKernel<PolicySelector, int, OffsetT>);
 
-  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel,
-                           DeviceRadixSortInitKernel<PolicySelector, int, int>);
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitKernel<PolicySelector, int, int>);
 
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortOnesweepKernel,
