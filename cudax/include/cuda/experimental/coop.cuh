@@ -22,5 +22,6 @@
 #endif // no system header
 
 #include <cuda/experimental/__coop/reduce.cuh>
+#include <cuda/experimental/__coop/shuffle.cuh>
 
 #endif // _CUDA_EXPERIMENTAL_COOP
