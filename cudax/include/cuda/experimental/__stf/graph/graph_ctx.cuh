@@ -610,7 +610,7 @@ private:
 
     ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
 
-    cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch));
+    cuda_try<cudaGraphInstantiateWithFlags>(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
     return res;
   }
