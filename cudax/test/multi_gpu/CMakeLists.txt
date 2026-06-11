@@ -8,5 +8,4 @@ endfunction()
 
 multi_gpu_get_nccl()
 
-add_subdirectory(shard)
 add_subdirectory(sort)

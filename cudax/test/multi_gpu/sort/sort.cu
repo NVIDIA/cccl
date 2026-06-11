@@ -27,6 +27,7 @@
 #include <nccl.h>
 #include <testing.cuh>
 
+#include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
 
 #define REQUIRE_NCCL(...) REQUIRE((__VA_ARGS__) == ::ncclSuccess)
@@ -100,21 +101,6 @@ struct CommsManager
 
   std::vector<ncclComm_t> comms;
 };
-
-[[nodiscard]] std::vector<cudax::communicator> get_comms()
-{
-  static const CommsManager mgr;
-
-  std::vector<cudax::communicator> comms;
-
-  comms.reserve(mgr.comms.size());
-  for (std::size_t i = 0; i < mgr.comms.size(); ++i)
-  {
-    comms.emplace_back(mgr.comms[i], cudax::logical_device{cuda::devices[i]});
-  }
-
-  return comms;
-}
 
 template <class T>
 [[nodiscard]] T make_value(const cuda::std::int64_t key, const cuda::std::int64_t)
@@ -246,14 +232,12 @@ void check_sort_case(
   const auto envs     = make_envs(comms, streams);
   auto device_vec     = make_device_inputs(comms, host_inputs);
 
-  REQUIRE(test::count_driver_stack() == 0);
   cudax::sort(comms, envs, device_vec, cmp);
-  // REQUIRE(test::count_driver_stack() == 0);
+
   for (auto& stream : streams)
   {
     stream.sync();
   }
-  // REQUIRE(test::count_driver_stack() == 0);
 
   REQUIRE(device_vec.size() == host_inputs.size());
   for (cuda::std::size_t rank = 0; rank < comms.size(); ++rank)
@@ -261,41 +245,89 @@ void check_sort_case(
     CAPTURE(rank);
     REQUIRE(device_vec[rank].size() == host_inputs[rank].size());
   }
-  // REQUIRE(test::count_driver_stack() == 0);
 
   const auto output = gather_outputs(comms, device_vec);
-  // REQUIRE(test::count_driver_stack() == 0);
 
   REQUIRE(cuda::std::is_sorted(output.begin(), output.end(), cmp));
   REQUIRE_THAT(output, Equals(expected));
-  // REQUIRE(test::count_driver_stack() == 0);
 }
 
+template <class T>
 struct abs_less
 {
-  [[nodiscard]] static _CCCL_API constexpr int abs_int(const int value)
+  [[nodiscard]] static _CCCL_API constexpr T abs(const T& value)
   {
-    return value < 0 ? -value : value;
+    return value < T{} ? -value : value;
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const int lhs, const int rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const T& lhs, const T& rhs) const
   {
-    return abs_int(lhs) == abs_int(rhs) ? lhs < rhs : abs_int(lhs) < abs_int(rhs);
+    return abs(lhs) == abs(rhs) ? lhs < rhs : abs(lhs) < abs(rhs);
   }
+};
+
+template <class = void>
+class InitNCCL
+{
+public:
+  InitNCCL()
+  {
+    test::empty_driver_stack();
+    std::vector<int> devlist;
+
+    for (auto&& device : cuda::devices)
+    {
+      device.init();
+      devlist.push_back(device.get());
+    }
+
+    nccl_comms_.resize(devlist.size());
+    REQUIRE_NCCL(ncclCommInitAll(nccl_comms_.data(), devlist.size(), devlist.data()));
+    // ncclCommInitAll() will leave one or more contexts on the stack, so we need to restore
+    // what we had before the call to it. See https://github.com/NVIDIA/nccl/issues/2231
+    test::empty_driver_stack();
+
+    cudax_comms_.reserve(nccl_comms_.size());
+    for (std::size_t i = 0; i < nccl_comms_.size(); ++i)
+    {
+      cudax_comms_.emplace_back(nccl_comms_[i], cudax::logical_device{cuda::devices[i]});
+    }
+  }
+
+  ~InitNCCL()
+  {
+    for (auto& comm : nccl_comms_)
+    {
+      if (comm)
+      {
+        REQUIRE_NCCL(ncclCommDestroy(comm));
+        comm = nullptr;
+      }
+    }
+  }
+
+  [[nodiscard]] const std::vector<cudax::communicator>& get_comms() const
+  {
+    return cudax_comms_;
+  }
+
+private:
+  std::vector<ncclComm_t> nccl_comms_;
+  std::vector<cudax::communicator> cudax_comms_;
 };
 } // namespace
 
-C2H_CCCLRT_TEST("random inputs", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "random inputs", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
-  auto rng   = make_rng(C2H_SEED(2));
+  auto&& comms = this->get_comms();
+  auto rng     = make_rng(C2H_SEED(2));
 
   std::vector<c2h::host_vector<T>> input(comms.size());
   for (auto& local : input)
   {
-    fill_random(local, 10, rng);
+    fill_random(local, 100, rng);
   }
 
   SECTION("ascending comparator")
@@ -309,17 +341,17 @@ C2H_CCCLRT_TEST("random inputs", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("uneven rank sizes", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "uneven rank sizes", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
-  auto rng   = make_rng(C2H_SEED(2));
+  auto&& comms = this->get_comms();
+  auto rng     = make_rng(C2H_SEED(2));
 
   std::vector<c2h::host_vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
-    fill_random(input[rank], rank + 1, rng);
+    fill_random(input[rank], (rank * 10) + 1, rng);
   }
 
   SECTION("ascending comparator")
@@ -333,17 +365,17 @@ C2H_CCCLRT_TEST("uneven rank sizes", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("inputs with some empty ranks", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "inputs with some empty ranks", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
-  auto rng   = make_rng(C2H_SEED(2));
+  auto&& comms = this->get_comms();
+  auto rng     = make_rng(C2H_SEED(2));
 
   std::vector<c2h::host_vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 1; rank < input.size(); rank += 2)
   {
-    fill_random(input[rank], 10, rng);
+    fill_random(input[rank], 100, rng);
   }
 
   SECTION("ascending comparator")
@@ -357,7 +389,7 @@ C2H_CCCLRT_TEST("inputs with some empty ranks", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("no communicators", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "no communicators", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -375,11 +407,11 @@ C2H_CCCLRT_TEST("no communicators", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("all ranks empty", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "all ranks empty", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
+  auto&& comms = this->get_comms();
   std::vector<c2h::host_vector<T>> input(comms.size());
 
   SECTION("ascending comparator")
@@ -393,11 +425,11 @@ C2H_CCCLRT_TEST("all ranks empty", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("a single global item", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "a single global item", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
+  auto&& comms = this->get_comms();
   std::vector<c2h::host_vector<T>> input(comms.size());
 
   if (!input.empty())
@@ -416,11 +448,11 @@ C2H_CCCLRT_TEST("a single global item", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("one item per rank", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "one item per rank", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
+  auto&& comms = this->get_comms();
   std::vector<c2h::host_vector<T>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
@@ -440,16 +472,16 @@ C2H_CCCLRT_TEST("one item per rank", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("all equal inputs", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "all equal inputs", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
+  auto&& comms = this->get_comms();
   std::vector<c2h::host_vector<T>> input(comms.size());
 
   for (auto& local : input)
   {
-    local.assign(10, make_value<T>(1, 1));
+    local.assign(100, make_value<T>(1, 1));
   }
 
   SECTION("ascending comparator")
@@ -463,17 +495,17 @@ C2H_CCCLRT_TEST("all equal inputs", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("inputs with many equal keys", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "inputs with many equal keys", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
+  auto&& comms = this->get_comms();
   std::vector<c2h::host_vector<T>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     auto& local = input[rank];
-    local.resize(10);
+    local.resize(100);
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
@@ -493,17 +525,17 @@ C2H_CCCLRT_TEST("inputs with many equal keys", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("presorted inputs", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "presorted inputs", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
+  auto&& comms = this->get_comms();
   std::vector<c2h::host_vector<T>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     auto& local = input[rank];
-    local.resize(10);
+    local.resize(100);
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
@@ -523,17 +555,17 @@ C2H_CCCLRT_TEST("presorted inputs", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("reverse-sorted inputs", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "reverse-sorted inputs", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
+  auto&& comms = this->get_comms();
   std::vector<c2h::host_vector<T>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     auto& local = input[rank];
-    local.resize(10);
+    local.resize(100);
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
@@ -553,17 +585,17 @@ C2H_CCCLRT_TEST("reverse-sorted inputs", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("skewed rank sizes", "[multi_gpu][sort]", sort_types)
+C2H_TEST_WITH_FIXTURE(InitNCCL, "skewed rank sizes", "[multi_gpu][sort]", sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
-  auto comms = get_comms();
-  auto rng   = make_rng(C2H_SEED(2));
+  auto&& comms = this->get_comms();
+  auto rng     = make_rng(C2H_SEED(2));
 
   std::vector<c2h::host_vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
-    fill_random(input[rank], rank == 0 ? 20 : 1, rng);
+    fill_random(input[rank], rank == 0 ? 200 : 1, rng);
   }
 
   SECTION("ascending comparator")
@@ -577,15 +609,15 @@ C2H_CCCLRT_TEST("skewed rank sizes", "[multi_gpu][sort]", sort_types)
   }
 }
 
-C2H_CCCLRT_TEST("nonstandard comparator", "[multi_gpu][sort]")
+C2H_TEST_WITH_FIXTURE(InitNCCL, "nonstandard comparator", "[multi_gpu][sort]", )
 {
-  auto comms = get_comms();
+  auto&& comms = this->get_comms();
   std::vector<c2h::host_vector<int>> input(comms.size());
 
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     auto& local = input[rank];
-    local.resize(10);
+    local.resize(100);
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {

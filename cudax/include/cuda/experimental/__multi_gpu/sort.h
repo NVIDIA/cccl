@@ -946,9 +946,10 @@ struct _Sorter
            ::cuda::std::ranges::views::zip(__comms, __streams, __local_send_counts_bytes))
       {
         auto& __recv_counts_bytes = __local_recv_counts_bytes.emplace_back(__send_counts_bytes.__make_empty_like());
-        auto* const __ptr         = __send_counts_bytes.__get().data();
+        auto* const __send_ptr    = __send_counts_bytes.__get().data();
+        auto* const __recv_ptr    = __recv_counts_bytes.__get().data();
 
-        __nccl::__ncclAlltoAll(__ptr, __ptr, sizeof(*__ptr), __nccl::__ncclChar, __comm.comm(), __stream);
+        __nccl::__ncclAlltoAll(__send_ptr, __recv_ptr, sizeof(*__send_ptr), __nccl::__ncclChar, __comm.comm(), __stream);
       }
     }
 
