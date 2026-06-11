@@ -356,7 +356,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per
   // Copy input for verification
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
-  // Run the top-k algorithm with a per-segment k passed as an immediate sequence
+  // Run the top-k algorithm with a per-segment k passed as an deferred sequence
   batched_topk_keys<direction>(
     d_keys_in,
     d_keys_out,
@@ -455,7 +455,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
   // Copy input for verification
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
-  // Run the top-k algorithm with a per-segment k passed as an immediate sequence
+  // Run the top-k algorithm with a per-segment k passed as an deferred sequence
   batched_topk_keys<direction>(
     d_keys_in,
     d_keys_out,
