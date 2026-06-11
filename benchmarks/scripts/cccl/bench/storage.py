@@ -44,7 +44,7 @@ def get_postgres_config():
 
 
 def get_bench_table_name(subbench, algname):
-    return "{}.{}".format(algname, subbench)
+    return f"{algname}.{subbench}"
 
 
 def blob_to_samples(blob):

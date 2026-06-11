@@ -58,7 +58,7 @@ class VariantPoint:
 
 class BasePoint(VariantPoint):
     def __init__(self):
-        VariantPoint.__init__(self, [])
+        super().__init__([])
 
 
 def parse_ranges(columns):
@@ -84,23 +84,23 @@ def parse_meta():
     cccl_revision = "0.0-0-0000"
     with open("cccl_meta_bench.csv", "r") as f:
         lines = f.readlines()
-        for line in lines:
-            if "," in line:
-                columns = line.split(",")
-            else:
-                columns = [" ".join(line.split())]
+    for line in lines:
+        if "," in line:
+            columns = line.split(",")
+        else:
+            columns = [" ".join(line.split())]
 
-            name = columns[0]
+        name = columns[0]
 
-            if name == "ctk_version":
-                ctk_version = columns[1].rstrip()
-            elif name == "cccl_revision":
-                cccl_revision = columns[1].rstrip()
+        if name == "ctk_version":
+            ctk_version = columns[1].rstrip()
+        elif name == "cccl_revision":
+            cccl_revision = columns[1].rstrip()
+        else:
+            if len(columns) > 1:
+                benchmarks[name] = parse_ranges(columns[1:])
             else:
-                if len(columns) > 1:
-                    benchmarks[name] = parse_ranges(columns[1:])
-                else:
-                    benchmarks[name] = []
+                benchmarks[name] = []
 
     return ctk_version, cccl_revision, benchmarks
 
