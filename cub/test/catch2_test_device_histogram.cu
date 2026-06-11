@@ -30,7 +30,15 @@
 #include <c2h/extended_types.h>
 #include <c2h/vector.h>
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
+// Device-side (CDP) launch (lid_1) is intentionally omitted: the high-bin histogram
+// path requires either a cooperative launch (cudaLaunchCooperativeKernel) or a raised
+// dynamic-SMEM cap (cudaFuncSetAttribute), both of which are host-only runtime APIs
+// that cannot be issued from a device-side launch. The dispatch therefore returns
+// cudaErrorNotSupported for those tiers under CDP, which the shared launch helper
+// (catch2_test_launch_helper.h) asserts against. Only host launch (lid_0) and graph
+// capture (lid_2) are exercised. See task to add a non-cooperative 3-launch gather
+// fallback if device-side high-bin histogram is ever required.
+// %PARAM% TEST_LAUNCH lid 0:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
