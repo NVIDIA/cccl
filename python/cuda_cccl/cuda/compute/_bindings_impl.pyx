@@ -2421,10 +2421,7 @@ cdef class DeviceBinarySearchBuildResult:
             )
 
     def _get_cubin(self):
-        return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.transform.payload,
-            self.build_data.transform.payload_size
-        )
+        return _binary_search_cubin_bytes(&self.build_data)
 
 
 # ----------------------------------
