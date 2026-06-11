@@ -840,12 +840,17 @@ private:
       return agent.bulk_span({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(dst)), chunk.count});
     }
 
-    // Apply `f` to every overflow key once, in the current ping-pong direction.
-    template <typename F>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f)
+    // Apply `f` to every overflow key once, in the current ping-pong direction. `mid()` is invoked exactly once,
+    // after the prefetch loads for this pass's first reload wave (the first `p_eff` visits) have been issued but before
+    // they are waited on, so the caller's resident-chunk work overlaps those in-flight bulk copies. The histogram is
+    // order-independent, so folding resident keys between the streamer's load issue and its wait is safe. `mid` must be
+    // uniform across the block and contain no unmatched block barrier (`for_each_chunk_key` has none).
+    template <typename F, typename Mid>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
     {
       if (overflow_chunks == 0)
       {
+        mid();
         return;
       }
 
@@ -871,8 +876,10 @@ private:
           primed = true;
         }
 
-        for (offset_t i = 0; i < m; ++i)
-        {
+        // Consume overflow visit `i`: wait for its slot, fold its keys via `f`, then prefetch the chunk `p_eff` visits
+        // ahead into the slot just freed (a barrier guards the slot before the async copy can overwrite the data the
+        // block was just reading).
+        const auto consume = [&](offset_t i) {
           const offset_t o = forward ? i : (m - 1 - i);
           const int stage  = static_cast<int>(o % pe);
           if (inflight_mask & (::cuda::std::uint32_t{1} << stage))
@@ -882,9 +889,6 @@ private:
           }
           agent.for_each_chunk_key(stage_span(stage, o), f);
 
-          // Prefetch the chunk `p_eff` visits ahead in this direction. It maps
-          // to the slot we just finished, so a barrier is required before the
-          // async copy can overwrite the data the block was just reading.
           const offset_t ni = i + pe;
           if (ni < m)
           {
@@ -892,13 +896,32 @@ private:
             __syncthreads();
             issue_load(stage, no);
           }
+        };
+
+        // Phase 1: consume the first `p_eff` visits (the chunks reused from the previous pass, already resident in the
+        // streaming slots), which issues the prefetch loads for this pass's reload wave into the freed slots.
+        const offset_t split = (::cuda::std::min) (pe, m);
+        for (offset_t i = 0; i < split; ++i)
+        {
+          consume(i);
+        }
+
+        // The reload wave is now in flight; run the caller's resident-chunk work to hide its latency before waiting.
+        mid();
+
+        // Phase 2: consume the remaining visits (their loads were issued in phase 1 and overlapped `mid`).
+        for (offset_t i = split; i < m; ++i)
+        {
+          consume(i);
         }
         forward = !forward;
       }
       else
       {
-        // Generic fallback: overflow keys are read straight from gmem each pass
-        // (no SMEM reuse), but the walk still snakes for L2 locality.
+        // Generic fallback: no async SMEM pipeline, so resident work cannot hide load latency here. Fold the resident
+        // chunks first (preserving the prior ordering), then read the overflow keys straight from gmem each pass (no
+        // SMEM reuse), with the walk still snaking for L2 locality.
+        mid();
         for (offset_t i = 0; i < m; ++i)
         {
           const offset_t o         = forward ? i : (m - 1 - i);
@@ -917,6 +940,14 @@ private:
         }
         forward = !forward;
       }
+    }
+
+    // Overload with no interleaved work, for the fused first pass where the resident keys are still being streamed in
+    // by the BlockLoadToShared pipeline (rather than already resident in SMEM).
+    template <typename F>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f)
+    {
+      process_pass(static_cast<F&&>(f), [] {});
     }
   };
 
@@ -1256,27 +1287,33 @@ private:
           }
         };
 
-        if constexpr (use_block_load_to_shared)
-        {
-          // Rebuild the resident pointer from its 32-bit shared address so the reads stay `LDS` even if the value
-          // spilled across the pass loop (see `resident_smem32`).
-          key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
-          for_each_chunk_key({rk, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, add_hist);
-        }
-        else
-        {
-          for (offset_t p = 0; p < my_resident_chunks; ++p)
+        // Resident-chunk histogram, deferred into the streamer so it overlaps the streamer's in-flight first reload
+        // wave (see `process_pass`). The histogram is order-independent, so folding resident keys between the
+        // streamer's load issue and its wait does not change the result.
+        const auto fold_resident_hist = [&] {
+          if constexpr (use_block_load_to_shared)
           {
-            const offset_t chunk_idx = part.global_index(p);
-            const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
-            key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
-            for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, add_hist);
+            // Rebuild the resident pointer from its 32-bit shared address so the reads stay `LDS` even if the value
+            // spilled across the pass loop (see `resident_smem32`).
+            key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+            for_each_chunk_key({rk, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, add_hist);
           }
-        }
+          else
+          {
+            for (offset_t p = 0; p < my_resident_chunks; ++p)
+            {
+              const offset_t chunk_idx = part.global_index(p);
+              const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+              key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
+              for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, add_hist);
+            }
+          }
+        };
 
-        // Re-stream the overflow chunks into this pass's histogram. Ping-pongs direction and reuses the boundary
-        // chunks left resident by the previous pass.
-        streamer.process_pass(add_hist);
+        // Re-stream the overflow chunks into this pass's histogram, overlapping the resident-chunk histogram with the
+        // first wave of reload bulk copies. Ping-pongs direction and reuses the boundary chunks left resident by the
+        // previous pass.
+        streamer.process_pass(add_hist, fold_resident_hist);
       }
 
       // Local barrier is enough: all Step 1 / Step 2 writes to `hist[]`
