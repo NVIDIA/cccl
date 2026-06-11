@@ -280,8 +280,8 @@ static_assert(
   build_ptr->cc               = cc_major * 10 + cc_minor;
   build_ptr->accumulator_size = accum_t.size;
   // Zero-init fields set by _load, not _compile.
-  build_ptr->library                  = nullptr;
-  build_ptr->segmented_reduce_kernel  = nullptr;
+  build_ptr->library                 = nullptr;
+  build_ptr->segmented_reduce_kernel = nullptr;
 
   // All potentially-throwing operations come before any release() calls so that
   // unique_ptrs automatically clean up on exception.
@@ -324,7 +324,8 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  CUresult status = cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  CUresult status =
+    cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
   if (status != CUDA_SUCCESS)
   {
     return status;

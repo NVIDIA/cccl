@@ -17,6 +17,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
 #include <cstdlib>
 #include <cstring>
 #include <format>
@@ -27,8 +29,6 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-
-#include <cuda/__type_traits/is_trivially_copyable.h>
 
 #include <nvrtc.h>
 
@@ -470,10 +470,10 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
 
-  build_ptr->runtime_policy             = policy_ptr.release();
-  build_ptr->runtime_policy_size        = policy_size;
-  build_ptr->init_kernel_lowered_name   = init_name.release();
-  build_ptr->scan_kernel_lowered_name   = scan_name.release();
+  build_ptr->runtime_policy           = policy_ptr.release();
+  build_ptr->runtime_policy_size      = policy_size;
+  build_ptr->init_kernel_lowered_name = init_name.release();
+  build_ptr->scan_kernel_lowered_name = scan_name.release();
 
   return CUDA_SUCCESS;
 }

@@ -361,8 +361,7 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   };
   static_assert(::cuda::is_trivially_copyable_v<cub::detail::reduce::policy_selector>);
   static_assert(::cuda::is_trivially_copyable_v<cub::detail::reduce_nondeterministic::policy_selector>);
-  const size_t policy_size =
-    build_nondeterministic ? sizeof(policy_sel_nd) : sizeof(policy_sel);
+  const size_t policy_size = build_nondeterministic ? sizeof(policy_sel_nd) : sizeof(policy_sel);
   std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
   if (build_nondeterministic)
   {
@@ -382,10 +381,10 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   build->accumulator_size = accum_t.size;
   build->determinism      = determinism;
   // Zero-init fields set by _load, not _compile.
-  build->library                    = nullptr;
-  build->single_tile_kernel         = nullptr;
-  build->single_tile_second_kernel  = nullptr;
-  build->reduction_kernel           = nullptr;
+  build->library                        = nullptr;
+  build->single_tile_kernel             = nullptr;
+  build->single_tile_second_kernel      = nullptr;
+  build->reduction_kernel               = nullptr;
   build->nondeterministic_atomic_kernel = nullptr;
 
   // All potentially-throwing operations come before any release() calls so that

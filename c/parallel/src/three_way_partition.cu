@@ -295,7 +295,7 @@ static_assert(
 
   build_ptr->cc = cc.get();
   // Zero-init fields set by _load, not _compile.
-  build_ptr->library                        = nullptr;
+  build_ptr->library                         = nullptr;
   build_ptr->three_way_partition_init_kernel = nullptr;
   build_ptr->three_way_partition_kernel      = nullptr;
 

@@ -401,8 +401,8 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   build_ptr->level_type          = lower_level.type;
   build_ptr->sample_type         = d_samples.value_type;
   build_ptr->num_active_channels = num_active_channels;
-  build_ptr->may_overflow        = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
-                                          // it later.
+  build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
+                                   // it later.
   // Zero-init fields set by _load, not _compile.
   build_ptr->library      = nullptr;
   build_ptr->init_kernel  = nullptr;

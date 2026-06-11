@@ -679,21 +679,21 @@ static_assert(
   std::unique_ptr<void, free_deleter> partition_policy_ptr(std::malloc(partition_policy_size));
   std::memcpy(sort_policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   std::memcpy(partition_policy_ptr.get(), &partition_policy_sel, sizeof(partition_policy_sel));
-  auto fallback_name    = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_fallback_kernel_lowered_name));
-  auto small_name       = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_kernel_small_lowered_name));
-  auto large_name       = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_kernel_large_lowered_name));
-  auto twp_init_name    = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_init_kernel_lowered_name));
-  auto twp_kernel_name  = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_kernel_lowered_name));
+  auto fallback_name   = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_fallback_kernel_lowered_name));
+  auto small_name      = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_kernel_small_lowered_name));
+  auto large_name      = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_kernel_large_lowered_name));
+  auto twp_init_name   = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_init_kernel_lowered_name));
+  auto twp_kernel_name = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_kernel_lowered_name));
 
-  build_ptr->cc       = cc_major * 10 + cc_minor;
-  build_ptr->key_type = keys_in_it.value_type;
+  build_ptr->cc          = cc_major * 10 + cc_minor;
+  build_ptr->key_type    = keys_in_it.value_type;
   build_ptr->offset_type = cccl_type_info{sizeof(OffsetT), alignof(OffsetT), cccl_type_enum::CCCL_INT64};
-  build_ptr->order    = sort_order;
+  build_ptr->order       = sort_order;
   // Zero-init fields set by _load, not _compile.
-  build_ptr->library                      = nullptr;
-  build_ptr->segmented_sort_fallback_kernel = nullptr;
-  build_ptr->segmented_sort_kernel_small    = nullptr;
-  build_ptr->segmented_sort_kernel_large    = nullptr;
+  build_ptr->library                         = nullptr;
+  build_ptr->segmented_sort_fallback_kernel  = nullptr;
+  build_ptr->segmented_sort_kernel_small     = nullptr;
+  build_ptr->segmented_sort_kernel_large     = nullptr;
   build_ptr->three_way_partition_init_kernel = nullptr;
   build_ptr->three_way_partition_kernel      = nullptr;
 

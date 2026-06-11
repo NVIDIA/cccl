@@ -13,6 +13,8 @@
 #include <cub/device/device_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -20,8 +22,6 @@
 #include <mutex>
 #include <sstream>
 #include <vector>
-
-#include <cuda/__type_traits/is_trivially_copyable.h>
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
@@ -408,7 +408,8 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  CUresult status = cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  CUresult status =
+    cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
   if (status != CUDA_SUCCESS)
   {
     return status;
