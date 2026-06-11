@@ -106,12 +106,12 @@ namespace transform
 template <>
 struct tile_eligible<::cuda::std::plus<::__half>, ::__half, 2> : ::cuda::std::true_type
 {
-  using tile_op_type = CUB_NS_QUALIFIER::detail::transform::tile::tile_plus;
+  using tile_op_type = cub::detail::transform::tile::tile_plus;
 };
 template <>
 struct tile_eligible<::cuda::std::multiplies<::__half>, ::__half, 2> : ::cuda::std::true_type
 {
-  using tile_op_type = CUB_NS_QUALIFIER::detail::transform::tile::tile_multiplies;
+  using tile_op_type = cub::detail::transform::tile::tile_multiplies;
 };
 #  endif // _CCCL_HAS_NVFP16()
 
@@ -119,12 +119,12 @@ struct tile_eligible<::cuda::std::multiplies<::__half>, ::__half, 2> : ::cuda::s
 template <>
 struct tile_eligible<::cuda::std::plus<::__nv_bfloat16>, ::__nv_bfloat16, 2> : ::cuda::std::true_type
 {
-  using tile_op_type = CUB_NS_QUALIFIER::detail::transform::tile::tile_plus;
+  using tile_op_type = cub::detail::transform::tile::tile_plus;
 };
 template <>
 struct tile_eligible<::cuda::std::multiplies<::__nv_bfloat16>, ::__nv_bfloat16, 2> : ::cuda::std::true_type
 {
-  using tile_op_type = CUB_NS_QUALIFIER::detail::transform::tile::tile_multiplies;
+  using tile_op_type = cub::detail::transform::tile::tile_multiplies;
 };
 #  endif // _CCCL_HAS_NVBF16()
 } // namespace transform
