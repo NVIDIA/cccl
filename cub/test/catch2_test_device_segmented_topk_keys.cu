@@ -55,7 +55,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
     values_it,
     segment_sizes,
     k,
-    ::cuda::args::constant<Direction>{},
+    cuda::args::constant<Direction>{},
     num_segments,
     total_num_items_guarantee,
     stream);
@@ -156,10 +156,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   batched_topk_keys<direction>(
     d_keys_in,
     d_keys_out,
-    ::cuda::args::immediate{segment_size, ::cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
-    ::cuda::args::immediate{k, ::cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    ::cuda::args::immediate{num_segments},
-    ::cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_segments * segment_size});
   // Prepare expected results
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -253,11 +253,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   batched_topk_keys<direction>(
     d_keys_in,
     d_keys_out,
-    ::cuda::args::__immediate_sequence{
-      segment_size_it, ::cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
-    ::cuda::args::immediate{k, ::cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    ::cuda::args::immediate{num_segments},
-    ::cuda::args::immediate{num_items});
+    cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_items});
 
   // Verify keys are returned correctly: sort each segment of the expected input, then compact the top-k
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
@@ -351,12 +350,12 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    ::cuda::__argument::__immediate{segment_size, ::cuda::__argument::__bounds<segment_size_t{1}, max_segment_size>()},
-    ::cuda::__argument::__immediate_sequence{
-      thrust::raw_pointer_cast(segment_k.data()), ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
-    ::cuda::__argument::__constant<direction>{},
-    ::cuda::__argument::__immediate{num_segments},
-    ::cuda::__argument::__immediate{num_segments * segment_size});
+    cuda::__argument::__immediate{segment_size, cuda::__argument::__bounds<segment_size_t{1}, max_segment_size>()},
+    cuda::__argument::deferred_sequence{
+      thrust::raw_pointer_cast(segment_k.data()), cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    cuda::__argument::__constant<direction>{},
+    cuda::__argument::__immediate{num_segments},
+    cuda::__argument::__immediate{num_segments * segment_size});
 
   // Prepare expected results: sort each fixed-size input segment, then compact each to its per-segment top-k.
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
@@ -451,13 +450,13 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    ::cuda::__argument::__immediate_sequence{
-      segment_size_it, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
-    ::cuda::__argument::__immediate_sequence{
-      thrust::raw_pointer_cast(segment_k.data()), ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
-    ::cuda::__argument::__constant<direction>{},
-    ::cuda::__argument::__immediate{num_segments},
-    ::cuda::__argument::__immediate{num_items});
+    cuda::__argument::deferred_sequence{
+      segment_size_it, cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::__argument::deferred_sequence{
+      thrust::raw_pointer_cast(segment_k.data()), cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    cuda::__argument::__constant<direction>{},
+    cuda::__argument::__immediate{num_segments},
+    cuda::__argument::__immediate{num_items});
 
   // Verify keys are returned correctly: sort each segment of the expected input, then compact the per-segment top-k
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
@@ -490,10 +489,10 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
   batched_topk_keys<cub::detail::topk::select::min>(
     d_keys_in_it,
     d_keys_out_it,
-    ::cuda::args::immediate{segment_size, ::cuda::args::bounds<cuda::std::int64_t{1}, max_segment_size>()},
-    ::cuda::args::immediate{k, ::cuda::args::bounds<cuda::std::int64_t{1}, k>()},
-    ::cuda::args::immediate{num_segments},
-    ::cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{segment_size, cuda::args::bounds<cuda::std::int64_t{1}, max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<cuda::std::int64_t{1}, k>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_segments * segment_size});
 
   const int num_minus_zero = static_cast<int>(thrust::count_if(d_keys_out.begin(), d_keys_out.end(), is_minus_zero{}));
   REQUIRE(num_minus_zero >= 1);
