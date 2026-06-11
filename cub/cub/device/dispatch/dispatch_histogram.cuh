@@ -60,15 +60,29 @@ namespace detail::histogram
 // Maximum number of bins per channel for which we will use a privatized smem strategy
 static constexpr int max_privatized_smem_bins = 256;
 
-// Above the static 256-bin tier, larger privatized histograms (up to this cap)
-// are kept on chip in a single dynamic-SMEM kernel whose per-block histogram
-// lives in extern __shared__ sized at launch. This keeps the histogram in fast
-// SMEM (avoiding the GMEM atomicAdd_block of the GMEM-privatized path) without a
-// ladder of compile-time-sized kernels. 16384 bins x 4 bytes = 64 KB/block
-// exceeds the ptxas 48 KB static cap, so the dynamic kernel raises its
-// cudaFuncAttributeMaxDynamicSharedMemorySize; the per-CTA SMEM budget on
-// SM90/SM100 is large enough for this to launch with reasonable occupancy.
-static constexpr int max_dynamic_smem_bins = 16384;
+// Above the static 256-bin tier, larger privatized histograms are kept on chip in a
+// single dynamic-SMEM kernel whose per-block histogram lives in extern __shared__
+// sized AT LAUNCH from the runtime bin count. This keeps the histogram in fast SMEM
+// (avoiding the GMEM atomicAdd_block of the GMEM-privatized path) without a ladder of
+// compile-time-sized kernels. The per-block footprint exceeds the ptxas 48 KB static
+// cap (e.g. 16384 bins x 4 B = 64 KB), so the dynamic kernel raises its
+// cudaFuncAttributeMaxDynamicSharedMemorySize.
+//
+// `kDynamicSmemKernelTagBins` is ONLY a compile-time instantiation tag: it is the
+// nonzero `PRIVATIZED_SMEM_BINS` template value that selects the dynamic-SMEM kernel
+// (vs the static 256-bin kernel at `max_privatized_smem_bins`, vs the GMEM-privatized
+// path at 0). It does NOT size any storage on the dynamic path -- ZeroBinCounters /
+// StoreOutput / the accumulate loop all bound on the RUNTIME `num_privatized_bins[ch]`
+// (see agent_histogram.cuh), and the launch SMEM is `Σ_ch bins * CounterSize()`. So
+// the actual on-chip CAPACITY is a runtime byte budget, not this constant.
+//
+// The runtime routing cap -- the largest bin count the selector keeps on chip -- is
+// `detail::histogram::max_dynamic_smem_bins(counter_bytes, channels, device_optin)`
+// (tuning_histogram.cuh), derived from `cache_tuning::max_dynamic_smem_bytes`. It was
+// previously a single frozen `16384`, which conflated a per-arch HARDWARE byte budget
+// with a bin count (silently assuming a 4-byte counter and one channel) and with this
+// compile-time tag. Those three roles are now separated.
+static constexpr int kDynamicSmemKernelTagBins = 16384;
 
 // Multi-channel privatized-SMEM eligibility is more restrictive than
 // single-channel: the per-block histogram footprint and the classify cost both
@@ -177,6 +191,13 @@ struct selector_features
   bool is_even; // EVEN entry point (true) or RANGE (false)
   int num_bins; // max_num_output_bins across active channels
   long long num_pixels; // total pixels per active channel
+  // Largest bin count that still fits the whole histogram on chip in the
+  // dynamic-SMEM privatized kernel, for THIS counter width and channel count.
+  // Derived host-side from the per-arch byte budget + device opt-in SMEM via
+  // detail::histogram::max_dynamic_smem_bins(); the caller fills it in (it cannot
+  // be computed here -- select_algorithm is _CCCL_HOST_DEVICE and the device query
+  // is host-only). Replaces the old frozen 16384 routing threshold.
+  int on_chip_bin_cap;
 };
 
 // Pick a single algorithm for one cell. Rules are first-match. The selector
@@ -225,7 +246,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   }
   if (f.num_active_channels == 1)
   {
-    if (f.num_bins <= max_dynamic_smem_bins)
+    if (f.num_bins <= f.on_chip_bin_cap)
     {
       return algorithm::smem_privatized;
     }
@@ -242,7 +263,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
     {
       return algorithm::smem_privatized;
     }
-    if (f.is_even && f.num_active_channels <= 3 && f.num_bins <= max_dynamic_smem_bins)
+    if (f.is_even && f.num_active_channels <= 3 && f.num_bins <= f.on_chip_bin_cap)
     {
       return algorithm::smem_privatized;
     }
@@ -336,6 +357,36 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // Default: the cuckoo cache (its 2-hash probe + count replicas win the larger
   // bin tiers and the smallest inputs).
   return algorithm::direct_cuckoo;
+}
+
+// Resolve the runtime on-chip bin cap for `selector_features::on_chip_bin_cap`: the
+// largest bin count the dynamic-SMEM privatized kernel can hold for this counter
+// width and channel count on the CURRENT device. Queries the device's opt-in SMEM
+// (host only -- the query is unavailable on device, where we fall back to the tuned
+// byte budget) and feeds it to detail::histogram::max_dynamic_smem_bins(). Mirrors the
+// cache path's opt-in query (it already calls cudaDeviceGetAttribute unguarded in the
+// same dispatch chain). Pure host/device-arithmetic; zero device SASS impact on the
+// hot path (called once per dispatch, before kernel launch).
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int resolve_on_chip_bin_cap(int counter_bytes, int num_active_channels)
+{
+  int device_optin_smem_bytes = 0;
+#if _CCCL_HOSTED()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 int dev = 0;
+                 if (cudaGetDevice(&dev) != cudaSuccess)
+                 {
+                   (void) cudaGetLastError();
+                   dev = 0;
+                 }
+                 if (cudaDeviceGetAttribute(&device_optin_smem_bytes, cudaDevAttrMaxSharedMemoryPerBlockOptin, dev)
+                     != cudaSuccess)
+                 {
+                   (void) cudaGetLastError();
+                   device_optin_smem_bytes = 0; // -> max_dynamic_smem_bins falls back to the tuned budget
+                 }
+               }));
+#endif // _CCCL_HOSTED()
+  return max_dynamic_smem_bins(counter_bytes, num_active_channels, device_optin_smem_bytes);
 }
 
 template <int NUM_CHANNELS,
@@ -601,13 +652,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
 
-  // The privatized-SMEM histogram for 256 < bins <= max_dynamic_smem_bins lives
+  // The privatized-SMEM histogram for the "256 < bins <= on-chip cap" tier lives
   // in extern __shared__ sized at launch, so its per-CTA SMEM footprint can
   // exceed the ptxas 48 KB static cap (16384 bins x 4 B = 64 KB). The dispatch
   // raises the kernel's cudaFuncAttributeMaxDynamicSharedMemorySize and passes
   // the byte budget as the third launch parameter. The 256-bin / byte tier and
   // the GMEM-privatized path (PRIVATIZED_SMEM_BINS == 0) use static SMEM.
-  static constexpr bool kUseDynamicSmem = (PRIVATIZED_SMEM_BINS == max_dynamic_smem_bins);
+  // `kDynamicSmemKernelTagBins` is the compile-time tag marking this dynamic tier
+  // (the on-chip CAPACITY is a runtime byte budget, not this value).
+  static constexpr bool kUseDynamicSmem = (PRIVATIZED_SMEM_BINS == kDynamicSmemKernelTagBins);
 
   // The dynamic-SMEM kernel merges each block's privatized histogram directly
   // into the global output via per-block atomicAdd (StoreOutput): at these bin
@@ -1796,7 +1849,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  constexpr int kPrivatizedSmemBins = max_dynamic_smem_bins;
+  constexpr int kPrivatizedSmemBins = kDynamicSmemKernelTagBins;
 
   // The hybrid kernel is single-channel-focused and assumes a chunked split with
   // primary in SMEM and secondary in per-block GMEM. We require kSplitBin to be at
@@ -2162,22 +2215,28 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
   // See cached_privatized_spill_design.md.
 #if _CCCL_HOSTED()
   NV_IF_TARGET(NV_IS_HOST, ({
-                 // Forcing only applies in the high-bin regime the forced algorithms
-                 // are designed for. The cooperative direct-atomic / gmem-privatized
-                 // kernels assume bins > max_dynamic_smem_bins; forcing one at a tiny
-                 // (e.g. 256-bin) cell drives a degenerate cooperative launch that can
-                 // crash. Below the high-bin threshold we ignore the override and let
-                 // select_algorithm's legal choice (smem_privatized) stand, so sweep
-                 // scripts that force a high-bin algorithm across a full axis don't
-                 // fault on the low-bin cells. (smem_privatized is always legal, so it
-                 // is never gated.)
-                 const bool force_legal_here = (max_num_output_bins > max_dynamic_smem_bins);
-                 if (const char* env = force_legal_here ? ::std::getenv("CUB_HISTO_FORCE_ALGO") : nullptr)
+                 // Honor a forced algorithm UNCONDITIONALLY, at any bin count. If a
+                 // request is forced it must run -- a force that is silently ignored is
+                 // a bug (the caller measures a different algorithm than it asked for).
+                 //
+                 // This previously gated forcing to bins above the on-chip cap, on the
+                 // theory that forcing a high-bin (cooperative direct-atomic /
+                 // gmem-privatized) kernel at a tiny bin count drove a "degenerate
+                 // cooperative launch that can crash". That is not true on this dispatch:
+                 // every high-bin algo (gmem_privatized_nocache, direct_{nocache,cuckoo,
+                 // single_probe}, gmem_privatized_{cuckoo,single_probe}) forced at 256 /
+                 // 1024 / 16384 bins runs the requested kernel, returns success, and
+                 // passes the benchmark's built-in correctness check. The cooperative
+                 // launch already has a safe non-cooperative fallback if it cannot be set
+                 // up, so there is nothing to guard against. (A genuinely unsupported
+                 // (algo, cell) pair -- e.g. multi-channel hybrid -- returns
+                 // cudaErrorNotSupported from its dispatch helper so the cell is dropped,
+                 // which is the correct way to decline a force: error, never substitute.)
+                 if (const char* env = ::std::getenv("CUB_HISTO_FORCE_ALGO"))
                  {
-                   // Force any algorithm at any (high-bin) cell (apples-to-apples
-                   // sweeps). Names match the algorithm enum; the legacy aliases
-                   // (hybrid, gmem_priv_gather, priv_*) are kept so older sweep scripts
-                   // work.
+                   // Force any algorithm at any cell (apples-to-apples sweeps). Names
+                   // match the algorithm enum; the legacy aliases (hybrid,
+                   // gmem_priv_gather, priv_*) are kept so older sweep scripts work.
                    if (::std::strcmp(env, "hybrid") == 0 || ::std::strcmp(env, "gmem_priv_gather") == 0
                        || ::std::strcmp(env, "gmem_privatized_nocache") == 0)
                    {
@@ -2231,8 +2290,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
   {
     case algorithm::smem_privatized: {
       // Whole-histogram-on-chip privatized SMEM. Recover the static (compile-time
-      // sized, bins <= 256) vs dynamic (extern __shared__, up to max_dynamic_smem_bins)
-      // tier from the bin count — the two were separate enumerators before the merge.
+      // sized, bins <= 256) vs dynamic (extern __shared__, sized at launch) tier from
+      // the bin count — the two were separate enumerators before the merge.
       // PRIVATIZED_SMEM_BINS is the compile-time marker selecting the path in dispatch<>;
       // the dynamic path's actual bin count comes from the runtime level arrays.
       if (max_num_output_bins <= max_privatized_smem_bins)
@@ -2256,7 +2315,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
           kernel_source,
           launcher_factory);
       }
-      constexpr int PRIVATIZED_SMEM_BINS = max_dynamic_smem_bins;
+      constexpr int PRIVATIZED_SMEM_BINS = kDynamicSmemKernelTagBins;
       return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS>(
         d_temp_storage,
         temp_storage_bytes,
@@ -2504,6 +2563,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     features.num_bins            = max_num_output_bins;
     features.num_pixels =
       static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
+    features.on_chip_bin_cap = resolve_on_chip_bin_cap(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
     const algorithm algo = select_algorithm<false>(features);
 
     return CubDebug((dispatch_by_algorithm<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
@@ -2666,6 +2726,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     features.num_bins            = max_num_output_bins;
     features.num_pixels =
       static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
+    features.on_chip_bin_cap = resolve_on_chip_bin_cap(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
     const algorithm algo = select_algorithm<false>(features);
 
     return CubDebug((dispatch_by_algorithm<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
