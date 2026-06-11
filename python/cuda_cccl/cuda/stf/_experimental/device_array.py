@@ -70,6 +70,9 @@ class DeviceArray:
     )
 
     def __init__(self, size: int, dtype, dplace: "data_place", stream=None):
+        if size < 0:
+            raise ValueError("DeviceArray size must be non-negative")
+
         self._dtype = np.dtype(dtype)
         self._size = size
         self._nbytes = size * self._dtype.itemsize
@@ -99,6 +102,9 @@ class DeviceArray:
     ) -> "DeviceArray":
         """Allocate on *dplace* and copy *host_array* to the device."""
         host_array = np.ascontiguousarray(host_array)
+        if host_array.ndim != 1:
+            raise ValueError("DeviceArray.from_host only supports 1-D host arrays")
+
         arr = DeviceArray(host_array.shape[0], host_array.dtype, dplace, stream)
         if arr._nbytes > 0:
             arr.copy_to_device(host_array)

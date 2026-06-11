@@ -244,6 +244,22 @@ def test_allocation_is_stream_ordered():
 # ---------------------------------------------------------------------------
 
 
+def test_device_array_rejects_negative_size():
+    """DeviceArray size must describe a real 1-D allocation."""
+    import numpy as np
+
+    with pytest.raises(ValueError, match="non-negative"):
+        stf.DeviceArray(-1, np.float32, stf.data_place.host())
+
+
+def test_device_array_from_host_rejects_non_1d_input():
+    """from_host keeps DeviceArray semantics intentionally 1-D."""
+    import numpy as np
+
+    with pytest.raises(ValueError, match="1-D"):
+        stf.DeviceArray.from_host(np.zeros((2, 2), dtype=np.float32), stf.data_place.host())
+
+
 def test_device_array_roundtrip():
     """Create DeviceArray from host, copy back, verify."""
     import numpy as np
