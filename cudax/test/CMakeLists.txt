@@ -211,6 +211,10 @@ cudax_add_catch2_test(test_target coop.shuffle_down.threads_within_warp
     coop/shuffle_down/threads_within_warp.cu
 )
 
+cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
+    coop/shuffle_up/threads_within_warp.cu
+)
+
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
       cufile/driver_attributes.cu
