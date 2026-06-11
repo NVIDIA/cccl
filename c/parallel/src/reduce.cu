@@ -426,6 +426,7 @@ catch (const std::exception& exc)
 CUresult cccl_device_reduce_load(cccl_device_reduce_build_result_t* build)
 try
 {
+  // Both nullptr and [0]=='\0' checks needed: non-null empty string is also invalid.
   if (build == nullptr || build->payload == nullptr || build->payload_size == 0
       || build->payload_kind != CCCL_PAYLOAD_CUBIN || build->single_tile_kernel_lowered_name == nullptr
       || build->single_tile_kernel_lowered_name[0] == '\0' || build->single_tile_second_kernel_lowered_name == nullptr
@@ -434,7 +435,11 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  check(cuLibraryLoadData(&build->library, build->payload, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  CUresult status = cuLibraryLoadData(&build->library, build->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    return status;
+  }
   try
   {
     check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, build->single_tile_kernel_lowered_name));

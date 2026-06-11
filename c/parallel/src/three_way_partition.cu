@@ -344,7 +344,11 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  check(cuLibraryLoadData(&build->library, build->payload, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  CUresult status = cuLibraryLoadData(&build->library, build->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    return status;
+  }
   try
   {
     check(cuLibraryGetKernel(
