@@ -164,10 +164,10 @@ if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
     # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
     # * 1.5Mb for the shell launched by ninja
     # * 6MiB for each sccache client process
-    # * round up
-    mem_per_sccache_client="$((1024 * 8))"
-    # Assume preprocessor invocations take ~250Mb or so
-    mem_per_preprocessor="$((250 * 1024))"
+    # * round up to 10
+    mem_per_sccache_client="$((1024 * 10))"
+    # Assume preprocessor invocations take ~500Mb or so
+    mem_per_preprocessor="$((500 * 1024))"
     # It's usually around 400-600MiB, but be conservative
     # and assume the sccache daemon will use 1GiB of RAM
     mem_for_sccache_daemon="$((1 * 1024 * 1024))"
