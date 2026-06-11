@@ -14,9 +14,10 @@ import textwrap
 from types import new_class
 from typing import TYPE_CHECKING, Callable, Hashable, List, Tuple
 
+# Classic numba-cuda: still used by the gpu_struct typing/lowering machinery
+# below (register_model/cgutils/lower_cast).  numba-cuda is a runtime dependency
+# regardless (cuda.coop uses it), so importing it here is safe.
 import numba
-import numba.cuda
-import numba.np.numpy_support
 import numba.types
 import numpy as np
 from numba import types
@@ -35,6 +36,9 @@ from numba.core.typing.templates import ConcreteTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
 from numba.extending import lower_builtin, lower_cast
 
+# numba-cuda-mlir backend: used for op compilation, return-type inference, and
+# the TypeDescriptor <-> numba type conversions (see ._mlir).
+from . import _mlir
 from . import types as cccl_types
 from ._bindings import Op, OpKind
 from ._caching import CachableFunction, cache_with_registered_key_functions
@@ -59,33 +63,24 @@ if TYPE_CHECKING:
 
 
 def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
-    """Compile a Numba device op to LLVM bitcode (.bc) bytes.
+    """Compile a device op to LLVM bitcode (.bc) bytes via numba-cuda-mlir.
 
     Used on the v2 (HostJIT) backend, which prefers LLVM bitcode over NVRTC
     LTO-IR — the JIT linker routes "BC"-magic blobs through LLVM's native
     bitcode linker instead of nvJitLink's LTO codegen.
 
-    Numba's public ``cuda.compile`` only emits PTX or LTO-IR. To get LLVM IR
-    with the C-ABI wrapper (the form CUB's PTX references by name), we go one
-    layer deeper to ``_compile_pyfunc_with_fixup`` with ``abi="c"`` and pull
-    the LLVM string off the code library before NVVM lowering to PTX.
+    numba-cuda-mlir's public ``cuda.compile`` only emits PTX or LTO-IR, so we
+    extract LLVM IR from its internal MLIR -> LLVM translation (one step before
+    libnvvm; see ``_mlir.compile_to_llvm_ir``) and turn that textual IR into
+    bitcode with llvmlite.  The C-ABI wrapper is emitted under the exact symbol
+    ``wrapped_op.__name__`` that CUB's PTX references by name.
     """
     import os
-    import re
 
     import llvmlite.binding as llvm
-    from numba.cuda.compiler import _compile_pyfunc_with_fixup
 
     target_name = wrapped_op.__name__
-    lib, _ = _compile_pyfunc_with_fixup(
-        wrapped_op,
-        wrapper_sig,
-        device=True,
-        abi="c",
-        abi_info={"abi_name": target_name},
-        lto=False,
-    )
-    text_ir = lib.get_llvm_str()
+    text_ir = _mlir.compile_to_llvm_ir(wrapped_op, wrapper_sig, target_name)
 
     debug_dir = os.environ.get("CCCL_JIT_DEBUG")
     if debug_dir:
@@ -93,46 +88,23 @@ def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
         with open(os.path.join(debug_dir, f"{target_name}.raw.ll"), "w") as f:
             f.write(text_ir)
 
-    # get_llvm_str joins all modules in the library with "\n\n". Split on
-    # ModuleID markers so each chunk parses standalone, then link them.
-    parts = [p for p in re.split(r"(?m)^(?=; ModuleID = )", text_ir) if p.strip()]
-    if not parts:
-        parts = [text_ir]
-
-    # Strip Numba's `target datalayout = ...` line — llvmlite ships with an
-    # older NVVM layout (`e-p:64:64:64-...`) that doesn't match the modern
-    # CUDA layout (`e-p6:32:32-...`) emitted by hostjit's Clang. Linking
-    # modules with mismatched layouts triggers LLVM warnings and can lead to
-    # miscompiles. Removing the line lets LLVM default to the target triple's
-    # canonical layout, which agrees with Clang.
-    parts = [re.sub(r"(?m)^target datalayout =.*\n", "", p) for p in parts]
-
-    modules = []
-    for i, part in enumerate(parts):
-        try:
-            m = llvm.parse_assembly(part)
-            m.verify()
-        except Exception as exc:
-            raise RuntimeError(
-                f"Failed to parse LLVM IR module {i} for '{target_name}': {exc}"
-            ) from exc
-        modules.append(m)
-
-    main = modules[0]
-    for m in modules[1:]:
-        main.link_in(m, preserve=True)
+    try:
+        module = llvm.parse_assembly(text_ir)
+        module.verify()
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to parse LLVM IR for '{target_name}': {exc}"
+        ) from exc
 
     if debug_dir:
-        with open(os.path.join(debug_dir, f"{target_name}.merged.ll"), "w") as f:
-            f.write(str(main))
         with open(os.path.join(debug_dir, f"{target_name}.symbols.txt"), "w") as f:
             f.write(f"target_name={target_name}\n")
-            for fn in main.functions:
+            for fn in module.functions:
                 f.write(
                     f"  {fn.linkage} {'decl' if fn.is_declaration else 'def '} {fn.name}\n"
                 )
 
-    return bytes(main.as_bitcode())
+    return bytes(module.as_bitcode())
 
 
 # -----------------------------------------------------------------------------
@@ -426,17 +398,17 @@ def type_descriptor_to_numba(td):
     Handles:
     - PointerTypeDescriptor: creates CPointer to the pointee's numba type
     - StructTypeDescriptor: registers a struct class for the layout
-    - POD TypeDescriptor: uses numba.from_dtype
+    - POD TypeDescriptor: uses numba-cuda-mlir's from_dtype
     - Numba types: pass through
     """
 
-    # Pass through if already a Numba type
-    if isinstance(td, numba.types.Type):
+    # Pass through if already a numba-cuda-mlir type
+    if isinstance(td, _mlir.types.Type):
         return td
 
     # Handle PointerTypeDescriptor (must check before TypeDescriptor since it's a subclass)
     if isinstance(td, cccl_types.PointerTypeDescriptor):
-        return types.CPointer(type_descriptor_to_numba(td.pointee))
+        return _mlir.types.CPointer(type_descriptor_to_numba(td.pointee))
 
     # Handle TypeDescriptor (includes StructTypeDescriptor)
     if isinstance(td, cccl_types.TypeDescriptor):
@@ -467,7 +439,7 @@ def _convert_type_descriptor_to_numba(td):
             return _register_struct_with_numba(struct_class)
 
     # For POD types
-    return numba.from_dtype(td.dtype)
+    return _mlir.from_numpy_dtype(td.dtype)
 
 
 def _is_gpu_struct_class(obj):
@@ -521,7 +493,7 @@ def _numba_type_to_type_descriptor(numba_type):
         return numba_type.python_type._type_descriptor
 
     # POD type - convert via numpy dtype
-    dtype = numba.np.numpy_support.as_dtype(numba_type)
+    dtype = _mlir.as_numpy_dtype(numba_type)
     return cccl_types.from_numpy_dtype(dtype)
 
 
@@ -537,8 +509,12 @@ def _infer_return_type(py_func, input_types):
     unique_suffix = hex(id(py_func))[2:]
     abi_name = f"{sanitized_name}_{unique_suffix}"
     input_numba_types = tuple(type_descriptor_to_numba(t) for t in input_types)
-    _, return_type = numba.cuda.compile(
-        py_func, input_numba_types, abi_info={"abi_name": abi_name}
+    _, return_type = _mlir.cuda.compile(
+        py_func,
+        input_numba_types,
+        device=True,
+        abi_info={"abi_name": abi_name},
+        output="ltoir",
     )
     return _numba_type_to_type_descriptor(return_type)
 
@@ -587,7 +563,14 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type):
             kind="llvm_ir",
         )
     else:
-        ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+        ltoir, _ = _mlir.cuda.compile(
+            wrapped_op,
+            sig=wrapper_sig,
+            device=True,
+            abi="c",
+            abi_info={"abi_name": wrapped_op.__name__},
+            output="ltoir",
+        )
         code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
     return Op(
@@ -865,57 +848,48 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
         if not is_contiguous(state_array):
             raise ValueError(f"state array {i} must be contiguous")
 
-    # Convert input types to Numba types
+    # Convert input types to numba-cuda-mlir types
     numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
 
-    # Create Numba array types for state arrays
-    state_array_types = [
-        numba.types.Array(numba.from_dtype(get_dtype(s)), 1, "A") for s in state_arrays
-    ]
+    # State arrays are passed to the (transformed) op as typed pointers; the op
+    # body indexes them (``state[i]``), which works on a CPointer.  See
+    # _odr_helpers.create_stateful_op_void_ptr_wrapper for how the packed state
+    # void* is unpacked into one CPointer per state array.
+    state_dtypes = [_mlir.from_numpy_dtype(get_dtype(s)) for s in state_arrays]
+    state_ptr_types = [_mlir.types.CPointer(dt) for dt in state_dtypes]
 
     # Infer output type if needed
     if output_type is None:
-        # Compile with Numba to infer return type
+        # Compile to infer return type.
         # The transformed function expects (state_arrays..., regular_args...)
-        all_numba_input_types = tuple(state_array_types) + numba_input_types
+        all_numba_input_types = tuple(state_ptr_types) + numba_input_types
         sanitized_name = sanitize_identifier(op.__name__)
         unique_suffix = hex(id(op))[2:]
         abi_name = f"{sanitized_name}_{unique_suffix}"
-        _, return_type = numba.cuda.compile(
-            op, all_numba_input_types, abi_info={"abi_name": abi_name}
+        _, return_type = _mlir.cuda.compile(
+            op,
+            all_numba_input_types,
+            device=True,
+            abi_info={"abi_name": abi_name},
+            output="ltoir",
         )
         # Convert return type to TypeDescriptor
-        output_type = cccl_types.from_numpy_dtype(
-            numba.np.numpy_support.as_dtype(return_type)
-        )
+        output_type = cccl_types.from_numpy_dtype(_mlir.as_numpy_dtype(return_type))
 
-    # Convert output type to Numba type
+    # Convert output type to numba-cuda-mlir type
     numba_output_type = type_descriptor_to_numba(output_type)
 
     # Build full signature: output_type(state_arrays..., regular_args...)
-    sig = numba_output_type(*state_array_types, *numba_input_types)
+    sig = numba_output_type(*state_ptr_types, *numba_input_types)
 
     # Get state pointers - pointers to the device array data
     state_ptrs = [get_data_pointer(arr) for arr in state_arrays]
 
-    # Get shape and itemsize from each state array
-    state_info = []
-    for state_array in state_arrays:
-        state_info.append(
-            {
-                "shape": len(state_array),
-                "itemsize": get_dtype(state_array).itemsize,
-                "strides": get_dtype(state_array).itemsize,
-            }
-        )
-
     # All pointers have the same alignment, use pointer-sized int alignment
     state_alignment = np.dtype(np.intp).alignment
 
-    # Create the stateful wrapper (constructs arrays from pointers)
-    wrapped_op, wrapper_sig = create_stateful_op_void_ptr_wrapper(
-        op, sig, state_array_types, state_info
-    )
+    # Create the stateful wrapper (unpacks the packed state pointers).
+    wrapped_op, wrapper_sig = create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes)
 
     # Compile the wrapper — LLVM bitcode for v2 (HostJIT), LTO-IR for v1 (NVRTC).
     from ._device_code import DeviceCode
@@ -926,7 +900,14 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
             kind="llvm_ir",
         )
     else:
-        ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+        ltoir, _ = _mlir.cuda.compile(
+            wrapped_op,
+            sig=wrapper_sig,
+            device=True,
+            abi="c",
+            abi_info={"abi_name": wrapped_op.__name__},
+            output="ltoir",
+        )
         code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
     # Pack all data pointers as bytes (sequentially)
