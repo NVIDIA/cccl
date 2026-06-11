@@ -56,9 +56,9 @@ transform_kernel(const ::cuda::std::int64_t num_items, Out* __restrict__ out, co
   using cub::detail::transform::tile::make_aligned_partition_view;
   const auto bx = ct::bid().x;
 
-  const auto n     = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-  auto out_view    = make_aligned_partition_view<TileSize>(out, n);
-  auto load_one    = [bx, n](auto* ptr) { return make_aligned_partition_view<TileSize>(ptr, n).load_masked(bx); };
+  const auto n        = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
+  const auto out_view = make_aligned_partition_view<TileSize>(out, n);
+  auto load_one       = [bx, n](auto* ptr) { return make_aligned_partition_view<TileSize>(ptr, n).load_masked(bx); };
 
   out_view.store_masked(Fn{}(load_one(ins)...), bx);
 }
@@ -70,9 +70,9 @@ __tile_global__ void fill_kernel(const ::cuda::std::int64_t num_items, T* __rest
   using cub::detail::transform::tile::make_aligned_partition_view;
   const auto bx = ct::bid().x;
 
-  const auto n  = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-  auto out_view = make_aligned_partition_view<TileSize>(out, n);
-  using tile_t  = ct::tile<T, ct::shape<TileSize>>;
+  const auto n        = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
+  const auto out_view = make_aligned_partition_view<TileSize>(out, n);
+  using tile_t        = ct::tile<T, ct::shape<TileSize>>;
   out_view.store_masked(ct::full<tile_t>(value), bx);
 }
 
