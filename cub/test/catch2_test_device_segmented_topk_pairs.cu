@@ -4,6 +4,7 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
@@ -47,8 +48,76 @@ struct flag_intra_segment_duplicates
 template <typename ItemItT, typename SegIdItT>
 flag_intra_segment_duplicates(ItemItT, SegIdItT) -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
 
+enum class topk_backend
+{
+  baseline,
+  cluster,
+};
+
+inline constexpr topk_backend selected_backend = topk_backend::cluster;
+
+// Routes the key-value (pairs) top-k to either the baseline or the cluster backend, threading both the key and value
+// iterators-of-iterators through. The cluster backend exercises the key-value-pair path in
+// `agent_batched_topk_cluster`.
+template <typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParamT,
+          typename KParamT,
+          typename SelectDirectionT,
+          typename NumSegmentsParameterT,
+          typename TotalNumItemsGuaranteeT>
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputItItT d_key_segments_it,
+  KeyOutputItItT d_key_segments_out_it,
+  ValueInputItItT d_value_segments_it,
+  ValueOutputItItT d_value_segments_out_it,
+  SegmentSizeParamT segment_sizes,
+  KParamT k,
+  SelectDirectionT select_direction,
+  NumSegmentsParameterT num_segments,
+  TotalNumItemsGuaranteeT total_num_items_guarantee,
+  cudaStream_t stream = nullptr)
+{
+  if constexpr (selected_backend == topk_backend::cluster)
+  {
+    return cub::detail::batched_topk_cluster::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      d_value_segments_it,
+      d_value_segments_out_it,
+      segment_sizes,
+      k,
+      select_direction,
+      num_segments,
+      total_num_items_guarantee,
+      stream);
+  }
+  else
+  {
+    return cub::detail::batched_topk::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      d_value_segments_it,
+      d_value_segments_out_it,
+      segment_sizes,
+      k,
+      select_direction,
+      num_segments,
+      total_num_items_guarantee,
+      stream);
+  }
+}
+
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(cub::detail::batched_topk::dispatch, batched_topk_pairs);
+DECLARE_LAUNCH_WRAPPER(dispatch_batched_topk_pairs, batched_topk_pairs);
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;

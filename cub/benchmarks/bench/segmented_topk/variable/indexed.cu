@@ -3,6 +3,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
@@ -14,6 +15,68 @@
 #include <nvbench_helper.cuh>
 
 #include "common.cuh"
+
+enum class topk_backend
+{
+  baseline,
+  cluster,
+};
+
+// Which backend computes the indexed (key + segment-local-index value) top-k. The cluster backend exercises the new
+// key-value-pair path through `agent_batched_topk_cluster`; the baseline backend is kept for A/B comparison.
+inline constexpr topk_backend selected_backend = topk_backend::cluster;
+
+template <typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParamT,
+          typename KParamT,
+          typename SelectDirectionParamT,
+          typename NumSegmentsParameterT,
+          typename TotalNumItemsGuaranteeT,
+          typename EnvT>
+CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_indexed(
+  KeyInputItItT d_keys_in,
+  KeyOutputItItT d_keys_out,
+  ValueInputItItT d_values_in,
+  ValueOutputItItT d_values_out,
+  SegmentSizeParamT segment_sizes,
+  KParamT k,
+  SelectDirectionParamT select_direction,
+  NumSegmentsParameterT num_segments,
+  TotalNumItemsGuaranteeT total_num_items,
+  EnvT env)
+{
+  if constexpr (selected_backend == topk_backend::cluster)
+  {
+    return cub::detail::batched_topk_cluster::dispatch_with_env(
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      segment_sizes,
+      k,
+      select_direction,
+      num_segments,
+      total_num_items,
+      env);
+  }
+  else
+  {
+    return cub::detail::batched_topk::dispatch_with_env(
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      segment_sizes,
+      k,
+      select_direction,
+      num_segments,
+      total_num_items,
+      env);
+  }
+}
 
 // Indexed (arg-top-k) variant: each key carries a segment-local index as its value payload. The input values are
 // produced by a counting iterator that restarts at 0 for every segment, so indices are not (pre-)materialized in global
@@ -73,7 +136,7 @@ void decode_style_variable_topk_indexed(
     auto env = cub_bench_env(alloc, launch);
     // TODO(bgruber): call the public API once available
     _CCCL_TRY_CUDA_API(
-      cub::detail::batched_topk::dispatch_with_env,
+      batched_topk_indexed,
       "batched topk failed",
       d_keys_in,
       d_keys_out,

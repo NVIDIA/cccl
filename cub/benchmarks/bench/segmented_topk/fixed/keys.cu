@@ -84,7 +84,16 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
   if constexpr (selected_backend == topk_backend::cluster)
   {
     return cub::detail::batched_topk_cluster::dispatch_with_env(
-      d_keys_in, d_keys_out, segment_sizes, k, select_direction, num_segments, total_num_items, env);
+      d_keys_in,
+      d_keys_out,
+      static_cast<cub::NullType**>(nullptr),
+      static_cast<cub::NullType**>(nullptr),
+      segment_sizes,
+      k,
+      select_direction,
+      num_segments,
+      total_num_items,
+      env);
   }
   else if constexpr (selected_backend == topk_backend::device)
   {

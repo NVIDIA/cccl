@@ -79,6 +79,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
       temp_storage_bytes,
       d_key_segments_it,
       d_key_segments_out_it,
+      static_cast<cub::NullType**>(nullptr),
+      static_cast<cub::NullType**>(nullptr),
       segment_sizes,
       k,
       select_direction,
