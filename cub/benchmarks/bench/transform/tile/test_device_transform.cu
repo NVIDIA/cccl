@@ -182,10 +182,12 @@ void test_fill(int64_t n, T value) {
 CUB_NAMESPACE_BEGIN
 namespace transform
 {
-template <> struct tile_eligible<identity_op, int32_t, 1> : ::cuda::std::true_type { using tile_op_type = tile_identity_op; };
-template <> struct tile_eligible<identity_op, float, 1>   : ::cuda::std::true_type { using tile_op_type = tile_identity_op; };
-template <> struct tile_eligible<square_op, int32_t, 1>   : ::cuda::std::true_type { using tile_op_type = tile_square_op; };
-template <> struct tile_eligible<square_op, float, 1>     : ::cuda::std::true_type { using tile_op_type = tile_square_op; };
+template <> struct tile_eligible<identity_op, int32_t, 1> : ::cuda::std::true_type {};
+template <> struct tile_eligible<identity_op, float, 1>   : ::cuda::std::true_type {};
+template <> struct tile_eligible<square_op, int32_t, 1>   : ::cuda::std::true_type {};
+template <> struct tile_eligible<square_op, float, 1>     : ::cuda::std::true_type {};
+template <> struct tile_operator<identity_op> { using type = tile_identity_op; };
+template <> struct tile_operator<square_op>   { using type = tile_square_op; };
 } // namespace transform
 CUB_NAMESPACE_END
 #endif

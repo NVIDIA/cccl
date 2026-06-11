@@ -92,12 +92,18 @@ CUB_NAMESPACE_BEGIN
 namespace transform
 {
 // Unary
-template <class T> struct tile_eligible<relu_op,    T, 1> : ::cuda::std::true_type { using tile_op_type = tile_relu;    };
-template <class T> struct tile_eligible<sigmoid_op, T, 1> : ::cuda::std::true_type { using tile_op_type = tile_sigmoid; };
-template <class T> struct tile_eligible<tanh_op,    T, 1> : ::cuda::std::true_type { using tile_op_type = tile_tanh;    };
-template <class T> struct tile_eligible<gelu_op,    T, 1> : ::cuda::std::true_type { using tile_op_type = tile_gelu;    };
-template <class T> struct tile_eligible<sin_op,     T, 1> : ::cuda::std::true_type { using tile_op_type = tile_sin;     };
-template <class T> struct tile_eligible<exp_op,     T, 1> : ::cuda::std::true_type { using tile_op_type = tile_exp;     };
+template <class T> struct tile_eligible<relu_op,    T, 1> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<sigmoid_op, T, 1> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<tanh_op,    T, 1> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<gelu_op,    T, 1> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<sin_op,     T, 1> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<exp_op,     T, 1> : ::cuda::std::true_type {};
+template <> struct tile_operator<relu_op>    { using type = tile_relu;    };
+template <> struct tile_operator<sigmoid_op> { using type = tile_sigmoid; };
+template <> struct tile_operator<tanh_op>    { using type = tile_tanh;    };
+template <> struct tile_operator<gelu_op>    { using type = tile_gelu;    };
+template <> struct tile_operator<sin_op>     { using type = tile_sin;     };
+template <> struct tile_operator<exp_op>     { using type = tile_exp;     };
 
 // MUFU-heavy unary ops: hint to tile policy picker to cap items/thread at vector width on sub-4-byte types.
 template <> struct tile_mufu_heavy<sigmoid_op> : ::cuda::std::true_type {};
@@ -107,14 +113,22 @@ template <> struct tile_mufu_heavy<sin_op>     : ::cuda::std::true_type {};
 template <> struct tile_mufu_heavy<exp_op>     : ::cuda::std::true_type {};
 
 // Binary
-template <class T> struct tile_eligible<binary_add,  T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_add;  };
-template <class T> struct tile_eligible<binary_sub,  T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_sub;  };
-template <class T> struct tile_eligible<binary_mul,  T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_mul;  };
-template <class T> struct tile_eligible<binary_div,  T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_div;  };
-template <class T> struct tile_eligible<binary_le,   T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_le;   };
-template <class T> struct tile_eligible<binary_ge,   T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_ge;   };
-template <class T> struct tile_eligible<binary_fmin, T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_fmin; };
-template <class T> struct tile_eligible<binary_fmax, T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_fmax; };
+template <class T> struct tile_eligible<binary_add,  T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<binary_sub,  T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<binary_mul,  T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<binary_div,  T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<binary_le,   T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<binary_ge,   T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<binary_fmin, T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<binary_fmax, T, 2> : ::cuda::std::true_type {};
+template <> struct tile_operator<binary_add>  { using type = tile_binary_add;  };
+template <> struct tile_operator<binary_sub>  { using type = tile_binary_sub;  };
+template <> struct tile_operator<binary_mul>  { using type = tile_binary_mul;  };
+template <> struct tile_operator<binary_div>  { using type = tile_binary_div;  };
+template <> struct tile_operator<binary_le>   { using type = tile_binary_le;   };
+template <> struct tile_operator<binary_ge>   { using type = tile_binary_ge;   };
+template <> struct tile_operator<binary_fmin> { using type = tile_binary_fmin; };
+template <> struct tile_operator<binary_fmax> { using type = tile_binary_fmax; };
 } // namespace transform
 CUB_NAMESPACE_END
 #endif

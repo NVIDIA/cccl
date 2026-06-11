@@ -42,7 +42,8 @@ struct tile_rgb_to_y {
 CUB_NAMESPACE_BEGIN
 namespace transform
 {
-template <class T> struct tile_eligible<rgb_to_y, T, 3> : ::cuda::std::true_type { using tile_op_type = tile_rgb_to_y; };
+template <class T> struct tile_eligible<rgb_to_y, T, 3> : ::cuda::std::true_type {};
+template <> struct tile_operator<rgb_to_y> { using type = tile_rgb_to_y; };
 } // namespace transform
 CUB_NAMESPACE_END
 #endif

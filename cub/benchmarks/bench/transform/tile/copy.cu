@@ -33,7 +33,8 @@ struct tile_identity {
 CUB_NAMESPACE_BEGIN
 namespace transform
 {
-template <class T> struct tile_eligible<identity, T, 1> : ::cuda::std::true_type { using tile_op_type = tile_identity; };
+template <class T> struct tile_eligible<identity, T, 1> : ::cuda::std::true_type {};
+template <> struct tile_operator<identity> { using type = tile_identity; };
 } // namespace transform
 CUB_NAMESPACE_END
 #endif

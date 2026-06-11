@@ -152,9 +152,9 @@ runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIte
 // caller (the hook in device_transform.cuh) is responsible for checking
 // runtime_preconditions_valid first.
 //
-// The tile kernel is launched with the trait's tile_op_type (a tile-friendly
-// mirror of Op with __tile__ operator), NOT the user's Op instance -- the
-// user's scalar functor cannot be invoked on ct::tile arguments.
+// The tile kernel is launched with tile_operator_t<Op>: for a scalar Op that is its
+// registered tile-friendly mirror (a __tile__ functor), and for an already-tile Op it
+// is Op itself. A scalar functor cannot be invoked on ct::tile arguments.
 template <typename TransformOp, typename OutIter, typename... InIters, typename OffsetT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
 dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_items, ::cudaStream_t stream)
@@ -165,12 +165,12 @@ dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_item
       return ::cuda::std::make_tuple(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(iters)...);
     },
     inputs);
-  using out_value_t = cub::detail::it_value_t<OutIter>;
-  using tile_op_t = typename cub::transform::tile_eligible<TransformOp, out_value_t, sizeof...(InIters)>::tile_op_type;
+  // The tile functor to run for TransformOp: its registered tile_operator mirror.
+  using tile_op_t = cub::transform::tile_operator_t<TransformOp>;
   static_assert(::cuda::std::is_empty_v<tile_op_t>,
-                "tile_op_type must be stateless (the tile kernel default-constructs it)");
+                "tile_operator type must be stateless (the tile kernel default-constructs it)");
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
-                "tile_op_type must be trivially default constructible");
+                "tile_operator type must be trivially default constructible");
 
   return DeviceTransform::Transform<0, cub::transform::tile_mufu_heavy_v<TransformOp>, tile_op_t>(
     in_ptrs, out_ptr, static_cast<::cuda::std::int64_t>(num_items), tile_op_t{}, stream);

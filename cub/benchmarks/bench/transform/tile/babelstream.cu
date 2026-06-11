@@ -62,10 +62,14 @@ struct tile_nstream_op {
 CUB_NAMESPACE_BEGIN
 namespace transform
 {
-template <class T> struct tile_eligible<mul_op,     T, 1> : ::cuda::std::true_type { using tile_op_type = tile_mul_op; };
-template <class T> struct tile_eligible<add_op,     T, 2> : ::cuda::std::true_type { using tile_op_type = tile_add_op; };
-template <class T> struct tile_eligible<triad_op,   T, 2> : ::cuda::std::true_type { using tile_op_type = tile_triad_op; };
-template <class T> struct tile_eligible<nstream_op, T, 3> : ::cuda::std::true_type { using tile_op_type = tile_nstream_op; };
+template <class T> struct tile_eligible<mul_op,     T, 1> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<add_op,     T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<triad_op,   T, 2> : ::cuda::std::true_type {};
+template <class T> struct tile_eligible<nstream_op, T, 3> : ::cuda::std::true_type {};
+template <> struct tile_operator<mul_op>     { using type = tile_mul_op; };
+template <> struct tile_operator<add_op>     { using type = tile_add_op; };
+template <> struct tile_operator<triad_op>   { using type = tile_triad_op; };
+template <> struct tile_operator<nstream_op> { using type = tile_nstream_op; };
 } // namespace transform
 CUB_NAMESPACE_END
 #endif
