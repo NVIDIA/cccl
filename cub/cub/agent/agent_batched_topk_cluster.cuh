@@ -771,15 +771,18 @@ private:
   // ---------------------------------------------------------------------------
   // Re-streams the per-rank "overflow" chunks (those that do not fit in the
   // resident SMEM region) from gmem through a small, fixed, round-robin set of
-  // `PipelineStages` streaming slots. The same object is reused for every radix
-  // pass and the final filter. It ping-pongs the iteration order across calls so
-  // the `PipelineStages` boundary chunks that one pass leaves resident in the
-  // streaming slots are reused by the next pass with no reload; in the limit
-  // where the overflow fits entirely in the streaming slots (`overflow <=
-  // PipelineStages`), the chunks are loaded once and never reloaded. The
-  // resident region is unaffected: it lives in the slots `[0, resident_slots)`,
-  // the streaming region in `[stream_slot_base, stream_slot_base +
-  // PipelineStages)`.
+  // `p_eff` (<= `PipelineStages`) streaming slots. The same object is reused for
+  // every radix pass and the final filter. It ping-pongs the iteration order
+  // across calls so the `p_eff` boundary chunks that one pass leaves resident in
+  // the streaming slots are reused by the next pass with no reload; the remaining
+  // `overflow_chunks - p_eff` chunks are reloaded from gmem on each pass. The
+  // caller right-sizes the reservation to `p_eff = min(PipelineStages, excess)`
+  // (where `excess = my_chunks - full_slots`), so a streaming rank always has
+  // `overflow_chunks = excess + p_eff` and reloads exactly `excess` chunks per
+  // pass - the reserved slots only ever buy reuse of the `p_eff` boundary chunks,
+  // never a reload-free pass. The resident region is unaffected: it lives in the
+  // slots `[0, resident_slots)`, the streaming region in `[stream_slot_base,
+  // stream_slot_base + p_eff)`.
   struct overflow_streamer
   {
     agent_batched_topk_cluster& agent;
@@ -792,7 +795,7 @@ private:
     offset_t overflow_base; // rank-local chunk index of the first overflow (streamed) chunk
     int stream_slot_base; // SMEM slot index at which the streaming region begins
     offset_t overflow_chunks; // number of overflow chunks for this rank (M)
-    int p_eff; // active streaming depth = min(PipelineStages, M) (>= 1)
+    int p_eff; // streaming region size = reserved streaming slots (<= PipelineStages, <= M, >= 1)
     bool forward = true;
     bool primed  = false;
 
@@ -813,6 +816,7 @@ private:
       offset_t resident_chunks_,
       offset_t overflow_base_,
       int stream_slot_base_,
+      int stream_slots_,
       offset_t my_chunks_)
         : agent(agent_)
         , block_keys_in(block_keys_in_)
@@ -825,8 +829,13 @@ private:
         , stream_slot_base(stream_slot_base_)
         , overflow_chunks((my_chunks_ > resident_chunks_) ? (my_chunks_ - resident_chunks_) : offset_t{0})
     {
-      const int m = static_cast<int>((::cuda::std::min) (overflow_chunks, static_cast<offset_t>(PipelineStages)));
-      p_eff       = (m > 0) ? m : 1;
+      // `p_eff` is the streaming region size the caller reserved at `[stream_slot_base, stream_slot_base +
+      // stream_slots)`; using all of it as pipeline stages keeps the ping-pong reuse maximal. It is `<= M` whenever
+      // there is overflow (`M = excess + stream_slots >= stream_slots`); the `>= 1` floor only matters for the no-op
+      // (`M == 0`) case, where the streamer never touches a slot.
+      p_eff = (stream_slots_ > 0) ? stream_slots_ : 1;
+      _CCCL_ASSERT(overflow_chunks == 0 || p_eff <= static_cast<int>(overflow_chunks),
+                   "streaming depth exceeds the overflow chunk count");
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE offset_t chunk_index_of(offset_t overflow_idx) const
@@ -1079,9 +1088,8 @@ private:
 
     // Resident vs. streaming split, decided independently per CTA. A CTA whose owned-chunk count fits its resident
     // slots (`my_chunks <= full_slots`) keeps every chunk resident and streams nothing; only a CTA that actually
-    // overflows reserves the last `PipelineStages` slots of its block_tile as a round-robin streaming region (keeping
-    // `full_slots - PipelineStages` resident) and re-streams its overflow chunks from gmem on every pass via
-    // `streamer`.
+    // overflows reserves a round-robin streaming region at the tail of its block_tile and re-streams its overflow
+    // chunks from gmem on every pass via `streamer`.
     //
     // This is purely a local decision: each CTA only ever loads/scans its own chunks (resident SMEM or its own gmem
     // overflow), and the cross-CTA traffic (histogram fold, leader `state`, the deterministic `cand_prefix` scan) plus
@@ -1096,16 +1104,24 @@ private:
     // gmem traffic and SMEM pressure. Both schemes stream under the exact same global condition (some rank overflows
     // iff `ceil_div(chunks, cluster_size) > full_slots`), so the `full_slots > PipelineStages` reservation guarantee
     // the dispatch already provisions for is unchanged.
+    //
+    // Right-size the streaming region. A CTA that overflows its resident slots by only `excess = my_chunks -
+    // full_slots` chunks needs at most `excess` streaming slots to cycle that overflow through gmem; reserving the full
+    // `PipelineStages` would needlessly route up-to-`PipelineStages` extra chunks through the streaming machinery (and
+    // its per-prefetch `__syncthreads()`) that could instead stay resident and be read once. So reserve
+    // `stream_slots = min(PipelineStages, excess)` slots: deep overflows (`excess >= PipelineStages`) behave exactly as
+    // before, while barely-overflowing segments keep the rest resident. The per-pass gmem reload is `excess` either way
+    // (the streamer reuses its `p_eff = stream_slots` boundary chunks across passes); this only shrinks the streaming
+    // region - and grows the resident region - which can only relax the `>= 2 resident slots` head+tail guarantee
+    // below.
     const offset_t full_slots  = block_tile_capacity / static_cast<offset_t>(chunk_items);
     const bool needs_streaming = my_chunks > full_slots;
     _CCCL_ASSERT(!needs_streaming || full_slots > static_cast<offset_t>(PipelineStages),
                  "block_tile too small to reserve a streaming region");
-    const offset_t resident_slots_cap =
-      needs_streaming
-        ? ((full_slots > static_cast<offset_t>(PipelineStages))
-             ? full_slots - static_cast<offset_t>(PipelineStages)
-             : offset_t{1})
-        : full_slots;
+    const offset_t stream_slots =
+      needs_streaming ? (::cuda::std::min) (static_cast<offset_t>(PipelineStages), my_chunks - full_slots)
+                      : offset_t{0};
+    const offset_t resident_slots_cap = full_slots - stream_slots;
     const offset_t my_resident_chunks = (::cuda::std::min) (my_chunks, resident_slots_cap);
     // Resident chunks stay within the first `resident_slots_cap` slots; the streaming region occupies the slots
     // `[resident_slots_cap, full_slots)`, so both regions live inside the allocated block_tile buffer.
@@ -1149,6 +1165,7 @@ private:
       my_resident_chunks,
       overflow_base,
       static_cast<int>(resident_slots_cap),
+      static_cast<int>(stream_slots),
       my_chunks);
 
     ::cuda::std::span<key_t> resident_keys;
