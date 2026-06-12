@@ -34,7 +34,6 @@
 #include <cuda/__container/make_buffer_with_pool.h>
 #include <cuda/__device/device_ref.h>
 #include <cuda/__functional/lazy_call_or.h>
-#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__launch/launch.h>
@@ -44,10 +43,10 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/no_init.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/copy_if.h>
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/sample.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
@@ -55,16 +54,13 @@
 #include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
-#include <cuda/std/__random/bernoulli_distribution.h>
 #include <cuda/std/__random/philox_engine.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/repeat_view.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/zip_view.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -87,14 +83,15 @@ namespace __detail
 // Parallelize with multiple threads (but not too many!). __I_j is O(p-1), so in
 // practice at the absolute max a few thousand if you are running on the worlds
 // largest supercomputers.
-template <class _Iter, class _Sent, class _Tp, class _BinaryOp>
+template <class _Tp, class _BinaryOp>
 _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
-  ::cuda::std::bernoulli_distribution __keep,
-  _Iter __begin,
-  _Sent __end,
-  ::cuda::std::span<const ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>> __I_j,
+  ::cuda::std::philox4x64 __gen,
+  const double __prob,
+  const _Tp* __begin,
+  const _Tp* const __end,
+  const ::cuda::std::span<const ::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>> __I_j,
   _BinaryOp __cmp,
-  _Tp* __samples_iter,
+  const ::cuda::std::span<_Tp> __samples,
   ::cuda::std::size_t* __samples_size_bytes)
 {
   if (threadIdx.x != 0)
@@ -103,10 +100,9 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
     return;
   }
 
-  // Only 1 thread for now, but I guess it cannot hurt to seed?
-  auto __gen                       = ::cuda::std::philox4x64{::clock()};
-  auto* const __samples_iter_begin = __samples_iter;
+  auto __samples_it = __samples.begin();
 
+  _CCCL_ASSERT(__prob > 0, "Cannot have 0 probably of picking elements");
   // By value so that load from global memory happens only once
   for (const auto [__lo, __hi] : __I_j)
   {
@@ -117,15 +113,17 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
     const auto __first = __lo.has_value() ? ::cuda::std::lower_bound(__begin, __last, *__lo, __cmp) : __begin;
 
     _CCCL_ASSERT(__first <= __last, "Inputs are not sorted for binary search");
-    __samples_iter = ::cuda::std::copy_if(__first, __last, __samples_iter, [&](const auto&) {
-      return __keep(__gen);
-    });
 
+    const auto __num_samples =
+      static_cast<::cuda::std::uint32_t>(::cuda::std::ceil(static_cast<double>(__last - __first) * __prob));
+    const auto __remaining_samples = static_cast<::cuda::std::uint32_t>(__samples.end() - __samples_it);
+
+    __samples_it =
+      ::cuda::std::sample(__first, __last, __samples_it, ::cuda::std::min(__num_samples, __remaining_samples), __gen);
     __begin = __last;
   }
 
-  *__samples_size_bytes =
-    static_cast<::cuda::std::size_t>(__samples_iter - __samples_iter_begin) * sizeof(*__samples_iter);
+  *__samples_size_bytes = static_cast<::cuda::std::size_t>(__samples_it - __samples.begin()) * sizeof(*__samples_it);
 }
 
 template <class _Integral>
@@ -251,12 +249,12 @@ struct __finalize_splitters_fn
 
 template <class _Range>
 _CCCL_CONCEPT __can_thrust_no_init_resize = _CCCL_REQUIRES_EXPR((_Range), _Range& __range)(
-  requires(::cuda::std::is_trivially_constructible_v<::cuda::std::ranges::range_value_t<_Range>>),
+  requires(::cuda::std::is_trivially_default_constructible_v<::cuda::std::ranges::range_value_t<_Range>>),
   __range.resize(::cuda::std::size_t{}, ::thrust::no_init));
 
 template <class _Range>
 _CCCL_CONCEPT __can_cuda_no_init_resize = _CCCL_REQUIRES_EXPR((_Range), _Range& __range)(
-  requires(::cuda::std::is_trivially_constructible_v<::cuda::std::ranges::range_value_t<_Range>>),
+  requires(::cuda::std::is_trivially_default_constructible_v<::cuda::std::ranges::range_value_t<_Range>>),
   __range.resize(::cuda::std::size_t{}, ::cuda::no_init));
 
 template <class _Range>
@@ -408,7 +406,7 @@ struct _Sorter
 
     [[nodiscard]] _CCCL_HOST_API auto end() noexcept
     {
-      return __buf_.end();
+      return begin() + size();
     }
 
     [[nodiscard]] _CCCL_HOST_API auto begin() const noexcept
@@ -418,7 +416,7 @@ struct _Sorter
 
     [[nodiscard]] _CCCL_HOST_API auto end() const noexcept
     {
-      return __buf_.end();
+      return begin() + size();
     }
 
     [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
@@ -464,16 +462,14 @@ struct _Sorter
     ::cuda::launch(
       __stream,
       __config,
-      __sample_probes_kernel<::cuda::std::ranges::iterator_t<_InputRange>,
-                             ::cuda::std::ranges::sentinel_t<_InputRange>,
-                             _Tp,
-                             _BinaryOp>,
-      ::cuda::std::bernoulli_distribution{__sampling_probability},
-      ::cuda::std::ranges::begin(__input),
-      ::cuda::std::ranges::end(__input),
+      __sample_probes_kernel<_Tp, _BinaryOp>,
+      ::cuda::std::philox4x64{static_cast<::cuda::std::uint32_t>(__sampling_probability)},
+      __sampling_probability,
+      ::cuda::std::to_address(&*::cuda::std::ranges::begin(__input)),
+      ::cuda::std::to_address(&*::cuda::std::ranges::end(__input)),
       __I_j.__get(),
       ::cuda::std::move(__cmp),
-      __samples->__get().data(),
+      ::cuda::std::span<_Tp>{*__samples},
       __samples_size_bytes->__get().data());
   }
 
@@ -909,7 +905,7 @@ struct _Sorter
          __splitters_begin = __splitters.__get().data(),
          __num_splitters   = __splitters.size(),
          __lo              = __input_begin,
-         __cmp] _CCCL_HOST_DEVICE(::cuda::std::size_t __d) mutable {
+         __cmp] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __d) mutable {
           auto __hi = __input_end;
 
           if (__d != __num_splitters)
@@ -933,7 +929,7 @@ struct _Sorter
         __comm.device(),
         __comm_size,
         ::cub::DeviceTransform::Transform,
-        (::cuda::counting_iterator<::cuda::std::size_t>{},
+        (::cuda::counting_iterator<::cuda::std::uint64_t>{},
          ::cuda::std::move(__out),
          __comm_size_fixed,
          ::cuda::std::move(__op),
@@ -1177,7 +1173,7 @@ struct _Sorter
          __comm_size,
          __N,
          __current_offsets = __current_offsets.__get().data(),
-         __desired_offsets = __desired_offsets.__get().data()] _CCCL_HOST_DEVICE(::cuda::std::size_t __peer) {
+         __desired_offsets = __desired_offsets.__get().data()] _CCCL_HOST_DEVICE(::cuda::std::uint64_t __peer) {
           // current_offsets[i] is the start of rank i's current
           // (post-exchange) bucket; desired offsets are the original final
           // buckets. Intersect the two global element intervals to derive
@@ -1222,7 +1218,7 @@ struct _Sorter
         __comm.device(),
         __comm_size,
         ::cub::DeviceTransform::Transform,
-        (::cuda::counting_iterator<::cuda::std::size_t>{},
+        (::cuda::counting_iterator<::cuda::std::uint64_t>{},
          ::cuda::std::move(__out),
          __comm_size_fixed,
          ::cuda::std::move(__op),
@@ -1519,7 +1515,10 @@ struct _Sorter
         const auto __sample_reserve    = ::cuda::std::clamp<::cuda::std::size_t>(
           __previous_estimate, ::cuda::std::min(__local_baseline, __n_local), __n_local);
 
-        __resize_for_overwrite(__samples, __sample_reserve);
+        (void) __sample_reserve;
+        const auto __estimate = __j == 1 ? __n_local * __prob : (__previous_sendcount_bytes / sizeof(_Tp));
+
+        __resize_for_overwrite(__samples, __estimate);
         __sample_probes(__stream, __input, __I_j, __prob, __cmp, &__samples, &__sample_sizes_bytes);
       }
 
