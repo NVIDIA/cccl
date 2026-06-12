@@ -27,6 +27,7 @@
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__iterator/zip_iterator.h>
+#include <cuda/__memory/aligned_size.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
@@ -97,7 +98,16 @@ struct DeviceTransform
     // https://github.com/NVIDIA/cccl/issues/8805 for data. We use choose_signed_offset to just check if it can hold the
     // value passed by the user, but otherwise ignore the chosen signed offset type.
     using offset_t = ::cuda::std::int64_t;
-    if (const cudaError_t error = detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
+
+    // num_items may be a plain integer or a cuda::aligned_size_t<N> -- an opt-in promise (the same one
+    // cuda::memcpy_async uses) that the pointers are N-aligned and num_items is a multiple of N. Unwrap
+    // it to a plain integer for the offset machinery (choose_signed_offset requires an integral type);
+    // the alignment promise is read separately by the tile hook below. For a plain integer this is a
+    // no-op: count_t == NumItemsT and count == num_items.
+    constexpr ::cuda::std::size_t num_items_align = ::cuda::__get_size_align_v<NumItemsT>;
+    using count_t       = ::cuda::std::conditional_t<(num_items_align > 1), ::cuda::std::size_t, NumItemsT>;
+    const count_t count = static_cast<count_t>(num_items);
+    if (const cudaError_t error = detail::choose_signed_offset<count_t>::is_exceeding_offset_type(count))
     {
       return error;
     }
@@ -105,24 +115,24 @@ struct DeviceTransform
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
-    // Opt-in tile path. When the (Op, T, NIn) combo is trait-eligible AND
-    // the runtime alignment + divisibility preconditions hold, route to the
-    // tile kernel. Otherwise fall through to the standard CUB dispatch
-    // below -- CUB's existing kernels handle the unaligned tail case via
-    // their own internal logic, so misalignment is a graceful fallback,
-    // not an error.
+    // Opt-in tile path. When the (Op, T, NIn) combo is trait-eligible we route to the tile kernel:
+    //  - if num_items is a cuda::aligned_size_t<N>=16, the caller has promised 16-byte pointer
+    //    alignment + divisibility, so we commit to tile at compile time and skip the runtime check;
+    //  - otherwise we check the alignment/divisibility preconditions at runtime and fall through to
+    //    the standard CUB dispatch below if they do not hold (CUB's kernels handle the unaligned/tail
+    //    case, so this is a graceful fallback, not an error).
     if constexpr (StableAddress == detail::transform::requires_stable_address::no
                   && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
-                  && cub::detail::transform::tile::tile_dispatch_eligible_v<
-                       TransformOp,
-                       RandomAccessIteratorOut,
-                       RandomAccessIteratorsIn...>)
+                  && cub::detail::transform::tile::
+                    tile_dispatch_eligible_v<TransformOp, RandomAccessIteratorOut, RandomAccessIteratorsIn...>)
     {
-      if (cub::detail::transform::tile::runtime_preconditions_valid(
-            inputs, output, static_cast<offset_t>(num_items)))
+      if constexpr (num_items_align >= 16)
       {
-        return cub::detail::transform::tile::dispatch<TransformOp>(
-          inputs, output, static_cast<offset_t>(num_items), stream);
+        return cub::detail::transform::tile::dispatch<TransformOp>(inputs, output, static_cast<offset_t>(count), stream);
+      }
+      else if (cub::detail::transform::tile::runtime_preconditions_valid(inputs, output, static_cast<offset_t>(count)))
+      {
+        return cub::detail::transform::tile::dispatch<TransformOp>(inputs, output, static_cast<offset_t>(count), stream);
       }
     }
 #endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
@@ -145,7 +155,7 @@ struct DeviceTransform
     return detail::transform::dispatch<StableAddress>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
-      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(count),
       ::cuda::std::move(predicate),
       ::cuda::std::move(transform_op),
       stream,
