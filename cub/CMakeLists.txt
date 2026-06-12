@@ -19,6 +19,17 @@ option(
   "Build cub::DeviceTransform's tile path (requires nvcc --enable-tile)."
   OFF
 )
+if (
+  CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
+  AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+  AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS 13.4
+)
+  message(
+    FATAL_ERROR
+    "CCCL_ENABLE_TILE_TRANSFORM_DISPATCH requires CUDA 13.4+ (nvcc --enable-tile). "
+    "Found ${CMAKE_CUDA_COMPILER_VERSION}."
+  )
+endif()
 
 option(CUB_ENABLE_TUNING "Build CUB tuning suite." OFF)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
