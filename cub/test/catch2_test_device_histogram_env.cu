@@ -1287,7 +1287,7 @@ C2H_TEST("HistogramPolicy", "[histogram][device]")
     .load_modifier                    = cub::CacheLoadModifier::LOAD_LDG,
     .rle_compress                     = false,
     .mem_preference                   = cub::SMEM,
-    .work_stealing                    = false,
+    .use_work_stealing                = false,
     .init_kernel_pdl_trigger_max_bins = 2048};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
