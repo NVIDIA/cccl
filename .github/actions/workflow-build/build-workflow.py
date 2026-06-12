@@ -59,6 +59,7 @@ import copy
 import functools
 import json
 import os
+import random
 import re
 import struct
 import sys
@@ -423,8 +424,7 @@ def generate_dispatch_group_name(matrix_job):
     return f"{project['name']} {compiler_info}"
 
 
-def generate_dispatch_job_name(matrix_job, job_type):
-    job_info = get_job_type_info(job_type)
+def generate_dispatch_job_name(matrix_job, job_type, job_info):
     cpu_str = matrix_job["cpu"]
     gpu_str = (", " + matrix_job["gpu"].upper()) if job_info["gpu"] else ""
     cuda_compile_arch = (
@@ -459,12 +459,16 @@ def generate_dispatch_job_name(matrix_job, job_type):
     return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
 
 
-def generate_dispatch_job_runner(matrix_job, job_type):
+def generate_dispatch_job_runner(matrix_job, job_type, job_info):
     runner_os = "windows" if is_windows(matrix_job) else "linux"
     cpu = matrix_job["cpu"]
 
-    job_info = get_job_type_info(job_type)
     if not job_info["gpu"]:
+        if matrix_job.get("use_sccache_dist", False):
+            # Use smaller 8-core runners for build jobs if we can
+            return f"{runner_os}-{cpu}-cpu8m"
+        else:
+            return f"{runner_os}-{cpu}-cpu16"
         # if job_type == "build":
         #     # Use smaller 8-core runners for build jobs if we can
         #     if ("clang" not in matrix_job["cudacxx"]) and (
@@ -472,7 +476,7 @@ def generate_dispatch_job_runner(matrix_job, job_type):
         #     ):
         #         return f"{runner_os}-{cpu}-cpu8"
         # # ClangCUDA and MSVC should use 16-core runners
-        return f"{runner_os}-{cpu}-cpu16"
+        # return f"{runner_os}-{cpu}-cpu16"
 
     gpu = get_gpu(matrix_job["gpu"])
     suffix = "-testing" if gpu["testing"] else ""
@@ -491,12 +495,11 @@ def generate_dispatch_job_host_compiler(matrix_job, job_type):
     return host_compiler["container_tag"] + host_compiler["version"]
 
 
-def generate_dispatch_job_image(matrix_job, job_type):
+def generate_dispatch_job_image(matrix_job, job_type, job_info):
     devcontainer_version = matrix_yaml["devcontainer_version"]
     ctk = matrix_job["ctk"]
     host_compiler = generate_dispatch_job_host_compiler(matrix_job, job_type)
 
-    job_info = get_job_type_info(job_type)
     ctk_suffix = "ext" if job_info["cuda_ext"] else ""
 
     if is_windows(matrix_job):
@@ -512,11 +515,10 @@ def generate_dispatch_job_environment(matrix_job, job_type):
     return json.dumps(matrix_job.get("environment") or [])
 
 
-def generate_dispatch_job_command(matrix_job, job_type):
+def generate_dispatch_job_command(matrix_job, job_type, job_info):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
     script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
 
-    job_info = get_job_type_info(job_type)
     job_prefix = job_info["invoke"]["prefix"]
     job_args = job_info["invoke"]["args"]
 
@@ -552,14 +554,12 @@ def generate_dispatch_job_command(matrix_job, job_type):
     return command
 
 
-def generate_dispatch_job_origin(matrix_job, job_type):
+def generate_dispatch_job_origin(matrix_job, job_type, job_info):
     # Already has silename, line number, etc:
     origin = matrix_job["origin"].copy()
 
     origin_job = matrix_job.copy()
     del origin_job["origin"]
-
-    job_info = get_job_type_info(job_type)
 
     # Replace the unexploded 'jobs' tag with the current single job type:
     origin_job["jobs"] = [job_info["id"]]
@@ -595,15 +595,39 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
 
 def generate_dispatch_job_json(matrix_job, job_type):
+    job_info = get_job_type_info(job_type)
+    command = generate_dispatch_job_command(matrix_job, job_type, job_info)
+
+    if (
+        # Only use the build cluster for build jobs
+        job_type == "build"
+        # Only use the build cluster for CPU jobs
+        and not job_info["gpu"]
+        # Only use the build cluster for Linux jobs
+        and not is_windows(matrix_job)
+        # Only use the build cluster for every 1 out of 10 runs
+        and random.randint(0, 10) == 10
+    ):
+        matrix_job["use_sccache_dist"] = True
+        matrix_job["environment"] = matrix_job.get("environment") or []
+        matrix_job["environment"].append("USE_SCCACHE_DIST=1")
+        # Over-subscribe -j to keep the build cluster busy if *not* ClangCUDA
+        # or Python. ClangCUDA can use the build cluster for C++ files, but not
+        # CUDA, and we'll OOM if we try to compile too many at once.
+        if ("clang" not in matrix_job["cudacxx"]) and not command.endswith(
+            "_python.sh"
+        ):
+            matrix_job["environment"].append("PARALLEL_LEVEL=0")
+
     return {
         "cuda": generate_dispatch_job_ctk_version(matrix_job, job_type),
         "host": generate_dispatch_job_host_compiler(matrix_job, job_type),
-        "name": generate_dispatch_job_name(matrix_job, job_type),
-        "runner": generate_dispatch_job_runner(matrix_job, job_type),
-        "image": generate_dispatch_job_image(matrix_job, job_type),
+        "name": generate_dispatch_job_name(matrix_job, job_type, job_info),
+        "runner": generate_dispatch_job_runner(matrix_job, job_type, job_info),
+        "image": generate_dispatch_job_image(matrix_job, job_type, job_info),
         "environment": generate_dispatch_job_environment(matrix_job, job_type),
-        "command": generate_dispatch_job_command(matrix_job, job_type),
-        "origin": generate_dispatch_job_origin(matrix_job, job_type),
+        "command": command,
+        "origin": generate_dispatch_job_origin(matrix_job, job_type, job_info),
     }
 
 
@@ -641,7 +665,7 @@ def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job
         producer_matrix_job = copy.deepcopy(matrix_job)
         producer_matrix_job["ctk"] = producer_ctk
     else:
-        producer_matrix_job = matrix_job
+        producer_matrix_job = copy.deepcopy(matrix_job)
 
     producer_json = generate_dispatch_job_json(producer_matrix_job, producer_job_type)
 

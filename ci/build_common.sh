@@ -156,33 +156,33 @@ set -u
 
 N_CPUS="$(nproc --all --ignore=1)"
 readonly N_CPUS
-readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
+declare PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
-# # If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
-# # concurrent preprocessor calls we think we can do without OOM'ing the machine
-# if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
-#     # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
-#     # * 1.5Mb for the shell launched by ninja
-#     # * 6MiB for each sccache client process
-#     # * round up to 10
-#     mem_per_sccache_client="$((1024 * 10))"
-#     # Assume preprocessor invocations take ~750Mb or so
-#     mem_per_preprocessor="$((750 * 1024))"
-#     # Sum the two to get memory per job
-#     mem_per_job="$((mem_per_sccache_client + mem_per_preprocessor))"
-#     # It's usually around 400-600MiB, but be conservative
-#     # and assume the sccache daemon will use 1GiB of RAM
-#     mem_for_sccache_daemon="$((1 * 1024 * 1024))"
-#     # Available memory (in KB), for more details see free(1).
-#     free_mem="$(grep MemAvailable /proc/meminfo | tr -s '[:space:]' | cut -d' ' -f2)"
-#     # Stay under 95% for CI
-#     free_mem="$(((free_mem - mem_for_sccache_daemon) * 95 / 100))"
-#     # Total job count is available memory after accounting for `nproc` preprocessor calls
-#     # divided by the amount of memory required to invoke the sccache thin client process.
-#     PARALLEL_LEVEL="$((free_mem / mem_per_job))"
-# fi
+# If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
+# concurrent preprocessor calls we think we can do without OOM'ing the machine
+if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
+    # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
+    # * 1.5Mb for the shell launched by ninja
+    # * 6MiB for each sccache client process
+    # * round up
+    mem_per_sccache_client="$((8 * 1024))"
+    # Assume preprocessor invocations take ~250Mb or so
+    mem_per_preprocessor="$((250 * 1024))"
+    # Sum the two to get memory per job
+    mem_per_job="$((mem_per_sccache_client + mem_per_preprocessor))"
+    # It's usually around 400-600MiB, but be conservative
+    # and assume the sccache daemon will use 1GiB of RAM
+    mem_for_sccache_daemon="$((1 * 1024 * 1024))"
+    # Available memory (in KB), for more details see free(1).
+    free_mem="$(grep MemAvailable /proc/meminfo | tr -s '[:space:]' | cut -d' ' -f2)"
+    # Stay under 95% for CI
+    free_mem="$(((free_mem - mem_for_sccache_daemon) * 95 / 100))"
+    # Total job count is available memory after accounting for `nproc` preprocessor calls
+    # divided by the amount of memory required to invoke the sccache thin client process.
+    PARALLEL_LEVEL="$((free_mem / mem_per_job))"
+fi
 
-# export PARALLEL_LEVEL
+export PARALLEL_LEVEL
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
