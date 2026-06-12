@@ -43,6 +43,7 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/no_init.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/copy_if.h>
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/max.h>
@@ -562,6 +563,7 @@ struct _Sorter
     const ::std::vector<__buffer<_Tp>>& __local_samples,
     _BinaryOp __cmp,
     ::std::vector<__buffer<::cuda::std::size_t>>* __local_samples_size_bytes,
+    ::std::vector<::cuda::std::size_t>* __local_sendcounts_bytes,
     ::std::vector<__buffer<_Tp>>* __local_probes)
   {
     {
@@ -576,13 +578,12 @@ struct _Sorter
       }
     }
 
-    ::std::vector<::cuda::std::size_t> __sendcounts_bytes(::cuda::std::ranges::begin(__comms)->size());
     ::std::vector<::cuda::std::size_t> __root_recvcounts_bytes;
     ::std::vector<::cuda::std::size_t> __root_displs_bytes;
     ::cuda::std::optional<__buffer<_Tp>> __root_all_samples;
 
-    for (auto&& [__comm, __stream, __env, __samples_size_bytes, __sendcount] :
-         ::cuda::std::ranges::views::zip(__comms, __streams, __envs, *__local_samples_size_bytes, __sendcounts_bytes))
+    for (auto&& [__comm, __stream, __env, __samples_size_bytes, __sendcount] : ::cuda::std::ranges::views::zip(
+           __comms, __streams, __envs, *__local_samples_size_bytes, *__local_sendcounts_bytes))
     {
       if (__comm.rank() == __ROOT_RANK)
       {
@@ -634,7 +635,7 @@ struct _Sorter
       const auto _ = __nccl::__auto_nccl_group{};
 
       for (auto&& [__comm, __stream, __samples, __sendcount_bytes] :
-           ::cuda::std::ranges::views::zip(__comms, __streams, __local_samples, __sendcounts_bytes))
+           ::cuda::std::ranges::views::zip(__comms, __streams, __local_samples, *__local_sendcounts_bytes))
       {
         const auto __rank = __comm.rank();
 
@@ -1420,6 +1421,7 @@ struct _Sorter
     ::std::vector<__buffer<_Tp>> __local_samples;
     ::std::vector<__buffer<::cuda::std::size_t>> __local_samples_sizes_bytes;
     ::std::vector<__buffer<::cuda::std::uint64_t>> __local_hist;
+    ::std::vector<::cuda::std::size_t> __local_sample_sendcounts_bytes(__num_local_inputs);
 
     __local_Ls.reserve(__num_local_inputs);
     __local_Us.reserve(__num_local_inputs);
@@ -1459,7 +1461,7 @@ struct _Sorter
       static_cast<::cuda::std::int32_t>(::cuda::std::ceil(::cuda::std::log10(::cuda::std::log10(__comm_size) / __EPS))),
       1);
     const auto __s_j_interior = 2. * ::cuda::std::log(__comm_size) / __EPS;
-    // Lemma 4.6: the OVERALL sample size for round j is
+    // Lemma 4.6: the overall sample size for round j is
     //
     // Z_j <= 5*p*s_j/s_{j-1} w.h.p.,
     //
@@ -1471,29 +1473,65 @@ struct _Sorter
     //
     // s_j/s_{j-1} = (2 ln p / eps)^{1/k}
     //
-    // is constant across rounds. So the GLOBAL sample size is bounded (w.h.p.) by
-    //
-    // Z_j = 5*p*(2 ln p/eps)^{1/k}.
-    //
-    // This is only a w.h.p. bound on a Bernoulli draw, not a hard cap, so it is
-    // used as a reserve() hint -- an unlucky overshoot just costs a realloc.
-    const auto __Z_j_per_proc = static_cast<::cuda::std::size_t>(::cuda::std::ceil(
-      5. * ::cuda::std::pow(2. * ::cuda::std::log(__comm_size) / __EPS, 1.0 / static_cast<double>(__K))));
+    // is constant across rounds. Divide the global bound by p for a balanced local baseline,
+    // then scale by this rank's input size. After the first round, use the previous actual
+    // local sample count as the stronger signal.
+    const auto __sample_size_ratio =
+      ::cuda::std::pow(2. * ::cuda::std::log(__comm_size) / __EPS, 1.0 / static_cast<double>(__K));
 
     for (int __j = 1; __j <= __K; ++__j)
     {
       const auto __s_j  = ::cuda::std::pow(__s_j_interior, static_cast<double>(__j) / static_cast<double>(__K));
       const auto __prob = ::cuda::std::min(__s_j * static_cast<double>(__comm_size) / static_cast<double>(__N), 1.);
 
-      for (auto&& [__stream, __input, __I_j, __samples, __sample_sizes_bytes] : ::cuda::std::ranges::views::zip(
-             __streams, __local_inputs, __local_I_js, __local_samples, __local_samples_sizes_bytes))
+      for (auto&& [__stream, __input, __I_j, __samples, __sample_sizes_bytes, __n_local, __previous_sendcount_bytes] :
+           ::cuda::std::ranges::views::zip(
+             __streams,
+             __local_inputs,
+             __local_I_js,
+             __local_samples,
+             __local_samples_sizes_bytes,
+             __local_original_sizes,
+             __local_sample_sendcounts_bytes))
       {
-        __resize_for_overwrite(__samples, __Z_j_per_proc);
+        // Lemma 4.6 bounds the total sample count across the communicator, not this rank's
+        // local buffer. Start with the balanced per-rank share:
+        //
+        // 5 * (s_j / s_{j-1})
+        //
+        // Then scale it by this rank's relative input size:
+        //
+        // n_local / (N / p)
+        //
+        // After the first round, the previous local sample count is usually a better
+        // predictor: it was produced by sampling this rank's actual keys inside the previous
+        // splitter intervals, so it captures skew that the size-only baseline cannot see. The
+        // predictor is:
+        //
+        // 2 * previous_count
+        //
+        // Clamp that predictor between the local baseline and n_local. If the baseline itself
+        // exceeds n_local, both clamp bounds collapse to n_local.
+        const auto __local_scale = static_cast<double>(__n_local * __comm_size) / static_cast<double>(__N);
+        const auto __local_baseline =
+          static_cast<::cuda::std::size_t>(::cuda::std::ceil(5. * __sample_size_ratio * __local_scale));
+        const auto __previous_estimate = 2 * __previous_sendcount_bytes / sizeof(_Tp);
+        const auto __sample_reserve    = ::cuda::std::clamp<::cuda::std::size_t>(
+          __previous_estimate, ::cuda::std::min(__local_baseline, __n_local), __n_local);
+
+        __resize_for_overwrite(__samples, __sample_reserve);
         __sample_probes(__stream, __input, __I_j, __prob, __cmp, &__samples, &__sample_sizes_bytes);
       }
 
       __gather_merge_broadcast(
-        __comms, __envs, __streams, __local_samples, __cmp, &__local_samples_sizes_bytes, &__local_probes);
+        __comms,
+        __envs,
+        __streams,
+        __local_samples,
+        __cmp,
+        &__local_samples_sizes_bytes,
+        &__local_sample_sendcounts_bytes,
+        &__local_probes);
 
       __local_histogram(__comms, __envs, __local_inputs, __local_probes, __cmp, &__local_hist);
 
