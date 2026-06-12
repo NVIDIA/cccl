@@ -51,6 +51,7 @@
 #  include <cuda/std/__ranges/size.h>
 #  include <cuda/std/__ranges/unwrap_end.h>
 #  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstdint>
@@ -62,9 +63,19 @@
 //! @brief The \c buffer class provides a container of contiguous memory
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+template <class _Tp>
+inline constexpr bool __is_any_env = false;
+
+template <class... _Tp>
+inline constexpr bool __is_any_env<::cuda::std::execution::env<_Tp...>> = true;
+
+// TODO:
+//
+// Find a way to enable checks again without bricking for environments that clearly (which we
+// can somehow detect) dont intend to have alignment.
 template <class _Env>
 inline constexpr bool __buffer_compatible_env =
-  ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
+  __is_any_env<::cuda::std::remove_cvref_t<_Env>>
   || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP

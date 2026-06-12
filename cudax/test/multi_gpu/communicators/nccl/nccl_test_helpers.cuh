@@ -99,7 +99,7 @@ private:
   std::vector<cudax::nccl_communicator_ref> wrappers_{};
 };
 
-#define NCCL_COMM_TEST(NAME, ...) \
+#define MGMN_TEST(NAME, ...) \
   C2H_TEST_WITH_FIXTURE(::nccl_test_util::nccl_comm_fixture, NAME, "[multi_gpu][nccl]", __VA_ARGS__)
 } // namespace nccl_test_util
 

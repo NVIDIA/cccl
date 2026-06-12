@@ -26,6 +26,8 @@
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 
@@ -214,6 +216,18 @@ _CCCL_CONCEPT __has_all_to_all_v = _CCCL_REQUIRES_EXPR(
     __recv_counts,
     __recv_displs,
     __stream));
+
+// ==========================================================================================
+
+template <class _Range>
+_CCCL_CONCEPT __range_of_communicators = _CCCL_REQUIRES_EXPR((_Range), )(
+  requires(::cuda::std::ranges::forward_range<_Range>),
+  requires(__communicator<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_Range>>>));
+
+template <class _Range>
+_CCCL_CONCEPT __range_of_streams = _CCCL_REQUIRES_EXPR((_Range), )(
+  requires(::cuda::std::ranges::forward_range<_Range>),
+  requires(::cuda::std::ranges::__container_compatible_range<_Range, ::cuda::stream_ref>));
 } // namespace cuda::experimental
 // NOLINTEND(bugprone-reserved-identifier)
 

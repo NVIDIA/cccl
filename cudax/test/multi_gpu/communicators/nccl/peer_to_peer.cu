@@ -28,7 +28,7 @@ struct payload
 } // namespace
 
 // Ring exchange via send/recv. Rank r contributes {r, r, r}.
-NCCL_COMM_TEST("nccl_communicator_ref send/recv ring")
+MGMN_TEST("nccl_communicator_ref send/recv ring", )
 {
   if (cuda::devices.size() == 1)
   {
@@ -84,7 +84,7 @@ NCCL_COMM_TEST("nccl_communicator_ref send/recv ring")
   }
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref send/recv transports trivially copyable payload")
+MGMN_TEST("nccl_communicator_ref send/recv transports trivially copyable payload", )
 {
   if (cuda::devices.size() == 1)
   {

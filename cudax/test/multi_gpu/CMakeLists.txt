@@ -63,6 +63,7 @@ function(cudax_add_multi_gpu_test sub_prefix target_name_var source)
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
+add_subdirectory(algorithms)
 add_subdirectory(communicators)
 add_subdirectory(concepts)
 add_subdirectory(nccl)
