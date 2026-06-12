@@ -99,14 +99,12 @@ struct DeviceTransform
     // value passed by the user, but otherwise ignore the chosen signed offset type.
     using offset_t = ::cuda::std::int64_t;
 
-    // num_items may be a plain integer or a cuda::aligned_size_t<N> -- an opt-in promise (the same one
-    // cuda::memcpy_async uses) that the pointers are N-aligned and num_items is a multiple of N. Unwrap
-    // it to a plain integer for the offset machinery (choose_signed_offset requires an integral type);
-    // the alignment promise is read separately by the tile hook below. For a plain integer this is a
-    // no-op: count_t == NumItemsT and count == num_items.
-    constexpr ::cuda::std::size_t num_items_align = ::cuda::__get_size_align_v<NumItemsT>;
-    using count_t       = ::cuda::std::conditional_t<(num_items_align > 1), ::cuda::std::size_t, NumItemsT>;
-    const count_t count = static_cast<count_t>(num_items);
+    // num_items may be a plain integer or cuda::aligned_size_t<N> (the cuda::memcpy_async-style opt-in promising N-byte
+    // pointer alignment + size divisibility). Unwrap to a plain integer for the offset machinery (choose_signed_offset
+    // needs an integral type); the tile hook below reads the alignment promise. No-op for a plain integer.
+    constexpr auto num_items_align = ::cuda::__get_size_align_v<NumItemsT>;
+    using count_t                  = ::cuda::std::conditional_t<(num_items_align > 1), ::cuda::std::size_t, NumItemsT>;
+    const count_t count            = static_cast<count_t>(num_items);
     if (const cudaError_t error = detail::choose_signed_offset<count_t>::is_exceeding_offset_type(count))
     {
       return error;

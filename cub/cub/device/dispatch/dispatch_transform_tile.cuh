@@ -37,6 +37,7 @@
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__tuple_dir/apply.h>
 #  include <cuda/std/__type_traits/is_empty.h>
@@ -44,8 +45,6 @@
 #  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/tuple>
-
-#  include <cuda_runtime.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -115,7 +114,7 @@ template <typename Op, typename OutIter, typename... InIters>
 inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
   && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
-  && cub::transform::tile_eligible_v<Op, cub::detail::it_value_t<OutIter>, sizeof...(InIters)>;
+  && cub::transform::tile_eligible_v<Op, ::cuda::std::iter_value_t<OutIter>, sizeof...(InIters)>;
 
 // Runtime predicate consulted by the cub::DeviceTransform tile hook before
 // it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
