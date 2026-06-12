@@ -99,7 +99,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
       __flag_iter,
       static_cast<_OffsetType*>(nullptr),
       __count,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
@@ -112,9 +112,9 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
         __num_bytes,
         ::cuda::std::move(__first),
         ::cuda::std::move(__flag_iter),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         __count,
-        __stream.get());
+        __policy);
     }
 
     __stream.sync();
