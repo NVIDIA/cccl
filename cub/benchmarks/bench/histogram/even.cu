@@ -133,9 +133,10 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
              });
 }
 
-// CounterT / OffsetT overridable for the 64-bit-counter / 64-bit-offset baseline build
-// (matches the feature branch's bench guards). Inert when undefined -> baseline dispatch
-// semantics unchanged. A 64-bit OffsetT is required for >2^31 elements.
+// CounterT / OffsetT are overridable (like TUNE_SampleT below) so a build variant can
+// instantiate the 64-bit-counter / 64-bit-offset configuration for the large-input
+// characterization sweep. A 64-bit OffsetT is required for >2^31 elements (>=8 GiB of
+// 4-byte samples, >=16 GiB of 8-byte samples).
 #ifdef TUNE_CounterT
 using counter_types = nvbench::type_list<TUNE_CounterT>;
 #else
