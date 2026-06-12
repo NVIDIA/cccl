@@ -600,8 +600,7 @@ private:
     {
       return error;
     }
-    constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 20;
-    const bool use_pdl              = num_items <= pdl_max_items && cc >= ::cuda::compute_capability{9, 0};
+    const bool use_pdl = cc >= ::cuda::compute_capability{9, 0};
 
     const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
     const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
@@ -654,7 +653,6 @@ private:
 
     // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
     // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
-    if (use_pdl)
     {
       constexpr int init_startup_threads = 256;
       const size_t num_init_items        = ::cuda::std::max(num_counter_items, num_bin_items);
@@ -676,33 +674,12 @@ private:
         return error;
       }
     }
-    else
-    {
-      if (const auto error = CubDebug(cudaMemsetAsync(d_ctrs, 0, num_counter_items * sizeof(AtomicOffsetT), stream)))
-      {
-        return error;
-      }
-
-      // compute num_passes histograms with RADIX_DIGITS bins each
-      if (const auto error = CubDebug(cudaMemsetAsync(d_bins, 0, num_bin_items * sizeof(OffsetT), stream)))
-      {
-        return error;
-      }
-    }
 
     if (const auto error = CubDebug(
           launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream, use_pdl)
             .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer)))
     {
       return error;
-    }
-
-    if (!use_pdl)
-    {
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-      {
-        return error;
-      }
     }
 
     if (const auto error = CubDebug(launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream, use_pdl)
