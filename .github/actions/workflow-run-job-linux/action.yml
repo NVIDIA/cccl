@@ -227,16 +227,16 @@ runs:
           extra_launch_args+=(--env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL")
           extra_launch_args+=(--env "SCCACHE_DIST_AUTH_TOKEN")
 
-          # Over-subscribe -j to keep the build cluster busy if _not_ ClangCUDA.
-          # ClangCUDA can use the build cluster for C++ files, but _not_ CUDA,
-          # and we'll OOM if we try to compile too many at once.
-          if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
-            if ! grep -q '_python.sh' <<< "$COMMAND"; then
-              extra_launch_args+=(
-                --env "PARALLEL_LEVEL=0"
-              )
-            fi
-          fi
+          # # Over-subscribe -j to keep the build cluster busy if _not_ ClangCUDA.
+          # # ClangCUDA can use the build cluster for C++ files, but _not_ CUDA,
+          # # and we'll OOM if we try to compile too many at once.
+          # if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
+          #   if ! grep -q '_python.sh' <<< "$COMMAND"; then
+          #     extra_launch_args+=(
+          #       --env "PARALLEL_LEVEL=128"
+          #     )
+          #   fi
+          # fi
 
           echo -e "\e[1;34mUsing the build cluster at ${SCCACHE_DIST_URL}\e[0m"
         fi
