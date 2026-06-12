@@ -226,7 +226,7 @@ C2H_TEST("cub::DevicePartition::If three-way env-based API with tuning", "[parti
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_num_selected[0] == 5);
-  REQUIRE(d_num_selected[1] == 1);
+  REQUIRE(d_num_selected[1] == 2);
   d_small_out.resize(d_num_selected[0]);
   d_large_out.resize(d_num_selected[1]);
   REQUIRE(d_small_out == expected_small);
