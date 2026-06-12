@@ -78,9 +78,9 @@ _CCCL_CONCEPT synchronous_communicator = _CCCL_REQUIRES_EXPR((_Comm), _Comm& __c
   typename(typename _Comm::native_handle_type),
   _Same_as(typename _Comm::native_handle_type) __comm.native_handle(),
   noexcept(__comm.native_handle()),
-  _Satisfies(::cuda::experimental::__convertible_to_int32) __comm.rank(),
+  _Satisfies(__convertible_to_int32) __comm.rank(),
   noexcept(__comm.rank()),
-  _Satisfies(::cuda::experimental::__convertible_to_int32) __comm.size(),
+  _Satisfies(__convertible_to_int32) __comm.size(),
   noexcept(__comm.size()),
   typename(typename _Comm::group_token_type),
   _Same_as(typename _Comm::group_token_type) __comm.group_token(),
@@ -89,7 +89,7 @@ _CCCL_CONCEPT synchronous_communicator = _CCCL_REQUIRES_EXPR((_Comm), _Comm& __c
 );
 
 template <class _Comm>
-_CCCL_CONCEPT communicator = _CCCL_REQUIRES_EXPR((_Comm), )( //
+_CCCL_CONCEPT communicator = _CCCL_REQUIRES_EXPR((_Comm), )(
   requires(synchronous_communicator<_Comm>),
   requires(__has_send<_Comm>),
   requires(__has_recv<_Comm>) //
