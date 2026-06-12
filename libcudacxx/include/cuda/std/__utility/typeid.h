@@ -44,7 +44,10 @@
 #include <cuda/std/__string/string_view.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_function.h>
+#include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 
@@ -162,7 +165,7 @@ struct __pretty_name_begin
 [[nodiscard]] _CCCL_API constexpr __string_view __find_pretty_name(__string_view __sv) noexcept
 {
   return __sv.substr(::cuda::std::__add_string_view_position(
-                       __sv.find("__pretty_name_begin<"), ptrdiff_t(sizeof("__pretty_name_begin<")) - 1),
+                       __sv.find("__pretty_name_begin<"), static_cast<ptrdiff_t>(sizeof("__pretty_name_begin<")) - 1),
                      __sv.find_end(">::__pretty_name_end"));
 }
 
@@ -187,11 +190,86 @@ template <class _Tp>
 #  define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
 #endif
 
-#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
+#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG) \
+  && defined(_CCCL_ENABLE_DEBUG_MODE)
 // A quick smoke test to ensure that the pretty name extraction is working.
 static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"));
 static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>());
-#endif
+#endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG && _CCCL_ENABLE_DEBUG_MODE
+
+// We find the spelling of a non-type template parameter value _Vp as follows:
+// 1. Wrap the value in the class template __stringof_wrapper and obtain
+//    the pretty name of that type via __pretty_nameof. This reuses all of the
+//    compiler-specific machinery (and quirk handling) that __pretty_nameof
+//    already implements.
+// 2. The resulting string looks like "...__stringof_wrapper<42>...".
+//    Trim the surrounding wrapper to recover the value's spelling.
+//
+// The exact spelling is whatever the compiler emits for the value and is not
+// guaranteed to be identical across compilers (e.g. a char might be spelled
+// 'A', an enumerator might be spelled by name or by a cast). Integral values
+// such as `42` are spelled identically everywhere.
+
+template <auto _Vp>
+struct __stringof_wrapper
+{};
+
+// Extract the value's spelling from the pretty name of __stringof_wrapper<_Vp>.
+[[nodiscard]] _CCCL_API constexpr __string_view __find_stringof(__string_view __sv) noexcept
+{
+  // Trim the surrounding "__stringof_wrapper<" ... ">".
+  return __sv.substr(::cuda::std::__add_string_view_position(
+                       __sv.find("__stringof_wrapper<"), static_cast<ptrdiff_t>(sizeof("__stringof_wrapper<")) - 1),
+                     __sv.find_end(">"));
+}
+
+//! @brief Returns the compiler's spelling of a value passed as a non-type
+//! template parameter, e.g. `__stringof<42>()` yields `"42"` and
+//! `__stringof<cudaStreamSynchronize>()` yields `"cudaStreamSynchronize"`.
+//!
+//! @tparam _Vp The value whose compiler spelling is returned.
+//! @return A string view containing the compiler's spelling of `_Vp`.
+//!
+//! This is the value counterpart of `__pretty_nameof` (which spells types). It
+//! supports the same set of compilers and the same compiler quirks, because it
+//! is implemented on top of `__pretty_nameof`.
+//!
+//! When the value is a function (or function pointer), the leading '&' that
+//! clang and cudafe prepend to a function template argument is dropped, so the
+//! result is just the function's (possibly qualified) name. The exact spelling
+//! of other values is whatever the compiler emits and is not guaranteed to be
+//! identical across compilers.
+template <auto _Vp>
+[[nodiscard]] _CCCL_API constexpr __string_view __stringof() noexcept
+{
+  __string_view __sv =
+    ::cuda::std::__find_stringof(::cuda::std::__pretty_nameof<::cuda::std::__stringof_wrapper<_Vp>>());
+  // For a function argument, clang and cudafe prepend a '&' (e.g. "&fn"); drop
+  // it so the result is just the function's name.
+  if constexpr (is_function_v<remove_pointer_t<decltype(_Vp)>> || is_member_function_pointer_v<decltype(_Vp)>)
+  {
+    if (__sv.size() != 0 && __sv[0] == '&')
+    {
+      __sv = __sv.substr(1, static_cast<ptrdiff_t>(__sv.size()));
+    }
+  }
+  return __sv;
+}
+
+#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG) \
+  && defined(_CCCL_ENABLE_DEBUG_MODE)
+// A quick smoke test to ensure that the value spelling extraction is working.
+// An integer literal is spelled identically on every supported compiler.
+static_assert(::cuda::std::__stringof<42>() == __string_view("42"));
+static_assert(::cuda::std::__stringof<42>() != ::cuda::std::__stringof<43>());
+// And that function arguments work (including the leading-'&' trim). We use a
+// host/device function defined above so this works in both compilation passes
+// without depending on any external symbols. The function lives in an inline
+// namespace, whose spelling varies between compilers, so we only check that the
+// unqualified name is present rather than matching it exactly.
+static_assert(::cuda::std::__stringof<&::cuda::std::__add_string_view_position>().find("__add_string_view_position")
+              != -1);
+#endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG && _CCCL_ENABLE_DEBUG_MODE
 
 // There are many complications with defining a unique constexpr global object
 // for each type in device code, particularly on Windows. So rather than try,

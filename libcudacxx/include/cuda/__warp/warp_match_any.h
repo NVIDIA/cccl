@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___WARP_WARP_MATCH_H
-#define _CUDA___WARP_WARP_MATCH_H
+#ifndef _CUDA___WARP_WARP_MATCH_ANY_H
+#define _CUDA___WARP_WARP_MATCH_ANY_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,19 +36,29 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
-extern "C" _CCCL_DEVICE void __cuda__match_all_sync_is_not_supported_before_SM_70__();
+extern "C" _CCCL_DEVICE void __cuda__match_any_sync_is_not_supported_before_SM_70__();
 
+//! @brief Returns the mask of lanes with the same bitwise value as the calling lane.
+//!
+//! @param[in] __data The data to compare across lanes.
+//! @param[in] __lane_mask The mask of participating lanes.
+//!
+//! @return A lane mask containing lanes in `__lane_mask` whose `__data` matches the calling lane's data.
 template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API bool
-warp_match_all(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()) noexcept
+[[nodiscard]] _CCCL_DEVICE_API lane_mask
+warp_match_any(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()) noexcept
 {
   static_assert(is_trivially_copyable_v<_Tp>, "data must be trivially copyable");
   _CCCL_ASSERT(__lane_mask != lane_mask::none(), "lane_mask must be non-zero");
 
   if constexpr (::cuda::std::is_same_v<_Tp, bool>)
   {
-    const auto __mask = ::__ballot_sync(__lane_mask.value(), __data);
-    return (__mask == __lane_mask.value() || __mask == 0);
+    auto __mask = ::__ballot_sync(__lane_mask.value(), __data);
+    if (!__data)
+    {
+      __mask = (~__mask) & __lane_mask.value();
+    }
+    return lane_mask{__mask};
   }
   else
   {
@@ -65,15 +75,15 @@ warp_match_all(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()
 #  endif // _CCCL_BUILTIN_CLEAR_PADDING
     ::cuda::std::memcpy(__array, __data_ptr, sizeof(_Tp));
 
-    bool __ret = true;
+    lane_mask __ret = __lane_mask;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
-      int __pred = false;
+      ::cuda::std::uint32_t __match_any_result = 0;
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
-                        (::__match_all_sync(__lane_mask.value(), __array[i], &__pred);),
-                        (::cuda::device::__cuda__match_all_sync_is_not_supported_before_SM_70__();));
-      __ret = __ret && __pred;
+                        (__match_any_result = ::__match_any_sync(__lane_mask.value(), __array[i]);),
+                        (::cuda::device::__cuda__match_any_sync_is_not_supported_before_SM_70__();));
+      __ret &= lane_mask{__match_any_result};
     }
     return __ret;
   }
@@ -84,4 +94,4 @@ _CCCL_END_NAMESPACE_CUDA_DEVICE
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_CUDA_COMPILATION()
-#endif // _CUDA___WARP_WARP_MATCH_H
+#endif // _CUDA___WARP_WARP_MATCH_ANY_H
