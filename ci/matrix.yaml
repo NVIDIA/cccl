@@ -54,6 +54,8 @@ workflows:
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',                   std: 'max', gpu: 'h100' }
     - {jobs: ['test_gpu'],                project: 'thrust',                std: 'max', gpu: 'h100' }
     - {jobs: ['test'],                    project: ['libcudacxx', 'cudax'], std: 'max', gpu: 'h100' }
+    # Multi-GPU coverage:
+    - {jobs: ['test'], project: 'libcudacxx', std: 'max', gpu: 'h100_2gpu', sm: 'gpu'}
     # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # Misc:
@@ -645,17 +647,20 @@ projects:
     name: 'clang-tidy'
     stds: [17]
 
-# testing -> Runner with GPU is in a nv-gh-runners testing pool
+# name -> Display name for generated job labels.
+# runner -> GPU/driver/count segment of the GHA runner label.
+# testing -> Runner with GPU is in a nv-gh-runners testing pool.
 gpus:
-  t4:         { sm: 75  } # 16 GB,  10 runners
-  rtx2080:    { sm: 75  } #  8 GB,  12 runners
-  rtxa6000:   { sm: 86  } # 48 GB,  12 runners
-  l4:         { sm: 89  } # 24 GB,  48 runners
-  rtx4090:    { sm: 89  } # 24 GB,  10 runners
-  h100:       { sm: 90  } # 80 GB,  16 runners
+  t4:         { name: 'T4',          sm: 75,  runner: 't4-latest-1'         } # 16 GB,  10 runners
+  rtx2080:    { name: 'RTX2080',     sm: 75,  runner: 'rtx2080-latest-1'    } #  8 GB,  12 runners
+  rtxa6000:   { name: 'RTXA6000',    sm: 86,  runner: 'rtxa6000-latest-1'   } # 48 GB,  12 runners
+  l4:         { name: 'L4',          sm: 89,  runner: 'l4-latest-1'         } # 24 GB,  48 runners
+  rtx4090:    { name: 'RTX4090',     sm: 89,  runner: 'rtx4090-latest-1'    } # 24 GB,  10 runners
+  h100:       { name: 'H100',        sm: 90,  runner: 'h100-latest-1'       } # 80 GB,  16 runners
+  h100_2gpu:  { name: 'H100 x2',     sm: 90,  runner: 'h100-latest-2'       } # 2 x 80 GB
   # Very small number of runners on loan from cuda-python while we wait for our order to arrive.
   # Limit jobs on these:
-  rtxpro6000: { sm: 120 }
+  rtxpro6000: { name: 'RTXPRO6000',  sm: 120, runner: 'rtxpro6000-latest-1' }
 
 # Tags are used to define a `matrix job` in the workflow section.
 #

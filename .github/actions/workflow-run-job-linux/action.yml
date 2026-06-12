@@ -169,9 +169,14 @@ runs:
 
         declare -a gpu_request=()
 
-        # Explicitly pass which GPU to use if on a GPU runner
+        # Explicitly pass which GPU to use if on a GPU runner.
         if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
-          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
+          # Multi-GPU runner labels end with "-<gpu-count>"; expose the full set.
+          if [[ "${JOB_RUNNER}" =~ -gpu-.+-([0-9]+)(-testing)?$ ]] && (( BASH_REMATCH[1] > 1 )); then
+            gpu_request+=(--gpus all)
+          else
+            gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
+          fi
         fi
 
         # If the image contains "cudaXX.Yext"...
