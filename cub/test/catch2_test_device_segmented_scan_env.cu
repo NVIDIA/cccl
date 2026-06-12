@@ -552,7 +552,7 @@ struct segmented_scan_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::SegmentedScanPolicy
   {
-    return cub::SegmentedScanPolicy{cub::BlockSegmentedScanPolicy{
+    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
       static_cast<int>(BlockThreads),
       1,
       cub::BLOCK_LOAD_DIRECT,
@@ -667,11 +667,11 @@ C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanPolicy>);
-  STATIC_REQUIRE(::cuda::std::semiregular<cub::BlockSegmentedScanPolicy>);
-  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::BlockSegmentedScanPolicy>);
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanBlockPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanBlockPolicy>);
 
   // aggregate init
-  constexpr auto block1 = cub::BlockSegmentedScanPolicy{
+  constexpr auto block1 = cub::SegmentedScanBlockPolicy{
     128,
     9,
     cub::BLOCK_LOAD_WARP_TRANSPOSE,
@@ -683,7 +683,7 @@ C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
-  constexpr auto block2 = cub::BlockSegmentedScanPolicy{
+  constexpr auto block2 = cub::SegmentedScanBlockPolicy{
     .threads_per_block = 128,
     .items_per_thread  = 9,
     .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,

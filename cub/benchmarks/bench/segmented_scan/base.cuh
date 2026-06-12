@@ -32,7 +32,7 @@ struct policy_selector_t
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedScanPolicy
   {
-    return cub::SegmentedScanPolicy{cub::BlockSegmentedScanPolicy{
+    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
       ThreadsPerBlock,
       ItemsPerThread,
       TUNE_BLOCK_LOAD_ALGORITHM,
