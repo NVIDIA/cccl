@@ -12,9 +12,9 @@ import cupy as cp
 import numpy as np
 
 import cuda.compute as cc
-from cuda.core import Device
 from cuda.compute._cpp_compile import compile_cpp_op_code
 from cuda.compute.op import RawOp
+from cuda.core import Device
 
 NOOP_TEMP_STORAGE_BYTES = 1
 NUM_ITEMS = 128
@@ -1462,7 +1462,9 @@ STREAM_CASES = [
     ),
     _make_case(
         "lower_bound.less.stream",
-        _setup_with_stream(_setup_with_values(_setup_binary_search, comp=cc.OpKind.LESS)),
+        _setup_with_stream(
+            _setup_with_values(_setup_binary_search, comp=cc.OpKind.LESS)
+        ),
         _make_lower_bound,
         _oneshot_lower_bound_stream,
         _twoshot_lower_bound_stream,
@@ -1470,7 +1472,9 @@ STREAM_CASES = [
     ),
     _make_case(
         "select.logical_not.stream",
-        _setup_with_stream(_setup_with_values(_setup_select, cond=cc.OpKind.LOGICAL_NOT)),
+        _setup_with_stream(
+            _setup_with_values(_setup_select, cond=cc.OpKind.LOGICAL_NOT)
+        ),
         _make_select,
         _oneshot_select_stream,
         _twoshot_select_stream,
