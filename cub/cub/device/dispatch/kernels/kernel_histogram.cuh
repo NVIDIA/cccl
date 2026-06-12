@@ -482,7 +482,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     hp.load_modifier,
     hp.rle_compress,
     hp.mem_preference,
-    hp.work_stealing,
+    hp.use_work_stealing,
     hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
@@ -668,7 +668,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     hp.load_modifier,
     hp.rle_compress,
     hp.mem_preference,
-    hp.work_stealing,
+    hp.use_work_stealing,
     hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,

@@ -31,12 +31,12 @@ struct HistogramPolicy
   int threads_per_block; //!< Number of threads in a CUDA block
   int pixels_per_thread; //!< Number of pixels processed per thread
   int vec_size; //!< Vectorization size for loading samples
-  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading samples
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading samples from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading samples from global memory
   bool rle_compress; //!< Whether to perform localized RLE to compress samples before histogramming
-  BlockHistogramMemoryPreference mem_preference; //!< Whether to prefer privatized shared-memory bins (versus privatized
-                                                 //!< global-memory bins)
-  bool work_stealing; //!< Whether to dequeue tiles from a global work queue
+  BlockHistogramMemoryPreference mem_preference; //!< Whether to prefer privatized shared-memory or global-memory bins,
+                                                 //!< or a mix of both
+  bool use_work_stealing; //!< Whether to dequeue tiles from a global work queue
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
 
@@ -46,7 +46,7 @@ struct HistogramPolicy
     return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
-        && lhs.mem_preference == rhs.mem_preference && lhs.work_stealing == rhs.work_stealing
+        && lhs.mem_preference == rhs.mem_preference && lhs.use_work_stealing == rhs.use_work_stealing
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins;
   }
 
@@ -63,7 +63,7 @@ struct HistogramPolicy
         << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .pixels_per_thread = "
         << p.pixels_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
-        << ", .mem_preference = " << p.mem_preference << ", .work_stealing = " << p.work_stealing
+        << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
         << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -136,8 +136,8 @@ struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sampl
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-  static constexpr bool rle_compress  = false;
-  static constexpr bool work_stealing = false;
+  static constexpr bool rle_compress      = false;
+  static constexpr bool use_work_stealing = false;
 };
 
 template <class SampleT>
@@ -151,8 +151,8 @@ struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sampl
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-  static constexpr bool rle_compress  = true;
-  static constexpr bool work_stealing = false;
+  static constexpr bool rle_compress      = true;
+  static constexpr bool use_work_stealing = false;
 };
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -173,7 +173,7 @@ struct sm100_tuning<true, SampleT, 1, 1, counter_size::_4, primitive_sample::yes
   static constexpr int items                                     = 12;
   static constexpr int threads                                   = 928;
   static constexpr bool rle_compress                             = false;
-  static constexpr bool work_stealing                            = false;
+  static constexpr bool use_work_stealing                        = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_CA;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
@@ -190,7 +190,7 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
   static constexpr int items                                     = 12;
   static constexpr int threads                                   = 448;
   static constexpr bool rle_compress                             = false;
-  static constexpr bool work_stealing                            = false;
+  static constexpr bool use_work_stealing                        = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
@@ -233,7 +233,7 @@ struct policy_hub
                                 Tuning::load_modifier,
                                 Tuning::rle_compress,
                                 Tuning::mem_preference,
-                                Tuning::work_stealing>;
+                                Tuning::use_work_stealing>;
 
     template <typename Tuning>
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
@@ -256,7 +256,7 @@ struct policy_hub
       Tuning::load_modifier,
       Tuning::rle_compress,
       Tuning::mem_preference,
-      Tuning::work_stealing,
+      Tuning::use_work_stealing,
       Tuning::vec_size>;
 
     template <typename Tuning>
