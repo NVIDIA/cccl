@@ -24,7 +24,6 @@
 #include <cuda/__execution/require.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -50,10 +49,10 @@ enum class __tie_break_t
 };
 
 template <__tie_break_t _Preference>
-struct _CCCL_DECLSPEC_EMPTY_BASES __tie_break_holder_t
-    : __requirement
-    , ::cuda::std::integral_constant<__tie_break_t, _Preference>
+struct __tie_break_holder_t : __requirement
 {
+  static constexpr __tie_break_t value = _Preference;
+
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_tie_break_t&) const noexcept
     -> __tie_break_holder_t<_Preference>
   {
