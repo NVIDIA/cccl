@@ -195,7 +195,7 @@ C2H_TEST("Device FindIf works with user provided memory and environment", "[find
     cub::DeviceFind::FindIf(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), predicate, num_items);
   REQUIRE(error == cudaSuccess);
   auto temp          = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
-  void* temp_storage = raw_pointer_cast(temp.data());
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   auto test_find_if = [&](const auto& env) {
     size_t num_bytes = 0;
@@ -304,7 +304,7 @@ C2H_TEST("Device LowerBound works with user provided memory and environment", "[
     cuda::std::less{});
   REQUIRE(error == cudaSuccess);
   auto temp          = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
-  void* temp_storage = raw_pointer_cast(temp.data());
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   auto test_lower_bound = [&](const auto& env) {
     size_t num_bytes = 0;
@@ -431,7 +431,7 @@ C2H_TEST("Device UpperBound works with user provided memory and environment", "[
     cuda::std::less{});
   REQUIRE(error == cudaSuccess);
   auto temp          = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
-  void* temp_storage = raw_pointer_cast(temp.data());
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   auto test_upper_bound = [&](const auto& env) {
     size_t num_bytes = 0;
