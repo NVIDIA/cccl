@@ -322,20 +322,35 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
     constexpr long long mid_tier_amortize_pixels_even = 1LL << 24; // 16M
     constexpr long long mid_tier_amortize_pixels_range = 1LL << 26; // 64M
 
-    if (f.num_bins <= hybrid_cap_tier_max_bins)
+    // Hybrid FEASIBILITY (counter-width-aware). The hybrid member stages its primary
+    // `hybrid_smem_split_bin_single_channel` bins in dynamic SMEM at `counter_bytes`
+    // each; that fits the per-CTA opt-in SMEM budget only when the split is within the
+    // on-chip bin cap (which IS the byte budget divided by the counter width --
+    // `on_chip_bin_cap`). With a 4-byte counter on B200 the cap is ~57344 >= 49152, so
+    // hybrid fits; with an 8-byte counter it is ~28672 < 49152, so the hybrid primary
+    // (384 KB) exceeds the 227 KB cap and the launch setup returns cudaErrorNotSupported.
+    // Gate the hybrid choice on this so a wide-counter histogram falls back to the
+    // direct-atomic cache instead of selecting an unlaunchable kernel. (Before this,
+    // 64-bit-counter histograms at the 65536/131072 tiers crashed: the selector picked
+    // hybrid unaware of the counter width.)
+    const bool hybrid_smem_fits = (hybrid_smem_split_bin_single_channel <= f.on_chip_bin_cap);
+
+    if (hybrid_smem_fits && f.num_bins <= hybrid_cap_tier_max_bins)
     {
       return (f.num_pixels >= cap_tier_amortize_pixels) ? algorithm::gmem_privatized_nocache // hybrid member
                                                         : algorithm::direct_single_probe;
     }
-    if (f.num_bins <= hybrid_mid_tier_max_bins)
+    if (hybrid_smem_fits && f.num_bins <= hybrid_mid_tier_max_bins)
     {
       const long long amortize = f.is_even ? mid_tier_amortize_pixels_even : mid_tier_amortize_pixels_range;
       return (f.num_pixels >= amortize) ? algorithm::gmem_privatized_nocache // hybrid member
                                         : algorithm::direct_single_probe;
     }
 
-    // High-bin tiers above the hybrid's reach (262144, 1048576): the histogram far
-    // exceeds the on-chip working set, so it is effectively a direct GMEM atomic.
+    // High-bin tiers above the hybrid's reach (262144, 1048576), and ALL high-bin tiers
+    // when the hybrid SMEM does not fit the counter width: the histogram exceeds the
+    // hybrid's on-chip working set (or the hybrid cannot be launched), so it is
+    // effectively a direct GMEM atomic.
     return algorithm::direct_single_probe;
   }
 
