@@ -79,9 +79,9 @@ struct DeviceRadixSortKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<PolicySelector, OffsetT>);
 
-  CUB_DEFINE_KERNEL_GETTER(RadixSortInitBinsAndCountersKernel, DeviceRadixSortInitKernel<PolicySelector, int, OffsetT>);
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitBinsAndCountersKernel, DeviceRadixSortInitKernel<int, OffsetT>);
 
-  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitKernel<PolicySelector, int, int>);
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitKernel<int, int>);
 
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortOnesweepKernel,
@@ -651,20 +651,20 @@ private:
     // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
     if (use_pdl)
     {
-      constexpr int INIT_STARTUP_THREADS = 256;
+      constexpr int init_startup_threads = 256;
       const size_t num_init_items        = ::cuda::std::max(num_counter_items, num_bin_items);
       const int init_startup_blocks =
-        static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(INIT_STARTUP_THREADS)));
+        static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
               init_startup_blocks,
-              INIT_STARTUP_THREADS,
+              init_startup_threads,
               reinterpret_cast<long long>(stream));
 #endif
 
       if (const auto error = CubDebug(
-            launcher_factory(init_startup_blocks, INIT_STARTUP_THREADS, 0, stream, use_pdl)
+            launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
               .doit(
                 kernel_source.RadixSortInitBinsAndCountersKernel(), d_ctrs, num_counter_items, d_bins, num_bin_items)))
       {
@@ -733,12 +733,12 @@ private:
 
         if (use_pdl)
         {
-          constexpr int INIT_LOOKBACK_THREADS = 256;
+          constexpr int init_lookback_threads = 256;
           const int init_lookback_blocks =
-            static_cast<int>(::cuda::ceil_div(num_lookback_items, static_cast<size_t>(INIT_LOOKBACK_THREADS)));
+            static_cast<int>(::cuda::ceil_div(num_lookback_items, static_cast<size_t>(init_lookback_threads)));
 
           if (const auto error = CubDebug(
-                launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream, use_pdl)
+                launcher_factory(init_lookback_blocks, init_lookback_threads, 0, stream, use_pdl)
                   .doit(
                     kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items, d_lookback, size_t{0})))
           {

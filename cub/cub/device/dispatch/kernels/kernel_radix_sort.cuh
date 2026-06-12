@@ -475,7 +475,7 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   agent.Process();
 }
 
-template <typename PolicySelector, typename InitT0, typename InitT1>
+template <typename InitT0, typename InitT1>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
   _CCCL_GRID_CONSTANT InitT0* const d_items0,
   _CCCL_GRID_CONSTANT const size_t num_items0,
@@ -577,6 +577,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTA
   using BlockScan                                         = cub::BlockScan<OffsetT, BLOCK_THREADS>;
   __shared__ typename BlockScan::TempStorage temp_storage;
 
+  // Make sure the histograms are done
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
   // load the bins

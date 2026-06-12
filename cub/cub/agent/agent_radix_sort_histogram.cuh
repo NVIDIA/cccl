@@ -257,6 +257,7 @@ struct AgentRadixSortHistogram
       __syncthreads();
 
       // Accumulate the result in global memory.
+      // Wait for global histogram init
       _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       AccumulateGlobalHistograms();
       __syncthreads();

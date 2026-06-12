@@ -242,6 +242,7 @@ struct AgentRadixSortOnesweep
         bins[u] = other_bins[u];
       }
 
+      // Wait for lookback init
       _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       agent.LookbackPartial(bins);
 
