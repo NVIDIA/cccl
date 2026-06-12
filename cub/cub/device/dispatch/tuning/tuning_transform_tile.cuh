@@ -36,7 +36,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform::tile
 {
-
 // mufu_heavy=true tells the policy the functor body has heavy MUFU usage.
 // for small data types, vectorized load will make them arrive packed in
 // registers and the compiler unpacks them and packs them back. reducing the
@@ -79,7 +78,6 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
 
   return items * threads_per_block;
 }
-
 } // namespace detail::transform::tile
 
 CUB_NAMESPACE_END
