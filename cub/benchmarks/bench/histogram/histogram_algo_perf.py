@@ -499,8 +499,16 @@ def main():
         # shapes (the sweep driver omits it elsewhere); a forced algo absent at a
         # given (transform, channels) simply has no points and is dropped per panel.
         # `smem_privatized` is synthesized from `default` in perf_series (not a data
-        # key), so include it whenever `default` is present.
-        algos = [a for a in ALGO_ORDER if a in per_algo_cells or a == "smem_privatized"]
+        # key), so include it whenever `default` is present -- EXCEPT when the data has
+        # explicit `smem_static` / `smem_dynamic` series (the low-bin static-vs-dynamic
+        # comparison sweep). There the synthesized SMP line is redundant with the
+        # measured SST/SDY series (it just traces one of them), so drop it as clutter.
+        has_explicit_smem = ("smem_static" in per_algo_cells) or ("smem_dynamic" in per_algo_cells)
+        algos = [
+            a
+            for a in ALGO_ORDER
+            if a in per_algo_cells or (a == "smem_privatized" and not has_explicit_smem)
+        ]
 
         # `_selected` is a meta map (selector's pick per cell), not an algorithm
         # series -- exclude it from sample/element/shape discovery and from plotting.
