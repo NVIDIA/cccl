@@ -212,21 +212,25 @@ C2H_TEST("Device FindIf works with user provided memory and environment", "[find
     REQUIRE(d_out[0] == 5);
   };
 
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
   SECTION("find_if works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     test_find_if(stream.get());
   }
 
   SECTION("find_if works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     test_find_if(stream);
   }
 
   SECTION("find_if works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     cuda::stream_ref stream_ref{stream};
     test_find_if(stream_ref);
   }
@@ -245,7 +249,7 @@ C2H_TEST("Device FindIf works with user provided memory and environment", "[find
 
   SECTION("find_if works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_find_if(policy);
   }
@@ -339,21 +343,25 @@ C2H_TEST("Device LowerBound works with user provided memory and environment", "[
     REQUIRE(d_output == expected);
   };
 
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
   SECTION("lower_bound works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     test_lower_bound(stream.get());
   }
 
   SECTION("lower_bound works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     test_lower_bound(stream);
   }
 
   SECTION("lower_bound works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     cuda::stream_ref stream_ref{stream};
     test_lower_bound(stream_ref);
   }
@@ -372,7 +380,7 @@ C2H_TEST("Device LowerBound works with user provided memory and environment", "[
 
   SECTION("lower_bound works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_lower_bound(policy);
   }
@@ -466,21 +474,25 @@ C2H_TEST("Device UpperBound works with user provided memory and environment", "[
     REQUIRE(d_output == expected);
   };
 
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
   SECTION("upper_bound works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     test_upper_bound(stream.get());
   }
 
   SECTION("upper_bound works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     test_upper_bound(stream);
   }
 
   SECTION("upper_bound works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     cuda::stream_ref stream_ref{stream};
     test_upper_bound(stream_ref);
   }
@@ -499,7 +511,7 @@ C2H_TEST("Device UpperBound works with user provided memory and environment", "[
 
   SECTION("upper_bound works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_upper_bound(policy);
   }
