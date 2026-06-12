@@ -31,10 +31,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_CUDA
-
 // NOLINTBEGIN(bugprone-reserved-identifier)
-namespace experimental
+namespace cuda::experimental
 {
 // Needed because the C++17 concept emulation can't handle the implicit first template
 // parameter of real concepts.
@@ -79,9 +77,7 @@ _CCCL_CONCEPT synchronous_communicator = _CCCL_REQUIRES_EXPR((_Comm), _Comm& __c
   _Same_as(typename _Comm::native_handle_type) __comm.native_handle(),
   noexcept(__comm.native_handle()),
   _Satisfies(__convertible_to_int32) __comm.rank(),
-  noexcept(__comm.rank()),
   _Satisfies(__convertible_to_int32) __comm.size(),
-  noexcept(__comm.size()),
   typename(typename _Comm::group_token_type),
   _Same_as(typename _Comm::group_token_type) __comm.group_token(),
   requires(__has_synchronous_send<_Comm>),
@@ -329,10 +325,8 @@ _CCCL_CONCEPT __has_all_to_all_v = _CCCL_REQUIRES_EXPR(
     __recv_counts,
     __recv_displs,
     __stream));
-} // namespace experimental
+} // namespace cuda::experimental
 // NOLINTEND(bugprone-reserved-identifier)
-
-_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 #endif // _CUDAX___MULTI_GPU_CONCEPTS_H
