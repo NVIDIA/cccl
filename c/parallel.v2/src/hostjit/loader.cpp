@@ -195,11 +195,14 @@ void DynamicLibrary::unload()
 {
   if (handle_)
   {
-#ifdef _WIN32
-    FreeLibrary(static_cast<HMODULE>(handle_));
-#else
-    dlclose(handle_);
-#endif
+    // Intentionally do NOT unload (dlclose / FreeLibrary) a compiled JIT module. See #9367.
+    //
+    // Each JIT .so is built by Clang with the classic fatbin embedding (-fcuda-include-gpubinary),
+    // which emits a module ctor (__cuda_module_ctor -> __cudaRegisterFatBinary)
+    // in .init_array but NO matching unregister dtor (.fini_array / __cudaUnregisterFatBinary).
+    // Unloading such a module unmaps its fatbin while the CUDA runtime still holds a pointer to it;
+    // that dangling registration corrupts the runtime's module table, so a later module's kernel
+    // launch silently no-ops.
     handle_ = nullptr;
   }
   last_error_.clear();
