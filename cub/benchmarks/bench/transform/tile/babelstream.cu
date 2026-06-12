@@ -1,162 +1,234 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// BabelStream-style bandwidth benchmarks via cub::DeviceTransform::Transform.
-// Custom ops self-register their tile substitutes via tile_eligible<>, so the
-// dispatch hook routes them to the tile kernel under --enable-tile + the
-// CCCL_ENABLE_TILE_TRANSFORM_DISPATCH macro.
+// Tile variant of the BabelStream transform bench. The lambdas of the base benchmark are replaced by
+// named, stateless ops that register a tile_operator substitute (gated). Under --enable-tile +
+// CCCL_ENABLE_TILE_TRANSFORM_DISPATCH the dispatch hook routes them to the tile kernel; otherwise this
+// is the standard CUB transform path. This file disappears once tile dispatch is fully transparent.
 
-#include <nvbench/nvbench.cuh>
-
-#include <cub/device/device_transform.cuh>
-
-#include <cuda_runtime.h>
-#include <cuda/std/tuple>
-#include <vector>
-#include <cstdint>
+#include "../common.h"
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cuda_tile.h>
 #endif
 
-#include "bench_init.cuh"
-
-// User-defined scalar ops (used at the call site, in both build modes).
-struct mul_op {
-    template <class B>
-    __host__ __device__ auto operator()(B b) const { return -(b + b); }
+// Stateless scalar ops, used at the call site in both build modes. Constants are baked in so the ops
+// stay stateless (the tile substitute must be trivially default constructible): with startScalar == -2,
+// `c * scalar` is `-(c + c)`, `b + scalar * c` is `b - c - c`, etc.
+struct mul_op
+{
+  template <class B>
+  __host__ __device__ auto operator()(B b) const
+  {
+    return -(b + b);
+  }
 };
-struct add_op {
-    template <class A, class B>
-    __host__ __device__ auto operator()(A a, B b) const { return a + b; }
+struct add_op
+{
+  template <class A, class B>
+  __host__ __device__ auto operator()(A a, B b) const
+  {
+    return a + b;
+  }
 };
-struct triad_op {
-    template <class B, class C>
-    __host__ __device__ auto operator()(B b, C c) const { return b - c - c; }
+struct triad_op
+{
+  template <class B, class C>
+  __host__ __device__ auto operator()(B b, C c) const
+  {
+    return b - c - c;
+  }
 };
-struct nstream_op {
-    template <class A, class B, class C>
-    __host__ __device__ auto operator()(A a, B b, C c) const { return a + b - c - c; }
+struct nstream_op
+{
+  template <class A, class B, class C>
+  __host__ __device__ auto operator()(A a, B b, C c) const
+  {
+    return a + b - c - c;
+  }
 };
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
-// Tile-friendly substitutes (must be stateless + trivially default constructible).
-struct tile_mul_op {
-    template <class B>
-    __tile__ auto operator()(B b) const { return -(b + b); }
+struct tile_mul_op
+{
+  template <class B>
+  __tile__ auto operator()(B b) const
+  {
+    return -(b + b);
+  }
 };
-struct tile_add_op {
-    template <class A, class B>
-    __tile__ auto operator()(A a, B b) const { return a + b; }
+struct tile_add_op
+{
+  template <class A, class B>
+  __tile__ auto operator()(A a, B b) const
+  {
+    return a + b;
+  }
 };
-struct tile_triad_op {
-    template <class B, class C>
-    __tile__ auto operator()(B b, C c) const { return b - c - c; }
+struct tile_triad_op
+{
+  template <class B, class C>
+  __tile__ auto operator()(B b, C c) const
+  {
+    return b - c - c;
+  }
 };
-struct tile_nstream_op {
-    template <class A, class B, class C>
-    __tile__ auto operator()(A a, B b, C c) const { return a + b - c - c; }
+struct tile_nstream_op
+{
+  template <class A, class B, class C>
+  __tile__ auto operator()(A a, B b, C c) const
+  {
+    return a + b - c - c;
+  }
 };
 
-// Self-register each scalar op for all T (partial specialization on T).
 CUB_NAMESPACE_BEGIN
 namespace transform
 {
-template <class T> struct tile_eligible<mul_op,     T, 1> : ::cuda::std::true_type {};
-template <class T> struct tile_eligible<add_op,     T, 2> : ::cuda::std::true_type {};
-template <class T> struct tile_eligible<triad_op,   T, 2> : ::cuda::std::true_type {};
-template <class T> struct tile_eligible<nstream_op, T, 3> : ::cuda::std::true_type {};
-template <> struct tile_operator<mul_op>     { using type = tile_mul_op; };
-template <> struct tile_operator<add_op>     { using type = tile_add_op; };
-template <> struct tile_operator<triad_op>   { using type = tile_triad_op; };
-template <> struct tile_operator<nstream_op> { using type = tile_nstream_op; };
+template <class T>
+struct tile_eligible<mul_op, T, 1> : ::cuda::std::true_type
+{};
+template <class T>
+struct tile_eligible<add_op, T, 2> : ::cuda::std::true_type
+{};
+template <class T>
+struct tile_eligible<triad_op, T, 2> : ::cuda::std::true_type
+{};
+template <class T>
+struct tile_eligible<nstream_op, T, 3> : ::cuda::std::true_type
+{};
+template <>
+struct tile_operator<mul_op>
+{
+  using type = tile_mul_op;
+};
+template <>
+struct tile_operator<add_op>
+{
+  using type = tile_add_op;
+};
+template <>
+struct tile_operator<triad_op>
+{
+  using type = tile_triad_op;
+};
+template <>
+struct tile_operator<nstream_op>
+{
+  using type = tile_nstream_op;
+};
 } // namespace transform
 CUB_NAMESPACE_END
+#endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
+
+// The tile path does not support __int128 (no tensor_span/partition_view for it), so the type axis
+// omits it relative to the base babelstream bench.
+#ifdef TUNE_T
+using element_types = nvbench::type_list<TUNE_T>;
+#else
+using element_types = nvbench::type_list<std::int8_t, std::int16_t, float, double>;
 #endif
 
-// True if `bytes_needed` worth of GPU memory is available, with 5% headroom
-// for driver overhead. Caller should `state.skip(...)` on false.
-inline bool gpu_mem_available(size_t bytes_needed) {
-    size_t free_b = 0, total_b = 0;
-    if (cudaMemGetInfo(&free_b, &total_b) != cudaSuccess) return false;
-    return bytes_needed + (bytes_needed / 20) < free_b;
-}
+inline auto array_size_powers = nvbench::range(16, 32, 4);
+
+// Same constant inputs as the base bench so nstream maintains a consistent workload.
+inline constexpr auto startA      = 11;
+inline constexpr auto startB      = 2;
+inline constexpr auto startC      = 1;
+inline constexpr auto startScalar = -2;
+static_assert(startA == (startA + startB + startScalar * startC), "nstream must have a consistent workload");
 
 template <typename T>
-struct Buffers {
-    T *a{}, *b{}, *c{};
-    int64_t n{};
-    Buffers(int64_t n) : n(n) {
-        cudaMalloc(&a, n * sizeof(T));
-        cudaMalloc(&b, n * sizeof(T));
-        cudaMalloc(&c, n * sizeof(T));
-        bench_init::rand_fill(a, n, 0xA111);
-        bench_init::rand_fill(b, n, 0xB222);
-        bench_init::rand_fill(c, n, 0xC333);
-        cudaDeviceSynchronize();
-    }
-    ~Buffers() { cudaFree(a); cudaFree(b); cudaFree(c); }
-};
+static void mul(nvbench::state& state, nvbench::type_list<T>)
+try
+{
+  const auto n = state.get_int64("Elements{io}");
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
 
-// --- benchmarks ---
-template <typename T>
-void mul(nvbench::state& state, nvbench::type_list<T>) {
-    auto n = state.get_int64("Elements{io}");
-    Buffers<T> buf(n);
-    state.add_element_count(n);
-    state.add_global_memory_reads<T>(n);
-    state.add_global_memory_writes<T>(n);
-    state.exec([&](nvbench::launch& launch) {
-        cub::DeviceTransform::Transform(
-            ::cuda::std::make_tuple(buf.b), buf.c, n, mul_op{}, launch.get_stream());
-    });
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(n);
+  state.add_global_memory_writes<T>(n);
+  bench_transform(state, cuda::std::tuple{c.begin()}, b.begin(), n, mul_op{});
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
-template <typename T>
-void add(nvbench::state& state, nvbench::type_list<T>) {
-    auto n = state.get_int64("Elements{io}");
-    Buffers<T> buf(n);
-    state.add_element_count(n);
-    state.add_global_memory_reads<T>(2 * n);
-    state.add_global_memory_writes<T>(n);
-    state.exec([&](nvbench::launch& launch) {
-        cub::DeviceTransform::Transform(
-            ::cuda::std::make_tuple(buf.a, buf.b), buf.c, n, add_op{}, launch.get_stream());
-    });
-}
+NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
+  .set_name("tile_mul")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-void triad(nvbench::state& state, nvbench::type_list<T>) {
-    auto n = state.get_int64("Elements{io}");
-    Buffers<T> buf(n);
-    state.add_element_count(n);
-    state.add_global_memory_reads<T>(2 * n);
-    state.add_global_memory_writes<T>(n);
-    state.exec([&](nvbench::launch& launch) {
-        cub::DeviceTransform::Transform(
-            ::cuda::std::make_tuple(buf.b, buf.c), buf.a, n, triad_op{}, launch.get_stream());
-    });
+static void add(nvbench::state& state, nvbench::type_list<T>)
+try
+{
+  const auto n = state.get_int64("Elements{io}");
+  thrust::device_vector<T> a(n, startA);
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
+
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(2 * n);
+  state.add_global_memory_writes<T>(n);
+  bench_transform(state, cuda::std::tuple{a.begin(), b.begin()}, c.begin(), n, add_op{});
 }
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
+}
+
+NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
+  .set_name("tile_add")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-void nstream(nvbench::state& state, nvbench::type_list<T>) {
-    auto n = state.get_int64("Elements{io}");
-    Buffers<T> buf(n);
-    state.add_element_count(n);
-    state.add_global_memory_reads<T>(3 * n);
-    state.add_global_memory_writes<T>(n);
-    state.exec([&](nvbench::launch& launch) {
-        cub::DeviceTransform::Transform(
-            ::cuda::std::make_tuple(buf.a, buf.b, buf.c), buf.a, n, nstream_op{}, launch.get_stream());
-    });
+static void triad(nvbench::state& state, nvbench::type_list<T>)
+try
+{
+  const auto n = state.get_int64("Elements{io}");
+  thrust::device_vector<T> a(n, startA);
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
+
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(2 * n);
+  state.add_global_memory_writes<T>(n);
+  bench_transform(state, cuda::std::tuple{b.begin(), c.begin()}, a.begin(), n, triad_op{});
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
-using types = nvbench::type_list<std::int8_t, std::int16_t, float, double>;
-inline auto sizes = std::vector<nvbench::int64_t>{16, 20, 24, 28, 31};
+NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
+  .set_name("tile_triad")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
-NVBENCH_BENCH_TYPES(mul,     NVBENCH_TYPE_AXES(types)).set_name("tile_mul").add_int64_power_of_two_axis("Elements{io}", sizes);
-NVBENCH_BENCH_TYPES(add,     NVBENCH_TYPE_AXES(types)).set_name("tile_add").add_int64_power_of_two_axis("Elements{io}", sizes);
-NVBENCH_BENCH_TYPES(triad,   NVBENCH_TYPE_AXES(types)).set_name("tile_triad").add_int64_power_of_two_axis("Elements{io}", sizes);
-NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(types)).set_name("tile_nstream").add_int64_power_of_two_axis("Elements{io}", sizes);
+template <typename T>
+static void nstream(nvbench::state& state, nvbench::type_list<T>)
+try
+{
+  const auto n = state.get_int64("Elements{io}");
+  thrust::device_vector<T> a(n, startA);
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
 
-NVBENCH_MAIN
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(3 * n);
+  state.add_global_memory_writes<T>(n);
+  bench_transform(state, cuda::std::tuple{a.begin(), b.begin(), c.begin()}, a.begin(), n, nstream_op{});
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
+}
+
+NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
+  .set_name("tile_nstream")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
