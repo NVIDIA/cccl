@@ -47,6 +47,7 @@ def disable_sass_check(monkeypatch):
         (cuda.compute.upper_bound, "right"),
     ],
 )
+@pytest.mark.no_numba
 def test_binary_search_explicit_opkind_less(search, side):
     h_data = np.array([1, 3, 3, 7, 9], dtype=np.int32)
     h_values = np.array([0, 3, 4, 10], dtype=np.int32)

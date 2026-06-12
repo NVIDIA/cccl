@@ -71,7 +71,7 @@ def _raw_less_than_i32(name: str, threshold: int) -> RawOp:
     source = f"""
 extern "C" __device__ void {name}(void* x, void* result) {{
     int value = *static_cast<int*>(x);
-    *static_cast<bool*>(result) = value < {threshold};
+    *static_cast<unsigned char*>(result) = value < {threshold} ? 1 : 0;
 }}
 """
     return RawOp(ltoir=compile_cpp_op_code(source), name=name)
