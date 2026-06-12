@@ -52,6 +52,7 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_down.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -150,7 +151,7 @@ struct smem_block_tile_layout
 // it is not a template parameter; per-block block_tile layout is still controlled
 // by the template parameters below.
 template <int ThreadsPerBlock,
-          int UnrollFactor,
+          int HistogramItemsPerThread,
           int PipelineStages,
           int ChunkBytes,
           int LoadAlignBytes,
@@ -187,6 +188,7 @@ struct agent_batched_topk_cluster
   using key_prefix_t = typename state_t::key_prefix_t;
 
   static constexpr int threads_per_block          = ThreadsPerBlock;
+  static constexpr int histogram_items_per_thread = HistogramItemsPerThread;
   static constexpr int load_align_bytes           = LoadAlignBytes;
   static constexpr int bits_per_pass              = BitsPerPass;
   static constexpr int tie_break_items_per_thread = TieBreakItemsPerThread;
@@ -197,6 +199,7 @@ struct agent_batched_topk_cluster
   static constexpr int slot_alignment             = smem_layout_t::slot_alignment;
 
   static_assert(PipelineStages > 0);
+  static_assert(HistogramItemsPerThread > 0, "histogram_items_per_thread must be positive");
   static_assert(ChunkBytes > 0);
   static_assert(LoadAlignBytes > 0);
   static_assert(ChunkBytes % LoadAlignBytes == 0, "ChunkBytes must be a multiple of LoadAlignBytes");
@@ -383,7 +386,7 @@ struct agent_batched_topk_cluster
     const auto begin         = reinterpret_cast<::cuda::std::uintptr_t>(base + chunk.offset);
     const auto end           = begin + static_cast<::cuda::std::uintptr_t>(chunk.count) * sizeof(key_t);
     const auto aligned_begin = ::cuda::round_up(begin, la);
-    const auto aligned_end   = (end / la) * la;
+    const auto aligned_end   = ::cuda::round_down(end, la);
     if (aligned_begin > aligned_end)
     {
       // The chunk lies strictly between two load_align boundaries (no aligned point inside): the whole chunk is an
@@ -471,17 +474,64 @@ struct agent_batched_topk_cluster
     }
   }
 
+  // Apply `apply(key, local)` to each key of a contiguous chunk (`local` is the key's strided lane index in
+  // `[0, chunk_count)`), processing tiles of `histogram_items_per_thread * threads_per_block` keys. Each tile is loaded
+  // into registers by one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the
+  // histogram passes: `apply`'s SMEM atomics can't be proven disjoint from the SMEM key reads, so a fused loop would
+  // interleave each load with its atomic instead of hoisting the whole load wave ahead.
+  template <typename Apply>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key_impl(const key_t* data, int chunk_count, Apply&& apply) const
+  {
+    constexpr int tile   = histogram_items_per_thread * threads_per_block;
+    const int tid        = static_cast<int>(threadIdx.x);
+    const int full_tiles = ::cuda::round_down(chunk_count, tile);
+
+    _CCCL_PRAGMA_NOUNROLL()
+    for (int tile_base = 0; tile_base < full_tiles; tile_base += tile)
+    {
+      key_t regs[histogram_items_per_thread];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int t = 0; t < histogram_items_per_thread; ++t)
+      {
+        regs[t] = data[tile_base + t * threads_per_block + tid];
+      }
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int t = 0; t < histogram_items_per_thread; ++t)
+      {
+        const int local = tile_base + t * threads_per_block + tid;
+        apply(regs[t], local);
+      }
+    }
+
+    if (full_tiles < chunk_count)
+    {
+      key_t regs[histogram_items_per_thread];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int t = 0; t < histogram_items_per_thread; ++t)
+      {
+        const int local = full_tiles + t * threads_per_block + tid;
+        if (local < chunk_count)
+        {
+          regs[t] = data[local];
+        }
+      }
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int t = 0; t < histogram_items_per_thread; ++t)
+      {
+        const int local = full_tiles + t * threads_per_block + tid;
+        if (local < chunk_count)
+        {
+          apply(regs[t], local);
+        }
+      }
+    }
+  }
+
   template <typename F>
   _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key(::cuda::std::span<key_t> chunk_keys, F&& f) const
   {
-    const int chunk_count = span_size(chunk_keys);
-    const int iterations  = ::cuda::ceil_div(chunk_count, threads_per_block);
-    detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
-      const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
-      if (local < chunk_count)
-      {
-        f(::cuda::std::data(chunk_keys)[local]);
-      }
+    for_each_chunk_key_impl(::cuda::std::data(chunk_keys), span_size(chunk_keys), [&](const key_t& key, int) {
+      f(key);
     });
   }
 
@@ -492,14 +542,8 @@ struct agent_batched_topk_cluster
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   for_each_chunk_key_indexed(::cuda::std::span<key_t> chunk_keys, offset_t base_off, F&& f) const
   {
-    const int chunk_count = span_size(chunk_keys);
-    const int iterations  = ::cuda::ceil_div(chunk_count, threads_per_block);
-    detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
-      const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
-      if (local < chunk_count)
-      {
-        f(::cuda::std::data(chunk_keys)[local], base_off + static_cast<offset_t>(local));
-      }
+    for_each_chunk_key_impl(::cuda::std::data(chunk_keys), span_size(chunk_keys), [&](const key_t& key, int local) {
+      f(key, base_off + static_cast<offset_t>(local));
     });
   }
 
@@ -973,7 +1017,7 @@ private:
         },
         [&](const auto& chunk) {
           const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
-          detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+          detail::transform::unrolled_for<histogram_items_per_thread>(iterations, [&](int j) {
             const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
             if (local < chunk.count)
             {
@@ -1005,7 +1049,7 @@ private:
         },
         [&](const auto& chunk) {
           const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
-          detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+          detail::transform::unrolled_for<histogram_items_per_thread>(iterations, [&](int j) {
             const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
             if (local < chunk.count)
             {
@@ -1309,7 +1353,7 @@ private:
           const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
           key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
           const int iterations     = ::cuda::ceil_div(chunk.count, threads_per_block);
-          detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+          detail::transform::unrolled_for<histogram_items_per_thread>(iterations, [&](int j) {
             const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
             if (local < chunk.count)
             {
@@ -1854,7 +1898,7 @@ private:
       // `get_key(local)` reads the key (from SMEM for resident chunks, from gmem for overflow chunks).
       auto write_run = [&](auto get_key, offset_t base_off, int count) {
         const int iterations = ::cuda::ceil_div(count, threads_per_block);
-        detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+        detail::transform::unrolled_for<histogram_items_per_thread>(iterations, [&](int j) {
           const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
           if (local < count)
           {

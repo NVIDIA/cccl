@@ -33,18 +33,12 @@ struct cluster_topk_launch_config
 struct cluster_topk_policy
 {
   int threads_per_block;
-  int unroll_factor;
+  int histogram_items_per_thread;
   int pipeline_stages;
   int chunk_bytes;
   int load_align_bytes;
   int bits_per_pass;
-  // Minimum number of CTAs per SM passed to the dynamic-cluster kernel's launch bounds. Defaults to 1: most cluster
-  // configurations already have an occupancy of 1 due to their shared-memory usage, so allowing the compiler to
-  // optimize for higher occupancy (fewer registers per thread) provides no benefit.
   int min_blocks_per_sm;
-  // Items-per-thread for the deterministic tie-break BlockScan sweep (final filter). Independent of `chunk_bytes`; the
-  // sweep tiles each region by `threads_per_block * tie_break_items_per_thread`. Only used when the deterministic
-  // tie-break path is enabled (`CUB_ENABLE_CLUSTER_TOPK_DETERMINISM`).
   int tie_break_items_per_thread;
   ::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_configs> launch_configs;
 };
@@ -64,7 +58,7 @@ make_policy(::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_c
 {
   return cluster_topk_policy{
     /*threads_per_block=*/512,
-    /*unroll_factor=*/0,
+    /*histogram_items_per_thread=*/4,
     /*pipeline_stages=*/3,
     /*chunk_bytes=*/16 * 1024,
     /*load_align_bytes=*/128,
@@ -128,10 +122,6 @@ make_policy(::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_c
 static_assert(is_valid_policy(sm90_100_110_policy()));
 static_assert(is_valid_policy(sm120_policy()));
 // Default selector for cluster-capable architectures (SM 9.0+).
-// `unroll_factor` only controls ILP in runtime-sized chunk loops; it no longer
-// defines the block_tile size. The launch config table is consumed at runtime, so
-// selectors can vary it by architecture without forcing static dispatch over
-// all cluster/SMEM combinations.
 struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const

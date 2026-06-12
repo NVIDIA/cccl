@@ -91,7 +91,7 @@ struct launch_config
 // width via cooperative groups.
 template <int ThreadsPerBlock,
           int MinBlocksPerSm,
-          int UnrollFactor,
+          int HistogramItemsPerThread,
           int PipelineStages,
           int ChunkBytes,
           int LoadAlignBytes,
@@ -118,7 +118,7 @@ __launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void 
 {
   using agent_t = agent_batched_topk_cluster<
     ThreadsPerBlock,
-    UnrollFactor,
+    HistogramItemsPerThread,
     PipelineStages,
     ChunkBytes,
     LoadAlignBytes,
@@ -165,7 +165,7 @@ __launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void 
 // CDP-only static-cluster kernel: compile-time `__cluster_dims__` so the
 // triple-chevron launch from device code needs no `cudaFuncSetAttribute`.
 template <int ThreadsPerBlock,
-          int UnrollFactor,
+          int HistogramItemsPerThread,
           int PipelineStages,
           int ChunkBytes,
           int LoadAlignBytes,
@@ -193,7 +193,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
 {
   using agent_t = agent_batched_topk_cluster<
     ThreadsPerBlock,
-    UnrollFactor,
+    HistogramItemsPerThread,
     PipelineStages,
     ChunkBytes,
     LoadAlignBytes,
@@ -283,7 +283,7 @@ struct force_emit_kernel<Kernel>
 #  define CUB_TOPK_CLUSTER_DEVICE_LAUNCH                                                \
     auto static_kernel = device_segmented_topk_cluster_kernel_static<                   \
       ThreadsPerBlock,                                                                  \
-      UnrollFactor,                                                                     \
+      HistogramItemsPerThread,                                                          \
       PipelineStages,                                                                   \
       ChunkBytes,                                                                       \
       LoadAlignBytes,                                                                   \
@@ -346,22 +346,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using SelectDirectionParameterT = decltype(select_directions);
   // Clusters are SM 9.0+ only and the tuning is currently identical across
   // CCs, so pin the selector query to the minimum supported CC.
-  constexpr cluster_topk_policy policy = PolicySelector{}(::cuda::compute_capability{9, 0});
-  constexpr int ThreadsPerBlock        = policy.threads_per_block;
-  constexpr int MinBlocksPerSm         = policy.min_blocks_per_sm;
-  constexpr int UnrollFactor           = policy.unroll_factor;
-  constexpr int PipelineStages         = policy.pipeline_stages;
-  constexpr int ChunkBytes             = policy.chunk_bytes;
-  constexpr int LoadAlignBytes         = policy.load_align_bytes;
-  constexpr int BitsPerPass            = policy.bits_per_pass;
-  constexpr int TieBreakItemsPerThread = policy.tie_break_items_per_thread;
+  constexpr cluster_topk_policy policy  = PolicySelector{}(::cuda::compute_capability{9, 0});
+  constexpr int ThreadsPerBlock         = policy.threads_per_block;
+  constexpr int MinBlocksPerSm          = policy.min_blocks_per_sm;
+  constexpr int HistogramItemsPerThread = policy.histogram_items_per_thread;
+  constexpr int PipelineStages          = policy.pipeline_stages;
+  constexpr int ChunkBytes              = policy.chunk_bytes;
+  constexpr int LoadAlignBytes          = policy.load_align_bytes;
+  constexpr int BitsPerPass             = policy.bits_per_pass;
+  constexpr int TieBreakItemsPerThread  = policy.tie_break_items_per_thread;
 
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
   using layout_t = smem_block_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
   using agent_t  = agent_batched_topk_cluster<
      ThreadsPerBlock,
-     UnrollFactor,
+     HistogramItemsPerThread,
      PipelineStages,
      ChunkBytes,
      LoadAlignBytes,
@@ -429,7 +429,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   constexpr auto dynamic_kernel = &device_segmented_topk_cluster_kernel<
     ThreadsPerBlock,
     MinBlocksPerSm,
-    UnrollFactor,
+    HistogramItemsPerThread,
     PipelineStages,
     ChunkBytes,
     LoadAlignBytes,
