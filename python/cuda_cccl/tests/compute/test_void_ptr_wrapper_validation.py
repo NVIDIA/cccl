@@ -16,8 +16,12 @@ import pytest
 numba = pytest.importorskip("numba")
 types = numba.types
 
-from cuda.compute._odr_helpers import _ArgMode, _ArgSpec, _create_void_ptr_wrapper
-from cuda.compute._utils import sanitize_identifier
+from cuda.compute._odr_helpers import (  # noqa: E402
+    _ArgMode,
+    _ArgSpec,
+    _create_void_ptr_wrapper,
+)
+from cuda.compute._utils import sanitize_identifier  # noqa: E402
 
 
 def _make_arg_specs():
