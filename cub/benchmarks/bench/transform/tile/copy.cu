@@ -10,6 +10,8 @@
 
 #include <cub/device/device_transform.cuh>
 
+#include <thrust/device_vector.h>
+
 #include <cuda_runtime.h>
 #include <cuda/std/tuple>
 #include <vector>
@@ -41,18 +43,18 @@ CUB_NAMESPACE_END
 
 template <typename T>
 void copy(nvbench::state& state, nvbench::type_list<T>) {
-    auto n = state.get_int64("Elements{io}");
-    T *in, *out;
-    cudaMalloc(&in, n * sizeof(T)); cudaMalloc(&out, n * sizeof(T));
-    bench_init::rand_fill(in, n, 0xA111); cudaDeviceSynchronize();
+    const auto n = state.get_int64("Elements{io}");
+    thrust::device_vector<T> in(n), out(n);
+    T* in_ptr  = thrust::raw_pointer_cast(in.data());
+    T* out_ptr = thrust::raw_pointer_cast(out.data());
+    bench_init::rand_fill(in_ptr, n, 0xA111); cudaDeviceSynchronize();
     state.add_element_count(n);
     state.add_global_memory_reads<T>(n);
     state.add_global_memory_writes<T>(n);
     state.exec([&](nvbench::launch& launch) {
         cub::DeviceTransform::Transform(
-            ::cuda::std::make_tuple(in), out, n, identity{}, launch.get_stream());
+            ::cuda::std::make_tuple(in_ptr), out_ptr, n, identity{}, launch.get_stream());
     });
-    cudaFree(in); cudaFree(out);
 }
 
 using types = nvbench::type_list<std::int8_t, std::int16_t, std::int32_t, float, double>;
