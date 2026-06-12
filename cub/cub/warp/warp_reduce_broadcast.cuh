@@ -46,7 +46,10 @@ CUB_NAMESPACE_BEGIN
 //! Overview
 //! ++++++++
 //!
-//! - Supports "logical" warps smaller than the physical warp size (e.g., logical warps of 8 threads).
+//! - Supports "logical" warps smaller than the physical warp size (e.g., logical warps of 8 threads). A physical warp
+//!   is partitioned into independent logical warps of ``LogicalWarpThreads`` lanes. For example,
+//!   ``WarpReduceBroadcast<int, 4>`` called by all 32 lanes of a physical warp performs eight independent reductions,
+//!   one for each contiguous group of four lanes, and returns each group's aggregate to that group's lanes.
 //! - Non-partial ``Sum``, ``Max``, and ``Min`` overloads use all-reduce fast paths for integral types.
 //! - Integral all-reduce fast paths use a different reduction tree than ``WarpReduce`` for recognized commutative
 //!   integral operators.
@@ -96,7 +99,8 @@ CUB_NAMESPACE_BEGIN
 //! @tparam LogicalWarpThreads
 //!   **[optional]** The number of threads per "logical" warp (may be less than the number of hardware warp threads but
 //!   has to be a power of two). Default is the warp size of the targeted CUDA compute-capability (e.g., 32 threads for
-//!   SM80).
+//!   SM80). When smaller than the hardware warp size, each hardware warp is partitioned into independent contiguous
+//!   logical warps of this size.
 template <typename T, int LogicalWarpThreads = detail::warp_threads>
 class WarpReduceBroadcast
 {
