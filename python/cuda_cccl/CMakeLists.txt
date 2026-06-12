@@ -83,6 +83,25 @@ install(
 # Build and install Cython extension
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
+set(
+  _python_gil_disabled_query
+  "import sysconfig; print('1' if sysconfig.get_config_var('Py_GIL_DISABLED') in (1, '1') else '0')"
+)
+execute_process(
+  COMMAND "${Python3_EXECUTABLE}" -c "${_python_gil_disabled_query}"
+  OUTPUT_VARIABLE _python_gil_disabled
+  RESULT_VARIABLE _python_gil_disabled_result
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if (NOT _python_gil_disabled_result EQUAL 0)
+  message(FATAL_ERROR "Failed to query Py_GIL_DISABLED from ${Python3_EXECUTABLE}")
+endif()
+
+if (Python3_VERSION_MAJOR EQUAL 3 AND Python3_VERSION_MINOR EQUAL 14 AND "${_python_gil_disabled}" STREQUAL "1")
+  target_compile_definitions(${_cccl_c_parallel_target} PRIVATE CCCL_PYTHON_FREE_THREADED=1)
+  message(STATUS "Enabling CCCL_PYTHON_FREE_THREADED for Python 3.14t")
+endif()
+
 get_filename_component(_python_path "${Python3_EXECUTABLE}" PATH)
 
 set(CYTHON_version_command "${Python3_EXECUTABLE}" -m cython --version)

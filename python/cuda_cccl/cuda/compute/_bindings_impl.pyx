@@ -6,6 +6,7 @@
 # distutils: language = c++
 # cython: language_level=3
 # cython: linetrace=True
+# cython: freethreading_compatible=True
 
 # Python signatures are declared in the companion Python stub file _bindings.pyi
 # Make sure to update PYI with change to Python API to ensure that Python

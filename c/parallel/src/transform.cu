@@ -120,24 +120,32 @@ struct transform_kernel_source
   cub::detail::transform::cuda_expected<cub::detail::transform::async_config>
   CacheAsyncConfiguration(const ActionT& action)
   {
+#if defined(CCCL_PYTHON_FREE_THREADED)
+    return action();
+#else // defined(CCCL_PYTHON_FREE_THREADED)
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
     if (!cache->async_config.has_value())
     {
       cache->async_config = action();
     }
     return *cache->async_config;
+#endif // defined(CCCL_PYTHON_FREE_THREADED)
   }
 
   template <class ActionT>
   cub::detail::transform::cuda_expected<cub::detail::transform::prefetch_config>
   CachePrefetchConfiguration(const ActionT& action)
   {
+#if defined(CCCL_PYTHON_FREE_THREADED)
+    return action();
+#else // defined(CCCL_PYTHON_FREE_THREADED)
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
     if (!cache->prefetch_config.has_value())
     {
       cache->prefetch_config = action();
     }
     return *cache->prefetch_config;
+#endif // defined(CCCL_PYTHON_FREE_THREADED)
   }
 
   CUkernel TransformKernel() const
@@ -325,7 +333,11 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
   build_ptr->cc                         = cc_major * 10 + cc_minor;
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
+#if defined(CCCL_PYTHON_FREE_THREADED)
+  build_ptr->cache                      = nullptr;
+#else // defined(CCCL_PYTHON_FREE_THREADED)
   build_ptr->cache                      = new transform::cache();
+#endif // defined(CCCL_PYTHON_FREE_THREADED)
 
   // avoid new and delete which requires the allocated and freed types to match
   static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
@@ -526,7 +538,11 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
   build_ptr->cc                         = cc_major * 10 + cc_minor;
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
+#if defined(CCCL_PYTHON_FREE_THREADED)
+  build_ptr->cache                      = nullptr;
+#else // defined(CCCL_PYTHON_FREE_THREADED)
   build_ptr->cache                      = new transform::cache();
+#endif // defined(CCCL_PYTHON_FREE_THREADED)
 
   // avoid new and delete which requires the allocated and freed types to match
   static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);

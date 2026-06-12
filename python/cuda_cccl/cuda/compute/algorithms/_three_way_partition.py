@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_result, cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
@@ -54,15 +54,25 @@ class _ThreeWayPartition:
             (value_type,), types.uint8
         )
 
-        self.build_result = call_build(
+        self.build_result = cache_build_result(
             _bindings.DeviceThreeWayPartitionBuildResult,
-            self.d_in_cccl,
-            self.d_first_part_out_cccl,
-            self.d_second_part_out_cccl,
-            self.d_unselected_out_cccl,
-            self.d_num_selected_out_cccl,
-            self.select_first_part_op_cccl,
-            self.select_second_part_op_cccl,
+            d_in,
+            d_first_part_out,
+            d_second_part_out,
+            d_unselected_out,
+            d_num_selected_out,
+            select_first_part_op,
+            select_second_part_op,
+            builder=lambda: call_build(
+                _bindings.DeviceThreeWayPartitionBuildResult,
+                self.d_in_cccl,
+                self.d_first_part_out_cccl,
+                self.d_second_part_out_cccl,
+                self.d_unselected_out_cccl,
+                self.d_num_selected_out_cccl,
+                self.select_first_part_op_cccl,
+                self.select_second_part_op_cccl,
+            ),
         )
 
     def __call__(

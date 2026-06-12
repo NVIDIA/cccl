@@ -9,7 +9,7 @@ import numpy as np
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_result, cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from ..op import OpAdapter, OpKind, make_op_adapter
@@ -71,13 +71,21 @@ class _BinarySearch:
 
         self.op_cccl = comp.compile((data_value_type, data_value_type), types.uint8)
 
-        self.build_result = call_build(
+        self.build_result = cache_build_result(
             _bindings.DeviceBinarySearchBuildResult,
+            d_data,
+            d_values,
+            d_out,
+            comp,
             mode,
-            self.d_data_cccl,
-            self.d_values_cccl,
-            self.d_out_cccl,
-            self.op_cccl,
+            builder=lambda: call_build(
+                _bindings.DeviceBinarySearchBuildResult,
+                mode,
+                self.d_data_cccl,
+                self.d_values_cccl,
+                self.d_out_cccl,
+                self.op_cccl,
+            ),
         )
 
     def __call__(

@@ -9,7 +9,7 @@ import numpy as np
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_registered_key_functions
+from ..._caching import cache_build_result, cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
 from ..._utils.protocols import (
     get_data_pointer,
@@ -52,15 +52,28 @@ class _SegmentedSort:
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
-        self.build_result = call_build(
-            _bindings.DeviceSegmentedSortBuildResult,
+        build_order = (
             _bindings.SortOrder.ASCENDING
             if order is SortOrder.ASCENDING
-            else _bindings.SortOrder.DESCENDING,
-            self.d_in_keys_cccl,
-            self.d_in_values_cccl,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
+            else _bindings.SortOrder.DESCENDING
+        )
+        self.build_result = cache_build_result(
+            _bindings.DeviceSegmentedSortBuildResult,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            start_offsets_in,
+            end_offsets_in,
+            order,
+            builder=lambda: call_build(
+                _bindings.DeviceSegmentedSortBuildResult,
+                build_order,
+                self.d_in_keys_cccl,
+                self.d_in_values_cccl,
+                self.start_offsets_in_cccl,
+                self.end_offsets_in_cccl,
+            ),
         )
 
     def __call__(

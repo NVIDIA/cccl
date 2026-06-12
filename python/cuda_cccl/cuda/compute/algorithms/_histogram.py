@@ -11,7 +11,7 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_result, cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
@@ -51,17 +51,28 @@ class _Histogram:
         self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
         self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
 
-        self.build_result = call_build(
+        self.build_result = cache_build_result(
             _bindings.DeviceHistogramBuildResult,
-            num_channels,
-            num_active_channels,
-            self.d_samples_cccl,
-            num_levels,
-            self.d_histogram_cccl,
-            self.h_lower_level_cccl,
-            self.num_rows,
-            row_stride_samples,
+            d_samples,
+            d_histogram,
+            int(num_levels),
+            h_lower_level[0].item(),
+            h_upper_level[0].item(),
+            h_lower_level.dtype,
+            num_samples,
             is_evenly_segmented,
+            builder=lambda: call_build(
+                _bindings.DeviceHistogramBuildResult,
+                num_channels,
+                num_active_channels,
+                self.d_samples_cccl,
+                num_levels,
+                self.d_histogram_cccl,
+                self.h_lower_level_cccl,
+                self.num_rows,
+                row_stride_samples,
+                is_evenly_segmented,
+            ),
         )
 
     def __call__(

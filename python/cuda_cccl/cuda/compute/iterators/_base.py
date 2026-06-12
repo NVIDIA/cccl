@@ -9,6 +9,7 @@ Base classes for iterators.
 from __future__ import annotations
 
 import hashlib
+import threading
 from typing import Hashable
 
 from .._bindings import Iterator, IteratorKind, IteratorState, Op
@@ -54,6 +55,7 @@ class IteratorBase:
         "_input_deref_op",
         "_output_deref_op",
         "_uid_cached",
+        "_op_lock",
     ]
 
     def __init__(
@@ -75,6 +77,11 @@ class IteratorBase:
         self._input_deref_op: Op | None = None
         self._output_deref_op: Op | None = None
         self._uid_cached: str | None = None
+        # Free-threaded Python can let multiple threads share a read-only
+        # iterator object and race during the first lazy Op construction.
+        # The lock only protects that cache miss path; cached access stays
+        # lock-free and iterator mutation remains the caller's responsibility.
+        self._op_lock = threading.Lock()
 
     @property
     def state(self) -> IteratorState:
@@ -117,19 +124,25 @@ class IteratorBase:
     def get_advance_op(self) -> Op:
         """Get the cached Op for the advance operation."""
         if self._advance_op is None:
-            self._advance_op = self._make_advance_op()
+            with self._op_lock:
+                if self._advance_op is None:
+                    self._advance_op = self._make_advance_op()
         return self._advance_op
 
     def get_input_deref_op(self) -> Op | None:
         """Get the cached Op for input dereference operation, or None if not supported."""
         if self._input_deref_op is None:
-            self._input_deref_op = self._make_input_deref_op()
+            with self._op_lock:
+                if self._input_deref_op is None:
+                    self._input_deref_op = self._make_input_deref_op()
         return self._input_deref_op
 
     def get_output_deref_op(self) -> Op | None:
         """Get the cached Op for output dereference operation, or None if not supported."""
         if self._output_deref_op is None:
-            self._output_deref_op = self._make_output_deref_op()
+            with self._op_lock:
+                if self._output_deref_op is None:
+                    self._output_deref_op = self._make_output_deref_op()
         return self._output_deref_op
 
     @property
