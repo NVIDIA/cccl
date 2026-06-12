@@ -2055,16 +2055,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
     return cudaErrorNotSupported;
   }
 
-  // Calculate launch geometry: pixels per block and tile counts.
-  const int pixels_per_block = threads_per_block * pixels_per_thread;
-  const int total_pixels     = static_cast<int>(num_row_pixels);
-  const int tiles_per_row    = (total_pixels + pixels_per_block - 1) / pixels_per_block;
+  // Calculate launch geometry: pixels per block and tile counts. total_pixels and the
+  // tile counts MUST be 64-bit: num_row_pixels is an OffsetT (which is 64-bit for large
+  // inputs), and at >= 2^31 elements a 32-bit `total_pixels` overflows to a negative
+  // value, making tiles_per_row negative and num_thread_blocks <= 0 -> a malformed
+  // cooperative launch ("operation not supported"). num_thread_blocks itself is bounded
+  // (by occupancy and an explicit INT_MAX/2 clamp), so it stays int, but it is derived
+  // from 64-bit intermediates.
+  const int pixels_per_block      = threads_per_block * pixels_per_thread;
+  const long long total_pixels    = static_cast<long long>(num_row_pixels);
+  const long long tiles_per_row    = (total_pixels + pixels_per_block - 1) / pixels_per_block;
 
   // Number of blocks: max grid that fits both occupancy and tiles_per_row * num_rows
   // (matches the persistent-grid sizing in the existing fused kernel).
   const int max_blocks_per_grid_by_occupancy = sm_count * fused_sm_occupancy;
-  const int max_blocks_for_work              = ::cuda::std::min(
-    static_cast<int>(num_rows) * tiles_per_row, ::cuda::std::numeric_limits<int>::max() / 2);
+  const long long total_tiles                = static_cast<long long>(num_rows) * tiles_per_row;
+  const int max_blocks_for_work              = static_cast<int>(
+    ::cuda::std::min<long long>(total_tiles, ::cuda::std::numeric_limits<int>::max() / 2));
   const int num_thread_blocks =
     ::cuda::std::min(max_blocks_per_grid_by_occupancy, max_blocks_for_work);
 
@@ -2149,7 +2156,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
     num_row_pixels,
     num_rows,
     row_stride_samples,
-    tiles_per_row,
+    static_cast<int>(tiles_per_row), // kernel param is int; value is bounded (<< INT_MAX)
     tile_queue,
     hybrid_max_num_output_bins,
     d_secondary_staging_array,
