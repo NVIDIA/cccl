@@ -595,8 +595,13 @@ private:
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
 
-    constexpr OffsetT PDL_MAX_ITEMS = static_cast<OffsetT>(1) << 20;
-    const bool use_pdl              = num_items <= PDL_MAX_ITEMS;
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    {
+      return error;
+    }
+    constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 20;
+    const bool use_pdl              = num_items <= pdl_max_items && cc >= ::cuda::compute_capability{9, 0};
 
     const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
     const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
