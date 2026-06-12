@@ -1,7 +1,7 @@
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
-    [ValidatePattern("^\d+\.\d+$")]
+    [ValidatePattern("^\d+\.\d+t?$")]
     [string]$PyVersion
 )
 
@@ -23,7 +23,7 @@ $wheelPath = Get-CudaCcclWheel
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
-    & $python -m pytest -n 6 -v compute/ -m "not large"
-    & $python -m pytest -n 0 -v compute/ -m "large"
+    & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading"
+    & $python -m pytest -n 0 -v compute/ -m "large and not free_threading"
 }
 finally { Pop-Location }

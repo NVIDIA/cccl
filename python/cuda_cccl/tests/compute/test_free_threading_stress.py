@@ -17,6 +17,7 @@ import pytest
 
 
 pytestmark = [
+    pytest.mark.free_threading,
     pytest.mark.no_numba,
     pytest.mark.no_verify_sass(
         reason="Free-threading stress tests intentionally run concurrent workers."

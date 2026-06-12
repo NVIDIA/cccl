@@ -21,7 +21,8 @@
 
 .PARAMETER PyVersion
     **Required.** The Python version to use for building the wheel, expressed
-    as `<major>.<minor>` (e.g. `3.11`).
+    as `<major>.<minor>` (e.g. `3.11`) or a free-threaded version such as
+    `3.14t`.
 
 .PARAMETER OnlyCudaMajor
     Optional. Restricts the build to a single CUDA major version (`12` or `13`).
@@ -49,7 +50,7 @@
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
-    [ValidatePattern("^\d+\.\d+$")]
+    [ValidatePattern("^\d+\.\d+t?$")]
     [string]$PyVersion,
 
     [Parameter(Mandatory = $false)]

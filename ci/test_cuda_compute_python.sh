@@ -35,5 +35,5 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
 fi
 
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest "${pytest_extra[@]}" -n 6 -v compute/ -m "not large"
-python -m pytest "${pytest_extra[@]}" -n 0 -v compute/ -m "large"
+python -m pytest "${pytest_extra[@]}" -n 6 -v compute/ -m "not large and not free_threading"
+python -m pytest "${pytest_extra[@]}" -n 0 -v compute/ -m "large and not free_threading"

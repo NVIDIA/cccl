@@ -1,7 +1,7 @@
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
-    [ValidatePattern("^\d+\.\d+$")]
+    [ValidatePattern("^\d+\.\d+t?$")]
     [string]$PyVersion
 )
 
