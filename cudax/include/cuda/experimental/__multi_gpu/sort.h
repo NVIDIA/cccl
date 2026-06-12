@@ -195,26 +195,31 @@ struct __update_intervals_fn
     tuple<::cuda::std::pair<::cuda::std::optional<_Tp>, ::cuda::std::optional<_Tp>>, _Bracket, _Bracket>
     operator()(const _Tup& __tup) const noexcept
   {
-    auto [__target, __L_i, __U_i]       = __tup;
+    auto [__target, __L_i, __U_i] = __tup;
+    // global_rank = number of input keys strictly less than probes[j]
+    //             = prefix sum of per-bucket counts up to bucket j.
     ::cuda::std::uint64_t __global_rank = 0;
 
-    for (::cuda::std::uint64_t __j = 0; __j < __num_probes; ++__j)
+    for (::cuda::std::size_t __j = 0; __j < __num_probes; ++__j)
     {
-      const auto __rank = __global_rank;
-
       __global_rank += __hist_begin[__j];
-      if ((__rank < __target) && (__rank > __L_i.__rank))
+
+      if (__global_rank == __target)
       {
-        __L_i = _Bracket{__rank, __probes_begin[__j]};
-      }
-      else if ((__rank > __target) && (__rank < __U_i.__rank))
-      {
-        __U_i = _Bracket{__rank, __probes_begin[__j]};
-      }
-      else if (__rank == __target)
-      {
-        __L_i = __U_i = _Bracket{__rank, __probes_begin[__j]};
+        // Exact match, we have managed to find the perfect splitter value
+        __L_i = __U_i = _Bracket{__global_rank, __probes_begin[__j]};
         break;
+      }
+
+      if ((__global_rank < __target) && (__global_rank > __L_i.__rank))
+      {
+        // We undershot the target, so we can raise our lower bound
+        __L_i = _Bracket{__global_rank, __probes_begin[__j]};
+      }
+      else if ((__global_rank > __target) && (__global_rank < __U_i.__rank))
+      {
+        // Overshot the target but can lower the upper bound
+        __U_i = _Bracket{__global_rank, __probes_begin[__j]};
       }
     }
 
@@ -236,8 +241,8 @@ struct __finalize_splitters_fn
   {
     const auto [__target_rank, __L_i, __U_i] = __tup;
 
-    // Pick the bracket endpoint closest to the target rank. The chosen key
-    // becomes the splitter used by data exchange.
+    // Pick the bracket endpoint closest to the target rank. The chosen key becomes the
+    // splitter used by data exchange.
     const bool __use_L = (__target_rank - __L_i.__rank) <= (__U_i.__rank - __target_rank);
     if (__use_L)
     {
@@ -738,12 +743,11 @@ struct _Sorter
       auto __op           = [__lo = __keys_first, __keys_last, __probes_first, __cmp, __num_probes]
         _CCCL_HOST_DEVICE(::cuda::std::uint64_t __bucket) mutable {
           auto __hi = __keys_last;
-          // This reordering takes advantage of the fact that we cached __lo
-          // previously. In that case, __lo will already have raised the lower
-          // bound of the search. We now just need to raise the *upper* bound of
-          // the search. We cannot do that generally by caching (because the
-          // operators are called from left to right), but we *can* bound the
-          // search for __lo.
+          // This reordering takes advantage of the fact that we cached __lo previously. In
+          // that case, __lo will already have raised the lower bound of the search. We now
+          // just need to raise the *upper* bound of the search. We cannot do that generally by
+          // caching (because the operators are called from left to right), but we *can* bound
+          // the search for __lo.
           if (__bucket != __num_probes)
           {
             __hi = ::cuda::std::lower_bound(__lo, __keys_last, __probes_first[__bucket], __cmp);
@@ -755,10 +759,9 @@ struct _Sorter
           }
 
           const auto __ret = __hi - __lo;
-          // This caching of __lo relies on the fact that CUB calls these
-          // operators with monotonically increasing bucket count (i.e. the stride
-          // is always adding blockIdx.x). If that doesn't happen, then this
-          // caching is wrong.
+          // This caching of __lo relies on the fact that CUB calls these operators with
+          // monotonically increasing bucket count (i.e. the stride is always adding
+          // blockIdx.x). If that doesn't happen, then this caching is wrong.
           __lo = __hi;
           return __ret;
         };
@@ -1453,27 +1456,11 @@ struct _Sorter
       __local_hist.emplace_back(__stream, __resource, __env);
     }
 
+    // Note: K is small, on the order of ~1-10
     const auto __K = ::cuda::std::max(
       static_cast<::cuda::std::int32_t>(::cuda::std::ceil(::cuda::std::log10(::cuda::std::log10(__comm_size) / __EPS))),
       1);
     const auto __s_j_interior = 2. * ::cuda::std::log(__comm_size) / __EPS;
-    // Lemma 4.6: the overall sample size for round j is
-    //
-    // Z_j <= 5*p*s_j/s_{j-1} w.h.p.,
-    //
-    // and with the schedule
-    //
-    // s_j = (2 ln p / eps)^{j/k}
-    //
-    // the ratio
-    //
-    // s_j/s_{j-1} = (2 ln p / eps)^{1/k}
-    //
-    // is constant across rounds. Divide the global bound by p for a balanced local baseline,
-    // then scale by this rank's input size. After the first round, use the previous actual
-    // local sample count as the stronger signal.
-    const auto __sample_size_ratio =
-      ::cuda::std::pow(2. * ::cuda::std::log(__comm_size) / __EPS, 1.0 / static_cast<double>(__K));
 
     for (int __j = 1; __j <= __K; ++__j)
     {
@@ -1490,33 +1477,21 @@ struct _Sorter
              __local_original_sizes,
              __local_sample_sendcounts_bytes))
       {
-        // Lemma 4.6 bounds the total sample count across the communicator, not this rank's
-        // local buffer. Start with the balanced per-rank share:
+        // Each iteration we sample the union of splitter intervals, \gamma_j with a
+        // probability of __prob. For the first iteration, \gamm_j is the entire array, but for
+        // previous iterations it's impossible for us to tell (on the host), because:
         //
-        // 5 * (s_j / s_{j-1})
+        // 1. We can't inspect the updated intervals __I_j, and
+        // 2. We can't count how many of our elements actually lie within those updated
+        //    intervals.
         //
-        // Then scale it by this rank's relative input size:
-        //
-        // n_local / (N / p)
-        //
-        // After the first round, the previous local sample count is usually a better
-        // predictor: it was produced by sampling this rank's actual keys inside the previous
-        // splitter intervals, so it captures skew that the size-only baseline cannot see. The
-        // predictor is:
-        //
-        // 2 * previous_count
-        //
-        // Clamp that predictor between the local baseline and n_local. If the baseline itself
-        // exceeds n_local, both clamp bounds collapse to n_local.
-        const auto __local_scale = static_cast<double>(__n_local * __comm_size) / static_cast<double>(__N);
-        const auto __local_baseline =
-          static_cast<::cuda::std::size_t>(::cuda::std::ceil(5. * __sample_size_ratio * __local_scale));
-        const auto __previous_estimate = 2 * __previous_sendcount_bytes / sizeof(_Tp);
-        const auto __sample_reserve    = ::cuda::std::clamp<::cuda::std::size_t>(
-          __previous_estimate, ::cuda::std::min(__local_baseline, __n_local), __n_local);
-
-        (void) __sample_reserve;
-        const auto __estimate = __j == 1 ? __n_local * __prob : (__previous_sendcount_bytes / sizeof(_Tp));
+        // So instead we use the fact that each round the number of samples must decrease,
+        // because I_j gets tightened and we sample an increasingly smaller region. Therefore,
+        // the high-water mark for the samples is the previous round's sample vector size.
+        const auto __estimate = ::cuda::std::max(
+          __j == 1 ? static_cast<::cuda::std::size_t>(::cuda::std::ceil(__n_local * __prob))
+                   : __previous_sendcount_bytes / sizeof(_Tp),
+          ::cuda::std::size_t{1});
 
         __resize_for_overwrite(__samples, __estimate);
         __sample_probes(__stream, __input, __I_j, __prob, __cmp, &__samples, &__sample_sizes_bytes);
