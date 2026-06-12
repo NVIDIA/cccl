@@ -14,6 +14,8 @@ import pytest
 
 from cuda.compute import gpu_struct
 
+pytestmark = pytest.mark.no_numba
+
 
 def test_newline_in_field_name_is_rejected():
     """Field names with newlines must be rejected — they are the exec() injection vector."""

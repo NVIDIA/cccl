@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import cupy as cp
 import numpy as np
+import pytest
 
 import cuda.compute
 from cuda.compute.iterators import (
@@ -12,6 +13,7 @@ from cuda.compute.iterators import (
 )
 
 
+@pytest.mark.no_numba
 def test_permutation_iterator_equality():
     values1 = cp.asarray([10, 20, 30, 40, 50], dtype="int32")
     values2 = cp.asarray([100, 200, 300], dtype="int32")
@@ -37,6 +39,7 @@ def test_permutation_iterator_equality():
     assert it1.kind != it5.kind
 
 
+@pytest.mark.no_numba
 def test_permutation_iterator_with_array_values():
     values = cp.asarray([10, 20, 30, 40, 50], dtype="int32")
     indices = cp.asarray([2, 0, 4, 1], dtype="int32")
@@ -54,6 +57,7 @@ def test_permutation_iterator_with_array_values():
     assert d_output[0] == values[indices].sum()
 
 
+@pytest.mark.no_numba
 def test_permutation_iterator_with_iterator_values():
     values_it = CountingIterator(np.int32(10))
     indices = cp.asarray([2, 0, 4, 1], dtype="int32")
@@ -157,6 +161,7 @@ def test_unary_transform_of_permutation_iterator():
     assert cp.all(d_out == expected)
 
 
+@pytest.mark.no_numba
 def test_caching_permutation_iterator():
     """Test that iterator compilation is cached across instances with the same structure."""
     from cuda.compute._cpp_compile import compile_cpp_op_code
@@ -204,6 +209,7 @@ def test_caching_permutation_iterator():
     )
 
 
+@pytest.mark.no_numba
 def test_permutation_iterator_advance():
     """Test PermutationIterator.__add__ only advances indices, not values."""
     # Create values array [10, 20, 30, 40, 50, 60, 70]

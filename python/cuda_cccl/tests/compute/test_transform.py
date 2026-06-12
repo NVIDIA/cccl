@@ -266,6 +266,7 @@ def test_transform_reuse_input_iterator():
     np.testing.assert_allclose(expected, got)
 
 
+@pytest.mark.no_numba
 def test_unary_transform_well_known_negate():
     """Test unary transform with well-known NEGATE operation."""
     dtype = np.int32
@@ -282,6 +283,7 @@ def test_unary_transform_well_known_negate():
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_numba
 def test_unary_transform_well_known_identity():
     """Test unary transform with well-known IDENTITY operation."""
     dtype = np.int32
@@ -298,6 +300,7 @@ def test_unary_transform_well_known_identity():
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize("dtype", [np.int32, np.float16])
 def test_binary_transform_well_known_plus(dtype):
     """Test binary transform with well-known PLUS operation."""
@@ -319,6 +322,7 @@ def test_binary_transform_well_known_plus(dtype):
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_numba
 def test_binary_transform_well_known_multiplies():
     """Test binary transform with well-known MULTIPLIES operation."""
     dtype = np.int32
@@ -586,6 +590,7 @@ def test_binary_transform_with_lambda():
     np.testing.assert_array_equal(d_out.get(), expected)
 
 
+@pytest.mark.no_numba
 def test_binary_transform_bool_equal_to():
     d_input1 = cp.array([True, False, True, False], dtype=np.bool_)
     d_input2 = cp.array([True, True, False, False], dtype=np.bool_)

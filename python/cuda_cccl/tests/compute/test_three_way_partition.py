@@ -7,6 +7,8 @@ import numpy as np
 import pytest
 
 import cuda.compute
+from cuda.compute._cpp_compile import compile_cpp_op_code
+from cuda.compute.op import RawOp
 from cuda.compute import CacheModifiedInputIterator, gpu_struct
 
 DTYPE_LIST = [
@@ -62,6 +64,50 @@ def _host_three_way_partition(h_in: np.ndarray, less_than_op, greater_equal_op):
         np.int64(first_part.size),
         np.int64(second_part.size),
         np.int64(unselected.size),
+    )
+
+
+def _raw_less_than_i32(name: str, threshold: int) -> RawOp:
+    source = f"""
+extern "C" __device__ void {name}(void* x, void* result) {{
+    int value = *static_cast<int*>(x);
+    *static_cast<bool*>(result) = value < {threshold};
+}}
+"""
+    return RawOp(ltoir=compile_cpp_op_code(source), name=name)
+
+
+@pytest.mark.no_numba
+def test_three_way_partition_raw_op_minimal():
+    h_in = np.arange(10, dtype=np.int32)
+    d_in = cp.asarray(h_in)
+    d_first = cp.empty_like(d_in)
+    d_second = cp.empty_like(d_in)
+    d_unselected = cp.empty_like(d_in)
+    d_num_selected = cp.empty(2, dtype=np.uint64)
+
+    cuda.compute.three_way_partition(
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=_raw_less_than_i32("less_than_3_i32", 3),
+        select_second_part_op=_raw_less_than_i32("less_than_6_i32", 6),
+        num_items=len(d_in),
+    )
+
+    selected = d_num_selected.get()
+    first_count = int(selected[0])
+    second_count = int(selected[1])
+    unselected_count = len(h_in) - first_count - second_count
+
+    np.testing.assert_array_equal(d_first.get()[:first_count], h_in[h_in < 3])
+    np.testing.assert_array_equal(
+        d_second.get()[:second_count], h_in[(h_in >= 3) & (h_in < 6)]
+    )
+    np.testing.assert_array_equal(
+        d_unselected.get()[:unselected_count], h_in[h_in >= 6]
     )
 
 

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import cupy as cp
 import numpy as np
+import pytest
 
 import cuda.compute
 from cuda.compute import ZipIterator, gpu_struct
@@ -149,6 +150,7 @@ def test_nested_struct_in_zip_iterator():
     assert result["color"]["b"] == expected_b
 
 
+@pytest.mark.no_numba
 def test_dict_init_nested_struct():
     """Test initializing a nested struct with a dictionary."""
     Inner = gpu_struct({"a": np.int32, "b": np.float32})
@@ -162,6 +164,7 @@ def test_dict_init_nested_struct():
     assert np.isclose(obj.inner.b, 3.14)
 
 
+@pytest.mark.no_numba
 def test_dict_init_per_field():
     """Test initializing a struct with a dictionary for a nested field."""
     Inner = gpu_struct({"a": np.int32, "b": np.float32})
@@ -175,6 +178,7 @@ def test_dict_init_per_field():
     assert np.isclose(obj.inner.b, 3.14)
 
 
+@pytest.mark.no_numba
 def test_dict_init_deeply_nested():
     """Test initializing deeply nested structs (3+ levels) with dictionaries."""
     Level1 = gpu_struct({"value": np.int32})
@@ -189,6 +193,7 @@ def test_dict_init_deeply_nested():
     assert obj.middle.nested.value == 42
 
 
+@pytest.mark.no_numba
 def test_dict_init_mixed():
     """Test mixed initialization with some dicts and some direct values."""
     Inner1 = gpu_struct({"a": np.int32, "b": np.int32})

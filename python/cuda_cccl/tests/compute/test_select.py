@@ -7,6 +7,8 @@ import numpy as np
 import pytest
 
 import cuda.compute
+from cuda.compute._cpp_compile import compile_cpp_op_code
+from cuda.compute.op import RawOp
 from cuda.compute import CacheModifiedInputIterator, ZipIterator, gpu_struct
 
 DTYPE_LIST = [
@@ -57,6 +59,35 @@ def _host_select(h_in: np.ndarray, cond):
     mask = np.vectorize(cond, otypes=[np.uint8])(h_in).astype(bool)
     selected = h_in[mask]
     return selected, np.int64(selected.size)
+
+
+def _raw_even_i32_op() -> RawOp:
+    source = """
+extern "C" __device__ void is_even_i32(void* x, void* result) {
+    int value = *static_cast<int*>(x);
+    *static_cast<bool*>(result) = (value % 2) == 0;
+}
+"""
+    return RawOp(ltoir=compile_cpp_op_code(source), name="is_even_i32")
+
+
+@pytest.mark.no_numba
+def test_select_raw_op_minimal():
+    h_in = np.arange(10, dtype=np.int32)
+    d_in = cp.asarray(h_in)
+    d_out = cp.empty_like(d_in)
+    d_num_selected = cp.empty(2, dtype=np.uint64)
+
+    cuda.compute.select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=_raw_even_i32_op(),
+        num_items=len(d_in),
+    )
+
+    num_selected = int(d_num_selected[0].get())
+    np.testing.assert_array_equal(d_out.get()[:num_selected], h_in[h_in % 2 == 0])
 
 
 @pytest.mark.parametrize("dtype,num_items", select_params)

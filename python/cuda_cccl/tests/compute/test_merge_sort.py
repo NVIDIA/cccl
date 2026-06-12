@@ -5,7 +5,6 @@
 from typing import List
 
 import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
 
@@ -82,11 +81,11 @@ merge_sort_params = [
 def test_merge_sort_keys(dtype, num_items, op):
     h_in_keys = random_array(num_items, dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_in_keys = cp.asarray(h_in_keys)
 
     merge_sort_device(d_in_keys, None, d_in_keys, None, op, num_items)
 
-    h_out_keys = d_in_keys.copy_to_host()
+    h_out_keys = d_in_keys.get()
     h_in_keys.sort()
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
@@ -102,13 +101,13 @@ def test_merge_sort_pairs(dtype, num_items, op, monkeypatch):
     h_in_keys = random_array(num_items, dtype)
     h_in_items = random_array(num_items, np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_items = cp.asarray(h_in_items)
 
     merge_sort_device(d_in_keys, d_in_items, d_in_keys, d_in_items, op, num_items)
 
-    h_out_keys = d_in_keys.copy_to_host()
-    h_out_items = d_in_items.copy_to_host()
+    h_out_keys = d_in_keys.get()
+    h_out_items = d_in_items.get()
 
     argsort = np.argsort(h_in_keys, stable=True)
     h_in_keys = np.array(h_in_keys)[argsort]
@@ -123,12 +122,12 @@ def test_merge_sort_keys_copy(dtype, num_items, op):
     h_in_keys = random_array(num_items, dtype)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.asarray(h_out_keys)
 
     merge_sort_device(d_in_keys, None, d_out_keys, None, op, num_items)
 
-    h_out_keys = d_out_keys.copy_to_host()
+    h_out_keys = d_out_keys.get()
     h_in_keys.sort()
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
@@ -146,15 +145,15 @@ def test_merge_sort_pairs_copy(dtype, num_items, op, monkeypatch):
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_items = np.empty(num_items, dtype=np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_items = numba.cuda.to_device(h_out_items)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_items = cp.asarray(h_in_items)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_items = cp.asarray(h_out_items)
 
     merge_sort_device(d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items)
 
-    h_out_keys = d_out_keys.copy_to_host()
-    h_out_items = d_out_items.copy_to_host()
+    h_out_keys = d_out_keys.get()
+    h_out_items = d_out_items.get()
 
     argsort = np.argsort(h_in_keys, stable=True)
     h_in_keys = np.array(h_in_keys)[argsort]
@@ -225,11 +224,11 @@ def test_merge_sort_keys_complex():
     imaginary = random_array(num_items, np.int64, max_value)
 
     h_in_keys = real + 1j * imaginary
-    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_in_keys = cp.asarray(h_in_keys)
 
     merge_sort_device(d_in_keys, None, d_in_keys, None, compare_complex, num_items)
 
-    h_out_keys = d_in_keys.copy_to_host()
+    h_out_keys = d_in_keys.get()
     h_in_keys = h_in_keys[np.argsort(h_in_keys.real, stable=True)]
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
@@ -240,15 +239,15 @@ def test_merge_sort_keys_copy_iterator_input(dtype, num_items, op):
     h_in_keys = random_array(num_items, dtype)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.asarray(h_out_keys)
 
     i_input = CacheModifiedInputIterator(d_in_keys, modifier="stream")
 
     merge_sort_device(i_input, None, d_out_keys, None, op, num_items)
 
     h_in_keys.sort()
-    h_out_keys = d_out_keys.copy_to_host()
+    h_out_keys = d_out_keys.get()
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
 
@@ -265,10 +264,10 @@ def test_merge_sort_pairs_copy_iterator_input(dtype, num_items, op, monkeypatch)
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_items = np.empty(num_items, dtype=np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_items = numba.cuda.to_device(h_out_items)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_items = cp.asarray(h_in_items)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_items = cp.asarray(h_out_items)
 
     i_input_keys = CacheModifiedInputIterator(d_in_keys, modifier="stream")
     i_input_items = CacheModifiedInputIterator(d_in_items, modifier="stream")
@@ -277,8 +276,8 @@ def test_merge_sort_pairs_copy_iterator_input(dtype, num_items, op, monkeypatch)
         i_input_keys, i_input_items, d_out_keys, d_out_items, op, num_items
     )
 
-    h_out_keys = d_out_keys.copy_to_host()
-    h_out_items = d_out_items.copy_to_host()
+    h_out_keys = d_out_keys.get()
+    h_out_items = d_out_items.get()
 
     argsort = np.argsort(h_in_keys, stable=True)
     h_in_keys = np.array(h_in_keys)[argsort]
@@ -307,6 +306,7 @@ def test_merge_sort_with_stream(cuda_stream):
     np.testing.assert_array_equal(got, h_in_keys)
 
 
+@pytest.mark.no_numba
 def test_merge_sort_well_known_less():
     dtype = np.int32
 
@@ -326,6 +326,7 @@ def test_merge_sort_well_known_less():
     np.testing.assert_equal(d_out_keys.get(), expected)
 
 
+@pytest.mark.no_numba
 def test_merge_sort_well_known_greater():
     dtype = np.int32
 

@@ -87,6 +87,7 @@ def test_shuffle_iterator_with_permutation_iterator():
     assert sorted(result) == sorted(d_values.get())
 
 
+@pytest.mark.no_numba
 def test_shuffle_iterator_invalid_num_items():
     with pytest.raises(ValueError, match="num_items must be > 0"):
         ShuffleIterator(0, seed=42)

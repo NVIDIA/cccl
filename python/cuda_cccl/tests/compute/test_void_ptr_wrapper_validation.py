@@ -12,7 +12,9 @@ leading-digit-only).
 """
 
 import pytest
-from numba import types
+
+numba = pytest.importorskip("numba")
+types = numba.types
 
 from cuda.compute._odr_helpers import _ArgMode, _ArgSpec, _create_void_ptr_wrapper
 from cuda.compute._utils import sanitize_identifier
