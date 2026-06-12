@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import cuda.compute
+from cuda.core import Device
 from cuda.compute import (
     CountingIterator,
     TransformIterator,
@@ -261,10 +262,8 @@ def test_zip_iterator_with_scan(num_items):
 @pytest.mark.parametrize("num_items", [10, 1000])
 def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     """Test ZipIterator as output iterator with scan operations."""
-    import numba.cuda
-
     # Skip SASS check for CC 8.0+ due to LDL/STL CI failure.
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     if cc_major >= 8:
         monkeypatch.setattr(
             cuda.compute._cccl_interop,
@@ -426,9 +425,7 @@ def test_deeply_nested_zip_iterators():
     ],
 )
 def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
-    import numba.cuda
-
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     if cc_major >= 8:
         monkeypatch.setattr(
             cuda.compute._cccl_interop,
@@ -502,6 +499,7 @@ def test_zip_iterator_of_transform_iterator_kind():
     assert it1.kind != it2.kind
 
 
+@pytest.mark.no_numba
 def test_caching_zip_iterator():
     """Test that iterator compilation is cached across instances with the same structure."""
     from cuda.compute._cpp_compile import compile_cpp_op_code
@@ -577,6 +575,7 @@ def test_caching_zip_iterator():
     assert len(set(kinds)) == 1, "Same CountingIterator types should have same kind"
 
 
+@pytest.mark.no_numba
 def test_compilation_caching_across_iterator_types():
     """Test that compilation caching works across different iterator types."""
     from cuda.compute import ConstantIterator

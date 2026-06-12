@@ -6,11 +6,11 @@ import itertools
 from typing import Tuple
 
 import cupy as cp
-import numba
 import numpy as np
 import pytest
 
 import cuda.compute
+from cuda.core import Device
 from cuda.compute import (
     DoubleBuffer,
     SortOrder,
@@ -148,7 +148,7 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     DTYPE_SIZE,
 )
 def test_radix_sort_keys(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -164,12 +164,12 @@ def test_radix_sort_keys(dtype, num_items, monkeypatch):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.asarray(h_out_keys)
 
     radix_sort_device(d_in_keys, d_out_keys, None, None, order, num_items)
 
-    h_out_keys = d_out_keys.copy_to_host()
+    h_out_keys = d_out_keys.get()
 
     h_in_keys, _ = host_sort(h_in_keys, None, order)
 
@@ -195,17 +195,17 @@ def test_radix_sort_pairs(dtype, num_items, monkeypatch):
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_values = np.empty(num_items, dtype=np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_values = numba.cuda.to_device(h_in_values)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_values = numba.cuda.to_device(h_out_values)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_values = cp.asarray(h_in_values)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_values = cp.asarray(h_out_values)
 
     radix_sort_device(
         d_in_keys, d_out_keys, d_in_values, d_out_values, order, num_items
     )
 
-    h_out_keys = d_out_keys.copy_to_host()
-    h_out_values = d_out_values.copy_to_host()
+    h_out_keys = d_out_keys.get()
+    h_out_values = d_out_values.get()
 
     h_in_keys, h_in_values = host_sort(h_in_keys, h_in_values, order)
 
@@ -218,7 +218,7 @@ def test_radix_sort_pairs(dtype, num_items, monkeypatch):
     DTYPE_SIZE,
 )
 def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -234,14 +234,14 @@ def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.asarray(h_out_keys)
 
     keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
 
     radix_sort_device(keys_double_buffer, None, None, None, order, num_items)
 
-    h_out_keys = keys_double_buffer.current().copy_to_host()
+    h_out_keys = keys_double_buffer.current().get()
 
     h_in_keys, _ = host_sort(h_in_keys, None, order)
 
@@ -253,7 +253,7 @@ def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # NOTE: int16 failures seen only with NVRTC 13.1:
     if cc_major >= 9 or np.isdtype(dtype, (np.int16, np.uint32)):
         import cuda.compute._cccl_interop
@@ -270,10 +270,10 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_values = np.empty(num_items, dtype=np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_values = numba.cuda.to_device(h_in_values)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_values = numba.cuda.to_device(h_out_values)
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_values = cp.asarray(h_in_values)
+    d_out_keys = cp.asarray(h_out_keys)
+    d_out_values = cp.asarray(h_out_values)
 
     keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
     values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
@@ -282,8 +282,8 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
         keys_double_buffer, None, values_double_buffer, None, order, num_items
     )
 
-    h_out_keys = keys_double_buffer.current().copy_to_host()
-    h_out_values = values_double_buffer.current().copy_to_host()
+    h_out_keys = keys_double_buffer.current().get()
+    h_out_values = values_double_buffer.current().get()
 
     h_in_keys, h_in_values = host_sort(h_in_keys, h_in_values, order)
 
@@ -304,7 +304,7 @@ DTYPE_SIZE_BIT_WINDOW = [
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # NOTE: int16 failures seen only with NVRTC 13.1:
     if cc_major >= 9 or np.isdtype(dtype, (np.int16, np.uint32)):
         import cuda.compute._cccl_interop
@@ -329,10 +329,10 @@ def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
         h_out_keys = np.empty(num_items, dtype=dtype)
         h_out_values = np.empty(num_items, dtype=np.float32)
 
-        d_in_keys = numba.cuda.to_device(h_in_keys)
-        d_in_values = numba.cuda.to_device(h_in_values)
-        d_out_keys = numba.cuda.to_device(h_out_keys)
-        d_out_values = numba.cuda.to_device(h_out_values)
+        d_in_keys = cp.asarray(h_in_keys)
+        d_in_values = cp.asarray(h_in_values)
+        d_out_keys = cp.asarray(h_out_keys)
+        d_out_values = cp.asarray(h_out_values)
 
         radix_sort_device(
             d_in_keys,
@@ -345,8 +345,8 @@ def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
             end_bit,
         )
 
-        h_out_keys = d_out_keys.copy_to_host()
-        h_out_values = d_out_values.copy_to_host()
+        h_out_keys = d_out_keys.get()
+        h_out_values = d_out_values.get()
 
         h_in_keys, h_in_values = host_sort(
             h_in_keys, h_in_values, order, begin_bit, end_bit
@@ -384,10 +384,10 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items, monkeypatch
         h_out_keys = np.empty(num_items, dtype=dtype)
         h_out_values = np.empty(num_items, dtype=np.float32)
 
-        d_in_keys = numba.cuda.to_device(h_in_keys)
-        d_in_values = numba.cuda.to_device(h_in_values)
-        d_out_keys = numba.cuda.to_device(h_out_keys)
-        d_out_values = numba.cuda.to_device(h_out_values)
+        d_in_keys = cp.asarray(h_in_keys)
+        d_in_values = cp.asarray(h_in_values)
+        d_out_keys = cp.asarray(h_out_keys)
+        d_out_values = cp.asarray(h_out_values)
 
         keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
         values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
@@ -403,8 +403,8 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items, monkeypatch
             end_bit,
         )
 
-        h_out_keys = keys_double_buffer.current().copy_to_host()
-        h_out_values = values_double_buffer.current().copy_to_host()
+        h_out_keys = keys_double_buffer.current().get()
+        h_out_values = values_double_buffer.current().get()
 
         h_in_keys, h_in_values = host_sort(
             h_in_keys, h_in_values, order, begin_bit, end_bit
@@ -469,8 +469,9 @@ def test_radix_sort_with_stream(cuda_stream):
     np.testing.assert_array_equal(got, h_in_keys)
 
 
+@pytest.mark.no_numba
 def test_radix_sort(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -518,8 +519,9 @@ def test_radix_sort(monkeypatch):
     np.testing.assert_array_equal(h_out_items, h_in_values)
 
 
+@pytest.mark.no_numba
 def test_radix_sort_double_buffer(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:

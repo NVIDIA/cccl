@@ -4,11 +4,11 @@
 
 
 import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
 
 import cuda.compute
+from cuda.core import Device
 from cuda.compute import (
     CountingIterator,
     OpKind,
@@ -52,7 +52,7 @@ def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, strea
     [True, False],
 )
 def test_scan_array_input(force_inclusive, input_array, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification if input is complex
     # as LDL/STL instructions are emitted for complex types.
     # Also skip for:
@@ -214,6 +214,7 @@ def test_scan_with_stream(force_inclusive, cuda_stream):
     np.testing.assert_allclose(expected, got, rtol=1e-5)
 
 
+@pytest.mark.no_numba
 def test_exclusive_scan_well_known_plus():
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
@@ -232,8 +233,9 @@ def test_exclusive_scan_well_known_plus():
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_numba
 def test_inclusive_scan_well_known_plus(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -354,7 +356,7 @@ def test_inclusive_scan_add():
 
 
 def test_reverse_input_iterator(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -409,6 +411,7 @@ def test_reverse_output_iterator():
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize(
     "force_inclusive",
     [True, False],
@@ -430,13 +433,14 @@ def test_future_init_value(force_inclusive):
     np.testing.assert_array_equal(expected, got)
 
 
+@pytest.mark.no_numba
 def test_no_init_value(monkeypatch):
     force_inclusive = True
     num_items = 1024
     dtype = np.dtype("int32")
 
     # Skip SASS check for CC 9.0 due to LDL/STL CI failure.
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     if cc_major >= 9:
         import cuda.compute._cccl_interop
 
@@ -456,6 +460,7 @@ def test_no_init_value(monkeypatch):
     np.testing.assert_array_equal(expected, got)
 
 
+@pytest.mark.no_numba
 def test_no_init_value_iterator():
     force_inclusive = True
     num_items = 1024
@@ -493,6 +498,7 @@ def test_inclusive_scan_with_lambda():
     np.testing.assert_array_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize("force_inclusive", [True, False])
 def test_scan_bool_maximum(force_inclusive):
     h_init = np.array([False], dtype=np.bool_)

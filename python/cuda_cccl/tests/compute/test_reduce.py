@@ -6,7 +6,6 @@ import functools
 import random
 
 import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
 from cupy.cuda import runtime
@@ -73,15 +72,15 @@ reduce_params = [
 def test_device_reduce(dtype, num_items, op):
     init_value = 42
     h_init = np.array([init_value], dtype=dtype)
-    d_output = numba.cuda.device_array(1, dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
 
     h_input = random_int(num_items, dtype)
-    d_input = numba.cuda.to_device(h_input)
+    d_input = cp.asarray(h_input)
 
     cuda.compute.reduce_into(
         d_in=d_input, d_out=d_output, num_items=d_input.size, op=op, h_init=h_init
     )
-    h_output = d_output.copy_to_host()
+    h_output = d_output.get()
     assert h_output[0] == pytest.approx(
         sum(h_input) + init_value, rel=0.08 if dtype == np.float16 else 0
     )  # obtained relative error value from c2h/include/c2h/check_results.cuh
@@ -94,10 +93,10 @@ def test_device_reduce_with_lambda():
     num_items = 1024
 
     h_init = np.array([init_value], dtype=dtype)
-    d_output = numba.cuda.device_array(1, dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
 
     h_input = random_int(num_items, dtype)
-    d_input = numba.cuda.to_device(h_input)
+    d_input = cp.asarray(h_input)
 
     # Use a lambda function directly as the reducer
     cuda.compute.reduce_into(
@@ -107,7 +106,7 @@ def test_device_reduce_with_lambda():
         op=lambda a, b: a + b,
         h_init=h_init,
     )
-    h_output = d_output.copy_to_host()
+    h_output = d_output.get()
     assert h_output[0] == sum(h_input) + init_value
 
 
@@ -118,10 +117,10 @@ def test_device_reduce_with_lambda_variable():
     num_items = 1024
 
     h_init = np.array([init_value], dtype=dtype)
-    d_output = numba.cuda.device_array(1, dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
 
     h_input = random_int(num_items, dtype)
-    d_input = numba.cuda.to_device(h_input)
+    d_input = cp.asarray(h_input)
 
     # Use a lambda function assigned to a variable as the reducer
     cuda.compute.reduce_into(
@@ -131,24 +130,24 @@ def test_device_reduce_with_lambda_variable():
         op=add_op_lambda,
         h_init=h_init,
     )
-    h_output = d_output.copy_to_host()
+    h_output = d_output.get()
     assert h_output[0] == sum(h_input) + init_value
 
 
 def test_complex_device_reduce():
     h_init = np.array([40.0 + 2.0j], dtype=complex)
-    d_output = numba.cuda.device_array(1, dtype=complex)
+    d_output = cp.empty(1, dtype=complex)
 
     for num_items in [42, 420000]:
         real_imag = np.random.random((2, num_items))
         h_input = real_imag[0] + 1j * real_imag[1]
-        d_input = numba.cuda.to_device(h_input)
+        d_input = cp.asarray(h_input)
         assert d_input.size == num_items
         cuda.compute.reduce_into(
             d_in=d_input, d_out=d_output, num_items=num_items, op=add_op, h_init=h_init
         )
 
-        result = d_output.copy_to_host()[0]
+        result = d_output.get()[0]
         expected = np.sum(h_input, initial=h_init[0])
         assert result == pytest.approx(expected)
 
@@ -162,11 +161,11 @@ def _test_device_sum_with_iterator(
 
     if use_numpy_array:
         h_input = np.array(l_varr, dtype_inp)
-        d_input = numba.cuda.to_device(h_input)
+        d_input = cp.asarray(h_input)
     else:
         d_input = i_input
 
-    d_output = numba.cuda.device_array(1, dtype_out)  # to store device sum
+    d_output = cp.empty(1, dtype_out)  # to store device sum
 
     h_init = np.array([start_sum_with], dtype_out)
 
@@ -174,7 +173,7 @@ def _test_device_sum_with_iterator(
         d_in=d_input, d_out=d_output, num_items=len(l_varr), op=add_op, h_init=h_init
     )
 
-    h_output = d_output.copy_to_host()
+    h_output = d_output.get()
     assert h_output[0] == expected_result
 
 
@@ -216,7 +215,7 @@ def test_device_sum_cache_modified_input_it(
     l_varr = [rng.randrange(100) for _ in range(num_items)]
     dtype_inp = np.dtype(supported_value_type)
     dtype_out = dtype_inp
-    input_devarr = numba.cuda.to_device(np.array(l_varr, dtype=dtype_inp))
+    input_devarr = cp.asarray(np.array(l_varr, dtype=dtype_inp))
     i_input = CacheModifiedInputIterator(input_devarr, modifier="stream")
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
@@ -691,6 +690,7 @@ def test_reduce_invalid_stream():
         )
 
 
+@pytest.mark.no_numba
 def test_device_reduce_well_known_plus():
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
@@ -709,6 +709,7 @@ def test_device_reduce_well_known_plus():
     assert (d_output == expected_output).all()
 
 
+@pytest.mark.no_numba
 def test_device_reduce_well_known_minimum():
     dtype = np.int32
     h_init = np.array([100], dtype=dtype)
@@ -727,6 +728,7 @@ def test_device_reduce_well_known_minimum():
     assert (d_output == expected_output).all()
 
 
+@pytest.mark.no_numba
 def test_device_reduce_well_known_maximum():
     dtype = np.int32
     h_init = np.array([-100], dtype=dtype)
@@ -925,6 +927,7 @@ def test_reduce_transform_output_iterator(floating_array):
     np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
 
 
+@pytest.mark.no_numba
 def test_reduce_with_not_guaranteed_determinism(floating_array):
     dtype = floating_array.dtype
     h_init = np.array([0], dtype=dtype)
@@ -942,6 +945,7 @@ def test_reduce_with_not_guaranteed_determinism(floating_array):
     )
 
 
+@pytest.mark.no_numba
 def test_reduce_bool():
     h_init = np.array([False])
     d_input = cp.array([True, False, True])

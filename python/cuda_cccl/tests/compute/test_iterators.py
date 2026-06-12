@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
 
@@ -22,6 +21,7 @@ from cuda.compute.iterators import (
 )
 
 
+@pytest.mark.no_numba
 def test_constant_iterator_equality():
     it1 = ConstantIterator(np.int32(0))
     it2 = ConstantIterator(np.int32(0))
@@ -32,6 +32,7 @@ def test_constant_iterator_equality():
     assert it1.kind != it4.kind
 
 
+@pytest.mark.no_numba
 def test_counting_iterator_equality():
     it1 = CountingIterator(np.int32(0))
     it2 = CountingIterator(np.int32(0))
@@ -42,6 +43,7 @@ def test_counting_iterator_equality():
     assert it1.kind != it4.kind
 
 
+@pytest.mark.no_numba
 def test_cache_modified_input_iterator_equality():
     ary1 = cp.asarray([0, 1, 2], dtype="int32")
     ary2 = cp.asarray([3, 4, 5], dtype="int32")
@@ -122,11 +124,14 @@ def reverse_iterator_array(request):
     if array_type == "cupy":
         array = cp.array(base_array)
     else:
+        import numba.cuda
+
         array = numba.cuda.to_device(base_array)
 
     return array
 
 
+@pytest.mark.no_numba
 def test_reverse_input_iterator_equality():
     ary1 = cp.asarray([0, 1, 2], dtype="int32")
     ary2 = cp.asarray([3, 4, 5], dtype="int32")
@@ -141,6 +146,7 @@ def test_reverse_input_iterator_equality():
     assert it1.kind != it4.kind
 
 
+@pytest.mark.no_numba
 def test_reverse_output_iterator_equality():
     ary1 = cp.asarray([0, 1, 2], dtype="int32")
     ary2 = cp.asarray([3, 4, 5], dtype="int32")
@@ -155,6 +161,7 @@ def test_reverse_output_iterator_equality():
     assert it1.kind != it4.kind
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize(
     "shape, itemsize, expected",
     [
@@ -179,6 +186,7 @@ def test_compute_c_contiguous_strides_in_bytes(shape, itemsize, expected):
     assert result == expected
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize(
     "shape, dtype",
     [

@@ -269,6 +269,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input(monkeypatch):
         )
 
 
+@pytest.mark.no_numba
 def test_segmented_reduce_well_known_plus(monkeypatch):
     # Disable SASS verification for this test (LDL instruction in SASS).
     monkeypatch.setattr(
@@ -299,6 +300,7 @@ def test_segmented_reduce_well_known_plus(monkeypatch):
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_numba
 def test_segmented_reduce_well_known_maximum(monkeypatch):
     # Disable SASS verification for this test (LDL instruction in SASS).
     monkeypatch.setattr(
@@ -329,6 +331,7 @@ def test_segmented_reduce_well_known_maximum(monkeypatch):
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_numba
 def test_segmented_reduce_bool_maximum(monkeypatch):
     # Disable SASS verification for this test (LDL instruction in SASS).
     monkeypatch.setattr(

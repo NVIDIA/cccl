@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import cupy as cp
 import numpy as np
+import pytest
 
 from cuda.compute import OpKind, TransformIterator, gpu_struct, reduce_into
 
 
+@pytest.mark.no_numba
 def test_deferred_annotations():
     # test that we can use @gpu_struct with deferred annotations
     # GH: #6421

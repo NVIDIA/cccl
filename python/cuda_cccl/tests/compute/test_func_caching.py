@@ -1,10 +1,12 @@
 import numpy as np
+import pytest
 
 from cuda.compute._caching import CachableFunction
 
 global_x = 1
 
 
+@pytest.mark.no_numba
 def test_func_caching_basic():
     def func(x):
         return x
@@ -19,6 +21,7 @@ def test_func_caching_basic():
     assert f1 == f2
 
 
+@pytest.mark.no_numba
 def test_func_caching_different_names():
     def func(x):
         return x
@@ -33,6 +36,7 @@ def test_func_caching_different_names():
     assert f1 != f2
 
 
+@pytest.mark.no_numba
 def test_func_caching_different_code():
     def func(x):
         return x
@@ -46,6 +50,7 @@ def test_func_caching_different_code():
     assert f1 != f2
 
 
+@pytest.mark.no_numba
 def test_func_caching_with_closure():
     def factory(x):
         def func(y):
@@ -61,6 +66,7 @@ def test_func_caching_with_closure():
     assert f1 != f3
 
 
+@pytest.mark.no_numba
 def test_func_caching_with_global_variable():
     global global_x
 
@@ -107,6 +113,7 @@ def test_func_caching_wrapped_cuda_jit_function():
     assert CachableFunction(func1) != CachableFunction(func3)
 
 
+@pytest.mark.no_numba
 def test_func_caching_with_global_np_ufunc():
     def make_func():
         def func(x):
@@ -126,6 +133,7 @@ def test_func_caching_with_global_np_ufunc():
     assert CachableFunction(func1) != CachableFunction(func2)
 
 
+@pytest.mark.no_numba
 def test_func_caching_with_aliased_np_ufunc():
     def make_func1():
         amin = np.argmin
