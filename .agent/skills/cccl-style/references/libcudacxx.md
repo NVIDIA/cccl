@@ -4,9 +4,6 @@ Use this reference for `libcudacxx/include/**/*` and `cudax/include/**/*`.
 
 ## Naming Style
 
-- Template parameters: CamelCase, e.g. `MyParameter`.
-- All other symbols: snake style, e.g. `my_variable`.
-
 All non-public symbols must be C++ reserved identifiers:
 
 - `_` for macros and template parameters, e.g. `_MY_MACRO`, `_MyParameter`.
@@ -20,21 +17,11 @@ All non-public symbols must be C++ reserved identifiers:
 
 ## Functions
 
-- Functions must be marked `_CCCL_HOST_API`, `_CCCL_DEVICE_API`, or `_CCCL_API`.
-- Non-template, non-`constexpr` functions must use `inline`.
-- Most functions with a non-void return type should use `[[nodiscard]]`; functions with known side effects may be exceptions.
-- Functions that do not throw exceptions must use `noexcept`.
 - Use `constexpr` for functions that do not depend on run-time features, such as pointers.
 - If the return type is not explicit (`auto`), then a trailing return type is strongly preferred.
-- Use `_CCCL_CONSTEVAL` when the function can only be evaluated at compile time.
-- Use C++20 concept macros instead of SFINAE, e.g. `_CCCL_TEMPLATE(...)` and `_CCCL_REQUIRES(...)`.
 
 ## Headers
 
-- All header inclusions must use the syntax `<header>`.
-- Use forward declaration, namely `__fwd/header.h` or direct type declaration, when possible instead of including the implementation header.
-- Headers should be the most precise available, e.g. `#include <cuda/std/__type_traits/is_array.h>`.
-- Do not include headers in `cuda/std/__cccl/` directly; they are provided by `__config` or the prologue/epilogue mechanism.
 - Use the correct license:
   - `libcudacxx/include/cuda/std` files ported from LLVM libc++ use the LLVM license.
   - `libcudacxx/include/cuda/` files use Apache License v2.0 with LLVM Exceptions.
@@ -65,4 +52,3 @@ All non-public symbols must be C++ reserved identifiers:
 
 - Do not use lambda expressions in device-only or host-device code.
 - Do not rely on deduction guides for initialization; use explicit template arguments instead.
-- Protect host-only code with `#if !_CCCL_COMPILER(NVRTC)`.
