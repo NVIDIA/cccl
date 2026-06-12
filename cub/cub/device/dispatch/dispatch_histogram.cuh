@@ -1710,12 +1710,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
 #if _CCCL_HOSTED()
     // Sweep-only launch tag (see the cooperative block above): the non-cooperative
-    // path ran the privatized-SMEM sweep kernel. Host-only, env-gated.
+    // path ran the privatized-SMEM sweep kernel. The `:static` / `:dynamic` suffix
+    // records WHICH smem-privatized kernel instantiation ran (compile-time
+    // kUseDynamicSmem), so the static-vs-dynamic comparison sweep can tell them apart
+    // at the same bin count. Host-only, env-gated.
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (::std::getenv("CUB_HISTO_LOG_LAUNCH"))
                    {
-                     ::std::fprintf(stderr, "[launch] bins=%d ch=%d ran=smem_privatized\n",
-                                    max_num_output_bins, NUM_ACTIVE_CHANNELS);
+                     ::std::fprintf(stderr, "[launch] bins=%d ch=%d ran=smem_privatized:%s\n",
+                                    max_num_output_bins, NUM_ACTIVE_CHANNELS,
+                                    kUseDynamicSmem ? "dynamic" : "static");
                    }
                  }));
 #endif
@@ -2309,6 +2313,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
   // force (normal dispatch) both stay false -> the default try-hybrid-then-gather.
   bool force_hybrid_member = false;
   bool force_gather_member = false;
+  // Sweep-only: the smem_privatized enum runs the STATIC (<=256-bin, compile-time
+  // sized) kernel at <=256 bins and the DYNAMIC (extern __shared__, launch-sized)
+  // kernel above. CUB_HISTO_FORCE_SMEM={static,dynamic} pins which kernel runs so a
+  // sweep can measure static vs dynamic at the SAME (low) bin count -- used to decide
+  // whether the dynamic kernel can replace the static one. 0 = no override (bin-count
+  // rule stands). Host-only; zero device SASS.
+  int force_smem_kind = 0; // 0 = auto, 1 = force static, 2 = force dynamic
 #if _CCCL_HOSTED()
   NV_IF_TARGET(NV_IS_HOST, ({
                  if (const char* env = ::std::getenv("CUB_HISTO_FORCE_ALGO"))
@@ -2316,6 +2327,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
                    force_hybrid_member = (::std::strcmp(env, "hybrid") == 0);
                    force_gather_member = (::std::strcmp(env, "gmem_privatized_nocache") == 0
                                           || ::std::strcmp(env, "gmem_priv_gather") == 0);
+                 }
+                 if (const char* env = ::std::getenv("CUB_HISTO_FORCE_SMEM"))
+                 {
+                   force_smem_kind = (::std::strcmp(env, "static") == 0)    ? 1
+                                     : (::std::strcmp(env, "dynamic") == 0) ? 2
+                                                                            : 0;
                  }
                }));
 #endif // _CCCL_HOSTED()
@@ -2328,7 +2345,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       // the bin count — the two were separate enumerators before the merge.
       // PRIVATIZED_SMEM_BINS is the compile-time marker selecting the path in dispatch<>;
       // the dynamic path's actual bin count comes from the runtime level arrays.
-      if (max_num_output_bins <= max_privatized_smem_bins)
+      // CUB_HISTO_FORCE_SMEM (force_smem_kind) overrides the bin-count rule for the
+      // static-vs-dynamic comparison sweep: force_static (1) keeps <=256 on the static
+      // kernel; force_dynamic (2) routes EVEN <=256-bin cells through the dynamic kernel
+      // (which sizes its extern __shared__ from the runtime bin count, so a small bin
+      // count just allocates a small dyn-SMEM region). Default (0) uses the bin count.
+      const bool use_static_smem =
+        (force_smem_kind == 2) ? false
+        : (force_smem_kind == 1) ? true
+                                 : (max_num_output_bins <= max_privatized_smem_bins);
+      if (use_static_smem)
       {
         constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
         return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS>(

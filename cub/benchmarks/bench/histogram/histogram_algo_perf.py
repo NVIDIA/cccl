@@ -94,6 +94,10 @@ ALGO_STYLE = {
     # values over that range (see perf_series). Drawn so the low-bin region is a
     # named algorithm, not two unlabeled reference lines.
     "smem_privatized": ("#8c564b", "h", "smem privatized", "-", 1.3),
+    # Low-bin static-vs-dynamic SMEM comparison sweep (histogram_lowbin_smem_sweep.py):
+    # the two privatized-SMEM kernel instantiations measured head-to-head at <=256 bins.
+    "smem_static": ("#8c564b", "h", "smem privatized (static <=256)", "-", 1.6),
+    "smem_dynamic": ("#1f77b4", "D", "smem privatized (dynamic)", "--", 1.3),
 }
 # 3-letter tag per algorithm, used to label each point of the `default` series with
 # the algorithm the selector actually picked there. `hybrid` is the smem_split>0
@@ -112,10 +116,14 @@ ALGO_TAG = {
     "direct_nocache": "DAN",
     "main": "BAS",  # baseline (upstream main); 3 letters like the rest, ties to "speedup vs baseline"
     "default": "DEF",
+    "smem_static": "SST",
+    "smem_dynamic": "SDY",
 }
 # Draw order: reference series last (on top). gmem/direct candidates first.
 ALGO_ORDER = [
     "smem_privatized",
+    "smem_static",
+    "smem_dynamic",
     "gmem_privatized_nocache",
     "hybrid",
     "gmem_privatized_cuckoo",
