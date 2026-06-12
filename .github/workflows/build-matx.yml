@@ -108,6 +108,8 @@ jobs:
 
           echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
 
+          export SCCACHE_DIST_AUTH_TOKEN;
+
           .devcontainer/launch.sh \
             --docker \
             --cuda 13.3 \
@@ -128,7 +130,7 @@ jobs:
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
             --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL" \
-            --env "SCCACHE_DIST_AUTH_TOKEN=$SCCACHE_DIST_AUTH_TOKEN" \
+            --env "SCCACHE_DIST_AUTH_TOKEN" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
 
