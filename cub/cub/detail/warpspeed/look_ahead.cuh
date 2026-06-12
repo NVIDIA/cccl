@@ -20,7 +20,6 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__cmath/round_down.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -264,10 +263,11 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 }
 
 // Deterministic version of warpIncrementalLookahead that returns the same aggrExclusiveCta. The difference is that it
-// always starts the lookahead from a tile index that is a multiple of 32: it shifts the left pointer (idxTilePrev) down
-// to the nearest multiple of 32 and reduces from there. Because every reduction begins at the same fixed tiles, no
-// matter which tiles happened to finish first, the order in which values are summed is always the same and the result
-// is identical on every run. idxTilePrev/aggrExclusiveCtaPrev are updated by reference to the last multiple of 32.
+// always starts the lookahead from a tile index that is a multiple of 32. The left pointer (idxTilePrev) is itself
+// always a multiple of 32, as it starts at 0 and is only ever advanced by whole batches of 32, so the lookahead resumes
+// from there directly. Because every reduction begins at the same fixed tiles, no matter which tiles happened to finish
+// first, the order in which values are summed is always the same and the result is identical on every run.
+// idxTilePrev/aggrExclusiveCtaPrev are updated by reference to the last multiple of 32.
 template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookaheadStable(
   SpecialRegisters specialRegisters,
@@ -280,8 +280,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   const int laneIdx                      = specialRegisters.laneIdx;
   const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
 
-  // Adjust the left pointer down to the previous 32-multiple so we do batched sums
-  int idxTileCur             = ::cuda::round_down(idxTilePrev, 32);
+  int idxTileCur             = idxTilePrev;
   AccumT aggrExclusiveCtaCur = aggrExclusiveCtaPrev;
 
   using warp_reduce_t = WarpReduce<AccumT>;
