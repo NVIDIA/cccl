@@ -17,12 +17,29 @@ namespace
 namespace cudax = ::cuda::experimental;
 namespace types = cudax_multi_gpu_concepts;
 
+// nvcc ignores [[maybe_unused]] entirely
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
+struct no_send : types::synchronous_communicator_model
+{
+  template <class Tp>
+  void recv(group_token_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+};
+
+struct no_recv : types::synchronous_communicator_model
+{
+  template <class Tp>
+  void send(group_token_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+};
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_HOST_DEVICE_API constexpr bool test()
 {
   static_assert(cudax::communicator<types::communicator_model>);
   static_assert(!cudax::communicator<types::synchronous_communicator_model>);
-  static_assert(!cudax::communicator<types::communicator_without_send>);
-  static_assert(!cudax::communicator<types::communicator_without_recv>);
+  static_assert(!cudax::communicator<no_send>);
+  static_assert(!cudax::communicator<no_recv>);
   return true;
 }
 } // namespace
