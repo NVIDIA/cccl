@@ -141,7 +141,35 @@ struct cache_tuning
   // 32768 (and below) stay on chip, while 65536 (256 KiB > budget) correctly routes
   // to the high-bin path. Revisit per architecture alongside the cache budget above.
   static constexpr int max_dynamic_smem_bytes = 232448;
+
+  // Per-CTA dynamic-SMEM BYTE budget for the single-channel hybrid kernel's PRIMARY
+  // (on-chip) bin range. Like max_dynamic_smem_bytes, this is the hardware-shaped knob:
+  // the hybrid's primary split (how many low bins stay in dyn-SMEM) is DERIVED from
+  // this budget and the per-bin counter width at runtime (`hybrid_smem_split_bins(...)`
+  // below), not frozen as a bin count. The old frozen `49152` baked in a 4-byte counter
+  // (49152 * 4 B = 192 KiB); with an 8-byte counter that same bin count needs 384 KiB
+  // and exceeds the per-CTA opt-in cap, so the hybrid launch failed (cudaErrorNotSupported)
+  // and 64-bit-counter histograms at the hybrid tiers crashed. Deriving the split in bytes
+  // keeps a (smaller) working hybrid for wide counters instead of forfeiting it.
+  // 192 KiB leaves headroom under the B200 227 KiB opt-in cap for static/driver SMEM.
+  static constexpr int hybrid_smem_split_bytes = 192 * 1024;
 };
+
+// Max PRIMARY bins the single-channel hybrid kernel can stage in dyn-SMEM for a given
+// counter width, derived from cache_tuning::hybrid_smem_split_bytes (clamped to the
+// device opt-in). Mirrors max_dynamic_smem_bins. The caller further clamps to
+// max_num_output_bins - 1 (the split must leave a non-empty GMEM secondary tail).
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int
+hybrid_smem_split_bins(int counter_bytes, int num_active_channels, int device_optin_smem_bytes = 0)
+{
+  const int tuned_bytes   = cache_tuning::hybrid_smem_split_bytes;
+  const int reserve_bytes = cache_tuning::smem_reserve_bytes;
+  const int hw_bytes      = device_optin_smem_bytes > 0 ? device_optin_smem_bytes : tuned_bytes;
+  const int capped_bytes  = hw_bytes < tuned_bytes ? hw_bytes : tuned_bytes;
+  const int budget        = capped_bytes - reserve_bytes;
+  const int per_bin       = counter_bytes * num_active_channels;
+  return (budget > 0 && per_bin > 0) ? budget / per_bin : 0;
+}
 
 // Maximum number of bins the whole-histogram-on-chip privatized kernel can hold per
 // channel for a given per-bin counter width, derived from `cache_tuning`'s byte
