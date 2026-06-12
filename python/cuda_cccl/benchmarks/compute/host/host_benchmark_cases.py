@@ -4,17 +4,9 @@
 
 from __future__ import annotations
 
-import argparse
-import json
-import platform
-import statistics
-import sys
-import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Callable, Iterable, Literal
+from typing import Any, Callable, Literal
 
 import cupy as cp
 import numpy as np
@@ -26,55 +18,8 @@ from cuda.compute.op import RawOp
 NOOP_TEMP_STORAGE_BYTES = 1
 NUM_ITEMS = 128
 NUM_SEGMENTS = 4
-MIN_SAMPLES_FOR_NOISE_ESTIMATE = 5
 
 NoopReturnKind = Literal["none", "temp_storage_bytes", "temp_storage_and_selector"]
-
-
-@dataclass(frozen=True)
-class TimingResult:
-    name: str
-    samples_ns: list[float]
-    number: int
-
-    @property
-    def min_ns(self) -> float:
-        return min(self.samples_ns)
-
-    @property
-    def median_ns(self) -> float:
-        return statistics.median(self.samples_ns)
-
-    @property
-    def mean_ns(self) -> float:
-        return statistics.mean(self.samples_ns)
-
-    @property
-    def stdev_ns(self) -> float | None:
-        if len(self.samples_ns) < MIN_SAMPLES_FOR_NOISE_ESTIMATE:
-            return None
-        return statistics.stdev(self.samples_ns)
-
-    @property
-    def relative_noise(self) -> float | None:
-        stdev_ns = self.stdev_ns
-        mean_ns = self.mean_ns
-        if stdev_ns is None or mean_ns <= 0:
-            return None
-        return stdev_ns / mean_ns
-
-    def as_json(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "unit": "ns",
-            "number": self.number,
-            "samples": self.samples_ns,
-            "min": self.min_ns,
-            "median": self.median_ns,
-            "mean": self.mean_ns,
-            "stdev": self.stdev_ns,
-            "relative_noise": self.relative_noise,
-        }
 
 
 @dataclass(frozen=True)
@@ -138,141 +83,6 @@ def make_tiny_temp_storage() -> cp.ndarray:
 
 def synchronize() -> None:
     cp.cuda.Device().synchronize()
-
-
-def measure_call(
-    name: str,
-    fn: Callable[[], None],
-    *,
-    repeat: int,
-    number: int,
-) -> TimingResult:
-    samples_ns = []
-    for _ in range(repeat):
-        start = time.perf_counter_ns()
-        for _ in range(number):
-            fn()
-        end = time.perf_counter_ns()
-        samples_ns.append((end - start) / number)
-    return TimingResult(name=name, samples_ns=samples_ns, number=number)
-
-
-def print_results(results: Iterable[TimingResult]) -> None:
-    rows = list(results)
-    name_width = max((len(row.name) for row in rows), default=4)
-    print(
-        f"{'case':<{name_width}}  {'median':>12}  {'min':>12}  "
-        f"{'mean':>12}  {'noise':>8}  {'repeat':>6}  {'number':>6}"
-    )
-    print("-" * (name_width + 68))
-    for result in rows:
-        print(
-            f"{result.name:<{name_width}}  "
-            f"{_format_ns(result.median_ns):>12}  "
-            f"{_format_ns(result.min_ns):>12}  "
-            f"{_format_ns(result.mean_ns):>12}  "
-            f"{_format_percentage(result.relative_noise):>8}  "
-            f"{len(result.samples_ns):>6}  "
-            f"{result.number:>6}"
-        )
-
-
-def _format_ns(ns: float) -> str:
-    if ns < 1_000:
-        return f"{ns:.1f} ns"
-    if ns < 1_000_000:
-        return f"{ns / 1_000:.2f} us"
-    return f"{ns / 1_000_000:.2f} ms"
-
-
-def _format_percentage(value: float | None) -> str:
-    if value is None:
-        return "inf"
-    return f"{value * 100.0:.2f}%"
-
-
-def add_case_filter(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "--case",
-        action="append",
-        choices=[case.name for case in CASES],
-        help="Benchmark case to run. May be passed multiple times.",
-    )
-
-
-def add_json_output(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "--json",
-        type=Path,
-        help="Write structured benchmark results to this JSON file.",
-    )
-
-
-def write_results_json(
-    path: Path,
-    *,
-    benchmark: str,
-    results: Iterable[TimingResult],
-    config: dict[str, Any],
-) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "schema": "cuda.compute.host_benchmark.v1",
-        "benchmark": benchmark,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "config": config,
-        "environment": _environment_info(),
-        "results": [result.as_json() for result in results],
-    }
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-
-
-def _environment_info() -> dict[str, Any]:
-    device_count = cp.cuda.runtime.getDeviceCount()
-    devices = []
-    for device_id in range(device_count):
-        props = cp.cuda.runtime.getDeviceProperties(device_id)
-        name = props["name"]
-        if isinstance(name, bytes):
-            name = name.decode()
-        devices.append(
-            {
-                "id": device_id,
-                "name": name,
-                "compute_capability": [
-                    int(props["major"]),
-                    int(props["minor"]),
-                ],
-            }
-        )
-
-    return {
-        "python": sys.version,
-        "platform": platform.platform(),
-        "devices": devices,
-    }
-
-
-def select_cases(case_names: list[str] | None) -> list[HostBenchmarkCase]:
-    if not case_names:
-        selected_cases = CASES
-    else:
-        selected = set(case_names)
-        selected_cases = [case for case in CASES if case.name in selected]
-
-    runnable = []
-    skipped_by_reason: dict[str, list[str]] = {}
-    for case in selected_cases:
-        if case.skip_reason is None:
-            runnable.append(case)
-        else:
-            skipped_by_reason.setdefault(case.skip_reason, []).append(case.name)
-
-    for reason, names in skipped_by_reason.items():
-        print(f"Skipping {len(names)} benchmark case(s): {', '.join(names)}")
-        print(f"  Reason: {reason}")
-
-    return runnable
 
 
 def _numba_cuda_skip_reason() -> str | None:
