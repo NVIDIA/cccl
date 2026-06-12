@@ -31,9 +31,6 @@
 
 #define _CCCL_CUB_HAS_TILE_TRANSFORM() _CCCL_TILE_COMPILATION()
 
-// Defined as a literal 1/0 (not (_CCCL_CUB_HAS_TILE_TRANSFORM() && defined(...))) so that
-// `#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()` in non-system code (benches, tests) does not
-// generate `defined` via macro expansion, which is UB and trips -Wexpansion-to-defined under -Werror.
 #if _CCCL_CUB_HAS_TILE_TRANSFORM() && defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH)
 #  define _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED() 1
 #else
