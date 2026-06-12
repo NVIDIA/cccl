@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__cuco/__hyperloglog/default_policy.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/default_policy.cuh>
 
 #endif // _CUDAX___CUCO_HLL_POLICIES_CUH

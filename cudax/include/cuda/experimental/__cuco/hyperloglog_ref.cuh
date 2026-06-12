@@ -27,7 +27,7 @@
 #include <cuda/std/span>
 #include <cuda/stream>
 
-#include <cuda/experimental/__cuco/__hyperloglog/hyperloglog_impl.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/hyperloglog_impl.cuh>
 #include <cuda/experimental/__cuco/hll_policies.cuh>
 
 #include <cooperative_groups.h>
@@ -136,7 +136,7 @@ public:
     // `clear(::cuda::stream_ref)` on this class is only __host__, it will take lower priority
     // that `clear(_CG)`, and we get:
     //
-    // cudax/include/cuda/experimental/__cuco/__hyperloglog/hyperloglog_impl.cuh:131:28: error: no member named
+    // cudax/include/cuda/experimental/__cuco/detail/hyperloglog/hyperloglog_impl.cuh:131:28: error: no member named
     // 'thread_rank' in 'cuda::stream_ref' [clang-diagnostic-error]
     //
     // 131 | for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())

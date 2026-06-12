@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___HYPERLOGLOG_KERNELS_CUH
-#define _CUDAX___CUCO___HYPERLOGLOG_KERNELS_CUH
+#ifndef _CUDAX___CUCO_DETAIL_HYPERLOGLOG_KERNELS_CUH
+#define _CUDAX___CUCO_DETAIL_HYPERLOGLOG_KERNELS_CUH
 
 #include <cuda/__cccl_config>
 
@@ -175,4 +175,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___HYPERLOGLOG_KERNELS_CUH
+#endif // _CUDAX___CUCO_DETAIL_HYPERLOGLOG_KERNELS_CUH
