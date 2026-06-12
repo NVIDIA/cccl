@@ -37,7 +37,7 @@ void check_result_and_erase(cuda::stream_ref stream, Result&& result, uint8_t pa
   stream.sync();
   for (int& i : result)
   {
-    CCCLRT_REQUIRE(i == expected);
+    REQUIRE(i == expected);
     i = 0;
   }
 }
@@ -65,15 +65,15 @@ struct test_buffer
     cuda::__ensure_current_context ctx_setter{cuda::device_ref{0}};
     if (type == test_buffer_type::pinned)
     {
-      _CCCL_TRY_CUDA_API(cudaMallocHost, "Failed to allocate pinned memory", &data_ptr, size * sizeof(T));
+      REQUIRE_CUDART(cudaMallocHost(&data_ptr, size * sizeof(T)));
     }
     else if (type == test_buffer_type::device)
     {
-      _CCCL_TRY_CUDA_API(cudaMalloc, "Failed to allocate device memory", &data_ptr, size * sizeof(T));
+      REQUIRE_CUDART(cudaMalloc(&data_ptr, size * sizeof(T)));
     }
     else if (type == test_buffer_type::managed)
     {
-      _CCCL_TRY_CUDA_API(cudaMallocManaged, "Failed to allocate managed memory", &data_ptr, size * sizeof(T));
+      REQUIRE_CUDART(cudaMallocManaged(&data_ptr, size * sizeof(T)));
     }
   }
 
@@ -84,15 +84,15 @@ struct test_buffer
       cuda::__ensure_current_context ctx_setter{cuda::device_ref{0}};
       if (type == test_buffer_type::pinned)
       {
-        _CCCL_LOG_CUDA_API(cudaFreeHost, "Failed to free pinned memory", data_ptr);
+        REQUIRE_CUDART(cudaFreeHost(data_ptr));
       }
       else if (type == test_buffer_type::device)
       {
-        _CCCL_LOG_CUDA_API(cudaFree, "Failed to free device memory", data_ptr);
+        REQUIRE_CUDART(cudaFree(data_ptr));
       }
       else if (type == test_buffer_type::managed)
       {
-        _CCCL_LOG_CUDA_API(cudaFree, "Failed to free managed memory", data_ptr);
+        REQUIRE_CUDART(cudaFree(data_ptr));
       }
     }
   }

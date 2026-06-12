@@ -32,15 +32,15 @@ struct basic_test_single_dim
   template <typename DynDims>
   TEST_FUNC void operator()(const DynDims& dims) const
   {
-    // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
+    // todo: allow this after fixing REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims).x == grid_size * block_size);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == grid_size * block_size);
+    REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims).x == grid_size * block_size);
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == grid_size * block_size);
 
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::block, dims).x == block_size);
-    CCCLRT_REQUIRE(cuda::block.dims(cuda::grid, dims).x == grid_size);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, dims) == block_size);
-    CCCLRT_REQUIRE(cuda::block.count(cuda::grid, dims) == grid_size);
+    REQUIRE(cuda::gpu_thread.dims(cuda::block, dims).x == block_size);
+    REQUIRE(cuda::block.dims(cuda::grid, dims).x == grid_size);
+    REQUIRE(cuda::gpu_thread.count(cuda::block, dims) == block_size);
+    REQUIRE(cuda::block.count(cuda::grid, dims) == grid_size);
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
@@ -66,7 +66,7 @@ struct basic_test_single_dim
 
     // Test that we can also drop the empty parens in the level constructors:
     auto config = cuda::make_hierarchy(cuda::block_dims<block_size>, cuda::grid_dims<grid_size>);
-    CCCLRT_REQUIRE(dims == config);
+    REQUIRE(dims == config);
   }
 };
 
@@ -77,18 +77,18 @@ struct basic_test_multi_dim
   template <typename DynDims>
   TEST_FUNC void operator()(const DynDims& dims) const
   {
-    // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
+    // todo: allow this after fixing REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(32, 12, 4));
-    CCCLRT_REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(0) == 32);
-    CCCLRT_REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(1) == 12);
-    CCCLRT_REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(2) == 4);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 512 * 3);
+    REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(32, 12, 4));
+    REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(0) == 32);
+    REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(1) == 12);
+    REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(2) == 4);
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 512 * 3);
 
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::block, dims) == dim3(2, 3, 4));
-    CCCLRT_REQUIRE(cuda::block.dims(cuda::grid, dims) == dim3(16, 4, 1));
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, dims) == 24);
-    CCCLRT_REQUIRE(cuda::block.count(cuda::grid, dims) == 64);
+    REQUIRE(cuda::gpu_thread.dims(cuda::block, dims) == dim3(2, 3, 4));
+    REQUIRE(cuda::block.dims(cuda::grid, dims) == dim3(16, 4, 1));
+    REQUIRE(cuda::gpu_thread.count(cuda::block, dims) == 24);
+    REQUIRE(cuda::block.count(cuda::grid, dims) == 64);
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
@@ -123,16 +123,16 @@ struct basic_test_mixed
   template <typename DynDims>
   TEST_FUNC void operator()(const DynDims& dims) const
   {
-    // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
+    // todo: allow this after fixing REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(2048, 4, 2));
-    CCCLRT_REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(0) == 2048);
-    CCCLRT_REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(1) == 4);
-    CCCLRT_REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(2) == 2);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 16 * 1024);
+    REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(2048, 4, 2));
+    REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(0) == 2048);
+    REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(1) == 4);
+    REQUIRE(cuda::gpu_thread.extents(cuda::grid, dims).extent(2) == 2);
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 16 * 1024);
 
-    CCCLRT_REQUIRE(cuda::block.dims(cuda::grid, dims) == dim3(8, 4, 2));
-    CCCLRT_REQUIRE(cuda::block.count(cuda::grid, dims) == 64);
+    REQUIRE(cuda::block.dims(cuda::grid, dims) == dim3(8, 4, 2));
+    REQUIRE(cuda::block.count(cuda::grid, dims) == 64);
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
@@ -162,15 +162,15 @@ struct basic_test_cluster
   template <typename DynDims>
   TEST_FUNC void operator()(const DynDims& dims) const
   {
-    // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
+    // todo: allow this after fixing REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(512, 6, 9));
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 27 * 1024);
+    REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(512, 6, 9));
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 27 * 1024);
 
-    CCCLRT_REQUIRE(cuda::block.dims(cuda::grid, dims) == dim3(2, 6, 9));
-    CCCLRT_REQUIRE(cuda::block.count(cuda::grid, dims) == 108);
-    CCCLRT_REQUIRE(cuda::cluster.dims(cuda::grid, dims) == dim3(1, 3, 9));
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::cluster, dims) == dim3(512, 2, 1));
+    REQUIRE(cuda::block.dims(cuda::grid, dims) == dim3(2, 6, 9));
+    REQUIRE(cuda::block.count(cuda::grid, dims) == 108);
+    REQUIRE(cuda::cluster.dims(cuda::grid, dims) == dim3(1, 3, 9));
+    REQUIRE(cuda::gpu_thread.dims(cuda::cluster, dims) == dim3(512, 2, 1));
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
@@ -252,7 +252,7 @@ C2H_TEST("Different constructions", "[hierarchy]")
   static_assert(config.hierarchy().count(cuda::gpu_thread, cuda::block) == block_size);
   static_assert(config.hierarchy().count(cuda::gpu_thread, cuda::cluster) == cluster_cnt *
   block_size); static_assert(config.hierarchy().count(cuda::block, cuda::cluster) ==
-  cluster_cnt); CCCLRT_REQUIRE(config.hierarchy().count() == grid_size * cluster_cnt *
+  cluster_cnt); REQUIRE(config.hierarchy().count() == grid_size * cluster_cnt *
   block_size);
 
   static_assert(config.hierarchy().has_level(cuda::block));
@@ -277,7 +277,7 @@ C2H_TEST("Replace level", "[hierarchy]")
   const auto replaced = cuda::hierarchy_add_level(fragment, cuda::block_dims(256));
   static_assert(replaced.has_level(cuda::block));
   static_assert(cuda::__has_bottom_unit_or_level_v<cuda::thread_level, decltype(replaced)>);
-  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, replaced) == 256);
+  REQUIRE(cuda::gpu_thread.count(cuda::block, replaced) == 256);
 #endif // !_CCCL_COMPILER(GCC, <, 9)
 }
 
@@ -287,34 +287,34 @@ __global__ void kernel(Hierarchy hierarchy)
   auto grid  = cg::this_grid();
   auto block = cg::this_thread_block();
 
-  CCCLRT_REQUIRE_DEVICE(grid.thread_rank() == cuda::gpu_thread.rank(cuda::grid));
-  CCCLRT_REQUIRE_DEVICE(grid.block_rank() == cuda::block.rank(cuda::grid));
-  CCCLRT_REQUIRE_DEVICE(grid.block_index() == cuda::block.index(cuda::grid));
-  CCCLRT_REQUIRE_DEVICE(grid.num_threads() == cuda::gpu_thread.count(cuda::grid));
-  CCCLRT_REQUIRE_DEVICE(grid.num_blocks() == cuda::block.count(cuda::grid));
-  CCCLRT_REQUIRE_DEVICE(grid.dim_blocks() == cuda::block.dims(cuda::grid));
+  REQUIRE_DEVICE(grid.thread_rank() == cuda::gpu_thread.rank(cuda::grid));
+  REQUIRE_DEVICE(grid.block_rank() == cuda::block.rank(cuda::grid));
+  REQUIRE_DEVICE(grid.block_index() == cuda::block.index(cuda::grid));
+  REQUIRE_DEVICE(grid.num_threads() == cuda::gpu_thread.count(cuda::grid));
+  REQUIRE_DEVICE(grid.num_blocks() == cuda::block.count(cuda::grid));
+  REQUIRE_DEVICE(grid.dim_blocks() == cuda::block.dims(cuda::grid));
 
-  CCCLRT_REQUIRE_DEVICE(block.thread_rank() == cuda::gpu_thread.rank(cuda::block));
-  CCCLRT_REQUIRE_DEVICE(block.thread_index() == cuda::gpu_thread.index(cuda::block));
-  CCCLRT_REQUIRE_DEVICE(block.num_threads() == cuda::gpu_thread.count(cuda::block));
-  CCCLRT_REQUIRE_DEVICE(block.dim_threads() == cuda::gpu_thread.dims(cuda::block));
+  REQUIRE_DEVICE(block.thread_rank() == cuda::gpu_thread.rank(cuda::block));
+  REQUIRE_DEVICE(block.thread_index() == cuda::gpu_thread.index(cuda::block));
+  REQUIRE_DEVICE(block.num_threads() == cuda::gpu_thread.count(cuda::block));
+  REQUIRE_DEVICE(block.dim_threads() == cuda::gpu_thread.dims(cuda::block));
 
-  CCCLRT_REQUIRE_DEVICE(block.thread_index() == cuda::gpu_thread.index(cuda::block, hierarchy));
+  REQUIRE_DEVICE(block.thread_index() == cuda::gpu_thread.index(cuda::block, hierarchy));
 
   const auto grid_index = cuda::gpu_thread.index_as<unsigned long long>(cuda::grid, hierarchy);
-  CCCLRT_REQUIRE_DEVICE(
+  REQUIRE_DEVICE(
     grid_index.x
     == static_cast<unsigned long long>(grid.block_index().x) * block.dim_threads().x + block.thread_index().x);
-  CCCLRT_REQUIRE_DEVICE(
+  REQUIRE_DEVICE(
     grid_index.y
     == static_cast<unsigned long long>(grid.block_index().y) * block.dim_threads().y + block.thread_index().y);
-  CCCLRT_REQUIRE_DEVICE(
+  REQUIRE_DEVICE(
     grid_index.z
     == static_cast<unsigned long long>(grid.block_index().z) * block.dim_threads().z + block.thread_index().z);
 
-  CCCLRT_REQUIRE_DEVICE(grid.block_rank() == cuda::block.rank(cuda::grid, hierarchy));
-  CCCLRT_REQUIRE_DEVICE(block.thread_rank() == cuda::gpu_thread.rank(cuda::block, hierarchy));
-  CCCLRT_REQUIRE_DEVICE(grid.thread_rank() == cuda::gpu_thread.rank(cuda::grid, hierarchy));
+  REQUIRE_DEVICE(grid.block_rank() == cuda::block.rank(cuda::grid, hierarchy));
+  REQUIRE_DEVICE(block.thread_rank() == cuda::gpu_thread.rank(cuda::block, hierarchy));
+  REQUIRE_DEVICE(grid.thread_rank() == cuda::gpu_thread.rank(cuda::grid, hierarchy));
 }
 
 C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
@@ -335,7 +335,7 @@ C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
       auto [grid, block] = cuda::get_launch_dimensions(hierarchy);
 
       kernel<<<grid, block>>>(hierarchy);
-      CUDART(cudaDeviceSynchronize());
+      REQUIRE_CUDART(cudaDeviceSynchronize());
     },
     hierarchies);
 }
@@ -365,16 +365,16 @@ __global__ void rank_kernel_cg(Hierarchy hierarchy, unsigned int* out)
 C2H_TEST("On device rank calculation", "[hierarchy]")
 {
   unsigned int* ptr;
-  CUDART(cudaMalloc((void**) &ptr, 2 * 1024 * sizeof(unsigned int)));
+  REQUIRE_CUDART(cudaMalloc((void**) &ptr, 2 * 1024 * sizeof(unsigned int)));
 
   const auto hierarchy_static = cuda::make_hierarchy(cuda::block_dims<256>(), cuda::grid_dims(dim3(2, 2, 2)));
   rank_kernel<<<dim3(2, 2, 2), 256>>>(hierarchy_static, ptr);
-  CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   rank_kernel_cg<<<dim3(2, 2, 2), 256>>>(hierarchy_static, ptr);
-  CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   rank_kernel_optimized<<<dim3(2, 2, 2), 256>>>(hierarchy_static, ptr);
-  CUDART(cudaDeviceSynchronize());
-  CUDART(cudaFree(ptr));
+  REQUIRE_CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaFree(ptr));
 }
 
 template <typename Hierarchy>
@@ -382,9 +382,9 @@ __global__ void examples_kernel(Hierarchy hierarchy)
 {
   {
     auto thread_index_in_block = cuda::gpu_thread.index(cuda::block, hierarchy);
-    CCCLRT_REQUIRE_DEVICE(thread_index_in_block == threadIdx);
+    REQUIRE_DEVICE(thread_index_in_block == threadIdx);
     auto block_index_in_grid = cuda::block.index(cuda::grid, hierarchy);
-    CCCLRT_REQUIRE_DEVICE(block_index_in_grid == blockIdx);
+    REQUIRE_DEVICE(block_index_in_grid == blockIdx);
   }
   {
     int thread_rank_in_block = cuda::gpu_thread.rank(cuda::block, hierarchy);
@@ -408,16 +408,16 @@ __global__ void examples_kernel(Hierarchy hierarchy)
   }
   {
     // Can be called with the instances of level types
-    CCCLRT_REQUIRE_DEVICE(cuda::gpu_thread.dims(cuda::block) == blockDim);
-    CCCLRT_REQUIRE_DEVICE(cuda::block.dims(cuda::grid) == gridDim);
+    REQUIRE_DEVICE(cuda::gpu_thread.dims(cuda::block) == blockDim);
+    REQUIRE_DEVICE(cuda::block.dims(cuda::grid) == gridDim);
 
     // Or using the level types as template arguments
     auto grid_dims_in_threads = cuda::gpu_thread.dims(cuda::grid);
   }
   {
     // Can be called with the instances of level types
-    CCCLRT_REQUIRE_DEVICE(cuda::gpu_thread.index(cuda::block) == threadIdx);
-    CCCLRT_REQUIRE_DEVICE(cuda::block.index(cuda::grid) == blockIdx);
+    REQUIRE_DEVICE(cuda::gpu_thread.index(cuda::block) == threadIdx);
+    REQUIRE_DEVICE(cuda::block.index(cuda::grid) == blockIdx);
 
     // Or using the level types as template arguments
     auto thread_index_in_grid = cuda::gpu_thread.index(cuda::grid);
@@ -438,8 +438,8 @@ C2H_TEST("Examples", "[hierarchy]")
   {
     auto hierarchy = cuda::make_hierarchy(cuda::grid_dims(256), cuda::cluster_dims<4>(), cuda::block_dims<8, 8, 8>());
     static_assert(cuda::gpu_thread.count(cuda::cluster, hierarchy) == 4 * 8 * 8 * 8);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, hierarchy) == 256 * 4 * 8 * 8 * 8);
-    CCCLRT_REQUIRE(cuda::cluster.count(cuda::grid, hierarchy) == 256);
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, hierarchy) == 256 * 4 * 8 * 8 * 8);
+    REQUIRE(cuda::cluster.count(cuda::grid, hierarchy) == 256);
   }
   {
     [[maybe_unused]] auto hierarchy =
@@ -451,8 +451,8 @@ C2H_TEST("Examples", "[hierarchy]")
     static_assert(cuda::gpu_thread.extents(cuda::cluster, hierarchy).extent(0) == 4 * 8);
     static_assert(cuda::gpu_thread.extents(cuda::cluster, hierarchy).extent(1) == 8);
     static_assert(cuda::gpu_thread.extents(cuda::cluster, hierarchy).extent(2) == 8);
-    CCCLRT_REQUIRE(cuda::gpu_thread.extents(cuda::grid, hierarchy).extent(0) == 256 * 4 * 8);
-    CCCLRT_REQUIRE(cuda::cluster.extents(cuda::grid, hierarchy).extent(0) == 256);
+    REQUIRE(cuda::gpu_thread.extents(cuda::grid, hierarchy).extent(0) == 256 * 4 * 8);
+    REQUIRE(cuda::cluster.extents(cuda::grid, hierarchy).extent(0) == 256);
   }
 #endif // !_CCCL_COMPILER(GCC, <, 9)
   {
@@ -477,18 +477,18 @@ C2H_TEST("Examples", "[hierarchy]")
   {
     auto hierarchy = cuda::make_hierarchy(cuda::grid_dims(256), cuda::cluster_dims<4>(), cuda::block_dims<8, 8, 8>());
     auto [grid_dimensions, cluster_dimensions, block_dimensions] = cuda::get_launch_dimensions(hierarchy);
-    CCCLRT_REQUIRE(grid_dimensions.x == 256 * 4);
-    CCCLRT_REQUIRE(cluster_dimensions.x == 4);
-    CCCLRT_REQUIRE(block_dimensions.x == 8);
-    CCCLRT_REQUIRE(block_dimensions.y == 8);
-    CCCLRT_REQUIRE(block_dimensions.z == 8);
+    REQUIRE(grid_dimensions.x == 256 * 4);
+    REQUIRE(cluster_dimensions.x == 4);
+    REQUIRE(block_dimensions.x == 8);
+    REQUIRE(block_dimensions.y == 8);
+    REQUIRE(block_dimensions.z == 8);
   }
   {
     auto hierarchy                           = cuda::make_hierarchy(cuda::grid_dims(16), cuda::block_dims<8, 8, 8>());
     auto [grid_dimensions, block_dimensions] = cuda::get_launch_dimensions(hierarchy);
     examples_kernel<<<grid_dimensions, block_dimensions>>>(hierarchy);
-    CUDART(cudaGetLastError());
-    CUDART(cudaDeviceSynchronize());
+    REQUIRE_CUDART(cudaGetLastError());
+    REQUIRE_CUDART(cudaDeviceSynchronize());
   }
 }
 
@@ -510,8 +510,8 @@ C2H_TEST("cuda::distribute", "[hierarchy]")
   constexpr int threadsPerBlock = 256;
   auto config                   = cuda::distribute<threadsPerBlock>(numElements);
 
-  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, config) == 256);
-  CCCLRT_REQUIRE(cuda::block.count(cuda::grid, config) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
+  REQUIRE(cuda::gpu_thread.count(cuda::block, config) == 256);
+  REQUIRE(cuda::block.count(cuda::grid, config) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
 }
 
 C2H_TEST("hierarchy merge", "[hierarchy]")
@@ -530,7 +530,7 @@ C2H_TEST("hierarchy merge", "[hierarchy]")
 
     auto dynamic_values   = cuda::make_hierarchy(cuda::cluster_dims(4), cuda::block_dims(5));
     auto combined_dynamic = dynamic_values.combine(h1);
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, combined_dynamic) == 40);
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, combined_dynamic) == 40);
   }
   SECTION("Overlapping")
   {

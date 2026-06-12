@@ -96,8 +96,8 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
     cuda::copy_bytes(_stream, host_buffer, vec);
     _stream.sync();
 
-    CCCLRT_REQUIRE(vec[0] == get_expected_value(fill_byte));
-    CCCLRT_REQUIRE(vec[1] == 0xbeef);
+    REQUIRE(vec[0] == get_expected_value(fill_byte));
+    REQUIRE(vec[1] == 0xbeef);
   }
 }
 
@@ -134,7 +134,7 @@ void test_mdspan_copy_bytes(
 
   for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)
   {
-    CCCLRT_REQUIRE(dst(0, i) == i);
+    REQUIRE(dst(0, i) == i);
   }
 }
 

@@ -26,8 +26,8 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 
   auto result = dev0.attribute(Attr);
   STATIC_REQUIRE(::cuda::std::is_same_v<decltype(result), ExpectedResult>);
-  CCCLRT_REQUIRE(result == dev0.attribute<ExpectedAttr>());
-  CCCLRT_REQUIRE(result == Attr(dev0));
+  REQUIRE(result == dev0.attribute<ExpectedAttr>());
+  REQUIRE(result == Attr(dev0));
   return result;
 }
 } // namespace
@@ -36,7 +36,7 @@ C2H_CCCLRT_TEST("init", "[device]")
 {
   cuda::device_ref dev{0};
   dev.init();
-  CCCLRT_REQUIRE(cuda::__driver::__isPrimaryCtxActive(cuda::__driver::__deviceGet(0)));
+  REQUIRE(cuda::__driver::__isPrimaryCtxActive(cuda::__driver::__deviceGet(0)));
 }
 
 C2H_CCCLRT_TEST("Smoke", "[device]")
@@ -46,14 +46,14 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
 
   SECTION("Compare")
   {
-    CCCLRT_REQUIRE(device_ref{0} == device_ref{0});
-    CCCLRT_REQUIRE(device_ref{0} == 0);
-    CCCLRT_REQUIRE(0 == device_ref{0});
+    REQUIRE(device_ref{0} == device_ref{0});
+    REQUIRE(device_ref{0} == 0);
+    REQUIRE(0 == device_ref{0});
     if (cuda::devices.size() > 1)
     {
-      CCCLRT_REQUIRE(device_ref{1} != device_ref{0});
-      CCCLRT_REQUIRE(device_ref{1} != 0);
-      CCCLRT_REQUIRE(0 != device_ref{1});
+      REQUIRE(device_ref{1} != device_ref{0});
+      REQUIRE(device_ref{1} != 0);
+      REQUIRE(0 != device_ref{1});
     }
   }
 
@@ -215,9 +215,9 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       STATIC_REQUIRE(::cudaComputeModeExclusiveProcess == attributes::compute_mode.exclusive_process_mode);
 
       auto mode = device_ref(0).attribute(attributes::compute_mode);
-      CCCLRT_REQUIRE((mode == attributes::compute_mode.default_mode || //
-                      mode == attributes::compute_mode.prohibited_mode || //
-                      mode == attributes::compute_mode.exclusive_process_mode));
+      REQUIRE((mode == attributes::compute_mode.default_mode || //
+               mode == attributes::compute_mode.prohibited_mode || //
+               mode == attributes::compute_mode.exclusive_process_mode));
     }
 
     SECTION("gpu_direct_rdma_flush_writes_options")
@@ -228,8 +228,8 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
 
       [[maybe_unused]] auto options = device_ref(0).attribute(attributes::gpu_direct_rdma_flush_writes_options);
 #if !_CCCL_COMPILER(MSVC)
-      CCCLRT_REQUIRE((options == attributes::gpu_direct_rdma_flush_writes_options.host || //
-                      options == attributes::gpu_direct_rdma_flush_writes_options.mem_ops));
+      REQUIRE((options == attributes::gpu_direct_rdma_flush_writes_options.host || //
+               options == attributes::gpu_direct_rdma_flush_writes_options.mem_ops));
 #endif
     }
 
@@ -241,9 +241,9 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
         ::cudaGPUDirectRDMAWritesOrderingAllDevices == attributes::gpu_direct_rdma_writes_ordering.all_devices);
 
       auto ordering = device_ref(0).attribute(attributes::gpu_direct_rdma_writes_ordering);
-      CCCLRT_REQUIRE((ordering == attributes::gpu_direct_rdma_writes_ordering.none || //
-                      ordering == attributes::gpu_direct_rdma_writes_ordering.owner || //
-                      ordering == attributes::gpu_direct_rdma_writes_ordering.all_devices));
+      REQUIRE((ordering == attributes::gpu_direct_rdma_writes_ordering.none || //
+               ordering == attributes::gpu_direct_rdma_writes_ordering.owner || //
+               ordering == attributes::gpu_direct_rdma_writes_ordering.all_devices));
     }
 
     SECTION("memory_pool_supported_handle_types")
@@ -267,7 +267,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
         | attributes::memory_pool_supported_handle_types.win32_kmt
         | attributes::memory_pool_supported_handle_types.fabric;
       auto handle_types = device_ref(0).attribute(attributes::memory_pool_supported_handle_types);
-      CCCLRT_REQUIRE(static_cast<int>(handle_types) <= static_cast<int>(all_handle_types));
+      REQUIRE(static_cast<int>(handle_types) <= static_cast<int>(all_handle_types));
     }
 
 #if _CCCL_CTK_AT_LEAST(12, 2)
@@ -277,8 +277,8 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       STATIC_REQUIRE(::cudaDeviceNumaConfigNumaNode == attributes::numa_config.numa_node);
 
       auto config = device_ref(0).attribute(attributes::numa_config);
-      CCCLRT_REQUIRE((config == attributes::numa_config.none || //
-                      config == attributes::numa_config.numa_node));
+      REQUIRE((config == attributes::numa_config.none || //
+               config == attributes::numa_config.numa_node));
     }
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
 
@@ -287,59 +287,59 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       cuda::compute_capability compute_cap = device_ref(0).attribute(attributes::compute_capability);
       int compute_cap_major                = device_ref(0).attribute(attributes::compute_capability_major);
       int compute_cap_minor                = device_ref(0).attribute(attributes::compute_capability_minor);
-      CCCLRT_REQUIRE(compute_cap.get() == 10 * compute_cap_major + compute_cap_minor);
+      REQUIRE(compute_cap.get() == 10 * compute_cap_major + compute_cap_minor);
     }
 
     SECTION("Total global memory")
     {
       auto total_mem = device_ref(0).attribute(attributes::total_global_memory);
       STATIC_REQUIRE(::cuda::std::is_same_v<decltype(total_mem), cuda::std::size_t>);
-      CCCLRT_REQUIRE(total_mem > 0);
+      REQUIRE(total_mem > 0);
     }
   }
   SECTION("Name")
   {
     const auto name = device_ref(0).name();
-    CCCLRT_REQUIRE(name.length() != 0);
-    CCCLRT_REQUIRE(name[0] != 0);
+    REQUIRE(name.length() != 0);
+    REQUIRE(name[0] != 0);
   }
 }
 
 C2H_CCCLRT_TEST("global devices vector", "[device]")
 {
-  CCCLRT_REQUIRE(cuda::devices.size() > 0);
-  CCCLRT_REQUIRE(cuda::devices.begin() != cuda::devices.end());
-  CCCLRT_REQUIRE(cuda::devices.begin() == cuda::devices.begin());
-  CCCLRT_REQUIRE(cuda::devices.end() == cuda::devices.end());
-  CCCLRT_REQUIRE(cuda::devices.size() == static_cast<size_t>(cuda::devices.end() - cuda::devices.begin()));
+  REQUIRE(cuda::devices.size() > 0);
+  REQUIRE(cuda::devices.begin() != cuda::devices.end());
+  REQUIRE(cuda::devices.begin() == cuda::devices.begin());
+  REQUIRE(cuda::devices.end() == cuda::devices.end());
+  REQUIRE(cuda::devices.size() == static_cast<size_t>(cuda::devices.end() - cuda::devices.begin()));
 
-  CCCLRT_REQUIRE(0 == cuda::devices[0].get());
-  CCCLRT_REQUIRE(cuda::device_ref{0} == cuda::devices[0]);
+  REQUIRE(0 == cuda::devices[0].get());
+  REQUIRE(cuda::device_ref{0} == cuda::devices[0]);
 
-  CCCLRT_REQUIRE(0 == (*cuda::devices.begin()).get());
-  CCCLRT_REQUIRE(cuda::device_ref{0} == *cuda::devices.begin());
+  REQUIRE(0 == (*cuda::devices.begin()).get());
+  REQUIRE(cuda::device_ref{0} == *cuda::devices.begin());
 
-  CCCLRT_REQUIRE(0 == cuda::devices.begin()->get());
-  CCCLRT_REQUIRE(0 == cuda::devices.begin()[0].get());
+  REQUIRE(0 == cuda::devices.begin()->get());
+  REQUIRE(0 == cuda::devices.begin()[0].get());
 
   if (cuda::devices.size() > 1)
   {
-    CCCLRT_REQUIRE(1 == cuda::devices[1].get());
-    CCCLRT_REQUIRE(cuda::device_ref{0} != cuda::devices[1].get());
+    REQUIRE(1 == cuda::devices[1].get());
+    REQUIRE(cuda::device_ref{0} != cuda::devices[1].get());
 
-    CCCLRT_REQUIRE(1 == (*std::next(cuda::devices.begin())).get());
-    CCCLRT_REQUIRE(1 == std::next(cuda::devices.begin())->get());
-    CCCLRT_REQUIRE(1 == cuda::devices.begin()[1].get());
+    REQUIRE(1 == (*std::next(cuda::devices.begin())).get());
+    REQUIRE(1 == std::next(cuda::devices.begin())->get());
+    REQUIRE(1 == cuda::devices.begin()[1].get());
 
-    CCCLRT_REQUIRE(cuda::devices.size() - 1 == static_cast<std::size_t>((*std::prev(cuda::devices.end())).get()));
-    CCCLRT_REQUIRE(cuda::devices.size() - 1 == static_cast<std::size_t>(std::prev(cuda::devices.end())->get()));
-    CCCLRT_REQUIRE(cuda::devices.size() - 1 == static_cast<std::size_t>(cuda::devices.end()[-1].get()));
+    REQUIRE(cuda::devices.size() - 1 == static_cast<std::size_t>((*std::prev(cuda::devices.end())).get()));
+    REQUIRE(cuda::devices.size() - 1 == static_cast<std::size_t>(std::prev(cuda::devices.end())->get()));
+    REQUIRE(cuda::devices.size() - 1 == static_cast<std::size_t>(cuda::devices.end()[-1].get()));
 
     auto peers = cuda::devices[0].peers();
     for (auto peer : peers)
     {
-      CCCLRT_REQUIRE(cuda::devices[0].has_peer_access_to(peer));
-      CCCLRT_REQUIRE(peer.has_peer_access_to(cuda::devices[0]));
+      REQUIRE(cuda::devices[0].has_peer_access_to(peer));
+      REQUIRE(peer.has_peer_access_to(cuda::devices[0]));
     }
   }
 
@@ -347,11 +347,11 @@ C2H_CCCLRT_TEST("global devices vector", "[device]")
   try
   {
     [[maybe_unused]] const cuda::device_ref& dev = cuda::devices[cuda::devices.size()];
-    CCCLRT_REQUIRE(false); // should not get here
+    REQUIRE(false); // should not get here
   }
   catch (const std::out_of_range&)
   {
-    CCCLRT_REQUIRE(true); // expected
+    REQUIRE(true); // expected
   }
 #endif // _CCCL_HAS_EXCEPTIONS()
 }
@@ -359,13 +359,13 @@ C2H_CCCLRT_TEST("global devices vector", "[device]")
 C2H_CCCLRT_TEST("memory location", "[device]")
 {
   cuda::memory_location loc = cuda::devices[0];
-  CCCLRT_REQUIRE(loc.type == ::cudaMemLocationTypeDevice);
-  CCCLRT_REQUIRE(loc.id == 0);
+  REQUIRE(loc.type == ::cudaMemLocationTypeDevice);
+  REQUIRE(loc.id == 0);
 
   if (cuda::devices.size() > 1)
   {
     loc = cuda::device_ref{1};
-    CCCLRT_REQUIRE(loc.type == ::cudaMemLocationTypeDevice);
-    CCCLRT_REQUIRE(loc.id == 1);
+    REQUIRE(loc.type == ::cudaMemLocationTypeDevice);
+    REQUIRE(loc.id == 1);
   }
 }
