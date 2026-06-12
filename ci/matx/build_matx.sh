@@ -97,7 +97,7 @@ cat "$version_override_file"
 # Configure and build
 rm -rf build
 
-cmake \
+SCCACHE_NO_DIST_COMPILE=1 cmake \
   -B build -S MatX -G Ninja \
   "-DCMAKE_CUDA_ARCHITECTURES=75;120" \
   "-DRAPIDS_CMAKE_CPM_OVERRIDE_VERSION_FILE=${version_override_file}" \
@@ -110,4 +110,4 @@ cmake \
 # `cmake --build -j8`. CMake expects a space between `-j` and
 # the numeric argument, or no argument at all.
 # shellcheck disable=SC2086
-cmake --build build -j ${PARALLEL_LEVEL:-}
+time cmake --build build -j ${PARALLEL_LEVEL:-}

@@ -73,10 +73,9 @@ public:
     {
       const int dev = device_ordinal(this->place);
       assert(dev >= 0);
-      cudaDeviceProp prop;
-      cuda_safe_call(cudaGetDeviceProperties(&prop, dev));
+      const cudaDeviceProp prop = cuda_try<cudaGetDeviceProperties>(dev);
 
-      size_t max_mem = prop.totalGlobalMem;
+      const size_t max_mem = prop.totalGlobalMem;
 
       // We cap the memory at a certain fraction of total memory
       if (getenv("USER_ALLOC_POOLS_MEM_CAP"))

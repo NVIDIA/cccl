@@ -44,7 +44,7 @@ namespace detail::scan
 namespace __cub_detail  = CUB_NS_QUALIFIER::detail;
 namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 
-_CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanWarpspeedPolicy& policy)
+_CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanLookaheadPolicy& policy)
 {
   const auto num_total_warps = 2 * policy.reduce_and_scan_warps + 1 /*num_load_warps*/
                              + 1 /*num_sched_warps*/ + 1 /*num_lookahead_warps*/;
@@ -65,7 +65,7 @@ struct scanKernelParams
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  static constexpr ScanWarpspeedPolicy policy = current_policy<PolicySelector>().warpspeed;
+  static constexpr ScanLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
   struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
@@ -95,7 +95,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   using in_out_t               = typename ScanResourcesT::in_out_t;
   using thread_and_warp_aggr_t = typename ScanResourcesT::thread_and_warp_aggr_t;
 
-  constexpr auto policy = current_policy<PolicySelector>().warpspeed;
+  constexpr auto policy = current_policy<PolicySelector>().lookahead;
 
   const int num_block_idx_stages =
     policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, numStages + policy.block_idx_stages);
@@ -237,7 +237,7 @@ threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp pr
 }
 
 // Similar to CUB agents, this closure just aggregates common constants so the device functions implementing the
-// warpspeed scan kernel can have lighter signatures. Each squad uses an instance of this to provide its context. In
+// lookahead scan kernel can have lighter signatures. Each squad uses an instance of this to provide its context. In
 // principle, it does not hold any mutable state. But it refers to the shared scan resources (SMEM + barriers etc.).
 template <typename PolicySelector,
           typename InputT,
@@ -246,9 +246,9 @@ template <typename PolicySelector,
           typename ScanOpT,
           typename RealInitValueT,
           bool ForceInclusive>
-struct warpspeed_scan_closure
+struct lookahead_scan_closure
 {
-  static constexpr ScanWarpspeedPolicy policy          = current_policy<PolicySelector>().warpspeed;
+  static constexpr ScanLookaheadPolicy policy          = current_policy<PolicySelector>().lookahead;
   static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
   static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
   static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
@@ -815,14 +815,14 @@ template <typename PolicySelector,
           typename AccumT,
           typename ScanOpT,
           typename InitValueT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   const scanKernelParams<InputT, OutputT, AccumT>& params, const ScanOpT& scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
   // Cache special registers at the start of kernel, since getting them takes a few cycles
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
-  static constexpr ScanWarpspeedPolicy policy = current_policy<PolicySelector>().warpspeed;
+  static constexpr ScanLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
 
   // Set up the shared memory resources
   auto res = [&] {
@@ -835,7 +835,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
 
   // Dispatch each warp to its respective squad
   using closure_t =
-    warpspeed_scan_closure<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>;
+    lookahead_scan_closure<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>;
   warpspeed::squadDispatch(
     specialRegisters, closure_t::scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
       // we load the initial value after the squad dispatch, so only the squads needing it emit an LDG
@@ -846,7 +846,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
 
 template <typename AccumT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
+device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
   if (tile_id >= num_temp_states)
@@ -879,7 +879,7 @@ device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, co
 }
 
 template <typename InputT, typename OutputT, typename AccumT>
-_CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(const ScanWarpspeedPolicy& policy, int num_stages) -> int
+_CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(const ScanLookaheadPolicy& policy, int num_stages) -> int
 {
   return smem_for_stages(
     policy,

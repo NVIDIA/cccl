@@ -205,9 +205,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -413,9 +411,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -674,9 +670,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -887,9 +881,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1085,9 +1077,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1277,9 +1267,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1465,9 +1453,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation

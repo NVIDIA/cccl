@@ -90,9 +90,11 @@ struct DeviceFind
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -109,11 +111,16 @@ struct DeviceFind
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename NumItemsT>
+  //!
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t FindIf(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -121,14 +128,22 @@ struct DeviceFind
     OutputIteratorT d_out,
     ScanOpT scan_op,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::FindIf");
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::find::dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream);
+    using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage,
+      temp_storage_bytes,
+      env,
+      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::find::dispatch(
+          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
+      });
   }
 
   //! @rst
@@ -178,10 +193,11 @@ struct DeviceFind
   //!   is a model of [Strict Weak Ordering], which forms a [Relation] with the value types of ``RangeIteratorT``
   //!   and ``ValuesIteratorT``.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -205,9 +221,10 @@ struct DeviceFind
   //!   Comparison function object which returns true if its first argument is ordered before the second in the
   //!   [Strict Weak Ordering] of the range to be searched.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
   //!
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
   //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -217,7 +234,8 @@ struct DeviceFind
             typename ValuesIteratorT,
             typename ValuesNumItemsT,
             typename OutputIteratorT,
-            typename CompareOpT>
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t LowerBound(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -227,27 +245,33 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::LowerBound");
 
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = 1;
-      return cudaSuccess;
-    }
+    return detail::dispatch_with_env(
+      d_temp_storage,
+      temp_storage_bytes,
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        if (storage == nullptr)
+        {
+          bytes = 1;
+          return cudaSuccess;
+        }
 
-    return DeviceTransform::__transform_internal(
-      ::cuda::std::make_tuple(d_values),
-      d_output,
-      static_cast<ValuesOffsetT>(values_num_items),
-      ::cuda::always_true{},
-      detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
-        d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-      ::cuda::stream_ref{stream});
+        return DeviceTransform::__transform_internal(
+          ::cuda::std::make_tuple(d_values),
+          d_output,
+          static_cast<ValuesOffsetT>(values_num_items),
+          ::cuda::always_true{},
+          detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
+            d_range, static_cast<RangeOffsetT>(range_num_items), comp),
+          ::cuda::stream_ref{stream});
+      });
   }
 
   //! @rst
@@ -298,10 +322,11 @@ struct DeviceFind
   //!   is a model of [Strict Weak Ordering], which forms a [Relation] with the value types of ``RangeIteratorT``
   //!   and ``ValuesIteratorT``.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -325,9 +350,10 @@ struct DeviceFind
   //!   Comparison function object which returns true if its first argument is ordered before the second in the
   //!   [Strict Weak Ordering] of the range to be searched.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
   //!
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
   //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -337,7 +363,8 @@ struct DeviceFind
             typename ValuesIteratorT,
             typename ValuesNumItemsT,
             typename OutputIteratorT,
-            typename CompareOpT>
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t UpperBound(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -347,27 +374,33 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::UpperBound");
 
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = 1;
-      return cudaSuccess;
-    }
+    return detail::dispatch_with_env(
+      d_temp_storage,
+      temp_storage_bytes,
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        if (storage == nullptr)
+        {
+          bytes = 1;
+          return cudaSuccess;
+        }
 
-    return DeviceTransform::__transform_internal(
-      ::cuda::std::make_tuple(d_values),
-      d_output,
-      static_cast<ValuesOffsetT>(values_num_items),
-      ::cuda::always_true{},
-      detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
-        d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-      ::cuda::stream_ref{stream});
+        return DeviceTransform::__transform_internal(
+          ::cuda::std::make_tuple(d_values),
+          d_output,
+          static_cast<ValuesOffsetT>(values_num_items),
+          ::cuda::always_true{},
+          detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
+            d_range, static_cast<RangeOffsetT>(range_num_items), comp),
+          ::cuda::stream_ref{stream});
+      });
   }
   //! @rst
   //! Finds the first element in the input sequence that satisfies the given predicate.
@@ -442,7 +475,7 @@ struct DeviceFind
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  FindIf(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
+  FindIf(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::FindIf");
 
@@ -551,7 +584,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::LowerBound");
 
@@ -671,7 +704,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::UpperBound");
 

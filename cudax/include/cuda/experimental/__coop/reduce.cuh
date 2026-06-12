@@ -26,12 +26,16 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/array>
 #include <cuda/std/optional>
 
+#include <cuda/experimental/__coop/shuffle_down.cuh>
 #include <cuda/experimental/group.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -194,6 +198,30 @@ __reduce_impl(this_grid<_Hierarchy> __group, _Tp (&__thread_data)[_Np], _RedFn _
     return ::cuda::experimental::coop::__reduce_impl(__block, __thread_partials, __red_fn);
   }
   return ::cuda::std::nullopt;
+}
+
+_CCCL_TEMPLATE(class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
+_CCCL_REQUIRES(::cuda::std::is_same_v<thread_level, typename _Group::unit_type>
+                 _CCCL_AND ::cuda::std::is_same_v<warp_level, typename _Group::level_type>)
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
+__reduce_impl(_Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+{
+  using _MappingResult         = typename _Group::__mapping_result_type;
+  const auto& __mapping_result = __group.__mapping_result();
+
+  const auto __lane = ::cuda::ptx::get_sreg_laneid();
+  auto __result     = ::cub::ThreadReduce(__thread_data, __red_fn);
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (unsigned __stride = 1; __stride < ::cuda::next_power_of_two(__mapping_result.count()); __stride *= 2)
+  {
+    const auto __other = ::cuda::experimental::coop::shuffle_down(__group, __result, __stride);
+    if (__other.has_value())
+    {
+      __result = __red_fn(__result, *__other);
+    }
+  }
+  return (__mapping_result.rank() == 0) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
 }
 
 _CCCL_TEMPLATE(class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
