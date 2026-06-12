@@ -149,11 +149,13 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 // - _Satisfies(CONCEPT...) EXPR...
 //
 // The last 4 are handled below:
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_requires   _CCCL_PP_CASE(REQUIRES)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_noexcept   _CCCL_PP_CASE(NOEXCEPT)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_typename   _CCCL_PP_CASE(TYPENAME)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Same_as   _CCCL_PP_CASE(SAME_AS)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Satisfies _CCCL_PP_CASE(SATISFIES)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_requires        _CCCL_PP_CASE(REQUIRES)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_noexcept        _CCCL_PP_CASE(NOEXCEPT)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_typename        _CCCL_PP_CASE(TYPENAME)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Same_as        _CCCL_PP_CASE(SAME_AS)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Satisfies      _CCCL_PP_CASE(SATISFIES)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Convertible_to _CCCL_PP_CASE(CONVERTIBLE_TO)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Derived_from   _CCCL_PP_CASE(DERIVED_FROM)
 
 // Converts "requires(ARGS...)" to "ARGS..."
 #define _CCCL_CONCEPT_EAT_REQUIRES_(...)         _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_REQUIRES_, __VA_ARGS__)
@@ -184,17 +186,41 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
   _CCCL_PP_CAT(_CCCL, _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_, __VA_ARGS__)))
 #define _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS__Same_as(...) _PP_EXPAND(__VA_ARGS__),
 
-// Converts "_Satisfies(TYPE) EXPR..." to "EXPR..."
+// Converts "_Satisfies(CONCEPT) EXPR..." to "EXPR..."
 #define _CCCL_CONCEPT_EAT_SATISFIES_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_SATISFIES_, __VA_ARGS__)
 #define _CCCL_CONCEPT_EAT_SATISFIES__Satisfies(...)
 
-// Converts "_Satisfies(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL
-// with _PP_EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
-// expansion here.)
+// Converts "_Satisfies(CONCEPT) EXPR..." to "CONCEPT" (The ridiculous concatenation of
+// _CCCL with _PP_EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to
+// do macro expansion here.)
 #define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(...) \
   _CCCL_PP_CAT(_CCCL,                                  \
                _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_, __VA_ARGS__)))
 #define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES__Satisfies(...) _PP_EXPAND(__VA_ARGS__),
+
+// Converts "_Convertible_to(TYPE) EXPR..." to "EXPR..."
+#define _CCCL_CONCEPT_EAT_CONVERTIBLE_TO_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_CONVERTIBLE_TO_, __VA_ARGS__)
+#define _CCCL_CONCEPT_EAT_CONVERTIBLE_TO__Convertible_to(...)
+
+// Converts "_Convertible_to(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of
+// _CCCL with _PP_EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to
+// do macro expansion here.)
+#define _CCCL_CONCEPT_GET_TYPE_FROM_CONVERTIBLE_TO_(...) \
+  _CCCL_PP_CAT(_CCCL,                                    \
+               _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_TYPE_FROM_CONVERTIBLE_TO_, __VA_ARGS__)))
+#define _CCCL_CONCEPT_GET_TYPE_FROM_CONVERTIBLE_TO__Convertible_to(...) _PP_EXPAND(__VA_ARGS__),
+
+// Converts "_Derived_from(TYPE) EXPR..." to "EXPR..."
+#define _CCCL_CONCEPT_EAT_DERIVED_FROM_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_DERIVED_FROM_, __VA_ARGS__)
+#define _CCCL_CONCEPT_EAT_DERIVED_FROM__Derived_from(...)
+
+// Converts "_Derived_from(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of
+// _CCCL with _PP_EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to
+// do macro expansion here.)
+#define _CCCL_CONCEPT_GET_TYPE_FROM_DERIVED_FROM_(...) \
+  _CCCL_PP_CAT(_CCCL,                                  \
+               _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_TYPE_FROM_DERIVED_FROM_, __VA_ARGS__)))
+#define _CCCL_CONCEPT_GET_TYPE_FROM_DERIVED_FROM__Derived_from(...) _PP_EXPAND(__VA_ARGS__),
 
 // Here are the implementations of the internal macros, first for when concepts
 // are available, and then for when they're not.
@@ -222,6 +248,12 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
     {_CCCL_CONCEPT_EAT_SAME_AS_(_REQ)}->_CCCL_CONCEPT_VSTD::same_as<_CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(_REQ)>
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE_SATISFIES(_REQ) \
     {_CCCL_CONCEPT_EAT_SATISFIES_(_REQ)}->_CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(_REQ)
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE_CONVERTIBLE_TO(_REQ) \
+    {_CCCL_CONCEPT_EAT_CONVERTIBLE_TO_(_REQ)}                 \
+      ->_CCCL_CONCEPT_VSTD::convertible_to<_CCCL_CONCEPT_GET_TYPE_FROM_CONVERTIBLE_TO_(_REQ)>
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE_DERIVED_FROM(_REQ) \
+    {_CCCL_CONCEPT_EAT_DERIVED_FROM_(_REQ)}                 \
+      ->_CCCL_CONCEPT_VSTD::derived_from<_CCCL_CONCEPT_GET_TYPE_FROM_DERIVED_FROM_(_REQ)>
 
 #  define _CCCL_FRAGMENT(_NAME, ...) _NAME<__VA_ARGS__>
 
@@ -269,10 +301,22 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE_SATISFIES(_REQ)                                                               \
     ::__cccl_requires < _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(_REQ) < decltype(_CCCL_CONCEPT_EAT_SATISFIES_(_REQ)) \
       >>
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE_CONVERTIBLE_TO(_REQ) \
+    ::__cccl_requires<::cuda::std::convertible_to<_CCCL_CONCEPT_CONVERTIBLE_TO_REQUIREMENT_(_REQ)>>
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE_DERIVED_FROM(_REQ) \
+    ::__cccl_requires<::cuda::std::derived_from<_CCCL_CONCEPT_DERIVED_FROM_REQUIREMENT_(_REQ)>>
 
-// Converts "_Same_as(TYPE) EXPR..." to "TYPE, decltype(EXPR...)"
+// Converts "_Same_as(TYPE) EXPR..." to "decltype(EXPR...), TYPE"
 #  define _CCCL_CONCEPT_SAME_AS_REQUIREMENT_(_REQ) \
-    _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(_REQ), decltype(_CCCL_CONCEPT_EAT_SAME_AS_(_REQ))
+    decltype(_CCCL_CONCEPT_EAT_SAME_AS_(_REQ)), _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(_REQ)
+
+// Converts "_Convertible_to(TYPE) EXPR..." to "decltype(EXPR...), TYPE"
+#  define _CCCL_CONCEPT_CONVERTIBLE_TO_REQUIREMENT_(_REQ) \
+    decltype(_CCCL_CONCEPT_EAT_CONVERTIBLE_TO_(_REQ)), _CCCL_CONCEPT_GET_TYPE_FROM_CONVERTIBLE_TO_(_REQ)
+
+// Converts "_Derived_from(TYPE) EXPR..." to "decltype(EXPR...), TYPE"
+#  define _CCCL_CONCEPT_DERIVED_FROM_REQUIREMENT_(_REQ) \
+    decltype(_CCCL_CONCEPT_EAT_DERIVED_FROM_(_REQ)), _CCCL_CONCEPT_GET_TYPE_FROM_DERIVED_FROM_(_REQ)
 
 #  if _CCCL_HAS_NOEXCEPT_MANGLING()
 // Converts "noexcept(EXPR)" to "::__cccl_requires<noexcept(EXPR)>"
