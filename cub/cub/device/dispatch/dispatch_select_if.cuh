@@ -214,16 +214,16 @@ template <typename DefaultPolicyGetter,
           typename StreamingContextT>
 struct make_vsmem_helper
 {
-  static constexpr select_if_policy active_policy = DefaultPolicyGetter{}();
-  using agent_policy_t =
-    AgentSelectIfPolicy<active_policy.threads_per_block,
-                        active_policy.items_per_thread,
-                        active_policy.load_algorithm,
-                        active_policy.load_modifier,
-                        active_policy.scan_algorithm,
-                        delay_constructor_t<active_policy.delay_constructor.kind,
-                                            active_policy.delay_constructor.delay,
-                                            active_policy.delay_constructor.l2_write_latency>>;
+  static constexpr SelectPolicy active_policy = DefaultPolicyGetter{}();
+  using agent_policy_t                        = detail::agent_select_if_policy<
+                           active_policy.threads_per_block,
+                           active_policy.items_per_thread,
+                           active_policy.load_algorithm,
+                           active_policy.load_modifier,
+                           active_policy.scan_algorithm,
+                           delay_constructor_t<active_policy.lookback_delay.kind,
+                                               active_policy.lookback_delay.delay,
+                                               active_policy.lookback_delay.l2_write_latency>>;
   using type = vsmem_helper_default_fallback_policy_t<
     agent_policy_t,
     bind_selection_opt<SelectionOpt>::template agent_t,
@@ -391,10 +391,10 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   // this is only called in device code
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> select_if_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> SelectPolicy
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::SelectIfPolicyT;
-    return select_if_policy{
+    return SelectPolicy{
       active_policy::BLOCK_THREADS,
       active_policy::ITEMS_PER_THREAD,
       active_policy::LOAD_ALGORITHM,
@@ -454,7 +454,7 @@ template <
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
     detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
     SelectionOpt>>
-struct DispatchSelectIf
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") DispatchSelectIf
 {
   /******************************************************************************
    * Types and constants
