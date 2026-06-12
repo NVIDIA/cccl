@@ -22,6 +22,22 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    # Expanded v2 (HostJIT) coverage: a 1:1 mirror of the v1 `cccl_c_parallel`
+    # and `python` PR matrices, retargeted at the v2 projects. Used to evaluate
+    # how much of the v1 matrix v2 can pass. Min supported CTK for v2 is 12.4
+    # (12.X aliases to 12.9). Windows/CTK-12.X is expected to fail until the
+    # devcontainer image ships nvptxcompiler for 12.4+ (nvfatbin already added
+    # in rapidsai/devcontainers#689; nvptxcompiler is still 13.0+-only).
+    #
+    # c.parallel v2 -- mirrors the v1 cccl_c_parallel rows (lines below in pull_request).
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080']}
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
+    # RTX PRO 6000 coverage (limited due to small number of runners):
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
+    # Python on v2 -- mirrors the v1 python rows.
+    - {jobs: ['test'], project: 'python_v2', ctk: ['12.X',        '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
+    - {jobs: ['test'], project: 'python_v2', ctk: ['12.X','13.0', '13.X'], py_version: ['3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
+    - {jobs: ['test'], project: 'python_v2', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
