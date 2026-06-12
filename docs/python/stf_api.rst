@@ -15,9 +15,15 @@ below.
 Record-once task graphs
 -----------------------
 
-.. automodule:: cuda.stf._experimental.task_graph
+Use ``task_graph()`` to create a record-once task graph. It returns a
+``TaskGraph`` object, which is the context manager and launch handle for the
+recorded graph.
+
+.. autofunction:: cuda.stf._experimental.task_graph.task_graph
+
+.. autoclass:: cuda.stf._experimental.task_graph.TaskGraph
   :members:
-  :undoc-members:
+  :exclude-members: __init__
 
 Device allocations
 ------------------

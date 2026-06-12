@@ -41,7 +41,12 @@ class _TaskGraphContext:
 
 
 class TaskGraph:
-    """Single-record, many-launch wrapper around a CUDASTF launchable graph."""
+    """Object returned by :func:`task_graph`.
+
+    A ``TaskGraph`` records a CUDASTF task DAG once and launches the recorded
+    graph many times. User code should normally create instances with
+    :func:`task_graph` rather than calling this class directly.
+    """
 
     def __init__(self) -> None:
         raw_context = stackable_context()
@@ -154,5 +159,11 @@ class TaskGraph:
 
 
 def task_graph() -> TaskGraph:
-    """Create a single-record, many-launch CUDASTF task graph."""
+    """Create a single-record, many-launch CUDASTF task graph.
+
+    Returns
+    -------
+    TaskGraph
+        The object used as the recording context manager and launch handle.
+    """
     return TaskGraph()
