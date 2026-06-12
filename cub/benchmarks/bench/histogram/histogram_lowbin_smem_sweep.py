@@ -50,6 +50,11 @@ DEFAULT_SHAPES = [
     "powerlaw:0.5", "zipf:1.0", "hash_synonym", "strided_sweep", "sawtooth",
 ]
 
+# The static privatized-SMEM kernel is compile-time sized for this many bins
+# (cub/.../dispatch_histogram.cuh: max_privatized_smem_bins). Forcing it above this is
+# an out-of-bounds access, so the sweep only runs the static series at <= this.
+MAX_STATIC_BINS = 256
+
 _LAUNCH_RE = re.compile(r"\[launch\] bins=(\d+) ch=(\d+) ran=([a-z_:]+)")
 
 
@@ -130,6 +135,13 @@ def main():
             for elements in args.elements:
                 for bins in args.bins:
                     for kind, key in (("static", "smem_static"), ("dynamic", "smem_dynamic")):
+                        # The STATIC kernel is compile-time sized for <=256 bins; forcing
+                        # it above that reads out of bounds (illegal memory access). Skip
+                        # static>256 -- the comparison is only meaningful in the static
+                        # kernel's actual domain; at 512 we still show dynamic + main to
+                        # mark where static is no longer an option.
+                        if kind == "static" and bins > MAX_STATIC_BINS:
+                            continue
                         med, tag, ok = run_cell(bbin, sample, elements, bins, args.shapes,
                                                 args.repeats, args.min_time, args.timeout, force_smem=kind)
                         calls += 1
