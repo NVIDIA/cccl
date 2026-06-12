@@ -237,12 +237,14 @@ C2H_TEST("DeviceSelect::Unique works with user provided memory and environments"
       REQUIRE(error == cudaSuccess);
       REQUIRE(cudaSuccess == cudaPeekAtLastError());
       REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+      REQUIRE(num_selected_std == num_selected_out[0]);
       out.resize(num_selected_out[0]);
       reference.resize(num_selected_out[0]);
       REQUIRE(reference == out);
     }
 
-    { // test overload without predicate
+    { // test overload with predicate
       size_t num_bytes = 0;
       error            = cub::DeviceSelect::Unique(
         static_cast<void*>(nullptr),
@@ -263,25 +265,33 @@ C2H_TEST("DeviceSelect::Unique works with user provided memory and environments"
       REQUIRE(error == cudaSuccess);
       REQUIRE(cudaSuccess == cudaPeekAtLastError());
       REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+      REQUIRE(num_selected_std == num_selected_out[0]);
+      out.resize(num_selected_out[0]);
+      reference.resize(num_selected_out[0]);
       REQUIRE(reference == out);
     }
   };
 
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
   SECTION("DeviceSelect::Unique works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     test_unique(stream.get());
   }
 
   SECTION("DeviceSelect::Unique works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     test_unique(stream);
   }
 
   SECTION("DeviceSelect::Unique works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     cuda::stream_ref stream_ref{stream};
     test_unique(stream_ref);
   }
@@ -300,7 +310,7 @@ C2H_TEST("DeviceSelect::Unique works with user provided memory and environments"
 
   SECTION("DeviceSelect::Unique works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[0]};
+    cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_unique(policy);
   }

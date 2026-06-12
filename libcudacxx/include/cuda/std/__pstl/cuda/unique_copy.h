@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___PSTL_CUDA_UNIQUE_H
-#define _CUDA_STD___PSTL_CUDA_UNIQUE_H
+#ifndef _CUDA_STD___PSTL_CUDA_UNIQUE_COPY_H
+#define _CUDA_STD___PSTL_CUDA_UNIQUE_COPY_H
 
 #include <cuda/std/detail/__config>
 
@@ -62,11 +62,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 template <>
-struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
+struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__cuda>
 {
-  template <class _Policy, class _InputIterator, class _BinaryPredicate>
-  [[nodiscard]] _CCCL_HOST_API static _InputIterator
-  __par_impl(const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPredicate __pred)
+  template <class _Policy, class _InputIterator, class _OutputIterator, class _BinaryPredicate>
+  [[nodiscard]] _CCCL_HOST_API static _OutputIterator __par_impl(
+    const _Policy& __policy,
+    _InputIterator __first,
+    _InputIterator __last,
+    _OutputIterator __result,
+    _BinaryPredicate __pred)
   {
     const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
@@ -82,6 +86,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
       static_cast<void*>(nullptr),
       __num_bytes,
       __first,
+      __result,
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
@@ -95,7 +100,8 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
         "__pstl_cuda_unique: kernel launch of cub::DeviceSelect::Unique failed",
         __storage.__get_temp_storage(),
         __num_bytes,
-        __first,
+        ::cuda::std::move(__first),
+        __result,
         __storage.template __get_raw_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
@@ -112,22 +118,29 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
     }
 
     __stream.sync();
-    return __first + __num_selected;
+    return __result + static_cast<iter_difference_t<_OutputIterator>>(__num_selected);
   }
 
-  _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _BinaryPredicate)
-  _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
+  _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _BinaryPredicate)
+  _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
+    _OutputIterator __result,
     _BinaryPredicate __pred) const
   {
-    if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
+    if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
+                  && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
       _CCCL_TRY
       {
-        return __par_impl(__policy, __first, ::cuda::std::move(__last), ::cuda::std::move(__pred));
+        return __par_impl(
+          __policy,
+          ::cuda::std::move(__first),
+          ::cuda::std::move(__last),
+          ::cuda::std::move(__result),
+          ::cuda::std::move(__pred));
       }
       _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
@@ -145,8 +158,10 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
     else
     {
       static_assert(__always_false_v<_Policy>,
-                    "__pstl_dispatch: CUDA backend of cuda::std::unique requires at least random access iterators");
-      return ::cuda::std::unique(::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
+                    "__pstl_dispatch: CUDA backend of cuda::std::unique_copy requires at least random access "
+                    "iterators");
+      return ::cuda::std::unique_copy(
+        ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result), ::cuda::std::move(__pred));
     }
   }
 };
@@ -159,4 +174,4 @@ _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 
 #endif // _CCCL_HAS_BACKEND_CUDA()
 
-#endif // _CUDA_STD___PSTL_CUDA_UNIQUE_H
+#endif // _CUDA_STD___PSTL_CUDA_UNIQUE_COPY_H
