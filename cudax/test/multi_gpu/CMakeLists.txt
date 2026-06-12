@@ -8,4 +8,5 @@
 #
 #===----------------------------------------------------------------------===##
 
+add_subdirectory(communicators)
 add_subdirectory(concepts)
