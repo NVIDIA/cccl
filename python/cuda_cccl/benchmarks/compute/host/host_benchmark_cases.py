@@ -269,9 +269,7 @@ def _twoshot_scan(state: SimpleNamespace, wrapper) -> None:
 def _setup_segmented_reduce() -> SimpleNamespace:
     d_in = cp.arange(NUM_ITEMS, dtype=cp.int32)
     d_out = cp.empty(NUM_SEGMENTS, dtype=cp.int32)
-    offsets = cp.asarray(
-        np.linspace(0, NUM_ITEMS, NUM_SEGMENTS + 1, dtype=np.int64)
-    )
+    offsets = cp.asarray(np.linspace(0, NUM_ITEMS, NUM_SEGMENTS + 1, dtype=np.int64))
     return SimpleNamespace(
         d_in=d_in,
         d_out=d_out,
@@ -687,9 +685,7 @@ def _twoshot_radix_sort(state: SimpleNamespace, wrapper) -> None:
 
 def _setup_segmented_sort() -> SimpleNamespace:
     state = _setup_sort()
-    offsets = cp.asarray(
-        np.linspace(0, NUM_ITEMS, NUM_SEGMENTS + 1, dtype=np.int64)
-    )
+    offsets = cp.asarray(np.linspace(0, NUM_ITEMS, NUM_SEGMENTS + 1, dtype=np.int64))
     state.start_offsets = offsets[:-1]
     state.end_offsets = offsets[1:]
     state.num_segments = NUM_SEGMENTS

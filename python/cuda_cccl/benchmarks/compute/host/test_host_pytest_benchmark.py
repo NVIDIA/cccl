@@ -5,15 +5,14 @@
 from __future__ import annotations
 
 import pytest
-
-import cuda.compute as cc
-
 from host_benchmark_cases import (
     CASES,
     HostBenchmarkCase,
     patch_wrapper_to_skip_native_compute,
     synchronize,
 )
+
+import cuda.compute as cc
 
 pytest.importorskip("pytest_benchmark")
 
