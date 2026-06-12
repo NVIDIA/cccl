@@ -88,6 +88,56 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]")
   REQUIRE(output == expected);
 }
 
+C2H_TEST("cub::DeviceReduce::Reduce with FutureValue accepts environment")
+{
+  // example-begin reduce-future-env
+  auto op             = cuda::std::plus{};
+  auto input          = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
+  auto output         = thrust::device_vector<float>(1);
+  auto init_value_vec = thrust::device_vector<float>{0.0f};
+  auto future_init    = cub::FutureValue<float>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+
+  auto error = cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), op, future_init, env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::Reduce failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<float> expected{6.0f};
+  // example-end reduce-future-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceReduce::Reduce with FutureValue accepts stream")
+{
+  // example-begin reduce-future-stream
+  auto op             = cuda::std::plus{};
+  auto input          = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
+  auto output         = thrust::device_vector<float>(1);
+  auto init_value_vec = thrust::device_vector<float>{0.0f};
+  auto future_init    = cub::FutureValue<float>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), op, future_init, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::Reduce failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<float> expected{6.0f};
+  // example-end reduce-future-stream
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
 C2H_TEST("cub::DeviceReduce::Sum accepts run_to_run determinism requirements", "[reduce][env]")
 {
   // TODO(srinivas): replace with gpu_to_gpu once offset size restriction is relaxed
@@ -483,6 +533,32 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts not_guaranteed determinism 
   REQUIRE(output == expected);
 }
 
+C2H_TEST("cub::DeviceReduce::TransformReduce with FutureValue accepts environments", "[reduce][env]")
+{
+  // example-begin transform-reduce-future-env-determinism
+  auto op             = cuda::std::plus{};
+  auto transform      = cuda::std::negate{};
+  auto input          = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
+  auto output         = thrust::device_vector<float>(1);
+  auto init_value_vec = c2h::device_vector<float>{0.0f};
+  auto future_init    = cub::FutureValue<float>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+
+  auto error =
+    cub::DeviceReduce::TransformReduce(input.begin(), output.begin(), input.size(), op, transform, future_init, env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::TransformReduce failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<float> expected{-10.0f};
+  // example-end transform-reduce-future-env-determinism
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
 C2H_TEST("cub::DeviceReduce::TransformReduce accepts stream", "[reduce][env]")
 {
   // example-begin transform-reduce-env-stream
@@ -504,6 +580,34 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts stream", "[reduce][env]")
 
   thrust::device_vector<float> expected{-10.0f};
   // example-end transform-reduce-env-stream
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceReduce::TransformReduce with FutureValue accepts stream", "[reduce][env]")
+{
+  // example-begin transform-reduce-future-env-stream
+  auto op             = cuda::std::plus{};
+  auto transform      = cuda::std::negate{};
+  auto input          = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
+  auto output         = thrust::device_vector<float>(1);
+  auto init_value_vec = c2h::device_vector<float>{0.0f};
+  auto future_init    = cub::FutureValue<float>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceReduce::TransformReduce(
+    input.begin(), output.begin(), input.size(), op, transform, future_init, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::TransformReduce failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<float> expected{-10.0f};
+  // example-end transform-reduce-future-env-stream
   stream.sync();
 
   REQUIRE(error == cudaSuccess);

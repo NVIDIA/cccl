@@ -153,6 +153,36 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     // Verify result
     REQUIRE(expected_result == out_result[0]);
   }
+
+  SECTION("reduce with FutureValue")
+  {
+    // example-begin device-reduce-future-value
+    using op_t = cuda::std::plus<>;
+
+    // Binary reduction operator
+    auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
+
+    // Prepare verification data
+    using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
+    accum_t init_value{};
+    init_default_constant(init_value);
+    output_t expected_result =
+      static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, init_value));
+
+    // Run test
+    c2h::device_vector<output_t> out_result(num_segments);
+    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    // Create device-resident initial value
+    c2h::device_vector<init_t> d_initial_value(1);
+    d_initial_value[0]     = static_cast<init_t>(*unwrap_it(&init_value));
+    auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+    device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, future_init_value);
+
+    // example-end device-reduce-future-value
+    // Verify result
+    REQUIRE(expected_result == out_result[0]);
+  }
 #endif // TEST_TYPES != 4
 
 // Skip DeviceReduce::Sum tests for extended floating-point types because of unbounded epsilon due

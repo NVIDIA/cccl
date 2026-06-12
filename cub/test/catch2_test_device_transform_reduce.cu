@@ -75,6 +75,62 @@ C2H_TEST("Device transform reduce works with pointers", "[reduce][device]", type
   }
 }
 
+C2H_TEST("Device transform reduce with FutureValue works with pointers", "[reduce][device]", types)
+{
+  using item_t         = c2h::get<0, TestType>;
+  using init_t         = item_t;
+  using offset_t       = std::int32_t;
+  using reduction_op_t = cuda::std::plus<>;
+  using transform_op_t = square_t<item_t>;
+
+  constexpr int max_items = 5000000;
+  constexpr int min_items = 1;
+
+  const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
+
+  // future init value
+  auto init_value_vec = c2h::device_vector<item_t>{42};
+  auto future_init    = cub::FutureValue<item_t>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  c2h::device_vector<item_t> out(1);
+  c2h::device_vector<item_t> in(num_items + 1);
+  c2h::gen(C2H_SEED(2), in);
+
+  item_t* d_in  = thrust::raw_pointer_cast(in.data());
+  item_t* d_out = thrust::raw_pointer_cast(out.data());
+
+  const c2h::host_vector<item_t> h_in = in;
+  c2h::host_vector<item_t> h_transformed_in(h_in.size() - 1);
+
+  SECTION("when aligned")
+  {
+    // example-begin device-transform-reduce-future-value-aligned
+    device_transform_reduce(d_in, d_out, num_items, reduction_op_t{}, transform_op_t{}, future_init);
+
+    std::transform(h_in.begin(), h_in.end() - 1, h_transformed_in.begin(), transform_op_t{});
+    const item_t expected =
+      std::accumulate(h_transformed_in.begin(), h_transformed_in.end(), item_t{42});
+
+    INFO("num_items: " << num_items);
+    REQUIRE(expected == out[0]);
+    // example-end device-transform-reduce-future-value-aligned
+  }
+
+  SECTION("when unaligned")
+  {
+    // example-begin device-transform-reduce-future-value-unaligned
+    device_transform_reduce(d_in + 1, d_out, num_items, reduction_op_t{}, transform_op_t{}, future_init);
+
+    std::transform(h_in.begin() + 1, h_in.end(), h_transformed_in.begin(), transform_op_t{});
+    const item_t expected =
+      std::accumulate(h_transformed_in.begin(), h_transformed_in.end(), item_t{42});
+
+    INFO("num_items: " << num_items);
+    REQUIRE(expected == out[0]);
+    // example-end device-transform-reduce-future-value-unaligned
+  }
+}
+
 C2H_TEST("Device transform reduce works with iterators", "[reduce][device]", types)
 {
   using item_t         = c2h::get<0, TestType>;

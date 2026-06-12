@@ -513,6 +513,271 @@ public:
   }
 
   //! @rst
+  //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and a device-resident initial
+  //! value (future value).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - Does not support binary reduction operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a user-defined product-reduction of a device vector of ``int`` data elements
+  //! with a device-resident initial value.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!    // or equivalently <cub/device/device_reduce.cuh>
+  //!
+  //!    // CustomProduct functor
+  //!    struct CustomProduct
+  //!    {
+  //!        template <typename T>
+  //!        __device__ __forceinline__
+  //!        T operator()(const T &a, const T &b) const {
+  //!            return a * b;
+  //!        }
+  //!    };
+  //!
+  //!    // Declare, allocate, and initialize device-accessible pointers
+  //!    int              num_items;      // e.g., 7
+  //!    int              *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    int              *d_out;         // e.g., [-]
+  //!    int              *d_init_iter;   // e.g., 1
+  //!    CustomProduct    prod_op;
+  //!
+  //!    auto future_init_value = cub::FutureValue<int>(d_init_iter);
+  //!
+  //!    ...
+  //!
+  //!    // Determine temporary device storage requirements
+  //!    void     *d_temp_storage = nullptr;
+  //!    size_t   temp_storage_bytes = 0;
+  //!    cub::DeviceReduce::Reduce(
+  //!      d_temp_storage, temp_storage_bytes,
+  //!      d_in, d_out, num_items, prod_op, future_init_value);
+  //!
+  //!    // Allocate temporary storage
+  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  //!
+  //!    // Run reduction
+  //!    cub::DeviceReduce::Reduce(
+  //!      d_temp_storage, temp_storage_bytes,
+  //!      d_in, d_out, num_items, prod_op, future_init_value);
+  //!
+  //!    // d_out <-- [15120]
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @tparam IterT
+  //!   **[inferred]** Iterator type for the future value
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of ``d_in``)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] init
+  //!   Initial value of the reduction (provided as a future value)
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename IterT = T*,
+            typename NumItemsT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    FutureValue<T, IterT> init,
+    cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
+
+    // Unsigned integer type for global offsets
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+
+    return detail::reduce::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<OffsetT>(num_items),
+      reduction_op,
+      detail::InputValue<T>(init),
+      stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and a device-resident initial
+  //! value (future value).
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - Does not support binary reduction operators that are non-commutative.
+  //! - By default, provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
+  //!   as the `env` parameter.
+  //!   To request "not-guaranteed" determinism, pass
+  //!   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a user-defined product-reduction of a device vector of ``int`` data elements
+  //! with a device-resident initial value and a stream environment.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!    // or equivalently <cub/device/device_reduce.cuh>
+  //!
+  //!    // CustomProduct functor
+  //!    struct CustomProduct
+  //!    {
+  //!        template <typename T>
+  //!        __device__ __forceinline__
+  //!        T operator()(const T &a, const T &b) const {
+  //!            return a * b;
+  //!        }
+  //!    };
+  //!
+  //!    // Declare, allocate, and initialize device-accessible pointers
+  //!    int              num_items;      // e.g., 7
+  //!    int              *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    int              *d_out;         // e.g., [-]
+  //!    int              *d_init_iter;   // e.g., 1
+  //!    CustomProduct    prod_op;
+  //!
+  //!    auto future_init_value = cub::FutureValue<int>(d_init_iter);
+  //!
+  //!    ...
+  //!
+  //!    // Run reduction with a custom stream
+  //!    cub::DeviceReduce::Reduce(
+  //!      d_in, d_out, num_items, prod_op, future_init_value, stream);
+  //!
+  //!    // d_out <-- [15120]
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @tparam IterT
+  //!   **[inferred]** Iterator type for the future value
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of ``d_in``)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] init
+  //!   Initial value of the reduction (provided as a future value)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename IterT = T*,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    FutureValue<T, IterT> init,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
+
+    using accum_t = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
+
+    return __transform_reduce<accum_t>(
+      d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, detail::InputValue<T>(init), env);
+  }
+
+  //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
   //!
   //! .. versionadded:: 2.2.0
@@ -2028,6 +2293,153 @@ public:
 
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor,
+  //! a unary ``transform_op`` functor, and a device-resident initial value (future value).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! - Does not support binary reduction operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a user-defined min-reduction of a
+  //! device vector of `int` data elements.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!    // or equivalently <cub/device/device_reduce.cuh>
+  //!
+  //!    thrust::device_vector<int> in = { 1, 2, 3, 4 };
+  //!    thrust::device_vector<int> out(1);
+  //!
+  //!    size_t temp_storage_bytes = 0;
+  //!    uint8_t *d_temp_storage = nullptr;
+  //!
+  //!    thrust::device_vector<int> init{42};
+  //!    auto future_init_value = cub::FutureValue<int>(init);
+  //!
+  //!    cub::DeviceReduce::TransformReduce(
+  //!      d_temp_storage,
+  //!      temp_storage_bytes,
+  //!      in.begin(),
+  //!      out.begin(),
+  //!      in.size(),
+  //!      cuda::std::plus<>{},
+  //!      square_t{},
+  //!      future_init_value);
+  //!
+  //!    thrust::device_vector<uint8_t> temp_storage(temp_storage_bytes);
+  //!    d_temp_storage = temp_storage.data().get();
+  //!
+  //!    cub::DeviceReduce::TransformReduce(
+  //!      d_temp_storage,
+  //!      temp_storage_bytes,
+  //!      in.begin(),
+  //!      out.begin(),
+  //!      in.size(),
+  //!      cuda::std::plus<>{},
+  //!      square_t{},
+  //!      future_init_value);
+  //!
+  //!    // out[0] <-- 72
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam TransformOpT
+  //!   **[inferred]** Unary reduction functor type having member `auto operator()(const T &a)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @tparam IterT
+  //!   **[inferred]** Iterator type for the future value
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of ``d_in``)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] transform_op
+  //!   Unary transform functor
+  //!
+  //! @param[in] init
+  //!   Initial value of the reduction (provided as a future value)
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename IterT = T*,
+            typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformReduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    TransformOpT transform_op,
+    FutureValue<T, IterT> init,
+    cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
+
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+
+    return detail::reduce::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<OffsetT>(num_items),
+      reduction_op,
+      detail::InputValue<T>(init),
+      stream,
+      transform_op);
+  }
+
+  //! @rst
+  //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor,
   //! a unary ``transform_op`` functor, and initial value ``init``.
   //!
   //! .. versionadded:: 3.4.0
@@ -2129,6 +2541,98 @@ public:
     using accum_t = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
     return __transform_reduce<accum_t>(d_in, d_out, num_items, reduction_op, transform_op, init, env);
+  }
+
+  //! @rst
+  //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor,
+  //! a unary ``transform_op`` functor, and a device-resident initial value (future value).
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - Does not support binary reduction operators that are non-commutative.
+  //! - By default, provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
+  //!   as the `env` parameter.
+  //!   To request "not-guaranteed" determinism, pass
+  //!   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam TransformOpT
+  //!   **[inferred]** Unary reduction functor type having member `auto operator()(const T &a)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @tparam IterT
+  //!   **[inferred]** Iterator type for the future value
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of ``d_in``)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] transform_op
+  //!   Unary transform functor
+  //!
+  //! @param[in] init
+  //!   Initial value of the reduction (provided as a future value)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename IterT = T*,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t TransformReduce(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    TransformOpT transform_op,
+    FutureValue<T, IterT> init,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::TransformReduce");
+    using accum_t = ::cuda::std::
+      __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
+    return __transform_reduce<accum_t>(
+      d_in, d_out, num_items, reduction_op, transform_op, detail::InputValue<T>(init), env);
   }
 
   //! @rst

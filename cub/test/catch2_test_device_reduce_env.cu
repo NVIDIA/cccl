@@ -117,6 +117,37 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+TEST_CASE("Device reduce with FutureValue works with default environment", "[reduce][device]")
+{
+  using num_items_t = int;
+  using value_t     = int;
+  using offset_t    = cub::detail::choose_offset_t<num_items_t>;
+
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+
+  unsigned int target_block_size =
+    cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_plus_t>{}(cc)
+      .single_tile.threads_per_block;
+
+  num_items_t num_items = 1;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_check_plus_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  auto d_in  = cuda::constant_iterator(value_t{1});
+  auto d_out = thrust::device_vector<value_t>(1);
+
+  auto init_value_vec = c2h::device_vector<value_t>{0};
+  auto future_init    = cub::FutureValue<value_t>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, future_init));
+
+  REQUIRE(d_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 TEST_CASE("Device Sum works with default environment", "[reduce][device]")
 {
   using num_items_t     = int;
@@ -520,6 +551,139 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   REQUIRE(d_out[0] == num_items);
 }
 
+C2H_TEST("Device reduce with FutureValue uses environment", "[reduce][device]", requirements)
+{
+  using determinism_t = c2h::get<0, TestType>;
+  using accumulator_t = float;
+  using op_t          = cuda::std::plus<>;
+  using num_items_t   = int;
+  using offset_t      = cub::detail::choose_offset_t<num_items_t>;
+  using transform_t   = cuda::std::identity;
+  using init_t        = accumulator_t;
+
+  num_items_t num_items = GENERATE(1 << 4, 1 << 24);
+  auto d_in             = cuda::constant_iterator(1.0f);
+  auto d_out            = thrust::device_vector<accumulator_t>(1);
+
+  auto init_value_vec = c2h::device_vector<init_t>{0};
+  auto future_init    = cub::FutureValue<init_t>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  size_t expected_bytes_allocated{};
+
+  // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
+  auto kernels = [&]() {
+    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
+    {
+      REQUIRE(cudaSuccess
+              == cub::DeviceReduce::Reduce(
+                nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, op_t{}, future_init));
+
+      using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+      return cuda::std::array<void*, 3>{
+        reinterpret_cast<void*>(
+          cub::detail::reduce::DeviceReduceSingleTileKernel<
+            policy_t,
+            decltype(d_in),
+            decltype(d_out.begin()),
+            offset_t,
+            op_t,
+            init_t,
+            accumulator_t,
+            transform_t>),
+        reinterpret_cast<void*>(
+          cub::detail::reduce::DeviceReduceKernel<policy_t, decltype(d_in), offset_t, op_t, accumulator_t, transform_t>),
+        reinterpret_cast<void*>(
+          cub::detail::reduce::DeviceReduceSingleTileKernel<
+            policy_t,
+            accumulator_t*,
+            decltype(d_out.begin()),
+            int, // always used with int offset
+            op_t,
+            init_t,
+            accumulator_t>)};
+    }
+    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
+    {
+      using policy_t = cub::detail::reduce_nondeterministic::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+      auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
+
+      REQUIRE(
+        cudaSuccess
+        == cub::detail::reduce_nondeterministic::dispatch(
+          nullptr,
+          expected_bytes_allocated,
+          d_in,
+          raw_ptr,
+          num_items,
+          op_t{},
+          cub::detail::InputValue<init_t>(future_init),
+          /* stream */ nullptr,
+          transform_t{}));
+
+      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
+        cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
+          policy_t,
+          decltype(d_in),
+          decltype(raw_ptr),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>)};
+    }
+    else
+    {
+      using policy_t              = cub::detail::rfa::policy_selector_from_types<accumulator_t>;
+      using deterministic_add_t   = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
+      using reduction_op_t        = deterministic_add_t;
+      using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
+      using output_it_t           = decltype(d_out.begin());
+
+      REQUIRE(
+        cudaSuccess
+        == cub::detail::rfa::
+          dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
+            nullptr,
+            expected_bytes_allocated,
+            d_in,
+            d_out.begin(),
+            num_items,
+            cub::detail::InputValue<init_t>(future_init)));
+
+      auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
+        policy_t,
+        decltype(d_in),
+        output_it_t,
+        reduction_op_t,
+        init_t,
+        deterministic_accum_t,
+        transform_t>;
+      auto k2 = cub::detail::reduce::
+        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>;
+      auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
+        policy_t,
+        deterministic_accum_t*,
+        output_it_t,
+        reduction_op_t,
+        init_t,
+        deterministic_accum_t,
+        transform_t>;
+      return cuda::std::array<void*, 3>{
+        reinterpret_cast<void*>(k1), reinterpret_cast<void*>(k2), reinterpret_cast<void*>(k3)};
+    }
+  }();
+
+  // Equivalent to `cuexec::require(cuexec::determinism::run_to_run)` and
+  //               `cuexec::require(cuexec::determinism::not_guaranteed)`
+  auto env = stdexec::env{cuda::execution::require(determinism_t{}), // determinism
+                          allowed_kernels(kernels), // allowed kernels for the given determinism
+                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+
+  device_reduce(d_in, d_out.begin(), num_items, op_t{}, future_init, env);
+
+  REQUIRE(d_out[0] == num_items);
+}
+
 C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
 {
   using determinism_t = c2h::get<0, TestType>;
@@ -790,6 +954,24 @@ TEST_CASE("Device TransformReduce works with default environment", "[reduce][dev
   REQUIRE(d_out[0] == -10);
 }
 
+TEST_CASE("Device TransformReduce with FutureValue works with default environment", "[reduce][device]")
+{
+  auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out = thrust::device_vector<int>(1);
+
+  auto negate = cuda::std::negate<int>{};
+
+  // future init value
+  auto init_value_vec = c2h::device_vector<int>{0};
+  auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::TransformReduce(
+            d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, future_init));
+
+  REQUIRE(d_out[0] == -10);
+}
+
 TEST_CASE("Device ReduceByKey works with default environment", "[reduce][device]")
 {
   auto d_keys_in        = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -896,6 +1078,38 @@ C2H_TEST("Device TransformReduce uses environment", "[reduce][device]")
 
   device_transform_reduce(
     d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0, env);
+
+  REQUIRE(d_out[0] == -10);
+}
+
+C2H_TEST("Device TransformReduce with FutureValue uses environment", "[reduce][device]")
+{
+  auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out = thrust::device_vector<int>(1);
+
+  auto negate = cuda::std::negate<int>{};
+
+  // future init value
+  auto init_value_vec = c2h::device_vector<int>{0};
+  auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::TransformReduce(
+      nullptr,
+      expected_bytes_allocated,
+      d_in.begin(),
+      d_out.begin(),
+      static_cast<int>(d_in.size()),
+      cuda::std::plus<int>{},
+      negate,
+      future_init));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_transform_reduce(
+    d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, future_init, env);
 
   REQUIRE(d_out[0] == -10);
 }

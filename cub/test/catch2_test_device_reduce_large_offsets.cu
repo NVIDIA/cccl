@@ -108,6 +108,34 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     REQUIRE(expected_result == out_result[0]);
   }
 
+  SECTION("reduce with FutureValue")
+  {
+    using op_t = custom_sum_op;
+
+    // Segment size (generate a series of: 0, 1, 2, ..., <segment_size-1>,  0, 1, 2, ..., <segment_size-1>, 0, 1, ...)
+    const auto segment_size = 1000;
+
+    // Initial value of reduction (FutureValue)
+    auto init_value_vec = c2h::device_vector<index_t>{42};
+    auto future_init    = cub::FutureValue<index_t>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+    // Binary reduction operator
+    const auto reduction_op = op_t{};
+
+    // Prepare verification data
+    const index_t expected_result = index_t{42} + get_segmented_guassian_sum(num_items, segment_size);
+
+    // Run test
+    c2h::device_vector<index_t> out_result(1);
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_in_it  = cuda::transform_iterator(index_it, mod_op<index_t>{segment_size});
+
+    device_reduce(d_in_it, d_out_it, num_items, reduction_op, future_init);
+
+    // Verify result
+    REQUIRE(expected_result == out_result[0]);
+  }
+
   SECTION("sum")
   {
     // Segment size (generate a series of: 0, 1, 2, ..., <segment_size-1>,  0, 1, 2, ..., <segment_size-1>, 0, 1, ...)
