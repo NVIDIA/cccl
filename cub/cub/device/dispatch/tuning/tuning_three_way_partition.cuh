@@ -37,7 +37,7 @@ struct ThreeWayPartitionPolicy
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
-  LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy for inter-block coordination
+  LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy configuring the delay used in decoupled lookback
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const ThreeWayPartitionPolicy& lhs, const ThreeWayPartitionPolicy& rhs) noexcept
