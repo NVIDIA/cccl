@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 from host_benchmark_cases import (
+    CALL_CASES,
     CASES,
     HostBenchmarkCase,
     patch_wrapper_to_skip_native_compute,
@@ -23,9 +24,9 @@ TWOSHOT_ROUNDS = 20
 TWOSHOT_ITERATIONS = 1000
 
 
-def _case_params() -> list[pytest.ParameterSet]:
+def _case_params(cases: list[HostBenchmarkCase]) -> list[pytest.ParameterSet]:
     params = []
-    for case in CASES:
+    for case in cases:
         marks = []
         if case.skip_reason is not None:
             marks.append(pytest.mark.skip(reason=case.skip_reason))
@@ -34,7 +35,7 @@ def _case_params() -> list[pytest.ParameterSet]:
 
 
 @pytest.mark.benchmark(group="cuda.compute.host.build_time")
-@pytest.mark.parametrize("case", _case_params())
+@pytest.mark.parametrize("case", _case_params(CASES))
 def test_build_time(benchmark, case: HostBenchmarkCase):
     state = case.setup()
     synchronize()
@@ -55,7 +56,7 @@ def test_build_time(benchmark, case: HostBenchmarkCase):
 
 
 @pytest.mark.benchmark(group="cuda.compute.host.oneshot_cached")
-@pytest.mark.parametrize("case", _case_params())
+@pytest.mark.parametrize("case", _case_params(CALL_CASES))
 def test_oneshot_cached_host_overhead(benchmark, case: HostBenchmarkCase):
     cc.clear_all_caches()
     state = case.setup()
@@ -75,7 +76,7 @@ def test_oneshot_cached_host_overhead(benchmark, case: HostBenchmarkCase):
 
 
 @pytest.mark.benchmark(group="cuda.compute.host.twoshot_call")
-@pytest.mark.parametrize("case", _case_params())
+@pytest.mark.parametrize("case", _case_params(CALL_CASES))
 def test_twoshot_call_host_overhead(benchmark, case: HostBenchmarkCase):
     cc.clear_all_caches()
     state = case.setup()

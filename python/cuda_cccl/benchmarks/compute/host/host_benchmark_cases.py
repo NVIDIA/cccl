@@ -14,6 +14,7 @@ import numpy as np
 import cuda.compute as cc
 from cuda.compute._cpp_compile import compile_cpp_op_code
 from cuda.compute.op import RawOp
+from cuda.core import Device
 
 NOOP_TEMP_STORAGE_BYTES = 1
 NUM_ITEMS = 128
@@ -79,6 +80,12 @@ def patch_wrapper_to_skip_native_compute(
 
 def make_tiny_temp_storage() -> cp.ndarray:
     return cp.empty(NOOP_TEMP_STORAGE_BYTES, dtype=cp.uint8)
+
+
+def make_stream():
+    device = Device()
+    device.set_current()
+    return device.create_stream()
 
 
 def synchronize() -> None:
@@ -228,6 +235,29 @@ def _twoshot_reduce(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _oneshot_reduce_stream(state: SimpleNamespace) -> None:
+    cc.reduce_into(
+        d_in=state.d_in,
+        d_out=state.d_out[:1],
+        num_items=state.num_items,
+        op=state.op,
+        h_init=state.h_init,
+        stream=state.stream,
+    )
+
+
+def _twoshot_reduce_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out[:1],
+        num_items=state.num_items,
+        op=state.op,
+        h_init=state.h_init,
+        stream=state.stream,
+    )
+
+
 def _setup_scan() -> SimpleNamespace:
     state = _setup_unary_input_output()
     state.h_init = np.array([0], dtype=np.int32)
@@ -263,6 +293,29 @@ def _twoshot_scan(state: SimpleNamespace, wrapper) -> None:
         op=state.op,
         init_value=state.h_init,
         num_items=state.num_items,
+    )
+
+
+def _oneshot_scan_stream(state: SimpleNamespace) -> None:
+    cc.exclusive_scan(
+        d_in=state.d_in,
+        d_out=state.d_out,
+        op=state.op,
+        init_value=state.h_init,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
+def _twoshot_scan_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out,
+        op=state.op,
+        init_value=state.h_init,
+        num_items=state.num_items,
+        stream=state.stream,
     )
 
 
@@ -318,6 +371,33 @@ def _twoshot_segmented_reduce(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _oneshot_segmented_reduce_stream(state: SimpleNamespace) -> None:
+    cc.segmented_reduce(
+        d_in=state.d_in,
+        d_out=state.d_out,
+        num_segments=state.num_segments,
+        start_offsets_in=state.start_offsets,
+        end_offsets_in=state.end_offsets,
+        op=state.op,
+        h_init=state.h_init,
+        stream=state.stream,
+    )
+
+
+def _twoshot_segmented_reduce_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out,
+        num_segments=state.num_segments,
+        start_offsets_in=state.start_offsets,
+        end_offsets_in=state.end_offsets,
+        op=state.op,
+        h_init=state.h_init,
+        stream=state.stream,
+    )
+
+
 def _make_unary_transform(state: SimpleNamespace):
     return cc.make_unary_transform(
         d_in=state.d_in,
@@ -341,6 +421,26 @@ def _twoshot_unary_transform(state: SimpleNamespace, wrapper) -> None:
         d_out=state.d_out,
         op=state.op,
         num_items=state.num_items,
+    )
+
+
+def _oneshot_unary_transform_stream(state: SimpleNamespace) -> None:
+    cc.unary_transform(
+        d_in=state.d_in,
+        d_out=state.d_out,
+        op=state.op,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
+def _twoshot_unary_transform_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        d_in=state.d_in,
+        d_out=state.d_out,
+        op=state.op,
+        num_items=state.num_items,
+        stream=state.stream,
     )
 
 
@@ -370,6 +470,28 @@ def _twoshot_binary_transform(state: SimpleNamespace, wrapper) -> None:
         d_out=state.d_out,
         op=state.op,
         num_items=state.num_items,
+    )
+
+
+def _oneshot_binary_transform_stream(state: SimpleNamespace) -> None:
+    cc.binary_transform(
+        d_in1=state.d_in1,
+        d_in2=state.d_in2,
+        d_out=state.d_out,
+        op=state.op,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
+def _twoshot_binary_transform_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        d_in1=state.d_in1,
+        d_in2=state.d_in2,
+        d_out=state.d_out,
+        op=state.op,
+        num_items=state.num_items,
+        stream=state.stream,
     )
 
 
@@ -427,6 +549,31 @@ def _twoshot_histogram(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _oneshot_histogram_stream(state: SimpleNamespace) -> None:
+    cc.histogram_even(
+        d_samples=state.d_samples,
+        d_histogram=state.d_histogram,
+        num_output_levels=state.num_output_levels,
+        lower_level=state.lower_level,
+        upper_level=state.upper_level,
+        num_samples=state.num_samples,
+        stream=state.stream,
+    )
+
+
+def _twoshot_histogram_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_samples=state.d_samples,
+        d_histogram=state.d_histogram,
+        h_num_output_levels=state.h_num_output_levels,
+        h_lower_level=state.h_lower_level,
+        h_upper_level=state.h_upper_level,
+        num_samples=state.num_samples,
+        stream=state.stream,
+    )
+
+
 def _setup_binary_search() -> SimpleNamespace:
     d_data = cp.arange(NUM_ITEMS, dtype=cp.int32)
     d_values = cp.arange(0, NUM_ITEMS, 2, dtype=cp.int32)
@@ -472,6 +619,30 @@ def _twoshot_lower_bound(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _oneshot_lower_bound_stream(state: SimpleNamespace) -> None:
+    cc.lower_bound(
+        d_data=state.d_data,
+        num_items=state.num_items,
+        d_values=state.d_values,
+        num_values=state.num_values,
+        d_out=state.d_out,
+        comp=state.comp,
+        stream=state.stream,
+    )
+
+
+def _twoshot_lower_bound_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        d_data=state.d_data,
+        num_items=state.num_items,
+        d_values=state.d_values,
+        num_values=state.num_values,
+        d_out=state.d_out,
+        comp=state.comp,
+        stream=state.stream,
+    )
+
+
 def _setup_select() -> SimpleNamespace:
     state = _setup_unary_input_output()
     state.d_num_selected = cp.empty(1, dtype=np.uint64)
@@ -507,6 +678,29 @@ def _twoshot_select(state: SimpleNamespace, wrapper) -> None:
         d_num_selected_out=state.d_num_selected,
         cond=state.cond,
         num_items=state.num_items,
+    )
+
+
+def _oneshot_select_stream(state: SimpleNamespace) -> None:
+    cc.select(
+        d_in=state.d_in,
+        d_out=state.d_out,
+        d_num_selected_out=state.d_num_selected,
+        cond=state.cond,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
+def _twoshot_select_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out,
+        d_num_selected_out=state.d_num_selected,
+        cond=state.cond,
+        num_items=state.num_items,
+        stream=state.stream,
     )
 
 
@@ -561,6 +755,35 @@ def _twoshot_three_way_partition(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _oneshot_three_way_partition_stream(state: SimpleNamespace) -> None:
+    cc.three_way_partition(
+        d_in=state.d_in,
+        d_first_part_out=state.d_first,
+        d_second_part_out=state.d_second,
+        d_unselected_out=state.d_unselected,
+        d_num_selected_out=state.d_num_selected,
+        select_first_part_op=state.first_op,
+        select_second_part_op=state.second_op,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
+def _twoshot_three_way_partition_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_first_part_out=state.d_first,
+        d_second_part_out=state.d_second,
+        d_unselected_out=state.d_unselected,
+        d_num_selected_out=state.d_num_selected,
+        select_first_part_op=state.first_op,
+        select_second_part_op=state.second_op,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
 def _setup_unique_by_key() -> SimpleNamespace:
     d_keys = cp.arange(NUM_ITEMS, dtype=cp.int32)
     d_items = cp.arange(NUM_ITEMS, dtype=cp.int32)
@@ -612,6 +835,33 @@ def _twoshot_unique_by_key(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _oneshot_unique_by_key_stream(state: SimpleNamespace) -> None:
+    cc.unique_by_key(
+        d_in_keys=state.d_in_keys,
+        d_in_items=state.d_in_items,
+        d_out_keys=state.d_out_keys,
+        d_out_items=state.d_out_items,
+        d_out_num_selected=state.d_num_selected,
+        op=state.op,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
+def _twoshot_unique_by_key_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in_keys=state.d_in_keys,
+        d_in_items=state.d_in_items,
+        d_out_keys=state.d_out_keys,
+        d_out_items=state.d_out_items,
+        d_out_num_selected=state.d_num_selected,
+        op=state.op,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
 def _setup_sort() -> SimpleNamespace:
     d_in_keys = cp.arange(NUM_ITEMS, 0, -1, dtype=cp.int32)
     d_out_keys = cp.empty_like(d_in_keys)
@@ -653,6 +903,29 @@ def _twoshot_merge_sort(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _oneshot_merge_sort_stream(state: SimpleNamespace) -> None:
+    cc.merge_sort(
+        d_in_keys=state.d_in_keys,
+        d_out_keys=state.d_out_keys,
+        num_items=state.num_items,
+        op=state.op,
+        stream=state.stream,
+    )
+
+
+def _twoshot_merge_sort_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in_keys=state.d_in_keys,
+        d_in_values=None,
+        d_out_keys=state.d_out_keys,
+        d_out_values=None,
+        num_items=state.num_items,
+        op=state.op,
+        stream=state.stream,
+    )
+
+
 def _make_radix_sort(state: SimpleNamespace):
     return cc.make_radix_sort(
         d_in_keys=state.d_in_keys,
@@ -680,6 +953,28 @@ def _twoshot_radix_sort(state: SimpleNamespace, wrapper) -> None:
         d_in_values=None,
         d_out_values=None,
         num_items=state.num_items,
+    )
+
+
+def _oneshot_radix_sort_stream(state: SimpleNamespace) -> None:
+    cc.radix_sort(
+        d_in_keys=state.d_in_keys,
+        d_out_keys=state.d_out_keys,
+        num_items=state.num_items,
+        order=cc.SortOrder.ASCENDING,
+        stream=state.stream,
+    )
+
+
+def _twoshot_radix_sort_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in_keys=state.d_in_keys,
+        d_out_keys=state.d_out_keys,
+        d_in_values=None,
+        d_out_values=None,
+        num_items=state.num_items,
+        stream=state.stream,
     )
 
 
@@ -732,6 +1027,36 @@ def _twoshot_segmented_sort(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _oneshot_segmented_sort_stream(state: SimpleNamespace) -> None:
+    cc.segmented_sort(
+        d_in_keys=state.d_in_keys,
+        d_out_keys=state.d_out_keys,
+        d_in_values=None,
+        d_out_values=None,
+        num_items=state.num_items,
+        num_segments=state.num_segments,
+        start_offsets_in=state.start_offsets,
+        end_offsets_in=state.end_offsets,
+        order=cc.SortOrder.ASCENDING,
+        stream=state.stream,
+    )
+
+
+def _twoshot_segmented_sort_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
+        temp_storage=state.temp_storage,
+        d_in_keys=state.d_in_keys,
+        d_out_keys=state.d_out_keys,
+        d_in_values=None,
+        d_out_values=None,
+        num_items=state.num_items,
+        num_segments=state.num_segments,
+        start_offsets_in=state.start_offsets,
+        end_offsets_in=state.end_offsets,
+        stream=state.stream,
+    )
+
+
 def _setup_with_values(
     setup_fn: Callable[[], SimpleNamespace], **values: Any
 ) -> Callable[[], SimpleNamespace]:
@@ -751,6 +1076,17 @@ def _setup_with_factories(
         state = setup_fn()
         for name, factory in factories.items():
             setattr(state, name, factory())
+        return state
+
+    return setup
+
+
+def _setup_with_stream(
+    setup_fn: Callable[[], SimpleNamespace],
+) -> Callable[[], SimpleNamespace]:
+    def setup() -> SimpleNamespace:
+        state = setup_fn()
+        state.stream = make_stream()
         return state
 
     return setup
@@ -1067,3 +1403,131 @@ CASES = [
         "temp_storage_and_selector",
     ),
 ]
+
+
+STREAM_CASES = [
+    _make_case(
+        "reduce.plus.stream",
+        _setup_with_stream(_setup_with_values(_setup_reduce, op=cc.OpKind.PLUS)),
+        _make_reduce,
+        _oneshot_reduce_stream,
+        _twoshot_reduce_stream,
+        "temp_storage_bytes",
+    ),
+    _make_case(
+        "exclusive_scan.plus.stream",
+        _setup_with_stream(_setup_with_values(_setup_scan, op=cc.OpKind.PLUS)),
+        _make_scan,
+        _oneshot_scan_stream,
+        _twoshot_scan_stream,
+        "temp_storage_bytes",
+    ),
+    _make_case(
+        "segmented_reduce.plus.stream",
+        _setup_with_stream(
+            _setup_with_values(_setup_segmented_reduce, op=cc.OpKind.PLUS)
+        ),
+        _make_segmented_reduce,
+        _oneshot_segmented_reduce_stream,
+        _twoshot_segmented_reduce_stream,
+        "temp_storage_bytes",
+    ),
+    _make_case(
+        "unary_transform.identity.stream",
+        _setup_with_stream(
+            _setup_with_values(_setup_unary_input_output, op=cc.OpKind.IDENTITY)
+        ),
+        _make_unary_transform,
+        _oneshot_unary_transform_stream,
+        _twoshot_unary_transform_stream,
+        "none",
+    ),
+    _make_case(
+        "binary_transform.plus.stream",
+        _setup_with_stream(
+            _setup_with_values(_setup_binary_input_output, op=cc.OpKind.PLUS)
+        ),
+        _make_binary_transform,
+        _oneshot_binary_transform_stream,
+        _twoshot_binary_transform_stream,
+        "none",
+    ),
+    _make_case(
+        "histogram_even.stream",
+        _setup_with_stream(_setup_histogram),
+        _make_histogram,
+        _oneshot_histogram_stream,
+        _twoshot_histogram_stream,
+        "temp_storage_bytes",
+    ),
+    _make_case(
+        "lower_bound.less.stream",
+        _setup_with_stream(
+            _setup_with_values(_setup_binary_search, comp=cc.OpKind.LESS)
+        ),
+        _make_lower_bound,
+        _oneshot_lower_bound_stream,
+        _twoshot_lower_bound_stream,
+        "none",
+    ),
+    _make_case(
+        "select.logical_not.stream",
+        _setup_with_stream(
+            _setup_with_values(_setup_select, cond=cc.OpKind.LOGICAL_NOT)
+        ),
+        _make_select,
+        _oneshot_select_stream,
+        _twoshot_select_stream,
+        "temp_storage_bytes",
+    ),
+    _make_case(
+        "three_way_partition.logical_not.stream",
+        _setup_with_stream(
+            _setup_with_values(
+                _setup_three_way_partition,
+                first_op=cc.OpKind.LOGICAL_NOT,
+                second_op=cc.OpKind.LOGICAL_NOT,
+            )
+        ),
+        _make_three_way_partition,
+        _oneshot_three_way_partition_stream,
+        _twoshot_three_way_partition_stream,
+        "temp_storage_bytes",
+    ),
+    _make_case(
+        "unique_by_key.equal.stream",
+        _setup_with_stream(
+            _setup_with_values(_setup_unique_by_key, op=cc.OpKind.EQUAL_TO)
+        ),
+        _make_unique_by_key,
+        _oneshot_unique_by_key_stream,
+        _twoshot_unique_by_key_stream,
+        "temp_storage_bytes",
+    ),
+    _make_case(
+        "merge_sort.less.stream",
+        _setup_with_stream(_setup_with_values(_setup_sort, op=cc.OpKind.LESS)),
+        _make_merge_sort,
+        _oneshot_merge_sort_stream,
+        _twoshot_merge_sort_stream,
+        "temp_storage_bytes",
+    ),
+    _make_case(
+        "radix_sort.stream",
+        _setup_with_stream(_setup_sort),
+        _make_radix_sort,
+        _oneshot_radix_sort_stream,
+        _twoshot_radix_sort_stream,
+        "temp_storage_and_selector",
+    ),
+    _make_case(
+        "segmented_sort.stream",
+        _setup_with_stream(_setup_segmented_sort),
+        _make_segmented_sort,
+        _oneshot_segmented_sort_stream,
+        _twoshot_segmented_sort_stream,
+        "temp_storage_and_selector",
+    ),
+]
+
+CALL_CASES = CASES + STREAM_CASES
