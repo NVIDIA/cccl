@@ -105,7 +105,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
       __output_wrapper,
       static_cast<_OffsetType*>(nullptr),
       __count,
-      nullptr);
+      __policy);
 
     {
       // Allocate memory for result
@@ -131,9 +131,9 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
         __storage.template __get_raw_ptr<1>(),
         ::cuda::transform_iterator{::cuda::counting_iterator<size_t>{0}, __rotate_fn{__count1}},
         ::cuda::std::move(__output_wrapper),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         __count,
-        __stream.get());
+        __policy);
     }
 
     __stream.sync();
