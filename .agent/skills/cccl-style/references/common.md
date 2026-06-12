@@ -39,7 +39,7 @@ Apply this guidance across CCCL unless a path-specific style reference says othe
 
 ## Function Calls And Types
 
-- In headers, free function calls must be fully qualified from the global namespace, e.g. `::cuda::ceil_div(...)`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`. This does not apply to (static) member functions of classes. The only exception to this rule are functions that are supposed to be found through argument dependent lookup (ADL) such as `::cuda::std::swap` and `::cuda::std::get`. Those functions can be called unqualified with a preceeding `using ::cuda::std::get;`
+- In headers, free function calls must be fully qualified from the global namespace, e.g. `::cuda::ceil_div(...)`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`. This does not apply to (static) member functions of classes. The only exceptions to this rule are functions that are supposed to be found through argument-dependent lookup (ADL), such as `::cuda::std::swap` and `::cuda::std::get`. Those functions can be called unqualified with a preceding `using ::cuda::std::get;`.
 - This global-qualification rule does not apply to source files such as tests and benchmarks.
 - Type names must be fully qualified except when they are already declared in the current namespace or an enclosing one.
 - Outside those namespaces, fully qualify `cuda::std` and standard integer type aliases such as `::cuda::std::size_t`. A local `using` declaration, e.g. `using ::cuda::std::size_t;`, is acceptable to avoid repetition within a function body.
