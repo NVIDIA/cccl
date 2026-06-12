@@ -198,6 +198,12 @@ struct selector_features
   // be computed here -- select_algorithm is _CCCL_HOST_DEVICE and the device query
   // is host-only). Replaces the old frozen 16384 routing threshold.
   int on_chip_bin_cap;
+  // Max PRIMARY bins the single-channel hybrid can stage in dyn-SMEM for THIS counter
+  // width, from detail::histogram::hybrid_smem_split_bins(). Byte-derived (shrinks for
+  // wide counters) so the hybrid is selected only where its on-chip primary is large
+  // enough to be worthwhile and, critically, actually fits the per-CTA SMEM cap.
+  // Replaces the old frozen 49152 split that assumed a 4-byte counter.
+  int hybrid_split_bins;
 };
 
 // Pick a single algorithm for one cell. Rules are first-match. The selector
@@ -256,11 +262,22 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   {
     // RANGE (or any transform) up to the smaller cap; EVEN extends further
     // (cheap classify), with the top of the range gated to <=3 active channels.
-    if (f.num_bins <= multi_channel_smem_bins_range)
+    // The multi_channel_smem_bins_* caps are the MEASURED perf crossovers for a 4-byte
+    // counter; they must additionally be clamped by `on_chip_bin_cap` (the byte budget
+    // / (counter_bytes * channels)) so a wide counter cannot select the dynamic-SMEM
+    // privatized kernel at a bin count whose per-CTA footprint exceeds the opt-in cap.
+    // For a 4-byte counter on_chip_bin_cap >> these caps, so 4-byte routing is unchanged;
+    // for an 8-byte counter (e.g. 4-channel EVEN at 8192 bins = 256 KiB > cap) the clamp
+    // routes the cell to the high-bin direct-atomic path instead of crashing the launch.
+    const int multi_range_cap = (multi_channel_smem_bins_range < f.on_chip_bin_cap)
+                                ? multi_channel_smem_bins_range : f.on_chip_bin_cap;
+    const int multi_even_cap = (multi_channel_smem_bins_even < f.on_chip_bin_cap)
+                               ? multi_channel_smem_bins_even : f.on_chip_bin_cap;
+    if (f.num_bins <= multi_range_cap)
     {
       return algorithm::smem_privatized;
     }
-    if (f.is_even && f.num_bins <= multi_channel_smem_bins_even)
+    if (f.is_even && f.num_bins <= multi_even_cap)
     {
       return algorithm::smem_privatized;
     }
@@ -323,34 +340,35 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
     constexpr long long mid_tier_amortize_pixels_range = 1LL << 26; // 64M
 
     // Hybrid FEASIBILITY (counter-width-aware). The hybrid member stages its primary
-    // `hybrid_smem_split_bin_single_channel` bins in dynamic SMEM at `counter_bytes`
-    // each; that fits the per-CTA opt-in SMEM budget only when the split is within the
-    // on-chip bin cap (which IS the byte budget divided by the counter width --
-    // `on_chip_bin_cap`). With a 4-byte counter on B200 the cap is ~57344 >= 49152, so
-    // hybrid fits; with an 8-byte counter it is ~28672 < 49152, so the hybrid primary
-    // (384 KB) exceeds the 227 KB cap and the launch setup returns cudaErrorNotSupported.
-    // Gate the hybrid choice on this so a wide-counter histogram falls back to the
-    // direct-atomic cache instead of selecting an unlaunchable kernel. (Before this,
-    // 64-bit-counter histograms at the 65536/131072 tiers crashed: the selector picked
-    // hybrid unaware of the counter width.)
-    const bool hybrid_smem_fits = (hybrid_smem_split_bin_single_channel <= f.on_chip_bin_cap);
+    // split of low bins in dynamic SMEM at `counter_bytes` each; that split is derived
+    // from a byte budget at runtime (`f.hybrid_split_bins`), NOT a frozen bin count, so
+    // it shrinks for wide counters instead of overflowing the per-CTA opt-in cap. The
+    // hybrid needs a usable split: at least one primary bin AND a non-empty GMEM tail
+    // (split < num_bins). This is a HARD launchability constraint, not a tuning guess --
+    // the tier bounds below (WHICH bin tiers hybrid wins) are the #44-measured ones; this
+    // feasibility check ONLY removes cells the hybrid physically cannot launch on this
+    // counter width (e.g. an 8-byte counter at the larger bin tiers, which used to crash
+    // because the frozen 49152 split needed 384 KiB > the 227 KiB cap). For a 4-byte
+    // counter the split (~48128) is feasible across the whole 65536/131072 hybrid range,
+    // so I32 routing is UNCHANGED.
+    const bool hybrid_feasible = (f.hybrid_split_bins > 0 && f.hybrid_split_bins < f.num_bins);
 
-    if (hybrid_smem_fits && f.num_bins <= hybrid_cap_tier_max_bins)
+    if (hybrid_feasible && f.num_bins <= hybrid_cap_tier_max_bins)
     {
       return (f.num_pixels >= cap_tier_amortize_pixels) ? algorithm::gmem_privatized_nocache // hybrid member
                                                         : algorithm::direct_single_probe;
     }
-    if (hybrid_smem_fits && f.num_bins <= hybrid_mid_tier_max_bins)
+    if (hybrid_feasible && f.num_bins <= hybrid_mid_tier_max_bins)
     {
       const long long amortize = f.is_even ? mid_tier_amortize_pixels_even : mid_tier_amortize_pixels_range;
       return (f.num_pixels >= amortize) ? algorithm::gmem_privatized_nocache // hybrid member
                                         : algorithm::direct_single_probe;
     }
 
-    // High-bin tiers above the hybrid's reach (262144, 1048576), and ALL high-bin tiers
-    // when the hybrid SMEM does not fit the counter width: the histogram exceeds the
-    // hybrid's on-chip working set (or the hybrid cannot be launched), so it is
-    // effectively a direct GMEM atomic.
+    // High-bin tiers above the hybrid's reach (262144, 1048576), and any tier where the
+    // byte-derived hybrid split is too small to be worthwhile for this counter width:
+    // the histogram exceeds the hybrid's on-chip working set, so it is effectively a
+    // direct GMEM atomic.
     return algorithm::direct_single_probe;
   }
 
@@ -385,15 +403,12 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   return algorithm::direct_cuckoo;
 }
 
-// Resolve the runtime on-chip bin cap for `selector_features::on_chip_bin_cap`: the
-// largest bin count the dynamic-SMEM privatized kernel can hold for this counter
-// width and channel count on the CURRENT device. Queries the device's opt-in SMEM
-// (host only -- the query is unavailable on device, where we fall back to the tuned
-// byte budget) and feeds it to detail::histogram::max_dynamic_smem_bins(). Mirrors the
-// cache path's opt-in query (it already calls cudaDeviceGetAttribute unguarded in the
-// same dispatch chain). Pure host/device-arithmetic; zero device SASS impact on the
-// hot path (called once per dispatch, before kernel launch).
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int resolve_on_chip_bin_cap(int counter_bytes, int num_active_channels)
+// The device's per-CTA opt-in dynamic-SMEM limit (cudaDevAttrMaxSharedMemoryPerBlockOptin),
+// or 0 if unavailable -- on the device side (the query is host-only) or on query failure,
+// in which case the byte-budget derivations below fall back to their tuned budgets. Mirrors
+// the cache path's opt-in query (it already calls cudaDeviceGetAttribute unguarded in the
+// same dispatch chain). Queried once per dispatch, before kernel launch; zero device SASS.
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int query_device_optin_smem_bytes()
 {
   int device_optin_smem_bytes = 0;
 #if _CCCL_HOSTED()
@@ -408,11 +423,27 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int resolve_on_chip_bin_cap(int counter_byte
                      != cudaSuccess)
                  {
                    (void) cudaGetLastError();
-                   device_optin_smem_bytes = 0; // -> max_dynamic_smem_bins falls back to the tuned budget
+                   device_optin_smem_bytes = 0; // -> derivations fall back to the tuned budget
                  }
                }));
 #endif // _CCCL_HOSTED()
-  return max_dynamic_smem_bins(counter_bytes, num_active_channels, device_optin_smem_bytes);
+  return device_optin_smem_bytes;
+}
+
+// Runtime on-chip bin cap for `selector_features::on_chip_bin_cap`: the largest bin count
+// the dynamic-SMEM privatized kernel can hold for this counter width + channel count on
+// the current device (byte budget / per-bin footprint).
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int resolve_on_chip_bin_cap(int counter_bytes, int num_active_channels)
+{
+  return max_dynamic_smem_bins(counter_bytes, num_active_channels, query_device_optin_smem_bytes());
+}
+
+// Runtime hybrid primary split for `selector_features::hybrid_split_bins`: the largest
+// PRIMARY (on-chip) bin count the single-channel hybrid can stage for this counter width,
+// byte-derived so it shrinks for wide counters rather than overflowing the SMEM cap.
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int resolve_hybrid_split_bins(int counter_bytes, int num_active_channels)
+{
+  return hybrid_smem_split_bins(counter_bytes, num_active_channels, query_device_optin_smem_bytes());
 }
 
 template <int NUM_CHANNELS,
@@ -1904,19 +1935,33 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
 {
   constexpr int kPrivatizedSmemBins = kDynamicSmemKernelTagBins;
 
-  // The hybrid kernel is single-channel-focused and assumes a chunked split with
-  // primary in SMEM and secondary in per-block GMEM. We require kSplitBin to be at
-  // most kMaxTotalBins / 2 (well, just at most max_num_output_bins).
-  if (max_num_output_bins <= kSplitBin)
+  // The hybrid kernel stages a PRIMARY range of low bins in dyn-SMEM and the secondary
+  // tail in per-block GMEM. The primary size (`hybrid_split_bin`) is byte-derived for
+  // the actual counter width, NOT the frozen template `kSplitBin` (which assumed a
+  // 4-byte counter -- 49152 bins -> 192 KiB -- and overflowed the per-CTA SMEM cap at
+  // an 8-byte counter, crashing the launch). `kSplitBin` is now only an UPPER BOUND on
+  // the primary; the launch SMEM is `hybrid_split_bin * sizeof(CounterT) * channels`,
+  // which fits the opt-in cap by construction. Clamp also to max_num_output_bins - 1 so
+  // the GMEM secondary tail is non-empty (the hybrid requires both regions).
+  int hybrid_split_bin = hybrid_smem_split_bins(int(sizeof(CounterT)), NUM_ACTIVE_CHANNELS,
+                                                query_device_optin_smem_bytes());
+  if (hybrid_split_bin > kSplitBin)
   {
-    // Fallback to the chunked dispatch if the bin count fits entirely in the SMEM
-    // primary range (no secondary GMEM region needed). Should not occur in normal
-    // operation since callers gate this dispatch on max_num_output_bins > xlarge.
+    hybrid_split_bin = kSplitBin; // template upper bound (the tuned/measured primary size)
+  }
+  if (hybrid_split_bin > max_num_output_bins - 1)
+  {
+    hybrid_split_bin = max_num_output_bins - 1; // leave a non-empty secondary tail
+  }
+  if (hybrid_split_bin <= 0 || max_num_output_bins <= hybrid_split_bin)
+  {
+    // No usable split (the whole histogram would fit the primary, or the budget is too
+    // small for even one bin). The caller's selector gates hybrid on a worthwhile split,
+    // so this is the defensive fallback: decline so the caller uses the direct path.
     return cudaErrorNotSupported;
   }
 
-  const int hybrid_split_bin      = kSplitBin;
-  const int hybrid_secondary_size = max_num_output_bins - kSplitBin;
+  const int hybrid_secondary_size = max_num_output_bins - hybrid_split_bin;
 
 #if _CCCL_HOSTED()
   // Step 1: Replicate the inner-dispatch setup so we can launch the hybrid kernel.
@@ -1938,7 +1983,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
     return cudaErrorNotSupported;
   }
 
-  // dyn-SMEM bytes per block: per-channel kSplitBin counters.
+  // dyn-SMEM bytes per block: per-channel hybrid_split_bin counters (byte-derived).
   const int dyn_smem_bytes_for_staging =
     int(sizeof(CounterT)) * hybrid_split_bin * NUM_ACTIVE_CHANNELS;
 
@@ -2639,6 +2684,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     features.num_pixels =
       static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
     features.on_chip_bin_cap = resolve_on_chip_bin_cap(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
+    features.hybrid_split_bins = resolve_hybrid_split_bins(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
     const algorithm algo = select_algorithm<false>(features);
 
     return CubDebug((dispatch_by_algorithm<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
@@ -2802,6 +2848,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     features.num_pixels =
       static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
     features.on_chip_bin_cap = resolve_on_chip_bin_cap(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
+    features.hybrid_split_bins = resolve_hybrid_split_bins(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
     const algorithm algo = select_algorithm<false>(features);
 
     return CubDebug((dispatch_by_algorithm<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
