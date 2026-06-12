@@ -10,6 +10,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
+#include <thrust/sequence.h>
 
 #include <cuda/iterator>
 
@@ -319,6 +320,113 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
+
+// Exercise the pair (key+value) generic fallback only in the float build (`TEST_TYPES == 1`); the test fixes its own
+// key/value types, so repeating it for every key-type axis would only waste time on the expensive 1 Mi-element runs.
+#if TEST_LAUNCH != 1 && TEST_TYPES == 1
+template <typename KeyT>
+struct cast_to_key_op
+{
+  template <typename T>
+  __host__ __device__ KeyT operator()(T x) const
+  {
+    return static_cast<KeyT>(x);
+  }
+};
+
+// Yields, for each segment, a *non-contiguous* iterator over that segment's keys (an integral counting iterator cast
+// to the key type). Feeding the cluster top-k a non-contiguous key iterator makes `use_block_load_to_shared` false, so
+// the agent takes its generic (non-BlockLoadToShared) path. Segment `seg` produces keys
+// [seg * segment_size, (seg + 1) * segment_size), so the flattened input equals the identity sequence.
+template <typename KeyT, typename SegmentSizeT>
+struct counting_segment_keys_op
+{
+  SegmentSizeT segment_size;
+
+  template <typename IndexT>
+  __host__ __device__ auto operator()(IndexT seg) const
+  {
+    return cuda::make_transform_iterator(
+      cuda::make_counting_iterator(static_cast<SegmentSizeT>(seg) * segment_size), cast_to_key_op<KeyT>{});
+  }
+};
+
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-contiguous key iterator",
+         "[pairs][segmented][topk][device][cluster]",
+         select_direction_list)
+{
+  using key_t           = float;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  // Selection direction comes from the compile-time test axis.
+  constexpr auto direction = c2h::get<0, TestType>::value;
+
+  // The counting-iterator key source is non-contiguous, so the agent uses its generic path rather than
+  // BlockLoadToShared - the only place the pair value writes flow through the generic resident/overflow code.
+  // `static_max_segment_size` exceeds the largest all-resident cluster coverage, so the 1 Mi-element segments stream
+  // (incl. an unaligned `- 31` tail), while the 128 Ki-element segment validates the generic resident path (no
+  // streaming) through the same code. Keeping the largest total below 2^24 makes every key an exact float, and every
+  // value index an exact `int32`.
+  constexpr segment_size_t static_max_segment_size = 1024 * 1024;
+  constexpr segment_size_t static_max_k            = 4 * 1024;
+  constexpr segment_index_t num_segments           = 3;
+
+  const segment_size_t segment_size =
+    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, segment_size_t{128 * 1024}}));
+  const segment_size_t max_k     = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k         = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
+  const segment_size_t num_items = num_segments * segment_size;
+
+  CAPTURE(static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
+
+  // Non-contiguous key input: segment `seg` is the counting iterator [seg * segment_size, (seg + 1) * segment_size).
+  auto d_keys_in = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), counting_segment_keys_op<key_t, segment_size_t>{segment_size});
+
+  // Value payload = global flattened index, so each output value indexes back into the identity `expected_keys`. Only
+  // the key iterator drives the resident/streaming path; the value iterator type is immaterial (values are fetched
+  // lazily per selected key), so a strided counting iterator suffices.
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+
+  // Outputs are real buffers (the output iterators stay contiguous; only the key input drives the generic path).
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr   = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_keys_out       = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  batched_topk_pairs(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    ::cuda::__argument::__immediate{
+      segment_size, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
+    ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<direction>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_items});
+
+  // The flattened input is the identity sequence, so materialize it for the standard pair verification.
+  c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
+  thrust::sequence(expected_keys.begin(), expected_keys.end());
+
+  // Verify (before sorting) that values stayed associated with their keys and that no index repeats within a segment.
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  // Verify the selected keys are the correct top-k.
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+#endif // TEST_LAUNCH != 1 && TEST_TYPES == 1
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segments",
          "[pairs][segmented][topk][device]",

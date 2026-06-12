@@ -1158,13 +1158,23 @@ private:
     // (the streamer reuses its `p_eff = stream_slots` boundary chunks across passes); this only shrinks the streaming
     // region - and grows the resident region - which can only relax the `>= 2 resident slots` head+tail guarantee
     // below.
-    const offset_t full_slots  = block_tile_capacity / static_cast<offset_t>(chunk_items);
-    const bool needs_streaming = my_chunks > full_slots;
-    _CCCL_ASSERT(!needs_streaming || full_slots > static_cast<offset_t>(PipelineStages),
-                 "block_tile too small to reserve a streaming region");
-    const offset_t stream_slots =
-      needs_streaming ? (::cuda::std::min) (static_cast<offset_t>(PipelineStages), my_chunks - full_slots)
-                      : offset_t{0};
+    //
+    // The streaming region is the async SMEM pipeline, which only exists on the TMA path. The generic fallback has no
+    // pipeline: it still keeps its resident chunks in SMEM (read once, reused across passes), but re-reads its overflow
+    // chunks straight from gmem every pass without ever staging them in a slot. Reserving streaming slots there would
+    // just leave SMEM idle, so the fallback reserves none and devotes the whole block_tile to resident chunks - the
+    // more chunks it keeps resident, the fewer it re-reads from gmem each pass.
+    const offset_t full_slots                   = block_tile_capacity / static_cast<offset_t>(chunk_items);
+    [[maybe_unused]] const bool needs_streaming = my_chunks > full_slots;
+    offset_t stream_slots                       = offset_t{0};
+    if constexpr (use_block_load_to_shared)
+    {
+      _CCCL_ASSERT(!needs_streaming || full_slots > static_cast<offset_t>(PipelineStages),
+                   "block_tile too small to reserve a streaming region");
+      stream_slots = needs_streaming
+                     ? (::cuda::std::min) (static_cast<offset_t>(PipelineStages), my_chunks - full_slots)
+                     : offset_t{0};
+    }
     const offset_t resident_slots_cap = full_slots - stream_slots;
     const offset_t my_resident_chunks = (::cuda::std::min) (my_chunks, resident_slots_cap);
     // Resident chunks stay within the first `resident_slots_cap` slots; the streaming region occupies the slots
