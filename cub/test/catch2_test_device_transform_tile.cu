@@ -66,8 +66,7 @@ CUB_NAMESPACE_BEGIN
 namespace transform
 {
 template <class T>
-struct tile_eligible<square_op, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<square_op, T, 1> = true;
 template <>
 struct tile_operator<square_op>
 {
@@ -75,8 +74,7 @@ struct tile_operator<square_op>
 };
 
 template <class T>
-struct tile_eligible<add_op, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<add_op, T, 2> = true;
 template <>
 struct tile_operator<add_op>
 {

@@ -41,8 +41,7 @@ CUB_NAMESPACE_BEGIN
 namespace transform
 {
 template <class T>
-struct tile_eligible<rgb_to_y, T, 3> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<rgb_to_y, T, 3> = true;
 template <>
 struct tile_operator<rgb_to_y>
 {

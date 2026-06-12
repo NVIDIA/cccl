@@ -286,23 +286,17 @@ namespace transform
 {
 // Unary
 template <class T>
-struct tile_eligible<relu_op, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<relu_op, T, 1> = true;
 template <class T>
-struct tile_eligible<sigmoid_op, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<sigmoid_op, T, 1> = true;
 template <class T>
-struct tile_eligible<tanh_op, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<tanh_op, T, 1> = true;
 template <class T>
-struct tile_eligible<gelu_op, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<gelu_op, T, 1> = true;
 template <class T>
-struct tile_eligible<sin_op, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<sin_op, T, 1> = true;
 template <class T>
-struct tile_eligible<exp_op, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<exp_op, T, 1> = true;
 template <>
 struct tile_operator<relu_op>
 {
@@ -354,29 +348,21 @@ struct tile_mufu_heavy<exp_op> : ::cuda::std::true_type
 
 // Binary
 template <class T>
-struct tile_eligible<binary_add, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<binary_add, T, 2> = true;
 template <class T>
-struct tile_eligible<binary_sub, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<binary_sub, T, 2> = true;
 template <class T>
-struct tile_eligible<binary_mul, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<binary_mul, T, 2> = true;
 template <class T>
-struct tile_eligible<binary_div, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<binary_div, T, 2> = true;
 template <class T>
-struct tile_eligible<binary_le, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<binary_le, T, 2> = true;
 template <class T>
-struct tile_eligible<binary_ge, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<binary_ge, T, 2> = true;
 template <class T>
-struct tile_eligible<binary_fmin, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<binary_fmin, T, 2> = true;
 template <class T>
-struct tile_eligible<binary_fmax, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<binary_fmax, T, 2> = true;
 template <>
 struct tile_operator<binary_add>
 {

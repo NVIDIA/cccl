@@ -86,17 +86,13 @@ CUB_NAMESPACE_BEGIN
 namespace transform
 {
 template <class T>
-struct tile_eligible<mul_op, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<mul_op, T, 1> = true;
 template <class T>
-struct tile_eligible<add_op, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<add_op, T, 2> = true;
 template <class T>
-struct tile_eligible<triad_op, T, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<triad_op, T, 2> = true;
 template <class T>
-struct tile_eligible<nstream_op, T, 3> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<nstream_op, T, 3> = true;
 template <>
 struct tile_operator<mul_op>
 {

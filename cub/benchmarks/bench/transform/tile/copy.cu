@@ -36,8 +36,7 @@ CUB_NAMESPACE_BEGIN
 namespace transform
 {
 template <class T>
-struct tile_eligible<identity, T, 1> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<identity, T, 1> = true;
 template <>
 struct tile_operator<identity>
 {

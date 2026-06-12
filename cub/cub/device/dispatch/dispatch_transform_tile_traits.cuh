@@ -4,10 +4,9 @@
 // Compile-time policy for cub::DeviceTransform's tile path.
 //
 // PUBLIC EXTENSION POINTS (cub::transform) -- two independent axes:
-//   tile_eligible<Op, T, NIn>   -- specialize to true_type to opt a (functor
-//                                   type, element type, input arity) combo into
-//                                   the tile dispatch path. Eligibility only.
-//   tile_eligible_v<...>        -- variable-template companion.
+//   tile_eligible_v<Op, T, NIn> -- specialize to true to opt a (functor type,
+//                                   element type, input arity) combo into the
+//                                   tile dispatch path. Eligibility only.
 //   tile_operator<Op>           -- the __tile__ functor the tile kernel runs
 //                                   for Op. No default: every tile-eligible Op
 //                                   must specialize it with `using type = <a
@@ -23,7 +22,7 @@
 //
 // Eligibility ("may this combo use the tile path?") and substitution ("which
 // __tile__ functor do we actually run?") are separate traits, so an eligible op
-// always registers both: tile_eligible<Op,T,NIn> and tile_operator<Op>.
+// always registers both: tile_eligible_v<Op,T,NIn> and tile_operator<Op>.
 //
 // INTERNAL (cub::detail::transform::tile):
 //   tile_plus, tile_multiplies   -- shipped tile-friendly substitutes used by
@@ -56,16 +55,14 @@ CUB_NAMESPACE_BEGIN
 // Public extension surface.
 namespace transform
 {
+// Opt a (functor type, element type, input arity) combo into the tile dispatch path: specialize this to
+// true for the combo. Eligibility only -- the __tile__ functor to actually run is named by tile_operator<Op>.
 template <typename Op, typename T, ::cuda::std::size_t NIn>
-struct tile_eligible : ::cuda::std::false_type
-{};
-
-template <typename Op, typename T, ::cuda::std::size_t NIn>
-inline constexpr bool tile_eligible_v = tile_eligible<Op, T, NIn>::value;
+inline constexpr bool tile_eligible_v = false;
 
 // The __tile__ functor the tile kernel runs for Op -- the tile-side mirror of the scalar Op. There is
 // no default: a scalar functor cannot be invoked on ct::tile, so every tile-eligible Op must specialize
-// this with a `type` naming a stateless __tile__ functor. tile_eligible<Op,...> says a combo MAY use the
+// this with a `type` naming a stateless __tile__ functor. tile_eligible_v<Op,...> says a combo MAY use the
 // tile path; tile_operator<Op> says WHAT the tile kernel runs.
 template <typename Op>
 struct tile_operator
@@ -120,11 +117,9 @@ namespace transform
 // cuda::std::plus / multiplies are scalar ops, so each is marked eligible and given a tile_operator mirror.
 #  if _CCCL_HAS_NVFP16()
 template <>
-struct tile_eligible<::cuda::std::plus<::__half>, ::__half, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<::cuda::std::plus<::__half>, ::__half, 2> = true;
 template <>
-struct tile_eligible<::cuda::std::multiplies<::__half>, ::__half, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<::cuda::std::multiplies<::__half>, ::__half, 2> = true;
 template <>
 struct tile_operator<::cuda::std::plus<::__half>>
 {
@@ -139,11 +134,9 @@ struct tile_operator<::cuda::std::multiplies<::__half>>
 
 #  if _CCCL_HAS_NVBF16()
 template <>
-struct tile_eligible<::cuda::std::plus<::__nv_bfloat16>, ::__nv_bfloat16, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<::cuda::std::plus<::__nv_bfloat16>, ::__nv_bfloat16, 2> = true;
 template <>
-struct tile_eligible<::cuda::std::multiplies<::__nv_bfloat16>, ::__nv_bfloat16, 2> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_eligible_v<::cuda::std::multiplies<::__nv_bfloat16>, ::__nv_bfloat16, 2> = true;
 template <>
 struct tile_operator<::cuda::std::plus<::__nv_bfloat16>>
 {
