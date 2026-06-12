@@ -6,8 +6,7 @@ import numpy as np
 import pytest
 
 import cuda.compute
-from cuda.compute._cpp_compile import compile_cpp_op_code
-from cuda.compute.op import RawOp
+from cuda.compute import OpKind
 
 DTYPE_LIST = [
     np.int32,
@@ -41,19 +40,14 @@ def disable_sass_check(monkeypatch):
     )
 
 
-def _raw_less_i32_op() -> RawOp:
-    source = """
-extern "C" __device__ void less_i32(void* lhs, void* rhs, void* result) {
-    int lhs_value = *static_cast<int*>(lhs);
-    int rhs_value = *static_cast<int*>(rhs);
-    *static_cast<bool*>(result) = lhs_value < rhs_value;
-}
-"""
-    return RawOp(ltoir=compile_cpp_op_code(source), name="less_i32")
-
-
-@pytest.mark.no_numba
-def test_lower_bound_raw_op_minimal():
+@pytest.mark.parametrize(
+    "search, side",
+    [
+        (cuda.compute.lower_bound, "left"),
+        (cuda.compute.upper_bound, "right"),
+    ],
+)
+def test_binary_search_explicit_opkind_less(search, side):
     h_data = np.array([1, 3, 3, 7, 9], dtype=np.int32)
     h_values = np.array([0, 3, 4, 10], dtype=np.int32)
 
@@ -61,16 +55,47 @@ def test_lower_bound_raw_op_minimal():
     d_values = cp.asarray(h_values)
     d_out = cp.empty(len(h_values), dtype=np.uintp)
 
-    cuda.compute.lower_bound(
+    search(
         d_data=d_data,
         num_items=len(d_data),
         d_values=d_values,
         num_values=len(d_values),
         d_out=d_out,
-        comp=_raw_less_i32_op(),
+        comp=OpKind.LESS,
     )
 
-    expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
+    expected = np.searchsorted(h_data, h_values, side=side).astype(np.uintp)
+    np.testing.assert_array_equal(d_out.get(), expected)
+
+
+@pytest.mark.parametrize(
+    "search, side",
+    [
+        (cuda.compute.lower_bound, "left"),
+        (cuda.compute.upper_bound, "right"),
+    ],
+)
+def test_binary_search_custom_comparator(search, side):
+    h_data = np.array([9, 7, 3, 3, 1], dtype=np.int32)
+    h_values = np.array([10, 4, 3, 0], dtype=np.int32)
+
+    def greater(lhs, rhs):
+        return lhs > rhs
+
+    d_data = cp.asarray(h_data)
+    d_values = cp.asarray(h_values)
+    d_out = cp.empty(len(h_values), dtype=np.uintp)
+
+    search(
+        d_data=d_data,
+        num_items=len(d_data),
+        d_values=d_values,
+        num_values=len(d_values),
+        d_out=d_out,
+        comp=greater,
+    )
+
+    expected = np.searchsorted(-h_data, -h_values, side=side).astype(np.uintp)
     np.testing.assert_array_equal(d_out.get(), expected)
 
 
