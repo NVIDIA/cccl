@@ -25,20 +25,19 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_scan
+//! The policy for block-level kernels in @ref DeviceSegmentedScan.
+struct BlockSegmentedScanPolicy
 {
-struct block_segmented_scan_policy
-{
-  int threads_per_block;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockStoreAlgorithm store_algorithm;
-  BlockScanAlgorithm scan_algorithm;
-  int max_segments;
+  int threads_per_block; //!< Number of threads per block
+  int items_per_thread; //!< Number of items per thread
+  BlockLoadAlgorithm load_algorithm; //!< Algorithm for loading input
+  CacheLoadModifier load_modifier; //!< Cache load modifier
+  BlockStoreAlgorithm store_algorithm; //!< Algorithm for storing output
+  BlockScanAlgorithm scan_algorithm; //!< Algorithm for the block scan
+  int max_segments; //!< Maximum number of segments per block
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const block_segmented_scan_policy& lhs, const block_segmented_scan_policy& rhs)
+  operator==(const BlockSegmentedScanPolicy& lhs, const BlockSegmentedScanPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -47,51 +46,54 @@ struct block_segmented_scan_policy
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const block_segmented_scan_policy& lhs, const block_segmented_scan_policy& rhs)
+  operator!=(const BlockSegmentedScanPolicy& lhs, const BlockSegmentedScanPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const block_segmented_scan_policy& policy)
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const BlockSegmentedScanPolicy& policy)
   {
     return os
-        << "block_segmented_scan_policy { .threads_per_block = " << policy.threads_per_block
+        << "BlockSegmentedScanPolicy { .threads_per_block = " << policy.threads_per_block
         << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
         << ", .load_modifier = " << policy.load_modifier << ", .store_algorithm = " << policy.store_algorithm
         << ", .scan_algorithm = " << policy.scan_algorithm << ", .max_segments_per_block = " << policy.max_segments
         << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
-struct segmented_scan_policy
+//! The tuning policy for all algorithms in @ref DeviceSegmentedScan.
+struct SegmentedScanPolicy
 {
-  block_segmented_scan_policy block;
+  BlockSegmentedScanPolicy block; //!< Policy for the block-level segmented scan kernel
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const segmented_scan_policy& lhs, const segmented_scan_policy& rhs)
+  operator==(const SegmentedScanPolicy& lhs, const SegmentedScanPolicy& rhs) noexcept
   {
     return lhs.block == rhs.block;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const segmented_scan_policy& lhs, const segmented_scan_policy& rhs)
+  operator!=(const SegmentedScanPolicy& lhs, const SegmentedScanPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const segmented_scan_policy& policy)
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
   {
-    return os << "segmented_scan_policy { .block = " << policy.block << " }";
+    return os << "SegmentedScanPolicy { .block = " << policy.block << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
+namespace detail::segmented_scan
+{
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept segmented_scan_policy_selector = policy_selector<T, segmented_scan_policy>;
+concept segmented_scan_policy_selector = policy_selector<T, SegmentedScanPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
@@ -100,8 +102,7 @@ struct policy_selector
   int accum_size;
   int accum_align;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
-    -> segmented_scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> SegmentedScanPolicy
   {
     constexpr int nominal_threads_per_block = 128;
     constexpr int nominal_items_per_thread  = 9;
@@ -125,7 +126,7 @@ struct policy_selector
     const auto scan_transposed_blockstore =
       large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-    return segmented_scan_policy{block_segmented_scan_policy{
+    return SegmentedScanPolicy{BlockSegmentedScanPolicy{
       block_scaled.threads_per_block,
       block_scaled.items_per_thread,
       scan_transposed_blockload,
@@ -145,7 +146,7 @@ template <typename AccumT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> segmented_scan_policy
+    -> SegmentedScanPolicy
   {
     constexpr auto accum_size  = static_cast<int>(sizeof(AccumT));
     constexpr auto accum_align = static_cast<int>(alignof(AccumT));
