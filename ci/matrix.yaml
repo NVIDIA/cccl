@@ -34,9 +34,11 @@ workflows:
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
     # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
-    # Python on v2 -- mirrors the v1 python rows.
-    - {jobs: ['test'], project: 'python_v2', ctk: ['12.X',        '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
-    - {jobs: ['test'], project: 'python_v2', ctk: ['12.X','13.0', '13.X'], py_version: ['3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
+    # Python on v2 -- mirrors the v1 python rows, but Linux/gcc13 only:
+    # python_v2 has no Windows CI scripts (only ci/*_python_v2.sh exist, no
+    # ci/windows/*_python_v2.ps1), so msvc2022 cannot run here.
+    - {jobs: ['test'], project: 'python_v2', ctk: ['12.X',        '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['gcc13']}
+    - {jobs: ['test'], project: 'python_v2', ctk: ['12.X','13.0', '13.X'], py_version: ['3.14'], gpu: 'l4', cxx: ['gcc13']}
     - {jobs: ['test'], project: 'python_v2', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
 
   pull_request:
