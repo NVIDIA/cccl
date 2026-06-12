@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 import cuda.compute
-from cuda.core import Device
 from cuda.compute import (
     CountingIterator,
     OpKind,
@@ -16,6 +15,7 @@ from cuda.compute import (
     TransformOutputIterator,
     gpu_struct,
 )
+from cuda.core import Device
 
 
 def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):

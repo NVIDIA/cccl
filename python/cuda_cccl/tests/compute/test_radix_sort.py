@@ -10,11 +10,11 @@ import numpy as np
 import pytest
 
 import cuda.compute
-from cuda.core import Device
 from cuda.compute import (
     DoubleBuffer,
     SortOrder,
 )
+from cuda.core import Device
 
 
 def get_mark(dt, log_size):

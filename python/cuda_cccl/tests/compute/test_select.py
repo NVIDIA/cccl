@@ -7,9 +7,9 @@ import numpy as np
 import pytest
 
 import cuda.compute
+from cuda.compute import CacheModifiedInputIterator, ZipIterator, gpu_struct
 from cuda.compute._cpp_compile import compile_cpp_op_code
 from cuda.compute.op import RawOp
-from cuda.compute import CacheModifiedInputIterator, ZipIterator, gpu_struct
 
 DTYPE_LIST = [
     np.uint8,

@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 
 import cuda.compute
-from cuda.core import Device
 from cuda.compute import (
     CountingIterator,
     TransformIterator,
     ZipIterator,
     gpu_struct,
 )
+from cuda.core import Device
 
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])

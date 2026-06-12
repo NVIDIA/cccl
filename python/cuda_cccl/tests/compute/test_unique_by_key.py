@@ -8,13 +8,13 @@ import numpy as np
 import pytest
 
 import cuda.compute
-from cuda.core import Device
 from cuda.compute import (
     CacheModifiedInputIterator,
     DiscardIterator,
     OpKind,
     gpu_struct,
 )
+from cuda.core import Device
 
 DTYPE_LIST = [
     np.uint8,
