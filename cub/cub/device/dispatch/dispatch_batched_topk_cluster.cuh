@@ -58,15 +58,6 @@ CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk_cluster
 {
 // -----------------------------------------------------------------------------
-// Hardware constants
-// -----------------------------------------------------------------------------
-// Largest cluster width guaranteed on every SM 9.0+ device.
-inline constexpr int max_portable_cluster_blocks = 8;
-
-// CUDA's hardware ceiling on cluster width (Hopper supports up to 16).
-inline constexpr int max_supported_cluster_blocks = 16;
-
-// -----------------------------------------------------------------------------
 // Cluster-size / dynamic-SMEM selection
 // -----------------------------------------------------------------------------
 // Tightest upper bound carried by the segment-size argument. Mirrors `__argument::__traits<>::highest` semantics:
