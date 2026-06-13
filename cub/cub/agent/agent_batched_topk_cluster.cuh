@@ -39,12 +39,11 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
-#include <cub/block/block_load_to_shared.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_topk.cuh>
-#include <cub/device/dispatch/kernels/kernel_transform.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
@@ -1007,8 +1006,10 @@ private:
     }
 
     // Apply `f(key)` to every overflow key once, in the current ping-pong direction. See `run_pass` for the overlap
-    // semantics of `mid`.
-    template <typename F, typename Mid>
+    // semantics of `mid`. `UnrollFactor` partially unrolls the generic (gmem fallback) fold loop; callers pass the
+    // tuning parameter matching their context (`histogram_items_per_thread` for the histogram passes,
+    // `tie_break_items_per_thread` for the non-deterministic final filter).
+    template <int UnrollFactor, typename F, typename Mid>
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
     {
       run_pass(
@@ -1017,29 +1018,31 @@ private:
         },
         [&](const auto& chunk) {
           const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
-          detail::transform::unrolled_for<histogram_items_per_thread>(iterations, [&](int j) {
+          _CCCL_PRAGMA_UNROLL(UnrollFactor)
+          for (int j = 0; j < iterations; ++j)
+          {
             const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
             if (local < chunk.count)
             {
               f(block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))]);
             }
-          });
+          }
         },
         static_cast<Mid&&>(mid));
     }
 
     // Overload with no interleaved work, for the fused first pass where the resident keys are still being streamed in
     // by the BlockLoadToShared pipeline (rather than already resident in SMEM).
-    template <typename F>
+    template <int UnrollFactor, typename F>
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f)
     {
-      process_pass(static_cast<F&&>(f), [] {});
+      process_pass<UnrollFactor>(static_cast<F&&>(f), [] {});
     }
 
     // Like `process_pass`, but applies `f(key, seg_idx)` where `seg_idx` is the key's segment-local index. The pair
     // final filter needs that index to fetch each selected key's value payload from gmem, while still reusing the
     // overflow keys from the streaming SMEM pipeline (block-load path) instead of re-reading them from gmem.
-    template <typename F, typename Mid>
+    template <int UnrollFactor, typename F, typename Mid>
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_indexed(F&& f, Mid&& mid)
     {
       run_pass(
@@ -1049,14 +1052,16 @@ private:
         },
         [&](const auto& chunk) {
           const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
-          detail::transform::unrolled_for<histogram_items_per_thread>(iterations, [&](int j) {
+          _CCCL_PRAGMA_UNROLL(UnrollFactor)
+          for (int j = 0; j < iterations; ++j)
+          {
             const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
             if (local < chunk.count)
             {
               const offset_t seg_idx = chunk.offset + static_cast<offset_t>(local);
               f(block_keys_in[static_cast<segment_size_val_t>(seg_idx)], seg_idx);
             }
-          });
+          }
         },
         static_cast<Mid&&>(mid));
     }
@@ -1363,7 +1368,9 @@ private:
           const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
           key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
           const int iterations     = ::cuda::ceil_div(chunk.count, threads_per_block);
-          detail::transform::unrolled_for<histogram_items_per_thread>(iterations, [&](int j) {
+          _CCCL_PRAGMA_UNROLL(histogram_items_per_thread)
+          for (int j = 0; j < iterations; ++j)
+          {
             const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
             if (local < chunk.count)
             {
@@ -1372,14 +1379,14 @@ private:
               chunk_keys[local] = key;
               add_first_pass(key);
             }
-          });
+          }
         }
       }
 
       // Fold the overflow chunks into the first-pass histogram. Forward direction; primes the streaming slots. The
       // streamer reuses the resident load's stage barriers (no re-init); `wait_stage` provides the producer/consumer
       // sync.
-      streamer.process_pass(add_first_pass);
+      streamer.process_pass<histogram_items_per_thread>(add_first_pass);
 
       const int resident_count = span_size(resident_keys);
       _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= block_tile_capacity,
@@ -1442,7 +1449,7 @@ private:
         // Re-stream the overflow chunks into this pass's histogram, overlapping the resident-chunk histogram with the
         // first wave of reload bulk copies. Ping-pongs direction and reuses the boundary chunks left resident by the
         // previous pass.
-        streamer.process_pass(add_hist, fold_resident_hist);
+        streamer.process_pass<histogram_items_per_thread>(add_hist, fold_resident_hist);
       }
 
       // Local barrier is enough: all Step 1 / Step 2 writes to `hist[]`
@@ -1873,7 +1880,7 @@ private:
           }
         }
       };
-      streamer.process_pass(write_selected, fold_resident);
+      streamer.process_pass<tie_break_items_per_thread>(write_selected, fold_resident);
     }
     else
     {
@@ -1908,13 +1915,15 @@ private:
       // `get_key(local)` reads the key (from SMEM for resident chunks, from gmem for overflow chunks).
       auto write_run = [&](auto get_key, offset_t base_off, int count) {
         const int iterations = ::cuda::ceil_div(count, threads_per_block);
-        detail::transform::unrolled_for<histogram_items_per_thread>(iterations, [&](int j) {
+        _CCCL_PRAGMA_UNROLL(tie_break_items_per_thread)
+        for (int j = 0; j < iterations; ++j)
+        {
           const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
           if (local < count)
           {
             write_selected_idx(get_key(local), base_off + static_cast<offset_t>(local));
           }
-        });
+        }
       };
 
       // Fold the resident keys (and their values) as the streamer's `mid` work so they overlap the first wave of
@@ -1962,7 +1971,7 @@ private:
       // Overflow chunks: reuse the keys from the streaming SMEM pipeline (block-load path; only the generic fallback
       // re-reads them from gmem), and fetch each selected key's value at its segment-local index `seg_idx`. The
       // resident keys above are folded in as the streamer's `mid` work to hide the first reload wave's latency.
-      streamer.process_pass_indexed(write_selected_idx, fold_resident);
+      streamer.process_pass_indexed<tie_break_items_per_thread>(write_selected_idx, fold_resident);
     }
 #  endif // CUB_ENABLE_CLUSTER_TOPK_DETERMINISM
 

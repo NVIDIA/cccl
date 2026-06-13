@@ -42,10 +42,16 @@ struct TripleChevronFactory
   }
 
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
-    dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
+    dim3 grid,
+    dim3 block,
+    ::cuda::std::size_t shared_mem,
+    ::cudaStream_t stream,
+    bool dependent_launch = false,
+    dim3 cluster_dim      = dim3{0, 0, 0}) const
   {
     __assert_pdl_allowed(dependent_launch);
-    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
+    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+      grid, block, shared_mem, stream, dependent_launch, cluster_dim);
   }
 
   template <class T = void>
@@ -140,6 +146,24 @@ struct TripleChevronFactory
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t set_max_dynamic_smem_size_for(Kernel kernel_ptr, int smem_size)
   {
     return CubDebug(::cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
+  }
+
+  // Opt the kernel in to non-portable cluster widths (i.e. >8).
+  template <typename Kernel>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t set_non_portable_cluster_allowed(Kernel kernel_ptr)
+  {
+    return CubDebug(::cudaFuncSetAttribute(
+      reinterpret_cast<const void*>(kernel_ptr), cudaFuncAttributeNonPortableClusterSizeAllowed, 1));
+  }
+
+  // Query the largest thread-block cluster the hardware can launch for `kernel_ptr` under `config`. The cluster
+  // dimension in `config` is ignored by the query.
+  template <typename Kernel>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  max_potential_cluster_size(int& cluster_size, Kernel kernel_ptr, const ::cudaLaunchConfig_t* config)
+  {
+    return CubDebug(
+      ::cudaOccupancyMaxPotentialClusterSize(&cluster_size, reinterpret_cast<const void*>(kernel_ptr), config));
   }
 };
 } // namespace detail

@@ -31,6 +31,7 @@
 
 #include <cub/agent/agent_batched_topk_cluster.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -238,37 +239,6 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
 #endif // CUB_RDC_ENABLED
 
 // -----------------------------------------------------------------------------
-// NVCC kernel-emission workaround
-// -----------------------------------------------------------------------------
-// NVCC `-rdc=false` only emits the device side of a templated `__global__`
-// when it sees a triple-chevron in the same TU; CUDA 13's
-// `-static-global-template-stub=true` makes the host stub internally linked
-// on top. Address-of and `cudaLaunchKernelEx` are not enough. The host path
-// must use `cudaLaunchKernelExC` for the cluster attribute, so instantiating
-// `force_emit_kernel<Kernel>::emit` parses a (dead) chevron in its place.
-// `Args` are deduced from the function-pointer type to avoid repeating the
-// dispatch's template parameter list.
-//
-// See https://developer.nvidia.com/blog/cuda-c-compiler-updates-impacting-elf-visibility-and-linkage/.
-template <auto Kernel>
-struct force_emit_kernel;
-
-template <typename... Args, void (*Kernel)(Args...)>
-struct force_emit_kernel<Kernel>
-{
-  [[noreturn]] _CCCL_HOST static void emit(Args... args)
-  {
-    _CCCL_ASSERT(false, "force_emit_kernel::emit must never be called");
-    // Unreachable; present only so NVCC emits `Kernel` for this TU.
-    if (false)
-    {
-      Kernel<<<1, 1>>>(args...);
-    }
-    _CCCL_UNREACHABLE();
-  }
-};
-
-// -----------------------------------------------------------------------------
 // Dispatch
 // -----------------------------------------------------------------------------
 // Keys-only; every segment must fit in one cluster_tile. Host picks
@@ -444,22 +414,21 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     SelectDirectionParameterT,
     NumSegmentsParameterT>;
 
-  // Force NVCC to emit the device side of `dynamic_kernel` for this TU; see
-  // `force_emit_kernel` above.
-  [[maybe_unused]] constexpr auto force_emit = &force_emit_kernel<dynamic_kernel>::emit;
-
   NV_IF_TARGET(
     NV_IS_HOST,
     ({
+      // The launcher's `doit` carries the triple-chevron that makes NVCC emit `dynamic_kernel` for this TU, and
+      // performs the cluster launch via `cudaLaunchKernelEx`. The factory also wraps the pre-launch driver queries.
+      detail::TripleChevronFactory launcher_factory{};
+
       // Opt in to non-portable cluster widths (>8 on Hopper).
-      if (const auto error = CubDebug(cudaFuncSetAttribute(
-            reinterpret_cast<const void*>(dynamic_kernel), cudaFuncAttributeNonPortableClusterSizeAllowed, 1)))
+      if (const auto error = launcher_factory.set_non_portable_cluster_allowed(dynamic_kernel))
       {
         return error;
       }
 
-      // Reused across the probe and the launch; `clusterDim.x` is a placeholder
-      // until after `cudaOccupancyMaxPotentialClusterSize` (which ignores it).
+      // Config used only for the occupancy probe below; the final launch goes through `launcher_factory`.
+      // `clusterDim.x` is a placeholder since `cudaOccupancyMaxPotentialClusterSize` ignores it.
       ::cudaLaunchAttribute cluster_attr{};
       cluster_attr.id               = ::cudaLaunchAttributeClusterDimension;
       cluster_attr.val.clusterDim.x = 1;
@@ -565,8 +534,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
         cfg.dynamicSmemBytes                = static_cast<unsigned int>(candidate_dynamic_smem);
         int candidate_hw_max_cluster_blocks = 0;
-        if (const auto error = CubDebug(cudaOccupancyMaxPotentialClusterSize(
-              &candidate_hw_max_cluster_blocks, reinterpret_cast<const void*>(dynamic_kernel), &cfg)))
+        if (const auto error =
+              launcher_factory.max_potential_cluster_size(candidate_hw_max_cluster_blocks, dynamic_kernel, &cfg))
         {
           return error;
         }
@@ -642,7 +611,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
       const int cluster_blocks       = selected_config.cluster_blocks;
       const auto block_tile_capacity = selected_config.block_tile_capacity;
-      cfg.dynamicSmemBytes           = static_cast<unsigned int>(selected_config.dynamic_smem_bytes);
 
       const auto grid_blocks =
         static_cast<::cuda::std::uint64_t>(num_seg_val) * static_cast<::cuda::std::uint64_t>(cluster_blocks);
@@ -651,21 +619,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         return cudaErrorInvalidValue;
       }
 
-      cfg.gridDim                   = dim3(static_cast<unsigned int>(grid_blocks), 1, 1);
-      cluster_attr.val.clusterDim.x = static_cast<unsigned int>(cluster_blocks);
-
-      if (const auto error = CubDebug(::cudaLaunchKernelEx(
-            &cfg,
-            dynamic_kernel,
-            d_key_segments_it,
-            d_key_segments_out_it,
-            d_value_segments_it,
-            d_value_segments_out_it,
-            segment_sizes,
-            k_param,
-            select_directions,
-            num_segments,
-            block_tile_capacity)))
+      // The cluster dimension routes the launch through `cudaLaunchKernelEx`; the sibling triple-chevron in
+      // `doit_host` forces NVCC to emit `dynamic_kernel` for this TU.
+      if (const auto error = CubDebug(
+            launcher_factory(dim3(static_cast<unsigned int>(grid_blocks), 1, 1),
+                             dim3(static_cast<unsigned int>(ThreadsPerBlock), 1, 1),
+                             static_cast<::cuda::std::size_t>(selected_config.dynamic_smem_bytes),
+                             stream,
+                             /*dependent_launch=*/false,
+                             dim3(static_cast<unsigned int>(cluster_blocks), 1, 1))
+              .doit(dynamic_kernel,
+                    d_key_segments_it,
+                    d_key_segments_out_it,
+                    d_value_segments_it,
+                    d_value_segments_out_it,
+                    segment_sizes,
+                    k_param,
+                    select_directions,
+                    num_segments,
+                    block_tile_capacity)))
       {
         return error;
       }
