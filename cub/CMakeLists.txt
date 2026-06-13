@@ -10,14 +10,21 @@ option(CUB_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
 option(CUB_ENABLE_TESTING "Build CUB testing suite." ON)
 option(CUB_ENABLE_EXAMPLES "Build CUB examples." ON)
 
-# Opt-in: build cub::DeviceTransform's tile-DSL path (test + benches) under `nvcc --enable-tile`.
-# Defaults OFF; CI never sets it, so the tile code stays gated out except in an explicit local
-# --enable-tile build. Applied per-target in test/ and benchmarks/ -- never via global CMAKE_CUDA_FLAGS,
-# which would also hit the C++17 c2h helper lib where cuda_tile.h hard-errors on the dialect.
+# Build cub::DeviceTransform's tile-DSL path (test + benches) under `nvcc --enable-tile`. Defaults ON when the
+# toolkit can build it (CTK 13.4+), so 13.4+ configs -- including CI -- exercise the tile path automatically; OFF
+# and compiled out below 13.4. The sm_80+ floor is enforced at runtime (dispatch cc check + NV_IF_TARGET in the
+# kernels), so a 13.4+ build still runs correctly on any GPU.
+set(_cccl_tile_transform_default OFF)
+if (
+  "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+  AND NOT "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS 13.4
+)
+  set(_cccl_tile_transform_default ON)
+endif()
 option(
   CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
   "Build cub::DeviceTransform's tile path (requires nvcc --enable-tile)."
-  OFF
+  ${_cccl_tile_transform_default}
 )
 if (
   CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
