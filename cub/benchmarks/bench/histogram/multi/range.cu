@@ -188,8 +188,19 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
              });
 }
 
-using counter_types     = nvbench::type_list<int32_t>;
+// CounterT / OffsetT overridable for the 64-bit-counter / 64-bit-offset variant
+// (matches the single-channel benches). Inert when undefined. Multi-channel 8-byte
+// counters are the case where the multi on-chip SMEM caps must be byte-derived.
+#ifdef TUNE_CounterT
+using counter_types = nvbench::type_list<TUNE_CounterT>;
+#else
+using counter_types = nvbench::type_list<int32_t>;
+#endif
+#ifdef TUNE_OffsetT
+using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
+#else
 using some_offset_types = nvbench::type_list<int32_t>;
+#endif
 
 #ifdef TUNE_SampleT
 using sample_types = nvbench::type_list<TUNE_SampleT>;
