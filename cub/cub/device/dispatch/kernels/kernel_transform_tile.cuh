@@ -19,6 +19,8 @@
 
 #  include <cuda/std/cstdint>
 
+#  include <nv/target>
+
 #  include <cuda_tile.h>
 
 CUB_NAMESPACE_BEGIN
@@ -48,29 +50,33 @@ template <int TileSize, typename T, typename N>
 // assume_divisible<16>      -- promises num_items % 16 == 0, so the tile DSL can elide tail handling.
 // assume_bounded_below<0>   -- promises num_items >= 0; enables sign-comparison simplifications.
 //
+// The body is guarded by NV_IF_TARGET(NV_PROVIDES_SM_80): tile requires sm_80+, so on older arches the kernel
+// compiles to a no-op (no unsupported SASS). The dispatch only launches it on sm_80+ devices (runtime cc check).
+//
 // NOTE: make_aligned_partition_view is invoked directly. do NOT wrap these calls in a lambda because of compiler bug:
 // templated __tile__ helper + a lambda that calls it + --expt-relaxed-constexpr produces invalid IR.
 template <int TileSize, typename Fn, typename Out, typename... Ins>
 __tile_global__ void
 transform_kernel(const ::cuda::std::int64_t num_items, Out* __restrict__ out, const Ins* __restrict__... ins)
 {
-  namespace ct  = ::cuda::tiles;
-  const auto bx = ct::bid().x;
-  const auto n  = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-
-  const auto out_view = make_aligned_partition_view<TileSize>(out, n);
-  out_view.store_masked(Fn{}(make_aligned_partition_view<TileSize>(ins, n).load_masked(bx)...), bx);
+  namespace ct = ::cuda::tiles;
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_80,
+    (const auto bx = ct::bid().x; const auto n = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
+     const auto out_view                       = make_aligned_partition_view<TileSize>(out, n);
+     out_view.store_masked(Fn{}(make_aligned_partition_view<TileSize>(ins, n).load_masked(bx)...), bx);));
 }
 
 template <int TileSize, typename T>
 __tile_global__ void fill_kernel(const ::cuda::std::int64_t num_items, T* __restrict__ out, const T value)
 {
-  namespace ct        = ::cuda::tiles;
-  const auto bx       = ct::bid().x;
-  const auto n        = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-  const auto out_view = make_aligned_partition_view<TileSize>(out, n);
-  using tile_t        = ct::tile<T, ct::shape<TileSize>>;
-  out_view.store_masked(ct::full<tile_t>(value), bx);
+  namespace ct = ::cuda::tiles;
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_80,
+    (const auto bx = ct::bid().x; const auto n = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
+     const auto out_view                       = make_aligned_partition_view<TileSize>(out, n);
+     using tile_t                              = ct::tile<T, ct::shape<TileSize>>;
+     out_view.store_masked(ct::full<tile_t>(value), bx);));
 }
 } // namespace detail::transform::tile
 

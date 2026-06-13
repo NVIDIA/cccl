@@ -10,7 +10,7 @@
 //                                used by `dispatch`
 // User-facing extension points (tile_eligible / tile_mufu_heavy) live in
 // dispatch_transform_tile_traits.cuh under cub::transform.
-// Requires CTK 13.3 or newer and nvcc invoked with --enable-tile.
+// Requires CTK 13.4 or newer and nvcc invoked with --enable-tile.
 
 #pragma once
 
@@ -32,11 +32,13 @@
 #  include <cub/device/dispatch/kernels/kernel_transform_tile.cuh>
 #  include <cub/device/dispatch/tuning/tuning_transform_tile.cuh>
 #  include <cub/util_debug.cuh>
+#  include <cub/util_device.cuh>
 
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__device/compute_capability.h>
 #  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__tuple_dir/apply.h>
@@ -104,17 +106,21 @@ struct DeviceTransform
   }
 };
 
-// Combined compile-time predicate used by cub::DeviceTransform's __transform_internal
-// to decide whether to route a given (Op, OutIter, InIters...) to the tile path.
-// The call site lifts this into an `if constexpr`: when this is true the hook
-// tries the tile kernel first and, on runtime alignment / divisibility
-// failure, falls through to the standard CUB dispatch below. When false, the
-// tile branch is discarded and only CUB's standard path is emitted.
+// Combined compile-time predicate for whether (Op, OutIter, InIters...) can use the tile path. We use this with
+// `if constexpr` for dispatch: when true the hook tries the tile kernel first and, on runtime alignment/divisibility
+// failure, falls through to the standard CUB dispatch; when false the tile branch is discarded entirely.
 template <typename Op, typename OutIter, typename... InIters>
 inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
   && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
   && cub::transform::tile_eligible_v<Op, ::cuda::std::iter_value_t<OutIter>, sizeof...(InIters)>;
+
+// Runtime arch gate: tile needs sm_80+. False (fall back to CUB) below sm_80 or if the cc query fails.
+[[nodiscard]] CUB_RUNTIME_FUNCTION inline bool device_supports_tile()
+{
+  ::cuda::compute_capability cc{};
+  return cub::detail::ptx_compute_cap(cc) == ::cudaSuccess && cc >= ::cuda::compute_capability{8, 0};
+}
 
 // Runtime predicate consulted by the cub::DeviceTransform tile hook before
 // it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
