@@ -259,14 +259,23 @@ def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min
         p = subprocess.run(cmd, env=env, text=True, capture_output=True)
         ran_algo = ran_algo or _ran_algo_from_stderr(p.stderr)
         if p.returncode != 0:
-            return {}, ran_algo, False
+            # Distinguish a STRUCTURAL "this algo can't run on this cell" from a real
+            # abort. The dispatch returns cudaErrorNotSupported when a forced algorithm
+            # cannot be launched here (e.g. forced pure-gather with a wide counter at a
+            # high bin count: its per-block GMEM slabs need the full co-resident grid,
+            # which an 8-byte counter's lower occupancy cannot provide), and the bench
+            # surfaces that as "FATAL ... -> operation not supported". That is the forced
+            # request being correctly DECLINED, not a crash -- the caller drops the cell
+            # rather than flagging an abort.
+            unsupported = "operation not supported" in p.stderr
+            return {}, ran_algo, False, unsupported
         for r in csv.DictReader(StringIO(p.stdout)):
             if r.get("Skipped") == "Yes":
                 continue
             bw = r.get("GlobalMem BW (bytes/sec)", "")
             if bw:
                 per_shape.setdefault(r["InputShape"], []).append(float(bw) / 1024**3)
-    return {sh: statistics.median(v) for sh, v in per_shape.items() if v}, ran_algo, True
+    return {sh: statistics.median(v) for sh, v in per_shape.items() if v}, ran_algo, True, False
 
 
 def main():
@@ -345,12 +354,19 @@ def main():
                              if a == "" or _forced_algo_applicable(ALGO_KEY.get(a, a), bins, multichannel)]
                     for algo_env in algos:
                         akey = ALGO_KEY.get(algo_env, algo_env)
-                        med, ran, ok = run_cell(branch_bin, algo_env, sample, elements, bins,
-                                                args.shapes, args.repeats, args.min_time, args.timeout)
+                        med, ran, ok, unsupported = run_cell(branch_bin, algo_env, sample, elements, bins,
+                                                             args.shapes, args.repeats, args.min_time, args.timeout)
                         total_calls += 1
                         if not ok:
+                            # A FORCED algo that returns "operation not supported" is being
+                            # structurally declined (it cannot launch on this cell -- e.g.
+                            # forced pure-gather with a wide counter at a high bin count),
+                            # NOT crashing: record it as a DROP, like a launch-tag mismatch.
+                            # `default` (algo_env == "") must always run, so an unsupported
+                            # there is a real ABORT. A non-unsupported failure is an ABORT.
+                            label = "DROP (unsupported)" if (unsupported and algo_env) else "ABORT"
                             print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                  f"{akey:28} ABORT", flush=True)
+                                  f"{akey:28} {label}", flush=True)
                             continue
                         # DROP a forced cell whose requested algorithm did NOT actually
                         # run -- the dispatch silently substituted a different one (e.g.
@@ -386,8 +402,8 @@ def main():
                 if main_bin.exists():
                     for elements in args.elements:
                         for bins in args.bins:
-                            med, _ran, ok = run_cell(main_bin, "", sample, elements, bins,
-                                                     main_shapes, args.repeats, args.min_time, args.timeout)
+                            med, _ran, ok, _unsup = run_cell(main_bin, "", sample, elements, bins,
+                                                             main_shapes, args.repeats, args.min_time, args.timeout)
                             total_calls += 1
                             if not ok:
                                 print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
