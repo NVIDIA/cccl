@@ -10,15 +10,19 @@
 set -euo pipefail
 BUILD=$(cd "${HIST_BENCH_BUILD:-build/autocuda/cub-benchmark}" && pwd)
 CMDS=/tmp/hist_u64_cmds.json
-LABELS="even range"
+LABELS="even range multi_even multi_range"
 # 64-bit counter MUST be `unsigned long long` (not uint64_t): CUDA atomicAdd /
 # atomicAdd_block provide an `unsigned long long` overload but none for `unsigned long`
 # (= uint64_t on this platform), so uint64_t fails to compile in the histogram kernels.
 COUNTER="${TUNE_COUNTER:-unsigned long long}"
 OFFSET="${TUNE_OFFSET:-long long}"
 cd "$BUILD"
+# Map the label (used for the compile-cmds key + obj name) to the dotted CUB target
+# stem the unified sweep expects: multi_even -> multi.even, multi_range -> multi.range.
+target_stem() { case "$1" in multi_even) echo "multi.even";; multi_range) echo "multi.range";; *) echo "$1";; esac; }
 for L in $LABELS; do
-  OUT="bin/cub.bench.histogram.${L}.base.u64"
+  STEM=$(target_stem "$L")
+  OUT="bin/cub.bench.histogram.${STEM}.base.u64"
   OBJ="/tmp/hist_${L}_u64.o"
   echo "  compile+link $L (CounterT=$COUNTER OffsetT=$OFFSET) -> $OUT"
   rm -f "$OBJ"
