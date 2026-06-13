@@ -113,12 +113,14 @@ class WarpReduceBroadcast
   //! Shared storage reference.
   typename WarpReduceT::TempStorage& temp_storage_;
 
-  template <typename ReductionT, typename ReductionOp>
+  template <typename ReductionT,
+            typename ReductionOp,
+            typename UnqualifiedReductionOp = ::cuda::std::remove_cvref_t<ReductionOp>>
   static constexpr bool is_commutative_associative_integral_reduction_v =
     ::cuda::std::is_integral_v<ReductionT>
-    && (detail::is_cuda_minimum_maximum_v<::cuda::std::remove_cvref_t<ReductionOp>, ReductionT>
-        || detail::is_cuda_std_plus_v<::cuda::std::remove_cvref_t<ReductionOp>, ReductionT>
-        || detail::is_cuda_std_bitwise_v<::cuda::std::remove_cvref_t<ReductionOp>, ReductionT>);
+    && (detail::is_cuda_minimum_maximum_v<UnqualifiedReductionOp, ReductionT>
+        || detail::is_cuda_std_plus_v<UnqualifiedReductionOp, ReductionT>
+        || detail::is_cuda_std_bitwise_v<UnqualifiedReductionOp, ReductionT>);
 
   template <typename ReductionT, typename ReductionOp>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ReductionT
@@ -148,16 +150,9 @@ class WarpReduceBroadcast
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T broadcast_from_lane0(T aggregate) const
   {
-    if constexpr (LogicalWarpThreads == 1)
-    {
-      return aggregate;
-    }
-    else
-    {
-      const auto logical_warp_id = cub::detail::logical_warp_id<LogicalWarpThreads>();
-      const auto member_mask     = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
-      return cub::ShuffleIndex<LogicalWarpThreads>(aggregate, 0, member_mask);
-    }
+    const auto logical_warp_id = cub::detail::logical_warp_id<LogicalWarpThreads>();
+    const auto member_mask     = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
+    return ::cuda::device::warp_shuffle_idx<LogicalWarpThreads>(aggregate, 0, member_mask);
   }
 
   template <typename ReductionT, typename ReductionOp>
@@ -204,7 +199,7 @@ public:
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceBroadcast(TempStorage& temp_storage)
-      : temp_storage_(temp_storage)
+      : temp_storage_{temp_storage}
   {}
 
   //! @}
