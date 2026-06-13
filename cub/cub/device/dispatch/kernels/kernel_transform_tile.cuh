@@ -43,18 +43,14 @@ template <int TileSize, typename T, typename N>
   return ct::partition_view{span, ct::shape<TileSize>{}};
 }
 
-// Tile DSL kernels backing cub::DeviceTransform's tile path. The kernels assume 16-byte alignment on every pointer
-// and 16-byte divisibility on num_items so the compiler can pick LDG.E.128. Callers in the dispatch header are
-// responsible for honoring those preconditions.
+// Tile DSL kernels backing cub::DeviceTransform's tile path. They assume 16-byte pointer alignment + 16-divisible
+// num_items (so the compiler picks LDG.E.128); the dispatch header honors that. NV_IF_TARGET(NV_PROVIDES_SM_80)
+// guards the body -- tile needs sm_80+, so sub-80 arches get a no-op kernel (dispatch only launches it on sm_80+).
+//   assume_divisible<16>     -- num_items % 16 == 0, so the tile DSL can elide tail handling.
+//   assume_bounded_below<0>  -- num_items >= 0; enables sign-comparison simplifications.
 //
-// assume_divisible<16>      -- promises num_items % 16 == 0, so the tile DSL can elide tail handling.
-// assume_bounded_below<0>   -- promises num_items >= 0; enables sign-comparison simplifications.
-//
-// The body is guarded by NV_IF_TARGET(NV_PROVIDES_SM_80): tile requires sm_80+, so on older arches the kernel
-// compiles to a no-op (no unsupported SASS). The dispatch only launches it on sm_80+ devices (runtime cc check).
-//
-// NOTE: make_aligned_partition_view is invoked directly. do NOT wrap these calls in a lambda because of compiler bug:
-// templated __tile__ helper + a lambda that calls it + --expt-relaxed-constexpr produces invalid IR.
+// NOTE: make_aligned_partition_view is invoked directly -- do NOT wrap these calls in a lambda: nvcc 13.4
+// miscompiles a templated __tile__ helper called via a lambda under --expt-relaxed-constexpr (invalid IR).
 template <int TileSize, typename Fn, typename Out, typename... Ins>
 __tile_global__ void
 transform_kernel(const ::cuda::std::int64_t num_items, Out* __restrict__ out, const Ins* __restrict__... ins)

@@ -60,10 +60,7 @@ namespace transform
 template <typename Op, typename T, ::cuda::std::size_t NIn>
 inline constexpr bool tile_eligible_v = false;
 
-// The __tile__ functor the tile kernel runs for Op -- the tile-side mirror of the scalar Op. There is
-// no default: a scalar functor cannot be invoked on ct::tile, so every tile-eligible Op must specialize
-// this with a `type` naming a stateless __tile__ functor. tile_eligible_v<Op,...> says a combo MAY use the
-// tile path; tile_operator<Op> says WHAT the tile kernel runs.
+// The __tile__ functor the tile kernel runs for Op.
 template <typename Op>
 struct tile_operator
 {

@@ -5,13 +5,8 @@
 // share. Two macros:
 //
 //   _CCCL_CUB_HAS_TILE_TRANSFORM()
-//     True when nvcc is compiling in tile mode (--enable-tile, i.e.
-//     _CCCL_TILE_COMPILATION()) AND the toolkit is CTK 13.4+. tile C++ exists
-//     since 13.3, but we require 13.4: the 13.3 tile compiler has too many
-//     codegen issues, so 13.4 is the supported floor. (C++20 is enforced by
-//     cuda_tile.h itself with an explicit #error.) The sm_80+ requirement is
-//     handled at runtime in the dispatch + NV_IF_TARGET in the kernels, not
-//     here, since this gate is host+device. When false, the tile headers
+//     True when nvcc is in tile mode (--enable-tile / _CCCL_TILE_COMPILATION()) AND CTK 13.4+. The sm_80+
+//     requirement is handled at runtime + NV_IF_TARGET in the kernels, not here. When false, the tile headers
 //     (kernel / tuning / dispatch / traits) are skipped entirely.
 //
 //   _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()

@@ -122,11 +122,8 @@ inline constexpr bool tile_dispatch_eligible_v =
   return cub::detail::ptx_compute_cap(cc) == ::cudaSuccess && cc >= ::cuda::compute_capability{8, 0};
 }
 
-// Runtime predicate consulted by the cub::DeviceTransform tile hook before
-// it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
-// guards the vectorized kernel. The tile kernels use ct::assume_aligned<16>
-// and ct::assume_divisible<16>, so violating these at runtime is UB.
-// Returns false to tell the hook to fall back to the standard CUB dispatch.
+// Runtime precondition the tile hook checks before dispatching: 16-byte pointer alignment + num_items % 16 == 0
+// (the kernels assume_aligned<16>/assume_divisible<16>, so violating these is UB). False -> fall back to CUB.
 template <typename OutIter, typename... InIters, typename OffsetT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION bool
 runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIter output, OffsetT num_items)
@@ -150,16 +147,9 @@ runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIte
   return aligned_out && aligned_in && (num_items % items_divisor) == 0;
 }
 
-// Bridge between cub::DeviceTransform::__transform_internal and the tile
-// DeviceTransform above. Precondition: tile_dispatch_eligible_v<Op, OutIter,
-// InIters...> is true AND runtime_preconditions_valid returned true. The kernel
-// itself assumes 16-byte pointer alignment and num_items divisibility; the
-// caller (the hook in device_transform.cuh) is responsible for checking
-// runtime_preconditions_valid first.
-//
-// The tile kernel is launched with tile_operator_t<Op>: for a scalar Op that is its
-// registered tile-friendly mirror (a __tile__ functor), and for an already-tile Op it
-// is Op itself. A scalar functor cannot be invoked on ct::tile arguments.
+// Bridge from cub::DeviceTransform::__transform_internal to the tile DeviceTransform. Precondition (the caller
+// checks it): tile_dispatch_eligible_v is true AND runtime_preconditions_valid returned true. Launches the kernel
+// with tile_operator_t<Op> -- Op's registered __tile__ mirror (a scalar functor can't be invoked on ct::tile).
 template <typename TransformOp, typename OutIter, typename... InIters, typename OffsetT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
 dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_items, ::cudaStream_t stream)
