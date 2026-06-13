@@ -61,8 +61,15 @@ BINARIES = {
 # secondary tail (bins > HYBRID_MIN_BINS); cells outside that domain are SKIPPED up
 # front via _forced_algo_applicable (running them would abort, not fall back). The
 # post-run DROP check on the [launch] tag remains as a safety net if the floor drifts.
-FORCED_ALGOS = [
-    "",  # default (selector)
+# Forced algorithms come in two regimes:
+#   HIGH-BIN (bins >= HIGH_BIN_THRESHOLD): the off-chip candidates that compete in the
+#     high-bin region (hybrid / gmem-priv / direct-atomic). Forced via CUB_HISTO_FORCE_ALGO.
+#   LOW-BIN  (bins <= MAX_STATIC_BINS): the two smem-privatized kernel instantiations
+#     (static vs dynamic), forced via CUB_HISTO_FORCE_SMEM. These let one unified sweep
+#     also answer "can the dynamic kernel replace the static <=256 kernel?" -- previously a
+#     separate bespoke script. `smem_static` is skipped above MAX_STATIC_BINS (the static
+#     kernel is compile-time-sized for 256 bins; forcing it higher reads out of bounds).
+FORCED_HIGH_BIN_ALGOS = [
     "hybrid",
     "gmem_privatized_nocache",
     "gmem_privatized_cuckoo",
@@ -71,16 +78,26 @@ FORCED_ALGOS = [
     "direct_cuckoo",
     "direct_single_probe",
 ]
+FORCED_LOW_BIN_ALGOS = ["smem_static", "smem_dynamic"]
+FORCED_ALGOS = [""] + FORCED_HIGH_BIN_ALGOS + FORCED_LOW_BIN_ALGOS  # "" == default (selector)
 ALGO_KEY = {"": "default"}  # env value -> JSON key; others map to themselves.
 
 # The exact `[launch] ... ran=X` tag each forced request must produce to count as
 # "actually ran the requested algorithm". Both GmemPrivatized<NoCache> members report
-# ran=gmem_privatized_nocache, distinguished only by the `:hybrid` suffix -- so the
-# two requests validate against different full tags. Everything else maps to itself.
+# ran=gmem_privatized_nocache, distinguished only by the `:hybrid` suffix; the two
+# smem-privatized members report ran=smem_privatized with a :static / :dynamic suffix.
+# Everything else maps to itself.
 EXPECTED_RAN = {
     "hybrid": "gmem_privatized_nocache:hybrid",
     "gmem_privatized_nocache": "gmem_privatized_nocache",
+    "smem_static": "smem_privatized:static",
+    "smem_dynamic": "smem_privatized:dynamic",
 }
+
+# The static privatized-SMEM kernel is compile-time sized for this many bins
+# (dispatch_histogram.cuh: max_privatized_smem_bins). Forcing smem_static above this is an
+# out-of-bounds access; the low-bin forced algos only apply at/below it.
+MAX_STATIC_BINS = 256
 
 # Smallest bin count at which we sweep the FORCED high-bin algorithms. Below this we
 # record ONLY `default` (which the selector runs as smem_privatized across the whole
@@ -115,12 +132,35 @@ HYBRID_MIN_BINS = 49152
 def _forced_algo_applicable(akey: str, bins: int, multichannel: bool) -> bool:
     """Whether forcing `akey` at this (bins, channels) cell can structurally run in
     dispatch. False => dispatch returns cudaErrorNotSupported and the bench aborts, so
-    the sweep skips the cell (no run, no abort, no column). All forced algos except
-    `hybrid` are valid across the whole high-bin tier; `hybrid` needs a GMEM secondary
-    tail (bins > HYBRID_MIN_BINS) and is single-channel only."""
+    the sweep skips the cell (no run, no abort, no column).
+      - smem_static : the static privatized-SMEM kernel, only valid at <= MAX_STATIC_BINS
+        (compile-time sized; forcing it higher reads out of bounds).
+      - smem_dynamic: the dynamic privatized-SMEM kernel, valid across the low-bin tier.
+      - hybrid      : needs a non-empty GMEM secondary tail (bins > HYBRID_MIN_BINS) and
+        is single-channel only.
+      - everything else (gmem-priv / direct-atomic): valid across the high-bin tier."""
+    if akey == "smem_static":
+        return bins <= MAX_STATIC_BINS
+    if akey == "smem_dynamic":
+        return True
     if akey == "hybrid":
         return (not multichannel) and bins > HYBRID_MIN_BINS
     return True
+
+
+def algos_for_bin(bins: int) -> list:
+    """The forced-algo env values to measure at this bin count (besides `default`, which
+    is always measured). Two regimes, possibly overlapping at neither end of the grid:
+      - LOW-BIN  (bins <= MAX_STATIC_BINS): the smem static-vs-dynamic comparison.
+      - HIGH-BIN (bins >= HIGH_BIN_THRESHOLD): the off-chip candidates. Between the two
+        (e.g. 2048..16384) only `default` is recorded -- smem_privatized is the lone
+        competitive algorithm there and the forced columns would be no-ops or losers."""
+    algos = [""]
+    if bins <= MAX_STATIC_BINS:
+        algos += FORCED_LOW_BIN_ALGOS
+    if bins >= HIGH_BIN_THRESHOLD:
+        algos += FORCED_HIGH_BIN_ALGOS
+    return algos
 
 # Default sweep grid. Bin counts straddle the SMEM tier (<=4096), the gather tier
 # (8192..65535), and the direct-atomic tiers (>=65536 cuckoo, >=262144 noprobe2).
@@ -194,10 +234,13 @@ def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min
     single binary call sweeps the InputShape axis, so we pass the whole shape list."""
     env = dict(os.environ)
     env["CUB_HISTO_LOG_LAUNCH"] = "1"  # emit the per-launch "[launch] ... ran=X" tag
-    if algo_env:
+    env.pop("CUB_HISTO_FORCE_ALGO", None)
+    env.pop("CUB_HISTO_FORCE_SMEM", None)
+    if algo_env in ("smem_static", "smem_dynamic"):
+        # Low-bin static-vs-dynamic privatized-SMEM comparison: routed via FORCE_SMEM.
+        env["CUB_HISTO_FORCE_SMEM"] = algo_env[len("smem_"):]  # "static" / "dynamic"
+    elif algo_env:
         env["CUB_HISTO_FORCE_ALGO"] = algo_env
-    else:
-        env.pop("CUB_HISTO_FORCE_ALGO", None)
     # NVBench rejects range syntax for a single string-axis value, so always pass
     # >= 2 shapes; callers ensure that (we sweep the full shape list at once).
     shape_axis = "[" + ",".join(shapes) + "]"
@@ -239,6 +282,11 @@ def main():
     ap.add_argument("--samples", nargs="+", default=DEFAULT_SAMPLES, help="SampleT axis values, e.g. I32 F64")
     ap.add_argument("--shapes", nargs="+", default=DEFAULT_SHAPES)
     ap.add_argument("--binaries", nargs="+", default=list(BINARIES), choices=list(BINARIES))
+    ap.add_argument("--binary-suffix", default="",
+                    help="appended to the bench target name for BOTH branch and main bins "
+                         "(default '' -> cub.bench.histogram.<b>.base; e.g. '.u64' selects the "
+                         "64-bit-counter variant cub.bench.histogram.<b>.base.u64). One unified "
+                         "driver covers the I32, low-bin static/dynamic, and 64-bit-counter sweeps.")
     ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--min-time", default="0.02")
     ap.add_argument("--timeout", default="120")
@@ -274,7 +322,7 @@ def main():
     results: dict[str, dict[str, dict[str, float]]] = {}
     total_calls = 0
     for blabel in args.binaries:
-        target = BINARIES[blabel]
+        target = BINARIES[blabel] + args.binary_suffix  # "" (default .base) or e.g. ".u64"
         branch_bin = branch_dir / target
         if not branch_bin.exists():
             print(f"!! missing branch binary {branch_bin}; skipping {blabel}", flush=True)
@@ -287,17 +335,14 @@ def main():
         for sample in args.samples:
             for elements in args.elements:
                 for bins in args.bins:
-                    high = bins >= HIGH_BIN_THRESHOLD  # forced set starts AT 32768
                     multichannel = blabel.startswith("multi")
-                    # Below 32768 record only `default` (smem_privatized is the only
-                    # competitive algorithm there -- see HIGH_BIN_THRESHOLD). At/above it,
-                    # restrict each forced algo to cells where it can structurally run --
-                    # skipping a cell where dispatch would return cudaErrorNotSupported
-                    # (which the bench escalates to a FATAL abort, not a fallback).
-                    # `default` ("") is always kept.
-                    algos = ([a for a in FORCED_ALGOS
-                              if a == "" or _forced_algo_applicable(ALGO_KEY.get(a, a), bins, multichannel)]
-                             if high else [""])
+                    # Forced algos for this bin (low-bin smem static/dynamic and/or
+                    # high-bin off-chip candidates), each further restricted to cells
+                    # where it can structurally run -- skipping a cell where dispatch
+                    # would return cudaErrorNotSupported (which the bench escalates to a
+                    # FATAL abort, not a fallback). `default` ("") is always kept.
+                    algos = [a for a in algos_for_bin(bins)
+                             if a == "" or _forced_algo_applicable(ALGO_KEY.get(a, a), bins, multichannel)]
                     for algo_env in algos:
                         akey = ALGO_KEY.get(algo_env, algo_env)
                         med, ran, ok = run_cell(branch_bin, algo_env, sample, elements, bins,

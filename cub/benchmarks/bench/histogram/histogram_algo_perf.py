@@ -94,8 +94,9 @@ ALGO_STYLE = {
     # values over that range (see perf_series). Drawn so the low-bin region is a
     # named algorithm, not two unlabeled reference lines.
     "smem_privatized": ("#8c564b", "h", "smem privatized", "-", 1.3),
-    # Low-bin static-vs-dynamic SMEM comparison sweep (histogram_lowbin_smem_sweep.py):
-    # the two privatized-SMEM kernel instantiations measured head-to-head at <=256 bins.
+    # Low-bin static-vs-dynamic SMEM comparison (histogram_algo_sweep.py forces
+    # smem_static / smem_dynamic at <=256 bins): the two privatized-SMEM kernel
+    # instantiations measured head-to-head.
     "smem_static": ("#8c564b", "h", "smem privatized (static <=256)", "-", 1.6),
     "smem_dynamic": ("#1f77b4", "D", "smem privatized (dynamic)", "--", 1.3),
 }
