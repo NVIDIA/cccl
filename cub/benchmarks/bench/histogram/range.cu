@@ -157,8 +157,19 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
              });
 }
 
-using counter_types     = nvbench::type_list<int32_t>;
+// CounterT / OffsetT overridable for the 64-bit-counter / 64-bit-offset baseline build
+// (matches the feature branch's bench guards). Inert when undefined -> baseline dispatch
+// semantics unchanged. A 64-bit OffsetT is required for >2^31 elements.
+#ifdef TUNE_CounterT
+using counter_types = nvbench::type_list<TUNE_CounterT>;
+#else
+using counter_types = nvbench::type_list<int32_t>;
+#endif
+#ifdef TUNE_OffsetT
+using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
+#else
 using some_offset_types = nvbench::type_list<int32_t>;
+#endif
 
 #ifdef TUNE_SampleT
 using sample_types = nvbench::type_list<TUNE_SampleT>;
