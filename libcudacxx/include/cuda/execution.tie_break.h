@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXECUTION_
-#define _CUDA_EXECUTION_
+#ifndef _CUDA_EXECUTION_EXECUTION_TIE_BREAK_H
+#define _CUDA_EXECUTION_EXECUTION_TIE_BREAK_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,12 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/policy.h>
-#include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
-#include <cuda/__execution/tune.h>
-#include <cuda/std/execution>
 
-#endif // _CUDA_EXECUTION
+#endif // _CUDA_EXECUTION_EXECUTION_TIE_BREAK_H

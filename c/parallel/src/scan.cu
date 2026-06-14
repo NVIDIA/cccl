@@ -279,8 +279,6 @@ try
 
   const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
-  const auto output_it_value_t = cccl_type_enum_to_name(output_it.value_type.type);
-
   const auto policy_sel = [&] {
     using cub::detail::scan::policy_selector;
     using cub::detail::scan::primitive_accum;
