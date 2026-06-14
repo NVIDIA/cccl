@@ -1560,7 +1560,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
     hp.rle_compress,
     hp.mem_preference,
     hp.use_work_stealing,
-    hp.vec_size>;
+    hp.vec_size,
+    hp.warp_coalesce>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
@@ -1755,7 +1756,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
                          hp.rle_compress,
                          hp.mem_preference,
                          hp.work_stealing,
-                         hp.vec_size>;
+                         hp.vec_size,
+                         hp.warp_coalesce>;
 
   if constexpr (!HybridSplit)
   {
@@ -2982,7 +2984,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
                          hp.rle_compress,
                          hp.mem_preference,
                          hp.work_stealing,
-                         hp.vec_size>;
+                         hp.vec_size,
+                         hp.warp_coalesce>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
