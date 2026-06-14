@@ -2432,15 +2432,28 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       // the bin count — the two were separate enumerators before the merge.
       // PRIVATIZED_SMEM_BINS is the compile-time marker selecting the path in dispatch<>;
       // the dynamic path's actual bin count comes from the runtime level arrays.
-      // CUB_HISTO_FORCE_SMEM (force_smem_kind) overrides the bin-count rule for the
+      // CUB_HISTO_FORCE_SMEM (force_smem_kind) overrides the rule below for the
       // static-vs-dynamic comparison sweep: force_static (1) keeps <=256 on the static
       // kernel; force_dynamic (2) routes EVEN <=256-bin cells through the dynamic kernel
       // (which sizes its extern __shared__ from the runtime bin count, so a small bin
-      // count just allocates a small dyn-SMEM region). Default (0) uses the bin count.
+      // count just allocates a small dyn-SMEM region). Default (0) uses the rule.
+      //
+      // The default rule is counter-width-aware. The static <=256-bin kernel carries a
+      // compile-time `CounterT[NUM_ACTIVE_CHANNELS][256+1]` __shared__ array sized for the
+      // FULL 256 bins regardless of the actual bin count. At a 4-byte counter that is the
+      // faster path (measured ~6% over dynamic on the low-bin tier: no launch-time
+      // dynamic-SMEM setup, compile-time bin-loop addressing). At a wider counter it is
+      // pathological: the fixed 8-byte array measures 2-8x SLOWER than the dynamic kernel
+      // across the whole <=256 tier (run_2026-06-13_u64: dyn/static geomean 7.6x even,
+      // 5.4x multi_even, 2.3x range, 1.7x multi_range; the dynamic kernel sizes its extern
+      // __shared__ to the runtime bin count instead). So only take the static kernel when
+      // the counter is 4 bytes; wider counters route <=256 through the dynamic kernel,
+      // which is both correct and the measured-faster path there.
+      const bool counter_prefers_static = (sizeof(CounterT) <= 4);
       const bool use_static_smem =
         (force_smem_kind == 2) ? false
         : (force_smem_kind == 1) ? true
-                                 : (max_num_output_bins <= max_privatized_smem_bins);
+                                 : (counter_prefers_static && max_num_output_bins <= max_privatized_smem_bins);
       if (use_static_smem)
       {
         constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
