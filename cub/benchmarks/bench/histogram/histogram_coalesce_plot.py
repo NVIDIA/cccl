@@ -23,8 +23,12 @@ src = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("coalesce_sweep.json")
 outdir = Path(sys.argv[2]) if len(sys.argv) > 2 else src.parent / "figs"
 d = json.load(open(src))
 
-# Series styles (color, marker, linestyle, label). BAS is the 1x reference (not drawn).
+# Series styles (color, marker, linestyle, label). BAS (upstream main) is the 1x
+# reference: it is the divisor for the speedup ratio, so it plots as a flat 1x line --
+# drawn explicitly and labeled (a dashed gray reference) so it reads as a real series
+# rather than an unlabeled gridline.
 STYLE = {
+    "BAS":        ("gray",    "",  "--", 2.0, "BAS — upstream main (1×)"),
     "DEF":        ("black",   "o", "-",  2.2, "DEF — selector default"),
     "GPN_coal":   ("#1f77b4", "^", "-",  1.6, "GPN + coalesce"),
     "GPN_nocoal": ("#1f77b4", "v", "--", 1.6, "GPN no-coalesce"),
@@ -55,10 +59,8 @@ def fmt_elem(e):
 
 def log2_yaxis(ax, vals):
     ax.set_yscale("log", base=2)
-    ax.axhline(1.0, color="gray", lw=1.0, alpha=0.7)
     ax.grid(True, which="both", alpha=0.2)
     # tick labels as plain multiples
-    import numpy as np
     finite = [v for v in vals if v and v > 0]
     if not finite:
         return
@@ -75,6 +77,14 @@ def fig_speedup(binary, sample, shape, elements, bins, cells, outpath):
     allvals = []
     for ci, e in enumerate(elements):
         ax = axs[0][ci]
+        # BAS (upstream main) is the divisor -> a flat 1x line. Draw it explicitly and
+        # labeled, spanning the bins where BAS actually has data, so the baseline reads
+        # as a real series rather than a bare gridline.
+        bas_bins = [b for b in bins if cells["BAS"].get(f"{sample}|{e}|{b}|{shape}")]
+        if bas_bins:
+            c, _mk, ls, lw, lbl = STYLE["BAS"]
+            ax.plot(bas_bins, [1.0] * len(bas_bins), color=c, linestyle=ls, lw=lw, label=lbl, zorder=1)
+            allvals.append(1.0)
         for series in DRAW_SERIES:
             color, mk, ls, lw, _ = STYLE[series]
             xs, ys = [], []
