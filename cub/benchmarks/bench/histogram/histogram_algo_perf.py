@@ -119,6 +119,14 @@ ALGO_TAG = {
     "default": "DEF",
     "smem_static": "SST",
     "smem_dynamic": "SDY",
+    # The `_selected` map stores the raw CUB_HISTO_LOG_LAUNCH tag, which carries a
+    # :static / :dynamic suffix for the privatized-SMEM kernel (the dispatch emits
+    # `smem_privatized:dynamic` etc.). Map those suffixed forms too, or the default
+    # series gets NO selected-algorithm label at the low-bin tier where the selector
+    # picks privatized SMEM (only the high-bin hybrid/direct tags, which have no
+    # suffix collision, would otherwise be annotated). SST/SDY tell which kernel ran.
+    "smem_privatized:static": "SST",
+    "smem_privatized:dynamic": "SDY",
 }
 # Draw order: reference series last (on top). gmem/direct candidates first.
 ALGO_ORDER = [
