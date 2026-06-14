@@ -195,15 +195,35 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!   enough that such a block fits within the shared-memory limit. Both uniform (fixed) and variable segment sizes are
 //!   supported as long as this maximum is honored.
 //! - **Uniform number of segments.** ``num_segments`` must be a single (host-resolved) value.
-//! - **Non-deterministic, unsorted output.** Like :cpp:struct:`cub::DeviceTopK`, the caller must acknowledge this by
-//!   passing ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+//! - **Explicit opt-out required for the output guarantees.** The deterministic, stable-sorted default contract
+//!   described in *Determinism, tie-breaking, and output ordering* below (and in :ref:`cub-topk-requirements`) is not
+//!   yet implemented. Like :cpp:struct:`cub::DeviceTopK`, the caller must currently request non-deterministic,
+//!   unsorted output explicitly by passing ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
 //!   cuda::execution::output_ordering::unsorted)`` in the environment.
 //!
-//! Determinism
-//! ++++++++++++++++++++++++++
+//! Determinism, tie-breaking, and output ordering
+//! +++++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! DeviceBatchedTopK currently only supports unordered output, which may be non-deterministic for certain inputs:
-//! if multiple items tie at the K-th position, the subset of tied elements returned may vary between runs.
+//! Like :cpp:struct:`cub::DeviceTopK`, the result of ``DeviceBatchedTopK`` is governed by two orthogonal execution
+//! requirements: *which* items are selected per segment (``cuda::execution::determinism``, optionally refined by
+//! ``cuda::execution::tie_break``) and the order in which they are written (``cuda::execution::output_ordering``).
+//! When the caller does not opt out, the committed default is the most reproducible behavior: deterministic results
+//! (``cuda::execution::determinism::run_to_run``), ties resolved toward the smaller (lower) source index
+//! (``cuda::execution::tie_break::prefer_smaller_index``), and stable-sorted output
+//! (``cuda::execution::output_ordering::stable_sorted``). Callers opt *out* of these guarantees to obtain faster
+//! implementations.
+//!
+//! See :ref:`cub-topk-requirements` for the full requirement model, worked examples, and guidance on choosing
+//! requirements.
+//!
+//! .. note::
+//!
+//!    **Current support.** This release only implements the fully opted-out configuration, which must be requested
+//!    explicitly: ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+//!    cuda::execution::output_ordering::unsorted)``. Any other combination (including an empty, no-requirement
+//!    environment) is rejected at compile time. In this configuration the per-segment output is unordered and may be
+//!    non-deterministic: if multiple items tie at the K-th position, the subset of tied elements returned is not
+//!    uniquely defined and may vary between runs.
 //!
 //! Usage Considerations
 //! ++++++++++++++++++++++++++
