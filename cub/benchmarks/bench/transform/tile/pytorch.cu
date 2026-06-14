@@ -417,7 +417,7 @@ using element_types = nvbench::type_list<
 #  if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
   __nv_bfloat16,
 #  endif
-  float>;
+  nvbench::float32_t>;
 #endif
 
 template <typename Op, typename T>

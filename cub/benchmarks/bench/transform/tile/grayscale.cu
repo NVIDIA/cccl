@@ -54,7 +54,7 @@ CUB_NAMESPACE_END
 #ifdef TUNE_T
 using value_types = nvbench::type_list<TUNE_T>;
 #else
-using value_types = nvbench::type_list<float, double>;
+using value_types = nvbench::type_list<nvbench::float32_t, nvbench::float64_t>;
 #endif
 
 template <typename T>

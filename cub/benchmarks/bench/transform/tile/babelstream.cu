@@ -122,7 +122,7 @@ CUB_NAMESPACE_END
 #ifdef TUNE_T
 using element_types = nvbench::type_list<TUNE_T>;
 #else
-using element_types = nvbench::type_list<std::int8_t, std::int16_t, float, double>;
+using element_types = nvbench::type_list<nvbench::int8_t, nvbench::int16_t, nvbench::float32_t, nvbench::float64_t>;
 #endif
 
 inline auto array_size_powers = nvbench::range(16, 32, 4);
