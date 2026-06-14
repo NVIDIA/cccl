@@ -86,13 +86,8 @@ struct policy_selector_from_hub
       lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>};
   }
 };
-} // namespace detail::three_way_partition
 
-/******************************************************************************
- * Dispatch
- ******************************************************************************/
-
-// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+// TODO(bgruber): drop in CCCL 4.0 when we drop the segmented sort dispatcher, which depends on this
 template <
   typename InputIteratorT,
   typename FirstOutputIteratorT,
@@ -118,7 +113,7 @@ template <
     detail::three_way_partition::streaming_context_t<OffsetT>,
     OffsetT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DevicePartition") DispatchThreeWayPartitionIf
+struct dispatch_three_way_partition_if
 {
   /*****************************************************************************
    * Types and constants
@@ -371,7 +366,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DevicePartition") DispatchThreeWayPar
       return error;
     }
 
-    DispatchThreeWayPartitionIf dispatch{
+    dispatch_three_way_partition_if dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -389,6 +384,52 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DevicePartition") DispatchThreeWayPar
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
+} // namespace detail::three_way_partition
+
+/******************************************************************************
+ * Dispatch
+ ******************************************************************************/
+
+// TODO(bgruber): Drop in CCCL 4.0
+//! Deprecated [Since 3.5]
+template <
+  typename InputIteratorT,
+  typename FirstOutputIteratorT,
+  typename SecondOutputIteratorT,
+  typename UnselectedOutputIteratorT,
+  typename NumSelectedIteratorT,
+  typename SelectFirstPartOp,
+  typename SelectSecondPartOp,
+  typename OffsetT,
+  typename PolicyHub    = detail::three_way_partition::policy_hub<cub::detail::it_value_t<InputIteratorT>,
+                                                                  detail::three_way_partition::per_partition_offset_t>,
+  typename KernelSource = detail::three_way_partition::DeviceThreeWayPartitionKernelSource<
+    detail::three_way_partition::policy_selector_from_hub<PolicyHub>,
+    InputIteratorT,
+    FirstOutputIteratorT,
+    SecondOutputIteratorT,
+    UnselectedOutputIteratorT,
+    NumSelectedIteratorT,
+    detail::three_way_partition::ScanTileStateT,
+    SelectFirstPartOp,
+    SelectSecondPartOp,
+    detail::three_way_partition::per_partition_offset_t,
+    detail::three_way_partition::streaming_context_t<OffsetT>,
+    OffsetT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+using DispatchThreeWayPartitionIf
+  CCCL_DEPRECATED_BECAUSE("Please use DevicePartition") = detail::three_way_partition::dispatch_three_way_partition_if<
+    InputIteratorT,
+    FirstOutputIteratorT,
+    SecondOutputIteratorT,
+    UnselectedOutputIteratorT,
+    NumSelectedIteratorT,
+    SelectFirstPartOp,
+    SelectSecondPartOp,
+    OffsetT,
+    PolicyHub,
+    KernelSource,
+    KernelLauncherFactory>;
 
 namespace detail::three_way_partition
 {
