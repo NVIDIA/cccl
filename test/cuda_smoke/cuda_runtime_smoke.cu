@@ -158,6 +158,9 @@ TEST_CASE("cudaMallocAsync from default pool works", "[cuda_smoke][async_mempool
   }
 
   CUDART_REQUIRE(cudaStreamDestroy(stream));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
+
 // smoke test for pinned host memory
 
 TEST_CASE("cudaMallocHost round-trip works", "[cuda_smoke][pinned_memory]")
