@@ -86,8 +86,6 @@ class __fmt_validation_format_context
 
 public:
   using char_type = _CharT;
-  template <class _Tp>
-  using formatter_type = formatter<_Tp, _CharT>;
 
   //! @brief Dummy iterator. During the compile-time validation nothing needs to be written. Therefore all operations of
   //!        this iterator are a NOP.
