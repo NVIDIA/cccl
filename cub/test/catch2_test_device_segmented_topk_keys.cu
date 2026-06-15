@@ -477,15 +477,22 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
 }
 
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
-C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
+         "[keys][segmented][topk][device][float]",
+         select_direction_list)
 {
   constexpr cuda::std::int64_t segment_size                      = 8;
-  constexpr cuda::std::int64_t k                                 = 5;
   constexpr cuda::std::int64_t num_segments                      = 1;
   [[maybe_unused]] constexpr cuda::std::int64_t max_segment_size = 64; // msvc warns, only used in nttp
 
-  // Input: one segment containing -0.0f and +0.0f; top-5 min should include both zeros.
-  c2h::device_vector<float> d_keys_in{3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f};
+  constexpr auto direction = c2h::get<0, TestType>::value;
+
+  c2h::device_vector<float> d_keys_in =
+    (direction == cub::detail::topk::select::min)
+      ? c2h::device_vector<float>{3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f}
+      : c2h::device_vector<float>{-2.0f, -0.0f, -3.0f, 0.0f, -1.0f, -4.0f, -5.0f, -6.0f};
+  const cuda::std::int64_t k = (direction == cub::detail::topk::select::min) ? 5 : 3;
+
   c2h::device_vector<float> d_keys_out(k, thrust::no_init);
 
   auto d_keys_in_it =
@@ -493,7 +500,7 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
   auto d_keys_out_it =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(d_keys_out.data())), k);
 
-  batched_topk_keys<cub::detail::topk::select::min>(
+  batched_topk_keys<direction>(
     d_keys_in_it,
     d_keys_out_it,
     cuda::args::immediate{segment_size, cuda::args::bounds<cuda::std::int64_t{1}, max_segment_size>()},
