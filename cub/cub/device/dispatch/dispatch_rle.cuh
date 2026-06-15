@@ -185,17 +185,15 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
-  static constexpr non_trivial_runs::rle_non_trivial_runs_policy policy = current_policy<PolicySelector>();
-  using AgentRlePolicyT =
-    AgentRlePolicy<policy.threads_per_block,
-                   policy.items_per_thread,
-                   policy.load_algorithm,
-                   policy.load_modifier,
-                   policy.store_with_time_slicing,
-                   policy.scan_algorithm,
-                   delay_constructor_t<policy.delay_constructor.kind,
-                                       policy.delay_constructor.delay,
-                                       policy.delay_constructor.l2_write_latency>>;
+  static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
+  using AgentRlePolicyT                           = agent_rle_policy<
+                              policy.threads_per_block,
+                              policy.items_per_thread,
+                              policy.load_algorithm,
+                              policy.load_modifier,
+                              policy.store_with_time_slicing,
+                              policy.scan_algorithm,
+                              delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
   using AgentRleT =
     AgentRle<AgentRlePolicyT,
@@ -220,10 +218,10 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const
-    -> non_trivial_runs::rle_non_trivial_runs_policy
+    -> RleNonTrivialRunsPolicy
   {
     using RleSweepPolicyT = typename PolicyHub::MaxPolicy::RleSweepPolicyT;
-    return non_trivial_runs::rle_non_trivial_runs_policy{
+    return RleNonTrivialRunsPolicy{
       RleSweepPolicyT::BLOCK_THREADS,
       RleSweepPolicyT::ITEMS_PER_THREAD,
       RleSweepPolicyT::LOAD_ALGORITHM,
@@ -265,7 +263,6 @@ struct policy_selector_from_hub
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
 template <typename InputIteratorT,
           typename OffsetsOutputIteratorT,
           typename LengthsOutputIteratorT,
@@ -275,7 +272,7 @@ template <typename InputIteratorT,
           typename PolicyHub =
             detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
                                                       cub::detail::it_value_t<InputIteratorT>>>
-struct DeviceRleDispatch
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDispatch
 {
   /******************************************************************************
    * Types and constants
@@ -677,7 +674,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     return error;
   }
 
-  const non_trivial_runs::rle_non_trivial_runs_policy active_policy = policy_selector(cc);
+  const RleNonTrivialRunsPolicy active_policy = policy_selector(cc);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;

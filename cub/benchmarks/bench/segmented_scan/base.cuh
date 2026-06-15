@@ -30,10 +30,9 @@
 template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock>
 struct policy_selector_t
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::segmented_scan::segmented_scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedScanPolicy
   {
-    return cub::detail::segmented_scan::segmented_scan_policy{cub::detail::segmented_scan::block_segmented_scan_policy{
+    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
       ThreadsPerBlock,
       ItemsPerThread,
       TUNE_BLOCK_LOAD_ALGORITHM,

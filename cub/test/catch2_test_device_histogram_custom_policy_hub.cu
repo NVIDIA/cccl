@@ -23,7 +23,7 @@ struct my_policy_hub
   struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
   {
     using AgentHistogramPolicyT = AgentHistogramPolicy<384, 16, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
-    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
+    static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
 };
 
