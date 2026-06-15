@@ -33,6 +33,7 @@ constexpr int warp_size = 32;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+template <bool Broadcasted>
 struct ReduceKernel
 {
   template <class Config, unsigned NThreadsInGroup, int NumItems, class T, class RedOp>
@@ -64,12 +65,22 @@ struct ReduceKernel
     {
       thread_data[i] = d_in[cuda::gpu_thread.rank_as<int>(group) + i * cuda::gpu_thread.count_as<int>(group)];
     }
-    const auto result = cudax::coop::reduce(group, thread_data, red_op);
 
-    REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
-    if (cuda::gpu_thread.is_root_rank(group))
+    if constexpr (Broadcasted)
     {
-      *d_out = result.value();
+      const auto result = cudax::coop::reduce(cudax::broadcasted, group, thread_data, red_op);
+
+      d_out[cuda::gpu_thread.rank(group)] = result;
+    }
+    else
+    {
+      const auto result = cudax::coop::reduce(group, thread_data, red_op);
+
+      REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
+      if (cuda::gpu_thread.is_root_rank(group))
+      {
+        *d_out = result.value();
+      }
     }
   }
 };
@@ -113,19 +124,20 @@ void verify_results(const T& expected_data, const T& test_results)
   }
 }
 
-template <unsigned NThreadsInGroup, class T, class RedOp>
-void run_thread_reduce_kernel(
+template <unsigned NThreadsInGroup, class T, class RedOp, bool Broadcasted = false>
+void run_reduce_kernel(
   cuda::stream_ref stream,
   cuda::std::integral_constant<unsigned, NThreadsInGroup>,
   int num_items,
   const c2h::device_vector<T>& in,
   c2h::device_vector<T>& out,
-  RedOp red_op)
+  RedOp red_op,
+  cuda::std::bool_constant<Broadcasted> = {})
 {
   const auto config  = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<warp_size>());
   const auto in_ptr  = thrust::raw_pointer_cast(in.data());
   const auto out_ptr = thrust::raw_pointer_cast(out.data());
-  const ReduceKernel kernel{};
+  const ReduceKernel<Broadcasted> kernel{};
 
   switch (num_items)
   {
@@ -210,7 +222,7 @@ C2H_TEST("reduce/threads_within_warp Integral Type Tests",
   {
     auto reference_result =
       cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * nthreads_in_group, operator_identity, reduce_op);
-    run_thread_reduce_kernel(stream, nthreads_in_group_t{}, num_items, d_in, d_out, reduce_op);
+    run_reduce_kernel(stream, nthreads_in_group_t{}, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
 }
@@ -237,7 +249,31 @@ C2H_TEST("reduce/threads_within_warp Floating-Point Type Tests",
   {
     auto reference_result =
       cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * nthreads_in_group, operator_identity, reduce_op);
-    run_thread_reduce_kernel(stream, nthreads_in_group_t{}, num_items, d_in, d_out, reduce_op);
+    run_reduce_kernel(stream, nthreads_in_group_t{}, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
+  }
+}
+
+C2H_TEST(
+  "reduce/threads_within_warp Broadcasted", "[reduce][threads_within_warp]", integral_type_list, nthreads_in_group_list)
+{
+  using value_t                    = c2h::get<0, TestType>;
+  using op_t                       = cuda::std::plus<>;
+  using nthreads_in_group_t        = c2h::get<1, TestType>;
+  constexpr auto reduce_op         = op_t{};
+  constexpr auto operator_identity = cuda::identity_element<op_t, value_t>();
+  constexpr auto nthreads_in_group = nthreads_in_group_t::value;
+  CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
+  c2h::device_vector<value_t> d_in(max_size * nthreads_in_group);
+  c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
+  c2h::host_vector<value_t> h_in = d_in;
+  cuda::stream stream{cuda::devices[0]};
+  for (int num_items = 1; num_items <= max_size; ++num_items)
+  {
+    c2h::device_vector<value_t> d_out(nthreads_in_group);
+    auto reference_result =
+      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * nthreads_in_group, operator_identity, reduce_op);
+    run_reduce_kernel(stream, nthreads_in_group_t{}, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
+    verify_results(c2h::host_vector<value_t>(nthreads_in_group, reference_result), c2h::host_vector<value_t>(d_out));
   }
 }

@@ -30,6 +30,7 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+template <bool Broadcasted>
 struct ReduceKernel
 {
   template <class Config, int NumItems, class T, class RedOp>
@@ -40,14 +41,27 @@ struct ReduceKernel
     T* __restrict__ d_out,
     RedOp red_op)
   {
+    cudax::this_thread thread{config};
+
     T thread_data[NumItems];
     for (int i = 0; i < NumItems; ++i)
     {
       thread_data[i] = d_in[i];
     }
-    const auto result = cudax::coop::reduce(cudax::this_thread{config}, thread_data, red_op);
-    REQUIRE(result.has_value());
-    *d_out = result.value();
+
+    if constexpr (Broadcasted)
+    {
+      const auto result = cudax::coop::reduce(cudax::broadcasted, thread, thread_data, red_op);
+
+      *d_out = result;
+    }
+    else
+    {
+      const auto result = cudax::coop::reduce(thread, thread_data, red_op);
+
+      REQUIRE(result.has_value());
+      *d_out = result.value();
+    }
   }
 };
 
@@ -88,14 +102,19 @@ void verify_results(const T& expected_data, const T& test_results)
   }
 }
 
-template <class T, class RedOp>
+template <class T, class RedOp, bool Broadcasted = false>
 void run_reduce_kernel(
-  cuda::stream_ref stream, int num_items, const c2h::device_vector<T>& in, c2h::device_vector<T>& out, RedOp red_op)
+  cuda::stream_ref stream,
+  int num_items,
+  const c2h::device_vector<T>& in,
+  c2h::device_vector<T>& out,
+  RedOp red_op,
+  cuda::std::bool_constant<Broadcasted> = {})
 {
   const auto config  = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
   const auto in_ptr  = thrust::raw_pointer_cast(in.data());
   const auto out_ptr = thrust::raw_pointer_cast(out.data());
-  const ReduceKernel kernel{};
+  const ReduceKernel<Broadcasted> kernel{};
 
   switch (num_items)
   {
@@ -198,6 +217,26 @@ C2H_TEST("reduce/this_thread Floating-Point Type Tests", "[reduce][this_thread]"
   {
     auto reference_result = cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items, operator_identity, reduce_op);
     run_reduce_kernel(stream, num_items, d_in, d_out, reduce_op);
+    verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
+  }
+}
+
+C2H_TEST("reduce/this_thread Broadcasted", "[reduce][this_thread]", integral_type_list)
+{
+  using value_t                    = c2h::get<0, TestType>;
+  using op_t                       = cuda::std::plus<>;
+  constexpr auto reduce_op         = op_t{};
+  constexpr auto operator_identity = cuda::identity_element<op_t, value_t>();
+  CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
+  c2h::device_vector<value_t> d_in(max_size);
+  c2h::device_vector<value_t> d_out(1);
+  c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
+  c2h::host_vector<value_t> h_in = d_in;
+  cuda::stream stream{cuda::devices[0]};
+  for (int num_items = 1; num_items <= max_size; ++num_items)
+  {
+    auto reference_result = cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items, operator_identity, reduce_op);
+    run_reduce_kernel(stream, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
 }
