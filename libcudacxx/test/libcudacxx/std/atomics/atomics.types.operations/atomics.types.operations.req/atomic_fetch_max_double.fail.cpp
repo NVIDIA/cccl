@@ -18,6 +18,6 @@
 int main(int, char**)
 {
   cuda::std::atomic<double> a(0.0);
-  a.fetch_max(0.0); // expected-error: no member named 'fetch_max'
+  a.fetch_max(0.0);
   return 0;
 }

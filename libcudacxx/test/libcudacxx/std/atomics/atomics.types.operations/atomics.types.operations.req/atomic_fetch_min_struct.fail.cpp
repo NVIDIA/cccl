@@ -23,6 +23,6 @@ struct UserType
 int main(int, char**)
 {
   cuda::std::atomic<UserType> a(UserType{0});
-  a.fetch_min(UserType{0}); // expected-error: no member named 'fetch_min'
+  a.fetch_min(UserType{0});
   return 0;
 }

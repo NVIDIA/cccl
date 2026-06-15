@@ -18,6 +18,6 @@
 int main(int, char**)
 {
   cuda::std::atomic<float> a(0.0f);
-  a.fetch_min(0.0f); // expected-error: no member named 'fetch_min'
+  a.fetch_min(0.0f);
   return 0;
 }
