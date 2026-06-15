@@ -2583,10 +2583,8 @@ struct DeviceSelect
             typename NumSelectedIteratorT,
             typename NumItemsT,
             typename EqualityOpT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>&& ::cuda::std::
-                                       indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
-                                     int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t UniqueByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
