@@ -162,13 +162,14 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_sm80(input, mask, reduction_op);))
   }
-#if __cccl_ptx_isa >= 860
-  else if constexpr (is_warp_redux_op_supported_sm100af<ReductionOp, T>)
+  else if constexpr (is_warp_redux_op_supported_sm100f<ReductionOp, T>)
   {
-    NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::warp_redux_sm100af(input, mask, reduction_op);))
+    // Before PTX ISA 8.8, float reductions are only supported on sm100a.
 #  if __cccl_ptx_isa >= 880
-    NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return cub::detail::warp_redux_sm100af(input, mask, reduction_op);))
-#  endif // __cccl_ptx_isa >= 880
+    NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return cub::detail::warp_redux_sm100f(input, mask, reduction_op);))
+#  else // ^^^ __cccl_ptx_isa >= 880 ^^^ / vvv __cccl_ptx_isa < 880 vvv
+    NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::warp_redux_sm100f(input, mask, reduction_op);))
+#  endif // ^^^ __cccl_ptx_isa < 880 ^^^
   }
 #endif // __cccl_ptx_isa >= 860
   return ::cuda::std::nullopt;
