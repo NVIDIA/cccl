@@ -180,6 +180,9 @@ struct DevicePartition
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -202,15 +205,14 @@ struct DevicePartition
   //! @param[in] num_items
   //!   Total number of items to select from
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename InputIteratorT,
             typename FlagIterator,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -219,31 +221,35 @@ struct DevicePartition
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
-    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
-    using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
-    using SelectOp      = NullType; // Selection op (not used)
-    using EqualityOp    = NullType; // Equality operator (not used)
+    using choose_offset_t         = detail::choose_signed_offset<NumItemsT>;
+    using offset_t                = typename choose_offset_t::type;
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    if (const cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items))
+    if (const auto error = choose_offset_t::is_exceeding_offset_type(num_items))
     {
       return error;
     }
 
-    return detail::select::dispatch<SelectImpl::Partition>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_flags,
-      d_out,
-      d_num_selected_out,
-      SelectOp{},
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Partition>(
+          storage,
+          bytes,
+          d_in,
+          d_flags,
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          NullType{},
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -329,7 +335,7 @@ struct DevicePartition
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DevicePartition::Flagged");
 
