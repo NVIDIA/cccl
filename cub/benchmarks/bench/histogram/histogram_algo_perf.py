@@ -99,6 +99,13 @@ ALGO_STYLE = {
     # instantiations measured head-to-head.
     "smem_static": ("#8c564b", "h", "smem privatized (static <=256)", "-", 1.6),
     "smem_dynamic": ("#1f77b4", "D", "smem privatized (dynamic)", "--", 1.3),
+    # No-warp-coalesce variants (histogram_algo_sweep.py forces these against the
+    # .nocoal binaries). Same base color as the coalesce-on kernel, dotted + open
+    # marker to read as "the same algorithm with coalescing disabled".
+    "gmem_privatized_nocache__nocoal": ("#9467bd", "1", "gmem-priv gather, NO-coalesce", ":", 1.3),
+    "direct_nocache__nocoal": ("#ff7f0e", "2", "direct-atomic no cache, NO-coalesce", ":", 1.3),
+    "direct_cuckoo__nocoal": ("#2ca02c", "3", "direct-atomic cuckoo, NO-coalesce", ":", 1.3),
+    "direct_single_probe__nocoal": ("#8c8c00", "4", "direct-atomic single-probe, NO-coalesce", ":", 1.3),
 }
 # 3-letter tag per algorithm, used to label each point of the `default` series with
 # the algorithm the selector actually picked there. `hybrid` is the smem_split>0
@@ -119,6 +126,11 @@ ALGO_TAG = {
     "default": "DEF",
     "smem_static": "SST",
     "smem_dynamic": "SDY",
+    # no-warp-coalesce variants (match histogram_wins_table.py tags)
+    "gmem_privatized_nocache__nocoal": "GN0",
+    "direct_nocache__nocoal": "DN0",
+    "direct_cuckoo__nocoal": "DC0",
+    "direct_single_probe__nocoal": "DS0",
     # The `_selected` map stores the raw CUB_HISTO_LOG_LAUNCH tag, which carries a
     # :static / :dynamic suffix for the privatized-SMEM kernel (the dispatch emits
     # `smem_privatized:dynamic` etc.). Map those suffixed forms too, or the default
@@ -134,12 +146,16 @@ ALGO_ORDER = [
     "smem_static",
     "smem_dynamic",
     "gmem_privatized_nocache",
+    "gmem_privatized_nocache__nocoal",
     "hybrid",
     "gmem_privatized_cuckoo",
     "gmem_privatized_single_probe",
     "direct_cuckoo",
+    "direct_cuckoo__nocoal",
     "direct_single_probe",
+    "direct_single_probe__nocoal",
     "direct_nocache",
+    "direct_nocache__nocoal",
     "main",
     "default",
 ]
