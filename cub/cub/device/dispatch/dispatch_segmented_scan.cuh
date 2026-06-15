@@ -143,7 +143,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const segmented_scan_policy active_policy = policy_selector(cc);
+  const SegmentedScanPolicy active_policy = policy_selector(cc);
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
@@ -174,6 +174,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         constexpr int workers_per_block = 1;
         const auto max_segments         = active_policy.block.max_segments;
         const auto threads_per_block    = active_policy.block.threads_per_block;
+        _CCCL_ASSERT(active_policy.block.threads_per_block > 0, "Policy value for threads_per_block is not positive");
+        _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
         return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
