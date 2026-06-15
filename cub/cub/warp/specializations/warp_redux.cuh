@@ -49,7 +49,7 @@ inline constexpr bool is_warp_redux_op_supported_sm100af =
 
 template <typename Op, typename T>
 inline constexpr bool is_warp_redux_op_supported =
-  is_warp_redux_op_supported_sm80<Op, T> || is_warp_redux_op_supported_sm100f<Op, T>;
+  is_warp_redux_op_supported_sm80<Op, T> || is_warp_redux_op_supported_sm100af<Op, T>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 Redux
@@ -124,7 +124,7 @@ template <typename T, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE_API
 _CCCL_FORCEINLINE T warp_redux_sm100af(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
-  static_assert(is_warp_redux_op_supported_sm100f<ReductionOp, T>, "Reduction operator not supported");
+  static_assert(is_warp_redux_op_supported_sm100af<ReductionOp, T>, "Reduction operator not supported");
   _CCCL_ASSERT(mask != 0, "Mask must not be 0");
 
   const float value = ::cuda::std::__fp_cast<float>(input);
