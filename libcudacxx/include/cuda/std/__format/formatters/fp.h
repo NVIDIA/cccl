@@ -73,11 +73,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<float, char> : __fmt_formatter_fp
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<double, char> : __fmt_formatter_fp<char>
 {};
-#if _CCCL_HAS_LONG_DOUBLE()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<long double, char> : __fmt_formatter_fp<char>
 {};
-#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _CCCL_HAS_WCHAR_T()
 template <>
@@ -86,11 +84,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<float, wchar_t> : __fmt_formatter
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<double, wchar_t> : __fmt_formatter_fp<wchar_t>
 {};
-#  if _CCCL_HAS_LONG_DOUBLE()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<long double, wchar_t> : __fmt_formatter_fp<wchar_t>
 {};
-#  endif // _CCCL_HAS_LONG_DOUBLE()
 #endif // _CCCL_HAS_WCHAR_T()
 
 _CCCL_END_NAMESPACE_CUDA_STD

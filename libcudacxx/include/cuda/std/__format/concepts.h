@@ -24,7 +24,9 @@
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__fwd/format.h>
+#include <cuda/std/__fwd/inplace_vector.h>
 #include <cuda/std/__fwd/tuple.h>
+#include <cuda/std/__iterator/wrap_iter.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/pair.h>
@@ -61,6 +63,38 @@ _CCCL_CONCEPT __formattable_with_helper = _CCCL_REQUIRES_EXPR(
 
 template <class _Tp, class _Context, class _Formatter = typename _Context::template formatter_type<remove_const_t<_Tp>>>
 _CCCL_CONCEPT __formattable_with = semiregular<_Formatter> && __formattable_with_helper<_Tp, _Context, _Formatter>;
+
+template <class _OutIt, class _CharT>
+_CCCL_CONCEPT __fmt_enable_direct_output =
+  __fmt_char_type<_CharT> && (same_as<_OutIt, _CharT*> || same_as<_OutIt, __wrap_iter<_CharT*>>);
+
+/// Opt-in to enable \ref __fmt_insertable for a \a _Container.
+template <class _Container>
+inline constexpr bool __fmt_enable_insertable_v = false;
+
+template <class _Tp, size_t _Np>
+inline constexpr bool __fmt_enable_insertable_v<inplace_vector<_Tp, _Np>> = true;
+
+// todo(dabayer): Enable insertable for host stdlib containers.
+
+template <class _Container>
+_CCCL_CONCEPT __fmt_insertable_helper = _CCCL_REQUIRES_EXPR(
+  (_Container),
+  _Container& __c,
+  add_pointer_t<typename _Container::value_type> __first,
+  add_pointer_t<typename _Container::value_type> __last)(__c.insert(__c.end(), __first, __last));
+
+/// Concept to see whether a \a _Container is insertable.
+///
+/// The concept is used to validate whether multiple calls to a
+/// \ref back_insert_iterator can be replace by a call to \c _Container::insert.
+///
+/// \note a \a _Container needs to opt-in to the concept by specializing
+/// \ref __enable_insertable.
+template <class _Container>
+_CCCL_CONCEPT __fmt_insertable =
+  __fmt_enable_insertable_v<_Container> && __fmt_char_type<typename _Container::value_type>
+  && __fmt_insertable_helper<_Container>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

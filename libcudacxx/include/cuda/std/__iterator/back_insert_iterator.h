@@ -33,6 +33,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+// todo(dabayer): This is a version of __back_insert_iterator that satisfies output_iterator even in C++17. We should
+// find a way to make the ordinary back_insert_iterator satisfy output_iterator in C++17 and remove this internal
+// version.
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __back_insert_iterator
 {
