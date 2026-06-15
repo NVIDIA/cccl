@@ -44,10 +44,10 @@ namespace detail::scan
 namespace __cub_detail  = CUB_NS_QUALIFIER::detail;
 namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 
-_CCCL_HOST_DEVICE_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
+_CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanLookaheadPolicy& policy)
 {
-  const auto num_total_warps = 2 * policy.num_reduce_and_scan_warps + 1 /*num_load_warps*/
-                             + 1 /*num_sched_warps*/ + 1 /*num_look_ahead_warps*/;
+  const auto num_total_warps = 2 * policy.reduce_and_scan_warps + 1 /*num_load_warps*/
+                             + 1 /*num_sched_warps*/ + 1 /*num_lookahead_warps*/;
   return num_total_warps * warp_threads;
 }
 
@@ -65,7 +65,7 @@ struct scanKernelParams
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
+  static constexpr ScanLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
   struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
@@ -95,7 +95,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   using in_out_t               = typename ScanResourcesT::in_out_t;
   using thread_and_warp_aggr_t = typename ScanResourcesT::thread_and_warp_aggr_t;
 
-  constexpr auto policy = current_policy<PolicySelector>().warpspeed;
+  constexpr auto policy = current_policy<PolicySelector>().lookahead;
 
   const int num_block_idx_stages =
     policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, numStages + policy.block_idx_stages);
@@ -136,11 +136,8 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpReduce(const Tp input, ScanOpT& scan_op)
 {
   using warp_reduce_t = WarpReduce<Tp>;
-
-  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-  static_assert(sizeof(typename warp_reduce_t::TempStorage) <= 4,
-                "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
-
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+                "WarpReduce for a full warp must not require temporary storage");
   typename warp_reduce_t::TempStorage temp_storage;
   return warp_reduce_t{temp_storage}.Reduce(input, scan_op);
 }
@@ -149,11 +146,8 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpReducePartial(const Tp input, ScanOpT& scan_op, const int num_items)
 {
   using warp_reduce_t = WarpReduce<Tp>;
-
-  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-  static_assert(sizeof(typename warp_reduce_t::TempStorage) <= 4,
-                "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
-
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+                "WarpReduce for a full warp must not require temporary storage");
   typename warp_reduce_t::TempStorage temp_storage;
   return warp_reduce_t{temp_storage}.Reduce(input, scan_op, num_items);
 }
@@ -162,16 +156,11 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
 {
   using warp_scan_t = WarpScan<Tp>;
-
-  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-  static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
-                "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
-
-  Tp result;
+  static_assert(::cuda::std::is_same_v<typename warp_scan_t::TempStorage, Uninitialized<NullType>>,
+                "WarpScan for a full warp must not require temporary storage");
   typename warp_scan_t::TempStorage temp_storage;
-
+  Tp result;
   warp_scan_t{temp_storage}.ExclusiveScan(regInput, result, scan_op);
-
   return result;
 }
 
@@ -191,11 +180,8 @@ warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, boo
   else
   {
     using warp_scan_t = WarpScan<Tp>;
-
-    // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-    static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
-                  "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
-
+    static_assert(::cuda::std::is_same_v<typename warp_scan_t::TempStorage, Uninitialized<NullType>>,
+                  "WarpScan for a full warp must not require temporary storage");
     Tp result;
     typename warp_scan_t::TempStorage temp_storage;
     warp_scan_t{temp_storage}.ExclusiveScanPartial(regInput, result, scan_op, num_items);
@@ -251,7 +237,7 @@ threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp pr
 }
 
 // Similar to CUB agents, this closure just aggregates common constants so the device functions implementing the
-// warpspeed scan kernel can have lighter signatures. Each squad uses an instance of this to provide its context. In
+// lookahead scan kernel can have lighter signatures. Each squad uses an instance of this to provide its context. In
 // principle, it does not hold any mutable state. But it refers to the shared scan resources (SMEM + barriers etc.).
 template <typename PolicySelector,
           typename InputT,
@@ -259,11 +245,11 @@ template <typename PolicySelector,
           typename AccumT,
           typename ScanOpT,
           typename RealInitValueT,
-          bool ForceInclusive>
-struct warpspeed_scan_closure
+          bool ForceInclusive,
+          bool StableReductionOrder = false>
+struct lookahead_scan_closure
 {
-  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
-
+  static constexpr ScanLookaheadPolicy policy          = current_policy<PolicySelector>().lookahead;
   static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
   static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
   static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
@@ -278,8 +264,8 @@ struct warpspeed_scan_closure
     squad_lookahead(policy),
   };
 
-  static constexpr int tile_size                   = policy.tile_size();
-  static constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
+  static constexpr int tile_size                  = policy.tile_size();
+  static constexpr int lookahead_items_per_thread = policy.lookahead_items_per_thread;
 
   // We might try to instantiate the kernel with huge types which would lead to a small tile size. Ensure its never 0
   static constexpr int elemPerThread = policy.items_per_thread;
@@ -327,14 +313,27 @@ struct warpspeed_scan_closure
 
     if (!is_first_tile)
     {
-      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<look_ahead_items_per_thread>(
-        specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
-      if (squad.isLeaderThread())
+      if constexpr (StableReductionOrder)
       {
-        refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
+        // The stable-order version updates idxTilePrev/AggrExclusiveCtaPrev itself
+        AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookaheadStable<lookahead_items_per_thread>(
+          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
+        if (squad.isLeaderThread())
+        {
+          refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
+        }
       }
-      AggrExclusiveCtaPrev = regAggrExclusiveCta;
-      idxTilePrev          = idxTile;
+      else
+      {
+        AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
+          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
+        if (squad.isLeaderThread())
+        {
+          refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
+        }
+        AggrExclusiveCtaPrev = regAggrExclusiveCta;
+        idxTilePrev          = idxTile;
+      }
     }
   }
 
@@ -825,19 +824,20 @@ struct warpspeed_scan_closure
 template <typename PolicySelector,
           bool ForceInclusive,
           typename RealInitValueT,
+          bool StableReductionOrder,
           typename InputT,
           typename OutputT,
           typename AccumT,
           typename ScanOpT,
           typename InitValueT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   const scanKernelParams<InputT, OutputT, AccumT>& params, const ScanOpT& scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
   // Cache special registers at the start of kernel, since getting them takes a few cycles
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
-  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
+  static constexpr ScanLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
 
   // Set up the shared memory resources
   auto res = [&] {
@@ -849,8 +849,15 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
   }();
 
   // Dispatch each warp to its respective squad
-  using closure_t =
-    warpspeed_scan_closure<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>;
+  using closure_t = lookahead_scan_closure<
+    PolicySelector,
+    InputT,
+    OutputT,
+    AccumT,
+    ScanOpT,
+    RealInitValueT,
+    ForceInclusive,
+    StableReductionOrder>;
   warpspeed::squadDispatch(
     specialRegisters, closure_t::scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
       // we load the initial value after the squad dispatch, so only the squads needing it emit an LDG
@@ -861,7 +868,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
 
 template <typename AccumT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
+device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
   if (tile_id >= num_temp_states)
@@ -894,7 +901,7 @@ device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, co
 }
 
 template <typename InputT, typename OutputT, typename AccumT>
-_CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(const scan_warpspeed_policy& policy, int num_stages) -> int
+_CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(const ScanLookaheadPolicy& policy, int num_stages) -> int
 {
   return smem_for_stages(
     policy,

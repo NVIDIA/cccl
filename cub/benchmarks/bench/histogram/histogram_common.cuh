@@ -47,12 +47,12 @@ struct bench_policy_selector
 
     return {TUNE_THREADS,
             TUNE_ITEMS,
+            TUNE_VEC_SIZE,
             load_algorithm,
             TUNE_LOAD_MODIFIER,
             TUNE_RLE_COMPRESS,
             MEM_PREFERENCE,
             TUNE_WORK_STEALING,
-            TUNE_VEC_SIZE,
             2048}; // TODO(bgruber): make tunable
   }
 };

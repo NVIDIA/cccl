@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/devices>
 #include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
@@ -350,6 +351,16 @@ C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
     CHECK(!(first != second));
   }
 
+  { // default pools are cached per physical device
+    if (cuda::devices.size() > 1)
+    {
+      cuda::device_memory_pool_ref second = cuda::device_default_memory_pool(cuda::device_ref{1});
+      CHECK(first.get() != second.get());
+      CHECK((first != second));
+      CHECK(!(first == second));
+    }
+  }
+
   { // comparison against a plain device_memory_pool_ref with a different pool
     cudaMemPool_t cuda_pool_handle{};
     {
@@ -444,11 +455,11 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
         cuda::device_memory_pool_ref another_default_pool_resource =
           cuda::device_default_memory_pool(cuda::device_ref{0});
 
-        pool.enable_access_from(peers_ext.front());
+        default_pool_resource.enable_access_from(peers_ext);
 
-        CCCLRT_CHECK(default_pool_resource.is_accessible_from(peers_ext.front()));
+        CCCLRT_REQUIRE(default_pool_resource.is_accessible_from(peers_ext.front()));
         allocate_and_check_access(default_pool_resource);
-        CCCLRT_CHECK(another_default_pool_resource.is_accessible_from(peers_ext.front()));
+        CCCLRT_REQUIRE(another_default_pool_resource.is_accessible_from(peers_ext.front()));
         allocate_and_check_access(another_default_pool_resource);
       }
     }

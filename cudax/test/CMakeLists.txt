@@ -196,8 +196,23 @@ cudax_add_catch2_test(test_target coop.reduce.this_cluster
 cudax_add_catch2_test(test_target coop.reduce.this_grid
     coop/reduce/this_grid.cu
 )
+cudax_add_catch2_test(test_target coop.reduce.threads_within_warp
+    coop/reduce/threads_within_warp.cu
+)
 cudax_add_catch2_test(test_target coop.reduce.warps_within_block
     coop/reduce/warps_within_block.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle.threads_within_warp
+    coop/shuffle/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle_down.threads_within_warp
+    coop/shuffle_down/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
+    coop/shuffle_up/threads_within_warp.cu
 )
 
 if (cudax_ENABLE_CUFILE)

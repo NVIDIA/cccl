@@ -121,12 +121,12 @@ public:
       : wrapper_(wrapper)
   {}
 
-  bool can_release_in_callback() const override
+  bool can_release_in_callback() const noexcept override
   {
     return true;
   }
 
-  void release_in_callback() override
+  void release_in_callback() noexcept override
   {
     delete wrapper_;
   }

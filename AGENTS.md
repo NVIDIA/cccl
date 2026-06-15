@@ -235,7 +235,7 @@ Requirements:
 
 * Python 3.10+
 * CUDA Toolkit 12.x or 13.x
-* NVIDIA GPU (CC 6.0+)
+* NVIDIA GPU (CC 7.5+)
 * Base dependencies: `numba>=0.60.0`, `numpy`, `cuda-pathfinder>=1.2.3`, `cuda-core`, `typing_extensions`
 * CUDA extras: `cuda-bindings` + `cuda-toolkit` + `numba-cuda` via `cuda-cccl[cu12]` or `cuda-cccl[cu13]`
 

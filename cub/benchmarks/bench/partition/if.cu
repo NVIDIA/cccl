@@ -35,15 +35,14 @@
 template <typename InputT>
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::select::select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::PartitionPolicy
   {
     return {TUNE_THREADS_PER_BLOCK,
             TUNE_ITEMS_PER_THREAD,
             TUNE_LOAD_ALGORITHM,
             TUNE_LOAD_MODIFIER,
             cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+            lookback_delay_policy};
   }
 };
 #endif // !TUNE_BASE

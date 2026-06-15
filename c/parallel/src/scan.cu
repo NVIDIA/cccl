@@ -209,12 +209,12 @@ struct scan_kernel_source
     return {build.description_bytes_per_tile, build.payload_bytes_per_tile};
   }
 
-  std::size_t look_ahead_tile_state_size() const
+  std::size_t lookahead_tile_state_size() const
   {
-    return look_ahead_tile_state_alignment();
+    return lookahead_tile_state_alignment();
   }
 
-  std::size_t look_ahead_tile_state_alignment() const
+  std::size_t lookahead_tile_state_alignment() const
   {
     constexpr int state_size = alignof(cub::detail::warpspeed::scan_state);
     return ::cuda::next_power_of_two(
@@ -228,11 +228,11 @@ struct scan_kernel_source
     return arg;
   }
 
-  static auto look_ahead_make_tile_state_kernel_arg(void* ts)
+  static auto lookahead_make_tile_state_kernel_arg(void* ts)
   {
     // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
     cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
-    ::cuda::std::__construct_at(&arg.warpspeed, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
     return arg;
   }
 };
@@ -278,8 +278,6 @@ try
     make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
   const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
-
-  const auto output_it_value_t = cccl_type_enum_to_name(output_it.value_type.type);
 
   const auto policy_sel = [&] {
     using cub::detail::scan::policy_selector;
@@ -358,8 +356,8 @@ struct __align__({1}) storage_t {{
 using device_scan_policy = {5};
 using namespace cub;
 using namespace cub::detail::scan;
-using cub::detail::delay_constructor_policy;
-using cub::detail::delay_constructor_kind;
+using cub::LookbackDelayPolicy;
+using cub::LookbackDelayAlgorithm;
 static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_it.value_type.size, // 0

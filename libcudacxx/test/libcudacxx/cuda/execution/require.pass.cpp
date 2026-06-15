@@ -37,6 +37,11 @@ TEST_FUNC void test()
       decltype(cuda::execution::output_ordering::__get_output_ordering(
         cuda::execution::__get_requirements(cuda::execution::require(cuda::execution::output_ordering::unsorted)))),
       cuda::execution::output_ordering::unsorted_t>);
+
+  static_assert(cuda::std::is_same_v<
+                decltype(cuda::execution::output_ordering::__get_output_ordering(cuda::execution::__get_requirements(
+                  cuda::execution::require(cuda::execution::output_ordering::stable_sorted)))),
+                cuda::execution::output_ordering::stable_sorted_t>);
 }
 
 int main(int, char**)
