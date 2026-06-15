@@ -28,6 +28,7 @@ __global__ void topk_kernel(cuda::std::span<const KeyT> g_in, cuda::std::span<Ke
   __shared__ typename topk_t::TempStorage smem;
 
   KeyT keys[ItemsPerThread];
+  // Sentinel values are adversarial by design to surface bugs in partial tile handling.
   constexpr KeyT oob_sentinel =
     SelectMax ? cuda::std::numeric_limits<KeyT>::max() : cuda::std::numeric_limits<KeyT>::lowest();
   if constexpr (BlockedInput)
