@@ -297,7 +297,10 @@ configuration.
 
 This does not make user-provided memory or CUDA work automatically safe to share.
 Users are still responsible for avoiding data races, such as two threads writing
-to the same output array at the same time. For concurrent use, prefer the direct
+to the same output array at the same time. Read-only iterator and operator
+objects may be shared across threads, but concurrent mutation of those objects,
+captured state, or underlying arrays requires external synchronization. For
+concurrent use, prefer the direct
 algorithm APIs, such as
 :func:`reduce_into <cuda.compute.algorithms.reduce_into>`, or create a separate
 reusable algorithm object in each thread (for example, the object returned by

@@ -451,6 +451,176 @@ as an example:
    At this point, the kernels stored in the reduction object are
    launched and the reduction is performed.
 
+Caching and free-threaded Python
+--------------------------------
+
+The user-facing cache behavior is described in :ref:`cuda.compute.caching`. This
+section describes the implementation contracts that keep that behavior correct
+for free-threaded Python and multi-GPU use.
+
+Design requirements
++++++++++++++++++++
+
+The free-threading design is constrained by the following requirements:
+
+* Importing ``cuda.compute`` in a free-threaded CPython interpreter must not
+  re-enable the GIL.
+* Free-threading support should not add global locking or shared-state
+  contention to the normal single-threaded execution path. Wrapper cache hits
+  should be thread-local, and normal algorithm execution should not take a
+  global cache lock.
+* Mutable wrapper state must not be shared across threads.
+* Expensive native build results should still be shared across threads when they
+  are safe to share.
+* Same-key concurrent cold builds should build once; waiters should receive the
+  same result or observe the same exception.
+
+Build and validation requirements
++++++++++++++++++++++++++++++++++
+
+The Cython extension that backs ``cuda.compute`` must opt in to free-threaded
+execution:
+
+.. code-block:: cython
+
+   # cython: freethreading_compatible=True
+
+Without this marker, importing the extension in a free-threaded CPython process
+can cause CPython to re-enable the GIL. The generated extension should advertise
+``Py_MOD_GIL_NOT_USED`` and importing ``cuda.compute`` should leave
+``sys._is_gil_enabled()`` false.
+
+The free-threaded wheel must also keep its free-threaded ABI tag after repair and
+merge steps. For CPython 3.14, the expected wheel tag contains
+``cp314-cp314t`` rather than the regular ``cp314-cp314`` tag. The acceptance
+criteria for a free-threaded build are:
+
+* the wheel has the expected ``cp314-cp314t`` ABI tag;
+* importing ``cuda.compute`` does not re-enable the GIL;
+* the free-threading stress suite passes without forcing ``PYTHON_GIL=0`` or
+  ``-X gil=0``.
+
+Two cache layers
+++++++++++++++++
+
+Internally, ``cuda.compute`` separates two kinds of cached state:
+
+* **Wrapper objects** are the Python objects returned by ``make_*`` APIs, such as
+  ``make_reduce_into``. They own per-call descriptor state and are cached per
+  Python thread by ``cache_with_registered_key_functions`` in
+  ``cuda/compute/_caching.py``. Keeping wrapper caches thread-local avoids
+  sharing mutable wrapper state across concurrent calls from free-threaded
+  Python.
+* **Build results** are the Cython objects that own the native C parallel build
+  state, such as loaded CUDA libraries, kernels, policy state, and other
+  read-only data needed to invoke an algorithm. They are cached by
+  ``cache_build_result`` and may be shared by wrapper objects in different
+  Python threads.
+
+The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
+thread-local and does not take the shared build-cache lock. The shared
+build-cache lock is used when constructing a wrapper that needs to look up,
+coordinate, or create a native build result, not during ordinary execution of an
+already-returned wrapper object.
+
+Device keying
++++++++++++++
+
+Both cache layers include the current CUDA runtime device ordinal and compute
+capability in their keys. The compute capability identifies the architecture used
+for code generation and policy selection. The device ordinal keeps native build
+state associated with the device on which it was built.
+
+The first implementation intentionally keys shared build results by CUDA runtime
+device ordinal rather than by CUDA context handle. User-managed CUDA driver
+contexts are not a target use case for ``cuda.compute``. CUDA runtime,
+``cuda.core``, CuPy, and PyTorch-style applications are expected to use the
+primary-context model, and language frontends generally prefer that model.
+
+The first implementation also does not share build results across devices that
+happen to have the same compute capability. Native build results are not treated
+as pure SM-level code artifacts. They can contain CUDA-facing build/load state,
+and CUB launch paths may resolve a ``CUkernel`` to the current-context
+``CUfunction`` before occupancy queries or launch. Some paths also get or set
+kernel attributes on the resolved function, and CUDA kernel-attribute behavior
+is device-specific. Until every build-result path is audited for same-SM
+cross-device sharing, separate device ordinals build and cache separate native
+results.
+
+Concurrent build coordination
++++++++++++++++++++++++++++++
+
+``cache_build_result`` is responsible for coordinating concurrent cache misses.
+The first thread to miss a build-result key runs the builder, while other
+threads wait for that in-flight build to complete. If the build succeeds, all
+waiting threads receive the same cached build result. If it fails, the exception
+is propagated to the waiting threads and the failed build is not stored in the
+cache.
+
+When adding a new algorithm, the factory that returns the reusable wrapper object
+should use ``cache_with_registered_key_functions``. The wrapper constructor
+should pass the expensive native build operation to ``cache_build_result`` if
+that native state is safe to share across threads. Do not perform an expensive
+native build before entering ``cache_build_result``; otherwise same-key cold
+factory calls can duplicate the build and bypass single-flight coordination.
+
+The specialization key must include every argument that can affect generated
+code, type layout, policy selection, or native build state. It should not include
+runtime-only values such as array pointers, array contents, item counts, streams,
+or temporary-storage pointers unless those values change the compiled interface.
+
+User-object and descriptor contracts
+++++++++++++++++++++++++++++++++++++
+
+Wrapper objects returned by ``make_*`` APIs are not thread-reentrant. If two
+threads need the same algorithm specialization, each thread should call the
+factory and receive its own wrapper object, or the caller must externally
+serialize access to a shared wrapper. The wrapper updates its Cython
+``Iterator``, ``Op``, ``Value``, and algorithm-specific descriptors before each
+native call, so concurrent calls through the same wrapper could overwrite the
+descriptor state another thread is about to use.
+
+Read-only iterator and operator objects may be shared across threads. The
+iterator base class uses a per-iterator lock for first-time lazy construction of
+advance, input-dereference, and output-dereference ``Op`` objects; cached access
+after that remains lock-free. This lock does not make arbitrary mutation safe:
+concurrent mutation of iterator state, operator state, captured state, or child
+iterators remains unsupported unless the caller synchronizes externally.
+
+Mutable execution state belongs to one thread at a time unless the caller
+provides synchronization. This includes output arrays, temporary-storage buffers,
+streams, ``DoubleBuffer`` instances, and other objects whose state changes as
+part of a launch.
+
+Backend-specific notes
+++++++++++++++++++++++
+
+The v1 NVRTC/nvJitLink backend and the v2 HostJIT backend have different
+free-threading risk surfaces and must be audited independently. v1 stresses
+NVRTC, nvJitLink, CUDA library loading, and CUB host dispatch. v2 adds HostJIT
+compiler state, LLVM/Clang initialization, persistent PCH paths, generated
+source/cubin artifacts, and dynamic loader lifetime.
+
+Transform has one additional v1 native-cache rule. In CPython 3.14
+free-threaded builds, ``python/cuda_cccl/CMakeLists.txt`` defines
+``CCCL_PYTHON_FREE_THREADED`` for the bundled C parallel target, and
+``c/parallel/src/transform.cu`` uses that macro to bypass the native
+``async_config`` / ``prefetch_config`` cache. Normal non-free-threaded builds
+keep the existing lazy native cache path. This avoids adding launch-path locking
+for transform in free-threaded Python builds while preserving the existing
+single-threaded behavior elsewhere.
+
+Clearing caches
++++++++++++++++
+
+``clear_all_caches()`` is process-local. It clears all known per-thread wrapper
+caches through a weak registry of live thread cache containers, and it clears the
+shared build-result cache. Separate Python processes build and cache
+independently.
+
+Calling ``clear_all_caches()`` concurrently with active factory calls or
+algorithm execution is not supported unless the caller synchronizes externally.
+
 
 For readers who want to connect this overview back to the source tree:
 
