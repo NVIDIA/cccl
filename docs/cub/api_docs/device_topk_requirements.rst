@@ -5,9 +5,11 @@
 Top-K: Determinism, Tie-Breaking, and Output Ordering
 ======================================================
 
-This page describes how to control the result of the CUB top-k family of algorithms (currently
-:cpp:struct:`cub::DeviceTopK`) through the execution environment. The same requirement model
-applies to every ``MaxKeys`` / ``MinKeys`` / ``MaxPairs`` / ``MinPairs`` entry point.
+This page describes how to control the result of the CUB top-k family of algorithms
+(:cpp:struct:`cub::DeviceTopK` and :cpp:struct:`cub::DeviceBatchedTopK`) through the execution
+environment. For :cpp:struct:`cub::DeviceBatchedTopK`, these requirements apply independently within
+each segment. The same requirement model applies to every ``MaxKeys`` / ``MinKeys`` / ``MaxPairs`` /
+``MinPairs`` entry point.
 
 Two orthogonal concerns
 -----------------------
