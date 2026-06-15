@@ -107,17 +107,17 @@ warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 
 #if __cccl_ptx_isa >= 860
 
-#  define _CUB_REDUX_FLOAT_OP(_CCCL_PTX_OP)                                                    \
+#  define _CUB_REDUX_FLOAT_OP(_CCCL_PTX_OP)                                                   \
     [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE float redux_sm100f_##_CCCL_PTX_OP##_ptx( \
-      const float value, ::cuda::std::uint32_t mask)                                           \
-    {                                                                                          \
-      float result;                                                                            \
-      asm volatile("{"                                                                         \
-                   "redux.sync." #_CCCL_PTX_OP ".f32 %0, %1, %2;"                              \
-                   "}"                                                                         \
-                   : "=f"(result)                                                              \
-                   : "f"(value), "r"(mask));                                                   \
-      return result;                                                                           \
+      const float value, ::cuda::std::uint32_t mask)                                          \
+    {                                                                                         \
+      float result;                                                                           \
+      asm volatile("{"                                                                        \
+                   "redux.sync." #_CCCL_PTX_OP ".f32 %0, %1, %2;"                             \
+                   "}"                                                                        \
+                   : "=f"(result)                                                             \
+                   : "f"(value), "r"(mask));                                                  \
+      return result;                                                                          \
     }
 
 _CUB_REDUX_FLOAT_OP(min)
@@ -129,8 +129,8 @@ _CUB_REDUX_FLOAT_OP(max)
 #  undef _CUB_REDUX_FLOAT_OP
 
 template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE_API
-_CCCL_FORCEINLINE T warp_redux_sm100f(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+warp_redux_sm100f(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
   static_assert(is_warp_redux_op_supported_sm100f<ReductionOp, T>, "Reduction operator not supported");
   _CCCL_ASSERT(mask != 0, "Mask must not be 0");
@@ -165,11 +165,11 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
   else if constexpr (is_warp_redux_op_supported_sm100f<ReductionOp, T>)
   {
     // Before PTX ISA 8.8, float reductions are only supported on sm100a.
-#  if __cccl_ptx_isa >= 880
+#if __cccl_ptx_isa >= 880
     NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return cub::detail::warp_redux_sm100f(input, mask, reduction_op);))
-#  else // ^^^ __cccl_ptx_isa >= 880 ^^^ / vvv __cccl_ptx_isa < 880 vvv
+#else // ^^^ __cccl_ptx_isa >= 880 ^^^ / vvv __cccl_ptx_isa < 880 vvv
     NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::warp_redux_sm100f(input, mask, reduction_op);))
-#  endif // ^^^ __cccl_ptx_isa < 880 ^^^
+#endif // ^^^ __cccl_ptx_isa < 880 ^^^
   }
 #endif // __cccl_ptx_isa >= 860
   return ::cuda::std::nullopt;
