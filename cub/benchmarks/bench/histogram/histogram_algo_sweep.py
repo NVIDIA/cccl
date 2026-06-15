@@ -69,18 +69,30 @@ BINARIES = {
 #     also answer "can the dynamic kernel replace the static <=256 kernel?" -- previously a
 #     separate bespoke script. `smem_static` is skipped above MAX_STATIC_BINS (the static
 #     kernel is compile-time-sized for 256 bins; forcing it higher reads out of bounds).
-FORCED_HIGH_BIN_ALGOS = [
-    "hybrid",
-    "gmem_privatized_nocache",
-    "gmem_privatized_cuckoo",
-    "gmem_privatized_single_probe",
-    "direct_nocache",
-    "direct_cuckoo",
-    "direct_single_probe",
-]
+# GPC/GPS (gmem_privatized_cuckoo / _single_probe) DROPPED: the wins analysis showed
+# both are never the best, nor within 2% of best, on any cell -- dead dispatch surface.
+#
+# WARP-COALESCE VARIANTS: each coalesce-affected off-chip algo is measured BOTH with
+# coalescing (the stock binary) and without (the `*__nocoal` key -> the .nocoal binary,
+# built -DCUB_HISTO_FORCE_WARP_COALESCE=0). The `__nocoal` suffix is stripped to form the
+# CUB_HISTO_FORCE_ALGO value (the kernel is the same; only the policy flag differs, which
+# the launch tag does not encode) and selects the .nocoal binary in run_cell. hybrid is
+# NOT coalesce-affected (AccumulatePixelsHybrid has no __match_any_sync), so it has no
+# __nocoal variant.
+_COALESCE_AFFECTED = ["gmem_privatized_nocache", "direct_nocache", "direct_cuckoo", "direct_single_probe"]
+FORCED_HIGH_BIN_ALGOS = (
+    ["hybrid"]
+    + _COALESCE_AFFECTED
+    + [a + "__nocoal" for a in _COALESCE_AFFECTED]
+)
 FORCED_LOW_BIN_ALGOS = ["smem_static", "smem_dynamic"]
 FORCED_ALGOS = [""] + FORCED_HIGH_BIN_ALGOS + FORCED_LOW_BIN_ALGOS  # "" == default (selector)
 ALGO_KEY = {"": "default"}  # env value -> JSON key; others map to themselves.
+
+
+def _base_algo(akey: str) -> str:
+    """Strip the `__nocoal` marker to get the CUB_HISTO_FORCE_ALGO value / launch-tag base."""
+    return akey[:-len("__nocoal")] if akey.endswith("__nocoal") else akey
 
 # The exact `[launch] ... ran=X` tag each forced request must produce to count as
 # "actually ran the requested algorithm". Both GmemPrivatized<NoCache> members report
@@ -354,7 +366,17 @@ def main():
                              if a == "" or _forced_algo_applicable(ALGO_KEY.get(a, a), bins, multichannel)]
                     for algo_env in algos:
                         akey = ALGO_KEY.get(algo_env, algo_env)
-                        med, ran, ok, unsupported = run_cell(branch_bin, algo_env, sample, elements, bins,
+                        # `*__nocoal` keys force their BASE algo (the kernel is identical;
+                        # only the warp-coalesce policy flag differs) but run against the
+                        # .nocoal binary (built -DCUB_HISTO_FORCE_WARP_COALESCE=0). All other
+                        # keys run against this binary with their own name as the force value.
+                        force_env = _base_algo(akey) if akey else ""
+                        cell_bin = (branch_dir / (BINARIES[blabel] + ".nocoal")) if akey.endswith("__nocoal") else branch_bin
+                        if akey.endswith("__nocoal") and not cell_bin.exists():
+                            print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                  f"{akey:28} SKIP (no {cell_bin.name})", flush=True)
+                            continue
+                        med, ran, ok, unsupported = run_cell(cell_bin, force_env, sample, elements, bins,
                                                              args.shapes, args.repeats, args.min_time, args.timeout)
                         total_calls += 1
                         if not ok:
@@ -376,7 +398,11 @@ def main():
                         # `default` is exempt (it IS "whatever the selector picks"); its
                         # actual pick is recorded into `_selected` for the plotter tags.
                         if algo_env:
-                            expected = EXPECTED_RAN.get(akey, akey)
+                            # `*__nocoal` emits the SAME launch tag as its base algo
+                            # (coalesce on/off is not encoded in the tag), so validate
+                            # against the base's expected tag.
+                            base = _base_algo(akey)
+                            expected = EXPECTED_RAN.get(base, base)
                             if ran != expected:
                                 print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
                                       f"{akey:28} DROP (ran={ran})", flush=True)
