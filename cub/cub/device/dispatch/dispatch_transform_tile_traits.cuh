@@ -16,9 +16,7 @@
 //                                   on ct::tile. Omitting it is a clear
 //                                   static_assert, not a cryptic kernel error.
 //   tile_operator_t<Op>         -- alias for tile_operator<Op>::type.
-//   tile_mufu_heavy<Op>         -- specialize to flag Op as MUFU-heavy; the
-//                                   tile policy picker uses this hint.
-//   tile_mufu_heavy_v<...>      -- variable-template companion.
+//   tile_mufu_heavy_v<Op>       -- specialize to true to flag Op as MUFU-heavy; the tile policy picker uses it.
 //
 // Eligibility ("may this combo use the tile path?") and substitution ("which
 // __tile__ functor do we actually run?") are separate traits, so an eligible op
@@ -72,14 +70,10 @@ struct tile_operator
 template <typename Op>
 using tile_operator_t = typename tile_operator<Op>::type;
 
-// Hint that Op uses MUFU (multi-function unit, sin/cos/exp/log/tanh/rcp/rsq). Setting this makes
-// the tile policy picker cap items/thread so MUFU pipes are not oversaturated.
+// Hint that Op uses MUFU (multi-function unit, sin/cos/exp/log/tanh/rcp/rsq); specialize to true to make the tile
+// policy picker cap items/thread so MUFU pipes are not oversaturated.
 template <typename Op>
-struct tile_mufu_heavy : ::cuda::std::false_type
-{};
-
-template <typename Op>
-inline constexpr bool tile_mufu_heavy_v = tile_mufu_heavy<Op>::value;
+inline constexpr bool tile_mufu_heavy_v = false;
 } // namespace transform
 
 // Internal substitutes shipped by CCCL.

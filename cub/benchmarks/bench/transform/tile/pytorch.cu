@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 // Tile variant of the PyTorch-style transform benches. Each named op registers a tile_operator
-// substitute (gated); MUFU-heavy ops also opt into tile_mufu_heavy<> so the tile policy picker caps
+// substitute (gated); MUFU-heavy ops also opt into tile_mufu_heavy_v so the tile policy picker caps
 // items/thread at the vector width on sub-4-byte types. Under --enable-tile +
 // CCCL_ENABLE_TILE_TRANSFORM_DISPATCH the dispatch hook routes them to the tile kernel; otherwise this
 // is the standard CUB path. This file disappears once tile dispatch is fully transparent.
@@ -331,20 +331,15 @@ struct tile_operator<exp_op>
 // MUFU-heavy unary ops: hint the tile policy picker to cap items/thread at the vector width on
 // sub-4-byte types.
 template <>
-struct tile_mufu_heavy<sigmoid_op> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_mufu_heavy_v<sigmoid_op> = true;
 template <>
-struct tile_mufu_heavy<tanh_op> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_mufu_heavy_v<tanh_op> = true;
 template <>
-struct tile_mufu_heavy<gelu_op> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_mufu_heavy_v<gelu_op> = true;
 template <>
-struct tile_mufu_heavy<sin_op> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_mufu_heavy_v<sin_op> = true;
 template <>
-struct tile_mufu_heavy<exp_op> : ::cuda::std::true_type
-{};
+inline constexpr bool tile_mufu_heavy_v<exp_op> = true;
 
 // Binary
 template <class T>
