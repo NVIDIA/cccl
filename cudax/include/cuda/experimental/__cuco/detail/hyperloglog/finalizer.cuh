@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___HYPERLOGLOG_FINALIZER_CUH
-#define _CUDAX___CUCO___HYPERLOGLOG_FINALIZER_CUH
+#ifndef _CUDAX___CUCO_DETAIL_HYPERLOGLOG_FINALIZER_CUH
+#define _CUDAX___CUCO_DETAIL_HYPERLOGLOG_FINALIZER_CUH
 
 #include <cuda/__cccl_config>
 
@@ -30,7 +30,7 @@
 #include <cuda/std/__numeric/midpoint.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__cuco/__hyperloglog/tuning.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/tuning.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -188,4 +188,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___HYPERLOGLOG_FINALIZER_CUH
+#endif // _CUDAX___CUCO_DETAIL_HYPERLOGLOG_FINALIZER_CUH

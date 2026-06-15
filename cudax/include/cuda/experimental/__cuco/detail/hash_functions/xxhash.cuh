@@ -42,8 +42,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _CUDAX___CUCO___HASH_FUNCTIONS_XXHASH_CUH
-#define _CUDAX___CUCO___HASH_FUNCTIONS_XXHASH_CUH
+#ifndef _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+#define _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
 
 #include <cuda/__cccl_config>
 
@@ -63,7 +63,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__cuco/__hash_functions/utils.cuh>
+#include <cuda/experimental/__cuco/detail/hash_functions/utils.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -423,4 +423,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___HASH_FUNCTIONS_XXHASH_CUH
+#endif // _CUDAX___CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
