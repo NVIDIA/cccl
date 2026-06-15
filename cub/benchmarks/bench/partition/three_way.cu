@@ -18,7 +18,7 @@ template <typename InputT>
 struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::three_way_partition::three_way_partition_policy
+    -> cub::ThreeWayPartitionPolicy
   {
     return {TUNE_THREADS_PER_BLOCK,
             TUNE_ITEMS_PER_THREAD,
