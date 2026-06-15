@@ -21,7 +21,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <cuda/std/__floating_point/cast.h>
+#include <cuda/std/__floating_point/cast.h> // IWYU pragma: keep
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -44,15 +44,7 @@ inline constexpr bool is_warp_redux_op_supported_sm80 =
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_op_supported_sm100af =
-  __cccl_ptx_isa >= 860
-  && (::cuda::std::is_same_v<T, float>
-#if _CCCL_HAS_NVFP16()
-      || is_half_v<T>
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
-      || is_bfloat16_v<T>
-#endif // _CCCL_HAS_NVBF16()
-      )
+  __cccl_ptx_isa >= 860 && (::cuda::std::is_same_v<T, float> || is_half_v<T> || is_bfloat16_v<T>)
   && is_cuda_minimum_maximum_v<ReduceOp, T>;
 
 template <typename Op, typename T>
@@ -122,15 +114,15 @@ warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 
 _CUB_REDUX_FLOAT_OP(min)
 _CUB_REDUX_FLOAT_OP(max)
-// TODO: min_abs, max_abs are also available but we need to introduce the corresposing operators
+// TODO(fbusato): min_abs, max_abs are also available but we need to introduce the corresposing operators
 // _CUB_REDUX_FLOAT_OP(min_abs)
 // _CUB_REDUX_FLOAT_OP(max_abs)
 
 #  undef _CUB_REDUX_FLOAT_OP
 
 template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE_API
-_CCCL_FORCEINLINE T warp_redux_sm100af(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+warp_redux_sm100af(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
   static_assert(is_warp_redux_op_supported_sm100af<ReductionOp, T>, "Reduction operator not supported");
   _CCCL_ASSERT(mask != 0, "Mask must not be 0");
@@ -162,16 +154,15 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_sm80(input, mask, reduction_op);))
   }
-  else if constexpr (is_warp_redux_op_supported_sm100f<ReductionOp, T>)
+  else if constexpr (is_warp_redux_op_supported_sm100af<ReductionOp, T>)
   {
     // Before PTX ISA 8.8, float reductions are only supported on sm100a.
-#  if __cccl_ptx_isa >= 880
+#if __cccl_ptx_isa >= 880
     NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return cub::detail::warp_redux_sm100f(input, mask, reduction_op);))
-#  else // ^^^ __cccl_ptx_isa >= 880 ^^^ / vvv __cccl_ptx_isa < 880 vvv
+#else // ^^^ __cccl_ptx_isa >= 880 ^^^ / vvv __cccl_ptx_isa < 880 vvv
     NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::warp_redux_sm100f(input, mask, reduction_op);))
-#  endif // ^^^ __cccl_ptx_isa < 880 ^^^
+#endif // ^^^ __cccl_ptx_isa < 880 ^^^
   }
-#endif // __cccl_ptx_isa >= 860
   return ::cuda::std::nullopt;
 }
 } // namespace detail
