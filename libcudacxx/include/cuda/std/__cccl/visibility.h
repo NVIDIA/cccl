@@ -116,15 +116,7 @@
 #  define _CCCL_DEVICE_API      _CCCL_DEVICE
 #  define _CCCL_TILE_API        _CCCL_TILE
 #else // ^^^ _CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_COMPILER(NVHPC) vvv
-// Local fork patch: drop _CCCL_TILE from _CCCL_API. Under the tile compiler's
-// local-only context check, marking a host/device utility __tile__ means its
-// body must satisfy tile restrictions even when the caller is non-tile. That
-// fails for any utility that takes a user-provided callable (apply, invoke,
-// visit, runtime_assume_aligned, ...). Drop the marker globally; tile DSL
-// code in this branch uses its own tile-marked operations and doesn't depend
-// on libcudacxx utilities being tile-callable. Revert when upstream fixes the
-// marking discipline (or the compiler adopts per-instantiation checking).
-#  define _CCCL_API             _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_API             _CCCL_TILE _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CCCL_HOST_DEVICE_API _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CCCL_HOST_API        _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CCCL_DEVICE_API      _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION

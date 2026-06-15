@@ -32,6 +32,10 @@
 #  define _CCCL_BUILTIN_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC)
 
+#if _CCCL_TILE_COMPILATION() // __builtin_launder is not supported in tile mode
+#  undef _CCCL_BUILTIN_LAUNDER
+#endif // _CCCL_TILE_COMPILATION()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>

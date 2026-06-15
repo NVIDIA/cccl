@@ -112,6 +112,11 @@
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
+#if _CCCL_TILE_COMPILATION() // __builtin_assume_aligned is not supported in tile mode
+#  undef _CCCL_BUILTIN_ASSUME_ALIGNED
+#  define _CCCL_BUILTIN_ASSUME_ALIGNED(_Ptr, ...) (_Ptr)
+#endif // _CCCL_TILE_COMPILATION()
+
 #if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
