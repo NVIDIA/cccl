@@ -21,7 +21,7 @@ Apply this guidance across CCCL unless a path-specific style reference says othe
 - Files must include all headers related to the symbols that they are using.
 - Relying on transitive header inclusion is not allowed.
 - Unneeded headers must be removed.
-- All headers must have the correct license. This also applies source files.
+- All headers must have the correct license. This also applies to source files.
 - All header inclusions must use the syntax `<header>`.
 - Use forward declaration, namely `__fwd/header.h` or direct type declaration, when possible instead of including the implementation header.
 - Headers should be the most precise available, e.g. `#include <cuda/std/__type_traits/is_array.h>`.
