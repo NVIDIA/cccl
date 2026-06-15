@@ -1875,17 +1875,18 @@ struct DeviceSelect
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename NumItemsT,
-            typename EqualityOpT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>&& ::cuda::std::
-                                       indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
-                                     int> = 0>
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EqualityOpT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
+                             int>                                        = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
     KeyInputIteratorT d_keys_in,
     ValueInputIteratorT d_values_in,
@@ -2003,10 +2004,10 @@ struct DeviceSelect
     typename ValueOutputIteratorT,
     typename NumSelectedIteratorT,
     typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>
-                               && !::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>,
-                             int> = 0>
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>, int> =
+      0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
     KeyInputIteratorT d_keys_in,
     ValueInputIteratorT d_values_in,
@@ -2576,17 +2577,18 @@ struct DeviceSelect
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename NumItemsT,
-            typename EqualityOpT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>&& ::cuda::std::
-                                       indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
-                                     int> = 0>
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EqualityOpT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
+                             int>                                        = 0>
   CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t UniqueByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2742,10 +2744,10 @@ struct DeviceSelect
     typename ValueOutputIteratorT,
     typename NumSelectedIteratorT,
     typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>
-                               && !::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>,
-                             int> = 0>
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>, int> =
+      0>
   CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t UniqueByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
