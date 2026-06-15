@@ -10,6 +10,7 @@
 
 #include <cuda/argument>
 #include <cuda/std/cassert>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -56,6 +57,13 @@ TEST_FUNC constexpr bool test()
     assert(b.lower() == 10);
     assert(b.upper() == 100);
     static_assert(cuda::std::is_same_v<decltype(b.lower()), int>);
+  }
+
+  // Default runtime bounds span the element type's numeric_limits range
+  {
+    constexpr cuda::args::runtime_bounds<int> b{};
+    static_assert(b.lower() == cuda::std::numeric_limits<int>::lowest());
+    static_assert(b.upper() == (cuda::std::numeric_limits<int>::max)());
   }
 
   // --- argument_bounds factory functions ---

@@ -68,6 +68,38 @@ template <auto _Lower, auto _Upper>
 inline constexpr bool __is_static_bounds_v<static_bounds<_Lower, _Upper>> = true;
 
 // =====================================================================
+// __type_lowest / __type_highest
+// =====================================================================
+
+// The implicit bounds of an element type are derived from cuda::std::numeric_limits. The primary numeric_limits
+// template returns a value-initialized object from lowest()/max() and is therefore meaningless as a bound, so require
+// an explicit specialization rather than silently producing a degenerate range.
+
+//! @brief Returns the lowest value representable by the element type @c _Tp.
+//! @tparam _Tp The element type. It must have a @c cuda::std::numeric_limits specialization.
+//! @return @c cuda::std::numeric_limits<_Tp>::lowest().
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __type_lowest() noexcept
+{
+  static_assert(::cuda::std::numeric_limits<_Tp>::is_specialized,
+                "cuda::args bounds require a specialized cuda::std::numeric_limits for the element type. Provide "
+                "explicit bounds for element types without a numeric_limits specialization.");
+  return ::cuda::std::numeric_limits<_Tp>::lowest();
+}
+
+//! @brief Returns the highest value representable by the element type @c _Tp.
+//! @tparam _Tp The element type. It must have a @c cuda::std::numeric_limits specialization.
+//! @return @c cuda::std::numeric_limits<_Tp>::max().
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __type_highest() noexcept
+{
+  static_assert(::cuda::std::numeric_limits<_Tp>::is_specialized,
+                "cuda::args bounds require a specialized cuda::std::numeric_limits for the element type. Provide "
+                "explicit bounds for element types without a numeric_limits specialization.");
+  return (::cuda::std::numeric_limits<_Tp>::max)();
+}
+
+// =====================================================================
 // runtime_bounds
 // =====================================================================
 
@@ -77,8 +109,8 @@ inline constexpr bool __is_static_bounds_v<static_bounds<_Lower, _Upper>> = true
 template <class _Tp>
 class runtime_bounds
 {
-  _Tp __lower_ = ::cuda::std::numeric_limits<_Tp>::lowest();
-  _Tp __upper_ = (::cuda::std::numeric_limits<_Tp>::max)();
+  _Tp __lower_ = __type_lowest<_Tp>();
+  _Tp __upper_ = __type_highest<_Tp>();
 
 public:
   constexpr runtime_bounds() noexcept = default;
