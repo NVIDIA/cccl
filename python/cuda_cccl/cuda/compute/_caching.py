@@ -159,6 +159,8 @@ def _make_hashable(value):
         # (pointers). Thus, we only cache on the dtype and shape of
         # the referenced array, but not its pointer.
         return (get_dtype(value), get_shape(value))
+    elif isinstance(value, (np.number, np.bool_)):
+        return ("numpy.scalar", value.dtype.str, value.tobytes())
     elif isinstance(value, (list, tuple)):
         return tuple(_make_hashable(v) for v in value)
     elif isinstance(value, dict):
