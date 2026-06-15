@@ -198,7 +198,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
         {
           if (lane_id == 0)
           {
-            *(d_out + global_segment_id) = reduce::unwrap_empty_problem_init(init);
+            reduce::handle_empty_problem(d_out + global_segment_id, init);
           }
           return;
         }
@@ -240,7 +240,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     {
       if (tid == 0)
       {
-        *(d_out + bid) = reduce::unwrap_empty_problem_init(init);
+        reduce::handle_empty_problem(d_out + bid, init);
       }
       return;
     }
@@ -399,7 +399,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
       {
         if (lane_id == 0)
         {
-          *(d_out + global_segment_id) = detail::reduce::unwrap_empty_problem_init(init);
+          detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
         }
         return;
       }

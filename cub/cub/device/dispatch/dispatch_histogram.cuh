@@ -725,9 +725,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(int)
-  -> decltype(ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count)
+  -> decltype(ActivePolicy::init_kernel_pdl_trigger_max_bins)
 {
-  return ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count;
+  return ActivePolicy::init_kernel_pdl_trigger_max_bins;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -745,12 +745,12 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> histogram_policy
   return histogram_policy{
     ap::BLOCK_THREADS,
     ap::PIXELS_PER_THREAD,
+    ap::VEC_SIZE,
     ap::LOAD_ALGORITHM,
     ap::LOAD_MODIFIER,
     ap::IS_RLE_COMPRESS,
     ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
-    ap::VEC_SIZE,
     convert_pdl_trigger<ActivePolicy>(0)};
 }
 
@@ -778,7 +778,7 @@ public:
                       ({
                         histogram_policy policy{};
                         extract_policy_dispatch_t dispatch{policy};
-                        MaxPolicy::Invoke(cc.get() * 10, dispatch);
+                        _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
                       ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));

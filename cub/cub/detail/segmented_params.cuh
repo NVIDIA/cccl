@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__argument_>
+#include <cuda/argument>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
@@ -33,10 +33,10 @@ namespace detail::params
 //! @param[in] __index Segment index to read for sequence arguments.
 //! @return The single argument value, or the sequence element at the given index.
 _CCCL_TEMPLATE(class _Tp, class _SegmentIndexT)
-_CCCL_REQUIRES((!::cuda::__argument::__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>) )
+_CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>) )
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto get_param(_Tp&& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
-  if constexpr (::cuda::__argument::__traits<::cuda::std::remove_cvref_t<_Tp>>::is_single_value)
+  if constexpr (::cuda::args::__traits<::cuda::std::remove_cvref_t<_Tp>>::is_single_value)
   {
     return __arg;
   }
@@ -46,46 +46,32 @@ _CCCL_REQUIRES((!::cuda::__argument::__is_wrapper_v<::cuda::std::remove_cvref_t<
   }
 }
 
-template <auto _Value, class _SegmentIndexT>
+template <auto _Value, class _Tp, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::__argument::__constant<_Value>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
+get_param(const ::cuda::args::constant<_Value, _Tp>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
-  return ::cuda::__argument::__unwrap(__arg);
-}
-
-template <auto _Value, class _SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::__argument::__constant_sequence<_Value>& __arg, _SegmentIndexT __index) noexcept
-{
-  return ::cuda::__argument::__unwrap(__arg)[__index];
-}
-
-template <class _Arg, class _StaticBounds, class _SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto get_param(
-  const ::cuda::__argument::__immediate<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
-{
-  return ::cuda::__argument::__unwrap(__arg);
+  return ::cuda::args::__unwrap(__arg);
 }
 
 template <class _Arg, class _StaticBounds, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::__argument::__immediate_sequence<_Arg, _StaticBounds>& __arg, _SegmentIndexT __index) noexcept
+get_param(const ::cuda::args::immediate<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
-  return ::cuda::__argument::__unwrap(__arg)[__index];
-}
-
-template <class _Arg, class _StaticBounds, class _SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto get_param(
-  const ::cuda::__argument::__deferred<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
-{
-  return ::cuda::__argument::__unwrap(__arg);
+  return ::cuda::args::__unwrap(__arg);
 }
 
 template <class _Arg, class _StaticBounds, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::__argument::__deferred_sequence<_Arg, _StaticBounds>& __arg, _SegmentIndexT __index) noexcept
+get_param(const ::cuda::args::deferred<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
-  return ::cuda::__argument::__unwrap(__arg)[__index];
+  return ::cuda::args::__unwrap(__arg);
+}
+
+template <class _Arg, class _StaticBounds, class _SegmentIndexT>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+get_param(const ::cuda::args::deferred_sequence<_Arg, _StaticBounds>& __arg, _SegmentIndexT __index) noexcept
+{
+  return ::cuda::args::__unwrap(__arg)[__index];
 }
 
 // =====================================================================
@@ -99,48 +85,23 @@ struct supported_options
   static constexpr ::cuda::std::size_t count = sizeof...(Options);
 };
 
-//! @brief Uniform discrete parameter — a single runtime value with a known set of supported options.
-template <typename T, T... Options>
-struct uniform_discrete_param
+//! @brief Static discrete parameter — a single compile-time value that is also its only supported option.
+//!
+//! Holds no runtime value, so it cannot be put into a state that disagrees with its supported option, and
+//! @c dispatch_impl therefore always matches it. This is the safe representation for a compile-time-fixed discrete
+//! parameter (e.g. a statically known top-k selection direction): modeling such a parameter with a runtime value
+//! instead would risk that value silently disagreeing with the supported option (a no-op dispatch unless
+//! @c CCCL_ENABLE_ASSERTIONS is set).
+template <typename T, T Value>
+struct static_discrete_param
 {
   using value_type          = T;
-  using supported_options_t = supported_options<T, Options...>;
-
-  T value;
-
-  _CCCL_HOST_DEVICE constexpr uniform_discrete_param(T v)
-      : value(v)
-  {}
-
-  uniform_discrete_param() = default;
+  using supported_options_t = supported_options<T, Value>;
 
   template <typename SegmentIndexT>
-  _CCCL_HOST_DEVICE constexpr auto get_param([[maybe_unused]] SegmentIndexT segment_id) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr T get_param(SegmentIndexT) const noexcept
   {
-    return value;
-  }
-};
-
-//! @brief Per-segment discrete parameter — per-segment values with a known set of supported options.
-template <typename IteratorT, typename T, T... Options>
-struct per_segment_discrete_param
-{
-  using iterator_type       = IteratorT;
-  using value_type          = T;
-  using supported_options_t = supported_options<T, Options...>;
-
-  IteratorT iterator;
-
-  _CCCL_HOST_DEVICE constexpr per_segment_discrete_param(IteratorT iter)
-      : iterator(iter)
-  {}
-
-  per_segment_discrete_param() = default;
-
-  template <typename SegmentIndexT>
-  _CCCL_HOST_DEVICE constexpr auto get_param(SegmentIndexT segment_id) const
-  {
-    return iterator[segment_id];
+    return Value;
   }
 };
 
@@ -164,7 +125,7 @@ dispatch_impl(T val, [[maybe_unused]] supported_options<T, Opts...> __supported_
   return match_found;
 }
 
-//! @brief Dispatcher that resolves a per-segment discrete parameter to a compile-time constant
+//! @brief Dispatcher that resolves a discrete parameter to a compile-time constant
 //!        and invokes a functor with the matched option.
 //!
 //! @param[in] param Discrete parameter to resolve.

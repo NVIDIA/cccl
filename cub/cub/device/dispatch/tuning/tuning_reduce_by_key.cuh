@@ -31,6 +31,41 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! The tuning policy for `DeviceReduce::ReduceByKey`
+struct ReduceByKeyPolicy
+{
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
+  LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const ReduceByKeyPolicy& lhs, const ReduceByKeyPolicy& rhs) noexcept
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const ReduceByKeyPolicy& lhs, const ReduceByKeyPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyPolicy& p)
+  {
+    return os
+        << "ReduceByKeyPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 namespace detail::reduce_by_key
 {
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
@@ -872,12 +907,12 @@ struct policy_hub
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
 
     using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<128,
-                             items_per_thread,
-                             BLOCK_LOAD_DIRECT,
-                             LoadModifier,
-                             BLOCK_SCAN_WARP_SCANS,
-                             default_reduce_by_key_delay_constructor_t<AccumT, int>>;
+      agent_reduce_by_key_policy<128,
+                                 items_per_thread,
+                                 BLOCK_LOAD_DIRECT,
+                                 LoadModifier,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
@@ -891,12 +926,12 @@ struct policy_hub
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
   template <typename Tuning>
   static auto select_agent_policy(int)
-    -> AgentReduceByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              LOAD_DEFAULT,
-                              BLOCK_SCAN_WARP_SCANS,
-                              typename Tuning::delay_constructor>;
+    -> agent_reduce_by_key_policy<Tuning::threads,
+                                  Tuning::items,
+                                  Tuning::load_algorithm,
+                                  LOAD_DEFAULT,
+                                  BLOCK_SCAN_WARP_SCANS,
+                                  typename Tuning::delay_constructor>;
 
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
@@ -926,12 +961,12 @@ struct policy_hub
     // Use values from tuning if a specialization exists, otherwise fall back to SM90
     template <typename Tuning>
     static auto select_agent_policy(int)
-      -> AgentReduceByKeyPolicy<Tuning::threads,
-                                Tuning::items,
-                                Tuning::load_algorithm,
-                                Tuning::load_modifier,
-                                BLOCK_SCAN_WARP_SCANS,
-                                typename Tuning::delay_constructor>;
+      -> agent_reduce_by_key_policy<Tuning::threads,
+                                    Tuning::items,
+                                    Tuning::load_algorithm,
+                                    Tuning::load_modifier,
+                                    BLOCK_SCAN_WARP_SCANS,
+                                    typename Tuning::delay_constructor>;
 
     template <typename Tuning>
     static auto select_agent_policy(long) -> typename Policy900::ReduceByKeyPolicyT;
@@ -942,43 +977,9 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-struct reduce_by_key_policy
-{
-  int threads_per_block;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const reduce_by_key_policy& lhs, const reduce_by_key_policy& rhs)
-  {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const reduce_by_key_policy& lhs, const reduce_by_key_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const reduce_by_key_policy& p)
-  {
-    return os
-        << "reduce_by_key_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
-  }
-#endif // _CCCL_HOSTED()
-};
-
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept reduce_by_key_policy_selector = detail::policy_selector<T, reduce_by_key_policy>;
+concept reduce_by_key_policy_selector = detail::policy_selector<T, ReduceByKeyPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
@@ -995,7 +996,7 @@ struct policy_selector
   bool accum_is_primitive;
   bool op_is_primitive;
 
-  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> reduce_by_key_policy
+  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> ReduceByKeyPolicy
   {
     constexpr int nominal_4B_items_per_thread = 6;
     const int combined_input_bytes            = key_size + accum_size;
@@ -1005,7 +1006,7 @@ struct policy_selector
         ? 6
         : ::cuda::std::clamp(
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
-    return reduce_by_key_policy{
+    return ReduceByKeyPolicy{
       128,
       items_per_thread,
       BLOCK_LOAD_DIRECT,
@@ -1016,7 +1017,7 @@ struct policy_selector
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> reduce_by_key_policy
+    -> ReduceByKeyPolicy
   {
     // bail out if we don't know the operation. TODO(bgruber): drop this check when we make the tuning API public
     if (!op_is_primitive)
@@ -1036,7 +1037,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_CA,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backon_jitter_window, 2044, 240}};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 2044, 240}};
       }
       if (key_size == 1 && accum_size == 2)
       {
@@ -1046,7 +1047,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff_jitter_window, 224, 390}};
+                {LookbackDelayAlgorithm::exponential_backoff_jitter_window, 224, 390}};
       }
       if (key_size == 1 && accum_size == 4)
       {
@@ -1056,7 +1057,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff, 248, 285}};
+                {LookbackDelayAlgorithm::exponential_backoff, 248, 285}};
       }
       if (key_size == 1 && accum_size == 8)
       {
@@ -1066,7 +1067,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::fixed_delay, 132, 540}};
+                {LookbackDelayAlgorithm::fixed_delay, 132, 540}};
       }
       if (key_size == 2 && accum_size == 1)
       {
@@ -1076,7 +1077,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff, 164, 290}};
+                {LookbackDelayAlgorithm::exponential_backoff, 164, 290}};
       }
       if (key_size == 2 && accum_size == 2)
       {
@@ -1086,7 +1087,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff, 180, 975}};
+                {LookbackDelayAlgorithm::exponential_backoff, 180, 975}};
       }
       if (key_size == 2 && accum_size == 4 && accum_t != type_t::float32) // I16, F32, I32 regressed, fall back to SM90
       {
@@ -1096,7 +1097,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff, 224, 550}};
+                {LookbackDelayAlgorithm::exponential_backoff, 224, 550}};
       }
       if (key_size == 2 && accum_size == 8)
       {
@@ -1106,7 +1107,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::fixed_delay, 156, 725}};
+                {LookbackDelayAlgorithm::fixed_delay, 156, 725}};
       }
       if (key_size == 4 && accum_size == 1)
       {
@@ -1116,7 +1117,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff, 324, 285}};
+                {LookbackDelayAlgorithm::exponential_backoff, 324, 285}};
       }
       if (key_size == 4 && accum_size == 2)
       {
@@ -1126,7 +1127,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backon_jitter_window, 1984, 115}};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 1984, 115}};
       }
       if (key_size == 4 && accum_size == 4)
       {
@@ -1136,7 +1137,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backon_jitter_window, 476, 1005}};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 476, 1005}};
       }
       if (key_size == 4 && accum_size == 8)
       {
@@ -1146,7 +1147,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backon, 1868, 145}};
+                {LookbackDelayAlgorithm::exponential_backon, 1868, 145}};
       }
       if (key_size == 8 && accum_size == 1)
       {
@@ -1156,7 +1157,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backon_jitter_window, 1940, 460}};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 1940, 460}};
       }
       if (key_size == 8 && accum_size == 2)
       {
@@ -1166,7 +1167,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_CA,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff, 392, 550}};
+                {LookbackDelayAlgorithm::exponential_backoff, 392, 550}};
       }
       if (key_size == 8 && accum_size == 4)
       {
@@ -1176,7 +1177,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff, 244, 475}};
+                {LookbackDelayAlgorithm::exponential_backoff, 244, 475}};
       }
       if (key_size == 8 && accum_size == 8)
       {
@@ -1186,7 +1187,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {delay_constructor_kind::exponential_backoff, 196, 340}};
+                {LookbackDelayAlgorithm::exponential_backoff, 196, 340}};
       }
     }
 
@@ -1197,12 +1198,12 @@ struct policy_selector
         if (key_size == 1 && accum_size == 1)
         {
           return {
-            256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 720}};
+            256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 720}};
         }
         if (key_size == 1 && accum_size == 2)
         {
           return {
-            320, 23, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 865}};
+            320, 23, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 865}};
         }
         if (key_size == 1 && accum_size == 4)
         {
@@ -1211,7 +1212,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 735}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 735}};
         }
         if (key_size == 1 && accum_size == 8)
         {
@@ -1220,7 +1221,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 580}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 580}};
         }
         if (key_size == 1 && accum_size == 16)
         {
@@ -1229,12 +1230,12 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1100}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1100}};
         }
         if (key_size == 2 && accum_size == 1)
         {
           return {
-            128, 23, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 985}};
+            128, 23, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 985}};
         }
         if (key_size == 2 && accum_size == 2)
         {
@@ -1243,7 +1244,7 @@ struct policy_selector
                   BLOCK_LOAD_DIRECT,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::fixed_delay, 276, 650}};
+                  {LookbackDelayAlgorithm::fixed_delay, 276, 650}};
         }
         if (key_size == 2 && accum_size == 4)
         {
@@ -1252,7 +1253,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::fixed_delay, 240, 765}};
+                  {LookbackDelayAlgorithm::fixed_delay, 240, 765}};
         }
         if (key_size == 2 && accum_size == 8)
         {
@@ -1261,7 +1262,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1190}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1190}};
         }
         if (key_size == 2 && accum_size == 16)
         {
@@ -1270,7 +1271,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1175}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1175}};
         }
         if (key_size == 4 && accum_size == 1)
         {
@@ -1279,7 +1280,7 @@ struct policy_selector
                   BLOCK_LOAD_DIRECT,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::fixed_delay, 404, 645}};
+                  {LookbackDelayAlgorithm::fixed_delay, 404, 645}};
         }
         if (key_size == 4 && accum_size == 2)
         {
@@ -1288,7 +1289,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1160}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1160}};
         }
         if (key_size == 4 && accum_size == 4)
         {
@@ -1297,7 +1298,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1170}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1170}};
         }
         if (key_size == 4 && accum_size == 8)
         {
@@ -1306,7 +1307,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1055}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1055}};
         }
         if (key_size == 4 && accum_size == 16)
         {
@@ -1315,7 +1316,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1195}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1195}};
         }
         if (key_size == 8 && accum_size == 1)
         {
@@ -1324,7 +1325,7 @@ struct policy_selector
                   BLOCK_LOAD_DIRECT,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1170}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1170}};
         }
         if (key_size == 8 && accum_size == 2)
         {
@@ -1333,7 +1334,7 @@ struct policy_selector
                   BLOCK_LOAD_DIRECT,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::fixed_delay, 236, 1030}};
+                  {LookbackDelayAlgorithm::fixed_delay, 236, 1030}};
         }
         if (key_size == 8 && accum_size == 4)
         {
@@ -1342,7 +1343,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::fixed_delay, 152, 560}};
+                  {LookbackDelayAlgorithm::fixed_delay, 152, 560}};
         }
         if (key_size == 8 && accum_size == 8)
         {
@@ -1351,7 +1352,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1030}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1030}};
         }
         if (key_size == 8 && accum_size == 16)
         {
@@ -1360,7 +1361,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1125}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1125}};
         }
         if (key_size == 16 && accum_size == 1)
         {
@@ -1369,7 +1370,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1080}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1080}};
         }
         if (key_size == 16 && accum_size == 2)
         {
@@ -1378,7 +1379,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::fixed_delay, 320, 1005}};
+                  {LookbackDelayAlgorithm::fixed_delay, 320, 1005}};
         }
         if (key_size == 16 && accum_size == 4)
         {
@@ -1387,7 +1388,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::fixed_delay, 232, 1100}};
+                  {LookbackDelayAlgorithm::fixed_delay, 232, 1100}};
         }
         if (key_size == 16 && accum_size == 8)
         {
@@ -1396,7 +1397,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1195}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1195}};
         }
         if (key_size == 16 && accum_size == 16)
         {
@@ -1405,7 +1406,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1150}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1150}};
         }
       }
 
@@ -1425,12 +1426,12 @@ struct policy_selector
         if (key_size == 1 && accum_size == 1)
         {
           return {
-            256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 975}};
+            256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 975}};
         }
         if (key_size == 1 && accum_size == 2)
         {
           return {
-            224, 12, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 840}};
+            224, 12, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 840}};
         }
         if (key_size == 1 && accum_size == 4)
         {
@@ -1439,12 +1440,12 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 760}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 760}};
         }
         if (key_size == 1 && accum_size == 8)
         {
           return {
-            224, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1070}};
+            224, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 1070}};
         }
         if (key_size == 1 && accum_size == 16)
         {
@@ -1453,12 +1454,12 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1175}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1175}};
         }
         if (key_size == 2 && accum_size == 1)
         {
           return {
-            256, 11, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 620}};
+            256, 11, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 620}};
         }
         if (key_size == 2 && accum_size == 2)
         {
@@ -1467,7 +1468,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 640}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 640}};
         }
         if (key_size == 2 && accum_size == 4)
         {
@@ -1476,7 +1477,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 905}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 905}};
         }
         if (key_size == 2 && accum_size == 8)
         {
@@ -1485,7 +1486,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 810}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 810}};
         }
         if (key_size == 2 && accum_size == 16)
         {
@@ -1494,7 +1495,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1115}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1115}};
         }
         if (key_size == 4 && accum_size == 1)
         {
@@ -1503,7 +1504,7 @@ struct policy_selector
                   BLOCK_LOAD_DIRECT,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1110}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1110}};
         }
         if (key_size == 4 && accum_size == 2)
         {
@@ -1512,7 +1513,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1200}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1200}};
         }
         if (key_size == 4 && accum_size == 4)
         {
@@ -1521,7 +1522,7 @@ struct policy_selector
                   BLOCK_LOAD_DIRECT,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1110}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1110}};
         }
         if (key_size == 4 && accum_size == 8)
         {
@@ -1530,7 +1531,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1165}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1165}};
         }
         if (key_size == 4 && accum_size == 16)
         {
@@ -1539,7 +1540,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1100}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1100}};
         }
         if (key_size == 8 && accum_size == 1)
         {
@@ -1548,17 +1549,17 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1175}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1175}};
         }
         if (key_size == 8 && accum_size == 2)
         {
           return {
-            224, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1075}};
+            224, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 1075}};
         }
         if (key_size == 8 && accum_size == 4)
         {
           return {
-            384, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1040}};
+            384, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 1040}};
         }
         if (key_size == 8 && accum_size == 8)
         {
@@ -1567,7 +1568,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1080}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1080}};
         }
         if (key_size == 8 && accum_size == 16)
         {
@@ -1576,12 +1577,12 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 430}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 430}};
         }
         if (key_size == 16 && accum_size == 1)
         {
           return {
-            192, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1105}};
+            192, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 1105}};
         }
         if (key_size == 16 && accum_size == 2)
         {
@@ -1590,7 +1591,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 755}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 755}};
         }
         if (key_size == 16 && accum_size == 4)
         {
@@ -1599,12 +1600,12 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 535}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 535}};
         }
         if (key_size == 16 && accum_size == 8)
         {
           return {
-            192, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1035}};
+            192, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 1035}};
         }
         if (key_size == 16 && accum_size == 16)
         {
@@ -1613,7 +1614,7 @@ struct policy_selector
                   BLOCK_LOAD_WARP_TRANSPOSE,
                   LOAD_DEFAULT,
                   BLOCK_SCAN_WARP_SCANS,
-                  {delay_constructor_kind::no_delay, 0, 1090}};
+                  {LookbackDelayAlgorithm::no_delay, 0, 1090}};
         }
       }
 
@@ -1634,17 +1635,16 @@ static_assert(reduce_by_key_policy_selector<policy_selector>);
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const
-    -> reduce_by_key_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> ReduceByKeyPolicy
   {
     using ReduceByKeyPolicyT = typename PolicyHub::MaxPolicy::ReduceByKeyPolicyT;
-    return reduce_by_key_policy{
+    return ReduceByKeyPolicy{
       ReduceByKeyPolicyT::BLOCK_THREADS,
       ReduceByKeyPolicyT::ITEMS_PER_THREAD,
       ReduceByKeyPolicyT::LOAD_ALGORITHM,
       ReduceByKeyPolicyT::LOAD_MODIFIER,
       ReduceByKeyPolicyT::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename ReduceByKeyPolicyT::detail::delay_constructor_t>,
+      lookback_delay_policy_from_type<typename ReduceByKeyPolicyT::detail::delay_constructor_t>,
     };
   }
 };
@@ -1653,7 +1653,7 @@ template <class ReductionOpT, class AccumT, class KeyT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> reduce_by_key_policy
+    -> ReduceByKeyPolicy
   {
     return policy_selector{
       int{sizeof(KeyT)},

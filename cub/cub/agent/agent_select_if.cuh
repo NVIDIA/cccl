@@ -44,49 +44,21 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-/**
- * Parameterizable tuning policy type for AgentSelectIf
- *
- * @tparam ThreadsPerBlock
- *   Threads per thread block
- *
- * @tparam ItemsPerThread
- *   Items per thread (per tile of input)
- *
- * @tparam LoadAlgorithm
- *   The BlockLoad algorithm to use
- *
- * @tparam LoadModifier
- *   Cache load modifier for reading input elements
- *
- * @tparam ScanAlgorithm
- *   The BlockScan algorithm to use
- *
- * @tparam DelayConstructorT
- *   Implementation detail, do not specify directly, requirements on the
- *   content of this type are subject to breaking change.
- */
+namespace detail
+{
+// TODO(bgruber): remove this when C++20 is the minimum, since then we can pass policy values as NTTP
 template <int ThreadsPerBlock,
           int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentSelectIfPolicy
+struct agent_select_if_policy
 {
-  /// Threads per thread block
-  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
-
-  /// Items per thread (per tile of input)
-  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-
-  /// The BlockLoad algorithm to use
+  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
+  static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
-
-  /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
-
-  /// The BlockScan algorithm to use
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
@@ -94,6 +66,16 @@ struct AgentSelectIfPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
+} // namespace detail
+
+template <int ThreadsPerBlock,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockScanAlgorithm ScanAlgorithm,
+          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+using AgentSelectIfPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartition") = detail::
+  agent_select_if_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, ScanAlgorithm, DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions

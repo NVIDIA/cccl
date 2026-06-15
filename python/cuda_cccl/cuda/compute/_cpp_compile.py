@@ -14,6 +14,12 @@ from cuda.cccl import get_include_paths
 from cuda.core import Device, Program, ProgramOptions
 
 from ._bindings import TypeEnum
+from ._device_code import DeviceCode
+
+try:
+    from ._build_info import USING_V2  # type: ignore[import-not-found]
+except ImportError:
+    USING_V2 = False
 
 
 def _get_arch_string() -> str:
@@ -76,6 +82,20 @@ def compile_cpp_to_ltoir(
     result = program.compile("ltoir")
 
     return result.code
+
+
+@functools.lru_cache(maxsize=256)
+def compile_cpp_op_code(source: str, arch: str | None = None) -> DeviceCode:
+    """Compile C++ wrapper source to whatever form the active backend prefers.
+
+    Returns a :class:`DeviceCode` wrapping the bytes and the matching format tag.
+
+    Cached so identical iterator structures produce identical code bytes —
+    callers can inspect ``cache_info()`` to verify symbol determinism.
+    """
+    if USING_V2:
+        return DeviceCode(op_bytes=source.encode("utf-8"), kind="cpp_source")
+    return DeviceCode(op_bytes=compile_cpp_to_ltoir(source, arch=arch), kind="ltoir")
 
 
 def cpp_type_from_descriptor(type_desc) -> str | None:

@@ -285,14 +285,14 @@ struct less_than_5_t
 template <unsigned int BlockThreads>
 struct partition_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::select::select_if_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::PartitionPolicy
   {
     return {static_cast<int>(BlockThreads),
             10,
             cub::BLOCK_LOAD_DIRECT,
             cub::LOAD_DEFAULT,
             cub::BLOCK_SCAN_WARP_SCANS,
-            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450}};
+            cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   }
 };
 
@@ -307,7 +307,7 @@ struct three_way_partition_policy_selector
             cub::BLOCK_LOAD_DIRECT,
             cub::LOAD_DEFAULT,
             cub::BLOCK_SCAN_WARP_SCANS,
-            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450}};
+            cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   }
 };
 
