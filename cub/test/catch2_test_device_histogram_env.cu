@@ -1149,7 +1149,7 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[histog
 template <int BlockThreads>
 struct histogram_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::histogram::histogram_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
     return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
   }
@@ -1266,3 +1266,35 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][devic
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("HistogramPolicy", "[histogram][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::HistogramPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::HistogramPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::HistogramPolicy{
+    128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, cub::SMEM, false, 2048};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::HistogramPolicy{
+    .threads_per_block                = 128,
+    .pixels_per_thread                = 7,
+    .vec_size                         = 4,
+    .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
+    .load_modifier                    = cub::CacheLoadModifier::LOAD_LDG,
+    .rle_compress                     = false,
+    .mem_preference                   = cub::SMEM,
+    .use_work_stealing                = false,
+    .init_kernel_pdl_trigger_max_bins = 2048};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)
