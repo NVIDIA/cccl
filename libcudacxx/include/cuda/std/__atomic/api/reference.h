@@ -64,7 +64,6 @@ struct __atomic_ref_arithmetic
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, )
-  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(const, )
 };
 
 template <typename _Tp, typename _Sco>

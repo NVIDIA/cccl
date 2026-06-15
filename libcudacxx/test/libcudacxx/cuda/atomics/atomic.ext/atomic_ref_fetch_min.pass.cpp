@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class T, template <typename, typename> class Selector>
-TEST_FUNC void test_arithmetic()
+TEST_FUNC void test_integral()
 {
   using A = cuda::atomic_ref<T>;
   {
@@ -65,12 +65,10 @@ TEST_FUNC void test_pointer()
 template <template <typename, typename> class Selector>
 TEST_FUNC void test()
 {
-  test_arithmetic<int, Selector>();
-  test_arithmetic<unsigned int, Selector>();
-  test_arithmetic<long long, Selector>();
-  test_arithmetic<unsigned long long, Selector>();
-  test_arithmetic<float, Selector>();
-  test_arithmetic<double, Selector>();
+  test_integral<int, Selector>();
+  test_integral<unsigned int, Selector>();
+  test_integral<long long, Selector>();
+  test_integral<unsigned long long, Selector>();
   test_pointer<int*, Selector>();
   test_pointer<const int*, Selector>();
 }

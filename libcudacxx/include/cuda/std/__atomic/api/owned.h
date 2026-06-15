@@ -72,9 +72,6 @@ struct __atomic_arithmetic
 
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile)
-
-  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, )
-  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, volatile)
 };
 
 template <typename _Tp, typename _Sco>
