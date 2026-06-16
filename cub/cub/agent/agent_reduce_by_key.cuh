@@ -740,6 +740,14 @@ struct AgentReduceByKey
     // Remaining items (including this tile)
     OffsetT num_remaining = num_items - tile_offset;
 
+    // Fire the prefetch here so the look-back scan inside ConsumeTile provides lead time.
+    if constexpr (AgentReduceByKeyPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_DIRECT_PREFETCH)
+    {
+      const int valid = (num_remaining > TILE_ITEMS) ? TILE_ITEMS : static_cast<int>(num_remaining);
+      ::cub::detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, valid);
+      ::cub::detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_values_in + tile_offset, valid);
+    }
+
     if (num_remaining > TILE_ITEMS)
     {
       // Not last tile

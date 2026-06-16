@@ -321,7 +321,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
 {
   static constexpr int threads                       = 224;
   static constexpr int items                         = 7;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT_PREFETCH;
   using delay_constructor                            = detail::no_delay_constructor_t<1075>;
 };
 
@@ -330,7 +330,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
 {
   static constexpr int threads                       = 384;
   static constexpr int items                         = 7;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT_PREFETCH;
   using delay_constructor                            = detail::no_delay_constructor_t<1040>;
 };
 
@@ -358,7 +358,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 {
   static constexpr int threads                       = 192;
   static constexpr int items                         = 7;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT_PREFETCH;
   using delay_constructor                            = detail::no_delay_constructor_t<1105>;
 };
 
@@ -385,7 +385,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 {
   static constexpr int threads                       = 192;
   static constexpr int items                         = 7;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT_PREFETCH;
   using delay_constructor                            = detail::no_delay_constructor_t<1035>;
 };
 
@@ -552,7 +552,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
 {
   static constexpr int threads                       = 256;
   static constexpr int items                         = 10;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT_PREFETCH;
   using delay_constructor                            = detail::no_delay_constructor_t<1170>;
 };
 
@@ -561,7 +561,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
 {
   static constexpr int threads                       = 256;
   static constexpr int items                         = 9;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT_PREFETCH;
   using delay_constructor                            = detail::fixed_delay_constructor_t<236, 1030>;
 };
 
