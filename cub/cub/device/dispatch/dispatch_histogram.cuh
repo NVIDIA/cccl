@@ -168,17 +168,14 @@ enum class algorithm : unsigned char
   // primary bin range promoted to SMEM, tail in GMEM); the smem_split value chosen
   // by dispatch selects the kernel's HybridSplit instantiation. Merged to one
   // enumerator per the design doc. Single-channel for the hybrid (smem_split>0) sub-case.
+  // Reachable via dispatch_by_algorithm + the CUB_HISTO_FORCE_ALGO hook; no longer
+  // auto-selected (the high-bin region routes to direct_single_probe).
   gmem_privatized_nocache,
 
-  // Cuckoo / single-probe SMEM cache front-end whose MISSES spill block-scope into
-  // the per-block private histogram (vs direct_*'s contended device-scope spill),
-  // then the atomic-free gather merges. The design doc's proposal
-  // (`gmem_privatized_{cuckoo,single_probe}`). Measured to lose to the incumbents in
-  // every cell except multi_even/powerlaw, where the win is unexploitable by a
-  // shape-blind selector; kept reachable-but-unselected (like the old gmem_priv_gather),
-  // selectable via dispatch_by_algorithm and the CUB_HISTO_FORCE_ALGO hook.
-  gmem_privatized_cuckoo,
-  gmem_privatized_single_probe,
+  // (The proposed gmem_privatized_{cuckoo,single_probe} cache+private-spill members were
+  // removed: a full-matrix sweep measured them never best nor within 2% of best on any
+  // cell, so they were pure dispatch surface. The gather (gmem_privatized_nocache) and the
+  // direct-atomic caches cover everything they could.)
 };
 
 // Inputs to the selector. Every value used to make a dispatch decision must
@@ -312,95 +309,20 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // measured hybrid/direct 0.68..1.00 across the 262144 grid).
   // -----------------------------------------------------------------------
 
-  if (f.num_active_channels == 1)
-  {
-    // --- Single-channel high-bin policy --------------------------------------
-    // Two algorithms compete here: the on-chip SMEM+GMEM hybrid (the smem_split>0
-    // member of gmem_privatized_nocache) and the direct-atomic single-probe cache.
-    // The hybrid keeps a modest histogram on chip and wins once its per-block setup
-    // (zeroing + a grid-wide gather) amortizes over enough pixels; below that N, and
-    // once the histogram is too large to stay on chip, direct GMEM atomics win.
-    // Thresholds are the measured geomean-over-shapes crossovers on B200 (sm_100);
-    // each is named for the exact regime it gates. The amortization N rises with both
-    // the bin count (a wider histogram is costlier to set up) and the classify cost
-    // (RANGE's per-sample SearchTransform is heavier than EVEN's ScaleTransform), so
-    // it is keyed on (bin tier, transform) rather than a single global pixel floor.
-    //
-    //   cap tier  (<= 65536):  hybrid wins from ~16M pixels, both transforms.
-    //   mid tier  (<= 131072): hybrid wins from ~16M (EVEN) / ~64M (RANGE).
-    //   above 131072 (262144, 1048576): the histogram exceeds the hybrid's on-chip
-    //                          working set, so the direct-atomic cache wins at every
-    //                          input size (measured hybrid/direct 0.68..1.00) -- the
-    //                          hybrid mid-tier ends at 131072, NOT 262144.
-    constexpr int hybrid_cap_tier_max_bins = hybrid_smem_bins_max_single_channel; // 65536
-    constexpr int hybrid_mid_tier_max_bins = 131072;
-
-    constexpr long long cap_tier_amortize_pixels      = 1LL << 24; // 16M (both transforms)
-    constexpr long long mid_tier_amortize_pixels_even = 1LL << 24; // 16M
-    constexpr long long mid_tier_amortize_pixels_range = 1LL << 26; // 64M
-
-    // Hybrid FEASIBILITY (counter-width-aware). The hybrid member stages its primary
-    // split of low bins in dynamic SMEM at `counter_bytes` each; that split is derived
-    // from a byte budget at runtime (`f.hybrid_split_bins`), NOT a frozen bin count, so
-    // it shrinks for wide counters instead of overflowing the per-CTA opt-in cap. The
-    // hybrid needs a usable split: at least one primary bin AND a non-empty GMEM tail
-    // (split < num_bins). This is a HARD launchability constraint, not a tuning guess --
-    // the tier bounds below (WHICH bin tiers hybrid wins) are the #44-measured ones; this
-    // feasibility check ONLY removes cells the hybrid physically cannot launch on this
-    // counter width (e.g. an 8-byte counter at the larger bin tiers, which used to crash
-    // because the frozen 49152 split needed 384 KiB > the 227 KiB cap). For a 4-byte
-    // counter the split (~48128) is feasible across the whole 65536/131072 hybrid range,
-    // so I32 routing is UNCHANGED.
-    const bool hybrid_feasible = (f.hybrid_split_bins > 0 && f.hybrid_split_bins < f.num_bins);
-
-    if (hybrid_feasible && f.num_bins <= hybrid_cap_tier_max_bins)
-    {
-      return (f.num_pixels >= cap_tier_amortize_pixels) ? algorithm::gmem_privatized_nocache // hybrid member
-                                                        : algorithm::direct_single_probe;
-    }
-    if (hybrid_feasible && f.num_bins <= hybrid_mid_tier_max_bins)
-    {
-      const long long amortize = f.is_even ? mid_tier_amortize_pixels_even : mid_tier_amortize_pixels_range;
-      return (f.num_pixels >= amortize) ? algorithm::gmem_privatized_nocache // hybrid member
-                                        : algorithm::direct_single_probe;
-    }
-
-    // High-bin tiers above the hybrid's reach (262144, 1048576), and any tier where the
-    // byte-derived hybrid split is too small to be worthwhile for this counter width:
-    // the histogram exceeds the hybrid's on-chip working set, so it is effectively a
-    // direct GMEM atomic.
-    return algorithm::direct_single_probe;
-  }
-
-  // ---- Multi-channel (hybrid is single-channel-only) ----------------------------
-  // The per-block privatized intermediate scales with the active channel count, so
-  // the high-bin region is served by the direct-atomic caches. (A cooperative
-  // gather-merge rule was evaluated for multi-EVEN at the largest inputs but
-  // dropped: it wins a narrow uniform/skew geomean yet collapses on the adversarial
-  // cache-stress distributions -- e.g. ~4x slower at the cache capacity cliff --
-  // which the direct-atomic caches absorb.)
-  //
-  // EVEN I32 favours the single-probe cache across all N (cheap classify, leaner
-  // probe). EVEN F64 at the cap tier is the one place cuckoo's count replicas pay
-  // off, so it is excluded here and falls through to the cuckoo default.
-  if (f.is_even && f.sample_bytes < 8)
-  {
-    return algorithm::direct_single_probe;
-  }
-  // Cap tier (<= cap-tier bin bound) at moderate/large input: single-probe, except
-  // the EVEN F64 case handled above. Covers RANGE (both widths) and is a measured
-  // tie for the cells it overlaps, so it never regresses. The pixel floor is the N
-  // above which the cache setup is worth taking; below it the smallest inputs prefer
-  // the cuckoo default.
-  constexpr long long multi_channel_cap_tier_min_pixels = 1LL << 24; // 16M
-  if (f.num_bins <= hybrid_smem_bins_max_single_channel && f.num_pixels >= multi_channel_cap_tier_min_pixels
-      && !(f.is_even && f.sample_bytes >= 8))
-  {
-    return algorithm::direct_single_probe;
-  }
-  // Default: the cuckoo cache (its 2-hash probe + count replicas win the larger
-  // bin tiers and the smallest inputs).
-  return algorithm::direct_cuckoo;
+  // Above the on-chip privatized cap, one algorithm wins across the whole high-bin
+  // region for every (channels, sample-width, bin-tier, pixel-count) regime: the
+  // direct-atomic single-probe cache, run with warp-coalescing DISABLED. Measured on
+  // B200 (sm_100) over the full benchmark matrix (run_2026-06-15_coalesce, I32+F64,
+  // 14 shapes), it is the per-cell best or within ~2% at every off-chip tier and beats
+  // the previous routing (hybrid / gather / cuckoo) by geomean 1.3-1.7x. The hybrid
+  // (smem_split>0 gmem_privatized member) and the cuckoo cache were each retired from
+  // the selector: single-probe matched or beat them everywhere once coalescing was
+  // turned off on the cache kernels (the coalesce penalty -- a __match_any_sync whose
+  // dependent atomic stalls when a warp's bins are distinct -- was what made the
+  // direct-atomic caches look weak in the older sweeps). single-probe is also the
+  // leaner probe, so this is simpler AND faster. Both transforms, both sample widths,
+  // both counter widths, single- and multi-channel collapse to this one rule.
+  return algorithm::direct_single_probe;
 }
 
 // The device's per-CTA opt-in dynamic-SMEM limit (cudaDevAttrMaxSharedMemoryPerBlockOptin),
@@ -2379,15 +2301,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
                    {
                      algo = algorithm::direct_single_probe;
                    }
-                   else if (::std::strcmp(env, "gmem_privatized_cuckoo") == 0 || ::std::strcmp(env, "priv_cuckoo") == 0)
-                   {
-                     algo = algorithm::gmem_privatized_cuckoo;
-                   }
-                   else if (::std::strcmp(env, "gmem_privatized_single_probe") == 0
-                            || ::std::strcmp(env, "priv_single_probe") == 0)
-                   {
-                     algo = algorithm::gmem_privatized_single_probe;
-                   }
                  }
                }));
 #endif // _CCCL_HOSTED()
@@ -2564,29 +2477,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
     }
     case algorithm::direct_nocache:
     case algorithm::direct_cuckoo:
-    case algorithm::direct_single_probe:
-    case algorithm::gmem_privatized_cuckoo:
-    case algorithm::gmem_privatized_single_probe: {
+    case algorithm::direct_single_probe: {
       // CacheSpillKernel<Combiner> family, PRIVATIZED_SMEM_BINS=0. The deeper dispatch<>
-      // picks the kernel from `direct_atomic_cache_mode`, which now encodes BOTH the
-      // combiner (cuckoo / single-probe / no-cache) AND the spill policy (device-scope
-      // to the shared output = direct_*; block-scope to a per-block private slab +
-      // gather = gmem_privatized_*):
+      // picks the kernel from `direct_atomic_cache_mode`, which encodes the combiner
+      // (cuckoo / single-probe / no-cache); the spill is always device-scope to the
+      // shared output (the private-spill modes 3/4 of the removed gmem_privatized_*
+      // members are gone):
       //   0 -> cuckoo,       output spill   (direct_cuckoo)
       //   1 -> single-probe, output spill   (direct_single_probe)
       //   2 -> no-cache,     output spill   (direct_nocache)
-      //   3 -> cuckoo,       private spill  (gmem_privatized_cuckoo)
-      //   4 -> single-probe, private spill  (gmem_privatized_single_probe)
       // kForceDirect: these are explicit direct-atomic choices, so dispatch<> runs
       // the direct-atomic kernel UNCONDITIONALLY (no bin-count veto) -- a forced or
       // selected direct_cuckoo therefore actually runs cuckoo at any high-bin count.
       constexpr int PRIVATIZED_SMEM_BINS = 0;
       const int direct_atomic_cache_mode =
-        (algo == algorithm::direct_cuckoo)                  ? 0
-        : (algo == algorithm::direct_single_probe)          ? 1
-        : (algo == algorithm::direct_nocache)               ? 2
-        : (algo == algorithm::gmem_privatized_cuckoo)       ? 3
-        : /* algorithm::gmem_privatized_single_probe */       4;
+        (algo == algorithm::direct_cuckoo)         ? 0
+        : (algo == algorithm::direct_single_probe) ? 1
+        : /* algorithm::direct_nocache */            2;
       return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS>(
         d_temp_storage,
         temp_storage_bytes,

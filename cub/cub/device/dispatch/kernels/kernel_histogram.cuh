@@ -22,6 +22,7 @@
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/array>
@@ -2498,7 +2499,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // the replica index is always 0 and the count layout is byte-for-byte
   // identical to an unreplicated cache.
   constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
-  constexpr bool kWarpCoalesce = current_policy<PolicySelector>().warp_coalesce;
+  // Warp-coalesce is a PER-KERNEL decision, not a single global flag. Measured on B200
+  // (run_2026-06-15_coalesce, I32+F64, 14 shapes): the __match_any_sync pre-merge HELPS
+  // the no-cache probe (no SMEM cache to absorb per-lane atomics, so lane-merging is the
+  // only contention relief: off/on 0.17-0.70x) but HURTS the cuckoo / single-probe caches
+  // in BOTH entropy classes (off/on 1.41-1.50x -- the cache already absorbs the atomics,
+  // so the match is pure dependent-stall overhead). So: coalesce ON for no_cache_probe,
+  // OFF for the cache probes. Compile-time (zero runtime branch), still AND-ed with the
+  // policy flag so CUB_HISTO_FORCE_WARP_COALESCE=0 can disable it everywhere for study.
+  constexpr bool kProbeIsNoCache = ::cuda::std::is_same_v<ProbeOp, no_cache_probe>;
+  constexpr bool kWarpCoalesce   = kProbeIsNoCache && current_policy<PolicySelector>().warp_coalesce;
   const int cache_mask  = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
