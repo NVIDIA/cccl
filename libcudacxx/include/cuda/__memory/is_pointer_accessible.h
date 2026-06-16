@@ -23,6 +23,7 @@
 
 #include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -240,11 +241,44 @@ _CCCL_HOST_API inline bool __is_device_accessible(
   {
     return true;
   }
-  // (5) check if the pointer is peer accessible from the specified device
-  int __result         = 0;
-  const auto __status3 = ::cuda::__driver::__deviceCanAccessPeerNoThrow(__result, __device.get(), __ptr_dev_id);
-  _CCCL_THROW_OR_RETURN(__status3, "Failed to check if the pointer is peer accessible from the specified device");
-  return static_cast<bool>(__result);
+  // (5) check if the pointer is actually accessible from the specified device
+  if (!__is_managed)
+  {
+    int __result         = 0;
+    const auto __status3 = ::cuda::__driver::__deviceCanAccessPeerNoThrow(__result, __device.get(), __ptr_dev_id);
+    _CCCL_THROW_OR_RETURN(__status3,
+                          "Failed to check if the pointer can be peer accessible from the specified device");
+    if (!__result)
+    {
+      return false;
+    }
+  }
+
+  _CCCL_TRY
+  {
+    ::cuda::__ensure_current_context __ctx_setter{__device};
+
+    void* __device_ptr      = nullptr;
+    const auto __ptr_status = ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(
+      __device_ptr, __p);
+    if (__ptr_status == ::cudaErrorInvalidValue)
+    {
+      return false;
+    }
+    _CCCL_THROW_OR_RETURN(__ptr_status, "Failed to get the device pointer for the specified device");
+    return __device_ptr != nullptr;
+  }
+  _CCCL_CATCH_ALL
+  {
+    if constexpr (_IsNothrow)
+    {
+      return false;
+    }
+    else
+    {
+      _CCCL_RETHROW;
+    }
+  }
 }
 
 /**
