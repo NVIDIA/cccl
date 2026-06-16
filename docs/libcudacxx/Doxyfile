@@ -20,6 +20,7 @@ INPUT                  = ../../libcudacxx/include/cuda/__algorithm \
                          ../../libcudacxx/include/cuda/__memory_resource \
                          ../../libcudacxx/include/cuda/__stream \
                          ../../libcudacxx/include/nv \
+                         ../../libcudacxx/include/cuda/std/__cccl/architecture.h \
                          ../../libcudacxx/include/cuda/std/__cccl/os.h
 
 RECURSIVE              = YES

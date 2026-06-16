@@ -20,6 +20,14 @@ included, and do not require including a specific header file.
    * - .. toctree::
           :maxdepth: 1
 
+          ../api/macro_cccl_arch
+     - Detecting the current host architecture.
+     - CCCL 3.5.0
+     - CUDA 13.5
+
+   * - .. toctree::
+          :maxdepth: 1
+
           ../api/macro_cccl_os
      - Detecting the current operating system.
      - CCCL 3.4.0

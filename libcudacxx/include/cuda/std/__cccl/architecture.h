@@ -18,8 +18,10 @@
 //
 // _CCCL_ARCH(ARM64)     ARM64
 // _CCCL_ARCH(X86_64)    X86 64 bit
+// CCCL_ARCH(ARM64)      ARM64
+// CCCL_ARCH(X86_64)     X86 64 bit
 
-// Determine the host compiler and its version
+// Determine the host architecture
 
 // Arm 64-bit
 #if (defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC) /*emulation*/)
@@ -38,6 +40,53 @@
 #endif
 
 #define _CCCL_ARCH(...) _CCCL_ARCH_##__VA_ARGS__##_()
+
+//! @def CCCL_ARCH(ARCH) /* implementation defined */
+//!
+//! @brief Detect the current host architecture.
+//!
+//! @param ARCH The name of the host architecture to test.
+//!
+//! @note This macro is made available when including any libcu++ header. Users that wish to
+//! include the smallest possible header for this macro should include `<cuda/std/version>`.
+//!
+//! For supported host architectures, the macro expands to an implementation-defined true value
+//! if the current host architecture matches, or false otherwise. These values may be used in
+//! boolean expressions (preprocessor or otherwise), but no other guarantees are made.
+//!
+//! Available values for `ARCH` include:
+//!
+//! - ``ARM64``: ARM 64-bit, including MSVC ARM64EC emulation.
+//! - ``X86_64``: X86 64-bit. This is false when compiling in MSVC ARM64EC emulation mode.
+//!
+//! Passing any other value will result in an undefined expansion, which may or may not be
+//! diagnosed by the compiler.
+//!
+//! @par Example
+//! @code
+//! #define MY_OTHER_MACRO 1
+//!
+//! // Expansion value can be used in ordinary macro conditionals
+//! #if CCCL_ARCH(X86_64) && MY_OTHER_MACRO
+//!   // ...
+//! #endif
+//!
+//! // Can be negated as usual
+//! #if !CCCL_ARCH(ARM64)
+//!   // ...
+//! #endif
+//! @endcode
+//!
+//! @return true if the specified host architecture is being compiled for, false otherwise.
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CCCL_ARCH(ARCH) /* implementation defined */
+#else
+#  define CCCL_ARCH(__arch__) _CCCL_ARCH_##__arch__##_()
+#endif
+
+// Note: the public API is single-arg to constrain the API and allow for future expansion. The
+// implementation is duplicated to guard against the architecture targets being accidentally
+// defined by the user.
 
 // Determine the endianness
 

@@ -7,8 +7,44 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__cccl/architecture.h>
-#include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/version>
+
+// Define these macros to true values. This tests that CCCL_ARCH(FOO) is resilient against
+// macro-expansion in case the user defines FOO, because if CCCL_ARCH() expands the macro, then
+// the below assertions should fire.
+#define ARM64  1
+#define X86_64 1
+
+#if (defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC))
+#  if !CCCL_ARCH(ARM64)
+#    error "ARM64 NOT detected when it SHOULD be"
+#  endif // !CCCL_ARCH(ARM64)
+#else // ^^^ ARM64 ^^^ / vvv !ARM64 vvv
+#  if CCCL_ARCH(ARM64)
+#    error "ARM64 detected when it SHOULDN'T be"
+#  endif // CCCL_ARCH(ARM64)
+#endif // !ARM64
+
+#if (defined(_M_X64) && !defined(_M_ARM64EC)) || defined(__amd64__) || defined(__x86_64__)
+#  if !CCCL_ARCH(X86_64)
+#    error "X86_64 NOT detected when it SHOULD be"
+#  endif // !CCCL_ARCH(X86_64)
+#else // ^^^ X86_64 ^^^ / vvv !X86_64 vvv
+#  if CCCL_ARCH(X86_64)
+#    error "X86_64 detected when it SHOULDN'T be"
+#  endif // CCCL_ARCH(X86_64)
+#endif // !X86_64
+
+#if CCCL_ARCH(ARM64) != _CCCL_ARCH(ARM64)
+#  error "CCCL_ARCH(ARM64) does not match _CCCL_ARCH(ARM64)"
+#endif // CCCL_ARCH(ARM64) != _CCCL_ARCH(ARM64)
+
+#if CCCL_ARCH(X86_64) != _CCCL_ARCH(X86_64)
+#  error "CCCL_ARCH(X86_64) does not match _CCCL_ARCH(X86_64)"
+#endif // CCCL_ARCH(X86_64) != _CCCL_ARCH(X86_64)
+
+#undef ARM64
+#undef X86_64
 
 #if !_CCCL_COMPILER(NVRTC)
 #  if _CCCL_ARCH(X86_64)
@@ -28,6 +64,8 @@
 
 int main(int, char**)
 {
+  static_assert(CCCL_ARCH(ARM64) == _CCCL_ARCH(ARM64));
+  static_assert(CCCL_ARCH(X86_64) == _CCCL_ARCH(X86_64));
   static_assert(sizeof(void*) == 8);
   return 0;
 }
