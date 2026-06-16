@@ -246,8 +246,7 @@ _CCCL_HOST_API inline bool __is_device_accessible(
   {
     int __result         = 0;
     const auto __status3 = ::cuda::__driver::__deviceCanAccessPeerNoThrow(__result, __device.get(), __ptr_dev_id);
-    _CCCL_THROW_OR_RETURN(__status3,
-                          "Failed to check if the pointer can be peer accessible from the specified device");
+    _CCCL_THROW_OR_RETURN(__status3, "Failed to check if the pointer can be peer accessible from the specified device");
     if (!__result)
     {
       return false;
@@ -258,9 +257,9 @@ _CCCL_HOST_API inline bool __is_device_accessible(
   {
     ::cuda::__ensure_current_context __ctx_setter{__device};
 
-    void* __device_ptr      = nullptr;
-    const auto __ptr_status = ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(
-      __device_ptr, __p);
+    void* __device_ptr = nullptr;
+    const auto __ptr_status =
+      ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(__device_ptr, __p);
     if (__ptr_status == ::cudaErrorInvalidValue)
     {
       return false;
