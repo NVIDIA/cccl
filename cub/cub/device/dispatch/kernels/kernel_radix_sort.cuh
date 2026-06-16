@@ -529,7 +529,7 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
                                  0,
                                  0,
                                  void,
-                                 policy.rank_num_parts,
+                                 policy.rank_num_private_partitions,
                                  policy.rank_algorith,
                                  policy.scan_algorithm,
                                  policy.store_algorithm,

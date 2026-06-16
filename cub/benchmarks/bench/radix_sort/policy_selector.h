@@ -86,7 +86,7 @@ constexpr std::size_t max_onesweep_temp_storage_size()
     0,
     0,
     void,
-    onesweep.rank_num_parts,
+    onesweep.rank_num_private_partitions,
     onesweep.rank_algorith,
     onesweep.scan_algorithm,
     onesweep.store_algorithm,

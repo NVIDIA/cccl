@@ -96,7 +96,12 @@ struct radix_sort_onesweep_policy
 {
   int threads_per_block;
   int items_per_thread;
-  int rank_num_parts;
+
+  //! The number of private histograms partitions in shared memory each histogram is split during the ranking phase to
+  //! reduce the contention of atomic operations. Ignored if @p rank_algorith is not one of
+  //! RADIX_RANK_MATCH_EARLY_COUNTS_*
+  int rank_num_private_partitions;
+
   int radix_bits;
   RadixRankAlgorithm rank_algorith;
   BlockScanAlgorithm scan_algorithm;
@@ -106,7 +111,7 @@ struct radix_sort_onesweep_policy
   operator==(const radix_sort_onesweep_policy& lhs, const radix_sort_onesweep_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.rank_num_parts == rhs.rank_num_parts && lhs.radix_bits == rhs.radix_bits
+        && lhs.rank_num_private_partitions == rhs.rank_num_private_partitions && lhs.radix_bits == rhs.radix_bits
         && lhs.rank_algorith == rhs.rank_algorith && lhs.scan_algorithm == rhs.scan_algorithm
         && lhs.store_algorithm == rhs.store_algorithm;
   }
@@ -121,8 +126,8 @@ struct radix_sort_onesweep_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_onesweep_policy& p)
   {
     return os
-        << "radix_sort_onesweep_policy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .rank_num_parts = " << p.rank_num_parts
+        << "radix_sort_onesweep_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .rank_num_private_partitions = " << p.rank_num_private_partitions
         << ", .radix_bits = " << p.radix_bits << ", .rank_algorith = " << p.rank_algorith
         << ", .scan_algorithm = " << p.scan_algorithm << ", .store_algorithm = " << p.store_algorithm << " }";
   }
@@ -133,7 +138,7 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
   int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
   int compute_t_size,
-  int rank_num_parts,
+  int rank_num_private_partitions,
   int radix_bits,
   RadixRankAlgorithm rank_algorith,
   BlockScanAlgorithm scan_algorithm,
@@ -143,7 +148,7 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
   return radix_sort_onesweep_policy{
     scaled.threads_per_block,
     scaled.items_per_thread,
-    rank_num_parts,
+    rank_num_private_partitions,
     radix_bits,
     rank_algorith,
     scan_algorithm,
