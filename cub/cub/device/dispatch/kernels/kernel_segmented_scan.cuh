@@ -44,7 +44,7 @@ namespace detail::segmented_scan
 //!        of a device-wide segmented prefix scan.
 //!
 //! @tparam SegmentedScanPolicyGetterT
-//!   Nullary callable type for getting segmented_scan_policy
+//!   Nullary callable type for getting SegmentedScanPolicy
 //!
 //! @tparam InputIteratorT
 //!   Random-access input iterator type

@@ -97,7 +97,7 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
     const cudax::group_by mapping{4};
     const cudax::barrier_synchronizer synchronizer{barriers};
 
-    const auto mapping_result = mapping.map(parent_group, prev_mapping_result);
+    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
     const auto synchronizer_instance =
       synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
 

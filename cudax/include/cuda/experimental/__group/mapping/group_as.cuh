@@ -94,9 +94,9 @@ public:
     return static_cast<unsigned>(static_count(__i));
   }
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
     constexpr auto __static_prev_nunits  = _PrevMappingResult::static_count();
@@ -163,8 +163,10 @@ public:
         const auto __n          = __i_count;
         const auto __rank       = __prev_unit_rank - __sum;
         const auto __lane_mask =
-          ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
-            __prev_mapping_result.lane_mask(), __n, __rank);
+          (::cuda::std::is_same_v<_Unit, thread_level>)
+            ? ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
+                __prev_mapping_result.lane_mask(), __n, __rank)
+            : __prev_mapping_result.lane_mask();
         return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
       }
       __sum += __i_count;
@@ -237,9 +239,9 @@ public:
     return __counts_[__i];
   }
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
     constexpr auto __static_prev_nunits  = _PrevMappingResult::static_count();
@@ -287,8 +289,10 @@ public:
         const auto __n          = __i_count;
         const auto __rank       = __prev_unit_rank - __sum;
         const auto __lane_mask =
-          ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
-            __prev_mapping_result.lane_mask(), __n, __rank);
+          (::cuda::std::is_same_v<_Unit, thread_level>)
+            ? ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
+                __prev_mapping_result.lane_mask(), __n, __rank)
+            : __prev_mapping_result.lane_mask();
         return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
       }
       __sum += __i_count;

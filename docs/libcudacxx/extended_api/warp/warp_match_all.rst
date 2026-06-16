@@ -18,6 +18,10 @@ Defined in ``<cuda/warp>`` header.
 The functionality provides a generalized and safe alternative to CUDA warp match all intrinsic ``__match_all_sync``.
 The function allows bitwise comparison of any data size, including raw arrays, pointers, and structs.
 
+.. note::
+
+  The underlying CUDA intrinsic does not provide memory ordering.
+
 **Parameters**
 
 - ``data``: data to compare.
@@ -30,7 +34,7 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 **Constraints**
 
 - ``T`` shall be trivially copyable, see :ref:`cuda::is_trivially_copyable <libcudacxx-extended-api-type_traits-is_trivially_copyable>`.
-- When ``__builtin_clear_padding`` is not supported, ``T`` shall have no padding bits, that is, ``T``'s value representation shall be identical to its object representation.
+- ``T`` shall be bitwise comparable, see :ref:`cuda::is_bitwise_comparable <libcudacxx-extended-api-type_traits-is_bitwise_comparable>`, except when ``__builtin_clear_padding`` is supported. In the latter case, ``T`` can have padding bits.
 
 **Preconditions**
 
@@ -39,17 +43,18 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 
 **Undefined Behavior**
 
-- ``lane_mask`` must represent a subset of the active lanes, undefined behavior otherwise.
+- ``lane_mask`` must represent a subset of the active lanes.
+- All non-exited lanes specified by ``lane_mask`` must execute the function with the same ``lane_mask`` value.
 
 **Performance considerations**
 
 - The function calls the PTX instruction ``match.sync`` :math:`ceil\left(\frac{sizeof(data)}{4}\right)` times.
-- The function is slightly faster when called with a mask of all active lanes (overload function) even if all lanes participates in the call.
-- The function is slower when called with a non-fully active warp.
+- The function is faster when called with a mask representing all active lanes in a warp (default value of the second parameter ``lane_mask``).
+- The function uses ``__ballot_sync`` when ``T`` is ``bool``.
 
 **References**
 
-- `CUDA match_all Intrinsics <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#warp-match-functions>`_
+- `CUDA match_all Intrinsics <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#warp-match-functions>`_
 - `PTX match.sync instruction <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-match-sync>`_
 
 Example
@@ -69,7 +74,7 @@ Example
     __global__ void warp_match_kernel() {
         assert(cuda::device::warp_match_all(2));
         assert(cuda::device::warp_match_all(2, cuda::device::lane_mask::all()));
-        assert(cuda::device::warp_match_all(MyStruct{1.0, 3})); // Undefined Behavior
+        assert(cuda::device::warp_match_all(MyStruct{1.0, 3})); // compile error, except when __builtin_clear_padding is supported
         assert(!cuda::device::warp_match_all(threadIdx.x));
     }
 
@@ -79,4 +84,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/Eq81fTb8z>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/x1sWbx14r>`_

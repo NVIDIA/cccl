@@ -200,8 +200,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   -> cuda_expected<
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, nullptr)), decltype(kernel_source.TransformKernel()), int>>
 {
-  CUB_DETAIL_CONSTEXPR_ISH const transform_policy policy = policy_getter();
-  CUB_DETAIL_CONSTEXPR_ISH int threads_per_block         = policy.async_copy.threads_per_block;
+  CUB_DETAIL_CONSTEXPR_ISH const TransformPolicy policy = policy_getter();
+  CUB_DETAIL_CONSTEXPR_ISH int threads_per_block        = policy.async_copy.threads_per_block;
 
   _CCCL_ASSERT(threads_per_block % alignment == 0, "threads_per_block needs to be a multiple of the copy alignment");
   // ^ then tile_size is a multiple of it
@@ -347,9 +347,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   KernelLauncherFactory launcher_factory,
   ::cuda::compute_capability cc)
 {
-  CUB_DETAIL_CONSTEXPR_ISH const transform_policy policy = policy_getter();
+  CUB_DETAIL_CONSTEXPR_ISH const TransformPolicy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH const int threads_per_block =
-    policy.algorithm == Algorithm::vectorized ? policy.vectorized.threads_per_block : policy.prefetch.threads_per_block;
+    policy.algorithm == TransformAlgorithm::vectorized
+      ? policy.vectorized.threads_per_block
+      : policy.prefetch.threads_per_block;
 
   auto determine_config = [&]() -> cuda_expected<prefetch_config> {
     int max_occupancy = 0;
@@ -378,7 +380,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   ::cuda::std::optional<int> ipt;
 
   // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
-  if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == policy.algorithm)
+  if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::vectorized == policy.algorithm)
   {
     const int vs  = policy.vectorized.vec_size;
     can_vectorize = kernel_source.CanVectorize(vs, out, ::cuda::std::get<Is>(in)...);
@@ -392,7 +394,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   {
     // otherwise, set up the prefetch kernel
     auto prefetch_policy = policy.prefetch;
-    if (policy.algorithm != Algorithm::prefetch)
+    if (policy.algorithm != TransformAlgorithm::prefetch)
     {
       // if tuning selected the vectorized path we compiled the kernel for it, so we need to use the same block size
       prefetch_policy.threads_per_block = policy.vectorized.threads_per_block;
@@ -466,7 +468,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t operator()(PolicyGetter policy_getter) const
   {
-    CUB_DETAIL_CONSTEXPR_ISH transform_policy active_policy = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH TransformPolicy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
@@ -480,7 +482,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == active_policy.algorithm)
+    if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
     {
       return invoke_async_algorithm(
         ::cuda::std::move(in),
@@ -500,7 +502,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         launcher_factory,
         cc);
     }
-    else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == active_policy.algorithm)
+    else if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ldgsts == active_policy.algorithm)
     {
       return invoke_async_algorithm(
         ::cuda::std::move(in),

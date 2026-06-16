@@ -56,6 +56,23 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @linear_performance{select-flagged, select-if, and select-unique}
 //!
+//! @par Tuning
+//! All non-ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref SelectPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin select-if-policy-selector
+//!      :end-before: example-end select-if-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin select-if-tuning
+//!      :end-before: example-end select-if-tuning
+//!
 //! @endrst
 struct DeviceSelect
 {
@@ -123,8 +140,7 @@ struct DeviceSelect
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -624,8 +640,7 @@ struct DeviceSelect
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -752,8 +767,7 @@ struct DeviceSelect
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -878,8 +892,7 @@ struct DeviceSelect
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -978,8 +991,7 @@ struct DeviceSelect
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1087,8 +1099,7 @@ struct DeviceSelect
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1759,6 +1770,24 @@ struct DeviceSelect
   //!     :start-after: example-begin select-uniquebykey-env
   //!     :end-before: example-end select-uniquebykey-env
   //!
+  //! @par Tuning
+  //! @rst
+  //! All *ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a
+  //! custom :ref:`policy selector <cub-policy-selectors>` that returns a @ref UniqueByKeyPolicy, as shown in the
+  //! example below:
+  //!
+  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!      :language: c++
+  //!      :dedent:
+  //!      :start-after: example-begin unique-by-key-policy-selector
+  //!      :end-before: example-end unique-by-key-policy-selector
+  //!
+  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!      :language: c++
+  //!      :dedent:
+  //!      :start-after: example-begin unique-by-key-tuning
+  //!      :end-before: example-end unique-by-key-tuning
+  //!
   //! @endrst
   //!
   //! @tparam KeyInputIteratorT
@@ -2017,8 +2046,7 @@ struct DeviceSelect
   //!   **[inferred]** Type of equality_op
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2137,8 +2165,7 @@ struct DeviceSelect
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2220,8 +2247,7 @@ struct DeviceSelect
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2308,8 +2334,7 @@ struct DeviceSelect
   //!   **[inferred]** Type of equality_op
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2448,8 +2473,7 @@ struct DeviceSelect
   //!   **[inferred]** Type of equality_op
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2603,8 +2627,7 @@ struct DeviceSelect
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

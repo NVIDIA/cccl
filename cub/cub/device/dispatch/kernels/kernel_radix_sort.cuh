@@ -148,21 +148,19 @@ __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_blo
   _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
     _CCCL_GRID_CONSTANT OffsetT* const d_spine, _CCCL_GRID_CONSTANT const int num_counts)
 {
-  static constexpr scan_policy active_policy = current_policy<PolicySelector>().scan;
-  static_assert(active_policy.algorithm == scan_algorithm::lookback);
-  static constexpr scan_lookback_policy policy = active_policy.lookback;
-  using ScanPolicy                             = AgentScanPolicy<
-                                0,
-                                0,
-                                void,
-                                policy.load_algorithm,
-                                policy.load_modifier,
-                                policy.store_algorithm,
-                                policy.scan_algorithm,
-                                NoScaling<policy.threads_per_block, policy.items_per_thread>,
-                                delay_constructor_t<policy.delay_constructor.kind,
-                                                    policy.delay_constructor.delay,
-                                                    policy.delay_constructor.l2_write_latency>>;
+  static constexpr ScanPolicy active_policy = current_policy<PolicySelector>().scan;
+  static_assert(active_policy.algorithm == ScanAlgorithm::lookback);
+  static constexpr ScanLookbackPolicy policy = active_policy.lookback;
+  using ScanPolicy                           = agent_scan_policy<
+                              0,
+                              0,
+                              void,
+                              policy.load_algorithm,
+                              policy.load_modifier,
+                              policy.store_algorithm,
+                              policy.scan_algorithm,
+                              NoScaling<policy.threads_per_block, policy.items_per_thread>,
+                              delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT = scan::AgentScan<ScanPolicy, OffsetT*, OffsetT*, ::cuda::std::plus<>, OffsetT, OffsetT, OffsetT>;
@@ -477,6 +475,32 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   agent.Process();
 }
 
+template <typename PolicySelector, typename InitT0, typename InitT1>
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
+  _CCCL_GRID_CONSTANT InitT0* const d_items0,
+  _CCCL_GRID_CONSTANT const size_t num_items0,
+  _CCCL_GRID_CONSTANT InitT1* const d_items1,
+  _CCCL_GRID_CONSTANT const size_t num_items1)
+{
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+  const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
+  for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+       idx < ::cuda::std::max(num_items0, num_items1);
+       idx += stride)
+  {
+    if (idx < num_items0)
+    {
+      d_items0[idx] = 0;
+    }
+    if (idx < num_items1)
+    {
+      d_items1[idx] = 0;
+    }
+  }
+}
+
 template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
@@ -552,6 +576,9 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTA
   constexpr int BINS_PER_THREAD                           = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
   using BlockScan                                         = cub::BlockScan<OffsetT, BLOCK_THREADS>;
   __shared__ typename BlockScan::TempStorage temp_storage;
+
+  // Make sure the histograms are done
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
   // load the bins
   OffsetT bins[BINS_PER_THREAD];

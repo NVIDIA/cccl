@@ -26,8 +26,10 @@
 #define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_BEGIN_NV_DIAG_SUPPRESS(__VA_ARGS__)
 
 // Use the CCCL host device function
-#define TEST_FUNC        _CCCL_HOST_DEVICE _CCCL_TILE
-#define TEST_DEVICE_FUNC _CCCL_DEVICE _CCCL_TILE
+#define TEST_FUNC             _CCCL_HOST_DEVICE _CCCL_TILE
+#define TEST_DEVICE_FUNC      _CCCL_DEVICE
+#define TEST_TILE_FUNC        _CCCL_TILE
+#define TEST_TILE_DEVICE_FUNC _CCCL_TILE _CCCL_DEVICE
 
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER
@@ -150,5 +152,13 @@ TEST_FUNC constexpr bool unused(T&&...)
 {
   return true;
 }
+
+// Class-type and floating-point NTTPs require C++20 and are broken on nvcc < 13.1
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L \
+  && !TEST_CUDA_COMPILER(NVCC, <, 13, 1)
+#  define TEST_HAS_CLASS_NTTP 1
+#else
+#  define TEST_HAS_CLASS_NTTP 0
+#endif
 
 #endif // SUPPORT_TEST_MACROS_HPP

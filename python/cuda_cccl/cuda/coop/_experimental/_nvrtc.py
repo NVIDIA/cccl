@@ -29,7 +29,7 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     check_in("rdc", rdc, [True, False])
     check_in("code", code, ["lto", "ptx"])
 
-    opts = [b"--std=c++17"]
+    opts = [b"--std=c++17", b"-D__NV_NO_VECTOR_DEPRECATION_DIAG"]
 
     # TODO: move this to a module-level import (after docs env modernization).
     from cuda.cccl import get_include_paths

@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/__memory/pointer_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -75,23 +76,16 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
     _OutputIterator __result,
     _BinaryPredicate __pred)
   {
-    using _OffsetType    = iter_difference_t<_InputIterator>;
-    using DispatchUnique = CUB_NS_QUALIFIER::DispatchSelectIf<
-      _InputIterator,
-      CUB_NS_QUALIFIER::NullType*,
-      _InputIterator,
-      _OffsetType*,
-      CUB_NS_QUALIFIER::NullType,
-      _BinaryPredicate,
-      _OffsetType,
-      Select>;
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
+    using _OffsetType          = iter_difference_t<_InputIterator>;
     const auto __count         = ::cuda::std::distance(__first, __last);
     _OffsetType __num_selected = 0;
     size_t __num_bytes         = 0;
 
     _CCCL_TRY_CUDA_API(
-      DispatchUnique::Dispatch,
+      CUB_NS_QUALIFIER::detail::select::dispatch<Select>,
       "__pstl_cuda_unique: determination of device storage for cub::DispatchSelectIf::Dispatch failed",
       static_cast<void*>(nullptr),
       __num_bytes,
@@ -102,15 +96,13 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
       CUB_NS_QUALIFIER::NullType{},
       __pred,
       __count,
-      nullptr);
-
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+      __stream.get());
 
     { // Create temporary storage for the return value as well as a copy of the input sequence as Unique is not inplace
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       _CCCL_TRY_CUDA_API(
-        DispatchUnique::Dispatch,
+        CUB_NS_QUALIFIER::detail::select::dispatch<Select>,
         "__pstl_cuda_unique: kernel launch of cub::DispatchSelectIf::Dispatch failed",
         __storage.__get_temp_storage(),
         __num_bytes,

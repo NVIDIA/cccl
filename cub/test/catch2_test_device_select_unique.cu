@@ -38,6 +38,7 @@ inline ulonglong2 to_bound(const unsigned long long bound)
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <>
 inline ulonglong4 to_bound(const unsigned long long bound)
 {

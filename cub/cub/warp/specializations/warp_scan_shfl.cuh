@@ -73,8 +73,7 @@ struct WarpScanShfl
   };
 
   /// Shared memory storage layout type
-  struct TempStorage
-  {};
+  using TempStorage = NullType;
 
   //---------------------------------------------------------------------
   // Thread fields

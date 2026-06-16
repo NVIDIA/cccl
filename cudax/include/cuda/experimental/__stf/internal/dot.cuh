@@ -560,8 +560,7 @@ public:
   {
     if (getenv("CUDASTF_DOT_COLOR_BY_DEVICE"))
     {
-      int dev;
-      cuda_safe_call(cudaGetDevice(&dev));
+      const int dev = cuda_try<cudaGetDevice>();
       EXPECT(dev < sizeof(colors) / sizeof(*colors));
       current_color = colors[dev];
     }

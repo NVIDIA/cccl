@@ -18,6 +18,7 @@
 
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
@@ -209,6 +210,28 @@ struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts..
 template <size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
     : tuple_element<Id, tuple<Ts...>>
+{};
+
+// tuple_of_iterator_references<_TTypes...> implicitly converts to tuple<_UTypes...> if is_compatible_tuple_v holds
+// So make sure that basic_common_reference in that case is the same as that of tuple<_UTypes...> with qualifiers
+template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
+struct basic_common_reference<
+  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<_TTypes...>,
+  tuple<_UTypes...>,
+  _TQual,
+  _UQual,
+  enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<_TTypes...>, tuple<_UTypes...>>>>
+    : basic_common_reference<tuple<_UTypes...>, tuple<_UTypes...>, _TQual, _UQual>
+{};
+
+template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
+struct basic_common_reference<
+  tuple<_TTypes...>,
+  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<_UTypes...>,
+  _TQual,
+  _UQual,
+  enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<_TTypes...>, tuple<_UTypes...>>>>
+    : basic_common_reference<tuple<_TTypes...>, tuple<_TTypes...>, _TQual, _UQual>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD

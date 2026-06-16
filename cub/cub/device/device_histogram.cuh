@@ -45,6 +45,23 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceHistogram}
 //!
+//! @par Tuning
+//! All algorithms in DeviceHistogram that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref HistogramPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin histogram-even-policy-selector
+//!      :end-before: example-end histogram-even-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin histogram-even-tuning
+//!      :end-before: example-end histogram-even-tuning
+//!
 //! @endrst
 struct DeviceHistogram
 {
@@ -127,9 +144,7 @@ struct DeviceHistogram
   //!   pointer differences, etc. @offset_size1
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -274,9 +289,7 @@ struct DeviceHistogram
   //!   pointer differences, etc. @offset_size1
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -439,9 +452,7 @@ struct DeviceHistogram
   //!   pointer differences, etc. @offset_size1
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -665,9 +676,7 @@ public:
   //!   pointer differences, etc. @offset_size1
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -884,9 +893,7 @@ public:
   //!   pointer differences, etc. @offset_size1
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1018,9 +1025,7 @@ public:
   //!   pointer differences, etc. @offset_size1
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1170,9 +1175,7 @@ public:
   //!   pointer differences, etc. @offset_size1
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1373,8 +1376,7 @@ public:
   //!   pointer differences, etc. @offset_size1
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
