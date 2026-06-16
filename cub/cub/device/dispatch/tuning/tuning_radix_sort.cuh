@@ -159,19 +159,19 @@ struct radix_sort_downsweep_policy
 {
   int threads_per_block;
   int items_per_thread;
-  int radix_bits;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
   RadixRankAlgorithm rank_algorithm;
   BlockScanAlgorithm scan_algorithm;
+  int radix_bits;
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const radix_sort_downsweep_policy& lhs, const radix_sort_downsweep_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.radix_bits == rhs.radix_bits && lhs.load_algorithm == rhs.load_algorithm
-        && lhs.load_modifier == rhs.load_modifier && lhs.rank_algorithm == rhs.rank_algorithm
-        && lhs.scan_algorithm == rhs.scan_algorithm;
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.rank_algorithm == rhs.rank_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
+        && lhs.radix_bits == rhs.radix_bits;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -185,9 +185,9 @@ struct radix_sort_downsweep_policy
   {
     return os
         << "radix_sort_downsweep_policy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .radix_bits = " << p.radix_bits
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .rank_algorithm = " << p.rank_algorithm << ", .scan_algorithm = " << p.scan_algorithm << " }";
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .rank_algorithm = " << p.rank_algorithm
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -196,21 +196,21 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_downsweep_policy
   int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
   int compute_t_size,
-  int radix_bits,
   BlockLoadAlgorithm load_algorithm,
   CacheLoadModifier load_modifier,
   RadixRankAlgorithm rank_algorithm,
-  BlockScanAlgorithm scan_algorithm) -> radix_sort_downsweep_policy
+  BlockScanAlgorithm scan_algorithm,
+  int radix_bits) -> radix_sort_downsweep_policy
 {
   const auto scaled = scale_reg_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
   return radix_sort_downsweep_policy{
     scaled.threads_per_block,
     scaled.items_per_thread,
-    radix_bits,
     load_algorithm,
     load_modifier,
     rank_algorithm,
-    scan_algorithm};
+    scan_algorithm,
+    radix_bits};
 }
 
 struct radix_sort_upsweep_policy
@@ -863,11 +863,11 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_downsweep_policy(DownsweepPolicy)
   return radix_sort_downsweep_policy{
     DownsweepPolicy::BLOCK_THREADS,
     DownsweepPolicy::ITEMS_PER_THREAD,
-    DownsweepPolicy::RADIX_BITS,
     DownsweepPolicy::LOAD_ALGORITHM,
     DownsweepPolicy::LOAD_MODIFIER,
     DownsweepPolicy::RANK_ALGORITHM,
-    DownsweepPolicy::SCAN_ALGORITHM};
+    DownsweepPolicy::SCAN_ALGORITHM,
+    DownsweepPolicy::RADIX_BITS};
 };
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
@@ -1751,21 +1751,21 @@ struct policy_selector
       512,
       23,
       __dominant_size(),
-      primary_radix_bits,
       BLOCK_LOAD_TRANSPOSE,
       LOAD_DEFAULT,
       RADIX_RANK_MATCH,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      primary_radix_bits);
 
     const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
       (key_size > 1) ? 256 : 128,
       47,
       __dominant_size(),
-      primary_radix_bits - 1,
       BLOCK_LOAD_TRANSPOSE,
       LOAD_DEFAULT,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      primary_radix_bits - 1);
 
     const auto upsweep =
       make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
@@ -1777,11 +1777,11 @@ struct policy_selector
       256,
       19,
       __dominant_size(),
-      single_tile_radix_bits,
       BLOCK_LOAD_DIRECT,
       LOAD_LDG,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      single_tile_radix_bits);
 
     return radix_sort_policy{
       /* use_onesweep */ true,
@@ -1845,21 +1845,21 @@ struct policy_selector
         512,
         23,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MATCH,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         (key_size > 1) ? 256 : 128,
         47,
         __dominant_size(),
-        primary_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits - 1);
 
       const auto upsweep =
         make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
@@ -1871,11 +1871,11 @@ struct policy_selector
         256,
         19,
         __dominant_size(),
-        single_tile_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits);
 
       return radix_sort_policy{
         use_onesweep,
@@ -1926,21 +1926,21 @@ struct policy_selector
         512,
         23,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MATCH,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         (key_size > 1) ? 256 : 128,
         offset_64bit ? 46 : 47,
         __dominant_size(),
-        primary_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits - 1);
 
       const auto upsweep =
         make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
@@ -1952,11 +1952,11 @@ struct policy_selector
         256,
         19,
         __dominant_size(),
-        single_tile_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits);
 
       return radix_sort_policy{
         use_onesweep,
@@ -2006,21 +2006,21 @@ struct policy_selector
         256,
         16,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         16,
         __dominant_size(),
-        alt_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        alt_radix_bits);
 
       const auto upsweep = radix_sort_upsweep_policy{
         downsweep.threads_per_block, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
@@ -2035,11 +2035,11 @@ struct policy_selector
         256,
         19,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits);
 
       return radix_sort_policy{
         use_onesweep,
@@ -2089,21 +2089,21 @@ struct policy_selector
         384,
         31,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MATCH,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         35,
         __dominant_size(),
-        primary_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        primary_radix_bits - 1);
 
       const auto upsweep =
         make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), primary_radix_bits, LOAD_LDG);
@@ -2115,11 +2115,11 @@ struct policy_selector
         256,
         19,
         __dominant_size(),
-        single_tile_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits);
 
       return radix_sort_policy{
         use_onesweep,
@@ -2170,21 +2170,21 @@ struct policy_selector
         256,
         25,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MATCH,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits);
 
       const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
         192,
         offset_64bit ? 32 : 39,
         __dominant_size(),
-        primary_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        primary_radix_bits - 1);
 
       const auto upsweep = radix_sort_upsweep_policy{
         downsweep.threads_per_block, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
@@ -2199,11 +2199,11 @@ struct policy_selector
         256,
         19,
         __dominant_size(),
-        single_tile_radix_bits,
         BLOCK_LOAD_DIRECT,
         LOAD_LDG,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits);
 
       return radix_sort_policy{
         use_onesweep,
@@ -2252,21 +2252,21 @@ struct policy_selector
       160,
       39,
       __dominant_size(),
-      primary_radix_bits,
       BLOCK_LOAD_WARP_TRANSPOSE,
       LOAD_DEFAULT,
       RADIX_RANK_BASIC,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      primary_radix_bits);
 
     const auto alt_downsweep = make_reg_scaled_radix_sort_downsweep_policy(
       256,
       16,
       __dominant_size(),
-      primary_radix_bits - 1,
       BLOCK_LOAD_DIRECT,
       LOAD_LDG,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_RAKING_MEMOIZE);
+      BLOCK_SCAN_RAKING_MEMOIZE,
+      primary_radix_bits - 1);
 
     const auto upsweep = radix_sort_upsweep_policy{
       downsweep.threads_per_block, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
@@ -2281,11 +2281,11 @@ struct policy_selector
       256,
       19,
       __dominant_size(),
-      single_tile_radix_bits,
       BLOCK_LOAD_DIRECT,
       LOAD_LDG,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      single_tile_radix_bits);
 
     return radix_sort_policy{
       use_onesweep,

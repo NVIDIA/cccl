@@ -49,11 +49,11 @@ struct policy_selector
       return cub::detail::radix_sort::radix_sort_downsweep_policy{
         scaled.threads_per_block,
         scaled.items_per_thread,
-        single_tile_radix_bits,
         cub::BLOCK_LOAD_DIRECT,
         cub::LOAD_LDG,
         cub::RADIX_RANK_MEMOIZE,
         cub::BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits,
       };
     }();
 
