@@ -1104,9 +1104,9 @@ public:
 
 #if _CCCL_COMPILER(GCC, <, 10)
     // gcc 7-9 fail to use `policy` in a constant expression, so we just compute it again inplace
-    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().use_onesweep)
+    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().algorithm == detail::radix_sort::RadixSortAlgorithm::onesweep)
 #else // _CCCL_COMPILER(GCC, <, 8)
-    if CUB_DETAIL_CONSTEXPR_ISH (policy.use_onesweep)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy.algorithm == detail::radix_sort::RadixSortAlgorithm::onesweep)
 #endif // _CCCL_COMPILER(GCC, <, 8)
     {
       return __invoke_onesweep(policy);

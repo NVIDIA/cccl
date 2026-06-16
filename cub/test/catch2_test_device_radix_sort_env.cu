@@ -1120,7 +1120,7 @@ struct tiny_onesweep_policy_selector
   {
     using default_selector_t                = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
     auto policy                             = default_selector_t{}(cc);
-    policy.use_onesweep                     = true;
+    policy.algorithm                        = cub::detail::radix_sort::RadixSortAlgorithm::onesweep;
     policy.onesweep.threads_per_block       = BlockThreads;
     policy.onesweep.items_per_thread        = 1;
     policy.single_tile.threads_per_block    = BlockThreads;

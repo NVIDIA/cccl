@@ -58,7 +58,7 @@ struct policy_selector
     }();
 
     return radix_sort_policy{
-      /* use_onesweep */ true,
+      radix_sort::RadixSortAlgorithm::onesweep,
       histogram,
       exclusive_sum,
       onesweep,
@@ -113,7 +113,7 @@ constexpr std::size_t max_temp_storage_size()
 {
   using offset_t               = cub::detail::choose_offset_t<OffsetT>;
   constexpr auto active_policy = policy_selector<KeyT, ValueT, offset_t>{}(cuda::compute_capability{});
-  static_assert(active_policy.use_onesweep);
+  static_assert(active_policy.algorithm == radix_sort::RadixSortAlgorithm::onesweep);
   return max_onesweep_temp_storage_size<KeyT, ValueT, offset_t, SortOrder>();
 }
 

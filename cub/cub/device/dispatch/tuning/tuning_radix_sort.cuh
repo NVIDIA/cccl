@@ -255,9 +255,30 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_upsweep_policy(
   return radix_sort_upsweep_policy{scaled.threads_per_block, scaled.items_per_thread, load_modifier, radix_bits};
 }
 
+enum class RadixSortAlgorithm
+{
+  multi_pass,
+  onesweep
+};
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algorithm)
+{
+  switch (algorithm)
+  {
+    case RadixSortAlgorithm::multi_pass:
+      return os << "RadixSortAlgorithm::multi_pass";
+    case RadixSortAlgorithm::onesweep:
+      return os << "RadixSortAlgorithm::onesweep";
+    default:
+      return os << "RadixSortAlgorithm::unknown(" << static_cast<int>(algorithm) << ")";
+  }
+}
+#endif // _CCCL_HOSTED()
+
 struct radix_sort_policy
 {
-  bool use_onesweep;
+  RadixSortAlgorithm algorithm;
   radix_sort_histogram_policy histogram;
   radix_sort_exclusive_sum_policy exclusive_sum;
   radix_sort_onesweep_policy onesweep;
@@ -270,10 +291,10 @@ struct radix_sort_policy
 
   _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const radix_sort_policy& lhs, const radix_sort_policy& rhs)
   {
-    return lhs.use_onesweep == rhs.use_onesweep && lhs.histogram == rhs.histogram
-        && lhs.exclusive_sum == rhs.exclusive_sum && lhs.onesweep == rhs.onesweep && lhs.scan == rhs.scan
-        && lhs.downsweep == rhs.downsweep && lhs.alt_downsweep == rhs.alt_downsweep && lhs.upsweep == rhs.upsweep
-        && lhs.alt_upsweep == rhs.alt_upsweep && lhs.single_tile == rhs.single_tile;
+    return lhs.algorithm == rhs.algorithm && lhs.histogram == rhs.histogram && lhs.exclusive_sum == rhs.exclusive_sum
+        && lhs.onesweep == rhs.onesweep && lhs.scan == rhs.scan && lhs.downsweep == rhs.downsweep
+        && lhs.alt_downsweep == rhs.alt_downsweep && lhs.upsweep == rhs.upsweep && lhs.alt_upsweep == rhs.alt_upsweep
+        && lhs.single_tile == rhs.single_tile;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const radix_sort_policy& lhs, const radix_sort_policy& rhs)
@@ -285,7 +306,7 @@ struct radix_sort_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_policy& p)
   {
     return os
-        << "radix_sort_policy { .use_onesweep = " << p.use_onesweep << ", .histogram = " << p.histogram
+        << "radix_sort_policy { .algorithm = " << p.algorithm << ", .histogram = " << p.histogram
         << ", .exclusive_sum = " << p.exclusive_sum << ", .onesweep = " << p.onesweep << ", .scan = " << p.scan
         << ", .downsweep = " << p.downsweep << ", .alt_downsweep = " << p.alt_downsweep << ", .upsweep = " << p.upsweep
         << ", .alt_upsweep = " << p.alt_upsweep << ", .single_tile = " << p.single_tile << " }";
@@ -919,7 +940,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> radix_sort_policy
   const auto single_tile = radix_sort::convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
 
   return radix_sort_policy{
-    active_policy::ONESWEEP,
+    active_policy::ONESWEEP ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass,
     histogram,
     exclusive_sum,
     onesweep,
@@ -1782,7 +1803,7 @@ struct policy_selector
       single_tile_radix_bits);
 
     return radix_sort_policy{
-      /* use_onesweep */ true,
+      RadixSortAlgorithm::onesweep,
       histogram,
       exclusive_sum,
       onesweep,
@@ -1811,9 +1832,10 @@ struct policy_selector
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const bool use_onesweep          = key_size >= int{sizeof(uint32_t)};
-      const int onesweep_radix_bits    = 8;
-      const bool offset_64bit          = offset_size == 8;
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+      const int onesweep_radix_bits = 8;
+      const bool offset_64bit       = offset_size == 8;
 
       const auto histogram = radix_sort_histogram_policy{128, 16, __scale_num_parts(1, key_size), onesweep_radix_bits};
 
@@ -1891,7 +1913,9 @@ struct policy_selector
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const bool use_onesweep = key_size >= int{sizeof(uint32_t)}; // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
+      // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = offset_size == 8;
 
@@ -1969,9 +1993,10 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{6, 2})
     {
-      const int primary_radix_bits  = 5;
-      const int alt_radix_bits      = primary_radix_bits - 1;
-      const bool use_onesweep       = key_size >= int{sizeof(uint32_t)};
+      const int primary_radix_bits = 5;
+      const int alt_radix_bits     = primary_radix_bits - 1;
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
 
       const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
@@ -2053,8 +2078,10 @@ struct policy_selector
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const bool use_onesweep          = key_size >= int{sizeof(uint32_t)}; // 10.0B 32b keys/s (GP100, 64M random keys)
-      const int onesweep_radix_bits    = 8;
+      // 10.0B 32b keys/s (GP100, 64M random keys)
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+      const int onesweep_radix_bits = 8;
 
       const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
 
@@ -2132,9 +2159,11 @@ struct policy_selector
     {
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 6.9B 32b keys/s (Quadro P100)
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-      const bool use_onesweep          = key_size >= int{sizeof(uint32_t)}; // 10.0B 32b keys/s (GP100, 64M random keys)
-      const int onesweep_radix_bits    = 8;
-      const bool offset_64bit          = (offset_size == 8);
+      // 10.0B 32b keys/s (GP100, 64M random keys)
+      const auto use_onesweep =
+        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+      const int onesweep_radix_bits = 8;
+      const bool offset_64bit       = (offset_size == 8);
 
       const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
 
@@ -2214,7 +2243,7 @@ struct policy_selector
     // SM50
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-    const bool use_onesweep          = false;
+    const auto use_onesweep          = RadixSortAlgorithm::multi_pass;
     const int onesweep_radix_bits    = 8;
 
     const auto histogram = radix_sort_histogram_policy{256, 8, __scale_num_parts(1, key_size), onesweep_radix_bits};
