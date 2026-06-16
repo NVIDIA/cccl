@@ -18,10 +18,10 @@ struct policy_selector
       return radix_sort_onesweep_policy{
         scaled.threads_per_block,
         scaled.items_per_thread,
-        1,
+        cub::RADIX_SORT_STORE_DIRECT,
         cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         cub::BLOCK_SCAN_RAKING_MEMOIZE,
-        cub::RADIX_SORT_STORE_DIRECT,
+        1,
         ONESWEEP_RADIX_BITS};
     }();
 
@@ -87,7 +87,7 @@ constexpr std::size_t max_onesweep_temp_storage_size()
     0,
     void,
     onesweep.rank_num_private_partitions,
-    onesweep.rank_algorith,
+    onesweep.rank_algorithm,
     onesweep.scan_algorithm,
     onesweep.store_algorithm,
     onesweep.radix_bits,
