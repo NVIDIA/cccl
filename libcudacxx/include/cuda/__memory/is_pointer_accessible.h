@@ -205,66 +205,46 @@ _CCCL_HOST_API inline bool __is_device_accessible(
   {
     return false;
   }
-  ::CUpointer_attribute __attrs[4] = {
-    ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-    ::CU_POINTER_ATTRIBUTE_IS_MANAGED,
-    ::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
-    ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
-  auto __memory_type       = static_cast<::CUmemorytype>(0);
-  int __is_managed         = 0;
-  int __ptr_dev_id         = 0;
-  ::CUmemoryPool __mempool = nullptr;
-  void* __results[4]       = {&__memory_type, &__is_managed, &__ptr_dev_id, &__mempool};
-  const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
-  _CCCL_THROW_OR_RETURN(__status, "Failed to get attributes of a pointer");
-  // (1) check if the pointer is unregistered
-  if (__memory_type == static_cast<::CUmemorytype>(0))
-  {
-    return false;
-  }
-  // (2) check if the pointer is a device accessible pointer or managed memory
-  if (!__is_managed && __memory_type != ::CU_MEMORYTYPE_DEVICE)
-  {
-    return false;
-  }
-  // (3) check if a memory pool is associated with the pointer
-  if (__mempool != nullptr)
-  {
-    ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()};
-    ::CUmemAccess_flags __pool_flags;
-    const auto __status2 = ::cuda::__driver::__mempoolGetAccessNoThrow(__pool_flags, __mempool, &__prop);
-    _CCCL_THROW_OR_RETURN(__status2, "Failed to get access of a memory pool");
-    return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
-  }
-  // (4) check if the pointer is allocated on the specified device
-  if (__ptr_dev_id == __device.get())
-  {
-    return true;
-  }
-  // (5) check if the pointer is actually accessible from the specified device
-  if (!__is_managed)
-  {
-    int __result         = 0;
-    const auto __status3 = ::cuda::__driver::__deviceCanAccessPeerNoThrow(__result, __device.get(), __ptr_dev_id);
-    _CCCL_THROW_OR_RETURN(__status3, "Failed to check if the pointer can be peer accessible from the specified device");
-    if (!__result)
-    {
-      return false;
-    }
-  }
-
   _CCCL_TRY
   {
     ::cuda::__ensure_current_context __ctx_setter{__device};
 
-    void* __device_ptr = nullptr;
-    const auto __ptr_status =
-      ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(__device_ptr, __p);
-    if (__ptr_status == ::cudaErrorInvalidValue)
+    ::CUpointer_attribute __attrs[4] = {
+      ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+      ::CU_POINTER_ATTRIBUTE_IS_MANAGED,
+      ::CU_POINTER_ATTRIBUTE_DEVICE_POINTER,
+      ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
+    auto __memory_type       = static_cast<::CUmemorytype>(0);
+    int __is_managed         = 0;
+    void* __device_ptr       = nullptr;
+    ::CUmemoryPool __mempool = nullptr;
+    void* __results[4]       = {&__memory_type, &__is_managed, &__device_ptr, &__mempool};
+    const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
+    if (__status == ::cudaErrorInvalidValue)
     {
       return false;
     }
-    _CCCL_THROW_OR_RETURN(__ptr_status, "Failed to get the device pointer for the specified device");
+    _CCCL_THROW_OR_RETURN(__status, "Failed to get attributes of a pointer");
+    // (1) check if the pointer is unregistered
+    if (__memory_type == static_cast<::CUmemorytype>(0))
+    {
+      return false;
+    }
+    // (2) check if the pointer is a device accessible pointer or managed memory
+    if (!__is_managed && __memory_type != ::CU_MEMORYTYPE_DEVICE)
+    {
+      return false;
+    }
+    // (3) check if a memory pool is associated with the pointer
+    if (__mempool != nullptr)
+    {
+      ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()};
+      ::CUmemAccess_flags __pool_flags;
+      const auto __status2 = ::cuda::__driver::__mempoolGetAccessNoThrow(__pool_flags, __mempool, &__prop);
+      _CCCL_THROW_OR_RETURN(__status2, "Failed to get access of a memory pool");
+      return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
+    }
+    // (4) check if the pointer is actually accessible from the specified device
     return __device_ptr != nullptr;
   }
   _CCCL_CATCH_ALL
