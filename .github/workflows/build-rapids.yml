@@ -166,15 +166,29 @@ jobs:
 
           chmod +x "$RUNNER_TEMP"/ci.sh
 
+          mkdir -p .aws
+
+          cat <<EOF > .aws/config
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > .aws/credentials
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+          EOF
+
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
+
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
             --env "AWS_ROLE_ARN=" \
-            --env "AWS_REGION=${AWS_REGION:-}" \
-            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
-            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
-            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "PYTHON_VERSION=${PYTHON_VERSION:-}" \
             --env "CONDA_ENV_CREATE_QUIET=true" \
             --env "CCCL_TAG=$CCCL_TAG" \
@@ -184,6 +198,7 @@ jobs:
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "SCCACHE_DIST_URL=https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com" \
             --env "SCCACHE_DIST_AUTH_TOKEN=$(
               curl -fsSL -H "Authorization: Bearer $(
                 curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \

@@ -707,11 +707,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
 
 // select the accumulator type using an overload set, so __accumulator_t and invoke_result_t are not instantiated when
 // an overriding accumulator type is present. This is needed by CCCL.C.
-template <typename InputIteratorT, typename InitValueT, typename ReductionOpT, typename TransformOpT>
-_CCCL_HOST_DEVICE_API auto select_accum_t(use_default*)
-  -> ::cuda::std::__accumulator_t<ReductionOpT,
-                                  ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
-                                  InitValueT>;
+template <typename InputIteratorT,
+          typename InitValueT,
+          typename ReductionOpT,
+          typename TransformOpT,
+          typename InputT = ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>>
+_CCCL_HOST_DEVICE_API auto select_accum_t(use_default*) -> ::cuda::std::__accumulator_t<
+  ReductionOpT,
+  InputT,
+  ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, no_init_t>, InputT, InitValueT>>;
+
 template <typename InputIteratorT,
           typename InitValueT,
           typename ReductionOpT,

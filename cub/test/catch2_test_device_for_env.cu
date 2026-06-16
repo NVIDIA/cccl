@@ -150,7 +150,7 @@ C2H_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]")
 template <int ThreadsPerBlock>
 struct for_each_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::for_each::for_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ForPolicy
   {
     return {ThreadsPerBlock, 2};
   }
@@ -230,3 +230,25 @@ C2H_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", block_sizes)
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_data.begin(), d_data.end(), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("ForPolicy", "[for][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ForPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ForPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::ForPolicy{128, 4};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::ForPolicy{.threads_per_block = 128, .items_per_thread = 4};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

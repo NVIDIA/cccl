@@ -85,6 +85,25 @@ inline constexpr bool is_non_deterministic_v =
 //!
 //! @linear_performance{reduction, reduce-by-key, and run-length encode}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! ``DeviceReduce::ReduceByKey`` can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ReduceByKeyPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_by_key_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin reduce-by-key-policy-selector
+//!      :end-before: example-end reduce-by-key-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_by_key_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin reduce-by-key-tuning
+//!      :end-before: example-end reduce-by-key-tuning
+//!
 //! @endrst
 struct DeviceReduce
 {
@@ -361,9 +380,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -631,8 +648,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -740,8 +756,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -968,8 +983,7 @@ public:
   //!   **[inferred]** Output iterator type for recording index of the returned value
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1248,8 +1262,7 @@ public:
   //!   (having value type ``cub::KeyValuePair<int, T>``) @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1372,8 +1385,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1574,8 +1586,7 @@ public:
   //!   **[inferred]** Output iterator type for recording index of the returned value
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1705,8 +1716,7 @@ public:
   //!   (having value type `cub::KeyValuePair<int, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -1956,8 +1966,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation
@@ -2358,8 +2367,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of ``d_temp_storage`` allocation

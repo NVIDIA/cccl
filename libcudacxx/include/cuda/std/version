@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -39,7 +39,7 @@
 #define __cccl_lib_forward_like                 202207L
 #define __cccl_lib_gcd_lcm                      201606L
 #define __cccl_lib_integer_comparison_functions 202002L
-#define __cccl_lib_integer_sequence             201304L
+#define __cccl_lib_integer_sequence             202511L
 #define __cccl_lib_integral_constant_callable   201304L
 #define __cccl_lib_is_final                     201402L
 #define __cccl_lib_is_nothrow_convertible       201806L
