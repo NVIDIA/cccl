@@ -77,8 +77,7 @@ template <typename PolicySelector,
           typename RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Predicate,
-          typename TransformOp,
-          int OutputAlign>
+          typename TransformOp>
 struct TransformKernelSource;
 
 template <typename PolicySelector,
@@ -86,15 +85,13 @@ template <typename PolicySelector,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Predicate,
-          typename TransformOp,
-          int OutputAlign>
+          typename TransformOp>
 struct TransformKernelSource<PolicySelector,
                              Offset,
                              ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                              RandomAccessIteratorOut,
                              Predicate,
-                             TransformOp,
-                             OutputAlign>
+                             TransformOp>
 {
   // PolicySelector must be stateless, so we can pass the type to the kernel
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
@@ -106,7 +103,6 @@ struct TransformKernelSource<PolicySelector,
                      Predicate,
                      TransformOp,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorOut>,
-                     OutputAlign,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
 
   template <class ActionT>
@@ -317,11 +313,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   }
 
   auto [launcher, kernel, items_per_thread] = *ret;
+
+  // Runtime check whether this launch can take the ublkcp kernel's vectorized (STG.128) store path. The output value
+  // type must pack into a 16-byte vector and all pointers must be suitably aligned. The kernel additionally gates on
+  // compile-time eligibility (contiguous, trivially relocatable, power-of-two element sizes, no predicate).
+  using output_t         = it_value_t<RandomAccessIteratorOut>;
+  constexpr int out_size = int{size_of<output_t>};
+  constexpr int vec_size = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
+  bool can_vectorize     = false;
+  if constexpr (vec_size > 1)
+  {
+    can_vectorize = kernel_source.CanVectorize(vec_size, out, ::cuda::std::get<Is>(in)...);
+  }
+
   return launcher.doit(
     kernel,
     num_items,
     items_per_thread,
-    false,
+    can_vectorize,
     pred,
     op,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
@@ -545,7 +554,6 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
 };
 
 template <requires_stable_address StableAddress,
-          int OutputAlign = 1,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Offset,
@@ -557,8 +565,7 @@ template <requires_stable_address StableAddress,
                                                                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                                                  RandomAccessIteratorOut,
                                                                  Predicate,
-                                                                 TransformOp,
-                                                                 OutputAlign>,
+                                                                 TransformOp>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires transform_policy_selector<PolicySelector>

@@ -22,7 +22,6 @@
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__iterator/zip_iterator.h>
-#include <cuda/__memory/aligned_size.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
@@ -93,20 +92,7 @@ struct DeviceTransform
     // https://github.com/NVIDIA/cccl/issues/8805 for data. We use choose_signed_offset to just check if it can hold the
     // value passed by the user, but otherwise ignore the chosen signed offset type.
     using offset_t = ::cuda::std::int64_t;
-    // num_items may be an aligned_size_t<N> (a caller promise that in/out are N-byte aligned and the count is a
-    // multiple of N). Unwrap it to the underlying integer.
-    const auto num_items_count = [&]() {
-      if constexpr (::cuda::std::is_integral_v<NumItemsT>)
-      {
-        return num_items;
-      }
-      else
-      {
-        return static_cast<::cuda::std::size_t>(num_items);
-      }
-    }();
-    using count_t = ::cuda::std::remove_const_t<decltype(num_items_count)>;
-    if (const cudaError_t error = detail::choose_signed_offset<count_t>::is_exceeding_offset_type(num_items_count))
+    if (const cudaError_t error = detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
     {
       return error;
     }
@@ -128,13 +114,10 @@ struct DeviceTransform
     static_assert(detail::transform::transform_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-    // An aligned_size_t<N> num_items lets the caller promise N-byte-aligned in/out pointers and a count that is a
-    // multiple of N. This is a compile-time guarantee so the ublkcp kernel can take the vector-store path.
-    constexpr int out_align = static_cast<int>(::cuda::__get_size_align_v<NumItemsT>);
-    return detail::transform::dispatch<StableAddress, out_align>(
+    return detail::transform::dispatch<StableAddress>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
-      static_cast<offset_t>(num_items_count),
+      static_cast<offset_t>(num_items),
       ::cuda::std::move(predicate),
       ::cuda::std::move(transform_op),
       stream,
