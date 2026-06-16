@@ -43,7 +43,8 @@ CUB work this usually means at least:
 
 * `docs/cub/developer_overview.rst`
 * `docs/cub/test_overview.rst` when adding or changing tests
-* `docs/cub/benchmarking.rst` when adding or changing benchmarks
+* `docs/cub/benchmarking.rst` when running or comparing benchmarks
+* `docs/cub/tuning.rst` when adding or changing benchmark definitions
 
 When implementing CUB headers, tests, or benchmarks:
 
@@ -52,10 +53,10 @@ When implementing CUB headers, tests, or benchmarks:
   refactor, utility-header addition, or code motion with possible codegen impact, split that into a
   preparatory PR with its own tests and, for CUDA codegen-sensitive paths, SASS diffs for relevant
   benchmarks.
-* Follow the established CUB header shape for CUB headers: SPDX/file comments, `#pragma once`,
-  `<cub/config.cuh>`, and the implicit system-header pragma block. Do not add libcu++ include guards or
-  `<cuda/std/__cccl/prologue.h>` / `<cuda/std/__cccl/epilogue.h>` to CUB headers unless surrounding CUB
-  headers have already adopted that pattern.
+* For new headers under `cub/cub/`, use the CUB header shape used by current CUB headers: SPDX/license
+  comment, `#pragma once`, `#include <cub/config.cuh>`, other required includes, then the
+  `_CCCL_IMPLICIT_SYSTEM_HEADER_*` pragma block before code. Do not add libcu++ include guards or
+  `<cuda/std/__cccl/prologue.h>` / `<cuda/std/__cccl/epilogue.h>` to CUB headers.
 * Prefer `cuda::std` facilities and headers where libcu++ provides the needed facility. Keep host-only
   standard-library facilities only where there is no suitable `cuda::std` equivalent or the code is
   intentionally host-only.
@@ -85,15 +86,17 @@ When implementing CUB headers, tests, or benchmarks:
   `docs/cub/test_overview.rst`.
 * When comparing host references with device outputs, make any device-to-host copy intentional and easy to
   see. Direct `c2h::host_vector` / `c2h::device_vector` comparisons are used in existing tests and bulk-copy
-  mismatched systems to host, but an explicit host copy is clearer when data movement matters to the test.
+  mismatched systems to host, but an explicit host copy is clearer when data movement matters to the test:
+  `c2h::host_vector<T> h_out = d_out; REQUIRE(h_out == h_ref);`.
 * Use CUB architecture constants such as `cub::detail::warp_threads` instead of hard-coded architectural
   values like `32`, and make public documentation match any row-major or multidimensional thread
   linearization used by the implementation.
-* For fixed-size range APIs, mirror sibling contracts: use `static_size_v` and
+* For fixed-size range APIs, mirror the contract of the corresponding primitive in the same subsystem: use
+  `static_size_v` and
   `cuda::std::iter_value_t`-based element checks, and allow zero-sized instantiations when the sibling API
   does.
 * When inactive lanes, partial tiles, or output-parameter overloads are part of the contract, initialize
-  outputs with a sentinel value that the operation cannot produce, and verify every overload family across the
+  outputs with a sentinel value that the operation cannot produce, and verify every overload set across the
   important type categories used by the primitive, including 64-bit floating-point and custom or multi-word
   types where applicable.
 * Let `clang-format` format code, then manually scan documentation comments and prose for readable wrapping

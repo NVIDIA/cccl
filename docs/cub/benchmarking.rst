@@ -125,49 +125,6 @@ Multiple benchmarks are selected by repeating the `-b` option.
     PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_plot_bwutil.py \
         -b base -a Elements{io}[pow2]=28 base.json
 
-
-Device-side primitive benchmarks
---------------------------------------------------------------------------------
-
-CUB benchmarks should measure the behavior implied by the API under test. For
-device-level algorithms, global input and output traffic is usually part of the
-algorithm contract and should be represented in the benchmark. For thread, warp,
-and block primitive microbenchmarks, global memory traffic can easily dominate the
-measurement and hide the cost of the primitive itself.
-
-When benchmarking thread-, warp-, or block-level primitives:
-
-* Prefer device-side benchmarking with the helper included as
-  ``<device_side_benchmark.cuh>``.
-* Use an existing device-side benchmark, such as
-  ``cub/benchmarks/bench/reduce/warp_reduce_base.cuh``, as the reference pattern.
-* Keep the implementation choice on its own NVBench axis. Workload knobs such as
-  value type, logical warp size, batch count, rows per block, warps per row, item
-  count, and synchronization mode should be separate axes so ``-a`` filters and
-  result comparisons can slice one dimension at a time.
-* Generate input data on the device, or keep setup outside the measured path.
-* Use shared memory for primitive-local state when that matches the primitive usage.
-* If the helper kernel unrolls the measured operation, include that unroll factor in
-  the reported element count, for example with
-  ``state.add_element_count(items * batches * unroll_factor)``.
-* Guard occupancy-derived launch sizes. If
-  ``cudaOccupancyMaxActiveBlocksPerMultiprocessor`` or equivalent sizing returns
-  zero active blocks for a configuration, skip that state with a clear
-  ``state.skip(...)`` message instead of launching a zero-sized grid.
-
-  .. code-block:: c++
-
-     if (max_blocks_per_SM == 0)
-     {
-       state.skip("Occupancy returns zero active blocks for this configuration");
-       return;
-     }
-
-If a benchmark changes from a global-memory-driven method to a device-side method,
-record that change when reporting results. The two methodologies answer different
-questions and their throughput numbers are not directly comparable.
-
-
 .. _cub-benchmarking-comparing:
 
 Comparing benchmark results
