@@ -16,12 +16,13 @@ BRANCH_BIN="build/autocuda/cub-benchmark/bin"
 MAIN_BIN="/home/shadeform/cccl/autocuda/worktrees/main-baseline/build/cub-benchmark/bin"
 mkdir -p "$OUT"
 
-# Sweep grid (override by editing here). Bins span the SMEM tier .. 1M incl. the
-# medium 32k/128k; 6 element sizes; both sample types; full 14 shapes.
-BINS="256 1024 4096 16384 32768 65536 131072 262144 1048576"
-ELEMENTS="1048576 16777216 67108864 268435456 1073741824 2000000000"
-SAMPLES="I32 F64"
-SHAPES="concentrated:1.0 concentrated:0.75 concentrated:0.5 concentrated:0.25 concentrated:0.0 powerlaw:0.75 powerlaw:0.5 powerlaw:0.25 zipf:1.0 hash_synonym stale_resident temporal_phases strided_sweep sawtooth"
+# Sweep grid (override per-axis via the HIST_SWEEP_{BINS,ELEMENTS,SAMPLES,SHAPES} env
+# vars; defaults below). Bins span the SMEM tier .. 1M incl. the on-chip-cap boundary
+# (49152/57344) and the low-bin tier (16/32); 6 element sizes; both sample types; 14 shapes.
+BINS="${HIST_SWEEP_BINS:-16 32 64 256 1024 4096 16384 32768 49152 57344 65536 131072 262144 1048576}"
+ELEMENTS="${HIST_SWEEP_ELEMENTS:-1048576 16777216 67108864 268435456 1073741824 2000000000}"
+SAMPLES="${HIST_SWEEP_SAMPLES:-I32 F64}"
+SHAPES="${HIST_SWEEP_SHAPES:-concentrated:1.0 concentrated:0.75 concentrated:0.5 concentrated:0.25 concentrated:0.0 powerlaw:0.75 powerlaw:0.5 powerlaw:0.25 zipf:1.0 hash_synonym stale_resident temporal_phases strided_sweep sawtooth}"
 
 # Characterization figures once (input-shape, binary-independent).
 echo "=== [$(date +%H:%M:%S)] characterization figures ==="
