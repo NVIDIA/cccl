@@ -35,6 +35,7 @@
 #include <cuda/std/array>
 #include <cuda/std/optional>
 
+#include <cuda/experimental/__coop/shuffle_down.cuh>
 #include <cuda/experimental/group.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -214,26 +215,10 @@ __reduce_impl(_Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
   _CCCL_PRAGMA_UNROLL_FULL()
   for (unsigned __stride = 1; __stride < ::cuda::next_power_of_two(__mapping_result.count()); __stride *= 2)
   {
-    const auto __other_is_valid = (__mapping_result.rank() + __stride < __mapping_result.count());
-
-    _Tp __other_result;
-    if constexpr (_MappingResult::is_always_contiguous())
+    const auto __other = ::cuda::experimental::coop::shuffle_down(__group, __result, __stride);
+    if (__other.has_value())
     {
-      const auto __other_offset = (__other_is_valid) ? __stride : 0u;
-      __other_result =
-        ::cuda::device::warp_shuffle_down(__result, __other_offset, __mapping_result.lane_mask().value()).data;
-    }
-    else
-    {
-      const auto __other_idx =
-        (__other_is_valid) ? ::__fns(__mapping_result.lane_mask().value(), __lane, __stride) : 0u;
-      __other_result =
-        ::cuda::device::warp_shuffle_idx(__result, __other_idx, __mapping_result.lane_mask().value()).data;
-    }
-
-    if (__other_is_valid)
-    {
-      __result = __red_fn(__result, __other_result);
+      __result = __red_fn(__result, *__other);
     }
   }
   return (__mapping_result.rank() == 0) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;

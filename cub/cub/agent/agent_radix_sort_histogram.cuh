@@ -242,7 +242,6 @@ struct AgentRadixSortHistogram
     {
       // Reset the counters.
       Init();
-      __syncthreads();
 
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;

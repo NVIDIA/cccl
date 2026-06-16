@@ -143,7 +143,7 @@ struct DeviceScanKernelSource
   CUB_RUNTIME_FUNCTION static constexpr auto lookahead_make_tile_state_kernel_arg(void* ts)
   {
     tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
-    ::cuda::std::__construct_at(&arg.warpspeed, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
+    ::cuda::std::__construct_at(&arg.lookahead, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
     return arg;
   }
 };
@@ -152,7 +152,7 @@ struct DeviceScanKernelSource
 template <typename LegacyActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanPolicy
 {
-  // this does not convert any warpspeed policy data, which is fine because we merged warpspeed scan during the CCCL 3.4
+  // this does not convert any lookahead policy data, which is fine because we merged lookahead scan during the CCCL 3.4
   // development cycle, so it never had user exposure through the policy_hub, and we can just only support it through
   // the policy_selector.
   using scan_policy_t = typename LegacyActivePolicy::ScanPolicyT;
@@ -166,7 +166,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanPolicy
       scan_policy_t::STORE_ALGORITHM,
       scan_policy_t::SCAN_ALGORITHM,
       detail::lookback_delay_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>},
-    ScanWarpspeedPolicy{}};
+    ScanLookaheadPolicy{}};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -475,11 +475,11 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
   CUB_RUNTIME_FUNCTION static void __check_smem()
   {
     static_assert(SMemSizeForSingleStage <= detail::max_smem_per_block,
-                  "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+                  "Single-stage lookahead scan exceeds architecture independent SMEM (48KiB)");
   }
 
   template <typename PolicyGetter>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_warpspeed_algorithm(PolicyGetter policy_getter)
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(PolicyGetter policy_getter)
   {
 #if __cccl_ptx_isa >= 860
     if (num_items == 0)
@@ -488,16 +488,16 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
       return cudaSuccess;
     }
 
-    CUB_DETAIL_CONSTEXPR_ISH const ScanWarpspeedPolicy warpspeed_policy = policy_getter().warpspeed;
-    CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.reduce_and_scan_warps >= 1,
-                                 "Warpspeed scan policy have at least 1 warp for reducing and scanning");
+    CUB_DETAIL_CONSTEXPR_ISH const ScanLookaheadPolicy lookahead_policy = policy_getter().lookahead;
+    CUB_DETAIL_STATIC_ISH_ASSERT(lookahead_policy.reduce_and_scan_warps >= 1,
+                                 "Lookahead scan policy have at least 1 warp for reducing and scanning");
     CUB_DETAIL_STATIC_ISH_ASSERT(
-      warpspeed_policy.items_per_thread >= 1, "Warpspeed scan policy must have at least 1 item per thread");
-    CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.lookahead_items_per_thread >= 1,
-                                 "Warpspeed scan policy must look ahead at least 1 item per thread");
+      lookahead_policy.items_per_thread >= 1, "Lookahead scan policy must have at least 1 item per thread");
+    CUB_DETAIL_STATIC_ISH_ASSERT(lookahead_policy.lookahead_items_per_thread >= 1,
+                                 "Lookahead scan policy must look ahead at least 1 item per thread");
 
     const int grid_dim =
-      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(lookahead_policy.tile_size())));
 
     if (d_temp_storage == nullptr)
     {
@@ -529,7 +529,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
     auto scan_kernel                 = kernel_source.ScanKernel();
     [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
     CUB_DETAIL_CONSTEXPR_ISH int smem_size_1_stage = detail::scan::smem_for_stages(
-      warpspeed_policy,
+      lookahead_policy,
       1,
       static_cast<int>(kernel_src.InputSize()),
       static_cast<int>(kernel_src.InputAlign()),
@@ -538,7 +538,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
       static_cast<int>(kernel_src.AccumAlign()));
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)
     _CCCL_ASSERT(smem_size_1_stage <= int{detail::max_smem_per_block},
-                 "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+                 "Single-stage lookahead scan exceeds architecture independent SMEM (48KiB)");
 #  else // defined(CUB_DEFINE_RUNTIME_POLICIES)
     __check_smem<smem_size_1_stage>();
 #  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
@@ -552,12 +552,12 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
                    // 1 CTA per SM +1 since it tends to improve performance
                    // TODO(bgruber): make the +1 a tuning parameter
                    const int max_stages_for_even_workload = static_cast<int>(
-                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size())) + 1);
+                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
 
                    while (num_stages <= max_stages_for_even_workload)
                    {
                      const int next_smem_size = detail::scan::smem_for_stages(
-                       warpspeed_policy,
+                       lookahead_policy,
                        num_stages + 1,
                        static_cast<int>(kernel_source.InputSize()),
                        static_cast<int>(kernel_source.InputAlign()),
@@ -620,7 +620,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
 
     // Invoke scan kernel
     {
-      const int block_dim = detail::scan::num_total_threads(warpspeed_policy);
+      const int block_dim = detail::scan::num_total_threads(lookahead_policy);
 
 #  ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
@@ -655,7 +655,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
     }
 #else // __cccl_ptx_isa >= 860
     static_assert(sizeof(policy_getter) == 0,
-                  "Implementation bug: Tuning policy selected warpspeed, but supported PTX ISA is too low");
+                  "Implementation bug: Tuning policy selected lookahead, but supported PTX ISA is too low");
 #endif // __cccl_ptx_isa >= 860
     return cudaSuccess;
   }
@@ -809,9 +809,9 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
       }
     };
 
-    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter{}().algorithm == ScanAlgorithm::warpspeed)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter{}().algorithm == ScanAlgorithm::lookahead)
     {
-      return __invoke_warpspeed_algorithm(policy_getter{});
+      return __invoke_lookahead_algorithm(policy_getter{});
     }
     else
     {
@@ -903,10 +903,10 @@ namespace detail::scan
 {
 // do check in separate function, so error message contains the required SMEM in the error novel
 template <int SMemSizeForSingleStage>
-CUB_RUNTIME_FUNCTION void check_warpspeed_smem()
+CUB_RUNTIME_FUNCTION void check_lookahead_smem()
 {
   static_assert(SMemSizeForSingleStage <= detail::max_smem_per_block,
-                "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+                "Single-stage lookahead scan exceeds architecture independent SMEM (48KiB)");
 }
 
 template <typename PolicyGetter,
@@ -1072,7 +1072,7 @@ template <typename PolicyGetter,
           typename OffsetT,
           typename KernelSource,
           typename KernelLauncherFactory>
-CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
+CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   PolicyGetter policy_getter,
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -1093,16 +1093,16 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
     return cudaSuccess;
   }
 
-  CUB_DETAIL_CONSTEXPR_ISH const ScanWarpspeedPolicy warpspeed_policy = policy_getter().warpspeed;
-  CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.reduce_and_scan_warps >= 1,
-                               "Warpspeed scan policy have at least 1 warp for reducing and scanning");
+  CUB_DETAIL_CONSTEXPR_ISH const ScanLookaheadPolicy lookahead_policy = policy_getter().lookahead;
+  CUB_DETAIL_STATIC_ISH_ASSERT(lookahead_policy.reduce_and_scan_warps >= 1,
+                               "Lookahead scan policy have at least 1 warp for reducing and scanning");
   CUB_DETAIL_STATIC_ISH_ASSERT(
-    warpspeed_policy.items_per_thread >= 1, "Warpspeed scan policy must have at least 1 item per thread");
-  CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.lookahead_items_per_thread >= 1,
-                               "Warpspeed scan policy must look ahead at least 1 item per thread");
+    lookahead_policy.items_per_thread >= 1, "Lookahead scan policy must have at least 1 item per thread");
+  CUB_DETAIL_STATIC_ISH_ASSERT(lookahead_policy.lookahead_items_per_thread >= 1,
+                               "Lookahead scan policy must look ahead at least 1 item per thread");
 
   const int grid_dim =
-    static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
+    static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(lookahead_policy.tile_size())));
 
   if (d_temp_storage == nullptr)
   {
@@ -1134,7 +1134,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
   auto scan_kernel                 = kernel_source.ScanKernel();
   [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
   CUB_DETAIL_CONSTEXPR_ISH int smem_size_1_stage = detail::scan::smem_for_stages(
-    warpspeed_policy,
+    lookahead_policy,
     1,
     static_cast<int>(kernel_src.InputSize()),
     static_cast<int>(kernel_src.InputAlign()),
@@ -1143,9 +1143,9 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
     static_cast<int>(kernel_src.AccumAlign()));
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)
   _CCCL_ASSERT(smem_size_1_stage <= int{detail::max_smem_per_block},
-               "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+               "Single-stage lookahead scan exceeds architecture independent SMEM (48KiB)");
 #  else // defined(CUB_DEFINE_RUNTIME_POLICIES)
-  check_warpspeed_smem<smem_size_1_stage>();
+  check_lookahead_smem<smem_size_1_stage>();
 #  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
   int num_stages = 1;
@@ -1157,12 +1157,12 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
                  // 1 CTA per SM +1 since it tends to improve performance
                  // TODO(bgruber): make the +1 a tuning parameter
                  const int max_stages_for_even_workload = static_cast<int>(
-                   ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size())) + 1);
+                   ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
 
                  while (num_stages <= max_stages_for_even_workload)
                  {
                    const int next_smem_size = detail::scan::smem_for_stages(
-                     warpspeed_policy,
+                     lookahead_policy,
                      num_stages + 1,
                      static_cast<int>(kernel_source.InputSize()),
                      static_cast<int>(kernel_source.InputAlign()),
@@ -1221,7 +1221,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
 
   // Invoke scan kernel
   {
-    const int block_dim = detail::scan::num_total_threads(warpspeed_policy);
+    const int block_dim = detail::scan::num_total_threads(lookahead_policy);
 #  ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
 #  endif // CUB_DEBUG_LOG
@@ -1255,7 +1255,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_warpspeed(
   }
 #else // __cccl_ptx_isa >= 860
   static_assert(sizeof(policy_getter) == 0,
-                "Implementation bug: Tuning policy selected warpspeed, but supported PTX ISA is too low");
+                "Implementation bug: Tuning policy selected lookahead, but supported PTX ISA is too low");
 #endif // __cccl_ptx_isa >= 860
   return cudaSuccess;
 }
@@ -1283,9 +1283,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
   KernelLauncherFactory launcher_factory)
 {
   const bool dependent_launch = cc >= ::cuda::compute_capability{9, 0};
-  if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::warpspeed)
+  if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::lookahead)
   {
-    return invoke_warpspeed(
+    return invoke_lookahead(
       policy_getter,
       d_temp_storage,
       temp_storage_bytes,

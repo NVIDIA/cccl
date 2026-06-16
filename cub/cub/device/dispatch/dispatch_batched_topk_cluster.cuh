@@ -40,10 +40,10 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/__argument_>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__numeric/narrow.h>
+#include <cuda/argument>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/cstdint>
@@ -60,13 +60,13 @@ namespace detail::batched_topk_cluster
 // -----------------------------------------------------------------------------
 // Cluster-size / dynamic-SMEM selection
 // -----------------------------------------------------------------------------
-// Tightest upper bound carried by the segment-size argument. Mirrors `__argument::__traits<>::highest` semantics:
-// the compile-time bound for `__constant`/bounded sequence arguments and the runtime value for a uniform
-// `__immediate`. For a per-segment sequence with only a static bound this can be the loose `numeric_limits<T>::max()`.
+// Tightest upper bound carried by the segment-size argument. Mirrors `args::__traits<>::highest` semantics:
+// the compile-time bound for `constant`/bounded sequence arguments and the runtime value for a uniform
+// `immediate`. For a per-segment sequence with only a static bound this can be the loose `numeric_limits<T>::max()`.
 template <typename SegmentSizeParameterT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto runtime_max_segment_size(SegmentSizeParameterT segment_sizes) noexcept
 {
-  return ::cuda::__argument::__highest_(segment_sizes);
+  return ::cuda::args::__highest_(segment_sizes);
 }
 
 struct launch_config
@@ -301,7 +301,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
-  // The selection direction is a compile-time constant carried as `::cuda::__argument::__constant<Dir>`. Wrap it into
+  // The selection direction is a compile-time constant carried as `::cuda::args::constant<Dir>`. Wrap it into
   // the internal discrete param the kernel/agent expect, exactly as the baseline `batched_topk::dispatch` does.
   auto select_directions          = batched_topk::wrap_select_direction(select_direction);
   using SelectDirectionParameterT = decltype(select_directions);
@@ -360,10 +360,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return cudaSuccess;
   }
 
-  static_assert(::cuda::__argument::__traits<NumSegmentsParameterT>::is_single_value,
+  static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value,
                 "Number of segments must be resolved on the host.");
 
-  using num_segments_val_t = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
+  using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
   const auto num_seg_val   = detail::params::get_param(num_segments, num_segments_val_t{0});
   if (num_seg_val == 0)
   {

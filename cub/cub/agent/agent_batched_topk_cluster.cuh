@@ -178,8 +178,8 @@ struct agent_batched_topk_cluster
   // iterators are then never dereferenced and the final filter's value writes are compiled out.
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
 
-  using segment_size_val_t = typename ::cuda::__argument::__traits<SegmentSizeParameterT>::element_type;
-  using num_segments_val_t = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
+  using segment_size_val_t = typename ::cuda::args::__traits<SegmentSizeParameterT>::element_type;
+  using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
 
   using offset_t     = ::cuda::std::uint32_t;
   using out_offset_t = ::cuda::std::uint32_t;

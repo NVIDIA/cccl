@@ -232,7 +232,7 @@ struct scan_kernel_source
   {
     // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
     cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
-    ::cuda::std::__construct_at(&arg.warpspeed, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
     return arg;
   }
 };
@@ -278,8 +278,6 @@ try
     make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
   const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
-
-  const auto output_it_value_t = cccl_type_enum_to_name(output_it.value_type.type);
 
   const auto policy_sel = [&] {
     using cub::detail::scan::policy_selector;

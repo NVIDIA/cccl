@@ -18,9 +18,9 @@ try
   using init_value_t             = T;
   using accum_t [[maybe_unused]] = ::cuda::std::__accumulator_t<op_t, init_value_t, T>;
   using offset_t                 = cub::detail::choose_offset_t<OffsetT>;
-#if USES_WARPSPEED()
-  static_assert(sizeof(offset_t) == sizeof(size_t)); // warpspeed scan uses size_t internally
-#endif // USES_WARPSPEED()
+#if USES_LOOKAHEAD()
+  static_assert(sizeof(offset_t) == sizeof(size_t)); // lookahead scan uses size_t internally
+#endif // USES_LOOKAHEAD()
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   if (sizeof(offset_t) == 4 && elements > std::numeric_limits<offset_t>::max())

@@ -351,7 +351,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   // we trigger the sweep kernel only if we have a small number of remaining writes in this kernel
   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                  if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
-                     <= policy.pdl_trigger_next_launch_in_init_kernel_max_bin_count)
+                     <= policy.init_kernel_pdl_trigger_max_bins)
                  {
                    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
                  }

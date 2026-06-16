@@ -1,8 +1,3 @@
----
-name: libcudacxx-test
-description: Write, update, and validate libcudacxx tests under libcudacxx/test.
----
-
 # libcudacxx Test
 
 ## Organization
