@@ -65,27 +65,27 @@ warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
   const auto value  = static_cast<promotion_t>(input);
   if constexpr (is_cuda_maximum_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_max_sync(mask, value));
+    return static_cast<T>(__reduce_max_sync(mask, value));
   }
   else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_min_sync(mask, value));
+    return static_cast<T>(__reduce_min_sync(mask, value));
   }
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_add_sync(mask, value));
+    return static_cast<T>(__reduce_add_sync(mask, value));
   }
   else if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_and_sync(mask, value));
+    return static_cast<T>(__reduce_and_sync(mask, value));
   }
   else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_or_sync(mask, value));
+    return static_cast<T>(__reduce_or_sync(mask, value));
   }
   else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
   {
-    return static_cast<T>(::__reduce_xor_sync(mask, value));
+    return static_cast<T>(__reduce_xor_sync(mask, value));
   }
   else
   {
