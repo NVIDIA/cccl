@@ -102,18 +102,18 @@ struct radix_sort_onesweep_policy
   //! RADIX_RANK_MATCH_EARLY_COUNTS_*
   int rank_num_private_partitions;
 
-  int radix_bits;
   RadixRankAlgorithm rank_algorith;
   BlockScanAlgorithm scan_algorithm;
   RadixSortStoreAlgorithm store_algorithm;
+  int radix_bits;
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const radix_sort_onesweep_policy& lhs, const radix_sort_onesweep_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.rank_num_private_partitions == rhs.rank_num_private_partitions && lhs.radix_bits == rhs.radix_bits
-        && lhs.rank_algorith == rhs.rank_algorith && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.store_algorithm == rhs.store_algorithm;
+        && lhs.rank_num_private_partitions == rhs.rank_num_private_partitions && lhs.rank_algorith == rhs.rank_algorith
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.store_algorithm == rhs.store_algorithm
+        && lhs.radix_bits == rhs.radix_bits;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -128,8 +128,8 @@ struct radix_sort_onesweep_policy
     return os
         << "radix_sort_onesweep_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
         << p.items_per_thread << ", .rank_num_private_partitions = " << p.rank_num_private_partitions
-        << ", .radix_bits = " << p.radix_bits << ", .rank_algorith = " << p.rank_algorith
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .store_algorithm = " << p.store_algorithm << " }";
+        << ", .rank_algorith = " << p.rank_algorith << ", .scan_algorithm = " << p.scan_algorithm
+        << ", .store_algorithm = " << p.store_algorithm << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -139,20 +139,20 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
   int nominal_4b_items_per_thread,
   int compute_t_size,
   int rank_num_private_partitions,
-  int radix_bits,
   RadixRankAlgorithm rank_algorith,
   BlockScanAlgorithm scan_algorithm,
-  RadixSortStoreAlgorithm store_algorithm) -> radix_sort_onesweep_policy
+  RadixSortStoreAlgorithm store_algorithm,
+  int radix_bits) -> radix_sort_onesweep_policy
 {
   const auto scaled = scale_reg_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
   return radix_sort_onesweep_policy{
     scaled.threads_per_block,
     scaled.items_per_thread,
     rank_num_private_partitions,
-    radix_bits,
     rank_algorith,
     scan_algorithm,
-    store_algorithm};
+    store_algorithm,
+    radix_bits};
 }
 
 struct radix_sort_downsweep_policy
@@ -888,10 +888,10 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> radix_sort_policy
     one_pol::BLOCK_THREADS,
     one_pol::ITEMS_PER_THREAD,
     one_pol::RANK_NUM_PARTS,
-    one_pol::RADIX_BITS,
     one_pol::RANK_ALGORITHM,
     one_pol::SCAN_ALGORITHM,
-    one_pol::STORE_ALGORITHM};
+    one_pol::STORE_ALGORITHM,
+    one_pol::RADIX_BITS};
 
   using scan_pol  = typename active_policy::ScanPolicy;
   const auto scan = ScanPolicy{
@@ -1703,20 +1703,20 @@ struct policy_selector
                     : (value_size < 8 ? (offset_64bit ? 17 : 23) : (offset_64bit ? 29 : 30)),
       __dominant_size(),
       1,
-      onesweep_radix_bits,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT);
+      RADIX_SORT_STORE_DIRECT,
+      onesweep_radix_bits);
 
     const auto onesweep_policy_key64 = make_reg_scaled_radix_sort_onesweep_policy(
       384,
       value_size < 8 ? 30 : 24,
       __dominant_size(),
       1,
-      onesweep_radix_bits,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT);
+      RADIX_SORT_STORE_DIRECT,
+      onesweep_radix_bits);
 
     const auto onesweep_large_key_policy = key_size == 4 ? onesweep_policy_key32 : onesweep_policy_key64;
 
@@ -1725,10 +1725,10 @@ struct policy_selector
       tuning.items,
       __dominant_size(),
       1,
-      8,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT);
+      RADIX_SORT_STORE_DIRECT,
+      8);
 
     const auto onesweep = key_size < 4 ? onesweep_small_key_policy : onesweep_large_key_policy;
 
@@ -1827,10 +1827,10 @@ struct policy_selector
         offset_64bit && key_size == 4 && !__keys_only() ? 17 : 21,
         __dominant_size(),
         1,
-        onesweep_radix_bits,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_RAKING_MEMOIZE,
-        RADIX_SORT_STORE_DIRECT);
+        RADIX_SORT_STORE_DIRECT,
+        onesweep_radix_bits);
 
       const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
@@ -1908,10 +1908,10 @@ struct policy_selector
         key_size == 4 && value_size == 4 ? 46 : 23,
         __dominant_size(),
         4,
-        onesweep_radix_bits,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_WARP_SCANS,
-        RADIX_SORT_STORE_DIRECT);
+        RADIX_SORT_STORE_DIRECT,
+        onesweep_radix_bits);
 
       const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
@@ -1988,10 +1988,10 @@ struct policy_selector
         30,
         __dominant_size(),
         2,
-        onesweep_radix_bits,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_WARP_SCANS,
-        RADIX_SORT_STORE_DIRECT);
+        RADIX_SORT_STORE_DIRECT,
+        onesweep_radix_bits);
 
       const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
@@ -2071,10 +2071,10 @@ struct policy_selector
         30,
         __dominant_size(),
         2,
-        onesweep_radix_bits,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_WARP_SCANS,
-        RADIX_SORT_STORE_DIRECT);
+        RADIX_SORT_STORE_DIRECT,
+        onesweep_radix_bits);
 
       const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
@@ -2152,10 +2152,10 @@ struct policy_selector
         offset_64bit ? 29 : 30,
         __dominant_size(),
         2,
-        onesweep_radix_bits,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BLOCK_SCAN_WARP_SCANS,
-        RADIX_SORT_STORE_DIRECT);
+        RADIX_SORT_STORE_DIRECT,
+        onesweep_radix_bits);
 
       const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
@@ -2234,10 +2234,10 @@ struct policy_selector
       21,
       __dominant_size(),
       1,
-      onesweep_radix_bits,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
       BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT);
+      RADIX_SORT_STORE_DIRECT,
+      onesweep_radix_bits);
 
     const auto scan = make_mem_scaled_lookback_scan_policy(
       512,

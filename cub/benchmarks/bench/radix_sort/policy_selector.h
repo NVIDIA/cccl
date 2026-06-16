@@ -19,10 +19,10 @@ struct policy_selector
         scaled.threads_per_block,
         scaled.items_per_thread,
         1,
-        ONESWEEP_RADIX_BITS,
         cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         cub::BLOCK_SCAN_RAKING_MEMOIZE,
-        cub::RADIX_SORT_STORE_DIRECT};
+        cub::RADIX_SORT_STORE_DIRECT,
+        ONESWEEP_RADIX_BITS};
     }();
 
     // These kernels are launched once, no point in tuning at the moment
