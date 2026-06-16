@@ -26,6 +26,7 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__new/device_new.h>
+#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 
@@ -229,6 +230,188 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 }
 
 #endif // _CCCL_DOXYGEN_INVOKED
+
+namespace detail
+{
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_block_load_global_l2(const void* ptr)
+{
+  asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(ptr)) : "memory");
+}
+
+template <typename RandomAccessIterator>
+inline constexpr bool can_prefetch_block_load =
+  is_CacheModifiedInputIterator<RandomAccessIterator>
+  || (::cuda::std::contiguous_iterator<RandomAccessIterator> && ::cuda::std::__can_to_address<RandomAccessIterator>);
+
+// @giannis: should i try to lambda inline this inside its calling body ??
+template <typename RandomAccessIterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto block_load_prefetch_base(RandomAccessIterator block_src_it)
+{
+  if constexpr (is_CacheModifiedInputIterator<RandomAccessIterator>)
+  {
+    return block_src_it.ptr;
+  }
+  else
+  {
+    return ::cuda::std::to_address(block_src_it);
+  }
+}
+
+template <int ThreadsPerBlock, typename RandomAccessIterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+prefetch_block_load_tile(int linear_tid, RandomAccessIterator block_src_it, int items_to_prefetch)
+{
+  if constexpr (can_prefetch_block_load<RandomAccessIterator>)
+  {
+    if (items_to_prefetch <= 0)
+    {
+      return;
+    }
+
+    using input_t                         = cub::detail::it_value_t<RandomAccessIterator>;
+    constexpr ::cuda::std::size_t stride  = 128;
+    const ::cuda::std::size_t total_bytes = static_cast<::cuda::std::size_t>(items_to_prefetch) * sizeof(input_t);
+    const auto* const base                = reinterpret_cast<const char*>(block_load_prefetch_base(block_src_it));
+
+    _CCCL_PRAGMA_NOUNROLL()
+    for (::cuda::std::size_t offset = static_cast<::cuda::std::size_t>(linear_tid) * stride; offset < total_bytes;
+         offset += static_cast<::cuda::std::size_t>(ThreadsPerBlock) * stride)
+    {
+      prefetch_block_load_global_l2(base + offset);
+    }
+  }
+}
+} // namespace detail
+
+//! @rst
+//! Load a linear segment of items into a blocked arrangement across the thread block, with L2 prefetching.
+//!
+//! @blocked
+//!
+//! Emits ``prefetch.global.L2`` hints for the full tile before performing the load.
+//! Only effective for pointer-like (contiguous) iterators; falls back to :cpp:func:`LoadDirectBlocked` silently for
+//! other iterator types.
+//!
+//! @endrst
+//!
+//! @tparam ThreadsPerBlock
+//!   The number of threads in the block.
+//!
+//! @tparam T
+//!   **[inferred]** The data type to load.
+//!
+//! @tparam ItemsPerThread
+//!   **[inferred]** The number of consecutive items partitioned onto each thread.
+//!
+//! @tparam RandomAccessIterator
+//!   **[inferred]** The random-access iterator type for input iterator.
+//!
+//! @param[in] linear_tid
+//!   A suitable 1D thread-identifier for the calling thread (e.g., `(threadIdx.y * blockDim.x) + linear_tid` for 2D
+//!   thread blocks)
+//!
+//! @param[in] block_src_it
+//!   The thread block's base input iterator for loading from
+//!
+//! @param[out] dst_items
+//!   Destination to load data into
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+LoadDirectBlockedPrefetch(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread])
+{
+  detail::prefetch_block_load_tile<ThreadsPerBlock>(linear_tid, block_src_it, ThreadsPerBlock * ItemsPerThread);
+  LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+}
+
+//! @rst
+//! Load a linear segment of items into a blocked arrangement across the thread block, guarded by range, with L2
+//! prefetching.
+//!
+//! @blocked
+//!
+//! @endrst
+//!
+//! @tparam ThreadsPerBlock
+//!   The number of threads in the block.
+//!
+//! @tparam T
+//!   **[inferred]** The data type to load.
+//!
+//! @tparam ItemsPerThread
+//!   **[inferred]** The number of consecutive items partitioned onto each thread.
+//!
+//! @tparam RandomAccessIterator
+//!   **[inferred]** The random-access iterator type for input iterator.
+//!
+//! @param[in] linear_tid
+//!   A suitable 1D thread-identifier for the calling thread (e.g., `(threadIdx.y * blockDim.x) + linear_tid` for 2D
+//!   thread blocks)
+//!
+//! @param[in] block_src_it
+//!   The thread block's base iterator for loading from
+//!
+//! @param[out] dst_items
+//!   Destination to load data into
+//!
+//! @param[in] block_items_end
+//!   First out-of-bounds index when loading from block_src_it
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlockedPrefetch(
+  int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end)
+{
+  detail::prefetch_block_load_tile<ThreadsPerBlock>(linear_tid, block_src_it, block_items_end);
+  LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+}
+
+//! @rst
+//! Load a linear segment of items into a blocked arrangement across the thread block, guarded by range, with a
+//! fall-back assignment of out-of-bound elements and L2 prefetching.
+//!
+//! @blocked
+//!
+//! @endrst
+//!
+//! @tparam ThreadsPerBlock
+//!   The number of threads in the block.
+//!
+//! @tparam T
+//!   **[inferred]** The data type to load.
+//!
+//! @tparam DefaultT
+//!   **[inferred]** The data type of the default value.
+//!
+//! @tparam ItemsPerThread
+//!   **[inferred]** The number of consecutive items partitioned onto each thread.
+//!
+//! @tparam RandomAccessIterator
+//!   **[inferred]** The random-access iterator type for input iterator.
+//!
+//! @param[in] linear_tid
+//!   A suitable 1D thread-identifier for the calling thread (e.g., `(threadIdx.y * blockDim.x) + linear_tid` for 2D
+//!   thread blocks)
+//!
+//! @param[in] block_src_it
+//!   The thread block's base input iterator for loading from
+//!
+//! @param[out] dst_items
+//!   Destination to load data into
+//!
+//! @param[in] block_items_end
+//!   First out-of-bounds index when loading from block_src_it
+//!
+//! @param[in] oob_default
+//!   Default value to assign out-of-bound items
+template <int ThreadsPerBlock, typename T, typename DefaultT, int ItemsPerThread, typename RandomAccessIterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlockedPrefetch(
+  int linear_tid,
+  RandomAccessIterator block_src_it,
+  T (&dst_items)[ItemsPerThread],
+  int block_items_end,
+  DefaultT oob_default)
+{
+  detail::prefetch_block_load_tile<ThreadsPerBlock>(linear_tid, block_src_it, block_items_end);
+  LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+}
 
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block.
@@ -724,6 +907,21 @@ enum BlockLoadAlgorithm
   //!
   //! @endrst
   BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED,
+
+  //! @rst
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! A :ref:`blocked arrangement <flexible-data-arrangement>` of data is prefetched into L2 and then read directly from
+  //! memory.
+  //!
+  //! Performance Considerations
+  //! ++++++++++++++++++++++++++
+  //!
+  //! This algorithm has the same memory-access pattern as cub::BLOCK_LOAD_DIRECT, but emits prefetch hints for
+  //! pointer-like inputs before loading the tile.
+  //! @endrst
+  BLOCK_LOAD_DIRECT_PREFETCH,
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -735,6 +933,8 @@ namespace detail
   {
     case BLOCK_LOAD_DIRECT:
       return "BLOCK_LOAD_DIRECT";
+    case BLOCK_LOAD_DIRECT_PREFETCH:
+      return "BLOCK_LOAD_DIRECT_PREFETCH";
     case BLOCK_LOAD_STRIPED:
       return "BLOCK_LOAD_STRIPED";
     case BLOCK_LOAD_VECTORIZE:
@@ -788,6 +988,9 @@ CUB_NAMESPACE_BEGIN
 //!
 //!   #. :cpp:enumerator:`cub::BLOCK_LOAD_DIRECT`:
 //!      A :ref:`blocked arrangement <flexible-data-arrangement>` of data is read directly from memory.
+//!   #. :cpp:enumerator:`cub::BLOCK_LOAD_DIRECT_PREFETCH`:
+//!      A :ref:`blocked arrangement <flexible-data-arrangement>` of data is prefetched into L2 and then read directly
+//!      from memory.
 //!   #. :cpp:enumerator:`cub::BLOCK_LOAD_STRIPED`:
 //!      A :ref:`striped arrangement <flexible-data-arrangement>` of data is read directly from memory.
 //!   #. :cpp:enumerator:`cub::BLOCK_LOAD_VECTORIZE`:
@@ -887,8 +1090,8 @@ class BlockLoad
 
   _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
   {
-    if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_STRIPED
-                  || Algorithm == BLOCK_LOAD_VECTORIZE)
+    if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_DIRECT_PREFETCH
+                  || Algorithm == BLOCK_LOAD_STRIPED || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
       return NullType{};
     }
@@ -997,6 +1200,10 @@ public:
     {
       LoadDirectBlocked(linear_tid, block_src_it, dst_items);
     }
+    else if constexpr (Algorithm == BLOCK_LOAD_DIRECT_PREFETCH)
+    {
+      LoadDirectBlockedPrefetch<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
+    }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
       LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
@@ -1086,6 +1293,10 @@ public:
     {
       LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
     }
+    else if constexpr (Algorithm == BLOCK_LOAD_DIRECT_PREFETCH)
+    {
+      LoadDirectBlockedPrefetch<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+    }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
       LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
@@ -1161,6 +1372,10 @@ public:
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
       LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_DIRECT_PREFETCH)
+    {
+      LoadDirectBlockedPrefetch<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
