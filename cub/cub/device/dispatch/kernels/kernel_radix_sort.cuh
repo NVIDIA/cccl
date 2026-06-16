@@ -475,6 +475,32 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   agent.Process();
 }
 
+template <typename PolicySelector, typename InitT0, typename InitT1>
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
+  _CCCL_GRID_CONSTANT InitT0* const d_items0,
+  _CCCL_GRID_CONSTANT const size_t num_items0,
+  _CCCL_GRID_CONSTANT InitT1* const d_items1,
+  _CCCL_GRID_CONSTANT const size_t num_items1)
+{
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+  const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
+  for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+       idx < ::cuda::std::max(num_items0, num_items1);
+       idx += stride)
+  {
+    if (idx < num_items0)
+    {
+      d_items0[idx] = 0;
+    }
+    if (idx < num_items1)
+    {
+      d_items1[idx] = 0;
+    }
+  }
+}
+
 template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
@@ -550,6 +576,9 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTA
   constexpr int BINS_PER_THREAD                           = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
   using BlockScan                                         = cub::BlockScan<OffsetT, BLOCK_THREADS>;
   __shared__ typename BlockScan::TempStorage temp_storage;
+
+  // Make sure the histograms are done
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
   // load the bins
   OffsetT bins[BINS_PER_THREAD];
