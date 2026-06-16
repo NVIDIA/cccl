@@ -108,8 +108,7 @@ C2H_TEST("Device transform reduce with FutureValue works with pointers", "[reduc
     device_transform_reduce(d_in, d_out, num_items, reduction_op_t{}, transform_op_t{}, future_init);
 
     std::transform(h_in.begin(), h_in.end() - 1, h_transformed_in.begin(), transform_op_t{});
-    const item_t expected =
-      std::accumulate(h_transformed_in.begin(), h_transformed_in.end(), item_t{42});
+    const item_t expected = std::accumulate(h_transformed_in.begin(), h_transformed_in.end(), item_t{42});
 
     INFO("num_items: " << num_items);
     REQUIRE(expected == out[0]);
@@ -122,8 +121,7 @@ C2H_TEST("Device transform reduce with FutureValue works with pointers", "[reduc
     device_transform_reduce(d_in + 1, d_out, num_items, reduction_op_t{}, transform_op_t{}, future_init);
 
     std::transform(h_in.begin() + 1, h_in.end(), h_transformed_in.begin(), transform_op_t{});
-    const item_t expected =
-      std::accumulate(h_transformed_in.begin(), h_transformed_in.end(), item_t{42});
+    const item_t expected = std::accumulate(h_transformed_in.begin(), h_transformed_in.end(), item_t{42});
 
     INFO("num_items: " << num_items);
     REQUIRE(expected == out[0]);
