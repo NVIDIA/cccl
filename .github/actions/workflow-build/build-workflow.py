@@ -1056,7 +1056,12 @@ def validate_tags(matrix_job, ignore_required=False):
             else [matrix_job["gpu"]]
         )
         for gpu in gpus:
-            base_gpu = split_gpu_spec(gpu)[0]
+            try:
+                base_gpu = split_gpu_spec(gpu)[0]
+            except Exception as exc:
+                raise Exception(
+                    error_message_with_matrix_job(matrix_job, str(exc))
+                ) from exc
             if base_gpu not in matrix_yaml["gpus"].keys():
                 raise Exception(
                     error_message_with_matrix_job(matrix_job, f"Unknown gpu '{gpu}'")
