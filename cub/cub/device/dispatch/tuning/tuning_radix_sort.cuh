@@ -258,7 +258,6 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_upsweep_policy(
 struct radix_sort_policy
 {
   bool use_onesweep;
-  int onesweep_radix_bits;
   radix_sort_histogram_policy histogram;
   radix_sort_exclusive_sum_policy exclusive_sum;
   radix_sort_onesweep_policy onesweep;
@@ -271,10 +270,10 @@ struct radix_sort_policy
 
   _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const radix_sort_policy& lhs, const radix_sort_policy& rhs)
   {
-    return lhs.use_onesweep == rhs.use_onesweep && lhs.onesweep_radix_bits == rhs.onesweep_radix_bits
-        && lhs.histogram == rhs.histogram && lhs.exclusive_sum == rhs.exclusive_sum && lhs.onesweep == rhs.onesweep
-        && lhs.scan == rhs.scan && lhs.downsweep == rhs.downsweep && lhs.alt_downsweep == rhs.alt_downsweep
-        && lhs.upsweep == rhs.upsweep && lhs.alt_upsweep == rhs.alt_upsweep && lhs.single_tile == rhs.single_tile;
+    return lhs.use_onesweep == rhs.use_onesweep && lhs.histogram == rhs.histogram
+        && lhs.exclusive_sum == rhs.exclusive_sum && lhs.onesweep == rhs.onesweep && lhs.scan == rhs.scan
+        && lhs.downsweep == rhs.downsweep && lhs.alt_downsweep == rhs.alt_downsweep && lhs.upsweep == rhs.upsweep
+        && lhs.alt_upsweep == rhs.alt_upsweep && lhs.single_tile == rhs.single_tile;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const radix_sort_policy& lhs, const radix_sort_policy& rhs)
@@ -286,8 +285,7 @@ struct radix_sort_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_policy& p)
   {
     return os
-        << "radix_sort_policy { .use_onesweep = " << p.use_onesweep
-        << ", .onesweep_radix_bits = " << p.onesweep_radix_bits << ", .histogram = " << p.histogram
+        << "radix_sort_policy { .use_onesweep = " << p.use_onesweep << ", .histogram = " << p.histogram
         << ", .exclusive_sum = " << p.exclusive_sum << ", .onesweep = " << p.onesweep << ", .scan = " << p.scan
         << ", .downsweep = " << p.downsweep << ", .alt_downsweep = " << p.alt_downsweep << ", .upsweep = " << p.upsweep
         << ", .alt_upsweep = " << p.alt_upsweep << ", .single_tile = " << p.single_tile << " }";
@@ -922,7 +920,6 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> radix_sort_policy
 
   return radix_sort_policy{
     active_policy::ONESWEEP,
-    active_policy::ONESWEEP_RADIX_BITS,
     histogram,
     exclusive_sum,
     onesweep,
@@ -1786,7 +1783,6 @@ struct policy_selector
 
     return radix_sort_policy{
       /* use_onesweep */ true,
-      onesweep_radix_bits,
       histogram,
       exclusive_sum,
       onesweep,
@@ -1880,7 +1876,6 @@ struct policy_selector
 
       return radix_sort_policy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -1961,7 +1956,6 @@ struct policy_selector
 
       return radix_sort_policy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -2044,7 +2038,6 @@ struct policy_selector
 
       return radix_sort_policy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -2124,7 +2117,6 @@ struct policy_selector
 
       return radix_sort_policy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -2208,7 +2200,6 @@ struct policy_selector
 
       return radix_sort_policy{
         use_onesweep,
-        onesweep_radix_bits,
         histogram,
         exclusive_sum,
         onesweep,
@@ -2290,7 +2281,6 @@ struct policy_selector
 
     return radix_sort_policy{
       use_onesweep,
-      onesweep_radix_bits,
       histogram,
       exclusive_sum,
       onesweep,

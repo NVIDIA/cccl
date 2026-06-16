@@ -22,13 +22,13 @@ struct policy_selector
         cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         cub::BLOCK_SCAN_RAKING_MEMOIZE,
         1,
-        ONESWEEP_RADIX_BITS};
+        TUNE_RADIX_BITS};
     }();
 
     // These kernels are launched once, no point in tuning at the moment
     const auto histogram = radix_sort_histogram_policy{
-      128, 16, cub::detail::radix_sort::__scale_num_parts(1, sizeof(KeyT)), ONESWEEP_RADIX_BITS};
-    const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, ONESWEEP_RADIX_BITS};
+      128, 16, cub::detail::radix_sort::__scale_num_parts(1, sizeof(KeyT)), TUNE_RADIX_BITS};
+    const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, TUNE_RADIX_BITS};
 
     const auto scan = [] {
       const auto scaled = cub::detail::scale_mem_bound(512, 23, sizeof(OffsetT));
@@ -59,7 +59,6 @@ struct policy_selector
 
     return radix_sort_policy{
       /* use_onesweep */ true,
-      /* onesweep_radix_bits */ TUNE_RADIX_BITS,
       histogram,
       exclusive_sum,
       onesweep,
