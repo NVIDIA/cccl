@@ -1118,18 +1118,18 @@ struct tiny_onesweep_policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::detail::radix_sort::radix_sort_policy
   {
-    using default_selector_t               = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
-    auto policy                            = default_selector_t{}(cc);
-    policy.use_onesweep                    = true;
-    policy.onesweep.threads_per_block      = BlockThreads;
-    policy.onesweep.items_per_thread       = 1;
-    policy.single_tile.threads_per_block   = BlockThreads;
-    policy.single_tile.items_per_thread    = 1;
-    policy.downsweep.threads_per_block     = BlockThreads;
-    policy.downsweep.items_per_thread      = 1;
-    policy.alt_downsweep.threads_per_block = BlockThreads;
-    policy.alt_downsweep.items_per_thread  = 1;
-    policy.histogram.num_parts             = 1;
+    using default_selector_t                = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
+    auto policy                             = default_selector_t{}(cc);
+    policy.use_onesweep                     = true;
+    policy.onesweep.threads_per_block       = BlockThreads;
+    policy.onesweep.items_per_thread        = 1;
+    policy.single_tile.threads_per_block    = BlockThreads;
+    policy.single_tile.items_per_thread     = 1;
+    policy.downsweep.threads_per_block      = BlockThreads;
+    policy.downsweep.items_per_thread       = 1;
+    policy.alt_downsweep.threads_per_block  = BlockThreads;
+    policy.alt_downsweep.items_per_thread   = 1;
+    policy.histogram.num_private_partitions = 1;
     return policy;
   }
 };

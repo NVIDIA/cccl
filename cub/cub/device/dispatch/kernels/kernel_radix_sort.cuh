@@ -466,7 +466,7 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   using HistogramPolicyT =
     AgentRadixSortHistogramPolicy<policy.threads_per_block,
                                   policy.items_per_thread,
-                                  policy.num_parts,
+                                  policy.num_private_partitions,
                                   void,
                                   policy.radix_bits>;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;

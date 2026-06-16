@@ -36,14 +36,17 @@ struct radix_sort_histogram_policy
 {
   int threads_per_block;
   int items_per_thread;
-  int num_parts;
+
+  //! The number of private histograms partitions in shared memory each histogram is split during counting to reduce the
+  //! contention of atomic operations
+  int num_private_partitions;
   int radix_bits;
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const radix_sort_histogram_policy& lhs, const radix_sort_histogram_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.num_parts == rhs.num_parts && lhs.radix_bits == rhs.radix_bits;
+        && lhs.num_private_partitions == rhs.num_private_partitions && lhs.radix_bits == rhs.radix_bits;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -56,8 +59,9 @@ struct radix_sort_histogram_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_histogram_policy& p)
   {
     return os
-        << "radix_sort_histogram_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .num_parts = " << p.num_parts << ", .radix_bits = " << p.radix_bits << " }";
+        << "radix_sort_histogram_policy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .num_private_partitions = " << p.num_private_partitions
+        << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };

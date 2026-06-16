@@ -100,7 +100,7 @@ constexpr std::size_t max_onesweep_temp_storage_size()
   using histogram_policy_t =
     AgentRadixSortHistogramPolicy<histogram.block_threads,
                                   histogram.items_per_thread,
-                                  histogram.num_parts,
+                                  histogram.num_private_partitions,
                                   void,
                                   histogram.radix_bits>;
   using hist_agent = cub::AgentRadixSortHistogram<histogram_policy_t, SortOrder, KeyT, OffsetT>;
