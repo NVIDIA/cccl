@@ -20,6 +20,9 @@ workflows:
   #   - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtx2080',
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
+  override:
+    # Exercise multi-GPU runner selection: requests linux-amd64-gpu-h100-latest-2.
+    - { jobs: ['test'], project: 'cub', gpu: 'h100-2', std: 17 }
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
@@ -631,6 +634,11 @@ projects:
     stds: [17]
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
+#
+# A `gpu` tag may request a multi-GPU runner pool by appending a `-N` suffix,
+# e.g. `gpu: h100-2` selects the `linux-amd64-gpu-h100-latest-2` pool. The
+# suffix is the GPU count and defaults to 1 when omitted (`gpu: h100` -> a
+# single-GPU runner). The base model must be one of the keys below.
 gpus:
   t4:         { sm: 75  } # 16 GB,  10 runners
   rtx2080:    { sm: 75  } #  8 GB,  12 runners
@@ -657,6 +665,8 @@ tags:
   # CPU architecture
   cpu: { default: 'amd64' }
   # GPU model
+  # Append '-N' to request an N-GPU runner pool (e.g. 'h100-2'); defaults to 1.
+  # See the `gpus` map.
   gpu: { default: 'rtx2080' }
   # Host compiler {name, version, exe}
   # See the `host_compilers` map.

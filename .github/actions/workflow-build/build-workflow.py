@@ -258,15 +258,37 @@ def get_device_compiler(matrix_job):
     return result
 
 
+def split_gpu_spec(gpu_string):
+    """Split a gpu tag into its base model and requested GPU count.
+
+    The gpu tag may carry an optional '-N' suffix requesting an N-GPU runner
+    pool, e.g. 'h100-2'. With no suffix the count defaults to 1. The trailing
+    token is only treated as a count when it is a positive integer; GPU model
+    names themselves contain no hyphens.
+    """
+    base_gpu, sep, count = gpu_string.rpartition("-")
+    if sep and count.isdigit():
+        num_gpus = int(count)
+        if num_gpus < 1:
+            raise Exception(f"Invalid GPU count in '{gpu_string}': must be >= 1.")
+        return base_gpu, num_gpus
+    return gpu_string, 1
+
+
 @memoize_result
 def get_gpu(gpu_string):
-    if gpu_string not in matrix_yaml["gpus"]:
+    base_gpu, num_gpus = split_gpu_spec(gpu_string)
+
+    if base_gpu not in matrix_yaml["gpus"]:
         raise Exception(
             f"Unknown gpu '{gpu_string}'. Valid options are: {', '.join(matrix_yaml['gpus'].keys())}"
         )
 
-    result = matrix_yaml["gpus"][gpu_string]
-    result["id"] = gpu_string
+    # Copy so per-spec fields (id, num_gpus) don't clobber the shared base entry
+    # when multiple specs resolve to the same model (e.g. 'h100' and 'h100-2').
+    result = dict(matrix_yaml["gpus"][base_gpu])
+    result["id"] = base_gpu
+    result["num_gpus"] = num_gpus
 
     if "testing" not in result:
         result["testing"] = False
@@ -470,7 +492,7 @@ def generate_dispatch_job_runner(matrix_job, job_type):
     gpu = get_gpu(matrix_job["gpu"])
     suffix = "-testing" if gpu["testing"] else ""
 
-    return f"{runner_os}-{cpu}-gpu-{gpu['id']}-latest-1{suffix}"
+    return f"{runner_os}-{cpu}-gpu-{gpu['id']}-latest-{gpu['num_gpus']}{suffix}"
 
 
 def generate_dispatch_job_ctk_version(matrix_job, job_type):
@@ -1034,11 +1056,10 @@ def validate_tags(matrix_job, ignore_required=False):
             else [matrix_job["gpu"]]
         )
         for gpu in gpus:
-            if gpu not in matrix_yaml["gpus"].keys():
+            base_gpu = split_gpu_spec(gpu)[0]
+            if base_gpu not in matrix_yaml["gpus"].keys():
                 raise Exception(
-                    error_message_with_matrix_job(
-                        matrix_job, f"Unknown gpu '{matrix_job['gpu']}'"
-                    )
+                    error_message_with_matrix_job(matrix_job, f"Unknown gpu '{gpu}'")
                 )
 
 
