@@ -217,14 +217,14 @@ struct radix_sort_upsweep_policy
 {
   int threads_per_block;
   int items_per_thread;
-  int radix_bits;
   CacheLoadModifier load_modifier;
+  int radix_bits;
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const radix_sort_upsweep_policy& lhs, const radix_sort_upsweep_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.radix_bits == rhs.radix_bits && lhs.load_modifier == rhs.load_modifier;
+        && lhs.load_modifier == rhs.load_modifier && lhs.radix_bits == rhs.radix_bits;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -238,7 +238,7 @@ struct radix_sort_upsweep_policy
   {
     return os
         << "radix_sort_upsweep_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .radix_bits = " << p.radix_bits << ", .load_modifier = " << p.load_modifier << " }";
+        << p.items_per_thread << ", .load_modifier = " << p.load_modifier << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -247,11 +247,11 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_upsweep_policy(
   int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
   int compute_t_size,
-  int radix_bits,
-  CacheLoadModifier load_modifier) -> radix_sort_upsweep_policy
+  CacheLoadModifier load_modifier,
+  int radix_bits) -> radix_sort_upsweep_policy
 {
   const auto scaled = scale_reg_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
-  return radix_sort_upsweep_policy{scaled.threads_per_block, scaled.items_per_thread, radix_bits, load_modifier};
+  return radix_sort_upsweep_policy{scaled.threads_per_block, scaled.items_per_thread, load_modifier, radix_bits};
 }
 
 struct radix_sort_policy
@@ -911,11 +911,11 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> radix_sort_policy
 
   using up_pol       = typename active_policy::UpsweepPolicy;
   const auto upsweep = radix_sort_upsweep_policy{
-    up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::RADIX_BITS, up_pol::LOAD_MODIFIER};
+    up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::LOAD_MODIFIER, up_pol::RADIX_BITS};
 
   using alt_up_pol       = typename active_policy::AltUpsweepPolicy;
   const auto alt_upsweep = radix_sort_upsweep_policy{
-    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::RADIX_BITS, alt_up_pol::LOAD_MODIFIER};
+    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::LOAD_MODIFIER, alt_up_pol::RADIX_BITS};
 
   const auto single_tile = radix_sort::convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
 
@@ -1768,10 +1768,10 @@ struct policy_selector
       primary_radix_bits - 1);
 
     const auto upsweep =
-      make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
+      make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), LOAD_DEFAULT, primary_radix_bits);
 
     const auto alt_upsweep =
-      make_reg_scaled_radix_sort_upsweep_policy(256, 47, __dominant_size(), primary_radix_bits - 1, LOAD_DEFAULT);
+      make_reg_scaled_radix_sort_upsweep_policy(256, 47, __dominant_size(), LOAD_DEFAULT, primary_radix_bits - 1);
 
     const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
       256,
@@ -1862,10 +1862,10 @@ struct policy_selector
         primary_radix_bits - 1);
 
       const auto upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
+        make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), LOAD_DEFAULT, primary_radix_bits);
 
       const auto alt_upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(256, 47, __dominant_size(), primary_radix_bits - 1, LOAD_DEFAULT);
+        make_reg_scaled_radix_sort_upsweep_policy(256, 47, __dominant_size(), LOAD_DEFAULT, primary_radix_bits - 1);
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
@@ -1943,10 +1943,10 @@ struct policy_selector
         primary_radix_bits - 1);
 
       const auto upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), primary_radix_bits, LOAD_DEFAULT);
+        make_reg_scaled_radix_sort_upsweep_policy(256, 23, __dominant_size(), LOAD_DEFAULT, primary_radix_bits);
 
       const auto alt_upsweep = make_reg_scaled_radix_sort_upsweep_policy(
-        256, offset_64bit ? 46 : 47, __dominant_size(), primary_radix_bits - 1, LOAD_DEFAULT);
+        256, offset_64bit ? 46 : 47, __dominant_size(), LOAD_DEFAULT, primary_radix_bits - 1);
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
@@ -2023,13 +2023,13 @@ struct policy_selector
         alt_radix_bits);
 
       const auto upsweep = radix_sort_upsweep_policy{
-        downsweep.threads_per_block, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
+        downsweep.threads_per_block, downsweep.items_per_thread, downsweep.load_modifier, downsweep.radix_bits};
 
       const auto alt_upsweep = radix_sort_upsweep_policy{
         alt_downsweep.threads_per_block,
         alt_downsweep.items_per_thread,
-        alt_downsweep.radix_bits,
-        alt_downsweep.load_modifier};
+        alt_downsweep.load_modifier,
+        alt_downsweep.radix_bits};
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
@@ -2106,10 +2106,10 @@ struct policy_selector
         primary_radix_bits - 1);
 
       const auto upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), primary_radix_bits, LOAD_LDG);
+        make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), LOAD_LDG, primary_radix_bits);
 
       const auto alt_upsweep =
-        make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), primary_radix_bits - 1, LOAD_LDG);
+        make_reg_scaled_radix_sort_upsweep_policy(128, 16, __dominant_size(), LOAD_LDG, primary_radix_bits - 1);
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
@@ -2187,13 +2187,13 @@ struct policy_selector
         primary_radix_bits - 1);
 
       const auto upsweep = radix_sort_upsweep_policy{
-        downsweep.threads_per_block, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
+        downsweep.threads_per_block, downsweep.items_per_thread, downsweep.load_modifier, downsweep.radix_bits};
 
       const auto alt_upsweep = radix_sort_upsweep_policy{
         alt_downsweep.threads_per_block,
         alt_downsweep.items_per_thread,
-        alt_downsweep.radix_bits,
-        alt_downsweep.load_modifier};
+        alt_downsweep.load_modifier,
+        alt_downsweep.radix_bits};
 
       const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
         256,
@@ -2269,13 +2269,13 @@ struct policy_selector
       primary_radix_bits - 1);
 
     const auto upsweep = radix_sort_upsweep_policy{
-      downsweep.threads_per_block, downsweep.items_per_thread, downsweep.radix_bits, downsweep.load_modifier};
+      downsweep.threads_per_block, downsweep.items_per_thread, downsweep.load_modifier, downsweep.radix_bits};
 
     const auto alt_upsweep = radix_sort_upsweep_policy{
       alt_downsweep.threads_per_block,
       alt_downsweep.items_per_thread,
-      alt_downsweep.radix_bits,
-      alt_downsweep.load_modifier};
+      alt_downsweep.load_modifier,
+      alt_downsweep.radix_bits};
 
     const auto single_tile = make_reg_scaled_radix_sort_downsweep_policy(
       256,
