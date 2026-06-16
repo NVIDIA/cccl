@@ -40,7 +40,6 @@
 #include <cuda/std/__memory/allocator.h>
 #include <cuda/std/__memory/destruct_n.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/string_view>
