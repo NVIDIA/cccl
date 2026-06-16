@@ -59,9 +59,10 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     const ThreadsInWarpMappingResult prev_mapping_result;
     const cudax::composite_mapping mapping{mapping1, mapping2};
 
-    static_assert(cudax::__group_mapping_result<decltype(mapping.map(parent_group, prev_mapping_result))>);
+    static_assert(
+      cudax::__group_mapping_result<decltype(mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result))>);
 
-    auto result  = mapping.map(parent_group, prev_mapping_result);
+    auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
     using Result = decltype(result);
 
     const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);

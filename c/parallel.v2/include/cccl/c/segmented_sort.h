@@ -79,7 +79,7 @@ CCCL_C_API CUresult cccl_device_segmented_sort(
   cccl_iterator_t d_values_out,
   uint64_t num_items,
   uint64_t num_segments,
-  cccl_iterator_t start_offset_in,
+  cccl_iterator_t begin_offset_in,
   cccl_iterator_t end_offset_in,
   bool is_overwrite_okay,
   int* selector,

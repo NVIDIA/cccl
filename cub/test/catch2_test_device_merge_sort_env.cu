@@ -35,8 +35,7 @@ namespace stdexec = cuda::std::execution;
 template <int ThreadsPerBlock>
 struct merge_sort_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::merge_sort::merge_sort_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::MergeSortPolicy
   {
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
   }
@@ -558,3 +557,35 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][devic
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::MergeSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::MergeSortPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::MergeSortPolicy{
+    256,
+    11,
+    cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    cub::CacheLoadModifier::LOAD_DEFAULT,
+    cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::MergeSortPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 11,
+    .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+    .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

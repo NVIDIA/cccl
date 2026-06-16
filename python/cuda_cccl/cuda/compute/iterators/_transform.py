@@ -9,7 +9,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from .._bindings import Op, OpKind
-from .._cpp_compile import compile_cpp_to_ltoir, make_variable_declaration
+from .._cpp_compile import compile_cpp_op_code, make_variable_declaration
 from ..op import make_op_adapter
 from ..types import TypeDescriptor, signature_from_annotations
 from ._base import IteratorBase
@@ -130,13 +130,13 @@ class TransformIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
+            ltoir=code,
+            extra_ltoirs=[child_op.code, *child_op.extra_code],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -165,17 +165,17 @@ class TransformIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[
-                compiled_op.ltoir,
-                *compiled_op.extra_ltoirs,
-                child_op.ltoir,
-                *child_op.extra_ltoirs,
+                compiled_op.code,
+                *compiled_op.extra_code,
+                child_op.code,
+                *child_op.extra_code,
             ],
         )
 
@@ -205,17 +205,17 @@ class TransformIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[
-                compiled_op.ltoir,
-                *compiled_op.extra_ltoirs,
-                child_op.ltoir,
-                *child_op.extra_ltoirs,
+                compiled_op.code,
+                *compiled_op.extra_code,
+                child_op.code,
+                *child_op.extra_code,
             ],
         )
 

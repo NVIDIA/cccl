@@ -87,6 +87,23 @@ CUB_NAMESPACE_BEGIN
 //!
 //!    // d_values <-- [1, 1, -1, 1, -1, 1, -1, 1]
 //!
+//! @par Tuning
+//! All algorithms in DeviceAdjacentDifference that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns an @ref AdjacentDifferencePolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin subtract-left-copy-policy-selector
+//!      :end-before: example-end subtract-left-copy-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin subtract-left-copy-tuning
+//!      :end-before: example-end subtract-left-copy-tuning
+//!
 //! @endrst
 struct DeviceAdjacentDifference
 {
@@ -169,8 +186,7 @@ struct DeviceAdjacentDifference
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -280,9 +296,7 @@ struct DeviceAdjacentDifference
   //!   **[inferred]** Type of `num_items`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -394,9 +408,7 @@ struct DeviceAdjacentDifference
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -495,9 +507,7 @@ struct DeviceAdjacentDifference
   //!   **[inferred]** Type of num_items
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

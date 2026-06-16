@@ -34,9 +34,9 @@ class identity_mapping
 public:
   _CCCL_HIDE_FROM_ABI explicit identity_mapping() = default;
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     return __prev_mapping_result;
   }

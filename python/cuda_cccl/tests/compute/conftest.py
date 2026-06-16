@@ -125,8 +125,6 @@ def raise_on_numba_import(monkeypatch):
 
 def pytest_collection_modifyitems(config, items):
     for item in items:
-        # Check if the 'no_numba' marker is present on the test item
         if item.get_closest_marker("no_numba"):
-            # If the marker is present, add 'raise_on_numba_import' to the list of required fixtures
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
