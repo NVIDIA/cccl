@@ -28,6 +28,8 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__type_traits/extent.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -35,11 +37,14 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
@@ -120,6 +125,56 @@ public:
 
   static_assert(__is_sequence_v<value_type>, "The value type of __constant_sequence must be a sequence");
 };
+
+//! @brief Wraps a compile-time constant argument sequence with an explicit element type.
+//!
+//! Unlike @c __constant_sequence, which carries the whole sequence as a single non-type template parameter, this
+//! wrapper carries each element as a separate structural non-type template parameter @c _Values together with a
+//! separate element type @c _Tp. This makes it usable with non-structural element types such as the extended
+//! floating-point types @c __half and @c __nv_bfloat16, whose values cannot be non-type template parameters.
+template <class _Tp, auto... _Values>
+class __constant_seq
+{
+public:
+  using __element_type = ::cuda::std::remove_cvref_t<_Tp>;
+  using value_type     = ::cuda::std::array<__element_type, sizeof...(_Values)>;
+
+  [[nodiscard]] _CCCL_API static constexpr value_type __get_value() noexcept
+  {
+    return value_type{static_cast<__element_type>(_Values)...};
+  }
+};
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+template <class _Tp, const auto& _Array, ::cuda::std::size_t... _Is>
+[[nodiscard]] _CCCL_API constexpr auto __make_constant_seq_impl(::cuda::std::index_sequence<_Is...>) noexcept
+{
+  return __constant_seq<_Tp, _Array[_Is]...>{};
+}
+#endif // _CCCL_DOXYGEN_INVOKED
+
+//! @brief Builds a @c __constant_seq from a reference to a @c constexpr array, keeping the array's element type.
+template <const auto& _Array>
+[[nodiscard]] _CCCL_API constexpr auto __make_constant_seq() noexcept
+{
+  using _ArrayT = ::cuda::std::remove_cvref_t<decltype(_Array)>;
+  static_assert(::cuda::std::is_array_v<_ArrayT>, "__make_constant_seq requires a reference to an array");
+  return ::cuda::args::__make_constant_seq_impl<::cuda::std::remove_extent_t<_ArrayT>, _Array>(
+    ::cuda::std::make_index_sequence<::cuda::std::extent_v<_ArrayT>>{});
+}
+
+//! @brief Builds a @c __constant_seq from a reference to a @c constexpr array, casting each element to @c _Tp.
+//!
+//! The source array element type must be structural; the target element type @c _Tp may be non-structural (e.g.
+//! @c __half), since each element is cast at use time rather than stored as a non-type template parameter.
+template <class _Tp, const auto& _Array>
+[[nodiscard]] _CCCL_API constexpr auto __make_constant_seq() noexcept
+{
+  using _ArrayT = ::cuda::std::remove_cvref_t<decltype(_Array)>;
+  static_assert(::cuda::std::is_array_v<_ArrayT>, "__make_constant_seq requires a reference to an array");
+  return ::cuda::args::__make_constant_seq_impl<_Tp, _Array>(
+    ::cuda::std::make_index_sequence<::cuda::std::extent_v<_ArrayT>>{});
+}
 
 // __assert_in_range
 // =====================================================================
@@ -623,6 +678,8 @@ template <auto _Value, class _Tp>
 inline constexpr bool __is_wrapper_v<constant<_Value, _Tp>> = true;
 template <auto _Value>
 inline constexpr bool __is_wrapper_v<__constant_sequence<_Value>> = true;
+template <class _Tp, auto... _Values>
+inline constexpr bool __is_wrapper_v<__constant_seq<_Tp, _Values...>> = true;
 template <class _Arg, class _StaticBounds>
 inline constexpr bool __is_wrapper_v<__immediate_sequence<_Arg, _StaticBounds>> = true;
 template <class _Arg, class _StaticBounds>
@@ -667,6 +724,13 @@ template <auto _Value>
 __unwrap(const __constant_sequence<_Value>&) noexcept
 {
   return _Value;
+}
+
+template <class _Tp, auto... _Values>
+[[nodiscard]] _CCCL_API constexpr typename __constant_seq<_Tp, _Values...>::value_type
+__unwrap(const __constant_seq<_Tp, _Values...>&) noexcept
+{
+  return __constant_seq<_Tp, _Values...>::__get_value();
 }
 
 template <class _Arg, class _StaticBounds>
@@ -763,9 +827,99 @@ _CCCL_API constexpr auto __constant_sequence_compute_highest() noexcept
   return static_cast<_ElementType>(*::cuda::std::max_element(__first, __last));
 }
 
+template <class _ElementType, auto... _Values>
+_CCCL_API constexpr _ElementType __constant_seq_compute_lowest() noexcept
+{
+  if constexpr (sizeof...(_Values) == 0)
+  {
+    return ::cuda::std::numeric_limits<_ElementType>::lowest();
+  }
+  else
+  {
+    _ElementType __vals[]{static_cast<_ElementType>(_Values)...};
+    return *::cuda::std::min_element(__vals, __vals + sizeof...(_Values));
+  }
+}
+
+template <class _ElementType, auto... _Values>
+_CCCL_API constexpr _ElementType __constant_seq_compute_highest() noexcept
+{
+  if constexpr (sizeof...(_Values) == 0)
+  {
+    return (::cuda::std::numeric_limits<_ElementType>::max)();
+  }
+  else
+  {
+    _ElementType __vals[]{static_cast<_ElementType>(_Values)...};
+    return *::cuda::std::max_element(__vals, __vals + sizeof...(_Values));
+  }
+}
+
 // =====================================================================
 // __traits
 // =====================================================================
+
+// True iff a value of element type @c _Tp can be formed from the structural non-type template parameter @c _Value
+// within a constant expression. Extended floating-point types such as @c __half have a non-constexpr converting
+// constructor, so the cast is not a constant expression and cannot back a @c static @c constexpr bound.
+template <class _Tp, auto _Value, class = void>
+inline constexpr bool __constant_has_static_bounds_v = false;
+
+template <class _Tp, auto _Value>
+inline constexpr bool __constant_has_static_bounds_v<
+  _Tp,
+  _Value,
+  ::cuda::std::void_t<::cuda::std::bool_constant<(static_cast<void>(static_cast<_Tp>(_Value)), true)>>> = true;
+
+// Static bound members for constant traits.
+//
+// A constant carries a single value, so its lower and upper bounds are both that value. Element types that cannot form
+// a constexpr value (e.g. the extended floating-point types) intentionally do not expose @c lowest / @c highest; the
+// compile-time bound members exist only when they can be constant-evaluated, which is what the compile-time dispatch
+// consumers rely on.
+template <class _ElementType, auto _Value, class _Tp, bool = __constant_has_static_bounds_v<_ElementType, _Value>>
+struct __constant_traits_bounds
+{
+  static constexpr _ElementType lowest  = __constant_compute_lowest<_Value, _Tp>();
+  static constexpr _ElementType highest = __constant_compute_highest<_Value, _Tp>();
+};
+
+template <class _ElementType, auto _Value, class _Tp>
+struct __constant_traits_bounds<_ElementType, _Value, _Tp, false>
+{};
+
+// True iff the lower and upper bounds of a typed constant sequence can be constant-evaluated. This is the case unless
+// the element type cannot form a constexpr value (e.g. the extended floating-point types), since then the element
+// casts performed while reducing the sequence are not constant expressions.
+template <class _Void, class _ElementType, auto... _Values>
+inline constexpr bool __constant_seq_has_static_bounds_impl_v = false;
+
+template <class _ElementType, auto... _Values>
+inline constexpr bool __constant_seq_has_static_bounds_impl_v<
+  ::cuda::std::void_t<
+    ::cuda::std::bool_constant<(static_cast<void>(__constant_seq_compute_lowest<_ElementType, _Values...>()),
+                                static_cast<void>(__constant_seq_compute_highest<_ElementType, _Values...>()),
+                                true)>>,
+  _ElementType,
+  _Values...> = true;
+
+template <class _ElementType, auto... _Values>
+inline constexpr bool __constant_seq_has_static_bounds_v =
+  __constant_seq_has_static_bounds_impl_v<void, _ElementType, _Values...>;
+
+// Static bound members for typed constant-sequence traits. As with @c __constant_traits_bounds, element types that
+// cannot form a @c static @c constexpr bound (e.g. the extended floating-point types) do not expose @c lowest /
+// @c highest.
+template <bool _HasStaticBounds, class _ElementType, auto... _Values>
+struct __constant_seq_traits_bounds
+{
+  static constexpr _ElementType lowest  = __constant_seq_compute_lowest<_ElementType, _Values...>();
+  static constexpr _ElementType highest = __constant_seq_compute_highest<_ElementType, _Values...>();
+};
+
+template <class _ElementType, auto... _Values>
+struct __constant_seq_traits_bounds<false, _ElementType, _Values...>
+{};
 
 //! @brief Traits for argument wrappers and plain argument values.
 //!
@@ -785,14 +939,13 @@ struct __traits_impl
 
 template <auto _Value, class _Tp>
 struct __traits_impl<constant<_Value, _Tp>>
+    : __constant_traits_bounds<typename constant<_Value, _Tp>::value_type, _Value, _Tp>
 {
   using value_type                      = typename constant<_Value, _Tp>::value_type;
   using element_type                    = value_type;
   static constexpr bool is_constant     = true;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __constant_compute_lowest<_Value, _Tp>();
-  static constexpr element_type highest = __constant_compute_highest<_Value, _Tp>();
 };
 
 template <class _Arg, class _StaticBounds>
@@ -822,6 +975,20 @@ struct __traits_impl<__constant_sequence<_Value>>
   static constexpr bool is_single_value = false;
   static constexpr element_type lowest  = __constant_sequence_compute_lowest<_Value>();
   static constexpr element_type highest = __constant_sequence_compute_highest<_Value>();
+};
+
+template <class _Tp, auto... _Values>
+struct __traits_impl<__constant_seq<_Tp, _Values...>>
+    : __constant_seq_traits_bounds<
+        __constant_seq_has_static_bounds_v<typename __constant_seq<_Tp, _Values...>::__element_type, _Values...>,
+        typename __constant_seq<_Tp, _Values...>::__element_type,
+        _Values...>
+{
+  using value_type                      = typename __constant_seq<_Tp, _Values...>::value_type;
+  using element_type                    = typename __constant_seq<_Tp, _Values...>::__element_type;
+  static constexpr bool is_constant     = true;
+  static constexpr bool is_deferred     = false;
+  static constexpr bool is_single_value = false;
 };
 
 template <class _Arg, class _StaticBounds>
@@ -902,6 +1069,12 @@ template <auto _Value>
   return __constant_sequence_compute_lowest<_Value>();
 }
 
+template <class _Tp, auto... _Values>
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(__constant_seq<_Tp, _Values...>) noexcept
+{
+  return __constant_seq_compute_lowest<typename __constant_seq<_Tp, _Values...>::__element_type, _Values...>();
+}
+
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr auto __lowest_(immediate<_Arg, _StaticBounds> __arg) noexcept
 {
@@ -953,6 +1126,12 @@ template <auto _Value>
 [[nodiscard]] _CCCL_API constexpr auto __highest_(__constant_sequence<_Value>) noexcept
 {
   return __constant_sequence_compute_highest<_Value>();
+}
+
+template <class _Tp, auto... _Values>
+[[nodiscard]] _CCCL_API constexpr auto __highest_(__constant_seq<_Tp, _Values...>) noexcept
+{
+  return __constant_seq_compute_highest<typename __constant_seq<_Tp, _Values...>::__element_type, _Values...>();
 }
 
 template <class _Arg, class _StaticBounds>
