@@ -27,7 +27,7 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 struct gather_v_returns_int : types::communicator_model
 {
   template <class Tp>
-  int gather_v(group_token_type&,
+  int gather_v(group_guard_type&,
                Tp*,
                ::cuda::std::size_t,
                Tp*,

@@ -27,7 +27,7 @@ struct all_to_all_v_returns_int : types::communicator_model
 {
   template <class Tp>
   int all_to_all_v(
-    group_token_type&,
+    group_guard_type&,
     Tp*,
     const ::cuda::std::size_t*,
     const ::cuda::std::size_t*,

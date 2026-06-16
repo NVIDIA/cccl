@@ -26,7 +26,7 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 struct all_gather_returns_int : types::communicator_model
 {
   template <class Tp>
-  int all_gather(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::stream_ref);
+  int all_gather(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::stream_ref);
 };
 
 _CCCL_END_NV_DIAG_SUPPRESS()

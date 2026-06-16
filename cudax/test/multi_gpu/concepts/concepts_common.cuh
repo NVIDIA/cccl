@@ -17,26 +17,26 @@
 
 namespace cudax_multi_gpu_concepts
 {
-struct group_token
+struct group_guard
 {};
 
 struct basic_communicator_model
 {
   using native_handle_type = int;
-  using group_token_type   = group_token;
+  using group_guard_type   = group_guard;
 
   native_handle_type native_handle() noexcept;
   ::cuda::std::int32_t rank() noexcept;
   ::cuda::std::int32_t size() noexcept;
-  group_token_type group_token();
+  group_guard_type group_guard();
 };
 
 struct communicator_model : basic_communicator_model
 {
   template <class Tp>
-  void send(group_token_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+  void send(group_guard_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
   template <class Tp>
-  void recv(group_token_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+  void recv(group_guard_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
 };
 } // namespace cudax_multi_gpu_concepts
 

@@ -48,7 +48,7 @@ _CCCL_CONCEPT __has_send = _CCCL_REQUIRES_EXPR(
   ::cuda::std::size_t __count,
   ::cuda::std::int32_t __peer,
   ::cuda::stream_ref __stream)(_Same_as(void) __comm.send(
-  ::cuda::std::declval<typename _Comm::group_token_type&>(), __buf, __count, __peer, __stream));
+  ::cuda::std::declval<typename _Comm::group_guard_type&>(), __buf, __count, __peer, __stream));
 
 // Requires communicator<_Comm> to be checked first, but that invokes a circular dependency
 template <class _Comm, class _Ptr = void*>
@@ -59,17 +59,17 @@ _CCCL_CONCEPT __has_recv = _CCCL_REQUIRES_EXPR(
   ::cuda::std::size_t __count,
   ::cuda::std::int32_t __peer,
   ::cuda::stream_ref __stream)(_Same_as(void) __comm.recv(
-  ::cuda::std::declval<typename _Comm::group_token_type&>(), __buf, __count, __peer, __stream));
+  ::cuda::std::declval<typename _Comm::group_guard_type&>(), __buf, __count, __peer, __stream));
 
 template <class _Comm>
-_CCCL_CONCEPT communicator = _CCCL_REQUIRES_EXPR((_Comm), _Comm& __comm)(
+_CCCL_CONCEPT __communicator = _CCCL_REQUIRES_EXPR((_Comm), _Comm& __comm)(
   typename(typename _Comm::native_handle_type),
   _Same_as(typename _Comm::native_handle_type) __comm.native_handle(),
   noexcept(__comm.native_handle()),
   _Satisfies(__convertible_to_int32) __comm.rank(),
   _Satisfies(__convertible_to_int32) __comm.size(),
-  typename(typename _Comm::group_token_type),
-  _Same_as(typename _Comm::group_token_type) __comm.group_token(),
+  typename(typename _Comm::group_guard_type),
+  _Same_as(typename _Comm::group_guard_type) __comm.group_guard(),
   requires(__has_send<_Comm>),
   requires(__has_recv<_Comm>) //
 );
@@ -88,9 +88,9 @@ _CCCL_CONCEPT __has_reduce = _CCCL_REQUIRES_EXPR(
   ::cuda::std::plus<> __op,
   ::cuda::std::int32_t __root,
   ::cuda::stream_ref __stream)(
-  requires(communicator<_Comm>),
+  requires(__communicator<_Comm>),
   _Same_as(void) __comm.reduce(
-    ::cuda::std::declval<typename _Comm::group_token_type&>(), __sendbuff, __recvbuff, __count, __op, __root, __stream));
+    ::cuda::std::declval<typename _Comm::group_guard_type&>(), __sendbuff, __recvbuff, __count, __op, __root, __stream));
 
 // ==========================================================================================
 
@@ -105,9 +105,9 @@ _CCCL_CONCEPT __has_all_reduce = _CCCL_REQUIRES_EXPR(
   ::cuda::std::size_t __count,
   ::cuda::std::plus<> __op,
   ::cuda::stream_ref __stream)(
-  requires(communicator<_Comm>),
+  requires(__communicator<_Comm>),
   _Same_as(void) __comm.all_reduce(
-    ::cuda::std::declval<typename _Comm::group_token_type&>(), __sendbuff, __recvbuff, __count, __op, __stream));
+    ::cuda::std::declval<typename _Comm::group_guard_type&>(), __sendbuff, __recvbuff, __count, __op, __stream));
 
 // ==========================================================================================
 
@@ -120,9 +120,9 @@ _CCCL_CONCEPT __has_gather = _CCCL_REQUIRES_EXPR(
   ::cuda::std::size_t __count,
   ::cuda::std::int32_t __root,
   ::cuda::stream_ref __stream)(
-  requires(communicator<_Comm>),
+  requires(__communicator<_Comm>),
   _Same_as(void) __comm.gather(
-    ::cuda::std::declval<typename _Comm::group_token_type&>(), __sendbuff, __recvbuff, __count, __root, __stream));
+    ::cuda::std::declval<typename _Comm::group_guard_type&>(), __sendbuff, __recvbuff, __count, __root, __stream));
 
 // ==========================================================================================
 
@@ -137,9 +137,9 @@ _CCCL_CONCEPT __has_gather_v = _CCCL_REQUIRES_EXPR(
   const ::cuda::std::size_t* __displs,
   ::cuda::std::int32_t __root,
   ::cuda::stream_ref __stream)(
-  requires(communicator<_Comm>),
+  requires(__communicator<_Comm>),
   _Same_as(void) __comm.gather_v(
-    ::cuda::std::declval<typename _Comm::group_token_type&>(),
+    ::cuda::std::declval<typename _Comm::group_guard_type&>(),
     __sendbuff,
     __send_count,
     __recvbuff,
@@ -158,9 +158,9 @@ _CCCL_CONCEPT __has_all_gather = _CCCL_REQUIRES_EXPR(
   _Ptr __recvbuff,
   ::cuda::std::size_t __count,
   ::cuda::stream_ref __stream)(
-  requires(communicator<_Comm>),
+  requires(__communicator<_Comm>),
   _Same_as(void) __comm.all_gather(
-    ::cuda::std::declval<typename _Comm::group_token_type&>(), __sendbuff, __recvbuff, __count, __stream));
+    ::cuda::std::declval<typename _Comm::group_guard_type&>(), __sendbuff, __recvbuff, __count, __stream));
 
 // ==========================================================================================
 
@@ -173,9 +173,9 @@ _CCCL_CONCEPT __has_broadcast = _CCCL_REQUIRES_EXPR(
   ::cuda::std::size_t __count,
   ::cuda::std::int32_t __root,
   ::cuda::stream_ref __stream)(
-  requires(communicator<_Comm>),
+  requires(__communicator<_Comm>),
   _Same_as(void) __comm.broadcast(
-    ::cuda::std::declval<typename _Comm::group_token_type&>(), __sendbuff, __recvbuff, __count, __root, __stream));
+    ::cuda::std::declval<typename _Comm::group_guard_type&>(), __sendbuff, __recvbuff, __count, __root, __stream));
 
 // ==========================================================================================
 
@@ -187,9 +187,9 @@ _CCCL_CONCEPT __has_all_to_all = _CCCL_REQUIRES_EXPR(
   _Ptr __recvbuff,
   ::cuda::std::size_t __count,
   ::cuda::stream_ref __stream)(
-  requires(communicator<_Comm>),
+  requires(__communicator<_Comm>),
   _Same_as(void) __comm.all_to_all(
-    ::cuda::std::declval<typename _Comm::group_token_type&>(), __sendbuff, __recvbuff, __count, __stream));
+    ::cuda::std::declval<typename _Comm::group_guard_type&>(), __sendbuff, __recvbuff, __count, __stream));
 
 // ==========================================================================================
 
@@ -204,9 +204,9 @@ _CCCL_CONCEPT __has_all_to_all_v = _CCCL_REQUIRES_EXPR(
   const ::cuda::std::size_t* __recv_counts,
   const ::cuda::std::size_t* __recv_displs,
   ::cuda::stream_ref __stream)(
-  requires(communicator<_Comm>),
+  requires(__communicator<_Comm>),
   _Same_as(void) __comm.all_to_all_v(
-    ::cuda::std::declval<typename _Comm::group_token_type&>(),
+    ::cuda::std::declval<typename _Comm::group_guard_type&>(),
     __sendbuff,
     __send_counts,
     __send_displs,

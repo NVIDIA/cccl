@@ -22,17 +22,17 @@ namespace cudax_multi_gpu_concepts
 struct collective_communicator_model : communicator_model
 {
   template <class Tp, class Op>
-  void reduce(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::std::int32_t, ::cuda::stream_ref);
+  void reduce(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::std::int32_t, ::cuda::stream_ref);
 
   template <class Tp, class Op>
-  void all_reduce(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::stream_ref);
+  void all_reduce(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::stream_ref);
 
   template <class Tp>
-  void gather(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+  void gather(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
 
   template <class Tp>
   void gather_v(
-    group_token_type&,
+    group_guard_type&,
     Tp*,
     ::cuda::std::size_t,
     Tp*,
@@ -42,17 +42,17 @@ struct collective_communicator_model : communicator_model
     ::cuda::stream_ref);
 
   template <class Tp>
-  void all_gather(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::stream_ref);
+  void all_gather(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::stream_ref);
 
   template <class Tp>
-  void broadcast(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+  void broadcast(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
 
   template <class Tp>
-  void all_to_all(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::stream_ref);
+  void all_to_all(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, ::cuda::stream_ref);
 
   template <class Tp>
   void all_to_all_v(
-    group_token_type&,
+    group_guard_type&,
     Tp*,
     const ::cuda::std::size_t*,
     const ::cuda::std::size_t*,

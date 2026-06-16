@@ -28,13 +28,13 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 struct all_reduce_rejects_void : types::communicator_model
 {
   template <class Tp, class Op, ::cuda::std::enable_if_t<!::cuda::std::is_void_v<Tp>, int> = 0>
-  void all_reduce(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::stream_ref);
+  void all_reduce(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::stream_ref);
 };
 
 struct all_reduce_returns_int : types::communicator_model
 {
   template <class Tp, class Op>
-  int all_reduce(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::stream_ref);
+  int all_reduce(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::stream_ref);
 };
 
 _CCCL_END_NV_DIAG_SUPPRESS()

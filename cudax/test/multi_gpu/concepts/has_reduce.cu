@@ -27,7 +27,7 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 struct reduce_returns_int : types::communicator_model
 {
   template <class Tp, class Op>
-  int reduce(group_token_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::std::int32_t, ::cuda::stream_ref);
+  int reduce(group_guard_type&, Tp*, Tp*, ::cuda::std::size_t, Op, ::cuda::std::int32_t, ::cuda::stream_ref);
 };
 
 _CCCL_END_NV_DIAG_SUPPRESS()

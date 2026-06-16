@@ -27,13 +27,13 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 struct no_send : types::basic_communicator_model
 {
   template <class Tp>
-  void send_sync(group_token_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t);
+  void send_sync(group_guard_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t);
 };
 
 struct send_returns_int : no_send
 {
   template <class Tp>
-  int send(group_token_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+  int send(group_guard_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
 };
 
 _CCCL_END_NV_DIAG_SUPPRESS()

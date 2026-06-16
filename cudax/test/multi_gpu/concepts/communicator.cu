@@ -23,22 +23,22 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 struct no_send : types::basic_communicator_model
 {
   template <class Tp>
-  void recv(group_token_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+  void recv(group_guard_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
 };
 
 struct no_recv : types::basic_communicator_model
 {
   template <class Tp>
-  void send(group_token_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
+  void send(group_guard_type&, Tp*, ::cuda::std::size_t, ::cuda::std::int32_t, ::cuda::stream_ref);
 };
 
 _CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_HOST_DEVICE_API constexpr bool test()
 {
-  static_assert(cudax::communicator<types::communicator_model>);
-  static_assert(!cudax::communicator<no_send>);
-  static_assert(!cudax::communicator<no_recv>);
+  static_assert(cudax::__communicator<types::communicator_model>);
+  static_assert(!cudax::__communicator<no_send>);
+  static_assert(!cudax::__communicator<no_recv>);
   return true;
 }
 } // namespace
