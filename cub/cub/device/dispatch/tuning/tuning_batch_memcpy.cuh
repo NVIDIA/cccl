@@ -27,9 +27,9 @@ struct BatchMemcpySmallBufferPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
   int buffers_per_thread; //!< Number of buffers processed per thread
-  int tlev_bytes_per_thread; //!< The number of bytes that each thread will work on with each iteration of reading in
-                             //!< bytes from one or more source-buffers and writing them out to the respective
-                             //!< destination-buffers.
+  int bytes_per_thread; //!< The number of bytes that each thread will work on with each iteration of reading in
+                        //!< bytes from one or more source-buffers and writing them out to the respective
+                        //!< destination-buffers.
   bool prefer_pow2_bits; //!< Whether the bit_packed_counter should prefer allocating a power-of-2 number of bits per
                          //!< counter
   int block_level_tile_size; //!< Tile size granularity for block-level buffers
@@ -42,7 +42,7 @@ struct BatchMemcpySmallBufferPolicy
   operator==(const BatchMemcpySmallBufferPolicy& lhs, const BatchMemcpySmallBufferPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.buffers_per_thread == rhs.buffers_per_thread
-        && lhs.tlev_bytes_per_thread == rhs.tlev_bytes_per_thread && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits
+        && lhs.bytes_per_thread == rhs.bytes_per_thread && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits
         && lhs.block_level_tile_size == rhs.block_level_tile_size
         && lhs.warp_level_threshold == rhs.warp_level_threshold
         && lhs.block_level_threshold == rhs.block_level_threshold
@@ -61,8 +61,8 @@ struct BatchMemcpySmallBufferPolicy
   {
     return os
         << "BatchMemcpySmallBufferPolicy { .threads_per_block = " << policy.threads_per_block
-        << ", .buffers_per_thread = " << policy.buffers_per_thread << ", .tlev_bytes_per_thread = "
-        << policy.tlev_bytes_per_thread << ", .prefer_pow2_bits = " << policy.prefer_pow2_bits
+        << ", .buffers_per_thread = " << policy.buffers_per_thread
+        << ", .bytes_per_thread = " << policy.bytes_per_thread << ", .prefer_pow2_bits = " << policy.prefer_pow2_bits
         << ", .block_level_tile_size = " << policy.block_level_tile_size << ", .warp_level_threshold = "
         << policy.warp_level_threshold << ", .block_level_threshold = " << policy.block_level_threshold
         << ", .buffer_lookback_delay = " << policy.buffer_lookback_delay
@@ -145,7 +145,7 @@ struct policy_selector
       BatchMemcpySmallBufferPolicy{
         /* .threads_per_block = */ 128,
         /* .buffers_per_thread = */ 4,
-        /* .tlev_bytes_per_thread = */ 8,
+        /* .bytes_per_thread = */ 8,
         /* .prefer_pow2_bits = */ cc < ::cuda::compute_capability{7, 0},
         /* .block_level_tile_size = */ large.threads_per_block * large.bytes_per_thread,
         /* .warp_level_threshold = */ 128,

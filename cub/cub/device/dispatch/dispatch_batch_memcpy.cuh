@@ -232,7 +232,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
   using AgentBatchMemcpyPolicyT = agent_batch_memcpy_policy<
     policy.threads_per_block,
     policy.buffers_per_thread,
-    policy.tlev_bytes_per_thread,
+    policy.bytes_per_thread,
     policy.prefer_pow2_bits,
     policy.block_level_tile_size,
     policy.warp_level_threshold,

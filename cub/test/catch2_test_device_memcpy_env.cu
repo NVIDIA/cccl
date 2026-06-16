@@ -207,7 +207,7 @@ C2H_TEST("BatchedMemcpyPolicy", "[memcpy][device]")
       cub::BatchMemcpySmallBufferPolicy{
         .threads_per_block     = 128,
         .buffers_per_thread    = 4,
-        .tlev_bytes_per_thread = 8,
+        .bytes_per_thread      = 8,
         .prefer_pow2_bits      = false,
         .block_level_tile_size = 256 * 32,
         .warp_level_threshold  = 128,
