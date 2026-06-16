@@ -70,6 +70,13 @@ CUB_NAMESPACE_BEGIN
 //! @cdp_class{DeviceSegmentedReduce}
 //! @determinism{run_to_run}
 //!
+//! Determinism
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! ``cub::DeviceSegmentedReduce`` supports ``not_guaranteed`` and ``run_to_run`` (default
+//! ``run_to_run``). ``gpu_to_gpu`` is not supported and is rejected at compile time. See the
+//! :ref:`determinism guarantees <cccl-determinism>` for what each level means.
+//!
 //! @endrst
 struct DeviceSegmentedReduce
 {

@@ -3,13 +3,18 @@
 Determinism
 ===========
 
-Determinism describes whether an algorithm produces the *same bitwise-exact result* every time it is
-run with the same input. For many parallel algorithms this is not automatic: the order in which partial
-results are combined depends on how work is scheduled across thousands of threads, and that schedule can
-change between launches or between GPUs. When the combining operator is not perfectly associative — most
-notably floating-point addition, where ``(a + b) + c`` need not equal ``a + (b + c)`` — a different
-combining order yields a (slightly) different result, so the output is no longer bitwise identical from
-one run to the next.
+Determinism describes whether an algorithm produces the *same result* every time it is run with the
+same input. For many parallel algorithms this is not automatic. For reductions and scans, for example,
+the order in which partial results are combined depends on how work is scheduled across thousands of
+threads, and that schedule can change between launches or between GPUs. When the combining operator is
+not perfectly associative — most notably floating-point addition, where ``(a + b) + c`` need not equal
+``a + (b + c)`` — a different combining order yields a (slightly) different result, so the output is no
+longer identical from one run to the next.
+
+What counts as the "same result" is defined *per algorithm*. For reductions and scans it means a
+*bitwise-identical* output. For other algorithms it can be weaker: a deterministic top-k, for example,
+guarantees the same *set* of selected items, while the order of those items within the output is a
+separate guarantee that an algorithm may expose on its own.
 
 CCCL lets users state the determinism guarantee they need as an explicit *requirement* on an
 algorithm, rather than relying on implementation-defined behavior. The library then either
@@ -19,17 +24,18 @@ requirement cannot be met for the given types and operator.
 Determinism guarantees
 ----------------------
 
-By *reproducible* we mean: given the same inputs, an algorithm returns *exact bitwise* identical outputs.
-What the guarantees differ in is the *scope* of that reproducibility — across repeated runs, across
-hardware, or not at all. CCCL models three levels, defined in ``cuda::execution::determinism``:
+By *reproducible* we mean: given the same inputs, an algorithm returns the same output, in the sense
+defined for that algorithm (see above). What the guarantees below differ in is the *scope* of that
+reproducibility — across repeated runs, across hardware, or not at all. CCCL models three levels,
+defined in ``cuda::execution::determinism``:
 
 ``not_guaranteed``
    No reproducibility guarantee. The result is a valid answer, but it may differ from one invocation to
    the next — even on the same GPU with the same input. This is usually the fastest option.
 
 ``run_to_run``
-   The result is reproducible across repeated runs *on the same GPU*, with the same input, build, and
-   launch configuration. It may still differ on a *different* GPU architecture.
+   The result is reproducible across repeated runs *on the same GPU*, with the same input, build,
+   tuning, and launch configuration. It may still differ on a *different* GPU architecture.
 
 ``gpu_to_gpu``
    The strongest guarantee: the result is reproducible across repeated runs *and across different GPU
@@ -48,8 +54,8 @@ the library simply selects the fastest valid implementation.
 
 .. warning::
 
-   ``gpu_to_gpu`` reproducibility is guaranteed across hardware for a *fixed* CCCL version, not across
-   CCCL versions. The bitwise result may change between releases as algorithms, reduction structures,
+   ``gpu_to_gpu``/``run_to_run`` reproducibility is guaranteed across hardware for a *fixed* CCCL version, not across
+   CCCL versions. If a policy selector is specified to change the used tuning, then reproducibility is only guaranteed for identical tunings. The bitwise result may also change between CCCL releases as algorithms, reduction structures,
    or tuning evolve.
 
 Requesting a determinism guarantee
@@ -83,8 +89,8 @@ fails to compile with a diagnostic explaining the constraint. If the guarantee c
 weaker-but-sufficient implementation (for example, an exactly-associative operator under
 ``gpu_to_gpu``), the library transparently selects it.
 
-Where Its Used ?
----------------
+Where it is used
+----------------
 
 Determinism requirements are consumed today by several ``cub`` device algorithms. See the
 :ref:`CUB determinism guide <cub-determinism>` for the per-algorithm support matrix, the exact
