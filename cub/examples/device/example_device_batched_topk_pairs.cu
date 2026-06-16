@@ -99,8 +99,7 @@ int main(int argc, char** argv)
   // Annotate the arguments: runtime segment size and K, each with a compile-time upper bound.
   auto segment_sizes  = cuda::args::immediate{segment_size, cuda::args::bounds<offset_t{1}, max_seg_size>()};
   auto k_arg          = cuda::args::immediate{k, cuda::args::bounds<offset_t{1}, max_k>()};
-  auto num_segs_arg   = cuda::args::immediate{static_cast<offset_t>(num_segments)};
-  auto total_num_args = cuda::args::immediate{num_items};
+  auto num_segs_arg = cuda::args::immediate{static_cast<offset_t>(num_segments)};
 
   size_t temp_storage_bytes = 0;
   CubDebugExit(DeviceBatchedTopK::MaxPairs(
@@ -113,7 +112,6 @@ int main(int argc, char** argv)
     segment_sizes,
     k_arg,
     num_segs_arg,
-    total_num_args,
     env));
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -127,7 +125,6 @@ int main(int argc, char** argv)
     segment_sizes,
     k_arg,
     num_segs_arg,
-    total_num_args,
     env));
 
   // Validate: (1) each output value indexes back to the matching output key, and (2) the selected keys are the K

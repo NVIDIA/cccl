@@ -33,6 +33,8 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -56,7 +58,6 @@ template <topk::select SelectDirection,
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename NumSegmentsParameterT,
-          typename TotalNumItemsGuaranteeT,
           typename EnvT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   void* d_temp_storage,
@@ -68,7 +69,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   SegmentSizeParameterT segment_sizes,
   KParameterT k,
   NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items,
   EnvT env)
 {
   // ---------------------------------------------------------------------------
@@ -128,7 +128,12 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
                 "host; pass num_segments as a single-value annotation (e.g. cuda::args::constant or "
                 "cuda::args::immediate), not a per-segment sequence.");
 
-  auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+  const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+
+  // The total-number-of-items guarantee is intentionally not part of the initial public API surface. The dispatch
+  // only uses its element type to size internal large-segment offsets (the value itself is unused), so we pass a
+  // conservative 64-bit upper bound here.
+  const auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
 
   return batched_topk::dispatch(
     d_temp_storage,
@@ -156,21 +161,20 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! ++++++++++++++++++++++++++
 //!
 //! Given a batch of segments, ``DeviceBatchedTopK`` finds, independently for each segment, the K largest (or
-//! smallest) items. Within each output segment the K results are returned in an **unspecified order**. The algorithm
-//! reuses the block-level top-k primitive used by :cpp:struct:`cub::DeviceTopK`.
+//! smallest) items.
 //!
 //! Argument annotation framework
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! The per-segment parameters (segment sizes, ``k``, the number of segments, and a guarantee on the total number of
-//! input items) are supplied as **annotated arguments** from ``cuda::args``. This lets callers communicate
+//! The per-segment parameters (segment sizes, ``k``, and the number of segments) are supplied as **annotated
+//! arguments** from ``cuda::args``. This lets callers communicate
 //! compile-time guarantees (e.g. a static upper bound on the segment size) that the algorithm uses to specialize the
 //! kernel:
 //!
-//! - ``cuda::args::constant<N>`` — a value known at compile time.
-//! - ``cuda::args::immediate{value, cuda::args::bounds<lo, hi>()}`` — a runtime value with a
+//! - ``cuda::args::constant<N>`` for a value known at compile time.
+//! - ``cuda::args::immediate{value, cuda::args::bounds<lo, hi>()}`` for a runtime value with a
 //!   compile-time ``[lo, hi]`` range.
-//! - ``cuda::args::deferred_sequence{iterator, cuda::args::bounds<lo, hi>()}`` — a per-segment
+//! - ``cuda::args::deferred_sequence{iterator, cuda::args::bounds<lo, hi>()}`` for a per-segment
 //!   sequence (e.g. variable segment sizes) with a compile-time element range.
 //!
 //! Choosing argument bounds
@@ -277,8 +281,8 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] segment_sizes
   //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
-  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum;
-  //!   prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
+  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
   //!   *Choosing argument bounds* section).
   //!
   //! @param[in] k
@@ -286,10 +290,6 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] num_segments
   //!   Annotated argument providing the (uniform) number of segments
-  //!
-  //! @param[in] total_num_items
-  //!   Annotated argument providing an upper-bound guarantee on the total number of input items across all segments,
-  //!   used to size internal offset types
   //!
   //! @param[in] env
   //!   @rst
@@ -301,9 +301,8 @@ struct DeviceBatchedTopK
             typename SegmentSizeParameterT,
             typename KParameterT,
             typename NumSegmentsParameterT,
-            typename TotalNumItemsGuaranteeT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -311,7 +310,6 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MaxKeys");
@@ -325,7 +323,6 @@ struct DeviceBatchedTopK
       segment_sizes,
       k,
       num_segments,
-      total_num_items,
       ::cuda::std::move(env));
   }
 
@@ -354,7 +351,6 @@ struct DeviceBatchedTopK
             typename SegmentSizeParameterT,
             typename KParameterT,
             typename NumSegmentsParameterT,
-            typename TotalNumItemsGuaranteeT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
     KeyInputIteratorItT d_keys_in,
@@ -362,7 +358,6 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxKeys");
@@ -378,7 +373,6 @@ struct DeviceBatchedTopK
           segment_sizes,
           k,
           num_segments,
-          total_num_items,
           env);
       });
   }
@@ -409,9 +403,8 @@ struct DeviceBatchedTopK
             typename SegmentSizeParameterT,
             typename KParameterT,
             typename NumSegmentsParameterT,
-            typename TotalNumItemsGuaranteeT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -419,7 +412,6 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MinKeys");
@@ -433,7 +425,6 @@ struct DeviceBatchedTopK
       segment_sizes,
       k,
       num_segments,
-      total_num_items,
       ::cuda::std::move(env));
   }
 
@@ -460,7 +451,6 @@ struct DeviceBatchedTopK
             typename SegmentSizeParameterT,
             typename KParameterT,
             typename NumSegmentsParameterT,
-            typename TotalNumItemsGuaranteeT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
     KeyInputIteratorItT d_keys_in,
@@ -468,7 +458,6 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinKeys");
@@ -484,7 +473,6 @@ struct DeviceBatchedTopK
           segment_sizes,
           k,
           num_segments,
-          total_num_items,
           env);
       });
   }
@@ -534,9 +522,8 @@ struct DeviceBatchedTopK
             typename SegmentSizeParameterT,
             typename KParameterT,
             typename NumSegmentsParameterT,
-            typename TotalNumItemsGuaranteeT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -546,7 +533,6 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MaxPairs");
@@ -560,7 +546,6 @@ struct DeviceBatchedTopK
       segment_sizes,
       k,
       num_segments,
-      total_num_items,
       ::cuda::std::move(env));
   }
 
@@ -585,7 +570,6 @@ struct DeviceBatchedTopK
             typename SegmentSizeParameterT,
             typename KParameterT,
             typename NumSegmentsParameterT,
-            typename TotalNumItemsGuaranteeT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
     KeyInputIteratorItT d_keys_in,
@@ -595,7 +579,6 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxPairs");
@@ -611,7 +594,6 @@ struct DeviceBatchedTopK
           segment_sizes,
           k,
           num_segments,
-          total_num_items,
           env);
       });
   }
@@ -645,9 +627,8 @@ struct DeviceBatchedTopK
             typename SegmentSizeParameterT,
             typename KParameterT,
             typename NumSegmentsParameterT,
-            typename TotalNumItemsGuaranteeT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorItT d_keys_in,
@@ -657,7 +638,6 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MinPairs");
@@ -671,7 +651,6 @@ struct DeviceBatchedTopK
       segment_sizes,
       k,
       num_segments,
-      total_num_items,
       ::cuda::std::move(env));
   }
 
@@ -696,7 +675,6 @@ struct DeviceBatchedTopK
             typename SegmentSizeParameterT,
             typename KParameterT,
             typename NumSegmentsParameterT,
-            typename TotalNumItemsGuaranteeT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
     KeyInputIteratorItT d_keys_in,
@@ -706,7 +684,6 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinPairs");
@@ -722,7 +699,6 @@ struct DeviceBatchedTopK
           segment_sizes,
           k,
           num_segments,
-          total_num_items,
           env);
       });
   }

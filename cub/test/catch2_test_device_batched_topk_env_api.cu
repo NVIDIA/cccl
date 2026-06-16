@@ -24,11 +24,6 @@
 
 #include <c2h/catch2_test_helper.h>
 
-static auto make_two_segments()
-{
-  return thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
-}
-
 C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][device][env]")
 {
   // example-begin batched-topk-max-keys-env
@@ -36,7 +31,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][de
   constexpr int segment_size = 8;
   constexpr int k            = 3;
 
-  auto keys_in  = make_two_segments();
+  auto keys_in  = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
   auto keys_out = thrust::device_vector<int>(num_segments * k, thrust::no_init);
 
   auto d_keys_in =
@@ -56,7 +51,6 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][de
     cuda::args::constant<segment_size>{},
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
-    cuda::args::immediate{cuda::std::int64_t{num_segments * segment_size}},
     env);
   if (error != cudaSuccess)
   {
@@ -78,7 +72,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][de
   constexpr int segment_size = 8;
   constexpr int k            = 3;
 
-  auto keys_in  = make_two_segments();
+  auto keys_in  = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
   auto keys_out = thrust::device_vector<int>(num_segments * k, thrust::no_init);
 
   auto d_keys_in =
@@ -97,8 +91,11 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][de
     cuda::args::constant<segment_size>{},
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
-    cuda::args::immediate{cuda::std::int64_t{num_segments * segment_size}},
     env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceBatchedTopK::MinKeys failed with status: " << error << '\n';
+  }
   // example-end batched-topk-min-keys-env
 
   stream.sync();
@@ -115,7 +112,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
   constexpr int segment_size = 8;
   constexpr int k            = 3;
 
-  auto keys_in    = make_two_segments();
+  auto keys_in    = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
   auto keys_out   = thrust::device_vector<int>(num_segments * k, thrust::no_init);
   auto values_out = thrust::device_vector<int>(num_segments * k, thrust::no_init);
 
@@ -123,8 +120,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), segment_size);
   auto d_keys_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
-  auto d_values_in =
-    cuda::make_strided_iterator(cuda::make_counting_iterator(cuda::make_counting_iterator(0)), segment_size);
+  auto d_values_in = cuda::make_constant_iterator(cuda::make_counting_iterator(0));
   auto d_values_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(values_out.data())), k);
 
@@ -141,12 +137,18 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
     cuda::args::constant<segment_size>{},
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
-    cuda::args::immediate{cuda::std::int64_t{num_segments * segment_size}},
     env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceBatchedTopK::MaxPairs failed with status: " << error << '\n';
+  }
   // example-end batched-topk-max-pairs-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
+
+  // Each input value is the global item index. Bounds-checked: every returned value indexes back to the input
+  // element (within its own segment) whose key was selected.
   thrust::host_vector<int> h_keys_in(keys_in);
   thrust::host_vector<int> h_keys_out(keys_out);
   thrust::host_vector<int> h_values_out(values_out);
@@ -154,9 +156,18 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
   {
     for (int j = 0; j < k; ++j)
     {
-      REQUIRE(h_keys_in[h_values_out[s * k + j]] == h_keys_out[s * k + j]);
+      const int idx = s * k + j;
+      const int v   = h_values_out[idx];
+      REQUIRE(v >= 0);
+      REQUIRE(v < segment_size);
+      REQUIRE(h_keys_in[s * segment_size + v] == h_keys_out[idx]);
     }
   }
+
+  // The selected keys must be the per-segment top-k (output is unordered; sort each segment descending).
+  thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
 }
 
 C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][device][env]")
@@ -166,7 +177,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][d
   constexpr int segment_size = 8;
   constexpr int k            = 3;
 
-  auto keys_in    = make_two_segments();
+  auto keys_in    = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
   auto keys_out   = thrust::device_vector<int>(num_segments * k, thrust::no_init);
   auto values_out = thrust::device_vector<int>(num_segments * k, thrust::no_init);
 
@@ -174,8 +185,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][d
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), segment_size);
   auto d_keys_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
-  auto d_values_in =
-    cuda::make_strided_iterator(cuda::make_counting_iterator(cuda::make_counting_iterator(0)), segment_size);
+  auto d_values_in = cuda::make_constant_iterator(cuda::make_counting_iterator(0));
   auto d_values_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(values_out.data())), k);
 
@@ -192,12 +202,18 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][d
     cuda::args::constant<segment_size>{},
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
-    cuda::args::immediate{cuda::std::int64_t{num_segments * segment_size}},
     env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceBatchedTopK::MinPairs failed with status: " << error << '\n';
+  }
   // example-end batched-topk-min-pairs-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
+
+  // Each input value is the global item index. Bounds-checked: every returned value indexes back to the input
+  // element (within its own segment) whose key was selected.
   thrust::host_vector<int> h_keys_in(keys_in);
   thrust::host_vector<int> h_keys_out(keys_out);
   thrust::host_vector<int> h_values_out(values_out);
@@ -205,7 +221,16 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][d
   {
     for (int j = 0; j < k; ++j)
     {
-      REQUIRE(h_keys_in[h_values_out[s * k + j]] == h_keys_out[s * k + j]);
+      const int idx = s * k + j;
+      const int v   = h_values_out[idx];
+      REQUIRE(v >= 0);
+      REQUIRE(v < segment_size);
+      REQUIRE(h_keys_in[s * segment_size + v] == h_keys_out[idx]);
     }
   }
+
+  // The selected keys must be the per-segment top-k (output is unordered; sort each segment ascending).
+  thrust::sort(keys_out.begin(), keys_out.begin() + k);
+  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k);
+  REQUIRE(keys_out == thrust::device_vector<int>{-3, 1, 2, 0, 1, 2});
 }

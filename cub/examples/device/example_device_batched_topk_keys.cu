@@ -96,17 +96,15 @@ int main(int argc, char** argv)
   CubDebugExit(cudaStreamCreate(&stream));
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, requirements};
 
-  // Annotate the arguments: segment size and K are compile-time constants; the number of segments and the upper bound
-  // on the total number of items are runtime values.
-  auto segment_sizes  = cuda::args::constant<segment_size>{};
-  auto k_arg          = cuda::args::constant<k>{};
-  auto num_segs_arg   = cuda::args::immediate{static_cast<cuda::std::int64_t>(num_segments)};
-  auto total_num_args = cuda::args::immediate{static_cast<cuda::std::int64_t>(num_items)};
+  // Annotate the arguments: segment size and K are compile-time constants; the number of segments is a runtime value.
+  auto segment_sizes = cuda::args::constant<segment_size>{};
+  auto k_arg         = cuda::args::constant<k>{};
+  auto num_segs_arg  = cuda::args::immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
   // Query temporary storage requirements
   size_t temp_storage_bytes = 0;
   CubDebugExit(DeviceBatchedTopK::MaxKeys(
-    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs_arg, total_num_args, env));
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs_arg, env));
 
   // Allocate temporary storage
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -114,7 +112,7 @@ int main(int argc, char** argv)
 
   // Run the segmented top-k algorithm
   CubDebugExit(DeviceBatchedTopK::MaxKeys(
-    d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs_arg, total_num_args, env));
+    d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs_arg, env));
 
   // Check for correctness: the per-segment output is unordered, so sort each output segment descending before
   // comparing against the (descending) reference.
