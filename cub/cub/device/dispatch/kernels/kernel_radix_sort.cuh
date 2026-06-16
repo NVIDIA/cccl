@@ -526,8 +526,8 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
 {
   static constexpr radix_sort_onesweep_policy policy = current_policy<PolicySelector>().onesweep;
   using OnesweepPolicyT                              = AgentRadixSortOnesweepPolicy<
-                                 policy.threads_per_block,
-                                 policy.items_per_thread,
+                                 0,
+                                 0,
                                  void,
                                  policy.rank_num_parts,
                                  policy.rank_algorith,
