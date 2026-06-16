@@ -17,6 +17,8 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "common_tests.cuh"
+
 #if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
 #  define TEST_TYPES cuda::mr::legacy_managed_memory_resource, cuda::managed_memory_pool_ref
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
@@ -89,13 +91,11 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource construction", "[memory_resource]"
 C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using managed_resource = TestType;
-#if _CCCL_CTK_AT_LEAST(13, 0)
-  if (!cuda::device_attributes::concurrent_managed_access(cuda::devices[0])
-      && cuda::std::is_same_v<managed_resource, cuda::managed_memory_pool_ref>)
+  if constexpr (test::is_memory_pool_type<managed_resource>)
   {
-    return;
+    test::skip_if_unsupported_memory_pool<managed_resource>();
   }
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
   managed_resource res = get_resource<managed_resource>();
   cuda::stream stream{cuda::device_ref{0}};
 
@@ -181,13 +181,11 @@ static_assert(cuda::mr::synchronous_resource<derived_managed_resource>);
 C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
   using managed_resource = TestType;
-#if _CCCL_CTK_AT_LEAST(13, 0)
-  if (!cuda::device_attributes::concurrent_managed_access(cuda::devices[0])
-      && cuda::std::is_same_v<managed_resource, cuda::managed_memory_pool_ref>)
+  if constexpr (test::is_memory_pool_type<managed_resource>)
   {
-    return;
+    test::skip_if_unsupported_memory_pool<managed_resource>();
   }
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
   managed_resource first = get_resource<managed_resource>();
   { // comparison against a plain managed_memory_resource
     managed_resource second = get_resource<managed_resource>();

@@ -16,6 +16,8 @@
 
 #include <testing.cuh>
 
+#include "common_tests.cuh"
+
 #if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
 #  define SHARED_TEST_TYPES \
     cuda::shared_managed_memory_pool, cuda::shared_device_memory_pool, cuda::shared_pinned_memory_pool
@@ -75,6 +77,8 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool construction", "[memory_resource]", SHA
 
   SECTION("Construct and get handle")
   {
+    test::skip_if_unsupported_memory_pool<shared_pool>();
+
     shared_pool pool = construct_shared_pool<shared_pool>();
     CHECK(pool.get() != nullptr);
   }
@@ -87,6 +91,8 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool construction", "[memory_resource]", SHA
 
   SECTION("from_native_handle")
   {
+    test::skip_if_unsupported_memory_pool<cuda::shared_device_memory_pool>();
+
     // Create an owning pool, release the handle, and wrap it via from_native_handle.
     cuda::device_memory_pool owning_pool{cuda::device_ref{0}};
     cudaMemPool_t raw    = owning_pool.release();
@@ -101,6 +107,7 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool construction", "[memory_resource]", SHA
 C2H_CCCLRT_TEST_LIST("shared_memory_pool copy and move", "[memory_resource]", SHARED_TEST_TYPES)
 {
   using shared_pool = TestType;
+  test::skip_if_unsupported_memory_pool<shared_pool>();
 
   shared_pool pool = construct_shared_pool<shared_pool>();
   auto handle      = pool.get();
@@ -157,6 +164,7 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool copy and move", "[memory_resource]", SH
 C2H_CCCLRT_TEST_LIST("shared_memory_pool comparison", "[memory_resource]", SHARED_TEST_TYPES)
 {
   using shared_pool = TestType;
+  test::skip_if_unsupported_memory_pool<shared_pool>();
 
   shared_pool pool1 = construct_shared_pool<shared_pool>();
   shared_pool pool2 = construct_shared_pool<shared_pool>();
@@ -183,6 +191,7 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool comparison", "[memory_resource]", SHARE
 C2H_CCCLRT_TEST_LIST("shared_memory_pool operations", "[memory_resource]", SHARED_TEST_TYPES)
 {
   using shared_pool = TestType;
+  test::skip_if_unsupported_memory_pool<shared_pool>();
 
   shared_pool pool = construct_shared_pool<shared_pool>();
 
@@ -242,6 +251,8 @@ C2H_CCCLRT_TEST("shared_device_memory_pool satisfies resource_with", "[memory_re
 {
   static_assert(cuda::mr::resource_with<cuda::shared_device_memory_pool, cuda::mr::device_accessible>);
 
+  test::skip_if_unsupported_memory_pool<cuda::shared_device_memory_pool>();
+
   cuda::shared_device_memory_pool pool{cuda::device_ref{0}};
   cuda::mr::resource_ref<cuda::mr::device_accessible> ref = pool;
   (void) ref;
@@ -252,6 +263,8 @@ C2H_CCCLRT_TEST("shared_pinned_memory_pool satisfies resource_with", "[memory_re
 {
   static_assert(cuda::mr::resource_with<cuda::shared_pinned_memory_pool, cuda::mr::device_accessible>);
   static_assert(cuda::mr::resource_with<cuda::shared_pinned_memory_pool, cuda::mr::host_accessible>);
+
+  test::skip_if_unsupported_memory_pool<cuda::shared_pinned_memory_pool>();
 
   cuda::shared_pinned_memory_pool pool{0};
   cuda::mr::resource_ref<cuda::mr::device_accessible, cuda::mr::host_accessible> ref = pool;
@@ -264,6 +277,8 @@ C2H_CCCLRT_TEST("shared_managed_memory_pool satisfies resource_with", "[memory_r
 {
   static_assert(cuda::mr::resource_with<cuda::shared_managed_memory_pool, cuda::mr::device_accessible>);
   static_assert(cuda::mr::resource_with<cuda::shared_managed_memory_pool, cuda::mr::host_accessible>);
+
+  test::skip_if_unsupported_memory_pool<cuda::shared_managed_memory_pool>();
 
   cuda::shared_managed_memory_pool pool{};
   cuda::mr::resource_ref<cuda::mr::device_accessible, cuda::mr::host_accessible> ref = pool;

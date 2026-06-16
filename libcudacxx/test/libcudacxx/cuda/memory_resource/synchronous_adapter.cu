@@ -13,6 +13,7 @@
 
 #include <testing.cuh>
 
+#include "resources/common_tests.cuh"
 #include "test_resource.cuh"
 
 template <class Resource>
@@ -52,6 +53,8 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
 
   SECTION("Test wrapping a resource")
   {
+    test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
+
     auto pool = cuda::device_default_memory_pool(cuda::device_ref{0});
     cuda::mr::synchronous_resource_adapter<cuda::device_memory_pool_ref> adapter{pool};
     auto* ptr = adapter.allocate(stream, 1024, 128);
