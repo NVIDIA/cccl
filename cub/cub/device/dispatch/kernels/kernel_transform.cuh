@@ -713,6 +713,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
 template <int threads_per_block,
           int UnrollFactor,
+          int OutputAlign,
           typename Offset,
           typename Predicate,
           typename F,
@@ -895,41 +896,117 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
 
-  auto process_tile = [&](auto full_tile) {
-    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
-      // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
-      const int idx = j * threads_per_block + threadIdx.x;
-      if (full_tile || idx < valid_items)
-      {
-        char* smem         = smem_base;
-        auto fetch_operand = [&](auto aligned_ptr) {
-          using T                = typename decltype(aligned_ptr)::value_type;
-          const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
-          const char* src        = smem + head_padding;
-          smem += tile_padding + int{sizeof(T)} * tile_size;
-          return reinterpret_cast<const T*>(src)[idx];
-        };
+  using output_t         = it_value_t<RandomAccessIteratorOut>;
+  constexpr int out_size = int{size_of<output_t>};
+  constexpr int vec_size = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
+  // When the caller guarantees aligned_size_t<N> num_items, i.e. the output pointer is N-byte aligned and the element
+  // count is a multiple of N, if 1. there are no predicates, 2. memory layout is contiguous, 3. semantically we can
+  // raw copy, 4. size is power-of-2 and <= 16 bytes  we can do vectorized store (STG.128)
+  constexpr bool vectorize_store =
+    OutputAlign >= 16 && vec_size > 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
+    && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
+    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && ::cuda::is_power_of_two(out_size)
+    && (true && ... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
 
-        // need to expand into a tuple for guaranteed order of evaluation
-        ::cuda::std::apply(
-          [&](auto... values) {
-            if (pred(values...))
-            {
-              out[idx] = f(values...);
-            }
-          },
-          ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
-      }
-    });
-  };
-  // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
-  if (tile_size == valid_items)
+  if constexpr (vectorize_store)
   {
-    process_tile(::cuda::std::true_type{});
+    using store_t         = decltype(load_store_type<16>());
+    auto* out_vec         = reinterpret_cast<store_t*>(out);
+    const int num_vectors = valid_items / vec_size;
+    for (int v = threadIdx.x; v < num_vectors; v += threads_per_block)
+    {
+      char* smem      = smem_base;
+      auto load_chunk = [&](auto aligned_ptr) {
+        using T = typename decltype(aligned_ptr)::value_type;
+        // on blackwell, head_padding should always be zero
+        // on hopper, bulk_copy_alignment is 128 bytes, head_padding could be 112 bytes for example
+        // alignof(T) will always be powers of 2 per C++ standard
+        const T* base = reinterpret_cast<const T*>(smem + aligned_ptr.head_padding);
+        smem += tile_padding + int{sizeof(T)} * tile_size;
+        // Gather this input's vec_size elements for output-vector v into a register array. we take the maximal
+        // alignment out of alignof(T) and 16 bytes. If input is narrower, we will waste a few (0-16) registers
+        constexpr ::cuda::std::size_t chunk_align = (::cuda::std::max) (alignof(T), alignof(int4));
+        ::cuda::__uninitialized_array<T, vec_size, chunk_align> elems;
+        constexpr int chunk_bytes = int{sizeof(T)} * vec_size;
+        // if same width or narrowing (e.g. int32 -> int8), we split it up into multiple 16 byte reads
+        // CAREFUL: the byte width sizeof(T) * vec_size can exceed 16 when the input is wider than the output.
+        // However, since input both input type size and output size is pow2, when the input is wider, it has to be
+        // pow2 times wider. Therefore, chunk_bytes = input size * vec_size is always divisible by 16
+        // (recall 16 = output size * vec_size) , i.e. we can read it as multiple int4 loads
+        if constexpr (chunk_bytes % int{sizeof(int4)} == 0)
+        {
+          constexpr int n = chunk_bytes / int{sizeof(int4)};
+          const int4* s   = reinterpret_cast<const int4*>(base) + v * n;
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int i = 0; i < n; ++i)
+          {
+            reinterpret_cast<int4*>(elems.data())[i] = s[i];
+          }
+        }
+        // if widening (e.g. int8 -> int32), just load it in one go. recall chunk_bytes = input size * vec_size, and
+        // vec_size = 16 / output size. Since output size is pow2, vec_size is pow2. Hence chunk_bytes is always pow2.
+        // this ensures load_store_type<chunk_bytes> will never fail.
+        else
+        {
+          using sub_t                             = decltype(load_store_type<chunk_bytes>());
+          *reinterpret_cast<sub_t*>(elems.data()) = reinterpret_cast<const sub_t*>(base)[v];
+        }
+        return elems;
+      };
+      auto chunks = ::cuda::std::tuple{load_chunk(aligned_ptrs)...};
+
+      alignas(sizeof(output_t) * vec_size) output_t res[vec_size];
+      // must fully unroll to take full advantage of ILP. otherwise perf regress by half
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int k = 0; k < vec_size; ++k)
+      {
+        res[k] = ::cuda::std::apply(
+          [&](auto&... c) {
+            return f(c[k]...);
+          },
+          chunks);
+      }
+      out_vec[v] = *reinterpret_cast<const store_t*>(res);
+    }
   }
   else
   {
-    process_tile(::cuda::std::false_type{});
+    auto process_tile = [&](auto full_tile) {
+      unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+        // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
+        const int idx = j * threads_per_block + threadIdx.x;
+        if (full_tile || idx < valid_items)
+        {
+          char* smem         = smem_base;
+          auto fetch_operand = [&](auto aligned_ptr) {
+            using T                = typename decltype(aligned_ptr)::value_type;
+            const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
+            const char* src        = smem + head_padding;
+            smem += tile_padding + int{sizeof(T)} * tile_size;
+            return reinterpret_cast<const T*>(src)[idx];
+          };
+
+          // need to expand into a tuple for guaranteed order of evaluation
+          ::cuda::std::apply(
+            [&](auto... values) {
+              if (pred(values...))
+              {
+                out[idx] = f(values...);
+              }
+            },
+            ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
+        }
+      });
+    };
+    // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
+    if (tile_size == valid_items)
+    {
+      process_tile(::cuda::std::true_type{});
+    }
+    else
+    {
+      process_tile(::cuda::std::false_type{});
+    }
   }
 }
 
@@ -1006,6 +1083,7 @@ template <typename PolicySelector,
           typename Predicate,
           typename F,
           typename RandomAccessIteratorOut,
+          int OutputAlign,
           typename... RandomAccessIteratorsIn>
 #if _CCCL_HAS_CONCEPTS()
   requires transform_policy_selector<PolicySelector>
@@ -1068,7 +1146,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
+      (transform_kernel_ublkcp<policy.async_copy.threads_per_block, policy.async_copy.unroll_factor, OutputAlign>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

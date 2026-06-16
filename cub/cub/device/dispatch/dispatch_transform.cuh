@@ -77,7 +77,8 @@ template <typename PolicySelector,
           typename RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Predicate,
-          typename TransformOp>
+          typename TransformOp,
+          int OutputAlign>
 struct TransformKernelSource;
 
 template <typename PolicySelector,
@@ -85,13 +86,15 @@ template <typename PolicySelector,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Predicate,
-          typename TransformOp>
+          typename TransformOp,
+          int OutputAlign>
 struct TransformKernelSource<PolicySelector,
                              Offset,
                              ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                              RandomAccessIteratorOut,
                              Predicate,
-                             TransformOp>
+                             TransformOp,
+                             OutputAlign>
 {
   // PolicySelector must be stateless, so we can pass the type to the kernel
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
@@ -103,6 +106,7 @@ struct TransformKernelSource<PolicySelector,
                      Predicate,
                      TransformOp,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorOut>,
+                     OutputAlign,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
 
   template <class ActionT>
@@ -541,6 +545,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
 };
 
 template <requires_stable_address StableAddress,
+          int OutputAlign = 1,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Offset,
@@ -552,7 +557,8 @@ template <requires_stable_address StableAddress,
                                                                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                                                  RandomAccessIteratorOut,
                                                                  Predicate,
-                                                                 TransformOp>,
+                                                                 TransformOp,
+                                                                 OutputAlign>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires transform_policy_selector<PolicySelector>
