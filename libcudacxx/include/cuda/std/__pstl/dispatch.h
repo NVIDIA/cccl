@@ -52,6 +52,7 @@ enum class __pstl_algorithm
   __shift_left,
   __shift_right,
   __stable_partition,
+  __sort,
   __transform,
   __transform_reduce,
   __unique,

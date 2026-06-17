@@ -27,6 +27,7 @@
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -103,6 +104,11 @@ struct pinned_memory_pool : pinned_memory_pool_ref
 {
   using reference_type = pinned_memory_pool_ref;
 
+  //! @brief Constructs an empty \c pinned_memory_pool without an underlying pool.
+  _CCCL_HOST_API explicit pinned_memory_pool(no_init_t) noexcept
+      : pinned_memory_pool_ref(::cudaMemPool_t{})
+  {}
+
 #    if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Constructs a \c pinned_memory_pool with optional properties.
   //! Properties include the initial pool size and the release threshold. If the
@@ -150,13 +156,23 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   {
     if (__pool_ != nullptr)
     {
-      ::cuda::__driver::__mempoolDestroy(__pool_);
+      _CCCL_ASSERT_CUDA_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool_);
     }
   }
 
   _CCCL_HOST_API static pinned_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
   {
     return pinned_memory_pool(__pool);
+  }
+
+  //! @brief Retrieve the native `cudaMemPool_t` handle and give up ownership.
+  //!
+  //! @return cudaMemPool_t The native handle being held by this object.
+  //!
+  //! @post The memory pool object is in a moved-from state.
+  _CCCL_HOST_API constexpr ::cudaMemPool_t release() noexcept
+  {
+    return ::cuda::std::exchange(__pool_, nullptr);
   }
 
   //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.

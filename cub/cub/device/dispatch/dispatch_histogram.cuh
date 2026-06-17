@@ -198,7 +198,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const histogram_policy active_policy = policy_selector(cc);
+  const HistogramPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
@@ -232,7 +232,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const int block_threads     = active_policy.block_threads;
+  const int threads_per_block = active_policy.threads_per_block;
   const int pixels_per_thread = active_policy.pixels_per_thread;
 
   // Get SM count
@@ -245,7 +245,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // Get SM occupancy for sweep_kernel
   int histogram_sweep_sm_occupancy;
   if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, block_threads)))
+        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, threads_per_block)))
   {
     return error;
   }
@@ -262,7 +262,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
-  int pixels_per_tile = block_threads * pixels_per_thread;
+  int pixels_per_tile = threads_per_block * pixels_per_thread;
   int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
   int blocks_per_row  = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
   int blocks_per_col =
@@ -321,21 +321,25 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  constexpr int histogram_init_block_threads = 256;
+  constexpr int histogram_init_threads_per_block = 256;
   int histogram_init_grid_dims =
-    (max_num_output_bins + histogram_init_block_threads - 1) / histogram_init_block_threads;
+    (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
 // Log DeviceHistogramInitKernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
           histogram_init_grid_dims,
-          histogram_init_block_threads,
+          histogram_init_threads_per_block,
           (long long) stream);
 #endif // CUB_DEBUG_LOG
 
   // Invoke histogram_init_kernel
   if (const auto error = CubDebug(
-        launcher_factory(histogram_init_grid_dims, histogram_init_block_threads, 0, stream, true)
+        launcher_factory(histogram_init_grid_dims,
+                         histogram_init_threads_per_block,
+                         0,
+                         stream,
+                         /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
           .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
   {
     return error;
@@ -354,14 +358,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           sweep_grid_dims.x,
           sweep_grid_dims.y,
           sweep_grid_dims.z,
-          block_threads,
+          threads_per_block,
           (long long) stream,
           pixels_per_thread,
           histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
-        launcher_factory(sweep_grid_dims, block_threads, 0, stream, true)
+        launcher_factory(
+          sweep_grid_dims, threads_per_block, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
           .doit(sweep_kernel,
                 d_samples,
                 num_output_bins_wrapper,
@@ -719,33 +724,33 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_pdl_trigger(int)
-  -> decltype(ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count)
+_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(int)
+  -> decltype(ActivePolicy::init_kernel_pdl_trigger_max_bins)
 {
-  return ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count;
+  return ActivePolicy::init_kernel_pdl_trigger_max_bins;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_pdl_trigger(long)
+_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(long)
 {
   return 0;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> histogram_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
 {
   using ap = typename ActivePolicy::AgentHistogramPolicyT;
-  return histogram_policy{
+  return HistogramPolicy{
     ap::BLOCK_THREADS,
     ap::PIXELS_PER_THREAD,
+    ap::VEC_SIZE,
     ap::LOAD_ALGORITHM,
     ap::LOAD_MODIFIER,
     ap::IS_RLE_COMPRESS,
     ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
-    ap::VEC_SIZE,
     convert_pdl_trigger<ActivePolicy>(0)};
 }
 
@@ -756,10 +761,10 @@ struct policy_selector_from_max_policy
 private:
   struct extract_policy_dispatch_t
   {
-    histogram_policy& policy;
+    HistogramPolicy& policy;
 
     template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
+    _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
       policy = convert_policy<ActivePolicyT>();
       return cudaSuccess;
@@ -767,25 +772,16 @@ private:
   };
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
-                        histogram_policy policy{};
+                        HistogramPolicy policy{};
                         extract_policy_dispatch_t dispatch{policy};
-                        MaxPolicy::Invoke(cc.get() * 10, dispatch);
+                        _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
                       ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));
-  }
-};
-
-template <typename PolicyHub>
-struct policy_selector_from_hub
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::compute_capability) const -> histogram_policy
-  {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 
@@ -1203,7 +1199,7 @@ template <
   typename KernelSource = detail::histogram::
     DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchHistogram
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceHistogram") DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
   static_assert(NUM_ACTIVE_CHANNELS <= NUM_CHANNELS,

@@ -133,10 +133,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce env-based API", "[segmented_reduce]
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedReduce::Reduce(
-    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0, env);
+    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0, stream_ref);
   thrust::device_vector<int> expected{21, 0, 17};
 
   if (error != cudaSuccess)
@@ -161,10 +160,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min env-based API", "[segmented_reduce][en
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error =
-    cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+  auto error = cub::DeviceSegmentedReduce::Min(
+    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
   thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
 
   if (error != cudaSuccess)
@@ -189,10 +187,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max env-based API", "[segmented_reduce][en
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error =
-    cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+  auto error = cub::DeviceSegmentedReduce::Max(
+    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
   thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
 
   if (error != cudaSuccess)
@@ -217,10 +214,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin env-based API", "[segmented_reduce]
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error =
-    cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+  auto error = cub::DeviceSegmentedReduce::ArgMin(
+    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
 
   if (error != cudaSuccess)
   {
@@ -244,10 +240,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax env-based API", "[segmented_reduce]
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error =
-    cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+  auto error = cub::DeviceSegmentedReduce::ArgMax(
+    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
 
   if (error != cudaSuccess)
   {
@@ -468,10 +463,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce fixed-size env-based API", "[segmen
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedReduce::Reduce(
-    d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0, env);
+    d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0, stream_ref);
   thrust::device_vector<int> expected{21, 8};
 
   if (error != cudaSuccess)
@@ -495,9 +489,8 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum fixed-size env-based API", "[segmented
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+  auto error = cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
   thrust::device_vector<int> expected{21, 8};
 
   if (error != cudaSuccess)
@@ -521,9 +514,8 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min fixed-size env-based API", "[segmented
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+  auto error = cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
   thrust::device_vector<int> expected{6, 0};
 
   if (error != cudaSuccess)
@@ -547,9 +539,8 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max fixed-size env-based API", "[segmented
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+  auto error = cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
   thrust::device_vector<int> expected{8, 5};
 
   if (error != cudaSuccess)
@@ -573,9 +564,8 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin fixed-size env-based API", "[segmen
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+  auto error = cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
 
   if (error != cudaSuccess)
   {
@@ -598,9 +588,8 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax fixed-size env-based API", "[segmen
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = ::cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+  auto error = cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
 
   if (error != cudaSuccess)
   {

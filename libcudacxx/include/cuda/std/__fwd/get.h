@@ -27,6 +27,7 @@
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -114,6 +115,14 @@ _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::cuda::std::ranges::get;
+
+// Explicitly rely on ADL, mostly for constructors of host STL types, where we cannot squeze using ::cuda::std::get; in
+template <size_t _Ip, class _TupleLike>
+[[nodiscard]] _CCCL_API constexpr decltype(auto) __adl_get(_TupleLike&& __t) noexcept
+{
+  using ::cuda::std::get;
+  return get<_Ip>(::cuda::std::forward<_TupleLike>(__t));
+}
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

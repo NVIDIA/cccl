@@ -51,7 +51,8 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr borrowed_iterator_t<_Rp>
   operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
   {
-    return ::cuda::std::__min_element(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r), __comp, __proj);
+    return ::cuda::std::__min_element(
+      ::cuda::std::ranges::__begin_cpo{}(__r), ::cuda::std::ranges::__end_cpo{}(__r), __comp, __proj);
   }
 };
 _CCCL_END_NAMESPACE_CPO

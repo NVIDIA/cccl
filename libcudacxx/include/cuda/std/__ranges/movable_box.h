@@ -116,7 +116,7 @@ struct __mb_optional_destruct_base
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>)
-      : __val_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __val_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 };
 
@@ -126,14 +126,14 @@ struct __mb_optional_destruct_base<_Tp, true>
   _CCCL_NO_UNIQUE_ADDRESS optional<_Tp> __val_;
 
   _CCCL_API constexpr __mb_optional_destruct_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
-      : __val_(in_place)
+      : __val_(in_place_t{})
   {}
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>)
-      : __val_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __val_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 };
 
@@ -272,7 +272,7 @@ struct __mb_holder_base
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_holder_base(in_place_t,
                                                 _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __holder_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __holder_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 };
 
@@ -282,14 +282,14 @@ struct __mb_holder_base<_Tp, true>
   _CCCL_NO_UNIQUE_ADDRESS __mb_holder<_Tp> __holder_;
 
   _CCCL_API constexpr __mb_holder_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
-      : __holder_(in_place)
+      : __holder_(in_place_t{})
   {}
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_holder_base(in_place_t,
                                                 _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __holder_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __holder_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 };
 
@@ -396,7 +396,7 @@ struct __movable_box<_Tp, true> : __movable_box_base<_Tp>
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __movable_box(in_place_t,
                                              _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_HIDE_FROM_ABI constexpr __movable_box() noexcept(is_nothrow_default_constructible_v<_Tp>) = default;

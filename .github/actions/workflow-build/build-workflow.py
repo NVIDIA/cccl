@@ -501,6 +501,10 @@ def generate_dispatch_job_image(matrix_job, job_type):
     return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
 
+def generate_dispatch_job_environment(matrix_job, job_type):
+    return json.dumps(matrix_job.get("environment") or [])
+
+
 def generate_dispatch_job_command(matrix_job, job_type):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
     script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
@@ -590,6 +594,7 @@ def generate_dispatch_job_json(matrix_job, job_type):
         "name": generate_dispatch_job_name(matrix_job, job_type),
         "runner": generate_dispatch_job_runner(matrix_job, job_type),
         "image": generate_dispatch_job_image(matrix_job, job_type),
+        "environment": generate_dispatch_job_environment(matrix_job, job_type),
         "command": generate_dispatch_job_command(matrix_job, job_type),
         "origin": generate_dispatch_job_origin(matrix_job, job_type),
     }
@@ -695,12 +700,13 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
 
 
 def compare_dispatch_jobs(job1, job2):
-    "Compare two dispatch job specs for equality. Considers only name/runner/image/command."
+    "Compare two dispatch job specs for equality. Considers only name/runner/image/environment/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
     return (
         job1["name"] == job2["name"]
         and job1["runner"] == job2["runner"]
         and job1["image"] == job2["image"]
+        and job1["environment"] == job2["environment"]
         and job1["command"] == job2["command"]
     )
 
@@ -1095,7 +1101,7 @@ def set_derived_tags(matrix_job):
 
 
 def next_explode_tag(matrix_job):
-    non_exploded_tags = ["jobs"]
+    non_exploded_tags = ["jobs", "environment"]
 
     for tag in matrix_job:
         if tag not in non_exploded_tags and isinstance(matrix_job[tag], list):

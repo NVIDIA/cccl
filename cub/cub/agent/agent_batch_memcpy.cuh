@@ -448,7 +448,7 @@ private:
 /**
  * Parameterizable tuning policy type for AgentBatchMemcpy
  */
-template <uint32_t BlockThreads,
+template <uint32_t ThreadsPerBlock,
           uint32_t BuffersPerThread,
           uint32_t TlevBytesPerThread,
           bool PreferPow2Bits,
@@ -460,7 +460,7 @@ template <uint32_t BlockThreads,
 struct AgentBatchMemcpyPolicy
 {
   /// Threads per thread block
-  static constexpr uint32_t BLOCK_THREADS = BlockThreads;
+  static constexpr uint32_t BLOCK_THREADS = ThreadsPerBlock;
   /// Items per thread (per tile of input)
   static constexpr uint32_t BUFFERS_PER_THREAD = BuffersPerThread;
   /// The number of bytes that each thread will work on with each iteration of reading in bytes

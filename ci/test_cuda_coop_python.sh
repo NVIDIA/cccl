@@ -27,4 +27,4 @@ python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
 
 # Run tests for coop module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest -n auto -v coop/
+python -m pytest -n auto -v coop/_experimental/

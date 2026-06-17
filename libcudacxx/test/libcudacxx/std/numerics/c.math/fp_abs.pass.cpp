@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
-
 // clang-format off
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on

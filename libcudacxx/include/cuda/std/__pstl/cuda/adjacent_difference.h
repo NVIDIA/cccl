@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -43,6 +44,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__numeric/adjacent_difference.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -65,7 +67,10 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
     _OutputIterator __result,
     _BinaryOp __binary_op)
   {
-    auto __count = ::cuda::std::distance(__first, __last);
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
+    const auto __count = ::cuda::std::distance(__first, __last);
 
     // We pass the policy as an environment to DeviceAdjacentDifference
     _CCCL_TRY_CUDA_API(
@@ -77,8 +82,6 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
       ::cuda::std::move(__binary_op),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __result + __count;

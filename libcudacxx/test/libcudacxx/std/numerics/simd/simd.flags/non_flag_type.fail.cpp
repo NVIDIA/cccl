@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // flags<Flags...> requires every type in the pack to be one of
 // convert_flag, aligned_flag, or overaligned_flag<N>.
 

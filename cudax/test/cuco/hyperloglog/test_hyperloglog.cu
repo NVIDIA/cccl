@@ -86,7 +86,7 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>>
     <<<1, 512, estimator.sketch_bytes()>>>(sketch_size_kb, items.begin(), num_items, device_estimate.begin());
 
-  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   std::size_t device_estimate_value = device_estimate[0];
   REQUIRE(device_estimate_value == host_estimate);

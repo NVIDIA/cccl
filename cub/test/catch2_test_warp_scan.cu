@@ -253,7 +253,7 @@ c2h::host_vector<T> compute_host_reference(
   {
     return c2h::host_vector<T>{};
   }
-  // TODO : assert result.size() % logical_warp_threads == 0
+  // TODO : REQUIRE(result.size() % logical_warp_threads == 0)
 
   // The accumulator variable is used to calculate warp_aggregate without
   // taking initial_value into consideration in both exclusive and inclusive scan.

@@ -74,8 +74,6 @@ TEST_FUNC void test_const_array(const T (&array)[Sz])
   assert(cuda::std::ssize(array) == Sz);
 }
 
-TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
-
 int main(int, char**)
 {
   cuda::std::inplace_vector<int, 3> v;
@@ -111,11 +109,10 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(sv))>);
   test_const_container(sv);
 
-#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("arrA") cannot be used in tile code
+  constexpr int arrA[]{1, 2, 3};
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(arrA))>);
   static_assert(cuda::std::is_signed_v<decltype(cuda::std::ssize(arrA))>);
   test_const_array(arrA);
-#endif // !_CCCL_TILE_COMPILATION()
 
   //  From P1227R2:
   //     Note that the code does not just return the cuda::std::make_signed variant of

@@ -63,10 +63,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '13.0', libs: 'rmm kvikio cudf cudf_kafka' }
+          - { cuda: '13.2', libs: 'rmm ucxx kvikio cudf cudf_kafka' }
           # TODO: remove the PYTHON_VERSION override when all of cuml's dependencies have Python 3.14 support
-          - { cuda: '13.0', libs: 'rmm ucxx raft cuvs cuml', python_version: '3.13' }
-          - { cuda: '13.0', libs: 'rmm ucxx raft cugraph'      }
+          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs nvforest cuml cuopt', python_version: '3.13' }
+          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs cugraph wholegraph' }
     permissions:
       id-token: write
       contents: read
@@ -96,12 +96,13 @@ jobs:
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
-          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cuopt_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_nvforest_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
@@ -165,15 +166,29 @@ jobs:
 
           chmod +x "$RUNNER_TEMP"/ci.sh
 
+          mkdir -p .aws
+
+          cat <<EOF > .aws/config
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > .aws/credentials
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+          EOF
+
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
+
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
             --env "AWS_ROLE_ARN=" \
-            --env "AWS_REGION=${AWS_REGION:-}" \
-            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
-            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
-            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "PYTHON_VERSION=${PYTHON_VERSION:-}" \
             --env "CONDA_ENV_CREATE_QUIET=true" \
             --env "CCCL_TAG=$CCCL_TAG" \
@@ -183,6 +198,7 @@ jobs:
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "SCCACHE_DIST_URL=https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com" \
             --env "SCCACHE_DIST_AUTH_TOKEN=$(
               curl -fsSL -H "Authorization: Bearer $(
                 curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \

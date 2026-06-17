@@ -52,19 +52,19 @@ TEST_FUNC void test_edges()
 
       // The __half or __nv_float16 functions use fp32, we need to account for this
       // as we are checking for floating-point equality:
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
       if constexpr (cuda::std::is_same_v<T, __half>)
       {
         z = exp(cuda::std::complex<float>(testcases[j]) * log(cuda::std::complex<float>(real(testcases[i]))));
       }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
       if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
       {
         z = exp(cuda::std::complex<float>(testcases[j]) * log(cuda::std::complex<float>(real(testcases[i]))));
       }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
       if (cuda::std::isnan(real(r)))
       {
@@ -100,14 +100,14 @@ int main(int, char**)
 
   test_edges<double>();
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test<__half>();
   test_edges<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test<__nv_bfloat16>();
   test_edges<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

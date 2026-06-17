@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && !c++17
-// nvbug6076227: ICE when validating tile MLIR
-
 #include <cuda/std/algorithm.rotate_copy.h>
 #include <cuda/std/cassert>
 

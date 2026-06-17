@@ -26,6 +26,7 @@
 #  include <cuda/__algorithm/common.h>
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
@@ -72,7 +73,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   [[maybe_unused]] copy_configuration __config)
 {
   static_assert(!::cuda::std::is_const_v<_DstTy>, "Copy destination can't be const");
-  static_assert(::cuda::std::is_trivially_copyable_v<_SrcTy> && ::cuda::std::is_trivially_copyable_v<_DstTy>);
+  static_assert(::cuda::is_trivially_copyable_v<_SrcTy> && ::cuda::is_trivially_copyable_v<_DstTy>);
 
   if (__src.size_bytes() > __dst.size_bytes())
   {

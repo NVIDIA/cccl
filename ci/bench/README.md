@@ -71,7 +71,7 @@ For Python benchmarks, `compare_paths.sh`:
 Python filters are regex patterns matched against relative paths under `python/cuda_cccl/benchmarks/`, for example:
 - `compute/reduce/sum\.py` — single benchmark
 - `compute/transform/.*\.py` — all transform benchmarks
-- `coop/.*\.py` — all coop benchmarks
+- `coop/_experimental/.*\.py` — all coop benchmarks
 
 ## Artifacts
 

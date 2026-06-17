@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6076227: ICE when validating tile MLIR
-
 // clang-format off
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on

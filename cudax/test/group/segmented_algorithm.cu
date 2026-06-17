@@ -109,5 +109,5 @@ C2H_TEST("Segmented algorithm", "[group]")
     });
   stream.sync();
 
-  CUDAX_CHECK(cuda::std::equal(cuda::execution::gpu, out.begin(), out.end(), cuda::constant_iterator{128}));
+  CHECK(cuda::std::equal(cuda::execution::gpu, out.begin(), out.end(), cuda::constant_iterator{128}));
 }

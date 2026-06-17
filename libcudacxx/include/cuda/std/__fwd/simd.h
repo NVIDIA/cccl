@@ -46,7 +46,16 @@ using mask = basic_mask<sizeof(_Tp), __deduce_abi_t<_Tp, _Np>>;
 template <typename _Tp, typename _Abi>
 struct __simd_storage;
 
+enum class __simd_operations_kind
+{
+  __default,
+  __fixed_size_float,
+};
+
 template <typename _Tp, typename _Abi>
+inline constexpr __simd_operations_kind __simd_operations_kind_v = __simd_operations_kind::__default;
+
+template <typename _Tp, typename _Abi, __simd_operations_kind = __simd_operations_kind_v<_Tp, _Abi>>
 struct __simd_operations;
 
 template <size_t _Bytes, typename _Abi>

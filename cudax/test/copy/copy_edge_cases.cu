@@ -63,7 +63,7 @@ TEST_CASE("copy d2d different types", "[copy][d2d][1d][mixed_types]")
     h_expected[i] = static_cast<float>(i * 10);
   }
   thrust::host_vector<float> result(d_dst);
-  CUDAX_REQUIRE(result == h_expected);
+  REQUIRE(result == h_expected);
 }
 
 // src: (0,0):(0,1)
@@ -85,7 +85,7 @@ TEST_CASE("copy d2d size 0", "[copy][d2d][zero_size]")
   stream.sync();
 
   thrust::host_vector<int> result(d_dst);
-  CUDAX_REQUIRE(result[0] == 0);
+  REQUIRE(result[0] == 0);
 }
 
 /***********************************************************************************************************************
@@ -125,7 +125,7 @@ TEST_CASE("copy d2d contiguous scaled_accessor", "[copy][d2d][1d][accessor]")
     h_expected[i] = i * 2;
   }
   thrust::host_vector<int> result(d_dst);
-  CUDAX_REQUIRE(result == h_expected);
+  REQUIRE(result == h_expected);
 }
 
 /***********************************************************************************************************************
@@ -351,7 +351,7 @@ TEST_CASE("copy d2d different extent types", "[copy][d2d][mixed_types]")
   stream.sync();
 
   thrust::host_vector<float> result(d_dst);
-  CUDAX_REQUIRE(result == h_data);
+  REQUIRE(result == h_data);
 }
 
 // src: dextents<int, 2>(4, 8), layout_stride with strides array<int, 2>
@@ -383,7 +383,7 @@ TEST_CASE("copy d2d different extent and stride types", "[copy][d2d][mixed_types
   stream.sync();
 
   thrust::host_vector<float> result(d_dst);
-  CUDAX_REQUIRE(result == h_data);
+  REQUIRE(result == h_data);
 }
 
 /***********************************************************************************************************************
@@ -422,7 +422,7 @@ TEST_CASE("copy d2d misaligned pointer", "[copy][d2d][alignment]")
 
   thrust::host_vector<char> h_dst_buf(d_dst_buf);
   thrust::host_vector<char> result(h_dst_buf.begin() + 1, h_dst_buf.begin() + 1 + N);
-  CUDAX_REQUIRE(result == h_src);
+  REQUIRE(result == h_src);
 }
 
 /***********************************************************************************************************************
@@ -457,7 +457,7 @@ TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
   cudax::copy(src, dst, stream);
   stream.sync();
 
-  CUDAX_REQUIRE(d_dst[0] == static_cast<char>(0x42));
-  CUDAX_REQUIRE(d_dst[N / 2] == static_cast<char>(0x42));
-  CUDAX_REQUIRE(d_dst[N - 1] == static_cast<char>(0x42));
+  REQUIRE(d_dst[0] == static_cast<char>(0x42));
+  REQUIRE(d_dst[N / 2] == static_cast<char>(0x42));
+  REQUIRE(d_dst[N - 1] == static_cast<char>(0x42));
 }

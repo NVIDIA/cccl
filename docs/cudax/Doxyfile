@@ -11,6 +11,7 @@ XML_PROGRAMLISTING     = YES
 
 # Input directory - specific paths for cudax
 INPUT                  = ../../cudax/include/cuda/experimental/__copy_bytes \
+                         ../../cudax/include/cuda/experimental/__fill_bytes \
                          ../../cudax/include/cuda/experimental/__container \
                          ../../cudax/include/cuda/experimental/__device \
                          ../../cudax/include/cuda/experimental/graph.cuh \
@@ -96,6 +97,7 @@ PREDEFINED = \
     "_CCCL_CONSTEXPR_CXX20=constexpr" \
     "_CCCL_CONSTEXPR_CXX23=constexpr" \
     "_CCCL_API=inline" \
+    "_CCCL_HOST_DEVICE_API=inline" \
     "_CCCL_HOST_API=inline" \
     "_CCCL_DEVICE_API=inline" \
     "_CCCL_NODEBUG_API=inline" \

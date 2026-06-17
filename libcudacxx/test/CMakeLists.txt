@@ -67,7 +67,7 @@ if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
   )
     message(
       FATAL_ERROR
-      "tile programs are not supported in NVCC until after 13.2 but found NVCC ${CMAKE_CUDA_COMPILER_VERSION}"
+      "tile programs require NVCC 13.3 or later; found NVCC ${CMAKE_CUDA_COMPILER_VERSION}"
     )
   endif()
   # Set warnings for Clang as device compiler
@@ -98,3 +98,4 @@ endif()
 
 add_subdirectory(nvtarget)
 add_subdirectory(atomic_codegen)
+add_subdirectory(simd_codegen)

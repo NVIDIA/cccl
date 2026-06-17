@@ -45,20 +45,20 @@ CUB_NAMESPACE_BEGIN
 // TODO(bgruber): deprecate once we publish the tuning API
 /**
  * Parameterizable tuning policy type for AgentReduce
- * @tparam NominalBlockThreads4B Threads per thread block
+ * @tparam NominalThreadsPerBlock4B Threads per thread block
  * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
  * @tparam VectorLoadLength Number of items per vectorized load
  * @tparam BlockAlgorithm Cooperative block-wide reduction algorithm to use
  * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           int VectorLoadLength,
           BlockReduceAlgorithm BlockAlgorithm,
           CacheLoadModifier LoadModifier,
-          typename ScalingType = detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentReducePolicy : ScalingType
 {
   /// Number of items per vectorized load
@@ -73,14 +73,14 @@ struct AgentReducePolicy : ScalingType
 
 /**
  * Parameterizable tuning policy type for AgentWarpReduce
- * @tparam BlockThreads Threads per thread block
+ * @tparam ThreadsPerBlock Threads per thread block
  * @tparam WarpThreads Threads per warp
  * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
  * @tparam VectorLoadLength Number of items per vectorized load
  * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int WarpThreads,
           int NominalItemsPerThread4B,
           typename ComputeT,
@@ -95,7 +95,7 @@ struct AgentWarpReducePolicy
   static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Number of threads per block
-  static constexpr int BLOCK_THREADS = BlockThreads;
+  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
 
   /// Number of items per thread. When `ComputeT` is `void`, the nominal value is used as-is (no scaling),
   /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.

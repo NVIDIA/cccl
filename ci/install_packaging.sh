@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Time limit for installation steps (seconds)
-readonly install_time_limit=10
+readonly install_time_limit=20
 
 ci_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$ci_dir/pretty_printing.sh"

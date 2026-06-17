@@ -31,22 +31,18 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-/**
- * Parameterizable tuning policy type for AgentUniqueByKey
- *
- * @tparam DelayConstructorT
- *   Implementation detail, do not specify directly, requirements on the
- *   content of this type are subject to breaking change.
- */
-template <int BlockThreads,
+namespace detail
+{
+// TODO(bgruber): remove this when C++20 is the minimum, since then we can pass policy values as NTTP
+template <int ThreadsPerBlock,
           int ItemsPerThread                    = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
           cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS,
           typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentUniqueByKeyPolicy
+struct agent_unique_by_key_policy
 {
-  static constexpr int BLOCK_THREADS                      = BlockThreads;
+  static constexpr int BLOCK_THREADS                      = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD                   = ItemsPerThread;
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -57,6 +53,17 @@ struct AgentUniqueByKeyPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread                    = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
+          cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS,
+          typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
+using AgentUniqueByKeyPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect") = detail::
+  agent_unique_by_key_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, ScanAlgorithm, DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions

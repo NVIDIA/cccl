@@ -1,8 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_topk.cuh>
+
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
+#include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 
 #include <nvbench_helper.cuh>
 
@@ -11,7 +15,7 @@
 // %RANGE% TUNE_BLOCK_LOAD_ALGORITHM ld 0:2:1
 
 #if !TUNE_BASE
-template <class KeyInT, class OffsetT>
+template <class KeyInT>
 struct policy_selector_t
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
@@ -40,12 +44,6 @@ struct policy_selector_t
 template <typename KeyT, typename OffsetT, typename OutOffsetT>
 void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffsetT>)
 {
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-  using out_offset_t =
-    cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
-                             offset_t,
-                             cub::detail::choose_offset_t<OutOffsetT>>;
-
   // Retrieve axis parameters
   const auto elements          = static_cast<size_t>(state.get_int64("Elements{io}"));
   const auto selected_elements = static_cast<size_t>(state.get_int64("SelectedElements"));
@@ -69,45 +67,39 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
   state.add_global_memory_reads<KeyT>(elements, "InputKeys");
   state.add_global_memory_writes<KeyT>(selected_elements, "OutputKeys");
 
-  // allocate temporary storage
-  size_t temp_size;
-  cub::detail::topk::dispatch<cub::detail::topk::select::max>(
+  // TODO(bgruber): call cub::DeviceTopK::MaxKeys with a the caching_allocator_t once we have an env-overload without
+  // temporary storage
+  auto env = cuda::std::execution::env{
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted)
+#if !TUNE_BASE
+      ,
+    cuda::execution::tune(policy_selector_t<KeyT>{})
+#endif // !TUNE_BASE
+  };
+
+  // Allocate temporary storage
+  size_t temp_size{};
+  cub::DeviceTopK::MaxKeys(
     nullptr,
     temp_size,
     d_keys_in,
     d_keys_out,
-    static_cast<const cub::NullType*>(nullptr),
-    static_cast<cub::NullType*>(nullptr),
-    static_cast<offset_t>(elements),
-    static_cast<out_offset_t>(selected_elements),
-    cub::detail::identity_decomposer_t{},
-    nullptr
-#if !TUNE_BASE
-    ,
-    policy_selector_t<KeyT, OffsetT>{}
-#endif // !TUNE_BASE
-  );
+    static_cast<OffsetT>(elements),
+    static_cast<OutOffsetT>(selected_elements),
+    env);
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  // run the algorithm
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::topk::dispatch<cub::detail::topk::select::max>(
+    auto env_with_stream = cuda::std::execution::env{cuda::stream_ref{launch.get_stream().get_stream()}, env};
+    cub::DeviceTopK::MaxKeys(
       temp_storage,
       temp_size,
       d_keys_in,
       d_keys_out,
-      static_cast<const cub::NullType*>(nullptr),
-      static_cast<cub::NullType*>(nullptr),
-      static_cast<offset_t>(elements),
-      static_cast<out_offset_t>(selected_elements),
-      cub::detail::identity_decomposer_t{},
-      launch.get_stream()
-#if !TUNE_BASE
-        ,
-      policy_selector_t<KeyT, OffsetT>{}
-#endif // !TUNE_BASE
-    );
+      static_cast<OffsetT>(elements),
+      static_cast<OutOffsetT>(selected_elements),
+      env_with_stream);
   });
 }
 

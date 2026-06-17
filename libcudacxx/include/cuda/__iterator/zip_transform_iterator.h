@@ -26,6 +26,7 @@
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/__iterator/zip_common.h>
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__functional/invoke.h>
@@ -550,11 +551,12 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Fn, class... _Iterators>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
   -> zip_transform_iterator<_Fn, _Iterators...>;
 
 template <class _Fn, class... _Iterators>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, _Iterators...) -> zip_transform_iterator<_Fn, _Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_transform_iterator(_Fn, _Iterators...)
+  -> zip_transform_iterator<_Fn, _Iterators...>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c zip_transform_iterator from a tuple of iterators.

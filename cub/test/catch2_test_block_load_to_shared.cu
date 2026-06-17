@@ -134,7 +134,7 @@ __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output,
 
   static_assert(alignof(input_t) <= cub::detail::LoadToSharedBufferAlignBytes<char>());
   extern __shared__ char smem_buff[];
-  assert(cuda::is_aligned(smem_buff, cub::detail::LoadToSharedBufferAlignBytes<input_t>()));
+  REQUIRE_DEVICE(cuda::is_aligned(smem_buff, cub::detail::LoadToSharedBufferAlignBytes<input_t>()));
 
   constexpr int ThreadsInBlock = ThreadsInBlockX * ThreadsInBlockY * ThreadsInBlockZ;
 

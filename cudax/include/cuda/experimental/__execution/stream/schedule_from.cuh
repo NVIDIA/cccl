@@ -73,22 +73,22 @@ struct __schedule_from_t
     using receiver_concept = receiver_t;
 
     template <class... _Values>
-    _CCCL_API constexpr void set_value(_Values&&...) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_value(_Values&&...) noexcept
     {
       // no-op
     }
 
-    _CCCL_API constexpr void set_error(::cuda::std::__ignore_t) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_error(::cuda::std::__ignore_t) noexcept
     {
       // no-op
     }
 
-    _CCCL_API constexpr void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
     {
       // no-op
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__rcvr_));
     }
@@ -103,7 +103,7 @@ struct __schedule_from_t
     using operation_state_concept = operation_state_t;
     using __env_t                 = __fwd_env_t<env_of_t<_Rcvr>>;
 
-    _CCCL_API constexpr explicit __opstate_t(_Sndr&& __sndr, _Rcvr __rcvr)
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(_Sndr&& __sndr, _Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
         , __stream_(__get_stream(__sndr, execution::get_env(__rcvr_)))
         , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Rcvr>{__rcvr_}))
@@ -111,7 +111,7 @@ struct __schedule_from_t
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_API void start() noexcept
+    _CCCL_HOST_DEVICE_API void start() noexcept
     {
       NV_IF_ELSE_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
     }
@@ -161,24 +161,24 @@ struct __schedule_from_t
     using sender_concept = sender_t;
 
     template <class _Self, class... _Env>
-    [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+    [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
     {
       return execution::get_child_completion_signatures<_Self, _Sndr, _Env...>();
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr>
     {
       return __opstate_t<_Sndr, _Rcvr>{static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr)};
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr>
     {
       return __opstate_t<const _Sndr&, _Rcvr>{__sndr_, static_cast<_Rcvr&&>(__rcvr)};
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> env_of_t<_Sndr>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> env_of_t<_Sndr>
     {
       return execution::get_env(__sndr_);
     }
@@ -191,7 +191,7 @@ struct __schedule_from_t
   };
 
   template <class _Sndr>
-  _CCCL_API static constexpr auto __mk_sndr(_Sndr&& __sndr)
+  _CCCL_HOST_DEVICE_API static constexpr auto __mk_sndr(_Sndr&& __sndr)
   {
     return __sndr_t<_Sndr>{{}, {}, static_cast<_Sndr&&>(__sndr)};
   }
@@ -200,7 +200,7 @@ struct __schedule_from_t
   // on the stream scheduler, is being connected. It wraps the child sender so that it
   // synchronizes the stream after launching the child.
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     static_assert(sender_for<_Sndr, schedule_from_t>);
     [[maybe_unused]] auto& [__tag, __ign, __child] = __sndr;

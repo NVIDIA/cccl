@@ -51,13 +51,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define __LIBCUDACXX_ASM_THREAD_YIELD (;)
 #endif // ! _CCCL_ARCH(X86_64)
 
-_CCCL_API inline void __cccl_thread_yield_processor()
+_CCCL_HOST_DEVICE_API inline void __cccl_thread_yield_processor()
 {
   NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
 }
 
 template <class _Fn>
-_CCCL_API inline bool __cccl_thread_poll_with_backoff(
+_CCCL_HOST_DEVICE_API inline bool __cccl_thread_poll_with_backoff(
   _Fn&& __f, ::cuda::std::chrono::nanoseconds __max = ::cuda::std::chrono::nanoseconds::zero())
 {
   ::cuda::std::chrono::high_resolution_clock::time_point const __start =

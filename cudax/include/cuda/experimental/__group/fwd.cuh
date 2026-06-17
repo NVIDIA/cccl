@@ -69,11 +69,16 @@ class group;
 
 // mappings
 
+template <class _Fn>
+class binary_partition;
+
 template <::cuda::std::size_t _Count = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
 class group_by;
 
 template <class _Data, bool _IsExahustive>
 class group_as;
+
+class identity_mapping;
 
 // synchronizers
 

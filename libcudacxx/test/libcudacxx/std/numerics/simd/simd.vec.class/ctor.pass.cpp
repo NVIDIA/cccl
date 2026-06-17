@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/std/__simd_>
 
 // [simd.ctor], basic_vec constructors
@@ -138,26 +141,16 @@ template <typename T, int N>
 TEST_FUNC constexpr void test_range()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
-  cuda::std::array<T, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<T>(i + 1);
-  }
+  auto arr  = make_iota_array<T, N>();
 
   static_assert(!noexcept(Vec(arr)));
   static_assert(!noexcept(Vec(arr, simd::flag_default)));
 
   Vec vec(arr);
-  for (int i = 0; i < N; ++i)
-  {
-    assert(vec[i] == static_cast<T>(i + 1));
-  }
+  assert(vec == arr);
 
   Vec vec2(arr, simd::flag_default);
-  for (int i = 0; i < N; ++i)
-  {
-    assert(vec2[i] == static_cast<T>(i + 1));
-  }
+  assert(vec2 == arr);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -167,20 +160,13 @@ template <typename T, int N>
 TEST_FUNC constexpr void test_range_span()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
-  cuda::std::array<T, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<T>(i + 1);
-  }
+  auto arr  = make_iota_array<T, N>();
 
   const cuda::std::span<T, N> values(arr);
   const Vec vec(values);
   const Vec vec2(values, simd::flag_default);
-  for (int i = 0; i < N; ++i)
-  {
-    assert(vec[i] == static_cast<T>(i + 1));
-    assert(vec2[i] == static_cast<T>(i + 1));
-  }
+  assert(vec == arr);
+  assert(vec2 == arr);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -189,20 +175,13 @@ TEST_FUNC constexpr void test_range_span()
 template <typename T, int N>
 TEST_FUNC constexpr void test_range_alignment_flags()
 {
-  using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
-  alignas(64) cuda::std::array<T, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<T>(i + 1);
-  }
+  using Vec            = simd::basic_vec<T, simd::fixed_size<N>>;
+  alignas(64) auto arr = make_iota_array<T, N>();
 
   const Vec aligned_vec(arr, simd::flag_aligned);
   const Vec overaligned_vec(arr, simd::flag_overaligned<32>);
-  for (int i = 0; i < N; ++i)
-  {
-    assert(aligned_vec[i] == static_cast<T>(i + 1));
-    assert(overaligned_vec[i] == static_cast<T>(i + 1));
-  }
+  assert(aligned_vec == arr);
+  assert(overaligned_vec == arr);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -213,11 +192,7 @@ TEST_FUNC constexpr void test_masked_range()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
-  cuda::std::array<T, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<T>(i + 1);
-  }
+  auto arr   = make_iota_array<T, N>();
 
   Mask even_mask(is_even{});
   static_assert(!noexcept(Vec(arr, even_mask)));
@@ -226,27 +201,15 @@ TEST_FUNC constexpr void test_masked_range()
   Vec vec(arr, even_mask);
   for (int i = 0; i < N; ++i)
   {
-    if (i % 2 == 0)
-    {
-      assert(vec[i] == static_cast<T>(i + 1));
-    }
-    else
-    {
-      assert(vec[i] == T{0});
-    }
+    T expected = (i % 2 == 0) ? static_cast<T>(i + 1) : T{0};
+    assert(vec[i] == expected);
   }
 
   Vec vec2(arr, even_mask, simd::flag_default);
   for (int i = 0; i < N; ++i)
   {
-    if (i % 2 == 0)
-    {
-      assert(vec2[i] == static_cast<T>(i + 1));
-    }
-    else
-    {
-      assert(vec2[i] == T{0});
-    }
+    T expected = (i % 2 == 0) ? static_cast<T>(i + 1) : T{0};
+    assert(vec2[i] == expected);
   }
 }
 
@@ -258,19 +221,12 @@ template <typename T, typename U, int N>
 TEST_FUNC constexpr void test_range_convert_lossy()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
-  cuda::std::array<U, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<U>(i + 1);
-  }
+  auto arr  = make_iota_array<U, N>();
 
   static_assert(!noexcept(Vec(arr, simd::flag_convert)));
 
   Vec vec(arr, simd::flag_convert);
-  for (int i = 0; i < N; ++i)
-  {
-    assert(vec[i] == static_cast<T>(static_cast<U>(i + 1)));
-  }
+  assert((vec == make_iota_array<T, N>()));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -282,11 +238,7 @@ TEST_FUNC constexpr void test_masked_range_convert_lossy()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
-  cuda::std::array<U, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<U>(i + 1);
-  }
+  auto arr   = make_iota_array<U, N>();
 
   Mask even_mask(is_even{});
   static_assert(!noexcept(Vec(arr, even_mask, simd::flag_convert)));
@@ -294,14 +246,8 @@ TEST_FUNC constexpr void test_masked_range_convert_lossy()
   Vec vec(arr, even_mask, simd::flag_convert);
   for (int i = 0; i < N; ++i)
   {
-    if (i % 2 == 0)
-    {
-      assert(vec[i] == static_cast<T>(static_cast<U>(i + 1)));
-    }
-    else
-    {
-      assert(vec[i] == T{0});
-    }
+    T expected = (i % 2 == 0) ? static_cast<T>(static_cast<U>(i + 1)) : T{0};
+    assert(vec[i] == expected);
   }
 }
 
@@ -470,7 +416,7 @@ TEST_FUNC constexpr void test_enable_abi_boundary()
   // the disabled specialization still exposes value_type / abi_type / mask_type
   static_assert(cuda::std::is_same_v<DisabledVec::value_type, T>);
   static_assert(cuda::std::is_same_v<DisabledVec::abi_type, simd::fixed_size<65>>);
-  static_assert(cuda::std::is_same_v<DisabledVec::mask_type, simd::basic_mask<sizeof(T), simd::fixed_size<65>>>);
+  static_assert(cuda::std::is_same_v<DisabledVec::mask_type, simd::mask<T, 65>>);
 }
 
 DEFINE_BASIC_VEC_TEST()

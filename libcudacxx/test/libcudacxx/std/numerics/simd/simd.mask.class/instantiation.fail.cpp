@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // basic_mask<Bytes, Abi> requires Bytes to map to a valid integer type (1, 2, 4, 8, or 16 with __int128).
 
 #include <cuda/std/__simd_>

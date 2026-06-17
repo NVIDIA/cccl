@@ -82,7 +82,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
   struct __either_sig_fn
   {
     template <class... _As>
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const
     {
       if constexpr (!__callable<_Pred, _As&...>)
       {
@@ -132,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _As>
-    _CCCL_API void set_value(_As&&... __as) noexcept
+    _CCCL_HOST_DEVICE_API void set_value(_As&&... __as) noexcept
     {
       auto __just = just_from(conditional_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
       _CCCL_TRY
@@ -157,17 +157,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     }
 
     template <class _Error>
-    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_API constexpr void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
@@ -183,14 +183,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     using __params_t              = __closure_base_t<_Pred, _Then, _Else>;
     using __rcvr_t                = conditional_t::__rcvr_t<_Rcvr, _Pred, _Then, _Else, __completions_t>;
 
-    _CCCL_API __opstate_t(_CvSndr&& __sndr, _Rcvr&& __rcvr, __params_t&& __params)
+    _CCCL_HOST_DEVICE_API __opstate_t(_CvSndr&& __sndr, _Rcvr&& __rcvr, __params_t&& __params)
         : __state_{static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params)}
         , __op_{execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{&__state_})}
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       execution::start(__op_);
     }
@@ -207,10 +207,10 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  _CCCL_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
 
   template <class _Pred, class _Then, class _Else>
-  _CCCL_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
 };
 
 template <class _Pred, class _Then, class _Else, class _Sndr>
@@ -222,7 +222,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__cl
   _Sndr __sndr_;
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
@@ -235,19 +235,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__cl
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr, _Pred, _Then, _Else>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr, _Pred, _Then, _Else>
   {
     return {static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   connect(_Rcvr __rcvr) const& -> __opstate_t<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
   {
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }
@@ -257,7 +258,7 @@ template <class _Pred, class _Then, class _Else>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
 {
   template <class _Sndr>
-  _CCCL_API auto operator()(_Sndr __sndr) &&
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr) &&
   {
     using __sndr_t = conditional_t::__sndr_t<__closure_base_t, _Sndr>;
 
@@ -272,13 +273,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
   }
 
   template <class _Sndr>
-  _CCCL_API auto operator()(_Sndr __sndr) const&
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr) const&
   {
     return __closure_base_t(*this)(static_cast<_Sndr&&>(__sndr));
   }
 
   template <class _Sndr>
-  _CCCL_API friend auto operator|(_Sndr __sndr, __closure_base_t __self)
+  _CCCL_HOST_DEVICE_API friend auto operator|(_Sndr __sndr, __closure_base_t __self)
   {
     return static_cast<__closure_base_t&&>(__self)(static_cast<_Sndr&&>(__sndr));
   }
@@ -289,7 +290,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
+_CCCL_HOST_DEVICE_API constexpr auto
+conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
   using __params_t _CCCL_NODEBUG_ALIAS = __closure_base_t<_Pred, _Then, _Else>;
   __params_t __params{static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
@@ -297,7 +299,7 @@ _CCCL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _
 }
 
 template <class _Pred, class _Then, class _Else>
-_CCCL_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
+_CCCL_HOST_DEVICE_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
 {
   return __closure_base_t<_Pred, _Then, _Else>{
     static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};

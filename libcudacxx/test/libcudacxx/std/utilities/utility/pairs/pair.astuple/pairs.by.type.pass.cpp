@@ -82,8 +82,7 @@ int main(int, char**)
     cuda::std::pair<int&&, int const&&> const p(cuda::std::move(x), cuda::std::move(y));
     static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<int&&>(cuda::std::move(p)))>::value);
     static_assert(noexcept(cuda::std::get<int&&>(cuda::std::move(p))));
-    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(p)))>::value,
-                  "");
+    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(p)))>::value);
     static_assert(noexcept(cuda::std::get<int const&&>(cuda::std::move(p))));
   }
 

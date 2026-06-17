@@ -22,63 +22,6 @@ if ("Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
   list(REMOVE_ITEM public_headers "annotated_ptr")
 endif()
 
-if (CCCL_ENABLE_TILE)
-  list(
-    # error: asm statement is unsupported in tile code
-    REMOVE_ITEM public_headers
-    "cuda/access_property"
-    "cuda/annotated_ptr"
-    "cuda/atomic"
-    "cuda/barrier"
-    "cuda/buffer"
-    "cuda/execution"
-    "cuda/latch"
-    "cuda/memory"
-    "cuda/memory_resource"
-    "cuda/pipeline"
-    "cuda/random"
-    "cuda/semaphore"
-    "cuda/discard_memory"
-    "cuda/std/atomic"
-    "cuda/std/barrier"
-    "cuda/std/execution"
-    "cuda/std/latch"
-    "cuda/std/semaphore"
-  )
-
-  list(
-    # error: global scope non-placement dynamic deallocation with operator delete is unsupported in tile code
-    REMOVE_ITEM public_headers
-    "cuda/random"
-    "cuda/std/random"
-  )
-
-  list(
-    # error: bit field read/write is unsupported in tile code
-    REMOVE_ITEM public_headers
-    "cuda/std/__format_"
-  )
-
-  list(
-    # error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
-    REMOVE_ITEM public_headers
-    "cuda/annotated_ptr"
-    "cuda/barrier"
-    "cuda/buffer"
-    "cuda/hierarchy"
-    "cuda/pipeline"
-    "cuda/std/execution"
-  )
-
-  list(
-    # error: indirect call is unsupported in tile code
-    REMOVE_ITEM public_headers
-    "cuda/annotated_ptr"
-    "cuda/barrier"
-    "cuda/pipeline"
-  )
-endif()
-
 function(libcudacxx_add_public_header_test_target target_name)
   if (NOT ARGN)
     return()

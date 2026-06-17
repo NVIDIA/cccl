@@ -168,17 +168,19 @@ template <class _CharT>
 {
   using _UCharT = __make_nbit_uint_t<sizeof(_CharT) * CHAR_BIT>;
 
+  bool __reached_end = false;
   while (*__lhs == *__rhs)
   {
     if (*__lhs == _CharT('\0'))
     {
-      return 0;
+      __reached_end = true;
+      break;
     }
 
     ++__lhs;
     ++__rhs;
   }
-  return (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
+  return __reached_end ? 0 : (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -214,22 +216,24 @@ __cccl_strncmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs, size_t _
 {
   using _UCharT = __make_nbit_uint_t<sizeof(_CharT) * CHAR_BIT>;
 
+  int __result = 0;
   while (__n--)
   {
     if (*__lhs != *__rhs)
     {
-      return (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
+      __result = (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
+      break;
     }
 
     if (*__lhs == _CharT('\0'))
     {
-      return 0;
+      break;
     }
 
     ++__lhs;
     ++__rhs;
   }
-  return 0;
+  return __result;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -262,15 +266,17 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
 {
+  bool __reached_end = false;
   while (*__ptr != __c)
   {
     if (*__ptr == _CharT('\0'))
     {
-      return nullptr;
+      __reached_end = true;
+      break;
     }
     ++__ptr;
   }
-  return __ptr;
+  return __reached_end ? nullptr : __ptr;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -354,15 +360,17 @@ template <class _CharT>
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memchr_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
+  _Tp* __result = nullptr;
   while (__n--)
   {
     if (*__ptr == __c)
     {
-      return __ptr;
+      __result = __ptr;
+      break;
     }
     ++__ptr;
   }
-  return nullptr;
+  return __result;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -450,16 +458,18 @@ __cccl_memcmp_impl_constexpr(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noe
 {
   using _Up = __make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
 
+  int __result = 0;
   while (__n--)
   {
     if (*__lhs != *__rhs)
     {
-      return static_cast<_Up>(*__lhs) < static_cast<_Up>(*__rhs) ? -1 : 1;
+      __result = static_cast<_Up>(*__lhs) < static_cast<_Up>(*__rhs) ? -1 : 1;
+      break;
     }
     ++__lhs;
     ++__rhs;
   }
-  return 0;
+  return __result;
 }
 
 #if !_CCCL_COMPILER(NVRTC)

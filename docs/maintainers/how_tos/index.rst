@@ -8,3 +8,4 @@ How-to guides for maintainers.
 
    ../backport_process
    compile_time
+   plan_work_with_github_issues

@@ -55,7 +55,7 @@ template <class _Tag>
 struct __decay_args
 {
   template <class... _Ts>
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const noexcept
   {
     if constexpr (!__decay_copyable<_Ts...>)
     {
@@ -81,7 +81,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   struct __send_result_fn
   {
     template <class _Rcvr, class _Tag, class... _As>
-    _CCCL_API constexpr void operator()(_Rcvr& __rcvr, _Tag, _As&... __args) const noexcept
+    _CCCL_HOST_DEVICE_API constexpr void operator()(_Rcvr& __rcvr, _Tag, _As&... __args) const noexcept
     {
       // moves from lvalues here is intentional:
       _Tag{}(static_cast<_Rcvr&&>(__rcvr), static_cast<_As&&>(__args)...);
@@ -91,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   struct __send_result_visitor
   {
     template <class _Rcvr, class _Tuple>
-    _CCCL_API constexpr void operator()(_Rcvr& __rcvr, _Tuple& __tuple) const noexcept
+    _CCCL_HOST_DEVICE_API constexpr void operator()(_Rcvr& __rcvr, _Tuple& __tuple) const noexcept
     {
       ::cuda::std::__apply(__send_result_fn{}, __tuple, __rcvr);
     }
@@ -111,23 +111,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   {
     using receiver_concept = receiver_t;
 
-    _CCCL_API constexpr void set_value() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_value() noexcept
     {
       __visit(__send_result_visitor{}, __state_->__result_, __state_->__rcvr_);
     }
 
     template <class _Error>
-    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_API constexpr void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
@@ -149,7 +149,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     using receiver_concept = receiver_t;
 
     template <class _Tag, class... _As>
-    _CCCL_API void __set_result(_Tag, _As&&... __as) noexcept
+    _CCCL_HOST_DEVICE_API void __set_result(_Tag, _As&&... __as) noexcept
     {
       using __tupl_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<_Tag, decay_t<_As>...>;
       _CCCL_TRY
@@ -167,26 +167,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     }
 
     template <class... _As>
-    _CCCL_API void set_value(_As&&... __as) noexcept
+    _CCCL_HOST_DEVICE_API void set_value(_As&&... __as) noexcept
     {
       __set_result(set_value_t{}, static_cast<_As&&>(__as)...);
       execution::start(__state_->__opstate2_);
     }
 
     template <class _Error>
-    _CCCL_API void set_error(_Error&& __error) noexcept
+    _CCCL_HOST_DEVICE_API void set_error(_Error&& __error) noexcept
     {
       __set_result(set_error_t{}, static_cast<_Error&&>(__error));
       execution::start(__state_->__opstate2_);
     }
 
-    _CCCL_API void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API void set_stopped() noexcept
     {
       __set_result(set_stopped_t{});
       execution::start(__state_->__opstate2_);
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
@@ -205,14 +205,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     using __stash_rcvr_t = continues_on_t::__stash_rcvr_t<_Sch, _Rcvr, __results_t>;
 
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
         : __state_{{static_cast<_Rcvr&&>(__rcvr), {}}, execution::connect(schedule(__sch), __rcvr_t{&__state_})}
         , __opstate1_{execution::connect(static_cast<_CvSndr&&>(__sndr), __stash_rcvr_t{&__state_})}
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       execution::start(__opstate1_);
     }
@@ -234,7 +234,8 @@ public:
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Sndr>
     [[nodiscard]]
-    _CCCL_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
+    _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr __sndr) const
+      -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
     {
       static_assert(__is_sender<_Sndr>);
       using __child_t = __call_result_t<schedule_from_t, _Sndr>;
@@ -244,7 +245,7 @@ public:
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Sndr>
     [[nodiscard]]
-    _CCCL_API constexpr friend auto operator|(_Sndr __sndr, __closure_t __clsur)
+    _CCCL_HOST_DEVICE_API constexpr friend auto operator|(_Sndr __sndr, __closure_t __clsur)
       -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
     {
       static_assert(__is_sender<_Sndr>);
@@ -257,7 +258,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sch __sch) const -> __closure_t<_Sch>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sch __sch) const -> __closure_t<_Sch>
   {
     static_assert(__is_scheduler<_Sch>);
     return __closure_t<_Sch>{__sch};
@@ -265,7 +266,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch, class _Sndr>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const
     -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
   {
     static_assert(__is_sender<_Sndr>);
@@ -286,7 +287,7 @@ private:
   //! - at least one of the value completions is not nothrow decay-copyable.
   //! In that case, error completions can come from the sender's value completions.
   template <class _SetTag, class... _Env>
-  _CCCL_API static _CCCL_CONSTEVAL bool __has_decay_copy_errors() noexcept
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL bool __has_decay_copy_errors() noexcept
   {
     if constexpr (__same_as<_SetTag, set_error_t>)
     {
@@ -303,7 +304,7 @@ private:
   const __sndr_t<_Sch, _Sndr>& __self_;
 
 public:
-  _CCCL_API constexpr explicit __attrs_t(const __sndr_t<_Sch, _Sndr>& __self) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit __attrs_t(const __sndr_t<_Sch, _Sndr>& __self) noexcept
       : __self_(__self)
   {}
 
@@ -327,7 +328,8 @@ public:
   _CCCL_TEMPLATE(class _SetTag, class... _Env)
   _CCCL_REQUIRES((__same_as<_SetTag, set_value_t> || __never_completes_with<_Sndr, _SetTag, __fwd_env_t<_Env>...>)
                    _CCCL_AND(!__has_decay_copy_errors<_SetTag, _Env...>()))
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, const _Env&... __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(get_completion_scheduler_t<_SetTag>, const _Env&... __env) const noexcept
     -> __call_result_t<get_completion_scheduler_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
   {
     return get_completion_scheduler<_SetTag>(__self_.__sch_, __fwd_env(__env)...);
@@ -337,7 +339,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _SetTag, class... _Env)
   _CCCL_REQUIRES(__never_completes_with<schedule_result_t<_Sch>, _SetTag, __fwd_env_t<_Env>...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, const _Env&... __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(get_completion_scheduler_t<_SetTag>, const _Env&... __env) const noexcept
     -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __fwd_env_t<_Env>...>
   {
     return get_completion_scheduler<_SetTag>(get_env(__self_.__sndr_), __fwd_env(__env)...);
@@ -360,7 +363,8 @@ public:
   //! completions.
   _CCCL_TEMPLATE(class _SetTag, class... _Env)
   _CCCL_REQUIRES(__same_as<_SetTag, set_value_t>)
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
     -> __unless_one_of_t<__compl_domain_t<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>, __not_a_domain>
   {
     return {};
@@ -369,7 +373,8 @@ public:
   //! @overload
   _CCCL_TEMPLATE(class _SetTag, class... _Env)
   _CCCL_REQUIRES((!__same_as<_SetTag, set_value_t>) _CCCL_AND(!__has_decay_copy_errors<_SetTag, _Env...>()))
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
     -> __unless_one_of_t<__common_domain_t<__compl_domain_t<_SetTag, _Sndr, __fwd_env_t<_Env>...>,
                                            __compl_domain_t<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>>,
                          __not_a_domain>
@@ -380,7 +385,8 @@ public:
   //! @overload
   _CCCL_TEMPLATE(class _SetTag, class... _Env)
   _CCCL_REQUIRES((__has_decay_copy_errors<_SetTag, _Env...>()))
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
     -> __unless_one_of_t<__common_domain_t<__compl_domain_t<_SetTag, _Sndr, __fwd_env_t<_Env>...>,
                                            __compl_domain_t<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>,
                                            __compl_domain_t<set_value_t, _Sndr, __fwd_env_t<_Env>...>>,
@@ -394,7 +400,7 @@ public:
   //! @note The completion behavior is the minimum between the scheduler's sender and
   //! the original sender.
   template <class... _Env>
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
   {
     return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>(),
                              execution::get_completion_behavior<_Sndr, _Env...>());
@@ -405,7 +411,7 @@ public:
   _CCCL_TEMPLATE(class _Tag, class... _Args)
   _CCCL_REQUIRES(__forwarding_query<_Tag> _CCCL_AND(!__is_completion_query<_Tag>)
                    _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Tag, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Tag, _Args&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Tag, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Tag, _Args...>)
       -> __query_result_t<env_of_t<_Sndr>, _Tag, _Args...>
   {
@@ -421,7 +427,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
   using sender_concept = sender_t;
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
@@ -441,19 +447,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sch, _Sndr, _Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sch, _Sndr, _Rcvr>
   {
     return __opstate_t<_Sch, _Sndr, _Rcvr>{static_cast<_Sndr&&>(__sndr_), __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Sch, const _Sndr&, _Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  connect(_Rcvr __rcvr) const& -> __opstate_t<_Sch, const _Sndr&, _Rcvr>
   {
     return __opstate_t<_Sch, const _Sndr&, _Rcvr>{__sndr_, __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sch, _Sndr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __attrs_t<_Sch, _Sndr>
   {
     return __attrs_t<_Sch, _Sndr>(*this);
   }

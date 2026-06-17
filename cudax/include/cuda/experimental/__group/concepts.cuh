@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__fwd/hierarchy.h>
+#include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
@@ -55,6 +56,7 @@ _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v
   _Same_as(::cuda::std::size_t) _Tp::static_count(),
   _Same_as(unsigned) __v.count(),
   _Same_as(unsigned) __v.rank(),
+  _Same_as(::cuda::device::lane_mask) __v.lane_mask(),
   _Same_as(bool) _Tp::is_always_exhaustive(),
   _Same_as(bool) _Tp::is_always_contiguous());
 } // namespace cuda::experimental

@@ -122,8 +122,7 @@ struct DeviceMemcpy
   //!   to be copied for each pair of buffers
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -252,12 +251,14 @@ struct DeviceMemcpy
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
 
-    using BlockOffsetT = uint32_t;
+    using BlockOffsetT            = uint32_t;
+    using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
-        storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+          storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream, policy_selector);
+      });
   }
 };
 

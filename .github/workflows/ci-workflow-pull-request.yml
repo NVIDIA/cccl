@@ -346,7 +346,7 @@ jobs:
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: wheel-cccl-linux-amd64-py3.13
+          name: wheel-cccl-linux-amd64-py3.14
           path: artifact
 
       - name: Check if wheel exists
@@ -364,7 +364,7 @@ jobs:
         if: steps.check-wheel.outputs.skip != 'true'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - name: Install wheel
         if: steps.check-wheel.outputs.skip != 'true'

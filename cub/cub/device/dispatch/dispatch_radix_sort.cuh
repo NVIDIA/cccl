@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
@@ -78,6 +78,10 @@ struct DeviceRadixSortKernelSource
                            DeviceRadixSortHistogramKernel<PolicySelector, Order, KeyT, OffsetT, DecomposerT>);
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<PolicySelector, OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitBinsAndCountersKernel, DeviceRadixSortInitKernel<PolicySelector, int, OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitKernel<PolicySelector, int, int>);
 
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortOnesweepKernel,
@@ -271,7 +275,7 @@ private:
     _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
             "%d, bit_grain %d\n",
             1,
-            policy.block_threads,
+            policy.threads_per_block,
             (long long) stream,
             policy.items_per_thread,
             1,
@@ -280,7 +284,7 @@ private:
 #endif
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(1, policy.block_threads, 0, stream)
+    launcher_factory(1, policy.threads_per_block, 0, stream)
       .doit(single_tile_kernel,
             d_keys.Current(),
             d_keys.Alternate(),
@@ -337,7 +341,7 @@ public:
     _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
             "bit_grain %d\n",
             pass_config.even_share.grid_size,
-            pass_config.upsweep_config.block_threads,
+            pass_config.upsweep_config.threads_per_block,
             (long long) stream,
             pass_config.upsweep_config.items_per_thread,
             pass_config.upsweep_config.sm_occupancy,
@@ -349,7 +353,7 @@ public:
     int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, 0, stream)
+    launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
       .doit(pass_config.upsweep_kernel,
             d_keys_in,
             d_spine,
@@ -375,13 +379,13 @@ public:
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
             1,
-            pass_config.scan_config.block_threads,
+            pass_config.scan_config.threads_per_block,
             (long long) stream,
             pass_config.scan_config.items_per_thread);
 #endif
 
     // Invoke scan_kernel
-    launcher_factory(1, pass_config.scan_config.block_threads, 0, stream)
+    launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
       .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
 
     // Check for failure to launch
@@ -400,14 +404,14 @@ public:
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
             pass_config.even_share.grid_size,
-            pass_config.downsweep_config.block_threads,
+            pass_config.downsweep_config.threads_per_block,
             (long long) stream,
             pass_config.downsweep_config.items_per_thread,
             pass_config.downsweep_config.sm_occupancy);
 #endif
 
     // Invoke downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, 0, stream)
+    launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
       .doit(pass_config.downsweep_kernel,
             d_keys_in,
             d_keys_out,
@@ -496,7 +500,7 @@ public:
       OffsetT num_items,
       int pass_radix_bits,
       detail::radix_sort::radix_sort_upsweep_policy upsweep_policy,
-      detail::radix_sort::scan_policy scan_policy,
+      ScanPolicy scan_policy,
       detail::radix_sort::radix_sort_downsweep_policy downsweep_policy,
       KernelLauncherFactory launcher_factory)
     {
@@ -548,7 +552,7 @@ private:
     const int RADIX_BITS                = policy.onesweep.radix_bits;
     const int RADIX_DIGITS              = 1 << RADIX_BITS;
     const int ONESWEEP_ITEMS_PER_THREAD = policy.onesweep.items_per_thread;
-    const int ONESWEEP_BLOCK_THREADS    = policy.onesweep.block_threads;
+    const int ONESWEEP_BLOCK_THREADS    = policy.onesweep.threads_per_block;
     const int ONESWEEP_TILE_ITEMS       = ONESWEEP_ITEMS_PER_THREAD * ONESWEEP_BLOCK_THREADS;
     // portions handle inputs with >=2**30 elements, due to the way lookback works
     // for testing purposes, one portion is <= 2**28 elements
@@ -591,20 +595,17 @@ private:
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
 
-    // initialization
-    if (const auto error =
-          CubDebug(cudaMemsetAsync(d_ctrs, 0, num_portions * num_passes * sizeof(AtomicOffsetT), stream)))
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {
       return error;
     }
+    const bool use_pdl = cc >= ::cuda::compute_capability{9, 0};
 
-    // compute num_passes histograms with RADIX_DIGITS bins each
-    if (const auto error = CubDebug(cudaMemsetAsync(d_bins, 0, num_passes * RADIX_DIGITS * sizeof(OffsetT), stream)))
-    {
-      return error;
-    }
-    int device  = -1;
-    int num_sms = 0;
+    const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
+    const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
+    int device                     = -1;
+    int num_sms                    = 0;
 
     if (const auto error = CubDebug(cudaGetDevice(&device)))
     {
@@ -616,7 +617,7 @@ private:
       return error;
     }
 
-    const int HISTO_BLOCK_THREADS = policy.histogram.block_threads;
+    const int HISTO_BLOCK_THREADS = policy.histogram.threads_per_block;
     int histo_blocks_per_sm       = 1;
     auto histogram_kernel         = kernel_source.RadixSortHistogramKernel();
 
@@ -638,20 +639,8 @@ private:
             policy.histogram.radix_bits);
 #endif
 
-    if (const auto error = CubDebug(
-          launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
-            .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer)))
-    {
-      return error;
-    }
-
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-    {
-      return error;
-    }
-
     // exclusive sums to determine starts
-    const int SCAN_BLOCK_THREADS = policy.exclusive_sum.block_threads;
+    const int SCAN_BLOCK_THREADS = policy.exclusive_sum.threads_per_block;
 
 // log exclusive_sum_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -662,7 +651,38 @@ private:
             policy.exclusive_sum.radix_bits);
 #endif
 
-    if (const auto error = CubDebug(launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream)
+    // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
+    // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
+    {
+      constexpr int init_startup_threads = 256;
+      const size_t num_init_items        = ::cuda::std::max(num_counter_items, num_bin_items);
+      const int init_startup_blocks =
+        static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
+
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
+              init_startup_blocks,
+              init_startup_threads,
+              reinterpret_cast<long long>(stream));
+#endif
+
+      if (const auto error = CubDebug(
+            launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
+              .doit(
+                kernel_source.RadixSortInitBinsAndCountersKernel(), d_ctrs, num_counter_items, d_bins, num_bin_items)))
+      {
+        return error;
+      }
+    }
+
+    if (const auto error = CubDebug(
+          launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream, use_pdl)
+            .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream, use_pdl)
                                       .doit(kernel_source.RadixSortExclusiveSumKernel(), d_bins)))
     {
       return error;
@@ -672,6 +692,7 @@ private:
     {
       return error;
     }
+
     // use the other buffer if no overwrite is allowed
     KeyT* d_keys_tmp     = d_keys.Alternate();
     ValueT* d_values_tmp = d_values.Alternate();
@@ -689,12 +710,30 @@ private:
         PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
           ::cuda::std::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
-        PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
+        PortionOffsetT num_blocks       = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
+        const size_t num_lookback_items = static_cast<size_t>(num_blocks) * RADIX_DIGITS;
 
-        if (const auto error =
-              CubDebug(cudaMemsetAsync(d_lookback, 0, num_blocks * RADIX_DIGITS * sizeof(AtomicOffsetT), stream)))
+        if (use_pdl)
         {
-          return error;
+          constexpr int init_lookback_threads = 256;
+          const int init_lookback_blocks =
+            static_cast<int>(::cuda::ceil_div(num_lookback_items, static_cast<size_t>(init_lookback_threads)));
+
+          if (const auto error = CubDebug(
+                launcher_factory(init_lookback_blocks, init_lookback_threads, 0, stream, use_pdl)
+                  .doit(
+                    kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items, d_lookback, size_t{0})))
+          {
+            return error;
+          }
+        }
+        else
+        {
+          if (const auto error =
+                CubDebug(cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
+          {
+            return error;
+          }
         }
 
 // log onesweep_kernel configuration
@@ -714,7 +753,7 @@ private:
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
         if (const auto error = CubDebug(
-              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
+              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream, use_pdl)
                 .doit(
                   onesweep_kernel,
                   d_lookback,
@@ -1019,7 +1058,7 @@ public:
   {
     struct policy_getter
     {
-      _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
         return detail::radix_sort::convert_policy<ActivePolicyT>();
       }
@@ -1057,7 +1096,7 @@ public:
     }
 
     // Force kernel code-generation in all compiler passes
-    if (num_items <= static_cast<OffsetT>(policy.single_tile.block_threads * policy.single_tile.items_per_thread))
+    if (num_items <= static_cast<OffsetT>(policy.single_tile.threads_per_block * policy.single_tile.items_per_thread))
     {
       // Small, single tile size
       return __invoke_single_tile(kernel_source.RadixSortSingleTileKernel(), policy.single_tile);
@@ -1212,7 +1251,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::stringstream ss;
                  ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceReduce to compute capability %d.%d with tuning: %s\n",
+                 _CubLog("Dispatching DeviceRadixSort to compute capability %d.%d with tuning: %s\n",
                          cc.major_cap(),
                          cc.minor_cap(),
                          ss.str().c_str());

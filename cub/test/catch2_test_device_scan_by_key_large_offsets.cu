@@ -101,8 +101,8 @@ try
   // Run test
   SECTION("ExclusiveScanByKey")
   {
-    constexpr bool is_exclusive = true;
-    auto initial_value          = item_t{42};
+    [[maybe_unused]] constexpr bool is_exclusive = true;
+    auto initial_value                           = item_t{42};
     device_exclusive_scan_by_key(
       keys_it, items_it, d_items_out_it, op_t{}, initial_value, num_items, cuda::std::equal_to<>{});
 
@@ -114,8 +114,8 @@ try
   }
   SECTION("InclusiveScanByKey")
   {
-    constexpr bool is_exclusive = false;
-    auto initial_value          = item_t{0};
+    [[maybe_unused]] constexpr bool is_exclusive = false;
+    auto initial_value                           = item_t{0};
     device_inclusive_scan_by_key(keys_it, items_it, d_items_out_it, op_t{}, num_items, cuda::std::equal_to<>{});
 
     // Ensure that we created the correct output

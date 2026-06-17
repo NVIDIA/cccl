@@ -153,8 +153,8 @@ struct custom_max_op
   __host__ __device__ int operator()(int i, int j)
   {
     // Values above 31 are invalid
-    assert(cuda::std::abs(i) < 32);
-    assert(cuda::std::abs(j) < 32);
+    REQUIRE(cuda::std::abs(i) < 32);
+    REQUIRE(cuda::std::abs(j) < 32);
     return cuda::std::max(i, j);
   }
 };
@@ -231,8 +231,8 @@ struct custom_sum_op
   __host__ __device__ int operator()(int i, int j)
   {
     // Values above 31 are invalid
-    assert(cuda::std::abs(i) < 32);
-    assert(cuda::std::abs(j) < 32);
+    REQUIRE(cuda::std::abs(i) < 32);
+    REQUIRE(cuda::std::abs(j) < 32);
     return i + j;
   }
 };

@@ -57,8 +57,8 @@ TEST_DEVICE_FUNC void test()
   assert(__nv_fp128_fdim(1.q, 1.q) == 0.q);
   assert(__nv_fp128_fmod(1.q, 1.q) == 0.q);
   assert(__nv_fp128_remainder(1.q, 1.q) == 0.q);
-  assert(__nv_fp128_frexp(1.q, &dummy_int) == 1.q);
-  assert(__nv_fp128_modf(1.q, &dummy_f128) == 1.q);
+  assert(__nv_fp128_frexp(1.q, &dummy_int) == 0.5q);
+  assert(__nv_fp128_modf(1.q, &dummy_f128) == 0.q);
   assert(__nv_fp128_hypot(3.q, 4.q) == 5.q);
   assert(__nv_fp128_fma(1.q, 1.q, 1.q) == 2.q);
   assert(__nv_fp128_ldexp(1.q, 0) == 1.q);

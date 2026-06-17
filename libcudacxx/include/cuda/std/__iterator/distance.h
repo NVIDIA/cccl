@@ -102,11 +102,11 @@ struct __fn
   {
     if constexpr (sized_range<_Rp>)
     {
-      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::size(__r));
+      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::__size_cpo{}(__r));
     }
     else
     {
-      return operator()(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r));
+      return operator()(::cuda::std::ranges::__begin_cpo{}(__r), ::cuda::std::ranges::__end_cpo{}(__r));
     }
   }
 };
@@ -115,6 +115,9 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto distance = __distance::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __distance_cpo = __distance::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

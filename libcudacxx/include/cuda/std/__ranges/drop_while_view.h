@@ -84,7 +84,7 @@ public:
 
   _CCCL_API constexpr explicit drop_while_view(_View __base, _Pred __pred)
       : __base_{::cuda::std::move(__base)}
-      , __pred_{::cuda::std::in_place, ::cuda::std::move(__pred)}
+      , __pred_{in_place_t{}, ::cuda::std::move(__pred)}
 
   {}
 
@@ -128,7 +128,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
-    return ::cuda::std::ranges::end(__base_);
+    return ::cuda::std::ranges::__end_cpo{}(__base_);
   }
 };
 
@@ -136,7 +136,8 @@ template <class _View, class _Pred>
 inline constexpr bool enable_borrowed_range<drop_while_view<_View, _Pred>> = enable_borrowed_range<_View>;
 
 template <class _Range, class _Pred>
-_CCCL_HOST_DEVICE drop_while_view(_Range&&, _Pred) -> drop_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES drop_while_view(_Range&&, _Pred)
+  -> drop_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 

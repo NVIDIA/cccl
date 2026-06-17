@@ -9,8 +9,11 @@
 
 // UNSUPPORTED: nvrtc
 
+#include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include <array>
 #include <complex>

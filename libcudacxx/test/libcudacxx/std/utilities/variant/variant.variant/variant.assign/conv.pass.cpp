@@ -30,14 +30,13 @@ int main(int, char**)
   static_assert(!cuda::std::is_assignable<cuda::std::variant<long, long long>, int>::value);
 
 #if !TEST_COMPILER(NVHPC)
-  static_assert(cuda::std::is_assignable<cuda::std::variant<char>, int>::value == VariantAllowsNarrowingConversions,
-                "");
+  static_assert(cuda::std::is_assignable<cuda::std::variant<char>, int>::value == VariantAllowsNarrowingConversions);
 #endif // !TEST_COMPILER(NVHPC)
 
   // static_assert(cuda::std::is_assignable<cuda::std::variant<cuda::std::string, float>, int>::value ==
-  // VariantAllowsNarrowingConversions, "");
+  // VariantAllowsNarrowingConversions);
   // static_assert(cuda::std::is_assignable<cuda::std::variant<cuda::std::string, double>, int>::value ==
-  // VariantAllowsNarrowingConversions, "");
+  // VariantAllowsNarrowingConversions);
   // static_assert(!cuda::std::is_assignable<cuda::std::variant<cuda::std::string, bool>, int>::value);
 
   static_assert(!cuda::std::is_assignable<cuda::std::variant<int, bool>, decltype("meow")>::value);

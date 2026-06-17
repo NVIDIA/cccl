@@ -59,8 +59,9 @@ struct DeviceMerge
   //! @tparam CompareOp **[deduced]** Binary predicate to compare the input iterator's value types. Must have a
   //! signature equivalent to `bool operator()(Key lhs, Key rhs)` and establish a [strict weak ordering].
   //!
-  //! @param[in] d_temp_storage Device-accessible allocation of temporary storage. When `nullptr`, the required
-  //! allocation size is written to `temp_storage_bytes` and no work is done.
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
   //! @param[in,out] temp_storage_bytes Reference to size in bytes of `d_temp_storage` allocation.
   //! @param[in] keys_in1 Iterator to the beginning of the first sorted input sequence.
   //! @param[in] num_keys1 Number of keys in the first input sequence.
@@ -248,8 +249,9 @@ struct DeviceMerge
   //! @tparam CompareOp **[deduced]** Binary predicate to compare the key input iterator's value types. Must have a
   //! signature equivalent to `bool operator()(Key lhs, Key rhs)` and establish a [strict weak ordering].
   //!
-  //! @param[in] d_temp_storage Device-accessible allocation of temporary storage. When `nullptr`, the required
-  //! allocation size is written to `temp_storage_bytes` and no work is done.
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
   //! @param[in,out] temp_storage_bytes Reference to size in bytes of `d_temp_storage` allocation.
   //! @param[in] keys_in1 Iterator to the beginning of the keys of the first sorted input sequence.
   //! @param[in] values_in1 Iterator to the beginning of the values of the first sorted input sequence.

@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -46,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -70,6 +72,9 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
     _OutputIterator __result,
     _Compare __comp)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     iter_difference_t<_InputIterator1> __count1 = ::cuda::std::distance(__first1, __last1);
     iter_difference_t<_InputIterator2> __count2 = ::cuda::std::distance(__first2, __last2);
     auto __ret                                  = __result + static_cast<iter_difference_t<_OutputIterator>>(__count1)
@@ -87,8 +92,6 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
       ::cuda::std::move(__comp),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __ret;

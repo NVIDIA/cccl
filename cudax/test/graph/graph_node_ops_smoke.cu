@@ -98,7 +98,7 @@ C2H_TEST("graph fill_bytes sets every byte to the requested value", "[graph][fil
 
   for (std::size_t i = 0; i < N; ++i)
   {
-    CUDAX_REQUIRE(mem[i] == 0);
+    REQUIRE(mem[i] == 0);
   }
 }
 
@@ -120,7 +120,7 @@ C2H_TEST("graph fill_bytes with non-zero value", "[graph][fill_bytes]")
 
   for (std::size_t i = 0; i < N; ++i)
   {
-    CUDAX_REQUIRE(mem[i] == static_cast<unsigned char>(0xAB));
+    REQUIRE(mem[i] == static_cast<unsigned char>(0xAB));
   }
 }
 
@@ -152,7 +152,7 @@ C2H_TEST("graph copy_bytes copies data from source to destination", "[graph][cop
 
   for (std::size_t i = 0; i < N; ++i)
   {
-    CUDAX_REQUIRE(dst[i] == src[i]);
+    REQUIRE(dst[i] == src[i]);
   }
 }
 
@@ -177,7 +177,7 @@ C2H_TEST("graph copy_bytes can be chained after fill_bytes", "[graph][fill_bytes
 
   for (std::size_t i = 0; i < N; ++i)
   {
-    CUDAX_REQUIRE(dst[i] == static_cast<unsigned char>(0xFF));
+    REQUIRE(dst[i] == static_cast<unsigned char>(0xFF));
   }
 }
 
@@ -204,7 +204,7 @@ C2H_TEST("graph host_launch executes a lambda callback", "[graph][host_launch]")
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(*counter == 42);
+  REQUIRE(*counter == 42);
 }
 
 C2H_TEST("graph host_launch with arguments", "[graph][host_launch]")
@@ -233,7 +233,7 @@ C2H_TEST("graph host_launch with arguments", "[graph][host_launch]")
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(*result == 30);
+  REQUIRE(*result == 30);
 }
 
 C2H_TEST("graph host_launch can be chained with kernel nodes", "[graph][host_launch]")
@@ -260,7 +260,7 @@ C2H_TEST("graph host_launch can be chained with kernel nodes", "[graph][host_lau
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(mem[0] == 43);
+  REQUIRE(mem[0] == 43);
 }
 
 C2H_TEST("graph host_launch can be launched multiple times", "[graph][host_launch]")
@@ -284,7 +284,7 @@ C2H_TEST("graph host_launch can be launched multiple times", "[graph][host_launc
   {
     exec.launch(s);
     s.sync();
-    CUDAX_REQUIRE(mem[0] == i + 1);
+    REQUIRE(mem[0] == i + 1);
   }
 }
 
@@ -305,11 +305,11 @@ C2H_TEST("graph host_launch data is cleaned up when graph is destroyed", "[graph
 
     // Release our copy — the graph's user object should keep the shared_ptr alive.
     witness.reset();
-    CUDAX_REQUIRE(!weak.expired());
+    REQUIRE(!weak.expired());
   }
   // graph_builder destroyed — user object destructor should have deleted the callback data,
   // releasing the last shared_ptr copy.
-  CUDAX_REQUIRE(weak.expired());
+  REQUIRE(weak.expired());
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -343,7 +343,7 @@ C2H_TEST("graph record_event and wait(event_ref) impose ordering across independ
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(mem[0] == 42);
+  REQUIRE(mem[0] == 42);
 }
 
 C2H_TEST("graph record_event node has the correct node type", "[graph][event_record]")
@@ -354,7 +354,7 @@ C2H_TEST("graph record_event node has the correct node type", "[graph][event_rec
   cuda::event ev{cuda::device_ref{0}};
   auto node = pb.record_event(ev);
 
-  CUDAX_REQUIRE(node.type() == cudax::graph_node_type::event_record);
+  REQUIRE(node.type() == cudax::graph_node_type::event_record);
 }
 
 C2H_TEST("graph wait(event_ref) node has the correct node type", "[graph][event_wait]")
@@ -365,7 +365,7 @@ C2H_TEST("graph wait(event_ref) node has the correct node type", "[graph][event_
   cuda::event ev{cuda::device_ref{0}};
   auto node = pb.wait(ev);
 
-  CUDAX_REQUIRE(node.type() == cudax::graph_node_type::wait_event);
+  REQUIRE(node.type() == cudax::graph_node_type::wait_event);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -396,7 +396,7 @@ C2H_TEST("graph insert_child_graph embeds a subgraph", "[graph][child_graph]")
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(mem[0] == 42);
+  REQUIRE(mem[0] == 42);
 }
 
 #  if _CCCL_CTK_AT_LEAST(12, 9)
@@ -417,7 +417,7 @@ C2H_TEST("graph insert_child_graph with ownership transfer", "[graph][child_grap
 
   // Move the child graph into the parent — child_g is null afterwards.
   cudax::insert_child_graph(pb, std::move(child_g));
-  CUDAX_REQUIRE(child_g.get() == nullptr);
+  REQUIRE(child_g.get() == nullptr);
 
   cudax::launch(pb, test::one_thread_dims, test::verify_42{}, val);
 
@@ -425,7 +425,7 @@ C2H_TEST("graph insert_child_graph with ownership transfer", "[graph][child_grap
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(mem[0] == 42);
+  REQUIRE(mem[0] == 42);
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 9)
 
@@ -442,7 +442,7 @@ C2H_TEST("graph insert_child_graph node has the correct node type", "[graph][chi
 
   auto node = cudax::insert_child_graph(pb, child_g);
 
-  CUDAX_REQUIRE(node.type() == cudax::graph_node_type::graph);
+  REQUIRE(node.type() == cudax::graph_node_type::graph);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -473,7 +473,7 @@ C2H_TEST("graph make_if_node body executes when handle is non-zero", "[graph][co
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(mem[0] == 42);
+  REQUIRE(mem[0] == 42);
 }
 
 C2H_TEST("graph make_if_node body is skipped when handle is zero", "[graph][conditional][if_node]")
@@ -498,7 +498,7 @@ C2H_TEST("graph make_if_node body is skipped when handle is zero", "[graph][cond
   s.sync();
 
   // val should remain 0 because the body was skipped.
-  CUDAX_REQUIRE(mem[0] == 0);
+  REQUIRE(mem[0] == 0);
 }
 
 C2H_TEST("graph make_while_node body executes the expected number of times", "[graph][conditional][while_node]")
@@ -522,7 +522,7 @@ C2H_TEST("graph make_while_node body executes the expected number of times", "[g
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(mem[0] == 0);
+  REQUIRE(mem[0] == 0);
 }
 
 C2H_TEST("graph make_if_node with pre-constructed handle", "[graph][conditional][if_node]")
@@ -547,7 +547,7 @@ C2H_TEST("graph make_if_node with pre-constructed handle", "[graph][conditional]
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(mem[0] == 42);
+  REQUIRE(mem[0] == 42);
 }
 
 #  endif // _CCCL_CTK_AT_LEAST(12, 4)

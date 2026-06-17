@@ -81,7 +81,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().large_buffer.block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
     _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
     _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
@@ -101,7 +101,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.block_thread
   using InputBufferT  = it_value_t<InputBufferIt>;
   using OutputBufferT = it_value_t<OutputBufferIt>;
 
-  constexpr uint32_t BLOCK_THREADS    = static_cast<uint32_t>(policy.block_threads);
+  constexpr uint32_t BLOCK_THREADS    = static_cast<uint32_t>(policy.threads_per_block);
   constexpr uint32_t ITEMS_PER_THREAD = static_cast<uint32_t>(policy.bytes_per_thread);
   constexpr BufferSizeT TILE_SIZE     = static_cast<BufferSizeT>(BLOCK_THREADS * ITEMS_PER_THREAD);
 
@@ -211,7 +211,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().small_buffer.block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
     _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
     _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
@@ -230,7 +230,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.block_thread
 
   // TODO(bgruber): refactor this in C++20, when we can pass policy as NTTP
   using AgentBatchMemcpyPolicyT = AgentBatchMemcpyPolicy<
-    policy.block_threads,
+    policy.threads_per_block,
     policy.buffers_per_thread,
     policy.tlev_bytes_per_thread,
     policy.prefer_pow2_bits,
@@ -348,7 +348,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   };
 
   constexpr BlockOffsetT init_kernel_threads = 128U;
-  const auto tile_size                       = static_cast<uint32_t>(active_policy.small_buffer.block_threads)
+  const auto tile_size                       = static_cast<uint32_t>(active_policy.small_buffer.threads_per_block)
                        * static_cast<uint32_t>(active_policy.small_buffer.buffers_per_thread);
 
   constexpr auto max_num_buffers_per_invocation = ::cuda::std::int64_t{512 * 1024 * 1024};
@@ -448,7 +448,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     BlockOffsetT,
     MemcpyOpt>;
 
-  const auto blev_block_threads = static_cast<uint32_t>(active_policy.large_buffer.block_threads);
+  const auto blev_threads_per_block = static_cast<uint32_t>(active_policy.large_buffer.threads_per_block);
 
   int device_ordinal;
   if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
@@ -463,7 +463,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   int batch_memcpy_blev_occupancy;
   if (const auto error =
-        CubDebug(MaxSmOccupancy(batch_memcpy_blev_occupancy, multi_block_memcpy_kernel, blev_block_threads)))
+        CubDebug(MaxSmOccupancy(batch_memcpy_blev_occupancy, multi_block_memcpy_kernel, blev_threads_per_block)))
   {
     return error;
   }
@@ -508,7 +508,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            batch_memcpy_grid_size, active_policy.small_buffer.block_threads, 0, stream)
+            batch_memcpy_grid_size, active_policy.small_buffer.threads_per_block, 0, stream)
             .doit(batch_memcpy_non_blev_kernel,
                   input_buffer_it + current_buffer_offset,
                   output_buffer_it + current_buffer_offset,
@@ -530,7 +530,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            batch_memcpy_blev_grid_size, blev_block_threads, 0, stream)
+            batch_memcpy_blev_grid_size, blev_threads_per_block, 0, stream)
             .doit(multi_block_memcpy_kernel,
                   d_blev_src_buffers,
                   d_blev_dst_buffers,

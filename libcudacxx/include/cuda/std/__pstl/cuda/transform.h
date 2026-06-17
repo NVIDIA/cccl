@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -34,6 +35,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
@@ -46,6 +48,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
@@ -71,6 +74,9 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     _UnaryOp __func,
     _Predicate __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     // We pass the policy as an environment to DeviceTransform
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
@@ -82,18 +88,13 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
       ::cuda::std::move(__func),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __result + __count;
   }
 
-  _CCCL_TEMPLATE(class _Policy,
-                 class _InputIterator,
-                 class _OutputIterator,
-                 class _UnaryOp,
-                 class _Predicate = CUB_NS_QUALIFIER::detail::transform::always_true_predicate)
+  _CCCL_TEMPLATE(
+    class _Policy, class _InputIterator, class _OutputIterator, class _UnaryOp, class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
                    is_invocable_v<_UnaryOp, iter_reference_t<_InputIterator>>)
   [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
@@ -145,7 +146,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
                  class _InputIterator2,
                  class _OutputIterator,
                  class _BinaryOp,
-                 class _Predicate = CUB_NS_QUALIFIER::detail::transform::always_true_predicate)
+                 class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator1> _CCCL_AND __has_forward_traversal<_InputIterator2> _CCCL_AND
                    __has_forward_traversal<_OutputIterator>)
   [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(

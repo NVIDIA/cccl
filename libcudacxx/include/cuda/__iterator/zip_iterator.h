@@ -491,7 +491,9 @@ public:
                                         ::cuda::std::index_sequence<_Indices...>) const
       noexcept(__zip_iter_constraints<_Iterators...>::__all_noexcept_swappable)
     {
-      (::cuda::std::ranges::iter_swap(::cuda::std::get<_Indices>(__iters1), ::cuda::std::get<_Indices>(__iters2)), ...);
+      (::cuda::std::ranges::__iter_swap_cpo{}(
+         ::cuda::std::get<_Indices>(__iters1), ::cuda::std::get<_Indices>(__iters2)),
+       ...);
     }
   };
 
@@ -517,10 +519,10 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
 
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c zip_iterator from a tuple of iterators.

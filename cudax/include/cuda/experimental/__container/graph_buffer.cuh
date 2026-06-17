@@ -27,8 +27,8 @@
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstddef>
@@ -68,7 +68,7 @@ namespace cuda::experimental
 template <class _Tp>
 class graph_buffer
 {
-  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "graph_buffer requires T to be trivially copyable.");
+  static_assert(::cuda::is_trivially_copyable_v<_Tp>, "graph_buffer requires T to be trivially copyable.");
 
 public:
   using value_type      = _Tp;

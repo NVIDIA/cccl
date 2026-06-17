@@ -31,6 +31,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramEven,
                             multi_histogram_even,
                             ESCAPE_LIST(int Channels, int ActiveChannels),
@@ -304,8 +305,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
     CAPTURE(lower_level, upper_level);
 
     // Compute reference result
-    auto fp_scales = array<LevelT, ActiveChannels>{}; // only used when LevelT is floating point
-    std::ignore    = fp_scales; // casting to void was insufficient. TODO(bgruber): use [[maybe_unsued]] in C++17
+    [[maybe_unused]] auto fp_scales = array<LevelT, ActiveChannels>{}; // only used when LevelT is floating point
     for (size_t c = 0; c < ActiveChannels; ++c)
     {
       if constexpr (!cs::is_integral<LevelT>::value)

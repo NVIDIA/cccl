@@ -73,6 +73,9 @@ inline namespace __cpo
 {
 // This is a global constant to avoid breaking types that pull in `::std::iter_swap` via ADL
 _CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __iter_swap_cpo = __iter_swap::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -7,15 +7,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
-
 #include <cuda/std/cassert>
 #include <cuda/std/variant>
 
 #include "host_device_types.h"
 #include "test_macros.h"
 
+#if _CCCL_DEVICE_COMPILATION()
 TEST_DEVICE_FUNC void test()
 {
   using variant = cuda::std::variant<device_only_type>;
@@ -115,9 +113,23 @@ TEST_DEVICE_FUNC void test()
     assert(cuda::std::get<0>(rhs) == 1337);
   }
 }
+#endif // _CCCL_DEVICE_COMPILATION()
+
+#if _CCCL_TILE_COMPILATION() //  cannot run main because its __tile_global__
+__global__ void test_kernel()
+{
+  test();
+}
 
 int main(int arg, char** argv)
 {
-  NV_IF_TARGET(NV_IS_DEVICE, (test();))
+  NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 1>>>();))
   return 0;
 }
+#else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
+int main(int arg, char** argv)
+{
+  NV_IF_TARGET(NV_IS_DEVICE, test();)
+  return 0;
+}
+#endif // !_CCCL_TILE_COMPILATION()

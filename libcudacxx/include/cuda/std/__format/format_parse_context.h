@@ -38,7 +38,7 @@ public:
   using const_iterator = typename basic_string_view<_CharT>::const_iterator;
   using iterator       = const_iterator;
 
-  _CCCL_API constexpr explicit basic_format_parse_context(
+  _CCCL_HOST_DEVICE_API constexpr explicit basic_format_parse_context(
     basic_string_view<_CharT> __fmt, size_t __num_args = 0) noexcept
       : __begin_(__fmt.begin())
       , __end_(__fmt.end())
@@ -52,22 +52,22 @@ public:
   basic_format_parse_context& operator=(const basic_format_parse_context&) = delete;
   basic_format_parse_context& operator=(basic_format_parse_context&&)      = delete;
 
-  [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator begin() const noexcept
   {
     return __begin_;
   }
 
-  [[nodiscard]] _CCCL_API constexpr const_iterator end() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator end() const noexcept
   {
     return __end_;
   }
 
-  _CCCL_API constexpr void advance_to(const_iterator __it)
+  _CCCL_HOST_DEVICE_API constexpr void advance_to(const_iterator __it)
   {
     __begin_ = __it;
   }
 
-  [[nodiscard]] _CCCL_API constexpr size_t next_arg_id()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_t next_arg_id()
   {
     if (__indexing_ == _Indexing::__manual)
     {
@@ -84,7 +84,7 @@ public:
     return __next_arg_id_++;
   }
 
-  _CCCL_API constexpr void check_arg_id(size_t __id)
+  _CCCL_HOST_DEVICE_API constexpr void check_arg_id(size_t __id)
   {
     if (__indexing_ == _Indexing::__automatic)
     {

@@ -29,6 +29,10 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__floating_point/conversion_rank_order.h>
 #include <cuda/std/__floating_point/traits.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -222,16 +226,50 @@ public:
 //! @brief Deduction guide for construction from complex types.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_any_complex_v<_Tp>)
-_CCCL_HOST_DEVICE complex(const _Tp&) -> complex<typename _Tp::value_type>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES complex(const _Tp&) -> complex<typename _Tp::value_type>;
 
 #if _CCCL_STD_VER >= 2020
 //! @brief Deduction guide for construction from a tuple-like object.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_any_complex_v<_Tp>) _CCCL_AND __is_complex_compatible_tuple_like<_Tp>)
-_CCCL_HOST_DEVICE complex(const _Tp&) -> complex<__complex_tuple_like_value_type_t<_Tp>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES complex(const _Tp&) -> complex<__complex_tuple_like_value_type_t<_Tp>>;
 #endif // _CCCL_STD_VER >= 2020
 
 _CCCL_END_NAMESPACE_CUDA
+
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::complex
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::cuda::complex<_Tp>> : integral_constant<size_t, 2>
+{};
+
+template <size_t _Ip, class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::cuda::complex<_Tp>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<cuda::complex<_Tp>>");
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
+};
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+// tuple protocol for cuda::std::complex
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _Tp>
+struct tuple_size<::cuda::complex<_Tp>> : ::cuda::std::integral_constant<::cuda::std::size_t, 2>
+{};
+
+template <::cuda::std::size_t _Ip, class _Tp>
+struct tuple_element<_Ip, ::cuda::complex<_Tp>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<cuda::complex<_Tp>>");
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
+};
+
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

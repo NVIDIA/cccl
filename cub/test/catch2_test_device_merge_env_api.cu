@@ -23,7 +23,6 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceMerge::MergeKeys(
     keys1.begin(),
@@ -32,7 +31,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
     static_cast<int>(keys2.size()),
     result.begin(),
     cuda::std::less<>{},
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';
@@ -41,6 +40,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
   thrust::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   // example-end merge-keys-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(result == expected);
 }
@@ -58,7 +58,6 @@ C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceMerge::MergePairs(
     keys1.begin(),
@@ -70,7 +69,7 @@ C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
     result_keys.begin(),
     result_values.begin(),
     cuda::std::less<>{},
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceMerge::MergePairs failed with status: " << error << '\n';
@@ -80,6 +79,7 @@ C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
   thrust::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   // example-end merge-pairs-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);

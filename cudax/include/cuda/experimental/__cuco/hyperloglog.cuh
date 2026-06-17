@@ -29,7 +29,7 @@
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__utility/forward.h>
 
-#include <cuda/experimental/__cuco/hash_functions.cuh>
+#include <cuda/experimental/__cuco/hll_policies.cuh>
 #include <cuda/experimental/__cuco/hyperloglog_ref.cuh>
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
@@ -47,20 +47,21 @@ namespace cuda::experimental::cuco
 //! @tparam _Tp Type of items to count
 //! @tparam _MemoryResource Type of memory resource used for device storage
 //! @tparam _Scope The scope in which operations will be performed by individual threads
-//! @tparam _Hash Hash function used to hash items
+//! @tparam _Policy Policy bundling hash function, bit-slicing rule, and finalizer
 template <class _Tp,
           class _MemoryResource       = ::cuda::device_memory_pool_ref,
           ::cuda::thread_scope _Scope = ::cuda::thread_scope_device,
-          class _Hash = ::cuda::experimental::cuco::hash<_Tp, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
+          class _Policy               = ::cuda::experimental::cuco::default_hll_policy<_Tp>>
 class hyperloglog
 {
 public:
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope
 
   template <::cuda::thread_scope _NewScope = thread_scope>
-  using ref_type = hyperloglog_ref<_Tp, _NewScope, _Hash>; ///< Non-owning reference type
+  using ref_type = hyperloglog_ref<_Tp, _NewScope, _Policy>; ///< Non-owning reference type
 
   using value_type    = typename ref_type<>::value_type; ///< Type of items to count
+  using policy_type   = typename ref_type<>::policy_type; ///< Policy type
   using hasher        = typename ref_type<>::hasher; ///< Hash function type
   using register_type = typename ref_type<>::register_type; ///< HLL register type
 
@@ -90,7 +91,7 @@ private:
 
   // Needs to be friends with other instantiations of this class template to have access to their
   // storage
-  template <class _Tp_, class _MemoryResource_, ::cuda::thread_scope _Scope_, class _Hash_>
+  template <class _Tp_, class _MemoryResource_, ::cuda::thread_scope _Scope_, class _Policy_>
   friend class hyperloglog;
 
 public:
@@ -101,17 +102,19 @@ public:
   //!
   //! @param __memory_resource A memory resource used for allocating device storage
   //! @param __sketch_size_kb Maximum sketch size in KB
-  //! @param __hash The hash function used to hash items
+  //! @param __policy The policy used to hash items and finalize the estimate
   //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If sketch size implies precision outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
   constexpr hyperloglog(_MemoryResource_&& __memory_resource,
                         sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
-                        const _Hash& __hash             = {},
+                        const _Policy& __policy         = {},
                         ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : hyperloglog{
-          ::cuda::std::forward<_MemoryResource_>(__memory_resource), __to_precision(__sketch_size_kb), __hash, __stream}
+      : hyperloglog{::cuda::std::forward<_MemoryResource_>(__memory_resource),
+                    __to_precision(__sketch_size_kb),
+                    __policy,
+                    __stream}
   {}
 
   //! @brief Constructs a `hyperloglog` host object.
@@ -119,14 +122,14 @@ public:
   //! @note This function synchronizes the given stream.
   //!
   //! @param __sketch_size_kb Maximum sketch size in KB
-  //! @param __hash The hash function used to hash items
+  //! @param __policy The policy used to hash items and finalize the estimate
   //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If sketch size implies precision outside [4, 18].
   constexpr hyperloglog(sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
-                        const _Hash& __hash             = {},
+                        const _Policy& __policy         = {},
                         ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : hyperloglog{__to_precision(__sketch_size_kb), __hash, __stream}
+      : hyperloglog{__to_precision(__sketch_size_kb), __policy, __stream}
   {}
 
   //! @brief Constructs a `hyperloglog` host object.
@@ -135,16 +138,16 @@ public:
   //!
   //! @param __memory_resource A memory resource used for allocating device storage
   //! @param __sd Desired standard deviation for the approximation error
-  //! @param __hash The hash function used to hash items
+  //! @param __policy The policy used to hash items and finalize the estimate
   //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If standard deviation implies precision outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
   constexpr hyperloglog(_MemoryResource_&& __memory_resource,
                         standard_deviation __sd,
-                        const _Hash& __hash         = {},
+                        const _Policy& __policy     = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : hyperloglog{::cuda::std::forward<_MemoryResource_>(__memory_resource), __to_precision(__sd), __hash, __stream}
+      : hyperloglog{::cuda::std::forward<_MemoryResource_>(__memory_resource), __to_precision(__sd), __policy, __stream}
   {}
 
   //! @brief Constructs a `hyperloglog` host object.
@@ -153,14 +156,14 @@ public:
   //!
   //! @param __memory_resource A memory resource used for allocating device storage
   //! @param __precision HyperLogLog precision parameter (determines number of registers as 2^precision)
-  //! @param __hash The hash function used to hash items
+  //! @param __policy The policy used to hash items and finalize the estimate
   //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If precision is outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
   constexpr hyperloglog(_MemoryResource_&& __memory_resource,
                         precision __precision,
-                        const _Hash& __hash         = {},
+                        const _Policy& __policy     = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __sketch_buffer{__stream,
                         ::cuda::std::forward<_MemoryResource_>(__memory_resource),
@@ -168,7 +171,8 @@ public:
                           __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
                           / sizeof(register_type),
                         ::cuda::no_init}
-      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
+      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}),
+              __policy}
   {
     clear_async(__stream);
   }
@@ -178,14 +182,14 @@ public:
   //! @note This function synchronizes the given stream.
   //!
   //! @param __sd Desired standard deviation for the approximation error
-  //! @param __hash The hash function used to hash items
+  //! @param __policy The policy used to hash items and finalize the estimate
   //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If standard deviation implies precision outside [4, 18].
   constexpr hyperloglog(standard_deviation __sd,
-                        const _Hash& __hash         = {},
+                        const _Policy& __policy     = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : hyperloglog{__to_precision(__sd), __hash, __stream}
+      : hyperloglog{__to_precision(__sd), __policy, __stream}
   {}
 
   //! @brief Constructs a `hyperloglog` host object.
@@ -193,12 +197,12 @@ public:
   //! @note This function synchronizes the given stream.
   //!
   //! @param __precision HyperLogLog precision parameter (determines number of registers as 2^precision)
-  //! @param __hash The hash function used to hash items
+  //! @param __policy The policy used to hash items and finalize the estimate
   //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If precision is outside [4, 18].
   constexpr hyperloglog(precision __precision,
-                        const _Hash& __hash         = {},
+                        const _Policy& __policy     = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __sketch_buffer{__stream,
                         ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
@@ -206,7 +210,8 @@ public:
                           __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
                           / sizeof(register_type),
                         ::cuda::no_init}
-      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
+      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}),
+              __policy}
   {
     clear_async(__stream);
   }
@@ -286,7 +291,7 @@ public:
   //! @param __other Other estimator to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope, class _OtherMemoryResource>
-  constexpr void merge_async(const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Hash>& __other,
+  constexpr void merge_async(const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Policy>& __other,
                              ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
   {
     __ref.merge_async(__other.__ref, __stream);
@@ -305,7 +310,7 @@ public:
   //! @param __other Other estimator to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope, class _OtherMemoryResource>
-  constexpr void merge(const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Hash>& __other,
+  constexpr void merge(const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Policy>& __other,
                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
   {
     __ref.merge(__other.__ref, __stream);
@@ -367,7 +372,7 @@ public:
   //! @return Device ref object of the current `hyperloglog` host object
   [[nodiscard]] constexpr ref_type<> ref() const noexcept
   {
-    return {sketch(), hash_function()};
+    return {sketch(), policy()};
   }
 
   //! @brief Get hash function.
@@ -376,6 +381,14 @@ public:
   [[nodiscard]] constexpr auto hash_function() const noexcept
   {
     return __ref.hash_function();
+  }
+
+  //! @brief Get the policy.
+  //!
+  //! @return The policy
+  [[nodiscard]] constexpr const _Policy& policy() const noexcept
+  {
+    return __ref.policy();
   }
 
   //! @brief Gets the span of the sketch.
@@ -435,7 +448,7 @@ public:
 private:
   [[nodiscard]] static constexpr precision __precision_in_bounds(precision __precision, const char* __message)
   {
-    const auto __value    = static_cast<int>(__precision);
+    const auto __value    = static_cast<::cuda::std::int32_t>(__precision);
     const auto __in_range = ::cuda::in_range(__value, 4, 18);
     if (!__in_range)
     {

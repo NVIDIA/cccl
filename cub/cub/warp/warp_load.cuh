@@ -170,7 +170,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
 //!    __global__ void ExampleKernel(int *d_data, ...)
 //!    {
 //!        constexpr int warp_threads = 16;
-//!        constexpr int block_threads = 256;
+//!        constexpr int threads_per_block = 256;
 //!        constexpr int items_per_thread = 4;
 //!
 //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -179,7 +179,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
 //!                                   cub::WARP_LOAD_TRANSPOSE,
 //!                                   warp_threads>;
 //!
-//!        constexpr int warps_in_block = block_threads / warp_threads;
+//!        constexpr int warps_in_block = threads_per_block / warp_threads;
 //!        constexpr int tile_size = items_per_thread * warp_threads;
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
@@ -466,7 +466,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -475,7 +475,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
@@ -518,7 +518,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -527,7 +527,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
@@ -573,7 +573,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -582,7 +582,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!

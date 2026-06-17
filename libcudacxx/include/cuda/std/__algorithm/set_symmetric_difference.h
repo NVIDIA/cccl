@@ -54,14 +54,13 @@ template <class _AlgPolicy, class _Compare, class _InIter1, class _Sent1, class 
 _CCCL_API constexpr __set_symmetric_difference_result<_InIter1, _InIter2, _OutIter> __set_symmetric_difference(
   _InIter1 __first1, _Sent1 __last1, _InIter2 __first2, _Sent2 __last2, _OutIter __result, _Compare&& __comp)
 {
+  bool __first_end_reached = true;
   while (__first1 != __last1)
   {
     if (__first2 == __last2)
     {
-      auto __ret1 = ::cuda::std::__copy<_AlgPolicy>(
-        ::cuda::std::move(__first1), ::cuda::std::move(__last1), ::cuda::std::move(__result));
-      return __set_symmetric_difference_result<_InIter1, _InIter2, _OutIter>(
-        ::cuda::std::move(__ret1.first), ::cuda::std::move(__first2), ::cuda::std::move((__ret1.second)));
+      __first_end_reached = false;
+      break;
     }
     if (__comp(*__first1, *__first2))
     {
@@ -83,10 +82,21 @@ _CCCL_API constexpr __set_symmetric_difference_result<_InIter1, _InIter2, _OutIt
       ++__first2;
     }
   }
-  auto __ret2 = ::cuda::std::__copy<_AlgPolicy>(
-    ::cuda::std::move(__first2), ::cuda::std::move(__last2), ::cuda::std::move(__result));
-  return __set_symmetric_difference_result<_InIter1, _InIter2, _OutIter>(
-    ::cuda::std::move(__first1), ::cuda::std::move(__ret2.first), ::cuda::std::move((__ret2.second)));
+
+  if (__first_end_reached)
+  {
+    auto __ret2 = ::cuda::std::__copy<_AlgPolicy>(
+      ::cuda::std::move(__first2), ::cuda::std::move(__last2), ::cuda::std::move(__result));
+    return __set_symmetric_difference_result<_InIter1, _InIter2, _OutIter>(
+      ::cuda::std::move(__first1), ::cuda::std::move(__ret2.first), ::cuda::std::move((__ret2.second)));
+  }
+  else
+  {
+    auto __ret1 = ::cuda::std::__copy<_AlgPolicy>(
+      ::cuda::std::move(__first1), ::cuda::std::move(__last1), ::cuda::std::move(__result));
+    return __set_symmetric_difference_result<_InIter1, _InIter2, _OutIter>(
+      ::cuda::std::move(__ret1.first), ::cuda::std::move(__first2), ::cuda::std::move((__ret1.second)));
+  }
 }
 
 _CCCL_EXEC_CHECK_DISABLE

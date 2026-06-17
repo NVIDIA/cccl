@@ -77,7 +77,7 @@ static_assert(cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<i
 static_assert(!cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<CopyableNonTrivial, int>>);
 static_assert(!cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<int, CopyableNonTrivial>>);
 static_assert(
-  !cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<CopyableNonTrivial, CopyableNonTrivial>>, "");
+  !cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<CopyableNonTrivial, CopyableNonTrivial>>);
 
 TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {

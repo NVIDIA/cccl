@@ -23,7 +23,6 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][k
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::SortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -32,7 +31,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][k
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::SortKeys failed with status: " << error << '\n';
@@ -41,6 +40,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][k
   thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   // example-end sort-keys-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected);
 }
@@ -54,7 +54,6 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segment
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::SortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -63,7 +62,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segment
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::SortKeysDescending failed with status: " << error << '\n';
@@ -72,6 +71,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segment
   thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   // example-end sort-keys-descending-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected);
 }
@@ -87,7 +87,6 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segm
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::SortKeys(
     d_keys,
@@ -95,7 +94,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segm
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::SortKeys (DoubleBuffer) failed with status: " << error << '\n';
@@ -104,6 +103,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segm
   thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   // example-end sort-keys-db-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
@@ -120,7 +120,6 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::SortKeysDescending(
     d_keys,
@@ -128,7 +127,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << '\n';
@@ -137,6 +136,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
   thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   // example-end sort-keys-descending-db-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
@@ -151,7 +151,6 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_s
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::StableSortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -160,7 +159,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_s
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::StableSortKeys failed with status: " << error << '\n';
@@ -169,6 +168,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_s
   thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   // example-end stable-sort-keys-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected);
 }
@@ -182,7 +182,6 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[s
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::StableSortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -191,7 +190,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[s
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::StableSortKeysDescending failed with status: " << error << '\n';
@@ -200,6 +199,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[s
   thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   // example-end stable-sort-keys-descending-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected);
 }
@@ -215,7 +215,6 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::StableSortKeys(
     d_keys,
@@ -223,7 +222,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::StableSortKeys (DoubleBuffer) failed with status: " << error << '\n';
@@ -232,6 +231,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
   thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   // example-end stable-sort-keys-db-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
@@ -248,7 +248,6 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-ba
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::StableSortKeysDescending(
     d_keys,
@@ -256,7 +255,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-ba
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr
@@ -266,6 +265,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-ba
   thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   // example-end stable-sort-keys-descending-db-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);

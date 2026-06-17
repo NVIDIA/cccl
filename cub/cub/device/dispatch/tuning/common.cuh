@@ -121,7 +121,7 @@ struct iterator_info
 };
 
 template <typename It>
-[[nodiscard]] _CCCL_API constexpr auto make_iterator_info() -> iterator_info
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator_info() -> iterator_info
 {
   using vt = it_value_t<It>;
   return iterator_info{
@@ -157,19 +157,19 @@ enum class length_size
 };
 
 template <class T>
-_CCCL_API constexpr primitive_key is_primitive_key()
+_CCCL_HOST_DEVICE_API constexpr primitive_key is_primitive_key()
 {
   return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
-_CCCL_API constexpr primitive_length is_primitive_length()
+_CCCL_HOST_DEVICE_API constexpr primitive_length is_primitive_length()
 {
   return is_primitive<T>::value ? primitive_length::yes : primitive_length::no;
 }
 
 template <class KeyT>
-_CCCL_API constexpr key_size classify_key_size()
+_CCCL_HOST_DEVICE_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -181,7 +181,7 @@ _CCCL_API constexpr key_size classify_key_size()
 }
 
 template <class LengthT>
-_CCCL_API constexpr length_size classify_length_size()
+_CCCL_HOST_DEVICE_API constexpr length_size classify_length_size()
 {
   return sizeof(LengthT) == 4 ? length_size::_4 : length_size::unknown;
 }

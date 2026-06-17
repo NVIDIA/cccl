@@ -1,6 +1,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 
@@ -56,6 +57,15 @@ struct cuda_make_counting_iterator
   }
 };
 
+struct cuda_make_permutation_iterator
+{
+  template <typename... Args>
+  auto operator()(Args&&... args) const
+  {
+    return cuda::make_permutation_iterator(cuda::std::forward<Args>(args)...);
+  }
+};
+
 struct cuda_make_transform_iterator
 {
   template <typename... Args>
@@ -80,6 +90,15 @@ struct thrust_make_counting_iterator
   auto operator()(Args&&... args) const
   {
     return thrust::make_counting_iterator(cuda::std::forward<Args>(args)...);
+  }
+};
+
+struct thrust_make_permutation_iterator
+{
+  template <typename... Args>
+  auto operator()(Args&&... args) const
+  {
+    return thrust::make_permutation_iterator(cuda::std::forward<Args>(args)...);
   }
 };
 
@@ -108,16 +127,18 @@ inline constexpr bool has_random_access_traversal =
 using cuda::std::__type_cartesian_product;
 using cuda::std::__type_list;
 
-using make_counting_t  = __type_list<cuda_make_counting_iterator, thrust_make_counting_iterator>;
-using make_transform_t = __type_list<cuda_make_transform_iterator, thrust_make_transform_iterator>;
-using make_zip_t       = __type_list<cuda_make_zip_iterator, thrust_make_zip_iterator>;
-using make_it_t        = __type_cartesian_product<make_counting_t, make_transform_t, make_zip_t>;
+using make_counting_t    = __type_list<cuda_make_counting_iterator, thrust_make_counting_iterator>;
+using make_transform_t   = __type_list<cuda_make_transform_iterator, thrust_make_transform_iterator>;
+using make_zip_t         = __type_list<cuda_make_zip_iterator, thrust_make_zip_iterator>;
+using make_permutation_t = __type_list<cuda_make_permutation_iterator, thrust_make_permutation_iterator>;
+using make_it_t          = __type_cartesian_product<make_counting_t, make_transform_t, make_zip_t, make_permutation_t>;
 TEMPLATE_LIST_TEST_CASE("iterator system and traversal propagation - any system", "[iterators]", make_it_t)
 {
   using namespace cuda::std;
   __type_at_c<0, TestType> make_counting_iterator;
   __type_at_c<1, TestType> make_transform_iterator;
   __type_at_c<2, TestType> make_zip_iterator;
+  __type_at_c<3, TestType> make_permutation_iterator;
 
   auto counting_it = make_counting_iterator(0);
   STATIC_REQUIRE(is_same_v<thrust::iterator_system_t<decltype(counting_it)>, thrust::any_system_tag>);
@@ -130,6 +151,10 @@ TEMPLATE_LIST_TEST_CASE("iterator system and traversal propagation - any system"
   [[maybe_unused]] auto zip_it = make_zip_iterator(counting_it, transform_it);
   STATIC_REQUIRE(is_same_v<thrust::iterator_system_t<decltype(zip_it)>, thrust::any_system_tag>);
   STATIC_REQUIRE(has_random_access_traversal<decltype(zip_it)>);
+
+  [[maybe_unused]] auto permutation_it = make_permutation_iterator(transform_it, transform_it);
+  STATIC_REQUIRE(is_same_v<thrust::iterator_system_t<decltype(permutation_it)>, thrust::any_system_tag>);
+  STATIC_REQUIRE(has_random_access_traversal<decltype(permutation_it)>);
 }
 
 auto expected_tag(thrust::device_vector<int>) -> thrust::device_system_tag;

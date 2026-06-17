@@ -9,6 +9,8 @@
 
 #include <cuda/experimental/copy.cuh>
 
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 
 #include <nvbench/nvbench.cuh>
@@ -16,15 +18,14 @@
 // GCC -Warray-bounds false positive for high-rank (20+) __raw_tensor instantiations
 _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
-using data_t = int;
-
-template <size_t Rank>
-int compute_alloc(int offset, const cuda::std::array<int, Rank>& shape, const cuda::std::array<int, Rank>& strides)
+template <size_t Rank, typename idx_t>
+size_t
+compute_alloc(size_t offset, const cuda::std::array<idx_t, Rank>& shape, const cuda::std::array<idx_t, Rank>& strides)
 {
-  int max_pos = offset;
+  int64_t max_pos = offset;
   for (size_t i = 0; i < Rank; ++i)
   {
-    int delta = (shape[i] - 1) * strides[i];
+    auto delta = static_cast<ptrdiff_t>(shape[i] - 1) * strides[i];
     if (delta > 0)
     {
       max_pos += delta;
@@ -33,21 +34,21 @@ int compute_alloc(int offset, const cuda::std::array<int, Rank>& shape, const cu
   return max_pos + 1;
 }
 
-template <size_t Rank>
+template <typename data_t = int, typename idx_t = int, size_t Rank>
 void bench_copy(nvbench::state& state,
-                int src_offset,
-                const cuda::std::array<int, Rank>& shape,
-                const cuda::std::array<int, Rank>& src_strides,
-                int dst_offset,
-                const cuda::std::array<int, Rank>& dst_strides)
+                size_t src_offset,
+                const cuda::std::array<idx_t, Rank>& shape,
+                const cuda::std::array<idx_t, Rank>& src_strides,
+                size_t dst_offset,
+                const cuda::std::array<idx_t, Rank>& dst_strides)
 {
-  const int src_alloc = compute_alloc(src_offset, shape, src_strides);
-  const int dst_alloc = compute_alloc(dst_offset, shape, dst_strides);
+  const auto src_alloc = compute_alloc(src_offset, shape, src_strides);
+  const auto dst_alloc = compute_alloc(dst_offset, shape, dst_strides);
 
   thrust::device_vector<data_t> d_src(src_alloc);
   thrust::device_vector<data_t> d_dst(dst_alloc);
 
-  int num_items = 1;
+  size_t num_items = 1;
   for (size_t i = 0; i < Rank; ++i)
   {
     num_items *= shape[i];
@@ -56,8 +57,8 @@ void bench_copy(nvbench::state& state,
   state.add_global_memory_reads<data_t>(num_items);
   state.add_global_memory_writes<data_t>(num_items);
 
-  using extents_t = cuda::std::dextents<int, Rank>;
-  using strides_t = cuda::dstrides<int, Rank>;
+  using extents_t = cuda::std::dextents<idx_t, Rank>;
+  using strides_t = cuda::dstrides<idx_t, Rank>;
   using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
 
   extents_t ext(shape);
@@ -75,189 +76,256 @@ void bench_copy(nvbench::state& state,
   });
 }
 
-template <size_t Rank>
+template <typename data_t = int, typename idx_t = int, size_t Rank>
 void bench_copy(nvbench::state& state,
-                int offset,
-                const cuda::std::array<int, Rank>& shape,
-                const cuda::std::array<int, Rank>& strides)
+                size_t offset,
+                const cuda::std::array<idx_t, Rank>& shape,
+                const cuda::std::array<idx_t, Rank>& strides)
 {
-  bench_copy(state, offset, shape, strides, offset, strides);
+  bench_copy<data_t>(state, offset, shape, strides, offset, strides);
 }
 
 /***********************************************************************************************************************
  * Memcpy benchmarks
  **********************************************************************************************************************/
 
-// src: (70,90,80,80):(576000,6400,80,1)
-// dst: (70,90,80,80):(576000,6400,80,1)
+// src: (25, 70, 90, 80, 80):(40320000, 576000, 6400, 80, 1)
+// dst: (25, 70, 90, 80, 80):(40320000, 576000, 6400, 80, 1)
 void memcpy_layout_0(nvbench::state& state)
 {
-  bench_copy(state, 0, cuda::std::array<int, 4>{70, 90, 80, 80}, cuda::std::array<int, 4>{576000, 6400, 80, 1});
+  cuda::std::array<int, 5> shape{25, 70, 90, 80, 80};
+  cuda::std::array<int, 5> strides{40320000, 576000, 6400, 80, 1};
+  bench_copy(state, 0, shape, strides);
 }
-NVBENCH_BENCH(memcpy_layout_0).set_name("memcpy_layout_0");
+NVBENCH_BENCH(memcpy_layout_0).set_name("contiguous (5D, int, 4GB)");
 
-// src: (70,90,80,80):(90,1,6300,504000)
-// dst: (70,90,80,80):(90,1,6300,504000)
+// src: (25, 80, 70, 80, 90):(40320000, 1, 576000, 80, 6400)
+// dst: (25, 80, 70, 80, 90):(40320000, 1, 576000, 80, 6400)
 void memcpy_layout_1(nvbench::state& state)
 {
-  bench_copy(state, 0, cuda::std::array<int, 4>{70, 90, 80, 80}, cuda::std::array<int, 4>{90, 1, 6300, 504000});
+  cuda::std::array<int, 5> shape{25, 80, 70, 80, 90};
+  cuda::std::array<int, 5> strides{40320000, 1, 576000, 80, 6400};
+  bench_copy(state, 0, shape, strides);
 }
-NVBENCH_BENCH(memcpy_layout_1).set_name("memcpy_layout_1");
+NVBENCH_BENCH(memcpy_layout_1).set_name("contiguous-perm (5D, int, 4GB)");
 
-// src: (1001,1007,3,31):(31217,1,31248217,1007), offset=0
-// dst: (1001,1007,3,31):(31217,1,31248217,1007), offset=31248217
+// src: (1, 25, 1, 80, 1, 70, 1, 80, 1, 90):(1, 40320000, 1, 1, 1, 576000, 1, 80, 1, 6400)
+// dst: (1, 25, 1, 80, 1, 70, 1, 80, 1, 90):(1, 40320000, 1, 1, 1, 576000, 1, 80, 1, 6400)
+void memcpy_layout_1b(nvbench::state& state)
+{
+  cuda::std::array<int, 10> shape{1, 25, 1, 80, 1, 70, 1, 80, 1, 90};
+  cuda::std::array<int, 10> strides{1, 40320000, 1, 1, 1, 576000, 1, 80, 1, 6400};
+  bench_copy(state, 0, shape, strides);
+}
+NVBENCH_BENCH(memcpy_layout_1b).set_name("contiguous-1-sized (10D, int, 4GB)");
+
+// src: (25, 70, 90, 80, 80):(40320000, 576000, 6400, 80, 1)
+// dst: (25, 70, 90, 80, 80):(40320000, 576000, 6400, 80, 1)
 void memcpy_layout_2(nvbench::state& state)
 {
-  cuda::std::array<int, 4> shape{1001, 1007, 3, 31};
-  cuda::std::array<int, 4> strides{31217, 1, 31248217, 1007};
-  bench_copy(state, 0, shape, strides, 31248217, strides);
+  cuda::std::array<int, 5> shape{25, 70, 90, 80, 80};
+  cuda::std::array<int, 5> strides{40320000, 576000, 6400, 80, 1};
+  bench_copy(state, 1, shape, strides);
 }
-NVBENCH_BENCH(memcpy_layout_2).set_name("memcpy_layout_2");
+NVBENCH_BENCH(memcpy_layout_2).set_name("contiguous-not-aligned (5D, int, 4GB)");
 
-// src: (57,71,1,1007,1):(71497,1,12225987,71,4075329), offset=12225987+4075329
-// dst: (57,71,1,1007,1):(71497,1,4075329,71,20376645), offset=3*4075329
+// src: (100, 70, 90, 80, 80):(40320000, 576000, 6400, 80, 1)
+// dst: (100, 70, 90, 80, 80):(40320000, 576000, 6400, 80, 1)
 void memcpy_layout_3(nvbench::state& state)
 {
-  cuda::std::array<int, 5> shape{57, 71, 1, 1007, 1};
-  cuda::std::array<int, 5> src_strides{71497, 1, 12225987, 71, 4075329};
-  cuda::std::array<int, 5> dst_strides{71497, 1, 4075329, 71, 20376645};
-  bench_copy(state, 12225987 + 4075329, shape, src_strides, 3 * 4075329, dst_strides);
+  cuda::std::array<int64_t, 5> shape{100, 70, 90, 80, 80};
+  cuda::std::array<int64_t, 5> strides{40320000, 576000, 6400, 80, 1};
+  bench_copy<char, int64_t>(state, 0, shape, strides);
 }
-NVBENCH_BENCH(memcpy_layout_3).set_name("memcpy_layout_3");
+NVBENCH_BENCH(memcpy_layout_3).set_name("contiguous-small (5D, char, 4GB)");
 
-// src: (63,70,1001):(1001,63063,-1), offset=1000
-// dst: (63,70,1001):(1001,63063,-1), offset=1000
+// src: (100, 70, 90, 80, 80):(40320000, 576000, 6400, 80, 1)
+// dst: (100, 70, 90, 80, 80):(40320000, 576000, 6400, 80, 1)
+void memcpy_layout_4(nvbench::state& state)
+{
+  cuda::std::array<int64_t, 5> shape{100, 70, 90, 80, 80};
+  cuda::std::array<int64_t, 5> strides{40320000, 576000, 6400, 80, 1};
+  bench_copy<char, int64_t>(state, 1, shape, strides);
+}
+NVBENCH_BENCH(memcpy_layout_4).set_name("contiguous-small-not-aligned (5D, char, 4GB)");
+
+// src: (25, 70, 90, 80, 80):(40320000, 576000, 6400, 80, -1), offset=80
+// dst: (25, 70, 90, 80, 80):(40320000, 576000, 6400, 80, -1), offset=80
 void memcpy_neg(nvbench::state& state)
 {
-  bench_copy(state, 1000, cuda::std::array<int, 3>{63, 70, 1001}, cuda::std::array<int, 3>{1001, 63063, -1});
+  cuda::std::array<int, 5> shape{25, 70, 90, 80, 80};
+  cuda::std::array<int, 5> strides{40320000, 576000, 6400, 80, -1};
+  bench_copy(state, 80, shape, strides);
 }
-NVBENCH_BENCH(memcpy_neg).set_name("memcpy_neg");
+NVBENCH_BENCH(memcpy_neg).set_name("contiguous-negative-stride (5D, int, 4GB)");
 
-/***********************************************************************************************************************
- * Reorder strides benchmark
- **********************************************************************************************************************/
-
-// src: (8,100019,4):(1100209,11,3)
-// dst: (8,100019,4):(1,8,800152)
-void reorder_strides(nvbench::state& state)
+// src: (134217600, 32):(128, 1), offset=32
+// dst: (134217600, 32):(128, 1), offset=32
+// Copies 4GB while allocating 16GB per tensor because of the padded outer stride.
+void vectorization(nvbench::state& state)
 {
-  cuda::std::array<int, 3> shape{8, 100019, 4};
-  bench_copy(state, 0, shape, cuda::std::array<int, 3>{1100209, 11, 3}, 0, cuda::std::array<int, 3>{1, 8, 800152});
+  cuda::std::array<int64_t, 2> shape{134217600, 32};
+  cuda::std::array<int64_t, 2> strides{128, 1};
+  bench_copy<char, int64_t>(state, 32, shape, strides);
 }
-NVBENCH_BENCH(reorder_strides).set_name("reorder_strides");
+NVBENCH_BENCH(vectorization).set_name("vectorization (2D, char, 4GB copy, 16GB alloc)");
 
-/***********************************************************************************************************************
- * Negative strides benchmarks
- **********************************************************************************************************************/
-
-// src: (70,90,80,80):(-576000,-6400,-80,-1), offset=alloc-1
-// dst: (70,90,80,80):(-576000,-6400,-80,-1), offset=alloc-1
-void negative_strides_0(nvbench::state& state)
+// src: (32767, (128 * 1024) / sizeof(int)):(128 * 1024, 1)
+// dst: (32767, (128 * 1024) / sizeof(int)):(128 * 1024, 1)
+// Copies 4GB while allocating 16GB per tensor because each row is padded to 128K elements.
+void block_contiguous(nvbench::state& state)
 {
-  constexpr int offset = 70 * 90 * 80 * 80 - 1;
-  bench_copy(state, offset, cuda::std::array<int, 4>{70, 90, 80, 80}, cuda::std::array<int, 4>{-576000, -6400, -80, -1});
+  cuda::std::array<int, 2> shape{32767, (128 * 1024) / sizeof(int)};
+  cuda::std::array<int, 2> strides{128 * 1024, 1};
+  bench_copy(state, 0, shape, strides);
 }
-NVBENCH_BENCH(negative_strides_0).set_name("Negative Strides (optimized)");
+NVBENCH_BENCH(block_contiguous).set_name("block-contiguous (2D, int, 4GB copy, 16GB alloc)");
+// (non-vectorizable)
 
-// src: (63,70,1001):(-1001,-63063,-1), offset=alloc-1
-// dst: (63,70,1001):(70070,1001,1), offset=0
-void src_neg_stride(nvbench::state& state)
+void several_dimensions(nvbench::state& state)
 {
-  constexpr int src_offset = 63 * 70 * 1001 - 1;
-  cuda::std::array<int, 3> shape{63, 70, 1001};
-  bench_copy(
-    state, src_offset, shape, cuda::std::array<int, 3>{-1001, -63063, -1}, 0, cuda::std::array<int, 3>{70070, 1001, 1});
+  cuda::std::array<int, 5> shape{64, 64, 64, 64, 64};
+  cuda::std::array<int, 5> strides{17043520 + 1, 266304 + 1, 4160 + 1, 64 + 1, 1};
+  bench_copy(state, 0, shape, strides);
 }
-NVBENCH_BENCH(src_neg_stride).set_name("src_neg_stride");
+NVBENCH_BENCH(several_dimensions).set_name("several_dimensions (5D, int, 4GB)");
 
-/***********************************************************************************************************************
- * Squeezing and flattening benchmarks
- **********************************************************************************************************************/
-
-// src: (2,)^23, bit-permuted strides
-// dst: (2,)^23, different bit-permuted strides (dims 20-22 differ)
-void flatten_common(nvbench::state& state)
+void several_dimensions_non_square(nvbench::state& state)
 {
-  cuda::std::array<int, 23> shape{};
-  for (auto& s : shape)
-  {
-    s = 2;
-  }
-  // clang-format off
-  cuda::std::array<int, 23> src_strides{
-    1 << 15, 1 << 16, 1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 21, 1 << 22,
-    1 << 14, 1 << 13, 1 << 12, 1 << 11, 1 << 10, 1 <<  9, 1 <<  8, 1 <<  7,
-    1 <<  6, 1 <<  5, 1 <<  4, 1 <<  3, 1 <<  2, 1 <<  0, 1 <<  1};
-  cuda::std::array<int, 23> dst_strides{
-    1 << 15, 1 << 16, 1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 21, 1 << 22,
-    1 << 14, 1 << 13, 1 << 12, 1 << 11, 1 << 10, 1 <<  9, 1 <<  8, 1 <<  7,
-    1 <<  6, 1 <<  5, 1 <<  4, 1 <<  3, 1 <<  1, 1 <<  2, 1 <<  0};
-  // clang-format on
-  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+  cuda::std::array<int, 5> shape{63, 65, 67, 69, 57};
+  cuda::std::array<int, 5> strides{17433131, 268202, 4003, 58, 1};
+  bench_copy(state, 0, shape, strides);
 }
-NVBENCH_BENCH(flatten_common).set_name("flatten_common");
-
-// src: (4,2,...,2):(5,2^4,...,2^22), alloc=2^23
-// dst: (4,2,...,2):(2^19,2^18,...,2^0), alloc=2^21
-void flatten_one(nvbench::state& state)
-{
-  // clang-format off
-  cuda::std::array<int, 20> shape{4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-  cuda::std::array<int, 20> src_strides{
-    5,       1 << 4,  1 << 5,  1 << 6,  1 << 7,  1 << 8,  1 << 9,  1 << 10,
-    1 << 11, 1 << 12, 1 << 13, 1 << 14, 1 << 15, 1 << 16, 1 << 17, 1 << 18,
-    1 << 19, 1 << 20, 1 << 21, 1 << 22};
-  cuda::std::array<int, 20> dst_strides{
-    1 << 19, 1 << 18, 1 << 17, 1 << 16, 1 << 15, 1 << 14, 1 << 13, 1 << 12,
-    1 << 11, 1 << 10, 1 <<  9, 1 <<  8, 1 <<  7, 1 <<  6, 1 <<  5, 1 <<  4,
-    1 <<  3, 1 <<  2, 1 <<  1, 1 <<  0};
-  // clang-format on
-  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
-}
-NVBENCH_BENCH(flatten_one).set_name("flatten_one");
-
-/***********************************************************************************************************************
- * Vectorize benchmarks
- **********************************************************************************************************************/
-
-// src: (35,255,10,24):(61440,240,24,1), offset=240
-// dst: (35,255,10,24):(61200,240,24,1), offset=0
-void sliced_vec(nvbench::state& state)
-{
-  cuda::std::array<int, 4> shape{35, 255, 10, 24};
-  bench_copy(
-    state, 240, shape, cuda::std::array<int, 4>{61440, 240, 24, 1}, 0, cuda::std::array<int, 4>{61200, 240, 24, 1});
-}
-NVBENCH_BENCH(sliced_vec).set_name("sliced_vec");
-
-// src: (355,255,4,3):(3072,12,3,1), offset=12
-// dst: (355,255,4,3):(3060,12,3,1), offset=0
-void sliced_vec_2(nvbench::state& state)
-{
-  cuda::std::array<int, 4> shape{355, 255, 4, 3};
-  bench_copy(state, 12, shape, cuda::std::array<int, 4>{3072, 12, 3, 1}, 0, cuda::std::array<int, 4>{3060, 12, 3, 1});
-}
-NVBENCH_BENCH(sliced_vec_2).set_name("sliced_vec_2");
-
-// src: (35,255,5,10):(153000,600,20,1), offset=205
-// dst: (35,255,5,10):(12750,50,10,1), offset=0
-void sliced_unaligned_ptr(nvbench::state& state)
-{
-  cuda::std::array<int, 4> shape{35, 255, 5, 10};
-  bench_copy(
-    state, 205, shape, cuda::std::array<int, 4>{153000, 600, 20, 1}, 0, cuda::std::array<int, 4>{12750, 50, 10, 1});
-}
-NVBENCH_BENCH(sliced_unaligned_ptr).set_name("sliced_unaligned_ptr");
+NVBENCH_BENCH(several_dimensions_non_square).set_name("several_dimensions_non_square (5D, int, 4GB)");
 
 /***********************************************************************************************************************
  * Transpose benchmark
  **********************************************************************************************************************/
 
-// src: (8192,8192):(8192,1)
-// dst: (8192,8192):(1,8192)
-void transpose(nvbench::state& state)
+// src: (32768,32768):(1,32768)
+// dst: (32768,32768):(32768,1)
+void transpose_2D_col_row(nvbench::state& state)
 {
-  cuda::std::array<int, 2> shape{8192, 8192};
-  bench_copy(state, 0, shape, cuda::std::array<int, 2>{8192, 1}, 0, cuda::std::array<int, 2>{1, 8192});
+  cuda::std::array<int, 2> shape{32768, 32768};
+  cuda::std::array<int, 2> src_strides{1, 32768};
+  cuda::std::array<int, 2> dst_strides{32768, 1};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
 }
-NVBENCH_BENCH(transpose).set_name("transpose");
+NVBENCH_BENCH(transpose_2D_col_row).set_name("transpose_2D_col_row (2D, int, 4GB)");
+
+void transpose_2D_row_col(nvbench::state& state)
+{
+  cuda::std::array<int, 2> shape{32768, 32768};
+  cuda::std::array<int, 2> src_strides{32768, 1};
+  cuda::std::array<int, 2> dst_strides{1, 32768};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_2D_row_col).set_name("transpose_2D_row_col (2D, int, 4GB)");
+
+void transpose_2D_char(nvbench::state& state)
+{
+  cuda::std::array<int64_t, 2> shape{65536, 65536};
+  cuda::std::array<int64_t, 2> src_strides{1, 65536};
+  cuda::std::array<int64_t, 2> dst_strides{65536, 1};
+  bench_copy<char, int64_t>(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_2D_char).set_name("transpose_2D_char (2D, char, 4GB)");
+
+void transpose_2D_short(nvbench::state& state)
+{
+  cuda::std::array<int, 2> shape{32760, 32768 * 2};
+  cuda::std::array<int, 2> src_strides{1, 32760};
+  cuda::std::array<int, 2> dst_strides{32768 * 2, 1};
+  bench_copy<short>(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_2D_short).set_name("transpose_2D_short (2D, short, 4GB)");
+
+void transpose_2D_double(nvbench::state& state)
+{
+  cuda::std::array<int64_t, 2> shape{32768, 16384};
+  cuda::std::array<int64_t, 2> src_strides{1, 32768};
+  cuda::std::array<int64_t, 2> dst_strides{16384, 1};
+  bench_copy<double, int64_t>(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_2D_double).set_name("transpose_2D_double (2D, double, 4GB)");
+
+void transpose_2D_odd_both(nvbench::state& state)
+{
+  cuda::std::array<int, 2> shape{32767, 32769};
+  cuda::std::array<int, 2> src_strides{1, 32767};
+  cuda::std::array<int, 2> dst_strides{32769, 1};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_2D_odd_both).set_name("transpose_2D_odd_both (2D, int, 4GB)");
+
+void transpose_3D(nvbench::state& state)
+{
+  cuda::std::array<int, 3> shape{1024, 1024, 1024};
+  cuda::std::array<int, 3> src_strides{1, 1024, 1024 * 1024};
+  cuda::std::array<int, 3> dst_strides{1024 * 1024, 1024, 1};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_3D).set_name("transpose_3D (3D, int, 4GB)");
+
+void transpose_3D_odd_edges(nvbench::state& state)
+{
+  cuda::std::array<int, 3> shape{1023, 1025, 1024};
+  cuda::std::array<int, 3> src_strides{1, 1023, 1023 * 1025};
+  cuda::std::array<int, 3> dst_strides{1025 * 1024, 1024, 1};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_3D_odd_edges).set_name("transpose_3D_odd_edges (3D, int, 4GB)");
+
+void transpose_src_small_15(nvbench::state& state)
+{
+  cuda::std::array<int, 3> shape{15, 2236962, 32};
+  cuda::std::array<int, 3> src_strides{1, 15 * 32, 15};
+  cuda::std::array<int, 3> dst_strides{2236962 * 32, 32, 1};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_src_small_15).set_name("transpose_src_small_15 (3D, int, 4GB)");
+
+void transpose_src_small_16(nvbench::state& state)
+{
+  cuda::std::array<int, 3> shape{16, 2097152, 32};
+  cuda::std::array<int, 3> src_strides{1, 16 * 32, 16};
+  cuda::std::array<int, 3> dst_strides{2097152 * 32, 32, 1};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_src_small_16).set_name("transpose_src_small_16 (3D, int, 4GB)");
+
+void transpose_src_small_17(nvbench::state& state)
+{
+  cuda::std::array<int, 3> shape{17, 1973790, 32};
+  cuda::std::array<int, 3> src_strides{1, 17 * 32, 17};
+  cuda::std::array<int, 3> dst_strides{1973790 * 32, 32, 1};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_src_small_17).set_name("transpose_src_small_17 (3D, int, 4GB)");
+
+void transpose_dst_small_8_padded(nvbench::state& state)
+{
+  cuda::std::array<int64_t, 3> shape{32, 4194304, 8};
+  cuda::std::array<int64_t, 3> src_strides{1, 32 * 8, 32};
+  cuda::std::array<int64_t, 3> dst_strides{4194304 * 16, 16, 1};
+  bench_copy<int, int64_t>(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_dst_small_8_padded).set_name("transpose_dst_small_8_padded (3D, int, 4GB)");
+
+void transpose_dst_small_16_padded(nvbench::state& state)
+{
+  cuda::std::array<int64_t, 3> shape{32, 2097152, 16};
+  cuda::std::array<int64_t, 3> src_strides{1, 32 * 16, 32};
+  cuda::std::array<int64_t, 3> dst_strides{2097152 * 32, 32, 1};
+  bench_copy<int, int64_t>(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_dst_small_16_padded).set_name("transpose_dst_small_16_padded (3D, int, 4GB)");
+
+void transpose_src_small_16_4D(nvbench::state& state)
+{
+  cuda::std::array<int, 4> shape{16, 1024, 2048, 32};
+  cuda::std::array<int, 4> src_strides{1, 16 * 32, 16 * 32 * 1024, 16};
+  cuda::std::array<int, 4> dst_strides{1024 * 2048 * 32, 32, 1024 * 32, 1};
+  bench_copy(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(transpose_src_small_16_4D).set_name("transpose_src_small_16_4D (4D, int, 4GB)");

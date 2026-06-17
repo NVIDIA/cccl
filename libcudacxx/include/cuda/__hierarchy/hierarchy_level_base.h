@@ -35,11 +35,11 @@
 #  include <cuda/std/__mdspan/extents.h>
 #  include <cuda/std/__type_traits/is_integer.h>
 
-#  if defined(_CUDAX_GROUP)
+#  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
 #    include <cuda/experimental/__group/concepts.cuh>
 #    include <cuda/experimental/__group/fwd.cuh>
 #    include <cuda/experimental/__group/queries.cuh>
-#  endif // _CUDAX_GROUP
+#  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -66,9 +66,9 @@ struct hierarchy_level_base
   using level_type = _Level;
 
   template <class _InLevel>
-  using __default_md_query_type = unsigned;
+  using __default_md_query_type = ::cuda::std::uint32_t;
   template <class _InLevel>
-  using __default_1d_query_type = ::cuda::std::size_t;
+  using __default_1d_query_type = typename _InLevel::__product_type;
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
@@ -102,8 +102,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
-  count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
     return _Level::template count_as<__default_1d_query_type<_InLevel>>(
       __level, ::cuda::__unpack_hierarchy_if_needed(__hier));
@@ -120,8 +119,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t
-  rank(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto rank(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
     return _Level::template rank_as<__default_1d_query_type<_InLevel>>(
       __level, ::cuda::__unpack_hierarchy_if_needed(__hier));
@@ -170,7 +168,7 @@ struct hierarchy_level_base
   }
 #  endif // _CCCL_CUDA_COMPILATION()
 
-#  if defined(_CUDAX_GROUP)
+#  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
 #    if _CCCL_CUDA_COMPILATION()
 
   _CCCL_TEMPLATE(class _Group)
@@ -223,7 +221,7 @@ struct hierarchy_level_base
     return ::cuda::experimental::__is_part_of_group<_Level>(__group);
   }
 #    endif // _CCCL_CUDA_COMPILATION()
-#  endif // _CUDAX_GROUP
+#  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
 private:
   template <class>

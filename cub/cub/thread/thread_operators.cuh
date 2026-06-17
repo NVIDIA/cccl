@@ -106,9 +106,10 @@ struct ArgMin
 
 namespace detail
 {
-// Less-than comparator for an index/value pair that compares values first, and indices when the values are equal
+// Uses a user-defined less-than comparator to return the minimum of an index/value pair. Compares values first, and
+// indices when the values are equal.
 template <typename ValueLessThen = ::cuda::std::less<>>
-struct arg_less : ValueLessThen
+struct arg_reduce_op : ValueLessThen
 {
   template <typename T, typename OffsetT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
@@ -138,17 +139,17 @@ struct arg_less : ValueLessThen
 };
 
 template <typename ValueLessThen>
-arg_less(ValueLessThen) -> arg_less<ValueLessThen>;
+arg_reduce_op(ValueLessThen) -> arg_reduce_op<ValueLessThen>;
 
 /// @brief Arg min functor (keeps the value and offset of the first occurrence of the smallest item)
-using arg_min = arg_less<::cuda::std::less<>>;
+using arg_min = arg_reduce_op<::cuda::std::less<>>;
 
 //! @brief Binary functor swapping the arguments to ``operator()`` before forwarding to an inner functor
 template <typename Predicate>
 struct swap_args : Predicate
 {
   template <typename T, typename U>
-  _CCCL_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
   {
     return Predicate::operator()(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
   }
@@ -158,7 +159,7 @@ template <typename Predicate>
 swap_args(Predicate) -> swap_args<Predicate>;
 
 /// @brief Arg max functor (keeps the value and offset of the first occurrence of the larger item)
-using arg_max = arg_less<swap_args<::cuda::std::less<>>>;
+using arg_max = arg_reduce_op<swap_args<::cuda::std::less<>>>;
 
 template <typename ScanOpT>
 struct ScanBySegmentOp

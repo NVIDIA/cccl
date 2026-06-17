@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // <algorithm>
 
 // template<ForwardIterator Iter1, ForwardIterator Iter2>
@@ -148,8 +151,8 @@ int main(int, char**)
   {
     int searcher_called = 0;
     using RI            = int*;
-    static_assert((cuda::std::is_same<RI, decltype(cuda::std::search(RI(), RI(), MySearcher{searcher_called}))>::value),
-                  "");
+    static_assert(
+      (cuda::std::is_same<RI, decltype(cuda::std::search(RI(), RI(), MySearcher{searcher_called}))>::value));
 
     RI it(nullptr);
     assert(it == cuda::std::search(it, it, MySearcher{searcher_called}));

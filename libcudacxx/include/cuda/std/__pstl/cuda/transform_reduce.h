@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -47,6 +48,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__numeric/transform_reduce.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -71,6 +73,9 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
     _ReductionOp __reduction_op,
     _TransformOp __transform_op)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     _Tp __ret;
 
     // We need to know the accumulator type to determine whether we need construct_at for the return value
@@ -90,9 +95,6 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
       __reduction_op,
       __transform_op,
       __init);
-
-    // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     {
       __temporary_storage<_Tp> __storage{__policy, __num_bytes, 1};

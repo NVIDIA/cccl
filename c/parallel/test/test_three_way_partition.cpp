@@ -8,11 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -127,18 +127,15 @@ struct three_way_partition_result_t
 
   bool operator==(const three_way_partition_result_t<T>& other) const
   {
-    return std::tie(num_items_in_first_part,
-                    num_items_in_second_part,
-                    num_unselected_items,
-                    first_part,
-                    second_part,
-                    unselected)
-        == std::tie(other.num_items_in_first_part,
-                    other.num_items_in_second_part,
-                    other.num_unselected_items,
-                    other.first_part,
-                    other.second_part,
-                    other.unselected);
+    if (num_items_in_first_part != other.num_items_in_first_part
+        || num_items_in_second_part != other.num_items_in_second_part
+        || num_unselected_items != other.num_unselected_items)
+    {
+      return false;
+    }
+    return std::equal(first_part.begin(), first_part.begin() + num_items_in_first_part, other.first_part.begin())
+        && std::equal(second_part.begin(), second_part.begin() + num_items_in_second_part, other.second_part.begin())
+        && std::equal(unselected.begin(), unselected.begin() + num_unselected_items, other.unselected.begin());
   }
 };
 
