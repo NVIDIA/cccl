@@ -22,6 +22,7 @@
 #include <cuda/std/cstring>
 #include <cuda/std/ranges>
 #include <cuda/std/string_view>
+#include <cuda/std/type_traits>
 
 #include "literal.h"
 
@@ -262,5 +263,16 @@ TEST_FUNC constexpr cuda::std::string_view get_format_types()
 // cuda::std::vector<cuda::std::basic_string<CharT>> fmt_invalid_nested_types(cuda::std::string_view valid) {
 //   return detail::fmt_invalid_types<CharT, 2>(valid);
 // }
+
+#if _CCCL_HAS_WCHAR_T()
+template <class CharT, class... Args>
+using test_format_string =
+  cuda::std::conditional_t<cuda::std::is_same_v<CharT, char>,
+                           cuda::std::format_string<Args...>,
+                           cuda::std::wformat_string<Args...>>;
+#else
+template <class CharT, class... Args>
+using test_format_string = cuda::std::format_string<Args...>;
+#endif
 
 #endif // TEST_SUPPORT_FORMAT_FUNCTIONS_COMMON_H
