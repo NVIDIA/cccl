@@ -157,16 +157,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
 
   size_t temp_storage_bytes = 0;
   auto error                = cub::DeviceBatchedTopK::MaxPairs(
-    nullptr,
-    temp_storage_bytes,
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
-    segment_sizes,
-    k_arg,
-    num_segs,
-    env);
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k_arg, num_segs, env);
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
   if (error == cudaSuccess)
   {
@@ -240,16 +231,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
 
   size_t temp_storage_bytes = 0;
   auto error                = cub::DeviceBatchedTopK::MinPairs(
-    nullptr,
-    temp_storage_bytes,
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
-    segment_sizes,
-    k_arg,
-    num_segs,
-    env);
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k_arg, num_segs, env);
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
   if (error == cudaSuccess)
   {

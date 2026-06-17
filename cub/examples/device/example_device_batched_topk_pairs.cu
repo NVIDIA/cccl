@@ -97,9 +97,9 @@ int main(int argc, char** argv)
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, requirements};
 
   // Annotate the arguments: runtime segment size and K, each with a compile-time upper bound.
-  auto segment_sizes  = cuda::args::immediate{segment_size, cuda::args::bounds<offset_t{1}, max_seg_size>()};
-  auto k_arg          = cuda::args::immediate{k, cuda::args::bounds<offset_t{1}, max_k>()};
-  auto num_segs_arg = cuda::args::immediate{static_cast<offset_t>(num_segments)};
+  auto segment_sizes = cuda::args::immediate{segment_size, cuda::args::bounds<offset_t{1}, max_seg_size>()};
+  auto k_arg         = cuda::args::immediate{k, cuda::args::bounds<offset_t{1}, max_k>()};
+  auto num_segs_arg  = cuda::args::immediate{static_cast<offset_t>(num_segments)};
 
   size_t temp_storage_bytes = 0;
   CubDebugExit(DeviceBatchedTopK::MaxPairs(

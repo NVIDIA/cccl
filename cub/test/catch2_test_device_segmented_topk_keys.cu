@@ -52,26 +52,12 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   if constexpr (SelectDirection == cub::detail::topk::select::max)
   {
     return cub::DeviceBatchedTopK::MaxKeys(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      segment_sizes,
-      k,
-      num_segments,
-      env);
+      d_temp_storage, temp_storage_bytes, d_key_segments_it, d_key_segments_out_it, segment_sizes, k, num_segments, env);
   }
   else
   {
     return cub::DeviceBatchedTopK::MinKeys(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      segment_sizes,
-      k,
-      num_segments,
-      env);
+      d_temp_storage, temp_storage_bytes, d_key_segments_it, d_key_segments_out_it, segment_sizes, k, num_segments, env);
   }
 }
 
