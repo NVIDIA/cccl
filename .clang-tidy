@@ -34,6 +34,8 @@ Checks:
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-branch-clone'
+  # We probably want this eventually, but needs discussion
+  - '-bugprone-argument-comment'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
