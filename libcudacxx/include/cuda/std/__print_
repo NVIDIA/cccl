@@ -1,0 +1,122 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD_PRINT
+#define _CUDA_STD_PRINT
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__format_>
+#include <cuda/std/version>
+
+#if _CCCL_HOSTED()
+#  include <system_error>
+
+#  include <stdio.h>
+#endif // _CCCL_HOSTED()
+
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HOSTED()
+_CCCL_HOST_API void __handle_output_error_host(FILE* __stream)
+{
+  if (::feof(__stream))
+  {
+    _CCCL_THROW(::std::system_error, EIO, ::std::generic_category(), "EOF while writing the formatted output");
+  }
+  _CCCL_THROW(::std::system_error, ::ferror(__stream), ::std::generic_category(), "failed to write formatted output");
+}
+#endif // _CCCL_HOSTED()
+
+template <class... _Args>
+_CCCL_API void vprint_nonunicode(string_view __fmt, format_args __args)
+{
+  ::cuda::std::__fmt_allocating_buffer<char> __buffer;
+  ::cuda::std::vformat_to(::cuda::std::__back_insert_iterator{__buffer}, __fmt, __args);
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    ({
+      const auto __size = ::fwrite(__buffer.__view().data(), 1, __buffer.__view().size(), stdout);
+      if (__size < __buffer.__view().size())
+      {
+        ::cuda::std::__handle_output_error_host(stdout);
+      }
+    }),
+    ({
+      __buffer.push_back('\0');
+      if (::printf("%s", __buffer.__view().data()) != 1)
+      {
+        _CCCL_THROW(::std::system_error, EIO, ::std::generic_category(), "failed to write formatted output");
+      }
+    }))
+}
+
+template <class... _Args>
+_CCCL_API void print(format_string<_Args...> __fmt, _Args&&... __args)
+{
+  ::cuda::std::vprint_nonunicode(__fmt.get(), ::cuda::std::make_format_args(__args...));
+}
+
+_CCCL_API inline void println()
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    ({
+      if (::putchar('\n') != '\n')
+      {
+        ::cuda::std::__handle_output_error_host(stdout);
+      }
+    }),
+    ({
+      if (::printf("\n") != 0)
+      {
+        _CCCL_THROW(::std::system_error, EIO, ::std::generic_category(), "failed to write formatted output");
+      }
+    }))
+}
+
+template <class... _Args>
+_CCCL_API void println(format_string<_Args...> __fmt, _Args&&... __args)
+{
+  ::cuda::std::__fmt_allocating_buffer<char> __buffer;
+  ::cuda::std::format_to(::cuda::std::__back_insert_iterator{__buffer}, __fmt, ::cuda::std::forward<_Args>(__args)...);
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    ({
+      __buffer.push_back('\n');
+      const auto __size = ::fwrite(__buffer.__view().data(), 1, __buffer.__view().size(), stdout);
+      if (__size < __buffer.__view().size())
+      {
+        ::cuda::std::__handle_output_error_host(stdout);
+      }
+    }),
+    ({
+      __buffer.push_back('\0');
+      if (::printf("%s\n", __buffer.__view().data()) != 1)
+      {
+        _CCCL_THROW(::std::system_error, EIO, ::std::generic_category(), "failed to write formatted output");
+      }
+    }))
+}
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD_PRINT
