@@ -598,25 +598,25 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    static_assert(!::std::is_same_v<T, void_interface>,
-                  "wait(token) returns void: use the non-template overload to block on a token.");
-    typename owning_container_of<T>::type out;
+    if constexpr (::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
+        cuda_safe_call(cudaStreamSynchronize(stream));
+      };
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      out = owning_container_of<T>::get_value(data);
-    };
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+        cuda_safe_call(cudaStreamSynchronize(stream));
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
-  }
-
-  /* Blocking wait on a token: there is no value to materialize, so this only
-   * synchronizes the host with the work the token depends on. */
-  void wait(cuda::experimental::stf::logical_data<void_interface>& ldata)
-  {
-    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-    };
+      return out;
+    }
   }
 
 private:

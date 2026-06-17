@@ -913,6 +913,9 @@ public:
     };
   }
 
+  // Forwards to the active backend. For a token (logical_data<void_interface>)
+  // the backend wait() returns void and only blocks on the token's
+  // dependencies, so `auto` deduces void here as well.
   template <typename T>
   auto wait(::cuda::experimental::stf::logical_data<T>& ldata)
   {
