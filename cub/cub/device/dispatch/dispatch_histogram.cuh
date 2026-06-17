@@ -34,13 +34,12 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/proclaim_return_type.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_void.h>
