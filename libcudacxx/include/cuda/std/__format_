@@ -23,6 +23,8 @@
 
 #include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/concepts.h>
+#include <cuda/std/__format/dynamic_format.h>
+#include <cuda/std/__format/format.h>
 #include <cuda/std/__format/format_arg.h>
 #include <cuda/std/__format/format_arg_store.h>
 #include <cuda/std/__format/format_args.h>
@@ -32,6 +34,8 @@
 #include <cuda/std/__format/format_parse_context.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__format/format_string.h>
+#include <cuda/std/__format/format_to_n.h>
+#include <cuda/std/__format/formatted_size.h>
 #include <cuda/std/__format/formatter.h>
 #include <cuda/std/__format/formatters/bool.h>
 #include <cuda/std/__format/formatters/char.h>

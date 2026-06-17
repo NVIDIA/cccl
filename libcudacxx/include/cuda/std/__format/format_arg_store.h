@@ -44,89 +44,125 @@ inline constexpr bool __is_bounded_array_of = false;
 template <class _Elem, size_t _Len>
 inline constexpr bool __is_bounded_array_of<_Elem[_Len], _Elem> = true;
 
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(is_same_v<_Tp, bool>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__boolean;
+}
+
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(is_same_v<_Tp, typename _Context::char_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__char_type;
+}
+
+#if _CCCL_HAS_WCHAR_T()
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(is_same_v<typename _Context::char_type, wchar_t> _CCCL_AND is_same_v<_Tp, char>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__char_type;
+}
+#endif // _CCCL_HAS_WCHAR_T()
+
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  if constexpr (sizeof(_Tp) <= sizeof(int))
+  {
+    return (is_signed_v<_Tp>) ? __fmt_arg_t::__int : __fmt_arg_t::__unsigned;
+  }
+  else if constexpr (sizeof(_Tp) <= sizeof(long long))
+  {
+    return (is_signed_v<_Tp>) ? __fmt_arg_t::__long_long : __fmt_arg_t::__unsigned_long_long;
+  }
+  else
+  {
+    return __fmt_arg_t::__handle;
+  }
+}
+
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(is_same_v<_Tp, float>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__float;
+}
+
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(is_same_v<_Tp, double>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__double;
+}
+
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(is_same_v<_Tp, long double>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__long_double;
+}
+
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES((is_same_v<typename _Context::char_type*, _Tp> || is_same_v<const typename _Context::char_type*, _Tp>) )
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__const_char_type_ptr;
+}
+
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(__is_bounded_array_of<_Tp, typename _Context::char_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__string_view;
+}
+
+// todo(dabayer): Add std::string_view support.
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(
+  __is_cuda_std_basic_string_view_v<_Tp> _CCCL_AND is_same_v<typename _Context::char_type, typename _Tp::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__string_view;
+}
+
+// todo(dabayer): Add std::string support.
+
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES(is_same_v<_Tp, void*> || is_same_v<_Tp, const void*> || is_same_v<_Tp, nullptr_t>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__ptr;
+}
+
+// Handle
+//
+// Note this version can't be constrained avoiding ambiguous overloads.
+// That means it can be instantiated by disabled formatters. To solve this, a
+// constrained version for not formattable formatters is added.
 template <class _Context, class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
 {
-  using _CtxCharT = typename _Context::char_type;
+  return __fmt_arg_t::__handle;
+}
 
-  __fmt_arg_t __ret = __fmt_arg_t::__none;
-
-  if constexpr (is_same_v<_Tp, bool>)
-  {
-    __ret = __fmt_arg_t::__boolean;
-  }
-  else if constexpr (is_same_v<_Tp, _CtxCharT>)
-  {
-    __ret = __fmt_arg_t::__char_type;
-  }
-#if _CCCL_HAS_WCHAR_T()
-  else if (is_same_v<wchar_t, _CtxCharT> && is_same_v<_Tp, char>)
-  {
-    __ret = __fmt_arg_t::__char_type;
-  }
-#endif // _CCCL_HAS_WCHAR_T()
-  else if constexpr (__cccl_is_integer_v<_Tp>)
-  {
-    if constexpr (sizeof(_Tp) <= sizeof(int))
-    {
-      __ret = (is_signed_v<_Tp>) ? __fmt_arg_t::__int : __fmt_arg_t::__unsigned;
-    }
-    else if constexpr (sizeof(_Tp) <= sizeof(long long))
-    {
-      __ret = (is_signed_v<_Tp>) ? __fmt_arg_t::__long_long : __fmt_arg_t::__unsigned_long_long;
-    }
-    else
-    {
-      // Extended integer types are handled as handles
-      __ret = __fmt_arg_t::__handle;
-    }
-  }
-  else if constexpr (is_same_v<_Tp, float>)
-  {
-    __ret = __fmt_arg_t::__float;
-  }
-  else if constexpr (is_same_v<_Tp, double>)
-  {
-    __ret = __fmt_arg_t::__double;
-  }
-#if _CCCL_HAS_LONG_DOUBLE()
-  else if constexpr (is_same_v<_Tp, long double>)
-  {
-    __ret = __fmt_arg_t::__long_double;
-  }
-#endif // _CCCL_HAS_LONG_DOUBLE()
-  else if constexpr (is_same_v<_Tp, _CtxCharT*> || is_same_v<_Tp, const _CtxCharT*>)
-  {
-    __ret = __fmt_arg_t::__const_char_type_ptr;
-  }
-  // todo: add std::string and std::string_view support
-  // - add `|| __is_std_basic_string_view_v<_Tp> || __is_std_basic_string_v<_Tp>` to the condition
-  else if constexpr (__is_cuda_std_basic_string_view_v<_Tp>)
-  {
-    __ret = (is_same_v<_CtxCharT, typename _Tp::value_type>) ? __fmt_arg_t::__string_view : __ret;
-  }
-  else if constexpr (__is_bounded_array_of<_Tp, _CtxCharT>)
-  {
-    __ret = __fmt_arg_t::__string_view;
-  }
-  else if constexpr (is_same_v<_Tp, void*> || is_same_v<_Tp, const void*> || is_same_v<_Tp, nullptr_t>)
-  {
-    __ret = __fmt_arg_t::__ptr;
-  }
-
-  if constexpr (__formattable_with<_Tp, _Context>)
-  {
-    __ret = (__ret == __fmt_arg_t::__none) ? __fmt_arg_t::__handle : __ret;
-  }
-
-  return __ret;
+// The overload for not formattable types allows triggering the static
+// assertion below.
+_CCCL_TEMPLATE(class _Context, class _Tp)
+_CCCL_REQUIRES((!__formattable_with<_Tp, _Context>) )
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+{
+  return __fmt_arg_t::__none;
 }
 
 template <class _Context, class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API basic_format_arg<_Context> __fmt_make_format_arg(_Tp& __value) noexcept
 {
   using _Dp                   = remove_const_t<_Tp>;
-  constexpr __fmt_arg_t __arg = __fmt_determine_arg_t<_Context, _Dp>();
+  constexpr __fmt_arg_t __arg = ::cuda::std::__fmt_determine_arg_t<_Context, _Dp>();
 
   static_assert(__arg != __fmt_arg_t::__none, "the supplied type is not formattable");
   static_assert(__formattable_with<_Tp, _Context>);
