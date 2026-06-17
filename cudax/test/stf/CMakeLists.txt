@@ -76,7 +76,6 @@ set(
   local_stf/stackable_write_back.cu
   local_stf/stackable_redundant_deps.cu
   local_stf/stackable_tmp.cu
-  local_stf/stackable_wait_token.cu
   local_stf/task_dep_copy_move_semantics.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu

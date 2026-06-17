@@ -56,4 +56,5 @@ int main()
   run<stream_ctx>();
   run<graph_ctx>();
   run<context>();
+  run<stackable_ctx>();
 }
