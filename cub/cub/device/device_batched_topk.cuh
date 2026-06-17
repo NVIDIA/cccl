@@ -111,8 +111,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   // ---------------------------------------------------------------------------
   // Resolve the (optionally tuned) policy selector from the environment.
   // ---------------------------------------------------------------------------
-  using key_t                     = it_value_t<it_value_t<KeyInputIteratorItT>>;
-  using value_t                   = it_value_t<it_value_t<ValueInputIteratorItT>>;
+  using key_t                     = cub::detail::it_value_t<cub::detail::it_value_t<KeyInputIteratorItT>>;
+  using value_t                   = cub::detail::it_value_t<cub::detail::it_value_t<ValueInputIteratorItT>>;
   using default_policy_selector_t = batched_topk::
     policy_selector_from_types<key_t, value_t, ::cuda::std::int64_t, ::cuda::args::__traits<KParameterT>::highest>;
   using tuning_env_t =
@@ -166,7 +166,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! Argument annotation framework
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! The parameters ``segment_sizes``, ``k``, and ``num_segments`` are passed as **annotated arguments** from
+//! The parameters ``segment_sizes``, ``k``, and ``num_segments`` can be passed as **annotated arguments** from
 //! ``cuda::args``. An annotation tells the algorithm everything you know about a parameter: where its value comes
 //! from and how tightly it is bounded. The more you can tell the algorithm, and the more precisely (a
 //! compile-time constant rather than a runtime value, a tight bound rather than a loose one), the more it can
@@ -177,8 +177,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!
 //! - ``cuda::args::constant<N>{}`` for a value fixed at compile time. ``N`` is both the value and its bound.
 //! - ``cuda::args::immediate{value}`` for a single value known on the host at the call.
-//! - ``cuda::args::deferred{pointer}`` for a single value read in stream order, for example one produced on the
-//!   device by a preceding launch.
+//! - ``cuda::args::deferred{iterator}`` for a single value read in stream order through a pointer or iterator, for
+//!   example one produced on the device by a preceding launch.
 //! - ``cuda::args::deferred_sequence{iterator}`` for a distinct value per segment, also read in stream order.
 //!
 //! **How it is bounded.** A bound lets the algorithm reason about a value it does not know exactly:
@@ -187,13 +187,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!   ``deferred_sequence`` (a ``constant`` is already its own bound). The kernel specializes on this range and uses
 //!   it to size temporary storage (see *Choosing argument bounds*), so prefer the tightest range you can prove.
 //! - A **runtime** bound, ``cuda::args::bounds(lo, hi)``, may accompany ``deferred`` and ``deferred_sequence`` when
-//!   the range is only known at runtime. A compile-time and a runtime bound can be combined, and the effective range
-//!   is then their intersection.
+//!   the range is only known at runtime. When combined with a compile-time bound, the runtime bound must be at least
+//!   as narrow, lying within the compile-time range and only tightening it further.
 //!
 //! **Which form each parameter accepts.** ``segment_sizes`` and ``k`` accept all four forms. The kernel specializes
 //! on their upper bound, so each carries a compile-time bound (a ``constant`` is its own, the other forms take an
-//! explicit ``cuda::args::bounds<lo, hi>()``). ``num_segments`` is a single value, supplied as ``constant``,
-//! ``immediate``, or ``deferred``, never as a per-segment sequence.
+//! explicit ``cuda::args::bounds<lo, hi>()``). ``num_segments`` must be a single value known on the host, supplied
+//! as ``constant`` or ``immediate``.
 //!
 //! .. code-block:: c++
 //!
