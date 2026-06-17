@@ -22,6 +22,17 @@ DETAIL_EVENT_NAMES = {
     "Source",
 }
 
+DETAIL_PREFIXES_TO_STRIP = (
+    "libcudacxx/include/",
+    "cudax/include/",
+    "c/parallel/include/",
+)
+
+DETAIL_PREFIXES_TO_COLLAPSE = (
+    ("cub/cub/", "cub/"),
+    ("thrust/thrust/", "thrust/"),
+)
+
 
 def normalize_detail(detail: str, repo_root: Path) -> str:
     detail_path = Path(detail)
@@ -32,15 +43,15 @@ def normalize_detail(detail: str, repo_root: Path) -> str:
         except ValueError:
             pass
 
-    for prefix in ("libcudacxx/include/", "cudax/include/", "c/parallel/include/"):
+    for prefix in DETAIL_PREFIXES_TO_STRIP:
         if detail.startswith(prefix):
             detail = detail[len(prefix) :]
             break
 
-    if detail.startswith("cub/cub/"):
-        detail = "cub/" + detail[len("cub/cub/") :]
-    elif detail.startswith("thrust/thrust/"):
-        detail = "thrust/" + detail[len("thrust/thrust/") :]
+    for prefix, replacement in DETAIL_PREFIXES_TO_COLLAPSE:
+        if detail.startswith(prefix):
+            detail = replacement + detail[len(prefix) :]
+            break
 
     return detail
 
@@ -119,7 +130,7 @@ def main() -> None:
         "--output", required=True, type=Path, help="Output trace JSON file or directory"
     )
     parser.add_argument(
-        "--repo-root", default=Path(__file__).resolve().parents[1], type=Path
+        "--repo-root", default=Path(__file__).resolve().parents[2], type=Path
     )
     parser.add_argument(
         "--max-detail-len",

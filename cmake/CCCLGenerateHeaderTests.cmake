@@ -28,6 +28,21 @@
 # - If no HEADER_TEMPLATE is provided, a default template will be used.
 # - The HEADER_TEMPLATE will be configured for each header, with the following variables:
 #   - @header@: The path to the target header, relative to <project_include_path>.
+option(
+  CCCL_COMPILE_TIME_SAVE_PREPROCESSED_TUS
+  "Save preprocessed generated one-include CUDA TUs for compile-time benchmarks."
+  OFF
+)
+option(
+  CCCL_COMPILE_TIME_GENERATE_DEVICE_TIME_TRACES
+  "Emit NVCC device time traces for compile-time benchmarks."
+  OFF
+)
+mark_as_advanced(
+  CCCL_COMPILE_TIME_SAVE_PREPROCESSED_TUS
+  CCCL_COMPILE_TIME_GENERATE_DEVICE_TIME_TRACES
+)
+
 function(cccl_generate_header_tests target_name project_include_path)
   set(options NO_METATARGETS)
   set(oneValueArgs LANGUAGE HEADER_TEMPLATE)
@@ -153,26 +168,31 @@ function(cccl_generate_header_tests target_name project_include_path)
     configure_file("${CGHT_HEADER_TEMPLATE}" "${header_src}" @ONLY)
     cght_apply_per_header_defines("${header}" "${header_src}")
 
-    # For profile-headers workflows, emit per-TU preprocessed artifacts next to
-    # generated header test sources so consumers can read them directly.
+    # Compile-time benchmark workflows can ask generated one-include CUDA TUs to
+    # preserve preprocessed artifacts and/or emit NVCC device time traces.
     if (
-      CCCL_PROFILE_HEADERS_GENERATE_PREPROCESSED_TUS
+      (
+        CCCL_COMPILE_TIME_SAVE_PREPROCESSED_TUS
+        OR CCCL_COMPILE_TIME_GENERATE_DEVICE_TIME_TRACES
+      )
       AND CGHT_LANGUAGE STREQUAL "CUDA"
     )
       get_filename_component(header_src_dir "${header_src}" DIRECTORY)
       if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
-        set_property(
-          SOURCE "${header_src}"
-          APPEND
-          PROPERTY COMPILE_OPTIONS "--keep" "--keep-dir=${header_src_dir}"
-        )
-        if (CCCL_PROFILE_HEADERS_GENERATE_DEVICE_TIME_TRACES)
+        if (CCCL_COMPILE_TIME_SAVE_PREPROCESSED_TUS)
+          set_property(
+            SOURCE "${header_src}"
+            APPEND
+            PROPERTY COMPILE_OPTIONS "--keep" "--keep-dir=${header_src_dir}"
+          )
+        endif()
+        if (CCCL_COMPILE_TIME_GENERATE_DEVICE_TIME_TRACES)
           set(trace_id "${header}")
           string(REPLACE "/" "__" trace_id "${trace_id}")
           string(REPLACE "." "_" trace_id "${trace_id}")
           set(
             trace_dir
-            "${CMAKE_BINARY_DIR}/header_testing/device_time_trace/${target_name}"
+            "${CMAKE_BINARY_DIR}/compile_time/raw_traces/${target_name}"
           )
           file(MAKE_DIRECTORY "${trace_dir}")
           set_property(
@@ -182,7 +202,10 @@ function(cccl_generate_header_tests target_name project_include_path)
               COMPILE_OPTIONS "--fdevice-time-trace=${trace_dir}/${trace_id}"
           )
         endif()
-      elseif ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
+      elseif (
+        CCCL_COMPILE_TIME_SAVE_PREPROCESSED_TUS
+        AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang"
+      )
         set_property(
           SOURCE "${header_src}"
           APPEND
