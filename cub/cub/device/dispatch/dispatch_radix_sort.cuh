@@ -600,7 +600,8 @@ private:
     {
       return error;
     }
-    const bool use_pdl = cc >= ::cuda::compute_capability{9, 0};
+    constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 24;
+    const bool use_pdl              = num_items <= pdl_max_items && cc >= ::cuda::compute_capability{9, 0};
 
     const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
     const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
