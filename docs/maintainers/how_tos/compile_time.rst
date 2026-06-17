@@ -85,6 +85,7 @@ different slices:
   ci/build_compile_time_bench.sh -skip-build -- -f scanning-function-body -i -n 20
   ci/build_compile_time_bench.sh -skip-build -- -f template-instantiation -e -n 15 --tag templates
   ci/build_compile_time_bench.sh -skip-build -- -f 'Scanning|Instantiating' -i -n 25
+  ci/build_compile_time_bench.sh -skip-build -- -f code-generation -i --scope-filter ""
 
 Baseline comparisons
 --------------------
@@ -141,6 +142,33 @@ Built-in filter names include:
 
 Unknown filters are interpreted as case-insensitive regular expressions over
 event names and event details.
+
+Symbol-scope filtering
+----------------------
+
+Symbol-like events, such as function parsing, template instantiation, function
+IR generation, and optimizer-function events, are scope-filtered by default to
+top-level CCCL-owned namespaces:
+
+- ``cuda::``
+- ``thrust::``
+- ``cub::``
+- ``cccl::``
+
+This keeps reports focused on CCCL symbols instead of system library symbols
+pulled into the same generated TU. The filter applies to demangled trace details
+and to decoded namespace prefixes from Itanium-mangled symbols in trace details.
+It does not filter path/phase events such as file processing, host compiler
+phases, or total compilation time.
+
+Pass ``--scope-filter <regex>`` after the wrapper's ``--`` separator to choose
+a different case-sensitive symbol-scope regex. Pass an empty string to disable
+symbol-scope filtering:
+
+.. code-block:: bash
+
+  ci/build_compile_time_bench.sh -skip-build -- \
+    -f template-instantiation -i --scope-filter ""
 
 ``host-compiler`` matches the host compiler preprocessing / compiling events
 that appear in the device-time-trace output. ``total-compilation`` is a

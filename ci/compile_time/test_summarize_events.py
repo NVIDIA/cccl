@@ -669,6 +669,244 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             {"g++ (preprocessing 1)", "gcc (compiling)"},
         )
 
+    def test_scope_filter_defaults_to_cccl_demangled_symbols(self) -> None:
+        traces = self.work / "traces"
+        output = self.work / "reports"
+
+        self.traces.write_trace(
+            traces / "target" / "symbols.json",
+            [
+                self.traces.event(
+                    "Scanning Function Body",
+                    "std::basic_string_view::size() const noexcept",
+                    0,
+                    100,
+                ),
+                self.traces.event(
+                    "Scanning Function Body",
+                    "cuda::std::__4::basic_string_view::size() const noexcept",
+                    200,
+                    80,
+                ),
+                self.traces.event(
+                    "Scanning Function Body",
+                    'cuda::std::literals::operator ""sv(const char *, unsigned long)',
+                    400,
+                    60,
+                ),
+            ],
+            "symbols",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-o",
+                output.as_posix(),
+                "-f",
+                "scanning-function-body",
+                "-i",
+                "--sort",
+                "total",
+                "-n",
+                "5",
+                "--tag",
+                "scope-default",
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rows = csv_rows(
+            output / "top-5-scanning-function-body-inclusive-by-total-scope-default.csv"
+        )
+        self.assertEqual(len(rows), 2)
+        self.assertIn("cuda::std", rows[0]["event_key"])
+        self.assertIn("operator", rows[1]["event_key"])
+
+    def test_empty_scope_filter_disables_symbol_scope_filtering(self) -> None:
+        traces = self.work / "traces"
+        output = self.work / "reports"
+
+        self.traces.write_trace(
+            traces / "target" / "symbols.json",
+            [
+                self.traces.event(
+                    "Scanning Function Body",
+                    "std::basic_string_view::size() const noexcept",
+                    0,
+                    100,
+                ),
+                self.traces.event(
+                    "Scanning Function Body",
+                    "cuda::std::__4::basic_string_view::size() const noexcept",
+                    200,
+                    80,
+                ),
+            ],
+            "symbols",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-o",
+                output.as_posix(),
+                "-f",
+                "scanning-function-body",
+                "-i",
+                "--sort",
+                "total",
+                "-n",
+                "5",
+                "--scope-filter",
+                "",
+                "--tag",
+                "scope-disabled",
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rows = csv_rows(
+            output
+            / "top-5-scanning-function-body-inclusive-by-total-scope-disabled.csv"
+        )
+        self.assertEqual(len(rows), 2)
+        self.assertIn("std::basic_string_view", rows[0]["event_key"])
+        self.assertIn("cuda::std", rows[1]["event_key"])
+
+    def test_scope_filter_uses_reported_template_symbol_scope(self) -> None:
+        traces = self.work / "traces"
+        output = self.work / "reports"
+
+        self.traces.write_trace(
+            traces / "target" / "templates.json",
+            [
+                self.traces.event(
+                    "Instantiating Template Function",
+                    (
+                        "nvtx3::v1::domain::get "
+                        "[nvtx3::v1::domain::get<cuda::__4::__nvtx_cccl_domain>()]"
+                    ),
+                    0,
+                    100,
+                ),
+                self.traces.event(
+                    "Instantiating Template Function",
+                    "cub::detail::load [cub::detail::load<int>()]",
+                    200,
+                    80,
+                ),
+            ],
+            "templates",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-o",
+                output.as_posix(),
+                "-f",
+                "template-instantiation",
+                "-i",
+                "--sort",
+                "total",
+                "-n",
+                "5",
+                "--tag",
+                "template-scope",
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rows = csv_rows(
+            output
+            / "top-5-template-instantiation-inclusive-by-total-template-scope.csv"
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertIn("cub::detail::load", rows[0]["event_key"])
+
+    def test_scope_filter_matches_mangled_cccl_namespaces(self) -> None:
+        traces = self.work / "traces"
+        output = self.work / "reports"
+
+        self.traces.write_trace(
+            traces / "target" / "mangled.json",
+            [
+                self.traces.event(
+                    "Generating Function IR",
+                    "_ZN4cuda3std3__43fooEv",
+                    0,
+                    100,
+                ),
+                self.traces.event(
+                    "Generating Function IR",
+                    "_ZN6thrust6detail3barEv",
+                    200,
+                    80,
+                ),
+                self.traces.event(
+                    "Generating Function IR",
+                    "_ZNSt6vectorIiE4sizeEv",
+                    400,
+                    200,
+                ),
+            ],
+            "mangled",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-o",
+                output.as_posix(),
+                "-f",
+                "code-generation",
+                "-i",
+                "--sort",
+                "total",
+                "-n",
+                "5",
+                "--tag",
+                "mangled-scope",
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rows = csv_rows(
+            output / "top-5-code-generation-inclusive-by-total-mangled-scope.csv"
+        )
+        self.assertEqual(
+            {row["event_key"] for row in rows},
+            {
+                "_ZN4cuda3std3__43fooEv",
+                "_ZN6thrust6detail3barEv",
+            },
+        )
+
     def test_total_compilation_filter_uses_trace_wall_span(self) -> None:
         traces = self.work / "traces"
         output = self.work / "reports"

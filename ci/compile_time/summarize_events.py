@@ -10,6 +10,16 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Callable
 
+DEFAULT_SCOPE_FILTER = r"(^|[^A-Za-z0-9_:])(?:::)?(?:cuda|thrust|cub|cccl)::"
+SYMBOL_SCOPE_EVENT_NAMES = {
+    "Scanning Function Body",
+    "Instantiating Template Class",
+    "Instantiating Template Function",
+    "Generating Function IR",
+    "OptFunction",
+}
+ITANIUM_CV_QUALIFIERS = frozenset("KOVR")
+
 
 @dataclass(frozen=True)
 class FilterSpec:
@@ -28,6 +38,7 @@ class ReportConfig:
     top_n: int
     tag: str | None
     threshold_us: float = 0.0
+    scope_filter: re.Pattern[str] | None = None
 
 
 @dataclass
@@ -176,13 +187,101 @@ def general_event_identity(event: TraceEvent, repo_root: Path) -> tuple[str, str
     return (event.name, event.key(repo_root))
 
 
+def strip_angle_arguments(symbol: str) -> str:
+    stripped: list[str] = []
+    depth = 0
+    for char in symbol:
+        if char == "<":
+            depth += 1
+            continue
+        if char == ">" and depth:
+            depth -= 1
+            continue
+        if depth == 0:
+            stripped.append(char)
+    return "".join(stripped)
+
+
+def symbol_name_prefix(symbol: str) -> str:
+    before_parameters = strip_angle_arguments(symbol).split("(", 1)[0].strip()
+    if not before_parameters:
+        return symbol
+    if "::operator" in before_parameters:
+        operator_scope = before_parameters.rfind("::operator")
+        prefix_start = before_parameters.rfind(" ", 0, operator_scope)
+        return before_parameters[prefix_start + 1 :]
+    return before_parameters.rsplit(None, 1)[-1]
+
+
+def itanium_nested_scope_candidates(symbol: str) -> list[str]:
+    if not symbol.startswith("_Z"):
+        return []
+
+    candidates: list[str] = []
+    for nested_marker in (i for i, char in enumerate(symbol) if char == "N"):
+        index = nested_marker + 1
+        while index < len(symbol) and symbol[index] in ITANIUM_CV_QUALIFIERS:
+            index += 1
+
+        scopes: list[str] = []
+        while index < len(symbol) and symbol[index].isdigit():
+            length_start = index
+            while index < len(symbol) and symbol[index].isdigit():
+                index += 1
+            try:
+                component_length = int(symbol[length_start:index])
+            except ValueError:
+                break
+
+            component = symbol[index : index + component_length]
+            if len(component) != component_length:
+                break
+
+            scopes.append(component)
+            candidates.append("::".join(scopes) + "::")
+            index += component_length
+
+    return candidates
+
+
+def symbol_scope_candidates(event: TraceEvent) -> list[str]:
+    if event.name not in SYMBOL_SCOPE_EVENT_NAMES or not event.detail:
+        return []
+
+    candidates = [symbol_name_prefix(event.detail)]
+    if " [" in event.detail:
+        _, bracketed_symbol = event.detail.split(" [", 1)
+        candidates.append(symbol_name_prefix(bracketed_symbol.rstrip("]")))
+
+    for candidate in list(candidates):
+        candidates.extend(itanium_nested_scope_candidates(candidate))
+
+    return candidates
+
+
+def matches_scope_filter(
+    event: TraceEvent, scope_filter: re.Pattern[str] | None
+) -> bool:
+    if scope_filter is None or event.name not in SYMBOL_SCOPE_EVENT_NAMES:
+        return True
+    return any(
+        scope_filter.search(candidate) for candidate in symbol_scope_candidates(event)
+    )
+
+
+def matches_report_config(event: TraceEvent, config: ReportConfig) -> bool:
+    return config.spec.matches(event) and matches_scope_filter(
+        event, config.scope_filter
+    )
+
+
 def report_event_identity(
-    event: TraceEvent, spec: FilterSpec, repo_root: Path
+    event: TraceEvent, config: ReportConfig, repo_root: Path
 ) -> tuple[str, str] | None:
-    if not spec.matches(event):
+    if not matches_report_config(event, config):
         return None
 
-    if spec.label == "file-processing":
+    if config.spec.label == "file-processing":
         event_key = normalize_project_file(event.detail, repo_root)
         if event_key is None:
             return None
@@ -193,9 +292,9 @@ def report_event_identity(
 
 
 def filter_event_identity(
-    event: TraceEvent, spec: FilterSpec, repo_root: Path
+    event: TraceEvent, config: ReportConfig, repo_root: Path
 ) -> tuple[str, str] | None:
-    if not spec.matches(event):
+    if not matches_report_config(event, config):
         return None
     return general_event_identity(event, repo_root)
 
@@ -456,22 +555,20 @@ def resolve_filter(filter_name: str) -> FilterSpec:
     return regex_filter(filter_name)
 
 
-def exclusive_child_events(
-    event: TraceEvent, spec: FilterSpec, exclusive_scope: str
-) -> list[TraceEvent]:
-    if exclusive_scope == "all":
+def exclusive_child_events(event: TraceEvent, config: ReportConfig) -> list[TraceEvent]:
+    if config.exclusive_scope == "all":
         return event.children
-    if exclusive_scope == "same-filter":
-        return [child for child in event.children if spec.matches(child)]
-    raise ValueError(f"unknown exclusive scope: {exclusive_scope}")
+    if config.exclusive_scope == "same-filter":
+        return [
+            child for child in event.children if matches_report_config(child, config)
+        ]
+    raise ValueError(f"unknown exclusive scope: {config.exclusive_scope}")
 
 
-def event_exclusive_us(
-    event: TraceEvent, spec: FilterSpec, exclusive_scope: str
-) -> int:
+def event_exclusive_us(event: TraceEvent, config: ReportConfig) -> int:
     child_intervals = [
         (child.start_us, child.end_us)
-        for child in exclusive_child_events(event, spec, exclusive_scope)
+        for child in exclusive_child_events(event, config)
     ]
     return max(0, event.inclusive_us - merged_interval_duration(child_intervals))
 
@@ -507,18 +604,14 @@ def collect_trace_stats(
     exclusive_config: ReportConfig,
 ) -> None:
     for event in events:
-        identity = report_event_identity(event, report_config.spec, repo_root)
+        identity = report_event_identity(event, report_config, repo_root)
         if identity is None:
             continue
         add_event_stats(
             stats,
             identity,
             event.inclusive_us,
-            event_exclusive_us(
-                event,
-                exclusive_config.spec,
-                exclusive_config.exclusive_scope,
-            ),
+            event_exclusive_us(event, exclusive_config),
             trace_path,
             event.root_tu,
         )
@@ -617,42 +710,40 @@ def comparable_child_identities(
         return {
             identity
             for event in events
-            if (identity := filter_event_identity(event, config.spec, repo_root))
-            is not None
+            if (identity := filter_event_identity(event, config, repo_root)) is not None
         }
     raise ValueError(f"unknown exclusive scope: {config.exclusive_scope}")
 
 
 def comparable_report_filter(
-    spec: FilterSpec,
+    config: ReportConfig,
     repo_root: Path,
     comparable_report_ids: set[tuple[str, str]],
 ) -> FilterSpec:
     def matches(event: TraceEvent) -> bool:
-        identity = report_event_identity(event, spec, repo_root)
+        identity = report_event_identity(event, config, repo_root)
         return identity is not None and identity in comparable_report_ids
 
-    return replace(spec, matches=matches)
+    return replace(config.spec, matches=matches)
 
 
 def comparable_child_filter(
-    spec: FilterSpec,
+    config: ReportConfig,
     repo_root: Path,
-    exclusive_scope: str,
     comparable_child_ids: set[tuple[str, str]],
 ) -> FilterSpec:
     def child_identity(event: TraceEvent) -> tuple[str, str] | None:
-        if exclusive_scope == "all":
+        if config.exclusive_scope == "all":
             return general_event_identity(event, repo_root)
-        if exclusive_scope == "same-filter":
-            return filter_event_identity(event, spec, repo_root)
-        raise ValueError(f"unknown exclusive scope: {exclusive_scope}")
+        if config.exclusive_scope == "same-filter":
+            return filter_event_identity(event, config, repo_root)
+        raise ValueError(f"unknown exclusive scope: {config.exclusive_scope}")
 
     def matches(event: TraceEvent) -> bool:
         identity = child_identity(event)
         return identity is not None and identity in comparable_child_ids
 
-    return replace(spec, matches=matches)
+    return replace(config.spec, matches=matches)
 
 
 def merge_event_stats(target: EventStats, source: EventStats) -> None:
@@ -696,8 +787,7 @@ def read_comparison_side(
     report_ids = {
         identity
         for event in events
-        if (identity := report_event_identity(event, config.spec, repo_root))
-        is not None
+        if (identity := report_event_identity(event, config, repo_root)) is not None
     }
     child_ids = comparable_child_identities(events, repo_root, config)
     return ComparisonSide(
@@ -752,18 +842,20 @@ def collect_comparison_stats(
             report_config = replace(
                 config,
                 spec=comparable_report_filter(
-                    config.spec, side.repo_root, comparable_report_ids
+                    config, side.repo_root, comparable_report_ids
                 ),
             )
             exclusive_config = replace(
                 config,
                 spec=comparable_child_filter(
-                    config.spec,
-                    side.repo_root,
-                    config.exclusive_scope,
-                    comparable_child_ids,
+                    config, side.repo_root, comparable_child_ids
                 ),
                 exclusive_scope="same-filter",
+                scope_filter=(
+                    config.scope_filter
+                    if config.exclusive_scope == "same-filter"
+                    else None
+                ),
             )
             side_stats: dict[tuple[str, str], EventStats] = {}
             collect_trace_stats(
@@ -1147,6 +1239,16 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--scope-filter",
+        default=DEFAULT_SCOPE_FILTER,
+        help=(
+            "case-sensitive regex for symbol-scope reports; applies to demangled "
+            "symbols and decoded Itanium-mangled namespace prefixes for symbol-like "
+            "events only; pass an empty string to disable (default: CCCL top-level "
+            "namespaces)"
+        ),
+    )
+    parser.add_argument(
         "--repo-root", default=Path(__file__).resolve().parents[2], type=Path
     )
     parser.add_argument(
@@ -1191,6 +1293,10 @@ def main() -> None:
         if args.exclusive_scope == "auto"
         else args.exclusive_scope
     )
+    try:
+        scope_filter = re.compile(args.scope_filter) if args.scope_filter else None
+    except re.error as e:
+        parser.error(f"invalid --scope-filter regex: {e}")
     config = ReportConfig(
         spec=spec,
         timing=args.timing,
@@ -1199,6 +1305,7 @@ def main() -> None:
         top_n=args.top,
         tag=args.tag,
         threshold_us=args.threshold * 1_000_000.0,
+        scope_filter=scope_filter,
     )
     output_dir = (
         args.output_dir.resolve(strict=False)
