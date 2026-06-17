@@ -16,11 +16,8 @@
 #include "test_macros.h"
 
 // Provided by the selected checker.
-template <class CharT, class... Args>
-TEST_FUNC bool
-check(cuda::std::basic_string_view<CharT> expected, cuda::std::basic_string_view<CharT> fmt, Args&&... args);
-template <class CharT, class... Args>
-TEST_FUNC bool check_exception(cuda::std::string_view what, cuda::std::basic_string_view<CharT> fmt, Args&&... args);
+TEST_FUNC bool check(...);
+TEST_FUNC bool check_exception(...);
 
 template <class CharT, class I>
 TEST_FUNC _CCCL_NOINLINE void test_integer_as_integer()
