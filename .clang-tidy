@@ -290,6 +290,14 @@ CheckOptions:
   # (`to_string(bool provenance = false)` comes to mind), but setting this to false makes
   # clang-tidy warn on a bunch of "obvious" calls, like `set_dim(1)` or
   # `with_concurrent(true)`.
+  bugprone-argument-comment.IgnoreSingleArgument: true
+  bugprone-argument-comment.CommentBoolLiterals: true
+  bugprone-argument-comment.CommentIntegerLiterals: true
+  bugprone-argument-comment.CommentFloatLiterals: true
+  bugprone-argument-comment.CommentStringLiterals: true
+  bugprone-argument-comment.CommentCharacterLiterals: true
+  bugprone-argument-comment.CommentUserDefinedLiterals: true
+  bugprone-argument-comment.CommentNullPtrs: true
   cppcoreguidelines-macro-usage.AllowedRegexp: '^DEBUG_.*|THRUST_PP_.*|_CCCL.*_PP_.*'
   bugprone-reserved-identifier.AllowedIdentifiers: '^_CCCL.*'
   performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
