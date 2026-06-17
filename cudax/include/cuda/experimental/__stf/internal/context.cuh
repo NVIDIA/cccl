@@ -1865,6 +1865,20 @@ UNITTEST("token vector")
   ctx.finalize();
 };
 
+// Blocking wait on a token returns void and only synchronizes the host
+UNITTEST("wait on token")
+{
+  context ctx;
+
+  auto tok = ctx.token();
+  ctx.task(tok.write())->*[](cudaStream_t) {};
+
+  static_assert(::std::is_void_v<decltype(ctx.wait(tok))>, "wait(token) must return void");
+  ctx.wait(tok);
+
+  ctx.finalize();
+};
+
 UNITTEST("get_stream")
 {
   context ctx;
