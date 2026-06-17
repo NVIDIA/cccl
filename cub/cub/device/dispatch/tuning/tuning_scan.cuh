@@ -882,15 +882,7 @@ struct policy_selector
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_lookahead_policy() const -> ScanLookaheadPolicy
   {
     ScanLookaheadPolicy lookahead_policy{};
-
-    // TODO(bgruber): tune this
-#if _CCCL_COMPILER(NVHPC)
-    // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
-    // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700.
-    lookahead_policy.reduce_and_scan_warps = 2;
-#else // _CCCL_COMPILER(NVHPC)
     lookahead_policy.reduce_and_scan_warps = 4;
-#endif // _CCCL_COMPILER(NVHPC)
 
     // TODO(bgruber): 5 is a bit better for complex<float>
     lookahead_policy.lookahead_items_per_thread = accum_size == 2 ? 3 : 4;
@@ -1039,9 +1031,17 @@ struct policy_selector
     // lookback stable reduction order implementation below.
     if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{10, 0})
     {
-      const auto lookahead_policy_opt = get_lookahead_policy(cc);
+      auto lookahead_policy_opt = get_lookahead_policy(cc);
       if (lookahead_policy_opt && can_use_lookahead(cc, *lookahead_policy_opt))
       {
+#if _CCCL_COMPILER(NVHPC)
+        // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
+        // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700 and
+        // https://github.com/NVIDIA/cccl/issues/9208. This probably degrades performance a lot. We should revert this
+        // once nvhpc can properly inline a function again.
+        lookahead_policy_opt->reduce_and_scan_warps = 2;
+#endif // _CCCL_COMPILER(NVHPC)
+
         return {ScanAlgorithm::lookahead, ScanLookbackPolicy{}, *lookahead_policy_opt};
       }
     }
