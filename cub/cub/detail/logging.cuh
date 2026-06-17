@@ -24,7 +24,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 //! Returns if logging is enabled
-_CCCL_HOST_API inline bool logging_enabled() noexcept
+[[nodiscard]] _CCCL_HOST_API inline bool logging_enabled() noexcept
 {
 #if _CCCL_HOSTED()
   static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
