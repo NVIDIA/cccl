@@ -87,14 +87,14 @@ constexpr std::size_t max_onesweep_temp_storage_size()
     onesweep.scan_algorithm,
     onesweep.store_algorithm,
     onesweep.radix_bits,
-    cub::NoScaling<onesweep.block_threads, onesweep.items_per_thread>>;
+    cub::NoScaling<onesweep.threads_per_block, onesweep.items_per_thread>>;
 
   using agent_radix_sort_onesweep_t =
     cub::AgentRadixSortOnesweep<onesweep_policy_t, SortOrder, KeyT, ValueT, OffsetT, portion_offset>;
 
   constexpr auto histogram = active_policy.histogram;
   using histogram_policy_t = cub::detail::agent_radix_sort_histogram_policy<
-    histogram.block_threads,
+    histogram.threads_per_block,
     histogram.items_per_thread,
     histogram.num_private_partitions,
     void,
