@@ -35,6 +35,10 @@ TEST_FUNC constexpr bool test_ctor()
 template <size_t Extent>
 TEST_FUNC constexpr void test_constructibility()
 {
+  struct Base
+  {};
+  struct Derived : Base
+  {};
   static_assert(cuda::std::is_constructible_v<cuda::std::span<int, Extent>, int*, int*>);
   static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, const int*, const int*>);
   static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, volatile int*, volatile int*>);
@@ -45,6 +49,8 @@ TEST_FUNC constexpr void test_constructibility()
   static_assert(!cuda::std::is_constructible_v<cuda::std::span<volatile int, Extent>, const int*, const int*>);
   static_assert(cuda::std::is_constructible_v<cuda::std::span<volatile int, Extent>, volatile int*, volatile int*>);
   static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, int*, float*>); // types wrong
+  static_assert(!cuda::std::is_constructible_v<cuda::std::span<Base, Extent>, Derived*, Derived*>);
+  static_assert(!cuda::std::is_constructible_v<cuda::std::span<const Base, Extent>, Derived*, Derived*>);
 }
 
 TEST_FUNC constexpr bool test()
