@@ -67,12 +67,14 @@ struct execute_on_stream_base : execution_policy<Derived>
 private:
   cudaStream_t stream;
 
-public:
   _CCCL_HOST_DEVICE execute_on_stream_base( // NOLINT(bugprone-crtp-constructor-accessibility)
     cudaStream_t stream_ = cuda_cub::default_stream())
       : stream(stream_)
   {}
 
+  friend Derived;
+
+public:
   _CCCL_HOST_DEVICE Derived on(::cudaStream_t s) const
   {
     Derived result = derived_cast(*this);
@@ -93,12 +95,14 @@ struct execute_on_stream_nosync_base : execution_policy<Derived>
 private:
   cudaStream_t stream;
 
-public:
   _CCCL_HOST_DEVICE execute_on_stream_nosync_base( // NOLINT(bugprone-crtp-constructor-accessibility)
     cudaStream_t stream_ = cuda_cub::default_stream())
       : stream(stream_)
   {}
 
+  friend Derived;
+
+public:
   _CCCL_HOST_DEVICE Derived on(::cudaStream_t s) const
   {
     Derived result = derived_cast(*this);

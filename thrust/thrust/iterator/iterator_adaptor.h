@@ -131,12 +131,12 @@ protected:
 public:
   /*! \p iterator_adaptor's default constructor does nothing.
    */
-  iterator_adaptor() = default; // NOLINT(bugprone-crtp-constructor-accessibility)
+  iterator_adaptor() = default;
 
   /*! This constructor copies from a given instance of the \p Base iterator.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit iterator_adaptor(Base const& iter) // NOLINT(bugprone-crtp-constructor-accessibility)
+  _CCCL_HOST_DEVICE explicit iterator_adaptor(Base const& iter)
       : m_iterator(iter)
   {}
 
