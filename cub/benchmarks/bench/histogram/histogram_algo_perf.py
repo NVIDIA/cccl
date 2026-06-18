@@ -307,8 +307,10 @@ def draw_perf(ax, series, title, default_tags=None):
         baseline = {int(x): y for x, y in zip(mb, mv) if y > 0}
 
     if baseline:
-        ax.set_yscale("log", base=2)
-        ax.set_ylabel("speedup vs baseline (×, log2)")
+        # The y-scale (log2 vs linear) is chosen AFTER plotting, from the max speedup in
+        # this panel (see below): log2 only when something exceeds 2x (so a wide dynamic
+        # range stays legible), otherwise a plain linear scale.
+        max_sp = 0.0
         # Every algorithm EXCEPT main, divided by main at the shared bin points.
         drawn = [a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])]
         for i, algo in enumerate(drawn):
@@ -320,6 +322,7 @@ def draw_perf(ax, series, title, default_tags=None):
             any_pts = True
             xs = np.array([xpos[p[0]] for p in pts], dtype=float)
             sp = np.array([p[1] for p in pts])
+            max_sp = max(max_sp, float(sp.max()))
             is_ref = (algo == "default")
             # Lines drawn first (lower zorder); markers all sit ON TOP (zorder 30+)
             # at the TRUE x, semi-transparent so overlapping points blend visibly
@@ -359,8 +362,16 @@ def draw_perf(ax, series, title, default_tags=None):
                                 zorder=1, label="_nolegend_")
                 ax.fill_between(xs, hi, 1.0, where=(hi < 1.0), color="#d62728", alpha=0.10,
                                 zorder=1, label="_nolegend_")
-        # Label the log2 axis in plain multiples (..., 0.5×, 1×, 2×, 4×, ...) rather
-        # than 2^n or powers of 10.
+        # Y-scale chosen from the data: log2 ONLY when some series exceeds 2x (a wide
+        # dynamic range that a linear axis would crush against the top); otherwise a
+        # plain linear scale (more readable when everything sits near 1x). Either way
+        # ticks are labelled in plain multiples (..., 0.5x, 1x, 2x, 4x, ...).
+        if max_sp > 2.0:
+            ax.set_yscale("log", base=2)
+            ax.set_ylabel("speedup vs baseline (×, log2)")
+        else:
+            ax.set_yscale("linear")
+            ax.set_ylabel("speedup vs baseline (×)")
         def _mult(v, _):
             if v >= 1:
                 return f"{int(round(v))}×" if abs(v - round(v)) < 1e-6 else f"{v:g}×"
@@ -502,33 +513,48 @@ def render_geomean(binary_label, per_algo_cells, sample, elements_list, algos, s
         fontsize=12,
     )
 
+    drawn_algos = set()
     for i, elements in enumerate(elements_list):
         r, c = i // ncols, i % ncols
         ax = fig.add_subplot(gs[r, c])
         series = geomean_perf_series(per_algo_cells, sample, elements, algos, shapes)
         tags = geomean_selected_tags(per_algo_cells, sample, elements, shapes)
+        # Record which series actually produced points (for an honest legend).
+        drawn_algos.update(a for a in series if len(series[a][0]))
         if not draw_perf(ax, series, f"N = {fmt_elements(elements)} elements", default_tags=tags):
             ax.text(0.5, 0.5, "no data\n(all cells skipped)", ha="center", va="center",
                     transform=ax.transAxes, fontsize=9, color="gray")
 
-    # Legend in the first unused grid cell of the last row (if any), else overlaid on
-    # the last panel. Mirrors render_one's tag -> name decoding.
+    # Legend, in a free grid cell if the perf grid leaves one, otherwise as a figure-level
+    # legend below the panels. Only series ACTUALLY drawn (in canonical order), plus the
+    # baseline line. Mirrors render_one's tag -> name decoding.
     def _legend_label(a):
         tag = ALGO_TAG.get(a)
         return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
+    legend_algos = [a for a in ALGO_ORDER if a in drawn_algos and a != "main"]
     handles = [
         plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1],
                    linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=_legend_label(a))
-        for a in algos
+        for a in legend_algos
     ]
+    if "main" in drawn_algos:  # the 1x baseline reference line
+        mc, _mm, _ml, mls, mlw = ALGO_STYLE["main"]
+        handles.append(plt.Line2D([0], [0], color=mc, linestyle=mls, lw=mlw,
+                                  label="BAS — baseline (upstream main), 1×"))
     free_slots = perf_rows * ncols - nperf
     if free_slots > 0:
         lax = fig.add_subplot(gs[perf_rows - 1, ncols - free_slots])
         lax.axis("off")
         lax.legend(handles=handles, loc="center", fontsize=10, title="algorithms (tag — name)",
                    title_fontsize=10, frameon=True)
-
-    fig.tight_layout(rect=(0, 0, 1, 0.93))
+        fig.tight_layout(rect=(0, 0, 1, 0.93))
+    else:
+        # No free panel slot (e.g. a full 2x3 grid): put the legend below the figure so
+        # it is never omitted.
+        ncol = min(len(handles), 4)
+        fig.legend(handles=handles, loc="lower center", ncol=ncol, fontsize=9,
+                   title="algorithms (tag — name)", title_fontsize=9, frameon=True)
+        fig.tight_layout(rect=(0, 0.08, 1, 0.93))
     fig.savefig(outpath, dpi=110, bbox_inches="tight")
     plt.close(fig)
 
@@ -566,31 +592,40 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
 
     C.draw_distribution(fig.add_subplot(gs[0, 0]), counts, char_bins)
     C.draw_sequence(fig.add_subplot(gs[0, 1]), bins, char_bins, shape=shape)
-    legend_ax = fig.add_subplot(gs[0, 2])
-    legend_ax.axis("off")
-    # Prefix each entry with its 3-letter tag so the legend decodes the tags
-    # annotated on the `default` series points (e.g. a "DAC" on the black line maps
-    # to "DAC — direct-atomic + cuckoo" here). Without this the tags are unexplained.
-    def _legend_label(a):
-        tag = ALGO_TAG.get(a)
-        return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
 
-    handles = [
-        plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1],
-                   linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=_legend_label(a))
-        for a in algos
-    ]
-    legend_ax.legend(handles=handles, loc="center", fontsize=10, title="algorithms (tag — name)",
-                     title_fontsize=10, frameon=True)
-
+    # Draw the per-element-count perf panels FIRST, recording which series actually
+    # produced points, so the legend lists only series present in this figure's data.
+    drawn_algos = set()
     for i, elements in enumerate(elements_list):
         r, c = 1 + i // ncols, i % ncols
         ax = fig.add_subplot(gs[r, c])
         series = perf_series(per_algo_cells, sample, elements, shape, algos)
         tags = selected_algo_tags(per_algo_cells, sample, elements, shape)
+        drawn_algos.update(a for a in series if len(series[a][0]))
         if not draw_perf(ax, series, f"N = {fmt_elements(elements)} elements", default_tags=tags):
             ax.text(0.5, 0.5, "no data\n(all cells skipped)", ha="center", va="center",
                     transform=ax.transAxes, fontsize=9, color="gray")
+
+    # Legend (top-right slot): only series actually drawn above, plus the baseline line.
+    # Prefix each entry with its 3-letter tag so the legend decodes the tags annotated on
+    # the `default` series points (e.g. a "DAC" on the black line maps to its name here).
+    legend_ax = fig.add_subplot(gs[0, 2])
+    legend_ax.axis("off")
+    def _legend_label(a):
+        tag = ALGO_TAG.get(a)
+        return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
+    legend_algos = [a for a in ALGO_ORDER if a in drawn_algos and a != "main"]
+    handles = [
+        plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1],
+                   linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=_legend_label(a))
+        for a in legend_algos
+    ]
+    if "main" in drawn_algos:
+        mc, _mm, _ml, mls, mlw = ALGO_STYLE["main"]
+        handles.append(plt.Line2D([0], [0], color=mc, linestyle=mls, lw=mlw,
+                                  label="BAS — baseline (upstream main), 1×"))
+    legend_ax.legend(handles=handles, loc="center", fontsize=10, title="algorithms (tag — name)",
+                     title_fontsize=10, frameon=True)
 
     if has_hr:
         hr_row = 1 + perf_rows
