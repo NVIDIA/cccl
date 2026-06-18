@@ -37,9 +37,9 @@ NAME = {
     "SST": "smem static", "SDY": "smem dynamic", "HYB": "hybrid (smem+gmem)",
     "GPN": "gmem-priv gather", "GPC": "gmem-priv cuckoo", "GPS": "gmem-priv single-probe",
     "DAN": "direct-atomic nocache", "DAC": "direct-atomic cuckoo", "DAS": "direct-atomic single-probe",
-    "GN0": "gmem-priv gather, NO-coalesce", "GC0": "gmem-priv cuckoo, NO-coalesce",
-    "GS0": "gmem-priv single-probe, NO-coalesce", "DN0": "direct-atomic nocache, NO-coalesce",
-    "DC0": "direct-atomic cuckoo, NO-coalesce", "DS0": "direct-atomic single-probe, NO-coalesce",
+    "GN0": "gmem-priv gather + no coalesce", "GC0": "gmem-priv cuckoo + no coalesce",
+    "GS0": "gmem-priv single-probe + no coalesce", "DN0": "direct-atomic + no cache + no coalesce",
+    "DC0": "direct-atomic + cuckoo + no coalesce", "DS0": "direct-atomic + single-probe + no coalesce",
 }
 # default = the selector's pick (not its own algorithm); main = a different upstream impl;
 # _selected = the per-cell launch-tag map (strings, not GiB/s) the main sweep records.

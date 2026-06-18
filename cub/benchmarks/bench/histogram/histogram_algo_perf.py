@@ -103,10 +103,10 @@ ALGO_STYLE = {
     # No-warp-coalesce variants (histogram_algo_sweep.py forces these against the
     # .nocoal binaries). Same base color as the coalesce-on kernel, dotted + open
     # marker to read as "the same algorithm with coalescing disabled".
-    "gmem_privatized_nocache__nocoal": ("#9467bd", "1", "gmem-priv gather, NO-coalesce", ":", 1.3),
-    "direct_nocache__nocoal": ("#ff7f0e", "2", "direct-atomic no cache, NO-coalesce", ":", 1.3),
-    "direct_cuckoo__nocoal": ("#2ca02c", "3", "direct-atomic cuckoo, NO-coalesce", ":", 1.3),
-    "direct_single_probe__nocoal": ("#8c8c00", "4", "direct-atomic single-probe, NO-coalesce", ":", 1.3),
+    "gmem_privatized_nocache__nocoal": ("#9467bd", "1", "gmem-priv gather + no coalesce", ":", 1.3),
+    "direct_nocache__nocoal": ("#ff7f0e", "2", "direct-atomic + no cache + no coalesce", ":", 1.3),
+    "direct_cuckoo__nocoal": ("#2ca02c", "3", "direct-atomic + cuckoo + no coalesce", ":", 1.3),
+    "direct_single_probe__nocoal": ("#8c8c00", "4", "direct-atomic + single-probe + no coalesce", ":", 1.3),
 }
 # 3-letter tag per algorithm, used to label each point of the `default` series with
 # the algorithm the selector actually picked there. `hybrid` is the smem_split>0
@@ -498,10 +498,16 @@ def render_geomean(binary_label, per_algo_cells, sample, elements_list, algos, s
     ncols = 3
     nperf = len(elements_list)
     perf_rows = (nperf + ncols - 1) // ncols
-    nrows = perf_rows
+    free_slots = perf_rows * ncols - nperf
+    # When the perf grid is exactly full (no free cell for the legend, e.g. 6 panels in a
+    # 2x3 grid), add a dedicated short bottom ROW for the legend so it never overlaps the
+    # panels' x-axis labels. A small height_ratio keeps that row compact.
+    needs_legend_row = (free_slots == 0)
+    nrows = perf_rows + (1 if needs_legend_row else 0)
 
-    fig = plt.figure(figsize=(5.4 * ncols, 4.1 * nrows))
-    gs = fig.add_gridspec(nrows, ncols)
+    fig = plt.figure(figsize=(5.4 * ncols, 4.1 * perf_rows + (0.9 if needs_legend_row else 0)))
+    height_ratios = [4.1] * perf_rows + ([0.9] if needs_legend_row else [])
+    gs = fig.add_gridspec(nrows, ncols, height_ratios=height_ratios)
 
     transform, channels = BINARY_META[binary_label]
     head = f"{transform.upper()} · {channels}-channel · {sample}  —  GEOMEAN over {len(shapes)} input shapes"
@@ -541,20 +547,20 @@ def render_geomean(binary_label, per_algo_cells, sample, elements_list, algos, s
         mc, _mm, _ml, mls, mlw = ALGO_STYLE["main"]
         handles.append(plt.Line2D([0], [0], color=mc, linestyle=mls, lw=mlw,
                                   label="BAS — baseline (upstream main), 1×"))
-    free_slots = perf_rows * ncols - nperf
     if free_slots > 0:
+        # Legend in the first unused panel cell of the last perf row.
         lax = fig.add_subplot(gs[perf_rows - 1, ncols - free_slots])
         lax.axis("off")
         lax.legend(handles=handles, loc="center", fontsize=10, title="algorithms (tag — name)",
                    title_fontsize=10, frameon=True)
-        fig.tight_layout(rect=(0, 0, 1, 0.93))
     else:
-        # No free panel slot (e.g. a full 2x3 grid): put the legend below the figure so
-        # it is never omitted.
-        ncol = min(len(handles), 4)
-        fig.legend(handles=handles, loc="lower center", ncol=ncol, fontsize=9,
+        # Dedicated bottom legend row spanning all columns -- its own reserved space, so
+        # it cannot overlap the panels' "# bins" labels above it.
+        lax = fig.add_subplot(gs[perf_rows, :])
+        lax.axis("off")
+        lax.legend(handles=handles, loc="center", ncol=min(len(handles), 5), fontsize=9,
                    title="algorithms (tag — name)", title_fontsize=9, frameon=True)
-        fig.tight_layout(rect=(0, 0.08, 1, 0.93))
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
     fig.savefig(outpath, dpi=110, bbox_inches="tight")
     plt.close(fig)
 
