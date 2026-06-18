@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 import textwrap
@@ -291,8 +292,13 @@ def draw_perf(ax, series, title, default_tags=None):
     default_tags = default_tags or {}
     ax.set_title(title, fontsize=9)
     ax.set_xlabel("# bins")
-    ax.set_xscale("log", base=2)
     any_pts = False
+
+    # CATEGORICAL x-axis: plot bins at evenly-spaced integer positions (0,1,2,...) rather
+    # than at their log2 value, so adjacent tiers (e.g. 49152/57344/65536) are not squished
+    # together. `xpos` maps a bin count to its slot index over the union of bins present.
+    all_bins_sorted = sorted({int(b) for s in series.values() for b in s[0]})
+    xpos = {b: i for i, b in enumerate(all_bins_sorted)}
 
     # Baseline = upstream main. Map bin -> main GiB/s for this (sample, elements, shape).
     baseline = None
@@ -312,7 +318,7 @@ def draw_perf(ax, series, title, default_tags=None):
             if not pts:
                 continue
             any_pts = True
-            xs = np.array([p[0] for p in pts], dtype=float)
+            xs = np.array([xpos[p[0]] for p in pts], dtype=float)
             sp = np.array([p[1] for p in pts])
             is_ref = (algo == "default")
             # Lines drawn first (lower zorder); markers all sit ON TOP (zorder 30+)
@@ -330,11 +336,12 @@ def draw_perf(ax, series, title, default_tags=None):
                     linestyle="none", alpha=mark_alpha,
                     zorder=(32 if is_ref else 30 + i))
             # Annotate each default point with the selected algorithm's 3-letter tag.
+            # `pts` carries the true bin counts; x position is the categorical slot.
             if is_ref and default_tags:
-                for x, y in zip(xs, sp):
-                    tag = default_tags.get(int(round(x)))
+                for (b, y) in pts:
+                    tag = default_tags.get(int(b))
                     if tag:
-                        ax.annotate(tag, (x, y), textcoords="offset points", xytext=(0, 7),
+                        ax.annotate(tag, (xpos[int(b)], y), textcoords="offset points", xytext=(0, 7),
                                     ha="center", va="bottom", fontsize=6, fontweight="bold",
                                     color="#000000", zorder=40)
         # Baseline reference: main is 1x by definition. Draw it as the styled main line.
@@ -346,7 +353,7 @@ def draw_perf(ax, series, title, default_tags=None):
             db, dv = series["default"]
             dpts = sorted((int(x), y / baseline[int(x)]) for x, y in zip(db, dv) if int(x) in baseline)
             if dpts:
-                xs = np.array([p[0] for p in dpts])
+                xs = np.array([xpos[p[0]] for p in dpts])
                 hi = np.array([p[1] for p in dpts])
                 ax.fill_between(xs, 1.0, hi, where=(hi >= 1.0), color="#2ca02c", alpha=0.10,
                                 zorder=1, label="_nolegend_")
@@ -369,13 +376,14 @@ def draw_perf(ax, series, title, default_tags=None):
             xb, yv = series[algo]
             any_pts = True
             is_ref = algo in ("default", "main")
-            ax.plot(xb, yv, color=color, marker=marker, markersize=10 if is_ref else 6,
-                    lw=lw, linestyle=ls, alpha=1.0 if is_ref else 0.8,
-                    label=label, zorder=(20 if is_ref else 3 + i))
+            ax.plot([xpos[int(x)] for x in xb], yv, color=color, marker=marker,
+                    markersize=10 if is_ref else 6, lw=lw, linestyle=ls,
+                    alpha=1.0 if is_ref else 0.8, label=label, zorder=(20 if is_ref else 3 + i))
 
     ax.grid(True, which="both", linestyle=":", alpha=0.4)
-    ax.set_xticks(sorted({int(b) for s in series.values() for b in s[0]}))
-    ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda v, _: fmt_bins(int(round(v)))))
+    # Categorical ticks: one slot per bin, evenly spaced, labelled with the bin count.
+    ax.set_xticks(range(len(all_bins_sorted)))
+    ax.set_xticklabels([fmt_bins(b) for b in all_bins_sorted])
     ax.tick_params(axis="x", labelsize=7, rotation=45)
     return any_pts
 
@@ -386,10 +394,11 @@ def draw_hitrate(ax, hr_algo_cells, shape, elements_list, title):
     ax.set_title(title, fontsize=9)
     ax.set_xlabel("# bins")
     ax.set_ylabel("cache hit rate (%)")
-    ax.set_xscale("log", base=2)
     any_pts = False
-    all_bins = set()
     cmap = plt.cm.viridis
+    # CATEGORICAL x-axis (evenly spaced), matching draw_perf: map each bin to a slot index.
+    all_bins_sorted = sorted({int(k.split("|")[0]) for k in hr_algo_cells})
+    xpos = {b: i for i, b in enumerate(all_bins_sorted)}
     for i, elements in enumerate(elements_list):
         pts = []
         for key, rec in hr_algo_cells.items():
@@ -399,15 +408,14 @@ def draw_hitrate(ax, hr_algo_cells, shape, elements_list, title):
         pts.sort()
         if pts:
             any_pts = True
-            xb = [p[0] for p in pts]; yv = [p[1] for p in pts]
-            all_bins.update(xb)
+            xb = [xpos[p[0]] for p in pts]; yv = [p[1] for p in pts]
             ax.plot(xb, yv, marker="o", ms=5, lw=1.8,
                     color=cmap(0.1 + 0.8 * i / max(1, len(elements_list) - 1)),
                     label=fmt_elements(elements))
     ax.grid(True, which="both", linestyle=":", alpha=0.4)
-    if all_bins:
-        ax.set_xticks(sorted(all_bins))
-        ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda v, _: fmt_bins(int(round(v)))))
+    if all_bins_sorted:
+        ax.set_xticks(range(len(all_bins_sorted)))
+        ax.set_xticklabels([fmt_bins(b) for b in all_bins_sorted])
     ax.tick_params(axis="x", labelsize=7, rotation=45)
     if any_pts:
         ax.set_ylim(-2, 102)
@@ -416,6 +424,113 @@ def draw_hitrate(ax, hr_algo_cells, shape, elements_list, title):
         ax.text(0.5, 0.5, "no hit-rate data", ha="center", va="center",
                 transform=ax.transAxes, fontsize=9, color="gray")
     return any_pts
+
+
+def geomean_perf_series(per_algo_cells, sample, elements, algos, shapes):
+    """Like perf_series, but each (algo, bins) point is the GEOMEAN of that algorithm's
+    GiB/s across all `shapes` at that (sample, elements, bins). Only bins where the algo
+    has >=1 positive shape sample contribute; the geomean is over exactly the shapes
+    present (so a forced algo that is dropped on some shapes still gets a fair mean over
+    the rest). Returns {algo: (bins[], geomean_gibs[])}, with `smem_privatized` synthesized
+    from `default` over the bins the selector ran it (same rule as perf_series)."""
+    shape_set = set(shapes)
+    out = {}
+    for algo in algos:
+        cells = per_algo_cells.get(algo, {})
+        bybin = {}
+        for key, gibs in cells.items():
+            s, e, b, sh = key.split("|")
+            if s == sample and int(e) == elements and sh in shape_set and int(b) >= MIN_PLOT_BINS and gibs > 0:
+                bybin.setdefault(int(b), []).append(gibs)
+        pts = sorted((b, math.exp(sum(map(math.log, v)) / len(v))) for b, v in bybin.items())
+        if pts:
+            out[algo] = (np.array([p[0] for p in pts], dtype=float), np.array([p[1] for p in pts]))
+    # Synthesize smem_privatized from the geomean default over the bins where the
+    # selector ran smem_privatized (the pick is shape-independent, so the bin set is the
+    # union across shapes), mirroring perf_series.
+    if "smem_privatized" in algos and "smem_privatized" not in out and "default" in out:
+        db, dv = out["default"]
+        selected = per_algo_cells.get("_selected", {})
+        smem_bins = set()
+        if selected:
+            for key, ran in selected.items():
+                s, e, b, sh = key.split("|")
+                if s == sample and int(e) == elements and sh in shape_set and ran == "smem_privatized":
+                    smem_bins.add(int(b))
+        else:
+            smem_bins = {int(b) for b in db if int(b) <= SMEM_PRIVATIZED_MAX_BINS}
+        pts = [(int(b), v) for b, v in zip(db, dv) if int(b) in smem_bins]
+        if pts:
+            out["smem_privatized"] = (np.array([p[0] for p in pts], dtype=float),
+                                      np.array([p[1] for p in pts]))
+    return out
+
+
+def geomean_selected_tags(per_algo_cells, sample, elements, shapes):
+    """{bins: tag} for the geomean default series. The selector is shape-blind, so its
+    pick is (almost always) constant across shapes at a given (sample, elements, bins);
+    take the pick of the first shape that has one. Falls back to whatever tag exists."""
+    selected = per_algo_cells.get("_selected", {})
+    tags = {}
+    for key, ran in selected.items():
+        s, e, b, sh = key.split("|")
+        if s == sample and int(e) == elements and sh in set(shapes) and ran in ALGO_TAG:
+            tags.setdefault(int(b), ALGO_TAG[ran])  # first shape wins; selector is shape-blind
+    return tags
+
+
+def render_geomean(binary_label, per_algo_cells, sample, elements_list, algos, shapes, outpath):
+    """One PNG: speedup-vs-#bins for each algorithm, GEOMEAN over all input shapes, one
+    panel per element count. Same layout/style as render_one's middle grid, but WITHOUT
+    the two input-characterization panels (a geomean is shape-agnostic) and without the
+    per-shape hit-rate row. The legend takes the slot the characterization row vacated."""
+    ncols = 3
+    nperf = len(elements_list)
+    perf_rows = (nperf + ncols - 1) // ncols
+    nrows = perf_rows
+
+    fig = plt.figure(figsize=(5.4 * ncols, 4.1 * nrows))
+    gs = fig.add_gridspec(nrows, ncols)
+
+    transform, channels = BINARY_META[binary_label]
+    head = f"{transform.upper()} · {channels}-channel · {sample}  —  GEOMEAN over {len(shapes)} input shapes"
+    fig.suptitle(
+        f"{head}\n"
+        f"speedup vs baseline (×, log2) vs #bins per input size — geomean of GiB/s across all "
+        f"shapes; one line per algorithm, baseline (upstream main) = 1×; default points tagged "
+        f"with the selected algorithm",
+        fontsize=12,
+    )
+
+    for i, elements in enumerate(elements_list):
+        r, c = i // ncols, i % ncols
+        ax = fig.add_subplot(gs[r, c])
+        series = geomean_perf_series(per_algo_cells, sample, elements, algos, shapes)
+        tags = geomean_selected_tags(per_algo_cells, sample, elements, shapes)
+        if not draw_perf(ax, series, f"N = {fmt_elements(elements)} elements", default_tags=tags):
+            ax.text(0.5, 0.5, "no data\n(all cells skipped)", ha="center", va="center",
+                    transform=ax.transAxes, fontsize=9, color="gray")
+
+    # Legend in the first unused grid cell of the last row (if any), else overlaid on
+    # the last panel. Mirrors render_one's tag -> name decoding.
+    def _legend_label(a):
+        tag = ALGO_TAG.get(a)
+        return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
+    handles = [
+        plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1],
+                   linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=_legend_label(a))
+        for a in algos
+    ]
+    free_slots = perf_rows * ncols - nperf
+    if free_slots > 0:
+        lax = fig.add_subplot(gs[perf_rows - 1, ncols - free_slots])
+        lax.axis("off")
+        lax.legend(handles=handles, loc="center", fontsize=10, title="algorithms (tag — name)",
+                   title_fontsize=10, frameon=True)
+
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.savefig(outpath, dpi=110, bbox_inches="tight")
+    plt.close(fig)
 
 
 def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos, outpath, hr_for_binary=None):
@@ -557,6 +672,12 @@ def main():
                 outpath = os.path.join(folder, f"{shape.replace(':', '_')}.png")
                 render_one(binary_label, per_algo_cells, sample, shape, elements, algos, outpath, hr_for_binary)
                 written.append(outpath)
+            # One geomean-over-shapes figure per (binary, sample): the shape-agnostic
+            # summary, omitting the two per-shape input-characterization panels and the
+            # per-shape hit-rate row.
+            geo_path = os.path.join(folder, "_geomean.png")
+            render_geomean(binary_label, per_algo_cells, sample, elements, algos, shapes, geo_path)
+            written.append(geo_path)
 
     print(f"Wrote {len(written)} images under {args.outdir}")
 
