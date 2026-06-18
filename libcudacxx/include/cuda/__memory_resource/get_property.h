@@ -114,10 +114,6 @@ _CCCL_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
 struct __fn
 {
-private:
-  __fn() = default;
-  friend _Derived;
-
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Property)
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND has_property<_Upstream, _Property>)
