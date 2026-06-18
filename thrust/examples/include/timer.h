@@ -35,7 +35,7 @@ struct timer
     restart();
   }
 
-  ~timer() // NOLINT(bugprone-exception-escape)
+  ~timer() noexcept(false)
   {
     cuda_safe_call(cudaEventDestroy(start));
     cuda_safe_call(cudaEventDestroy(end));

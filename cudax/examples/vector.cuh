@@ -102,7 +102,7 @@ private:
 
     __action(__action&&) = delete;
 
-    ~__action() // NOLINT(bugprone-exception-escape)
+    ~__action() noexcept(false)
     {
       __v_.sync_device_to_host(__str_, _Kind);
     }
