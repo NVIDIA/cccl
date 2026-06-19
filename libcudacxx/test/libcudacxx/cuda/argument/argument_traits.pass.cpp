@@ -103,9 +103,13 @@ TEST_FUNC void test()
   static_assert(!cuda::args::__traits<cuda::args::immediate<int>>::is_deferred);
   static_assert(!cuda::args::__traits<cuda::args::__immediate_sequence<cuda::std::span<int>>>::is_deferred);
   static_assert(!cuda::args::__traits<cuda::args::constant<42>>::is_deferred);
-#if TEST_HAS_CLASS_NTTP
-  static_assert(!cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_deferred);
-#endif // TEST_HAS_CLASS_NTTP
+
+  static_assert(!cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::is_deferred);
+  static constexpr int carr[]                         = {1, 2, 3};
+  static constexpr ::cuda::std::array<int, 3> cudaarr = {1, 2, 3};
+  static_assert(!cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::is_deferred);
+  static_assert(!cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::is_deferred);
+
   static_assert(cuda::args::__traits<cuda::args::deferred<cuda::std::span<int, 1>>>::is_deferred);
   static_assert(cuda::args::__traits<cuda::args::deferred_sequence<cuda::std::span<int>>>::is_deferred);
 
@@ -118,10 +122,11 @@ TEST_FUNC void test()
   static_assert(cuda::args::__traits<cuda::args::immediate<cuda::counting_iterator<int>>>::is_single_value);
   static_assert(!cuda::args::__traits<cuda::args::__immediate_sequence<cuda::std::span<int>>>::is_single_value);
   static_assert(cuda::args::__traits<cuda::args::constant<42>>::is_single_value);
-#if TEST_HAS_CLASS_NTTP
-  static_assert(
-    !cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_single_value);
-#endif // TEST_HAS_CLASS_NTTP
+
+  static_assert(!cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::is_single_value);
+  static_assert(!cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::is_single_value);
+  static_assert(!cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::is_single_value);
+
   static_assert(cuda::args::__traits<cuda::args::deferred<int*>>::is_single_value);
   static_assert(!cuda::args::__traits<cuda::args::deferred_sequence<cuda::std::span<int>>>::is_single_value);
 
@@ -134,11 +139,15 @@ TEST_FUNC void test()
                          cuda::std::span<int>>);
   static_assert(cuda::std::is_same_v<cuda::args::__traits<cuda::args::constant<42>>::value_type, int>);
   static_assert(cuda::std::is_same_v<cuda::args::__traits<cuda::args::constant<10, float>>::value_type, float>);
-#if TEST_HAS_CLASS_NTTP
-  static_assert(cuda::std::is_same_v<
-                cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::value_type,
-                cuda::std::array<int, 3>>);
-#endif // TEST_HAS_CLASS_NTTP
+
+  static_assert(cuda::std::is_same_v<cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::value_type,
+                                     cuda::std::array<int, 3>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::value_type,
+                         cuda::std::array<int, 3>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::value_type,
+                         cuda::std::array<int, 3>>);
 
   // --- argument_traits: lowest / highest ---
 
@@ -155,10 +164,13 @@ TEST_FUNC void test()
     == 8);
   static_assert(cuda::args::__traits<cuda::args::constant<10, float>>::lowest == 10.0f);
   static_assert(cuda::args::__traits<cuda::args::constant<10, float>>::highest == 10.0f);
-#if TEST_HAS_CLASS_NTTP
-  static_assert(cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{3, 1, 2}>>::lowest == 1);
-  static_assert(cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{3, 1, 2}>>::highest == 3);
-#endif // TEST_HAS_CLASS_NTTP
+
+  static_assert(cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::lowest == 1);
+  static_assert(cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::highest == 3);
+  static_assert(cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::lowest == 1);
+  static_assert(cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::highest == 3);
+  static_assert(cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::lowest == 1);
+  static_assert(cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::highest == 3);
 
   // --- Free function bounds on plain values ---
 
@@ -166,16 +178,6 @@ TEST_FUNC void test()
   static_assert(cuda::args::__highest_(42) == (cuda::std::numeric_limits<int>::max)());
   static_assert(cuda::args::__lowest_(1.0f) == cuda::std::numeric_limits<float>::lowest());
   static_assert(cuda::args::__highest_(1.0f) == (cuda::std::numeric_limits<float>::max)());
-
-  // --- Scalar and sequence wrappers expose distinct single-value traits ---
-
-  static_assert(cuda::args::__traits<cuda::args::constant<42>>::is_single_value);
-  static_assert(cuda::args::__traits<cuda::args::immediate<int>>::is_single_value);
-  static_assert(!cuda::args::__traits<cuda::args::__immediate_sequence<cuda::std::span<int>>>::is_single_value);
-#if TEST_HAS_CLASS_NTTP
-  static_assert(
-    !cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_single_value);
-#endif // TEST_HAS_CLASS_NTTP
 }
 
 int main(int, char**)

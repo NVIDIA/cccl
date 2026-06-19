@@ -55,16 +55,24 @@ TEST_FUNC void test()
   }
 #endif // TEST_HAS_CLASS_NTTP
 
-#if TEST_HAS_CLASS_NTTP
   // Array sequence
   {
-    constexpr auto sa_arr = cuda::args::__constant_sequence<cuda::std::array<int, 3>{128, 256, 512}>{};
+    static constexpr int carr[] = {128, 256, 512};
+    constexpr auto sa_arr       = cuda::args::make_constant_sequence<carr>();
     static_assert(cuda::args::__unwrap(sa_arr)[0] == 128);
     static_assert(cuda::args::__unwrap(sa_arr)[1] == 256);
     static_assert(cuda::args::__unwrap(sa_arr)[2] == 512);
     static_assert(cuda::std::is_same_v<decltype(sa_arr)::value_type, cuda::std::array<int, 3>>);
   }
-#endif // TEST_HAS_CLASS_NTTP
+
+  {
+    static constexpr ::cuda::std::array<int, 3> cudaarr = {128, 256, 512};
+    constexpr auto sa_arr                               = cuda::args::make_constant_sequence<cudaarr>();
+    static_assert(cuda::args::__unwrap(sa_arr)[0] == 128);
+    static_assert(cuda::args::__unwrap(sa_arr)[1] == 256);
+    static_assert(cuda::args::__unwrap(sa_arr)[2] == 512);
+    static_assert(cuda::std::is_same_v<decltype(sa_arr)::value_type, cuda::std::array<int, 3>>);
+  }
 
   // Bounds: scalar
   {
@@ -73,23 +81,27 @@ TEST_FUNC void test()
     static_assert(cuda::args::__highest_(sa) == 42);
   }
 
-#if TEST_HAS_CLASS_NTTP
   // Bounds: array sequence computes lowest/highest of elements
   {
-    constexpr auto sa = cuda::args::__constant_sequence<cuda::std::array<int, 3>{128, 256, 512}>{};
+    static constexpr int carr[] = {128, 256, 512};
+    constexpr auto sa           = cuda::args::make_constant_sequence<carr>();
     static_assert(cuda::args::__lowest_(sa) == 128);
     static_assert(cuda::args::__highest_(sa) == 512);
   }
-#endif // TEST_HAS_CLASS_NTTP
+  {
+    static constexpr ::cuda::std::array<int, 3> cudaarr = {128, 256, 512};
+    constexpr auto sa                                   = cuda::args::make_constant_sequence<cudaarr>();
+    static_assert(cuda::args::__lowest_(sa) == 128);
+    static_assert(cuda::args::__highest_(sa) == 512);
+  }
 
-#if TEST_HAS_CLASS_NTTP
   // Bounds: empty array sequence has unconstrained element bounds
   {
-    constexpr auto sa = cuda::args::__constant_sequence<cuda::std::array<int, 0>{}>{};
+    static constexpr ::cuda::std::array<int, 0> cudaarr = {};
+    constexpr auto sa                                   = cuda::args::make_constant_sequence<cudaarr>();
     static_assert(cuda::args::__lowest_(sa) == cuda::std::numeric_limits<int>::lowest());
     static_assert(cuda::args::__highest_(sa) == (cuda::std::numeric_limits<int>::max)());
   }
-#endif // TEST_HAS_CLASS_NTTP
 
   // Traits
   {
@@ -114,25 +126,29 @@ TEST_FUNC void test()
     static_assert(traits::highest == 10.0f);
   }
 
-#if TEST_HAS_CLASS_NTTP
   // Sequence traits
   {
-    using traits = cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>;
+    static constexpr int carr[] = {1, 2, 3};
+    using traits                = cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>;
     static_assert(traits::is_constant);
     static_assert(!traits::is_deferred);
     static_assert(!traits::is_single_value);
     static_assert(cuda::std::is_same_v<traits::value_type, cuda::std::array<int, 3>>);
     static_assert(cuda::std::is_same_v<traits::element_type, int>);
   }
-#endif // TEST_HAS_CLASS_NTTP
+  {
+    static constexpr ::cuda::std::array<int, 3> cudaarr = {1, 2, 3};
+    using traits = cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>;
+    static_assert(traits::is_constant);
+    static_assert(!traits::is_deferred);
+    static_assert(!traits::is_single_value);
+    static_assert(cuda::std::is_same_v<traits::value_type, cuda::std::array<int, 3>>);
+    static_assert(cuda::std::is_same_v<traits::element_type, int>);
+  }
 
-  // Single value: scalar is single, sequence is not
+  // Single value: scalar is single
   {
     static_assert(!cuda::args::__is_sequence_v<cuda::args::__traits<cuda::args::constant<42>>::value_type>);
-#if TEST_HAS_CLASS_NTTP
-    static_assert(
-      !cuda::args::__traits<cuda::args::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_single_value);
-#endif // TEST_HAS_CLASS_NTTP
   }
 
   // Unwrap: scalar
@@ -149,16 +165,6 @@ TEST_FUNC void test()
     static_assert(val == 10.0f);
     static_assert(cuda::std::is_same_v<decltype(val), const float>);
   }
-
-#if TEST_HAS_CLASS_NTTP
-  // Unwrap: sequence
-  {
-    constexpr auto sa  = cuda::args::__constant_sequence<cuda::std::array<int, 3>{10, 20, 30}>{};
-    constexpr auto val = cuda::args::__unwrap(sa);
-    static_assert(val[0] == 10);
-    static_assert(val[2] == 30);
-  }
-#endif // TEST_HAS_CLASS_NTTP
 }
 
 int main(int, char**)
