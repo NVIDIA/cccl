@@ -598,7 +598,7 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    if constexpr (::std::is_same_v<T, void_interface>)
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
     {
       // A token has no content to materialize: only synchronize the host with
       // the work the token depends on, and return void.
