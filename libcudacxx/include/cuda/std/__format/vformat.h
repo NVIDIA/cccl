@@ -20,12 +20,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/format_arg.h>
+#include <cuda/std/__format/format_args.h>
+#include <cuda/std/__format/format_context.h>
 #include <cuda/std/__format/format_error.h>
+#include <cuda/std/__format/format_parse_context.h>
 #include <cuda/std/__format/formatter.h>
 #include <cuda/std/__format/parse_arg_id.h>
 #include <cuda/std/__format/validation.h>
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -39,7 +48,7 @@ struct __fmt_replacement_field_visitor
   bool __parse_;
 
   template <class _Tp>
-  _CCCL_API constexpr void operator()(_Tp __arg)
+  _CCCL_API constexpr void operator()([[maybe_unused]] _Tp __arg)
   {
     if constexpr (is_same_v<_Tp, monostate>)
     {
@@ -119,7 +128,7 @@ __fmt_handle_replacement_field(_It __begin, _It __end, _ParseCtx& __parse_ctx, _
 }
 
 template <class _ParseCtx, class _Ctx>
-_CCCL_API constexpr typename _Ctx::iterator __fmt_vformat_to(_ParseCtx&& __parse_ctx, _Ctx&& __ctx)
+[[nodiscard]] _CCCL_API constexpr typename _Ctx::iterator __fmt_vformat_to(_ParseCtx&& __parse_ctx, _Ctx&& __ctx)
 {
   using _CharT = typename _ParseCtx::char_type;
   static_assert(is_same_v<typename _Ctx::char_type, _CharT>);
@@ -165,6 +174,43 @@ _CCCL_API constexpr typename _Ctx::iterator __fmt_vformat_to(_ParseCtx&& __parse
   }
   return __out_it;
 }
+
+// We mark this function as noinline because ptxas takes a lot of time and resources to inline and optimize the
+// formatting function. We expect the function to be mostly used for debugging anyway.
+template <class _OutIt, class _CharT, class _FormatOutIt>
+[[nodiscard]] _CCCL_API _CCCL_NOINLINE _OutIt __vformat_to_impl(
+  _OutIt __out_it, basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<_FormatOutIt, _CharT>> __args)
+{
+  if constexpr (is_same_v<_OutIt, _FormatOutIt>)
+  {
+    return ::cuda::std::__fmt_vformat_to(basic_format_parse_context{__fmt, __args.__size()},
+                                         ::cuda::std::__fmt_make_format_context(::cuda::std::move(__out_it), __args));
+  }
+  else
+  {
+    __fmt_buffer_select_t<_OutIt, _CharT> __buffer{::cuda::std::move(__out_it)};
+    (void) ::cuda::std::__fmt_vformat_to(
+      basic_format_parse_context{__fmt, __args.__size()},
+      ::cuda::std::__fmt_make_format_context(__buffer.__make_output_iterator(), __args));
+    return ::cuda::std::move(__buffer).__out_it();
+  }
+}
+
+_CCCL_TEMPLATE(class _OutIt)
+_CCCL_REQUIRES(output_iterator<_OutIt, const char&>)
+/*discard*/ _CCCL_API _OutIt vformat_to(_OutIt __out_it, string_view __fmt, format_args __args)
+{
+  return ::cuda::std::__vformat_to_impl(::cuda::std::move(__out_it), __fmt, __args);
+}
+
+#if _CCCL_HAS_WCHAR_T()
+_CCCL_TEMPLATE(class _OutIt)
+_CCCL_REQUIRES(output_iterator<_OutIt, const wchar_t&>)
+/*discard*/ _CCCL_API _OutIt vformat_to(_OutIt __out_it, wstring_view __fmt, wformat_args __args)
+{
+  return ::cuda::std::__vformat_to_impl(::cuda::std::move(__out_it), __fmt, __args);
+}
+#endif // _CCCL_HAS_WCHAR_T()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

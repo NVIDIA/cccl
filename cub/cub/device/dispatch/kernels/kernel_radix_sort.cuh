@@ -466,7 +466,7 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   using HistogramPolicyT =
     AgentRadixSortHistogramPolicy<policy.threads_per_block,
                                   policy.items_per_thread,
-                                  policy.num_parts,
+                                  policy.num_private_partitions,
                                   void,
                                   policy.radix_bits>;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
@@ -526,11 +526,11 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
 {
   static constexpr radix_sort_onesweep_policy policy = current_policy<PolicySelector>().onesweep;
   using OnesweepPolicyT                              = AgentRadixSortOnesweepPolicy<
-                                 policy.threads_per_block,
-                                 policy.items_per_thread,
+                                 0,
+                                 0,
                                  void,
-                                 policy.rank_num_parts,
-                                 policy.rank_algorith,
+                                 policy.rank_num_private_partitions,
+                                 policy.rank_algorithm,
                                  policy.scan_algorithm,
                                  policy.store_algorithm,
                                  policy.radix_bits,
