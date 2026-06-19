@@ -34,6 +34,26 @@ TEST_DEVICE_FUNC void test_types(T valueA = T{}, T valueB = T{1})
   }
 }
 
+TEST_DEVICE_FUNC uint32_t make_low_mask(unsigned count)
+{
+  return count == 32 ? 0xFFFFFFFF : ((1u << count) - 1);
+}
+
+TEST_DEVICE_FUNC void test_bool()
+{
+  for (unsigned i = 1; i <= 32; ++i)
+  {
+    auto mask = cuda::device::lane_mask{make_low_mask(i)};
+    if (threadIdx.x < i)
+    {
+      assert(cuda::device::warp_match_all(false, mask));
+      assert(cuda::device::warp_match_all(true, mask));
+      auto value = threadIdx.x == 0;
+      assert(cuda::device::warp_match_all(value, mask) == (i == 1));
+    }
+  }
+}
+
 struct WithPadding
 {
   int a;
@@ -42,6 +62,7 @@ struct WithPadding
 
 __global__ void test_kernel()
 {
+  test_bool();
   test_types<uint8_t>();
   test_types<uint16_t>();
   test_types<uint32_t>();

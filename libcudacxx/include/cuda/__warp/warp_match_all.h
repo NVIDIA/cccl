@@ -29,6 +29,7 @@
 #  include <cuda/__warp/lane_mask.h>
 #  include <cuda/std/__cstring/memcpy.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -44,30 +45,38 @@ warp_match_all(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()
   static_assert(is_trivially_copyable_v<_Tp>, "data must be trivially copyable");
   _CCCL_ASSERT(__lane_mask != lane_mask::none(), "lane_mask must be non-zero");
 
-  constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t));
-  ::cuda::std::uint32_t __array[__ratio]{};
+  if constexpr (::cuda::std::is_same_v<_Tp, bool>)
+  {
+    const auto __mask = ::__ballot_sync(__lane_mask.value(), __data);
+    return (__mask == __lane_mask.value() || __mask == 0);
+  }
+  else
+  {
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t));
+    ::cuda::std::uint32_t __array[__ratio]{};
 
 #  if defined(_CCCL_BUILTIN_CLEAR_PADDING)
-  auto __data_copy = __data;
-  _CCCL_BUILTIN_CLEAR_PADDING(&__data_copy);
-  const auto __data_ptr = ::cuda::std::addressof(__data_copy);
+    auto __data_copy = __data;
+    _CCCL_BUILTIN_CLEAR_PADDING(&__data_copy);
+    const auto __data_ptr = ::cuda::std::addressof(__data_copy);
 #  else // ^^^ _CCCL_BUILTIN_CLEAR_PADDING ^^^ / vvv !_CCCL_BUILTIN_CLEAR_PADDING vvv
-  static_assert(is_bitwise_comparable_v<_Tp>, "data must be bitwise comparable");
-  const auto __data_ptr = ::cuda::std::addressof(__data);
+    static_assert(is_bitwise_comparable_v<_Tp>, "data must be bitwise comparable");
+    const auto __data_ptr = ::cuda::std::addressof(__data);
 #  endif // _CCCL_BUILTIN_CLEAR_PADDING
-  ::cuda::std::memcpy(__array, __data_ptr, sizeof(_Tp));
+    ::cuda::std::memcpy(__array, __data_ptr, sizeof(_Tp));
 
-  bool __ret = true;
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < __ratio; ++i)
-  {
-    int __pred = false;
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
-                      (::__match_all_sync(__lane_mask.value(), __array[i], &__pred);),
-                      (::cuda::device::__cuda__match_all_sync_is_not_supported_before_SM_70__();));
-    __ret = __ret && __pred;
+    bool __ret = true;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < __ratio; ++i)
+    {
+      int __pred = false;
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
+                        (::__match_all_sync(__lane_mask.value(), __array[i], &__pred);),
+                        (::cuda::device::__cuda__match_all_sync_is_not_supported_before_SM_70__();));
+      __ret = __ret && __pred;
+    }
+    return __ret;
   }
-  return __ret;
 }
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE

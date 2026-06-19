@@ -4,7 +4,7 @@
 #pragma once
 
 #include <cub/device/device_copy.cuh>
-#include <cub/device/device_segmented_sort.cuh>
+#include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
 
 #include <thrust/remove.h>
@@ -354,8 +354,8 @@ void segmented_sort_keys(
   OffsetItT d_segment_offsets_end_it,
   cub::detail::topk::select direction)
 {
-  // TODO: switch this reference sort to cub::DeviceSegmentedRadixSort in a follow-up PR: it compiles ~30% faster
-  // than cub::DeviceSegmentedSort at negligible runtime cost.
+  // Use cub::DeviceSegmentedRadixSort rather than cub::DeviceSegmentedSort for this reference sort: it compiles
+  // ~30% faster at negligible runtime cost (the reference only needs per-segment ordering of arithmetic keys).
   cuda::std::int64_t num_items = d_keys_in.size();
 
   // Prepare alternate buffer for double buffering
@@ -367,7 +367,7 @@ void segmented_sort_keys(
   size_t temp_storage_bytes = 0;
   if (direction == cub::detail::topk::select::min)
   {
-    cub::DeviceSegmentedSort::SortKeys(
+    cub::DeviceSegmentedRadixSort::SortKeys(
       nullptr,
       temp_storage_bytes,
       d_keys,
@@ -380,7 +380,7 @@ void segmented_sort_keys(
     c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
 
     // Run segmented sort
-    cub::DeviceSegmentedSort::SortKeys(
+    cub::DeviceSegmentedRadixSort::SortKeys(
       thrust::raw_pointer_cast(d_temp_storage.data()),
       temp_storage_bytes,
       d_keys,
@@ -391,7 +391,7 @@ void segmented_sort_keys(
   }
   else
   {
-    cub::DeviceSegmentedSort::SortKeysDescending(
+    cub::DeviceSegmentedRadixSort::SortKeysDescending(
       nullptr,
       temp_storage_bytes,
       d_keys,
@@ -404,7 +404,7 @@ void segmented_sort_keys(
     c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
 
     // Run segmented sort
-    cub::DeviceSegmentedSort::SortKeysDescending(
+    cub::DeviceSegmentedRadixSort::SortKeysDescending(
       thrust::raw_pointer_cast(d_temp_storage.data()),
       temp_storage_bytes,
       d_keys,

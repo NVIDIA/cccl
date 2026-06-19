@@ -70,13 +70,13 @@ struct LookbackDelayPolicy
   unsigned int l2_write_latency; //!< The write latency of the L2 cache in nanoseconds
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs)
+  operator==(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs) noexcept
   {
     return lhs.kind == rhs.kind && lhs.delay == rhs.delay && lhs.l2_write_latency == rhs.l2_write_latency;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs)
+  operator!=(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
