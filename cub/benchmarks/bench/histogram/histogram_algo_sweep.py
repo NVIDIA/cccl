@@ -371,7 +371,13 @@ def main():
                         # .nocoal binary (built -DCUB_HISTO_FORCE_WARP_COALESCE=0). All other
                         # keys run against this binary with their own name as the force value.
                         force_env = _base_algo(akey) if akey else ""
-                        cell_bin = (branch_dir / (BINARIES[blabel] + ".nocoal")) if akey.endswith("__nocoal") else branch_bin
+                        # The .nocoal variant must carry the SAME binary-suffix as the
+                        # stock binary (e.g. ".u64"), so the 64-bit leg finds
+                        # `<bin>.base.nocoal.u64`, not the 32-bit `<bin>.base.nocoal`.
+                        cell_bin = (
+                            branch_dir / (BINARIES[blabel] + ".nocoal" + args.binary_suffix)
+                            if akey.endswith("__nocoal")
+                            else branch_bin)
                         if akey.endswith("__nocoal") and not cell_bin.exists():
                             print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
                                   f"{akey:28} SKIP (no {cell_bin.name})", flush=True)

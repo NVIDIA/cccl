@@ -31,10 +31,13 @@ OUT = Path(os.environ.get("HIST_SWEEP_OUTDIR", ".")) / "hitrate_results.json"
 # sample-independent: pick one). Cached algos only.
 # NOTE: the cap/hitrate variant builder emits filesystem-safe UNDERSCORE names
 # (multi_even, not multi.even), unlike the stock dotted nvbench binaries.
-BINARIES = [("even", "cub.bench.histogram.even.base.hitrate"),
-            ("range", "cub.bench.histogram.range.base.hitrate"),
-            ("multi_even", "cub.bench.histogram.multi_even.base.hitrate"),
-            ("multi_range", "cub.bench.histogram.multi_range.base.hitrate")]
+# HIST_HR_BINARY_SUFFIX appends a variant suffix (e.g. ".u64") so the 64-bit leg
+# targets cub.bench.histogram.<b>.base.hitrate.u64 instead of the 32-bit name.
+_HR_SUFFIX = os.environ.get("HIST_HR_BINARY_SUFFIX", "")
+BINARIES = [("even", f"cub.bench.histogram.even.base.hitrate{_HR_SUFFIX}"),
+            ("range", f"cub.bench.histogram.range.base.hitrate{_HR_SUFFIX}"),
+            ("multi_even", f"cub.bench.histogram.multi_even.base.hitrate{_HR_SUFFIX}"),
+            ("multi_range", f"cub.bench.histogram.multi_range.base.hitrate{_HR_SUFFIX}")]
 # Match the main perf sweep's shape set (current taxonomy: zipf:1.0, the swept
 # concentrated/powerlaw knobs, strided_sweep, sawtooth).
 # Match the main perf sweep's full shape set (concentrated/powerlaw swept across
