@@ -779,6 +779,38 @@ struct Transforms
       }
     }
 
+    //! @brief Lean classify for the STATIC <=256-bin SMEM tier.
+    //!
+    //! Byte-identical to upstream `main`'s flat `BinSelect`: a single `UpperBound`
+    //! + clamp, with NONE of the interpolation machinery the 3-arg `BinSelect` above
+    //! carries (no `num_bins < kInterpolationMinBins` runtime branch, no reads of the
+    //! precompute fields `m_inv_scale`/`m_first`/...). At <=256 bins the interpolation
+    //! fast-path never activates (`m_have_precompute` stays false there), so that
+    //! machinery is pure dead weight: its extra branch + the wider codegen/register
+    //! footprint measurably slow the latency/occupancy-bound static kernel (~1-3% vs
+    //! main, confirmed by A/B). The dynamic-SMEM tier (bins >= 512) keeps the full
+    //! interpolated `BinSelect`/MRU path, where that machinery pays off. EVEN's
+    //! ScaleTransform is unaffected (it has its own cheap classify).
+    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelectStaticLean(_SampleT sample, int& bin, bool valid) const
+    {
+      using WrappedLevelIteratorT =
+        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
+                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         LevelIteratorT>;
+      WrappedLevelIteratorT wrapped_levels(d_levels);
+
+      const int num_bins = num_output_levels - 1;
+      if (valid)
+      {
+        bin = UpperBound(wrapped_levels, num_output_levels, static_cast<LevelT>(sample)) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+      }
+    }
+
     //! @brief MRU-bracket-cached `BinSelect`.
     //!
     //! Same contract and result as the plain `BinSelect` above, but threads a
