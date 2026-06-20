@@ -504,9 +504,25 @@ struct AgentHistogram
               samples[pixel][ch], bins[pixel], is_valid[pixel], mru);
           }
         }
+        else if constexpr (PrivatizedDecodeOpT::is_range_transform)
+        {
+          // Static <=256-bin RANGE tier: lean classify (a flat UpperBound, byte-
+          // identical to upstream main) -- NOT the 3-arg BinSelect, whose interpolation
+          // machinery (the kInterpolationMinBins branch + precompute-field codegen) is
+          // dead weight here yet measurably slows this latency/occupancy-bound kernel
+          // (~1-3%). No MRU register state either. The dynamic tier keeps the full path.
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+          {
+            bins[pixel] = -1;
+            privatized_decode_op[ch].template BinSelectStaticLean<load_modifier>(
+              samples[pixel][ch], bins[pixel], is_valid[pixel]);
+          }
+        }
         else
         {
-          // Static <=256-bin tier: plain 3-arg BinSelect, no MRU register state.
+          // Static <=256-bin EVEN tier: plain 3-arg BinSelect (its ScaleTransform
+          // classify is already cheap; no MRU register state).
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
           {
