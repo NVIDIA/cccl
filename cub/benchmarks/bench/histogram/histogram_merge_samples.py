@@ -19,6 +19,10 @@ collisions = 0
 for path in inputs:
     d = json.load(open(path))
     for binary, cols in d.items():
+        if binary.startswith("_"):
+            # provenance/meta (e.g. _meta): carry through (last writer wins), not a binary.
+            merged[binary] = cols
+            continue
         mb = merged.setdefault(binary, {})
         for col, cells in cols.items():
             mc = mb.setdefault(col, {})
@@ -35,6 +39,8 @@ if collisions:
 json.dump(merged, open(out_path, "w"), indent=0)
 # report sample coverage per binary
 for binary in merged:
+    if binary.startswith("_"):
+        continue  # provenance/meta, not a binary
     samples = set()
     for col, cells in merged[binary].items():
         for k in cells:

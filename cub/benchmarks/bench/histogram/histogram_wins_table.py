@@ -12,6 +12,8 @@ from pathlib import Path
 
 src = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("allalgo_columns.json")
 d = json.load(open(src))
+# Drop provenance/meta keys (e.g. _meta) so every remaining top-level key is a binary.
+d = {k: v for k, v in d.items() if not k.startswith("_")}
 
 # 3-letter tags. Coalesce-on reuse the established histogram_algo_perf.py tags; the
 # *_nocoal variants get distinct tags (same family letter, "0" = coalesce off).

@@ -24,6 +24,13 @@ Output JSON schema (consumed by histogram_algo_perf.py):
 where `binary` in {even, range, multi_even, multi_range}, and `algo` includes the
 six forced names, "default", and "main".
 
+Plus a top-level `_meta` key (NOT a binary -- consumers MUST skip keys starting
+with "_") recording provenance: the git commit each binary set was built from
+(`branch_commit` for the candidate binaries, `main_commit` for the upstream
+baseline binaries), plus the sweep axes. This pins every run's numbers to the
+exact source they came from. `branch_commit`/`main_commit` are "unknown" if the
+binary dir is not inside a git work tree.
+
 Run (substantial wall time -- scope with the flags):
   python histogram_algo_sweep.py \
       --branch-bin-dir build/autocuda/cub-benchmark/bin \
@@ -51,6 +58,39 @@ BINARIES = {
     "multi_even": "cub.bench.histogram.multi.even.base",
     "multi_range": "cub.bench.histogram.multi.range.base",
 }
+
+
+def git_commit_for_path(path) -> str:
+    """The full git commit SHA of the work tree that `path` lives in, so a run's
+    numbers are pinned to the exact source the benchmarked binaries were built from.
+    Returns "unknown" if `path` is not inside a git work tree (or git is absent)."""
+    if not path:
+        return "unknown"
+    # Resolve to absolute so a relative --branch-bin-dir is interpreted against the
+    # caller's cwd, not git's; `build/` is typically gitignored but `git -C` still
+    # walks up to the enclosing work tree's HEAD.
+    try:
+        path = Path(path).resolve()
+    except OSError:
+        return "unknown"
+    try:
+        sha = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if sha.returncode != 0:
+            return "unknown"
+        commit = sha.stdout.strip()
+        # Note whether that work tree had uncommitted changes when swept.
+        dirty = subprocess.run(
+            ["git", "-C", str(path), "status", "--porcelain", "--untracked-files=no"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if dirty.returncode == 0 and dirty.stdout.strip():
+            commit += "-dirty"
+        return commit or "unknown"
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
 
 # Forced high-bin algorithms (env values for CUB_HISTO_FORCE_ALGO). "" == the
 # selector's own pick, recorded under the "default" key. `main` is handled
@@ -450,10 +490,25 @@ def main():
                     print(f"!! missing main binary {main_bin}; no main column for {blabel}", flush=True)
         results[blabel] = algo_cells
 
+    # Provenance: pin this run's numbers to the exact source the binaries were built
+    # from. Top-level `_meta` key (consumers skip "_"-prefixed keys -- not a binary).
+    results["_meta"] = {
+        "branch_commit": git_commit_for_path(args.branch_bin_dir),
+        "main_commit": git_commit_for_path(args.main_bin_dir) if args.main_bin_dir else None,
+        "branch_bin_dir": args.branch_bin_dir,
+        "main_bin_dir": args.main_bin_dir or None,
+        "binary_suffix": args.binary_suffix or None,
+        "binaries": list(args.binaries),
+        "samples": list(args.samples),
+        "bins": list(args.bins),
+        "elements": list(args.elements),
+    }
+
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w") as fh:
         json.dump(results, fh, indent=1)
-    print(f"\nwrote {args.out} ({total_calls} benchmark invocations)", flush=True)
+    bc = results["_meta"]["branch_commit"]
+    print(f"\nwrote {args.out} ({total_calls} benchmark invocations; branch_commit={bc})", flush=True)
 
 
 if __name__ == "__main__":

@@ -674,6 +674,8 @@ def main():
     os.makedirs(args.outdir, exist_ok=True)
     written = []
     for binary_label, per_algo_cells in data.items():
+        if binary_label.startswith("_"):
+            continue  # provenance/meta (e.g. _meta), not a binary
         transform, channels = BINARY_META[binary_label]
         # Plot every algorithm series actually present in the data for this binary
         # (in canonical ALGO_ORDER). `main` appears only for the generator-identical
