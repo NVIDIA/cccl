@@ -1534,8 +1534,24 @@ template <typename PolicySelector,
 // the same 384-thread fallback policy struct they cannot be split on a policy
 // field, so gate the hint on threads_per_block >= 512: it applies to the wide
 // multi-channel policies and falls back to minBlocks=0 for the narrow fallback.
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
-                  (current_policy<PolicySelector>().threads_per_block >= 512) ? 2 : 0)
+//
+// THREAD COUNT: this kernel is the STATIC fixed-`__shared__`-array privatized path
+// (UseDynamicSmemHistogram=false), instantiated only with PrivatizedSmemBins==256
+// (the <=256 static tier) or ==0 (the GMEM-privatized non-cooperative fallback). For
+// the static <=256 tier a policy may narrow the block via static_smem_threads_per_block
+// (e.g. RANGE: 768 sweep width regresses the latency-bound SearchTransform at tiny
+// bins; 384 recovers it). That override is COMPILE-TIME here -- it sizes both this
+// `__launch_bounds__` and the AgentHistogram's BLOCK_THREADS below, and the host launch
+// resolves the SAME value via histogram_policy::static_smem_threads() -- because the
+// SMEM-priv sweep is tile-based (BlockLoad requires launch threads == BLOCK_THREADS).
+// PrivatizedSmemBins==0 (GMEM fallback) keeps the full threads_per_block.
+__launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_threads()
+                                             : current_policy<PolicySelector>().threads_per_block),
+                  ((PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_threads()
+                                           : current_policy<PolicySelector>().threads_per_block)
+                   >= 512)
+                    ? 2
+                    : 0)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivatizedKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -1552,10 +1568,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
 {
   static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
+  // Static <=256 tier (PrivatizedSmemBins > 0) may narrow the block via the policy's
+  // static_smem_threads_per_block override; the GMEM fallback (PrivatizedSmemBins == 0)
+  // keeps the full sweep width. Compile-time, and MUST equal the host launch's resolved
+  // block dim (histogram_policy::static_smem_threads()) and this kernel's __launch_bounds__
+  // above, since the tile-based BlockLoad requires launch threads == BLOCK_THREADS.
+  static constexpr int kSweepThreads = (PrivatizedSmemBins > 0) ? hp.static_smem_threads() : hp.threads_per_block;
+  static constexpr int kSweepItems   = (PrivatizedSmemBins > 0) ? hp.static_smem_items() : hp.pixels_per_thread;
+
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = agent_histogram_policy<
-    hp.threads_per_block,
-    hp.pixels_per_thread,
+    kSweepThreads,
+    kSweepItems,
     hp.load_algorithm,
     hp.load_modifier,
     hp.rle_compress,

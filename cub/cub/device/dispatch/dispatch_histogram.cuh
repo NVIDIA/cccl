@@ -667,8 +667,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const int threads_per_block = active_policy.threads_per_block;
-  const int pixels_per_thread = active_policy.pixels_per_thread;
+  // SMEM-priv sweep block size. The STATIC <=256 tier (this is the non-dynamic,
+  // PRIVATIZED_SMEM_BINS>0 instantiation -- the dynamic tier is kUseDynamicSmem and the
+  // GMEM fallback is PRIVATIZED_SMEM_BINS==0) may narrow the block via the policy's
+  // static_smem_threads_per_block override. This MUST match the static kernel's
+  // compile-time kSweepThreads / __launch_bounds__ (kernel_histogram.cuh): the SMEM-priv
+  // sweep is tile-based (BlockLoad partitions a BLOCK_THREADS*ITEMS_PER_THREAD tile), so
+  // the launch block dim has to equal the kernel's compile-time BLOCK_THREADS or the load
+  // is wrong. The dynamic and GMEM paths keep the full threads_per_block.
+  static constexpr bool kIsStaticSmemTier = (!kUseDynamicSmem && PRIVATIZED_SMEM_BINS > 0);
+  const int threads_per_block =
+    kIsStaticSmemTier ? active_policy.static_smem_threads() : active_policy.threads_per_block;
+  // Match the kernel's compile-time kSweepItems for the static tier so pixels_per_tile
+  // (grid sizing) agrees with the kernel's tile. Dynamic/GMEM keep pixels_per_thread.
+  const int pixels_per_thread =
+    kIsStaticSmemTier ? active_policy.static_smem_items() : active_policy.pixels_per_thread;
   // Block size for the high-bin direct-atomic (cuckoo / single-probe) kernels.
   // These atomic straight to the output via a pure grid-stride loop, so any
   // block size is correct; a policy may decouple it from the SMEM-priv sweep's
