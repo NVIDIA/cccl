@@ -472,28 +472,48 @@ struct AgentHistogram
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ch = 0; ch < NumActiveChannels; ++ch)
       {
-        // Per-channel MRU bracket cache, scoped to this channel iteration so
-        // only ONE bracket is live at a time (no per-channel mru[NumActiveChannels]
-        // register array -> no spill on the register-pinned multi-channel sweep).
-        // It threads across the `pixels_per_thread` consecutive same-channel
-        // classifies below. The SMEM-priv RANGE sweep is ALU-bound on the
-        // SearchTransform interpolate+clamp+verify ladder. On a cache hit
-        // BinSelect returns the cached bin with two register compares and ZERO of
-        // that ladder; low-entropy inputs have high consecutive-sample bracket
-        // locality. The 4-arg BinSelect overload is a no-op forwarder on EVEN's
-        // ScaleTransform (is_range_transform==false), so this is byte-identical
-        // for EVEN and only changes the RANGE classify.
-        typename PrivatizedDecodeOpT::BracketCacheT mru;
-
         // Bin pixels
         int bins[pixels_per_thread];
 
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+        // The per-channel MRU bracket cache (4-arg BinSelect) accelerates the RANGE
+        // SearchTransform's interpolate+clamp+verify ladder on a cache hit, and it
+        // pays off on the DYNAMIC-SMEM tier (bins >= 512, classify-dominated). But on
+        // the STATIC <=256-bin tier the kernel is occupancy/register-bound and the
+        // classify is already cheap (tiny level array), so the cache's live state
+        // (BracketCacheT = 2 LevelT + int, held across the unrolled pixels loop)
+        // lowers occupancy and adds a per-sample compare with ~zero amortization --
+        // measured ~10% SLOWER than upstream's plain UpperBound at bins 16/32/64. So
+        // gate the cache on the tier: dynamic SMEM keeps the MRU; the static tier uses
+        // the plain 3-arg BinSelect (byte-identical to upstream main's accumulate).
+        // EVEN is unaffected either way (its ScaleTransform 4-arg BinSelect is a no-op
+        // forwarder), and the GMEM-privatized path (PrivatizedSmemBins == 0) uses a
+        // different accumulate function entirely.
+        if constexpr (UseDynamicSmemHistogram)
         {
-          bins[pixel] = -1;
-          privatized_decode_op[ch].template BinSelect<load_modifier>(
-            samples[pixel][ch], bins[pixel], is_valid[pixel], mru);
+          // Per-channel MRU bracket cache, scoped to this channel iteration so only
+          // ONE bracket is live at a time. It threads across the `pixels_per_thread`
+          // consecutive same-channel classifies; low-entropy inputs have high
+          // consecutive-sample bracket locality.
+          typename PrivatizedDecodeOpT::BracketCacheT mru;
+
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+          {
+            bins[pixel] = -1;
+            privatized_decode_op[ch].template BinSelect<load_modifier>(
+              samples[pixel][ch], bins[pixel], is_valid[pixel], mru);
+          }
+        }
+        else
+        {
+          // Static <=256-bin tier: plain 3-arg BinSelect, no MRU register state.
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+          {
+            bins[pixel] = -1;
+            privatized_decode_op[ch].template BinSelect<load_modifier>(
+              samples[pixel][ch], bins[pixel], is_valid[pixel]);
+          }
         }
 
         CounterT accumulator = 1;

@@ -40,11 +40,23 @@ struct HistogramPolicy
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
   int direct_atomic_threads_per_block = 0; //!< Thread count for direct-atomic kernels; 0 inherits threads_per_block
+  int static_smem_threads_per_block   = 0; //!< Static shared-memory tier threads; 0 inherits threads_per_block
+  int static_smem_items_per_block     = 0; //!< Static shared-memory tier items; 0 inherits pixels_per_thread
   bool warp_coalesce                  = true; //!< Coalesce same-bin warp lanes on global-memory atomic paths
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int direct_atomic_threads() const
   {
     return direct_atomic_threads_per_block != 0 ? direct_atomic_threads_per_block : threads_per_block;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_threads() const
+  {
+    return static_smem_threads_per_block != 0 ? static_smem_threads_per_block : threads_per_block;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_items() const
+  {
+    return static_smem_items_per_block != 0 ? static_smem_items_per_block : pixels_per_thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -56,6 +68,8 @@ struct HistogramPolicy
         && lhs.mem_preference == rhs.mem_preference && lhs.use_work_stealing == rhs.use_work_stealing
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
         && lhs.direct_atomic_threads_per_block == rhs.direct_atomic_threads_per_block
+        && lhs.static_smem_threads_per_block == rhs.static_smem_threads_per_block
+        && lhs.static_smem_items_per_block == rhs.static_smem_items_per_block
         && lhs.warp_coalesce == rhs.warp_coalesce;
   }
 
@@ -75,6 +89,8 @@ struct HistogramPolicy
         << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
         << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins
         << ", .direct_atomic_threads_per_block = " << p.direct_atomic_threads_per_block
+        << ", .static_smem_threads_per_block = " << p.static_smem_threads_per_block
+        << ", .static_smem_items_per_block = " << p.static_smem_items_per_block
         << ", .warp_coalesce = " << p.warp_coalesce << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -520,11 +536,29 @@ public:
           // has one SearchTransform and a larger cache, making it more
           // throughput-bound, so the per-transform decouple is per-channel-count.
           //
-          // The sweep tiers keep the 768-thread shape (SMEM-priv occupancy-bound,
-          // not direct-atomic latency-bound). EVEN inherits its sweep thread count
-          // (override stays 0): its cheap ScaleTransform makes the high-bin
-          // direct-atomic cells throughput-bound, where the wider block is fine.
-          return histogram_policy{768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048, 512};
+          // The dynamic-SMEM sweep tiers (bins 1024..cap) keep the 768-thread shape
+          // (SMEM-priv occupancy-bound, not latency-bound) -- they win 2.8-4.4x there.
+          // EVEN inherits its sweep thread count (both overrides stay 0): its cheap
+          // ScaleTransform makes the high-bin direct-atomic cells throughput-bound,
+          // where the wider block is fine, and its static <=256 tier never regressed.
+          //
+          // static_smem_{threads,items}_per_block = {384, t_scale(16)}: the STATIC
+          // <=256-bin SMEM-priv kernel is a SEPARATE instantiation from the dynamic
+          // sweep and is the only kernel the selector runs at bins <=
+          // max_privatized_smem_bins. The 768-thread / t_scale(12)-ipt shape tuned for
+          // the dynamic mid-bin tiers regresses the tiny static tier vs upstream main
+          // (which runs this cell at its SM50 fallback {384, t_scale(16)}). The dominant
+          // cost was NOT the launch shape but the SearchTransform MRU bracket cache in
+          // the SMEM accumulate loop (extra live register state lowering occupancy on
+          // this register-bound kernel) -- now gated off for the static tier in
+          // agent_histogram.cuh (kept on for the dynamic tier, where it pays off). With
+          // the MRU gated off, restoring the static tier's launch shape to main's {384,
+          // t_scale(16)} via these two overrides recovers the rest. The dynamic sweep
+          // (768 / t_scale(12)) and the direct-atomic path (512) are unchanged; EVEN
+          // (both overrides 0) is untouched. Consumed at compile time in the static
+          // kernel (see histogram_policy::static_smem_{threads,items}).
+          return histogram_policy{
+            768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048, 512, 384, t_scale(16)};
         }
       }
 
