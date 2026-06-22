@@ -276,7 +276,9 @@ void TestSortWithMagnitude(int magnitude)
     ASSERT_EQUAL(ok, true);
   }
   catch (std::bad_alloc&)
-  {}
+  {
+    return;
+  }
 }
 
 void TestSortWithLargeNumberOfItems()

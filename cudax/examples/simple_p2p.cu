@@ -67,11 +67,15 @@ void print_peer_accessibility()
     {
       if (dev_i != dev_j)
       {
-        bool can_access_peer = dev_i.has_peer_access_to(dev_j);
-        printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
-               dev_i.name().data(),
+        bool can_access_peer  = dev_i.has_peer_access_to(dev_j);
+        const auto dev_i_name = dev_i.name();
+        const auto dev_j_name = dev_j.name();
+        printf("> Peer access from %.*s (GPU%d) -> %.*s (GPU%d) : %s\n",
+               static_cast<int>(dev_i_name.size()),
+               dev_i_name.data(),
                dev_i.get(),
-               dev_j.name().data(),
+               static_cast<int>(dev_j_name.size()),
+               dev_j_name.data(),
                dev_j.get(),
                can_access_peer ? "Yes" : "No");
       }
