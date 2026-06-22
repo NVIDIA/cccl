@@ -54,7 +54,7 @@ the library simply selects the fastest valid implementation.
 
 .. warning::
 
-   ``gpu_to_gpu``/``run_to_run`` reproducibility is guaranteed across hardware for a *fixed* CCCL version, not across
+   ``gpu_to_gpu``/``run_to_run`` reproducibility is guaranteed for a *fixed* CCCL version, not across
    CCCL versions. If a policy selector is specified to change the used tuning, then reproducibility is only guaranteed for identical tunings. The bitwise result may also change between CCCL releases as algorithms, reduction structures,
    or tuning evolve.
 

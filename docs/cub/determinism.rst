@@ -60,3 +60,16 @@ Support matrix
 
    The set of algorithms that accept determinism requirements, and the type/operator constraints for
    each guarantee, are expanding over time. The matrix above reflects the current implementation.
+
+Algorithm-specific determinism models
+--------------------------------------
+
+The three guarantees describe the *scope* of reproducibility and fit most algorithms, where a
+reproducible result means a *bitwise-identical* output. A few algorithms still use the same three
+levels but extend the model with additional, algorithm-specific controls, documented on their own
+pages:
+
+- :ref:`cub::DeviceTopK <cub-topk-requirements>` — determinism applies to *set membership* (which
+  *K* items are selected) rather than a bitwise-identical buffer, and it adds tie-breaking
+  (``cuda::execution::tie_break``) and output-ordering (``cuda::execution::output_ordering``)
+  controls.
