@@ -268,7 +268,7 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
   cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
-  cccl_device_for_build_result_t build;
+  cccl_device_for_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
@@ -299,6 +299,156 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
   // Cleanup
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("For build result has AoT metadata populated", "[for][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
+  pointer_t<T> input_ptr(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_for_build(
+      &build,
+      input_ptr,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  REQUIRE(build.static_kernel_lowered_name != nullptr);
+  CHECK(build.static_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
+}
+
+C2H_TEST("For compile/load round-trip", "[for][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+  constexpr std::size_t n = 16;
+  const std::vector<T> input_h(n, T{1});
+
+  operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
+  pointer_t<T> input_ptr(input_h);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_for_compile(
+      &build,
+      input_ptr,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.static_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.static_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_for_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.static_kernel != nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_for(build, input_ptr, n, op, CU_STREAM_LEGACY));
+
+  std::vector<T> output(n);
+  cudaMemcpy(output.data(), input_ptr.ptr, sizeof(T) * n, cudaMemcpyDeviceToHost);
+  REQUIRE(std::all_of(output.begin(), output.end(), [](T v) {
+    return v == T{2};
+  }));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
+}
+
+C2H_TEST("For link_ltoir round-trip", "[for][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  // Kernel-only compile: op has a name but no LTOIR (code_size == 0).
+  // compile() will produce kernel LTOIR with an unresolved external reference to "op".
+  cccl_op_t op_ko{};
+  op_ko.type      = CCCL_STATELESS;
+  op_ko.name      = "op";
+  op_ko.code      = nullptr;
+  op_ko.code_size = 0;
+  op_ko.code_type = CCCL_OP_LTOIR;
+  op_ko.size      = 1;
+  op_ko.alignment = 1;
+
+  constexpr std::size_t n = 16;
+  const std::vector<T> input_h(n, T{1});
+  pointer_t<T> input_ptr(input_h);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_for_compile(
+      &build,
+      input_ptr,
+      op_ko,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  // After kernel-only compile: payload is kernel LTOIR, not a cubin.
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_LTOIR));
+  REQUIRE(build.payload_size > 0);
+  CHECK(build.library == nullptr);
+
+  // Compile the operator LTOIR separately (user-supplied blob).
+  operation_t op_full = make_operation("op", get_for_op(get_type_info<T>().type));
+  const void* op_blob = op_full.code.data();
+  size_t op_size      = op_full.code.size();
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_for_link_ltoir(&build, &op_blob, &op_size, 1));
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.library == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_for_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.static_kernel != nullptr);
+
+  cccl_op_t op_run = op_full;
+  REQUIRE(CUDA_SUCCESS == cccl_device_for(build, input_ptr, n, op_run, CU_STREAM_LEGACY));
+
+  std::vector<T> output(n);
+  cudaMemcpy(output.data(), input_ptr.ptr, sizeof(T) * n, cudaMemcpyDeviceToHost);
+  REQUIRE(std::all_of(output.begin(), output.end(), [](T v) {
+    return v == T{2};
+  }));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
+}
+#endif // CCCL_C_PARALLEL_V2
 
 // TODO:
 /*

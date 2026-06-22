@@ -550,10 +550,9 @@ C2H_TEST("Device segmented inclusive scan init with separate offsets uses enviro
 template <unsigned int BlockThreads>
 struct segmented_scan_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
-    -> cub::detail::segmented_scan::segmented_scan_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::SegmentedScanPolicy
   {
-    return cub::detail::segmented_scan::segmented_scan_policy{cub::detail::segmented_scan::block_segmented_scan_policy{
+    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
       static_cast<int>(BlockThreads),
       1,
       cub::BLOCK_LOAD_DIRECT,
@@ -662,3 +661,43 @@ C2H_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanPolicy>);
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanBlockPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanBlockPolicy>);
+
+  // aggregate init
+  constexpr auto block1 = cub::SegmentedScanBlockPolicy{
+    128,
+    9,
+    cub::BLOCK_LOAD_WARP_TRANSPOSE,
+    cub::LOAD_DEFAULT,
+    cub::BLOCK_STORE_WARP_TRANSPOSE,
+    cub::BLOCK_SCAN_WARP_SCANS,
+    512};
+  constexpr auto p1 = cub::SegmentedScanPolicy{block1};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto block2 = cub::SegmentedScanBlockPolicy{
+    .threads_per_block = 128,
+    .items_per_thread  = 9,
+    .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+    .load_modifier     = cub::LOAD_DEFAULT,
+    .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+    .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+    .max_segments      = 512};
+  constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)
