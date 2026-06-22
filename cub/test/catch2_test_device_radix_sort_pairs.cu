@@ -167,6 +167,7 @@ void do_large_offset_test(std::size_t num_items)
     std::cerr
       << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
+    SUCCEED("allocation failure is not a test failure");
   }
 }
 
