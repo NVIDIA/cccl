@@ -75,14 +75,6 @@ struct __invalid_pair_constraints
 template <class _T1, class _T2>
 struct __pair_constraints
 {
-  static constexpr bool __explicit_constructible_from_elements =
-    is_copy_constructible_v<_T1> && is_copy_constructible_v<_T2>
-    && (!is_convertible_v<__make_const_lvalue_ref<_T1>, _T1> || !is_convertible_v<__make_const_lvalue_ref<_T2>, _T2>);
-
-  static constexpr bool __implicit_constructible_from_elements =
-    is_copy_constructible_v<_T1> && is_copy_constructible_v<_T2> && is_convertible_v<__make_const_lvalue_ref<_T1>, _T1>
-    && is_convertible_v<__make_const_lvalue_ref<_T2>, _T2>;
-
   template <class _U1, class _U2>
   struct __constructible
   {
@@ -236,16 +228,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   {}
 
   // element wise constructors
-  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__explicit_constructible_from_elements, int> = 0>
-  _CCCL_API explicit constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
+  template <__select_constructor _Trait = __tuple_select_variadic_copy_constructible_v<__tuple_types<_T1, _T2>>,
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     is_nothrow_copy_constructible_v<_T1> && is_nothrow_copy_constructible_v<_T2>)
       : __base(__t1, __t2)
   {}
-
-  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__implicit_constructible_from_elements, int> = 0>
-  _CCCL_API constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
+  template <__select_constructor _Trait = __tuple_select_variadic_copy_constructible_v<__tuple_types<_T1, _T2>>,
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     is_nothrow_copy_constructible_v<_T1> && is_nothrow_copy_constructible_v<_T2>)
       : __base(__t1, __t2)
   {}
