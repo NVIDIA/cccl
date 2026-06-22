@@ -202,8 +202,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!     cuda::args::immediate{n, cuda::args::bounds<1, 1024>()};               // host value, at most 1024
 //!     cuda::args::deferred_sequence{d_sizes, cuda::args::bounds<1, 1024>()}; // per-segment, each at most 1024
 //!
-//!     // a single value produced on the device (e.g. num_segments), with a static cap and a tighter runtime cap:
-//!     cuda::args::deferred{d_count, cuda::args::bounds<0, 4096>(), cuda::args::bounds(0, n)};
+//!     // a uniform segment size produced on the device, capped at compile time and narrowed at runtime:
+//!     cuda::args::deferred{d_size, cuda::args::bounds<1, 1024>(), cuda::args::bounds(1, runtime_max)};
 //!
 //! Choosing argument bounds
 //! +++++++++++++++++++++++++++++++++++++++++++++
