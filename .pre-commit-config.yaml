@@ -10,6 +10,17 @@ ci:
     submodules: false
 
 repos:
+  # Central NVIDIA secret scan (TruffleHog) — from NVIDIA/security-workflows.
+  # Runs first so a leaked credential blocks the commit before any formatter
+  # touches the working tree. Requires `trufflehog` on $PATH; the wrapper
+  # prints exact install commands if it isn't found.
+  # TODO: switch `rev: main` to a release tag once NVIDIA/security-workflows
+  # ships its first release (v0.1.0).
+  - repo: https://github.com/NVIDIA/security-workflows
+    rev: main
+    hooks:
+      - id: secret-scan-trufflehog
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
