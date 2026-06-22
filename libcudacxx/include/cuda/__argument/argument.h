@@ -123,9 +123,6 @@ public:
   static constexpr ::cuda::std::size_t size = sizeof...(_Vs);
 };
 
-template <class>
-inline constexpr bool __always_false_v = false;
-
 template <const auto& Arr, ::cuda::std::size_t... Is>
 _CCCL_API constexpr auto __make_constant_sequence_impl(::cuda::std::index_sequence<Is...>)
 {
@@ -143,7 +140,7 @@ _CCCL_API constexpr auto __make_constant_sequence_impl(::cuda::std::index_sequen
   }
   else
   {
-    static_assert(__always_false_v<raw_array>, "unsupported array type");
+    static_assert(::cuda::std::__always_false_v<raw_array>, "unsupported array type");
   }
 }
 
