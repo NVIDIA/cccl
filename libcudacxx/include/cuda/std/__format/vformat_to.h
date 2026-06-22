@@ -134,12 +134,8 @@ _CCCL_DIAG_SUPPRESS_NVHPC(inline_gnu_noinline_conflict)
 // We mark this function as noinline during device compilation because ptxas takes a lot of time and resources to inline
 // and optimize the formatting function. We expect the function to be mostly used for debugging anyway.
 template <class _ParseCtx, class _Ctx>
-[[nodiscard]] _CCCL_API
-#if _CCCL_DEVICE_COMPILATION()
-_CCCL_NOINLINE
-#endif // _CCCL_DEVICE_COMPILATION()
-  constexpr typename _Ctx::iterator
-  __fmt_vformat_to(_ParseCtx&& __parse_ctx, _Ctx&& __ctx)
+[[nodiscard]] _CCCL_API _CCCL_NOINLINE_DEVICE constexpr typename _Ctx::iterator
+__fmt_vformat_to(_ParseCtx&& __parse_ctx, _Ctx&& __ctx)
 {
   using _CharT = typename _ParseCtx::char_type;
   static_assert(is_same_v<typename _Ctx::char_type, _CharT>);
