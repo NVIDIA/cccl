@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -262,10 +263,7 @@ public:
         .kind     = kind};
     }
 
-    cudaGraphNode_t result;
-    cuda_safe_call(cudaGraphAddMemcpyNode(&result, graph, input_nodes, input_cnt, &cpy_params));
-
-    return result;
+    return cuda_try<cudaGraphAddMemcpyNode>(graph, input_nodes, input_cnt, &cpy_params);
   }
 
   /// @brief Implementation of interface primitive
