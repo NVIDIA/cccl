@@ -730,7 +730,7 @@ __unwrap(const constant<_Value, _Tp>&) noexcept
 template <class _Tp, _Tp... _Vs>
 [[nodiscard]] _CCCL_API constexpr auto __unwrap(const __constant_sequence<_Tp, _Vs...>&) noexcept
 {
-  return ::cuda::std::array<_Tp, sizeof...(_Vs)>{_Vs...};
+  return ::cuda::std::array<::cuda::std::remove_cvref_t<_Tp>, sizeof...(_Vs)>{_Vs...};
 }
 
 template <class _Arg, class _StaticBounds>
