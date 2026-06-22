@@ -46,7 +46,6 @@ Checks:
   - '-bugprone-casting-through-void'
   - '-bugprone-integer-division'
   - '-bugprone-move-forwarding-reference'
-  - '-bugprone-inc-dec-in-conditions'
   - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'
   # This is just noise
