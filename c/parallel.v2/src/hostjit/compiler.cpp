@@ -1376,6 +1376,7 @@ public:
        "cudaMemset",
        "cudaMemsetAsync",
        "cudaDeviceSynchronize",
+       "cudaFuncSetAttribute",
        "cudaGetDevice",
        "cudaGetDeviceProperties",
        "cudaGetLastError",
