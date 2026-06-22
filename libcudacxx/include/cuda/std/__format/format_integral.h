@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -152,7 +152,7 @@ template <class _Tp, class _CharT, class _FmtCtx>
     __out_it                  = ::cuda::std::__fmt_copy(__array, __first, ::cuda::std::move(__out_it));
     __specs.__alignment_      = ::cuda::std::to_underlying(__fmt_spec_alignment::__right);
     __specs.__fill_.__data[0] = _CharT{'0'};
-    __specs.__width_ -= ::cuda::std::min(static_cast<uint32_t>(__last - __first), __specs.__width_);
+    __specs.__width_ -= ::cuda::std::min(static_cast<uint32_t>(__first - __array), __specs.__width_);
   }
 
   if (__specs.__std_.__type_ != __fmt_spec_type::__hexadecimal_upper_case)
@@ -168,42 +168,43 @@ __fmt_format_int(_Tp __value, _FmtCtx& __ctx, __fmt_parsed_spec<_CharT> __specs)
 {
   static_assert(__cccl_is_integer_v<_Tp>);
 
+  using _Up             = make_unsigned_t<_Tp>;
   const auto __uvalue   = ::cuda::uabs(__value);
   const auto __negative = is_signed_v<_Tp> && __value < 0;
 
   switch (__specs.__std_.__type_)
   {
     case __fmt_spec_type::__binary_lower_case: {
-      char __array[__fmt_int_buffer_size_v<_Tp, 2>];
+      char __array[__fmt_int_buffer_size_v<_Up, 2>];
       return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Tp, 2>, "0b", 2);
+        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 2>, "0b", 2);
     }
     case __fmt_spec_type::__binary_upper_case: {
-      char __array[__fmt_int_buffer_size_v<_Tp, 2>];
+      char __array[__fmt_int_buffer_size_v<_Up, 2>];
       return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Tp, 2>, "0B", 2);
+        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 2>, "0B", 2);
     }
     case __fmt_spec_type::__octal: {
       // Octal is special; if __uvalue == 0 there's no prefix.
-      char __array[__fmt_int_buffer_size_v<_Tp, 8>];
+      char __array[__fmt_int_buffer_size_v<_Up, 8>];
       return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Tp, 8>, __uvalue != 0 ? "0" : nullptr, 8);
+        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 8>, __uvalue != 0 ? "0" : nullptr, 8);
     }
     case __fmt_spec_type::__default:
     case __fmt_spec_type::__decimal: {
-      char __array[__fmt_int_buffer_size_v<_Tp, 10>];
+      char __array[__fmt_int_buffer_size_v<_Up, 10>];
       return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Tp, 10>, nullptr, 10);
+        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 10>, nullptr, 10);
     }
     case __fmt_spec_type::__hexadecimal_lower_case: {
-      char __array[__fmt_int_buffer_size_v<_Tp, 16>];
+      char __array[__fmt_int_buffer_size_v<_Up, 16>];
       return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Tp, 16>, "0x", 16);
+        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 16>, "0x", 16);
     }
     case __fmt_spec_type::__hexadecimal_upper_case: {
-      char __array[__fmt_int_buffer_size_v<_Tp, 16>];
+      char __array[__fmt_int_buffer_size_v<_Up, 16>];
       return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Tp, 16>, "0X", 16);
+        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 16>, "0X", 16);
     }
     default:
       _CCCL_UNREACHABLE();

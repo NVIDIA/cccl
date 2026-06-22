@@ -198,7 +198,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const histogram_policy active_policy = policy_selector(cc);
+  const HistogramPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
@@ -739,10 +739,10 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(long)
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> histogram_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
 {
   using ap = typename ActivePolicy::AgentHistogramPolicyT;
-  return histogram_policy{
+  return HistogramPolicy{
     ap::BLOCK_THREADS,
     ap::PIXELS_PER_THREAD,
     ap::VEC_SIZE,
@@ -761,7 +761,7 @@ struct policy_selector_from_max_policy
 private:
   struct extract_policy_dispatch_t
   {
-    histogram_policy& policy;
+    HistogramPolicy& policy;
 
     template <typename ActivePolicyT>
     _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
@@ -772,11 +772,11 @@ private:
   };
 
 public:
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
-                        histogram_policy policy{};
+                        HistogramPolicy policy{};
                         extract_policy_dispatch_t dispatch{policy};
                         _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
@@ -1199,7 +1199,7 @@ template <
   typename KernelSource = detail::histogram::
     DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchHistogram
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceHistogram") DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
   static_assert(NUM_ACTIVE_CHANNELS <= NUM_CHANNELS,

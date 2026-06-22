@@ -27,6 +27,7 @@
 #include <cuda/std/__format/format_arg.h>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -44,12 +45,12 @@ inline constexpr bool __is_bounded_array_of = false;
 template <class _Elem, size_t _Len>
 inline constexpr bool __is_bounded_array_of<_Elem[_Len], _Elem> = true;
 
-template <class _Context, class _Tp>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t()
+template <class _Context, class _Tp, class _Dummy>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t_impl(_Dummy) noexcept
 {
   using _CtxCharT = typename _Context::char_type;
 
-  __fmt_arg_t __ret = __fmt_arg_t::__none;
+  __fmt_arg_t __ret = __fmt_arg_t::__handle;
 
   if constexpr (is_same_v<_Tp, bool>)
   {
@@ -113,20 +114,27 @@ template <class _Context, class _Tp>
   {
     __ret = __fmt_arg_t::__ptr;
   }
-
-  if constexpr (__formattable_with<_Tp, _Context>)
-  {
-    __ret = (__ret == __fmt_arg_t::__none) ? __fmt_arg_t::__handle : __ret;
-  }
-
   return __ret;
+}
+
+template <class _Context, class _Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL enable_if_t<!__formattable_with<_Tp, _Context>, __fmt_arg_t>
+__fmt_determine_arg_t_impl(int) noexcept
+{
+  return __fmt_arg_t::__none;
+}
+
+template <class _Context, class _Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __fmt_arg_t __fmt_determine_arg_t() noexcept
+{
+  return ::cuda::std::__fmt_determine_arg_t_impl<_Context, _Tp>(0);
 }
 
 template <class _Context, class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API basic_format_arg<_Context> __fmt_make_format_arg(_Tp& __value) noexcept
 {
   using _Dp                   = remove_const_t<_Tp>;
-  constexpr __fmt_arg_t __arg = __fmt_determine_arg_t<_Context, _Dp>();
+  constexpr __fmt_arg_t __arg = ::cuda::std::__fmt_determine_arg_t<_Context, _Dp>();
 
   static_assert(__arg != __fmt_arg_t::__none, "the supplied type is not formattable");
   static_assert(__formattable_with<_Tp, _Context>);

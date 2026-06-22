@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the histogram dispatcher
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_histogram.cuh>
@@ -13,8 +16,6 @@
 #include <c2h/catch2_test_helper.h>
 
 using namespace cub;
-
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the histogram dispatcher after publishing the tuning API
 
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct my_policy_hub

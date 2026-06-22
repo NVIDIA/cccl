@@ -54,13 +54,19 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Iter, class _Sent, class _Proj, class _Comp>
 _CCCL_API constexpr pair<_Iter, _Iter> __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 {
-  auto __less = _MinmaxElementLessFunc<_Comp, _Proj>(__comp, __proj);
-
   pair<_Iter, _Iter> __result(__first, __first);
-  if (__first == __last || ++__first == __last)
+
+  if (__first == __last)
   {
     return __result;
   }
+
+  if (++__first == __last)
+  {
+    return __result;
+  }
+
+  auto __less = _MinmaxElementLessFunc<_Comp, _Proj>(__comp, __proj);
 
   if (__less(__first, __result.first))
   {
