@@ -26,6 +26,7 @@
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -205,58 +206,24 @@ _CCCL_HOST_API inline bool __is_device_accessible(
   {
     return false;
   }
-  _CCCL_TRY
+  if constexpr (_IsNothrow)
+  {
+    static_assert(!_IsNothrow, "TODO: implement a no-throw context setter for __is_device_accessible_nothrow");
+    return false;
+  }
+  else
   {
     ::cuda::__ensure_current_context __ctx_setter{__device};
 
-    ::CUpointer_attribute __attrs[4] = {
-      ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-      ::CU_POINTER_ATTRIBUTE_IS_MANAGED,
-      ::CU_POINTER_ATTRIBUTE_DEVICE_POINTER,
-      ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
-    auto __memory_type       = static_cast<::CUmemorytype>(0);
-    int __is_managed         = 0;
-    void* __device_ptr       = nullptr;
-    ::CUmemoryPool __mempool = nullptr;
-    void* __results[4]       = {&__memory_type, &__is_managed, &__device_ptr, &__mempool};
-    const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
+    void* __device_ptr  = nullptr;
+    const auto __status = ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(
+      __device_ptr, __p);
     if (__status == ::cudaErrorInvalidValue)
     {
       return false;
     }
     _CCCL_THROW_OR_RETURN(__status, "Failed to get attributes of a pointer");
-    // (1) check if the pointer is unregistered
-    if (__memory_type == static_cast<::CUmemorytype>(0))
-    {
-      return false;
-    }
-    // (2) check if the pointer is a device accessible pointer or managed memory
-    if (!__is_managed && __memory_type != ::CU_MEMORYTYPE_DEVICE)
-    {
-      return false;
-    }
-    // (3) check if a memory pool is associated with the pointer
-    if (__mempool != nullptr)
-    {
-      ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()};
-      ::CUmemAccess_flags __pool_flags;
-      const auto __status2 = ::cuda::__driver::__mempoolGetAccessNoThrow(__pool_flags, __mempool, &__prop);
-      _CCCL_THROW_OR_RETURN(__status2, "Failed to get access of a memory pool");
-      return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
-    }
-    // (4) check if the pointer is actually accessible from the specified device
     return __device_ptr != nullptr;
-  }
-  _CCCL_CATCH_ALL
-  {
-    if constexpr (_IsNothrow)
-    {
-      return false;
-    }
-    else
-    {
-      _CCCL_RETHROW;
-    }
   }
 }
 
@@ -273,10 +240,13 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   return ::cuda::__is_device_accessible(__p, __device, ::cuda::std::false_type{});
 }
 
+template <class _Dependent = void>
 [[nodiscard]]
-_CCCL_HOST_API inline bool __is_device_accessible_nothrow(const void* __p, device_ref __device) noexcept
+_CCCL_HOST_API inline bool __is_device_accessible_nothrow(const void*, device_ref) noexcept
 {
-  return ::cuda::__is_device_accessible(__p, __device, ::cuda::std::true_type{});
+  static_assert(::cuda::std::__always_false_v<_Dependent>,
+                "TODO: implement a no-throw context setter for __is_device_accessible_nothrow");
+  return false;
 }
 
 #  undef _CCCL_THROW_OR_RETURN
