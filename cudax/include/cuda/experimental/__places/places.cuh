@@ -91,7 +91,15 @@ class data_place
   static ::std::shared_ptr<data_place_interface> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<data_place_interface>(&instance, [](data_place_interface*) {});
+    // Build the aliasing shared_ptr exactly once and hand out copies. Besides
+    // avoiding a redundant control block per call, this keeps the factory
+    // thread-safe if T ever derives from enable_shared_from_this: constructing
+    // a shared_ptr from a raw pointer writes the object's weak-this member, so
+    // doing it on every call would race across host threads. The guarded
+    // function-local static performs that write once; later calls only copy
+    // the handle (atomic refcount bump).
+    static ::std::shared_ptr<data_place_interface> handle{&instance, [](data_place_interface*) {}};
+    return handle;
   }
 
 public:
@@ -542,7 +550,15 @@ public:
   static ::std::shared_ptr<impl> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<impl>(&instance, [](impl*) {});
+    // Build the aliasing shared_ptr exactly once and hand out copies.
+    // exec_place::impl derives from enable_shared_from_this, so constructing a
+    // shared_ptr from the raw &instance writes the object's weak-this member.
+    // Doing that on every call races when multiple host threads request the
+    // same singleton (e.g. concurrent parallel_for -> exec_place::current_device()).
+    // The guarded function-local static performs that write once; later calls
+    // only copy the handle (atomic refcount bump).
+    static ::std::shared_ptr<impl> handle{&instance, [](impl*) {}};
+    return handle;
   }
 
   exec_place() = default;
