@@ -123,7 +123,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  std::string sass = inspect_sass(build.cubin, build.cubin_size);
+  std::string sass = inspect_sass(build.payload, build.payload_size);
   CHECK(sass.find("UBLKCP") != std::string::npos);
 
   op = make_operation("op", get_reduce_op(get_type_info<int>().type));
@@ -142,7 +142,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  sass = inspect_sass(build.cubin, build.cubin_size);
+  sass = inspect_sass(build.payload, build.payload_size);
   CHECK(sass.find("UBLKCP") != std::string::npos);
 }
 
@@ -743,7 +743,7 @@ C2H_TEST("Transform works with C++ source operations using custom headers", "[tr
   cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
-  cccl_device_transform_build_result_t build;
+  cccl_device_transform_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
@@ -818,3 +818,96 @@ extern "C" __device__ void op(void* state_ptr, void* x_ptr, void* out_ptr) {
     REQUIRE(counter[0] == static_cast<int>(num_items));
   }
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("Transform build result has AoT metadata populated", "[transform][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_unary_operation();
+  pointer_t<T> in(1);
+  pointer_t<T> out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unary_transform_build(
+      &build,
+      in,
+      out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.transform_kernel_lowered_name != nullptr);
+  CHECK(build.transform_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+}
+
+C2H_TEST("Transform compile/load round-trip", "[transform][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_unary_operation();
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unary_transform_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.transform_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.transform_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.transform_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(n);
+  CUstream null_stream = nullptr;
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_unary_transform(build, input_ptr, output_ptr, n, op, null_stream));
+
+  std::vector<T> expected(input);
+  std::transform(expected.begin(), expected.end(), expected.begin(), [](T x) {
+    return -x;
+  });
+  REQUIRE(expected == std::vector<T>(output_ptr));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+}
+#endif // CCCL_C_PARALLEL_V2
