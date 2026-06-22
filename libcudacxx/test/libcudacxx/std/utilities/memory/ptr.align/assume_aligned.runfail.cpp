@@ -6,7 +6,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#include "cuda/std/__memory/assume_aligned.h"
+
+// UNSUPPORTED: enable-tile
+// nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
+#include <cuda/std/memory>
 
 #include <test_macros.h>
 
