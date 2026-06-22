@@ -433,14 +433,14 @@ public:
       std::size_t n = bucket.previous_allocated_count;
       if (n == 0)
       {
-        n = ::cuda::std::max(m_options.min_blocks_per_chunk, //
-                             m_options.min_bytes_per_chunk >> bytes_log2);
+        n = (::cuda::std::max) (m_options.min_blocks_per_chunk, //
+                                m_options.min_bytes_per_chunk >> bytes_log2);
       }
       else
       {
-        n = ::cuda::std::min({n * 3 / 2, //
-                              m_options.max_bytes_per_chunk >> bytes_log2,
-                              m_options.max_blocks_per_chunk});
+        n = (::cuda::std::min) ({n * 3 / 2, //
+                                 m_options.max_bytes_per_chunk >> bytes_log2,
+                                 m_options.max_blocks_per_chunk});
       }
 
       bytes = n << bytes_log2;
