@@ -29,8 +29,7 @@ static void make_unique_input(thrust::device_vector<T>& in, std::size_t elements
     thrust::counting_iterator<std::size_t>(elements),
     in.begin(),
     [] __device__(std::size_t i) {
-      const auto run = i / 2;
-      return static_cast<T>(run);
+      return static_cast<T>(i / 2ULL);
     });
 }
 
