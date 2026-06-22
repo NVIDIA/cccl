@@ -192,7 +192,8 @@ struct agent_t
       }
       else
       {
-        d_output[values_beg + j] = static_cast<it_value_t<OutputIt>>(range_beg + i);
+        using output_value_t = cub::detail::non_void_value_t<OutputIt, Offset>;
+        d_output[values_beg + j] = static_cast<output_value_t>(range_beg + i);
         ++j;
         --needles_remaining;
       }

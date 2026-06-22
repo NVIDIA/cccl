@@ -17,7 +17,7 @@ void basic(nvbench::state& state, nvbench::type_list<T>)
   bounds_bench_data<T> s(state);
 
   state.add_element_count(s.needles);
-  state.add_global_memory_reads<T>(s.needles);
+  state.add_global_memory_reads<T>(s.elements + .needles);
   state.add_global_memory_writes<std::ptrdiff_t>(s.needles);
 
   caching_allocator_t alloc;

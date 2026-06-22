@@ -135,8 +135,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const Offset tile_size = static_cast<Offset>(active_policy.block_threads * active_policy.items_per_thread);
-  _CCCL_ASSERT(range_count <= ::cuda::std::numeric_limits<Offset>::max() - values_count,
-               "range_count + values_count overflows Offset");
+  if (range_count > cuda::std::numeric_limits<Offset>::max() - values_count)
+  {
+    return cudaErrorInvalidValue;
+  }
   const Offset total_items   = range_count + values_count;
   const Offset num_tiles     = ::cuda::ceil_div(total_items, tile_size);
   const Offset num_diagonals = num_tiles + 1;
