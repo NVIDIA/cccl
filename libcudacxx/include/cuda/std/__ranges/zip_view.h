@@ -57,12 +57,13 @@ struct __zv_functors
   struct __zip_begin
   {
     template <class... _Types>
-    [[nodiscard]] _CCCL_API constexpr tuple<invoke_result_t<decltype(::cuda::std::ranges::begin)&, _Types>...>
+    [[nodiscard]] _CCCL_API constexpr tuple<invoke_result_t<const ::cuda::std::ranges::__begin_cpo&, _Types>...>
     operator()(_Types&&... __tuple_elements) const
-      noexcept(noexcept(tuple<invoke_result_t<decltype(::cuda::std::ranges::begin)&, _Types>...>{
-        ::cuda::std::invoke(::cuda::std::ranges::begin, ::cuda::std::forward<_Types>(__tuple_elements))...}))
+      noexcept(noexcept(tuple<invoke_result_t<const ::cuda::std::ranges::__begin_cpo&, _Types>...>{
+        ::cuda::std::invoke(::cuda::std::ranges::__begin_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...}))
     {
-      return {::cuda::std::invoke(::cuda::std::ranges::begin, ::cuda::std::forward<_Types>(__tuple_elements))...};
+      return {
+        ::cuda::std::invoke(::cuda::std::ranges::__begin_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...};
     }
   };
 
@@ -76,12 +77,12 @@ struct __zv_functors
   struct __zip_end
   {
     template <class... _Types>
-    [[nodiscard]] _CCCL_API constexpr tuple<invoke_result_t<decltype(::cuda::std::ranges::end)&, _Types>...>
+    [[nodiscard]] _CCCL_API constexpr tuple<invoke_result_t<const ::cuda::std::ranges::__end_cpo&, _Types>...>
     operator()(_Types&&... __tuple_elements) const
-      noexcept(noexcept(tuple<invoke_result_t<decltype(::cuda::std::ranges::end)&, _Types>...>{
-        ::cuda::std::invoke(::cuda::std::ranges::end, ::cuda::std::forward<_Types>(__tuple_elements))...}))
+      noexcept(noexcept(tuple<invoke_result_t<::cuda::std::ranges::__end_cpo&, _Types>...>{
+        ::cuda::std::invoke(::cuda::std::ranges::__end_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...}))
     {
-      return {::cuda::std::invoke(::cuda::std::ranges::end, ::cuda::std::forward<_Types>(__tuple_elements))...};
+      return {::cuda::std::invoke(::cuda::std::ranges::__end_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...};
     }
   };
 
@@ -98,16 +99,16 @@ struct __zv_functors
     [[nodiscard]] _CCCL_API static constexpr auto __get_min(_Sizes&&... __tuple_sizes) noexcept
     {
       using __size_type = make_unsigned_t<common_type_t<_Sizes...>>;
-      return (::cuda::std::ranges::min) ({static_cast<__size_type>(__tuple_sizes)...});
+      return ::cuda::std::ranges::__min_cpo{}({static_cast<__size_type>(__tuple_sizes)...});
     }
 
     template <class... _Types>
     [[nodiscard]] _CCCL_API constexpr auto operator()(_Types&&... __tuple_elements) const
       noexcept(noexcept(__zip_size::__get_min(
-        ::cuda::std::invoke(::cuda::std::ranges::size, ::cuda::std::forward<_Types>(__tuple_elements))...)))
+        ::cuda::std::invoke(::cuda::std::ranges::__size_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...)))
     {
       return __zip_size::__get_min(
-        ::cuda::std::invoke(::cuda::std::ranges::size, ::cuda::std::forward<_Types>(__tuple_elements))...);
+        ::cuda::std::invoke(::cuda::std::ranges::__size_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...);
     }
   };
 

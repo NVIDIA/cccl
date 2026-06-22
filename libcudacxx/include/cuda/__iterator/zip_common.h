@@ -228,7 +228,7 @@ struct __zip_op_minus
     }
 
     const _Diff __temp[] = {__first, ::cuda::std::get<_Indices>(__tuple1) - ::cuda::std::get<_Indices>(__tuple2)...};
-    return *(::cuda::std::ranges::min_element) (__temp, __op_comp_abs{});
+    return *::cuda::std::ranges::__min_element_cpo{}(__temp, __op_comp_abs{});
   }
 
   _CCCL_EXEC_CHECK_DISABLE
