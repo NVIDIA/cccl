@@ -14,11 +14,12 @@
 
 #include <cuda/experimental/__multi_gpu/concepts.h>
 
+#include <testing.cuh>
+
 #include "collective_concepts_common.cuh"
 
 namespace
 {
-namespace cudax = ::cuda::experimental;
 namespace types = cudax_multi_gpu_concepts;
 
 // nvcc ignores [[maybe_unused]] entirely
@@ -31,21 +32,13 @@ struct gather_returns_int : types::communicator_model
 };
 
 _CCCL_END_NV_DIAG_SUPPRESS()
-
-_CCCL_HOST_DEVICE_API constexpr bool test()
-{
-  static_assert(cudax::__has_gather<types::collective_communicator_model>);
-  static_assert(cudax::__has_gather<types::collective_communicator_model, long*>);
-  static_assert(!cudax::__has_gather<types::communicator_model>);
-
-  static_assert(!cudax::__has_gather<gather_returns_int>);
-  return true;
-}
 } // namespace
 
-int main(int, char**)
+C2H_TEST("__has_gather concept", "[multi_gpu][concepts]")
 {
-  test();
-  static_assert(test());
-  return 0;
+  STATIC_REQUIRE(cudax::__has_gather<types::collective_communicator_model>);
+  STATIC_REQUIRE(cudax::__has_gather<types::collective_communicator_model, long*>);
+  STATIC_REQUIRE(!cudax::__has_gather<types::communicator_model>);
+
+  STATIC_REQUIRE(!cudax::__has_gather<gather_returns_int>);
 }

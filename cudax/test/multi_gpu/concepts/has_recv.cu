@@ -14,11 +14,12 @@
 
 #include <cuda/experimental/__multi_gpu/concepts.h>
 
+#include <testing.cuh>
+
 #include "concepts_common.cuh"
 
 namespace
 {
-namespace cudax = ::cuda::experimental;
 namespace types = cudax_multi_gpu_concepts;
 
 // nvcc ignores [[maybe_unused]] entirely
@@ -37,21 +38,13 @@ struct no_recv : types::basic_communicator_model
 };
 
 _CCCL_END_NV_DIAG_SUPPRESS()
-
-_CCCL_HOST_DEVICE_API constexpr bool test()
-{
-  static_assert(cudax::__has_recv<types::communicator_model>);
-  static_assert(cudax::__has_recv<types::communicator_model, long*>);
-  static_assert(!cudax::__has_recv<no_recv>);
-
-  static_assert(!cudax::__has_recv<recv_returns_int>);
-  return true;
-}
 } // namespace
 
-int main(int, char**)
+C2H_TEST("__has_recv concept", "[multi_gpu][concepts]")
 {
-  test();
-  static_assert(test());
-  return 0;
+  STATIC_REQUIRE(cudax::__has_recv<types::communicator_model>);
+  STATIC_REQUIRE(cudax::__has_recv<types::communicator_model, long*>);
+  STATIC_REQUIRE(!cudax::__has_recv<no_recv>);
+
+  STATIC_REQUIRE(!cudax::__has_recv<recv_returns_int>);
 }
