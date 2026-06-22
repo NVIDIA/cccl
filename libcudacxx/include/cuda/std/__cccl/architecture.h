@@ -16,10 +16,10 @@
 
 // The header provides the following macros to determine the host architecture:
 //
-// _CCCL_ARCH(ARM64)     ARM64
-// _CCCL_ARCH(X86_64)    X86 64 bit
-// CCCL_ARCH(ARM64)      ARM64
-// CCCL_ARCH(X86_64)     X86 64 bit
+// _CCCL_ARCH(ARM64)      ARM64
+// _CCCL_ARCH(X86_64)     X86 64 bit
+// CCCL_HOST_ARCH(ARM64)  ARM64
+// CCCL_HOST_ARCH(X86_64) X86 64 bit
 
 // Determine the host architecture
 
@@ -41,7 +41,7 @@
 
 #define _CCCL_ARCH(...) _CCCL_ARCH_##__VA_ARGS__##_()
 
-//! @def CCCL_ARCH(ARCH) /* implementation defined */
+//! @def CCCL_HOST_ARCH(ARCH) /* implementation defined */
 //!
 //! @brief Detect the current host architecture.
 //!
@@ -67,21 +67,21 @@
 //! #define MY_OTHER_MACRO 1
 //!
 //! // Expansion value can be used in ordinary macro conditionals
-//! #if CCCL_ARCH(X86_64) && MY_OTHER_MACRO
+//! #if CCCL_HOST_ARCH(X86_64) && MY_OTHER_MACRO
 //!   // ...
 //! #endif
 //!
 //! // Can be negated as usual
-//! #if !CCCL_ARCH(ARM64)
+//! #if !CCCL_HOST_ARCH(ARM64)
 //!   // ...
 //! #endif
 //! @endcode
 //!
 //! @return true if the specified host architecture is being compiled for, false otherwise.
 #ifdef _CCCL_DOXYGEN_INVOKED
-#  define CCCL_ARCH(ARCH) /* implementation defined */
+#  define CCCL_HOST_ARCH(ARCH) /* implementation defined */
 #else
-#  define CCCL_ARCH(__arch__) _CCCL_ARCH_##__arch__##_()
+#  define CCCL_HOST_ARCH(__arch__) _CCCL_ARCH_##__arch__##_()
 #endif
 
 // Note: the public API is single-arg to constrain the API and allow for future expansion. The
