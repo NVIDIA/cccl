@@ -225,7 +225,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-#if TEST_LAUNCH != 1 && TEST_TYPES == 1
+#if TEST_TYPES == 1
 TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned segments",
           "[keys][segmented][topk][device][cluster]")
 {
@@ -360,7 +360,7 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
-#endif // TEST_LAUNCH != 1 && TEST_TYPES == 1
+#endif // TEST_TYPES == 1
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segments",
          "[keys][segmented][topk][device]",
@@ -461,7 +461,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-#if TEST_LAUNCH != 1 && TEST_TYPES == 1
+#if TEST_TYPES == 1
 TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unaligned segments",
           "[keys][segmented][topk][device][cluster]")
 {
@@ -535,7 +535,7 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalig
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
-#endif // TEST_LAUNCH != 1 && TEST_TYPES == 1
+#endif // TEST_TYPES == 1
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per-segment k",
          "[keys][segmented][topk][device]",
@@ -733,7 +733,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
-#if TEST_LAUNCH != 1 && TEST_TYPES == 2
+#if TEST_TYPES == 2
 // Heavy-tie stress/regression: collapse the keys to only a handful of distinct values so the k-th key's bucket holds a
 // large set of tied candidates. This exercises the cluster agent's candidate path and, when built with
 // CUB_ENABLE_CLUSTER_TOPK_DETERMINISM, the deterministic cross-CTA tie-break scan (cand_prefix + BlockScan ranks). The
@@ -795,7 +795,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundar
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
-#endif // TEST_LAUNCH != 1 && TEST_TYPES == 2
+#endif // TEST_TYPES == 2
 
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
 C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")

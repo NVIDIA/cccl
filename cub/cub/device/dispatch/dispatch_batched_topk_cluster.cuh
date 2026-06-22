@@ -577,9 +577,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         selected_config.cluster_blocks, selected_config.block_tile_capacity);
       if (selected_cluster_tile_capacity >= max_seg_size)
       {
-        const auto required_physical_cluster_tile_items =
-          static_cast<::cuda::std::uint64_t>(max_seg_size) + static_cast<::cuda::std::uint64_t>(layout_t::chunk_items);
-        selected_config.cluster_blocks = static_cast<int>(
+        // `cluster_tile_capacity == physical` (the head is an edge, not a reserved chunk), so the physical capacity
+        // need only reach `max_seg_size`; the chunk-granular round-up below grows it as needed.
+        const auto required_physical_cluster_tile_items = static_cast<::cuda::std::uint64_t>(max_seg_size);
+        selected_config.cluster_blocks                  = static_cast<int>(
           ::cuda::ceil_div(required_physical_cluster_tile_items,
                            static_cast<::cuda::std::uint64_t>(selected_config.block_tile_capacity)));
 
@@ -641,7 +642,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       constexpr int portable_total_smem_bytes = 48 * 1024;
       constexpr int dynamic_smem_bytes =
         (portable_total_smem_bytes > static_smem_bytes) ? portable_total_smem_bytes - static_smem_bytes : 0;
+
+      // The compile-time `ChunkBytes` is reused verbatim for the device launch: the agent peels the unaligned boundary
+      // edges into a tiny per-block buffer, so streaming needs only a single resident-or-streaming slot, and segments
+      // exceeding the small portable-SMEM block tile are handled by re-streaming overflow from gmem. The only hard
+      // requirement is that at least one load-aligned chunk fits the worst-case portable SMEM block tile.
       constexpr auto block_tile_capacity = layout_t::block_tile_capacity(dynamic_smem_bytes);
+      static_assert(block_tile_capacity >= static_cast<::cuda::std::uint32_t>(layout_t::chunk_items),
+                    "Portable SMEM is too small to fit even one load-aligned chunk for the device-launch (CDP) path");
 
       const auto grid_blocks = static_cast<::cuda::std::uint64_t>(num_seg_val)
                              * static_cast<::cuda::std::uint64_t>(max_portable_cluster_blocks);

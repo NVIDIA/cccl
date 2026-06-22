@@ -324,9 +324,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
-// Exercise the pair (key+value) generic fallback only in the float build (`TEST_TYPES == 1`); the test fixes its own
-// key/value types, so repeating it for every key-type axis would only waste time on the expensive 1 Mi-element runs.
-#if TEST_LAUNCH != 1 && TEST_TYPES == 1
+// Large-segment cluster pair tests, built only in the float build (`TEST_TYPES == 1`): they fix their own key/value
+// types, so repeating them per key-type axis would only waste time on the expensive 1 Mi-element runs. They run on
+// every launch id, including device launch (`lid_1`): the CDP static config's small resident capacity is what streams
+// big segments and peels the unaligned tail edge, so it is the path that must cover them.
+#if TEST_TYPES == 1
 template <typename KeyT>
 struct cast_to_key_op
 {
@@ -427,7 +429,82 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
-#endif // TEST_LAUNCH != 1 && TEST_TYPES == 1
+
+// Pair analog of the keys "large fixed-size unaligned segments" test: contiguous keys offset by `pad` take the
+// block-load path with an unaligned head edge, and the 1 Mi-element segments stream, so the value payloads exercise
+// the boundary-edge value writes that the small and non-contiguous pair tests above do not. Which boundary the launch
+// stresses depends on its resident capacity: the host/graph configs keep the tail suffix resident (`full_slots > 1`),
+// covering the head edge and the resident-suffix write; the device-launch (`lid_1`) static config has a small
+// `full_slots`, so the tail suffix is peeled into `edge_keys` and the persistent `tail_edge_len`/`process_tail_edge`
+// path is covered there.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned segments",
+         "[pairs][segmented][topk][device][cluster]",
+         select_direction_list)
+{
+  using key_t           = float;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr auto direction = c2h::get<0, TestType>::value;
+
+  constexpr segment_size_t static_max_segment_size = 1024 * 1024;
+  constexpr segment_size_t static_max_k            = 4 * 1024;
+  constexpr segment_index_t num_segments           = 3;
+
+  const int pad = GENERATE(0, 1, 3, 7);
+  const segment_size_t segment_size =
+    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, segment_size_t{128 * 1024}}));
+  const segment_size_t max_k     = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k         = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
+  const segment_size_t num_items = num_segments * segment_size;
+
+  CAPTURE(pad, static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
+
+  // Contiguous key storage offset by `pad` so each segment base is unaligned (forces the head boundary edge).
+  c2h::device_vector<key_t> keys_in_buffer(pad + num_items, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data()) + pad;
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  // Value payload = global flattened index into the (pad-excluded) logical input, so each output value indexes back
+  // into `expected_keys`.
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  // Logical input (pad excluded), flattened, for verification.
+  c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
+  thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
+
+  batched_topk_pairs<direction>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_items});
+
+  // Verify (before sorting) that values stayed associated with their keys and that no index repeats within a segment.
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  // Verify the selected keys are the correct top-k.
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+#endif // TEST_TYPES == 1
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segments",
          "[pairs][segmented][topk][device]",
