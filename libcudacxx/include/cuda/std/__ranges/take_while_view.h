@@ -30,6 +30,7 @@
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/view_interface.h>
@@ -217,6 +218,10 @@ public:
 template <class _Range, class _Pred>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_while_view(_Range&&, _Pred)
   -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
+
+// take_while_view's sentinel stores a pointer to the predicate.
+template <class _View, class _Pred>
+inline constexpr bool __has_dangling_iterator<take_while_view<_View, _Pred>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

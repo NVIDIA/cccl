@@ -16,7 +16,10 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
   set(test_sources ${ARGN})
 
   cccl_add_executable(${test_target} SOURCES ${ARGN} ADD_CTEST)
-  target_include_directories(${test_target} PRIVATE "common")
+  target_include_directories(
+    ${test_target}
+    PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/common"
+  )
   target_link_libraries(
     ${test_target}
     PRIVATE #
@@ -253,3 +256,5 @@ if (cudax_ENABLE_CUDASTF AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF tests are handled separately:
   add_subdirectory(stf)
 endif()
+
+add_subdirectory(multi_gpu)

@@ -156,6 +156,9 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(owning_view);
 template <class _Rp>
 inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
 
+template <class _Rp>
+inline constexpr bool __has_dangling_iterator<owning_view<_Rp>> = __has_dangling_iterator<_Rp>;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>

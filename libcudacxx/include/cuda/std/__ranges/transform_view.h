@@ -38,6 +38,7 @@
 #include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/empty.h>
+#include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/size.h>
@@ -103,6 +104,11 @@ class transform_view : public view_interface<transform_view<_View, _Fn>>
   _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Fn> __func_;
 
 public:
+  // [[nodiscard]] _CCCL_API constexpr const _Fn& __func() const noexcept
+  // {
+  //   return *__func_;
+  // }
+
   template <bool>
   class __sentinel;
 
@@ -482,6 +488,9 @@ template <class _Range, class _Fn>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES transform_view(_Range&&, _Fn)
   -> transform_view<::cuda::std::ranges::views::all_t<_Range>, _Fn>;
 
+template <class _Range, class _Fn>
+inline constexpr bool __has_dangling_iterator<transform_view<_Range, _Fn>> = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
@@ -491,7 +500,7 @@ struct __fn
   template <class _Range, class _Fn>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Fn&& __f) const
     noexcept(noexcept(transform_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Fn>(__f))))
-      -> transform_view<all_t<_Range>, remove_cvref_t<_Fn>>
+      -> decltype(transform_view(std::forward<_Range>(__range), std::forward<_Fn>(__f)))
   {
     return transform_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Fn>(__f));
   }

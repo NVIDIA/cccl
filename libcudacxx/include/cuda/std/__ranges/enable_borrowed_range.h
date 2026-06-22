@@ -34,6 +34,26 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 template <class>
 inline constexpr bool enable_borrowed_range = false;
 
+// Whether an iterator in a range would include a pointer to the underlying range, and
+// therefore could not be passed to iterator-based algorithms across host-device
+template <class>
+inline constexpr bool __has_dangling_iterator = false;
+
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<const _Tp> = __has_dangling_iterator<_Tp>;
+
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<_Tp&> = __has_dangling_iterator<_Tp>;
+
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<const _Tp&> = __has_dangling_iterator<_Tp>;
+
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<_Tp&&> = __has_dangling_iterator<_Tp>;
+
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<const _Tp&&> = __has_dangling_iterator<_Tp>;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>

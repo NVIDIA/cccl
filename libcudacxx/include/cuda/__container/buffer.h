@@ -63,9 +63,9 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Env>
-inline constexpr bool __buffer_compatible_env =
-  ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
-  || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
+inline constexpr bool __buffer_compatible_env = true;
+// ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
+// || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 //! @rst

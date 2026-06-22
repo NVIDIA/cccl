@@ -114,6 +114,10 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES ref_view(_Range&) -> ref_view<_Range>;
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
 
+// ref_view stores a pointer to the referenced range.
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<ref_view<_Tp>> = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>

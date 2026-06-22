@@ -58,6 +58,11 @@ public:
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<empty_view<_Tp>> = true;
 
+// No need to specialize, the default is false.
+//
+// template <class _Tp>
+// inline constexpr bool __has_dangling_iterator<empty_view<_Tp>> = false;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS

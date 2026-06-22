@@ -162,6 +162,9 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES common_view(_Range&&) -> common_view<::cuda::st
 template <class _View>
 inline constexpr bool enable_borrowed_range<common_view<_View>> = enable_borrowed_range<_View>;
 
+template <class _View>
+inline constexpr bool __has_dangling_iterator<common_view<_View>> = __has_dangling_iterator<_View>;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS

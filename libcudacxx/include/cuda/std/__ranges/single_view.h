@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/view_interface.h>
@@ -122,6 +123,10 @@ public:
 
 template <class _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES single_view(_Tp) -> single_view<_Tp>;
+
+// single_view uses raw pointers into its stored value as iterators.
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<single_view<_Tp>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

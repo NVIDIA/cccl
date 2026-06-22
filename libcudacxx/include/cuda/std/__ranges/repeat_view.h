@@ -303,6 +303,9 @@ private:
 template <class _Tp, class _Bound>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _Bound>;
 
+template <class _Tp, class _Bound>
+inline constexpr bool __has_dangling_iterator<repeat_view<_Tp, _Bound>> = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 // clang-format off

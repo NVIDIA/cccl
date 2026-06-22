@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__device/physical_device.h>
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
