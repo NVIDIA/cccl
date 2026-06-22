@@ -126,21 +126,21 @@ public:
 template <const auto& _Arr, ::cuda::std::size_t... _Is>
 _CCCL_API constexpr auto __make_constant_sequence_impl(::cuda::std::index_sequence<_Is...>)
 {
-  using raw_array = ::cuda::std::remove_const_t<::cuda::std::remove_reference_t<decltype(_Arr)>>;
+  using __raw_array = ::cuda::std::remove_cvref_t<decltype(_Arr)>;
 
-  if constexpr (::cuda::std::is_bounded_array_v<raw_array>)
+  if constexpr (::cuda::std::is_bounded_array_v<__raw_array>)
   {
-    using _Tp = ::cuda::std::remove_cv_t<::cuda::std::remove_extent_t<raw_array>>;
+    using _Tp = ::cuda::std::remove_cv_t<::cuda::std::remove_extent_t<__raw_array>>;
     return __constant_sequence<_Tp, _Arr[_Is]...>{};
   }
-  else if constexpr (::cuda::std::__is_cuda_std_array_v<raw_array>)
+  else if constexpr (::cuda::std::__is_cuda_std_array_v<__raw_array>)
   {
-    using _Tp = typename raw_array::value_type;
+    using _Tp = typename __raw_array::value_type;
     return __constant_sequence<_Tp, _Arr[_Is]...>{};
   }
   else
   {
-    static_assert(::cuda::std::__always_false_v<raw_array>, "unsupported array type");
+    static_assert(::cuda::std::__always_false_v<__raw_array>, "unsupported array type");
   }
 }
 
@@ -149,19 +149,19 @@ _CCCL_API constexpr auto __make_constant_sequence_impl(::cuda::std::index_sequen
 template <const auto& Arr>
 _CCCL_API constexpr auto __make_constant_sequence()
 {
-  using raw_array = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(Arr)>>;
+  using __raw_array = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(Arr)>>;
 
-  static_assert(::cuda::std::is_bounded_array_v<raw_array> || ::cuda::std::__is_cuda_std_array_v<raw_array>,
+  static_assert(::cuda::std::is_bounded_array_v<__raw_array> || ::cuda::std::__is_cuda_std_array_v<__raw_array>,
                 "make_constant_sequence requires a cuda::std::array or non-empty C-style array");
 
   constexpr ::cuda::std::size_t N = []() constexpr {
-    if constexpr (::cuda::std::is_bounded_array_v<raw_array>)
+    if constexpr (::cuda::std::is_bounded_array_v<__raw_array>)
     {
-      return ::cuda::std::extent_v<raw_array>;
+      return ::cuda::std::extent_v<__raw_array>;
     }
     else
     {
-      return ::cuda::std::tuple_size_v<raw_array>;
+      return ::cuda::std::tuple_size_v<__raw_array>;
     }
   }();
 
