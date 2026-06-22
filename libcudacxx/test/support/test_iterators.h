@@ -866,6 +866,8 @@ struct ThrowingIterator
       , index_(rhs.index_)
   {}
 
+  // Irrelevant for testing code
+  // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
   TEST_FUNC constexpr ThrowingIterator& operator=(const ThrowingIterator& rhs)
   {
     if (action_ == TAAssignment && --index_ < 0)

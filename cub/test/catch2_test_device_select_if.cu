@@ -326,6 +326,7 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
 }
 
 C2H_TEST("DeviceSelect::If works for very large number of output items",
@@ -374,6 +375,7 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
 }
 
 C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]")
