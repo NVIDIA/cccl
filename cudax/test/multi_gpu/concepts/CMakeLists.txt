@@ -8,21 +8,6 @@
 #
 #===----------------------------------------------------------------------===##
 
-set(
-  multi_gpu_concepts_test_sources
-  communicator.cu
-  has_all_gather.cu
-  has_all_reduce.cu
-  has_all_to_all.cu
-  has_all_to_all_v.cu
-  has_broadcast.cu
-  has_gather.cu
-  has_gather_v.cu
-  has_recv.cu
-  has_reduce.cu
-  has_send.cu
-)
-
 function(cudax_add_multi_gpu_concepts_test target_name_var source)
   cmake_path(GET source STEM filename)
   set(test_target "cudax.test.multi_gpu.concepts.${filename}")
@@ -33,6 +18,8 @@ function(cudax_add_multi_gpu_concepts_test target_name_var source)
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
-foreach (source IN LISTS multi_gpu_concepts_test_sources)
+file(GLOB test_srcs LIST_DIRECTORIES FALSE CONFIGURE_DEPENDS *.cu *.cpp)
+
+foreach (src IN LISTS test_srcs)
   cudax_add_multi_gpu_concepts_test(test_target "${source}")
 endforeach()
