@@ -21,6 +21,8 @@
 
 #if _CCCL_HAS_HOST_STD_LIB()
 #  include <array>
+#  include <complex>
+#  include <tuple>
 #  include <utility>
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -73,7 +75,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(p) == 1.0);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_pair_like)
+#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
   NV_IF_TARGET(NV_IS_HOST, ({
                  using Pair = cuda::std::pair<float, double>;
                  std::complex<float> t0{0.0f, 1.0};
@@ -81,7 +83,7 @@ int main(int, char**)
                  assert(cuda::std::get<0>(p) == 0.0f);
                  assert(cuda::std::get<1>(p) == 1.0);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_pair_like)
+#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
 
   return 0;
 }

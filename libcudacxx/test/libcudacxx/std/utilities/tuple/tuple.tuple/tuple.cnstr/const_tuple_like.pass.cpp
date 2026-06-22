@@ -21,6 +21,8 @@
 
 #if _CCCL_HAS_HOST_STD_LIB()
 #  include <array>
+#  include <complex>
+#  include <tuple>
 #  include <utility>
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -100,7 +102,7 @@ int main(int, char**)
 #if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
   NV_IF_TARGET(NV_IS_HOST, ({
                  using T = cuda::std::tuple<float, double>;
-                 const cuda::std::complex<double> t0{0.0, 1.0};
+                 const std::complex<double> t0{0.0, 1.0};
                  T t = t0;
                  assert(cuda::std::get<0>(t) == 0.0f);
                  assert(cuda::std::get<1>(t) == 1.0);

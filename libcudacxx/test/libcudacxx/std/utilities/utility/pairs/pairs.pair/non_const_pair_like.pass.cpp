@@ -21,6 +21,8 @@
 
 #if _CCCL_HAS_HOST_STD_LIB()
 #  include <array>
+#  include <complex>
+#  include <tuple>
 #  include <utility>
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -73,7 +75,7 @@ TEST_FUNC constexpr bool test()
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::complex<float> p{1.0f, 2.0f};
                  cuda::std::pair<ConvertibleFrom<float>, ConvertibleFrom<float>> p2 = p;
-                 assert(cuda::std::get<0>(p2).v.val == 1.0f);
+                 assert(cuda::std::get<0>(p2).v == 1.0f);
                  assert(cuda::std::get<1>(p2).v == 2.0f);
                }))
 #endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
@@ -123,7 +125,7 @@ TEST_FUNC constexpr bool test()
                  std::complex<float> p{1.0f, 2.0f};
                  cuda::std::pair<ExplicitConstructibleFrom<float>, ConvertibleFrom<float>> p2{p};
                  assert(cuda::std::get<0>(p2).v.val == 1.0f);
-                 assert(cuda::std::get<1>(p2).v == 2.0f);
+                 assert(cuda::std::get<1>(p2).v.val == 2.0f);
                }))
 #endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
 
