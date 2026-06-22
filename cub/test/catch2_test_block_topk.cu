@@ -81,7 +81,9 @@ void check_topk(const c2h::host_vector<KeyT>& h_in, cuda::std::span<const KeyT> 
 
   c2h::host_vector<KeyT> h_top(d_top);
   h_top.resize(top_size);
-  std::sort(h_top.begin(), h_top.end(), comparator_t<SelectMax>{});
+  std::sort(h_top.begin(),
+            h_top.end(),
+            direction_to_comparator_t<SelectMax ? cub::detail::topk::select::max : cub::detail::topk::select::min>{});
   c2h::host_vector<KeyT> h_ref_vec(h_ref.begin(), h_ref.end());
   CAPTURE(bit_repr(h_top), bit_repr(h_ref_vec));
   REQUIRE(h_top == h_ref_vec);

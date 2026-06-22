@@ -15,7 +15,6 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/cstddef>
@@ -28,6 +27,7 @@
 #include <algorithm>
 #include <initializer_list>
 
+#include "catch2_test_device_topk_common.cuh"
 #include <c2h/catch2_test_helper.h>
 
 // --- RNG and data generation ---
@@ -48,38 +48,6 @@ c2h::host_vector<T> distinct_keys(cuda::std::size_t n, rng_t& rng)
     v[i] = static_cast<T>(start + static_cast<T>(i));
   }
   thrust::shuffle(v.begin(), v.end(), rng);
-  return v;
-}
-
-// `n` keys from a centered distribution: standard normal for FP, uniform
-// over a width-`n` window for integers (centered at `0` for signed,
-// `max() / 2` for unsigned). The narrow window gives `~n/2` expected
-// collision pairs by birthday paradox, exercising the tie-break path
-// without engineering ties.
-template <typename KeyT>
-c2h::host_vector<KeyT> random_keys_centered(int n, rng_t& rng)
-{
-  c2h::host_vector<KeyT> v(n);
-  auto fill_keys = [&](auto& dist) {
-    for (auto& x : v)
-    {
-      x = dist(rng);
-    }
-  };
-  if constexpr (cuda::is_floating_point_v<KeyT>)
-  {
-    constexpr KeyT mean   = KeyT{0};
-    constexpr KeyT stddev = KeyT{1};
-    thrust::random::normal_distribution<KeyT> dist(mean, stddev);
-    fill_keys(dist);
-  }
-  else
-  {
-    constexpr KeyT mean = cuda::std::is_signed_v<KeyT> ? KeyT{0} : (cuda::std::numeric_limits<KeyT>::max() / KeyT{2});
-    const KeyT half     = static_cast<KeyT>(n / 2);
-    thrust::random::uniform_int_distribution<KeyT> dist(static_cast<KeyT>(mean - half), static_cast<KeyT>(mean + half));
-    fill_keys(dist);
-  }
   return v;
 }
 
@@ -303,17 +271,14 @@ inline auto overhang_generator(bool narrow, std::initializer_list<int> options)
 
 // --- Host top-k reference ---
 
-// Winner-first ordering: largest for SelectMax, smallest for SelectMin.
-template <bool SelectMax>
-using comparator_t = cuda::std::conditional_t<SelectMax, cuda::std::greater<>, cuda::std::less<>>;
-
 // Up to `min(k, in.size())` items so callers can pass a `k` exceeding the input length.
 template <bool SelectMax, typename T>
 c2h::host_vector<T> sorted_top_k(const c2h::host_vector<T>& in, int k)
 {
-  c2h::host_vector<T> ref = in;
-  const auto out_size     = cuda::std::min(static_cast<cuda::std::size_t>(k), ref.size());
-  std::partial_sort(ref.begin(), ref.begin() + out_size, ref.end(), comparator_t<SelectMax>{});
+  constexpr auto direction = SelectMax ? cub::detail::topk::select::max : cub::detail::topk::select::min;
+  c2h::host_vector<T> ref  = in;
+  const auto out_size      = cuda::std::min(static_cast<cuda::std::size_t>(k), ref.size());
+  std::partial_sort(ref.begin(), ref.begin() + out_size, ref.end(), direction_to_comparator_t<direction>{});
   ref.resize(out_size);
   return ref;
 }
