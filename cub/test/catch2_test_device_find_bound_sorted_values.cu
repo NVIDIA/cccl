@@ -6,6 +6,8 @@
 
 #include <thrust/sort.h>
 
+#include <cuda/iterator>
+
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
@@ -87,6 +89,48 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues works", "[find][device][binary-sear
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound);
 }
 
+C2H_TEST("DeviceFind::LowerBoundSortedValues works with a transform output iterator", "[find][device][binary-search]")
+{
+  using value_type = int;
+  using Result     = std::ptrdiff_t;
+
+  const std::size_t range_num_items  = 7492;
+  const std::size_t values_num_items = 749;
+
+  c2h::device_vector<value_type> range_d(range_num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(1), range_d);
+  thrust::sort(c2h::device_policy, range_d.begin(), range_d.end());
+
+  c2h::device_vector<value_type> values_d(values_num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(2), values_d);
+  thrust::sort(c2h::device_policy, values_d.begin(), values_d.end());
+
+  // A transform_output_iterator has a void value_type, which exercises the non_void_value_t fallback.
+  c2h::device_vector<Result> offsets_d(values_num_items, thrust::default_init);
+  auto offsets_out = cuda::make_transform_output_iterator(offsets_d.begin(), cuda::std::negate{});
+
+  lower_bound_sorted_values(
+    thrust::raw_pointer_cast(range_d.data()),
+    range_num_items,
+    thrust::raw_pointer_cast(values_d.data()),
+    values_num_items,
+    offsets_out,
+    cuda::std::less<value_type>{});
+
+  c2h::host_vector<value_type> range_h  = range_d;
+  c2h::host_vector<value_type> values_h = values_d;
+  c2h::host_vector<Result> offsets_h    = offsets_d;
+
+  c2h::host_vector<Result> offsets_ref(values_num_items);
+  for (auto i = 0u; i < values_num_items; ++i)
+  {
+    offsets_ref[i] =
+      -(std::lower_bound(range_h.data(), range_h.data() + range_num_items, values_h[i]) - range_h.data());
+  }
+
+  CHECK(offsets_ref == offsets_h);
+}
+
 C2H_TEST("DeviceFind::LowerBoundSortedValues works with descending order", "[find][device][binary-search]", types)
 {
   using value_type = c2h::get<0, TestType>;
@@ -123,7 +167,7 @@ C2H_TEST("DeviceFind::LowerBoundSortedValues almost tile-sized input sizes", "[f
   cuda::compute_capability cc{};
   REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
   const auto policy = cub::detail::find_bound_sorted_values::policy_selector_from_types<value_type, value_type>{}(cc);
-  const auto tile_size = std::size_t{static_cast<std::size_t>(policy.block_threads) * policy.items_per_thread};
+  const auto tile_size = std::size_t{static_cast<std::size_t>(policy.threads_per_block) * policy.items_per_thread};
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, tile_size - 1, 1);
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, tile_size, 1);
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, 1, tile_size - 1);
@@ -136,7 +180,7 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[f
   cuda::compute_capability cc{};
   REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
   const auto policy = cub::detail::find_bound_sorted_values::policy_selector_from_types<value_type, value_type>{}(cc);
-  const auto tile_size = std::size_t{static_cast<std::size_t>(policy.block_threads) * policy.items_per_thread};
+  const auto tile_size = std::size_t{static_cast<std::size_t>(policy.threads_per_block) * policy.items_per_thread};
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, tile_size - 1, 1);
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, tile_size, 1);
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, 1, tile_size - 1);

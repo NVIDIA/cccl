@@ -50,7 +50,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
   PartitionCompOp partition_comp)
 {
   constexpr find_bound_sorted_values_policy policy = current_policy<PolicySelector>();
-  constexpr int tile_size                          = policy.block_threads * policy.items_per_thread;
+  constexpr int tile_size                          = policy.threads_per_block * policy.items_per_thread;
 
   const Offset diagonal_idx = static_cast<Offset>(blockDim.x) * blockIdx.x + threadIdx.x;
   if (diagonal_idx < num_diagonals)
@@ -68,7 +68,7 @@ template <typename PolicySelector,
           typename OutputIt,
           typename Offset,
           typename CompareOp>
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void device_find_bound_sorted_values_kernel(
     _CCCL_GRID_CONSTANT const HaystackIt d_range,
     _CCCL_GRID_CONSTANT const NeedlesIt d_values,
@@ -80,7 +80,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 {
   constexpr find_bound_sorted_values_policy policy = current_policy<PolicySelector>();
   using AgentT =
-    agent_t<policy.block_threads,
+    agent_t<policy.threads_per_block,
             policy.items_per_thread,
             policy.load_modifier,
             Mode,
@@ -134,7 +134,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
        "Dispatching find_bound_sorted_values (merge-path) to arch %d with tuning: %s\n", cc.get(), ss.str().c_str());))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const Offset tile_size = static_cast<Offset>(active_policy.block_threads * active_policy.items_per_thread);
+  const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block * active_policy.items_per_thread);
   if (range_count > cuda::std::numeric_limits<Offset>::max() - values_count)
   {
     return cudaErrorInvalidValue;
@@ -193,7 +193,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            static_cast<int>(num_tiles), active_policy.block_threads, 0, stream)
+            static_cast<int>(num_tiles), active_policy.threads_per_block, 0, stream)
             .doit(
               device_find_bound_sorted_values_kernel<PolicySelector, Mode, HaystackIt, NeedlesIt, OutputIt, Offset, CompareOp>,
               d_range,

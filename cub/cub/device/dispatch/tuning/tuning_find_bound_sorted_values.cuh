@@ -30,14 +30,14 @@ namespace detail::find_bound_sorted_values
 {
 struct find_bound_sorted_values_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   CacheLoadModifier load_modifier;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const find_bound_sorted_values_policy& lhs, const find_bound_sorted_values_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier;
   }
 
@@ -50,7 +50,7 @@ struct find_bound_sorted_values_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const find_bound_sorted_values_policy& p)
   {
-    return os << "find_bound_sorted_values_policy { .block_threads = " << p.block_threads
+    return os << "find_bound_sorted_values_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier << " }";
   }
 #endif // _CCCL_HOSTED()

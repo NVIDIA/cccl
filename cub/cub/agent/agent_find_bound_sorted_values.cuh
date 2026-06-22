@@ -74,7 +74,7 @@ struct upper_bound_mode
   }
 };
 
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           CacheLoadModifier LoadModifier,
           typename Mode,
@@ -85,7 +85,7 @@ template <int BlockThreads,
           typename CompareOp>
 struct agent_t
 {
-  static constexpr int tile_size = BlockThreads * ItemsPerThread;
+  static constexpr int tile_size = ThreadsPerBlock * ItemsPerThread;
 
   using haystack_type = it_value_t<HaystackIt>;
   using needles_type  = it_value_t<NeedlesIt>;
@@ -125,7 +125,7 @@ struct agent_t
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int idx = BlockThreads * item + threadIdx.x;
+        const int idx = ThreadsPerBlock * item + threadIdx.x;
         if (idx < haystack_count)
         {
           storage.haystack[idx] = d_range_cm[idx];
@@ -138,7 +138,7 @@ struct agent_t
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int idx = BlockThreads * item + threadIdx.x;
+        const int idx = ThreadsPerBlock * item + threadIdx.x;
         if (idx < needles_count)
         {
           storage.needles[idx] = d_values_cm[idx];
@@ -152,7 +152,7 @@ struct agent_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx = BlockThreads * item + threadIdx.x;
+      const int idx = ThreadsPerBlock * item + threadIdx.x;
       if (idx < needles_count && (values_beg + idx) > 0)
       {
         const needles_type prev = (idx == 0) ? d_values[values_beg - 1] : storage.needles[idx - 1];
@@ -192,7 +192,7 @@ struct agent_t
       }
       else
       {
-        using output_value_t = cub::detail::non_void_value_t<OutputIt, Offset>;
+        using output_value_t     = cub::detail::non_void_value_t<OutputIt, Offset>;
         d_output[values_beg + j] = static_cast<output_value_t>(range_beg + i);
         ++j;
         --needles_remaining;
