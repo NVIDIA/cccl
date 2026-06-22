@@ -396,17 +396,18 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
     return CUDA_ERROR_OUT_OF_MEMORY;
   }
   std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
-  auto single_tile_name            = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
-  auto upsweep_name                = std::unique_ptr<char[]>(duplicate_c_string(upsweep_kernel_lowered_name));
-  auto alt_upsweep_name            = std::unique_ptr<char[]>(duplicate_c_string(alt_upsweep_kernel_lowered_name));
-  auto scan_bins_name              = std::unique_ptr<char[]>(duplicate_c_string(scan_bins_kernel_lowered_name));
-  auto downsweep_name              = std::unique_ptr<char[]>(duplicate_c_string(downsweep_kernel_lowered_name));
-  auto alt_downsweep_name          = std::unique_ptr<char[]>(duplicate_c_string(alt_downsweep_kernel_lowered_name));
-  auto histogram_name              = std::unique_ptr<char[]>(duplicate_c_string(histogram_kernel_lowered_name));
-  auto exclusive_sum_name          = std::unique_ptr<char[]>(duplicate_c_string(exclusive_sum_kernel_lowered_name));
-  auto init_bins_and_counters_name = std::unique_ptr<char[]>(duplicate_c_string(init_bins_and_counters_kernel_lowered_name));
-  auto init_lookback_name          = std::unique_ptr<char[]>(duplicate_c_string(init_lookback_kernel_lowered_name));
-  auto onesweep_name               = std::unique_ptr<char[]>(duplicate_c_string(onesweep_kernel_lowered_name));
+  auto single_tile_name   = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
+  auto upsweep_name       = std::unique_ptr<char[]>(duplicate_c_string(upsweep_kernel_lowered_name));
+  auto alt_upsweep_name   = std::unique_ptr<char[]>(duplicate_c_string(alt_upsweep_kernel_lowered_name));
+  auto scan_bins_name     = std::unique_ptr<char[]>(duplicate_c_string(scan_bins_kernel_lowered_name));
+  auto downsweep_name     = std::unique_ptr<char[]>(duplicate_c_string(downsweep_kernel_lowered_name));
+  auto alt_downsweep_name = std::unique_ptr<char[]>(duplicate_c_string(alt_downsweep_kernel_lowered_name));
+  auto histogram_name     = std::unique_ptr<char[]>(duplicate_c_string(histogram_kernel_lowered_name));
+  auto exclusive_sum_name = std::unique_ptr<char[]>(duplicate_c_string(exclusive_sum_kernel_lowered_name));
+  auto init_bins_and_counters_name =
+    std::unique_ptr<char[]>(duplicate_c_string(init_bins_and_counters_kernel_lowered_name));
+  auto init_lookback_name = std::unique_ptr<char[]>(duplicate_c_string(init_lookback_kernel_lowered_name));
+  auto onesweep_name      = std::unique_ptr<char[]>(duplicate_c_string(onesweep_kernel_lowered_name));
 
   build_ptr->cc         = cc_major * 10 + cc_minor;
   build_ptr->key_type   = input_keys_it.value_type;
@@ -443,15 +444,15 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
 
-  build_ptr->runtime_policy                    = policy_ptr.release();
-  build_ptr->runtime_policy_size               = policy_size;
-  build_ptr->single_tile_kernel_lowered_name   = single_tile_name.release();
-  build_ptr->upsweep_kernel_lowered_name       = upsweep_name.release();
-  build_ptr->alt_upsweep_kernel_lowered_name   = alt_upsweep_name.release();
-  build_ptr->scan_bins_kernel_lowered_name     = scan_bins_name.release();
-  build_ptr->downsweep_kernel_lowered_name     = downsweep_name.release();
-  build_ptr->alt_downsweep_kernel_lowered_name = alt_downsweep_name.release();
-  build_ptr->histogram_kernel_lowered_name     = histogram_name.release();
+  build_ptr->runtime_policy                             = policy_ptr.release();
+  build_ptr->runtime_policy_size                        = policy_size;
+  build_ptr->single_tile_kernel_lowered_name            = single_tile_name.release();
+  build_ptr->upsweep_kernel_lowered_name                = upsweep_name.release();
+  build_ptr->alt_upsweep_kernel_lowered_name            = alt_upsweep_name.release();
+  build_ptr->scan_bins_kernel_lowered_name              = scan_bins_name.release();
+  build_ptr->downsweep_kernel_lowered_name              = downsweep_name.release();
+  build_ptr->alt_downsweep_kernel_lowered_name          = alt_downsweep_name.release();
+  build_ptr->histogram_kernel_lowered_name              = histogram_name.release();
   build_ptr->exclusive_sum_kernel_lowered_name          = exclusive_sum_name.release();
   build_ptr->init_bins_and_counters_kernel_lowered_name = init_bins_and_counters_name.release();
   build_ptr->init_lookback_kernel_lowered_name          = init_lookback_name.release();
@@ -512,10 +513,9 @@ try
       cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, build_ptr->histogram_kernel_lowered_name));
     check(cuLibraryGetKernel(
       &build_ptr->exclusive_sum_kernel, build_ptr->library, build_ptr->exclusive_sum_kernel_lowered_name));
-    check(cuLibraryGetKernel(
-      &build_ptr->init_bins_and_counters_kernel,
-      build_ptr->library,
-      build_ptr->init_bins_and_counters_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build_ptr->init_bins_and_counters_kernel,
+                             build_ptr->library,
+                             build_ptr->init_bins_and_counters_kernel_lowered_name));
     check(cuLibraryGetKernel(
       &build_ptr->init_lookback_kernel, build_ptr->library, build_ptr->init_lookback_kernel_lowered_name));
     check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, build_ptr->onesweep_kernel_lowered_name));
