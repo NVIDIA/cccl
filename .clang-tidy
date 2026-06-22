@@ -45,7 +45,6 @@ Checks:
   - '-bugprone-assignment-in-if-condition'
   - '-bugprone-unchecked-optional-access'
   - '-bugprone-unintended-char-ostream-output'
-  - '-bugprone-unhandled-self-assignment'
   - '-bugprone-casting-through-void'
   - '-bugprone-integer-division'
   - '-bugprone-suspicious-stringview-data-usage'
