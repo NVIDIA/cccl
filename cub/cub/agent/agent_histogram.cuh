@@ -54,31 +54,9 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPrefer
 }
 #endif // _CCCL_HOSTED()
 
+namespace detail
+{
 //! Parameterizable tuning policy type for AgentHistogram
-//!
-//! @tparam ThreadsPerBlock
-//!   Threads per thread block
-//!
-//! @tparam PixelsPerThread
-//!   Pixels per thread (per tile of input)
-//!
-//! @tparam LoadAlgorithm
-//!   The BlockLoad algorithm to use
-//!
-//! @tparam LoadModifier
-//!   Cache load modifier for reading input elements
-//!
-//! @tparam RleCompress
-//!   Whether to perform localized RLE to compress samples before histogramming
-//!
-//! @tparam MemoryPreference
-//!   Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
-//!
-//! @tparam WorkStealing
-//!   Whether to dequeue tiles from a global work queue
-//!
-//! @tparam VecSize
-//!   Vector size for samples loading (1, 2, 4)
 template <int ThreadsPerBlock,
           int PixelsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
@@ -87,7 +65,7 @@ template <int ThreadsPerBlock,
           BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
           int VecSize = 4>
-struct AgentHistogramPolicy
+struct agent_histogram_policy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = ThreadsPerBlock;
@@ -113,6 +91,27 @@ struct AgentHistogramPolicy
   ///< Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int PixelsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          bool RleCompress,
+          BlockHistogramMemoryPreference MemoryPreference,
+          bool WorkStealing,
+          int VecSize = 4>
+using AgentHistogramPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::agent_histogram_policy<
+    ThreadsPerBlock,
+    PixelsPerThread,
+    LoadAlgorithm,
+    LoadModifier,
+    RleCompress,
+    MemoryPreference,
+    WorkStealing,
+    VecSize>;
 
 namespace detail::histogram
 {

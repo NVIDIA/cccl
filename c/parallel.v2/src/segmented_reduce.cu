@@ -63,7 +63,7 @@ try
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build->cc = cc_major * 10 + cc_minor;
-  cccl::detail::copy_cubin(result.cubin, build->cubin, build->cubin_size);
+  cccl::detail::copy_cubin(result.cubin, build->payload, build->payload_size);
   build->jit_compiler        = result.compiler;
   build->segmented_reduce_fn = reinterpret_cast<void*>(result.fn_ptr);
 

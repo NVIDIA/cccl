@@ -235,7 +235,7 @@ struct project1st
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE constexpr const T1& operator()(const T1& lhs, const T2& /*rhs*/) const
+  _CCCL_HOST_DEVICE constexpr const T1& operator()(const T1& lhs _CCCL_LIFETIMEBOUND, const T2& /*rhs*/) const
   {
     return lhs;
   }
@@ -284,7 +284,7 @@ struct project2nd
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs) const
+  _CCCL_HOST_DEVICE constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs _CCCL_LIFETIMEBOUND) const
   {
     return rhs;
   }

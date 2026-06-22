@@ -16,19 +16,6 @@ from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-def _normalize_comp(comp: Operator | None) -> OpAdapter:
-    # Use a lambda for the default comparator rather than OpKind.LESS
-    # because well-known ops don't carry type information needed by
-    # the binary search JIT compilation.
-    if comp is None or comp is OpKind.LESS:
-
-        def _default_less(a, b):
-            return a < b
-
-        return make_op_adapter(_default_less)
-    return make_op_adapter(comp)
-
-
 class _BinarySearch:
     __slots__ = [
         "build_result",
@@ -96,9 +83,7 @@ class _BinarySearch:
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
         # Update op state for stateful ops
-        comp_adapter = (
-            _normalize_comp(comp) if comp is not None else _normalize_comp(None)
-        )
+        comp_adapter = make_op_adapter(OpKind.LESS if comp is None else comp)
         self.op_cccl.state = comp_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
@@ -154,7 +139,7 @@ def make_lower_bound(
     See Also:
         :func:`lower_bound`
     """
-    comp_adapter = _normalize_comp(comp)
+    comp_adapter = make_op_adapter(OpKind.LESS if comp is None else comp)
     return _make_binary_search(
         d_data,
         d_values,
@@ -193,7 +178,7 @@ def make_upper_bound(
     See Also:
         :func:`upper_bound`
     """
-    comp_adapter = _normalize_comp(comp)
+    comp_adapter = make_op_adapter(OpKind.LESS if comp is None else comp)
     return _make_binary_search(
         d_data,
         d_values,
