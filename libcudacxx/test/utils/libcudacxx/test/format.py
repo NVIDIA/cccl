@@ -9,8 +9,8 @@
 import copy
 import errno
 import os
-import time
 import re
+import time
 
 import lit.Test  # pylint: disable=import-error
 import lit.TestRunner  # pylint: disable=import-error
@@ -376,29 +376,31 @@ class LibcxxTestFormat(object):
     def _evaluate_verify_test(self, test, test_cxx, parsers):
         source_path = test.getSourcePath()
         source_name = os.path.basename(source_path)
-        
+
         expected_lines = set()
         with open(source_path, "r") as f:
             lines = f.readlines()
-            
+
         has_expected_errors = False
         # Parses expected-{error,warning,note}[-re][@location] directives
-        pattern = re.compile(r'expected-(error|warning|note)(?:-re)?(?:@(\*:\*|[+-]?\d+))?')
+        pattern = re.compile(
+            r"expected-(error|warning|note)(?:-re)?(?:@(\*:\*|[+-]?\d+))?"
+        )
         for line_num, line in enumerate(lines, start=1):
             for match in pattern.finditer(line):
                 directive_type = match.group(1)
                 offset_str = match.group(2)
-                
-                if directive_type == 'error':
+
+                if directive_type == "error":
                     has_expected_errors = True
-                
-                if offset_str == '*:*':
+
+                if offset_str == "*:*":
                     continue  # wildcard: any file/line, skip line matching
 
                 if offset_str is None:
                     # error is on the current line (e.g., // expected-error)
                     expected_lines.add(line_num)
-                elif offset_str.startswith(('+', '-')): 
+                elif offset_str.startswith(("+", "-")):
                     # error is on a nearby line (e.g., // expected-error@-1 or // expected-error@+2)
                     expected_lines.add(line_num + int(offset_str))
                 else:
@@ -409,9 +411,9 @@ class LibcxxTestFormat(object):
             test_cxx.flags += ["-fsyntax-only"]
 
         cmd, out, err, rc = test_cxx.compile(source_path, out=os.devnull)
-        
+
         report = libcudacxx.util.makeReport(cmd, out, err, rc)
-        
+
         if has_expected_errors and rc == 0:
             report += "Expected compilation to fail but it succeeded!\n"
             return lit.Test.Result(lit.Test.FAIL, report)
@@ -419,7 +421,7 @@ class LibcxxTestFormat(object):
         if not has_expected_errors and rc != 0:
             report += "Expected compilation to succeed but it failed!\n"
             return lit.Test.Result(lit.Test.FAIL, report)
-            
+
         name = re.escape(source_name)
 
         # GCC/Clang: file.cpp:LINE:COL: error: ...
@@ -439,9 +441,9 @@ class LibcxxTestFormat(object):
             for p in [gcc_clang_pattern, msvc_pattern]
             for m in p.finditer(output)
         }
-            
+
         if missing_lines := expected_lines - actual_lines:
             report += f"Expected diagnostic on lines {sorted(list(missing_lines))} but none were emitted!\n"
             return lit.Test.Result(lit.Test.FAIL, report)
-            
+
         return lit.Test.Result(lit.Test.PASS, report)
