@@ -34,7 +34,6 @@ Checks:
   - '-bugprone-narrowing-conversions'
   - '-bugprone-misplaced-widening-cast'
   - '-bugprone-suspicious-include'
-  - '-bugprone-multi-level-implicit-pointer-conversion'
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-forwarding-reference-overload'
@@ -56,6 +55,7 @@ Checks:
   - '-bugprone-argument-comment'
   # This is just noise
   - '-bugprone-signed-char-misuse'
+  - '-bugprone-multi-level-implicit-pointer-conversion'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
