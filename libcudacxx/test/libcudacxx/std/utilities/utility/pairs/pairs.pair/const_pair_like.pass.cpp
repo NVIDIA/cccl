@@ -28,6 +28,8 @@
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_MSVC(4244) // 'initializing': conversion from 'const _Tp' to '_T2', possible loss of data
+
 struct Empty
 {};
 
