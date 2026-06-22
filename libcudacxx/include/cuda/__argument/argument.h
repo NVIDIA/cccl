@@ -791,16 +791,8 @@ _CCCL_API constexpr _Tp __constant_sequence_compute_lowest() noexcept
   }
   else
   {
-    constexpr _Tp values[] = {_Vs...};
-    _Tp __min              = values[0];
-    for (_Tp __v : values)
-    {
-      if (__v < __min)
-      {
-        __min = __v;
-      }
-    }
-    return __min;
+    constexpr _Tp __values[] = {_Vs...};
+    return static_cast<_Tp>(*::cuda::std::min_element(__values, __values + sizeof...(_Vs)));
   }
 }
 
@@ -813,16 +805,8 @@ _CCCL_API constexpr _Tp __constant_sequence_compute_highest() noexcept
   }
   else
   {
-    constexpr _Tp values[] = {_Vs...};
-    _Tp __max              = values[0];
-    for (_Tp __v : values)
-    {
-      if (__v > __max)
-      {
-        __max = __v;
-      }
-    }
-    return __max;
+    constexpr _Tp __values[] = {_Vs...};
+    return static_cast<_Tp>(*::cuda::std::max_element(__values, __values + sizeof...(_Vs)));
   }
 }
 
