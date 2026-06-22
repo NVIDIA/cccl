@@ -164,11 +164,7 @@ _CCCL_DIAG_POP
 
 template <>
 struct __native_hierarchy_level_base<grid_level> : hierarchy_level_base<grid_level>
-{
-private:
-  __native_hierarchy_level_base() = default;
-  friend grid_level;
-};
+{};
 
 _CCCL_END_NAMESPACE_CUDA
 
