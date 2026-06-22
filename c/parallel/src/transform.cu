@@ -341,6 +341,10 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
   // avoid new and delete which requires the allocated and freed types to match
   static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
   std::unique_ptr<void, free_deleter> runtime_policy(std::malloc(sizeof(policy_sel)));
+  if (!runtime_policy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::memcpy(runtime_policy.get(), &policy_sel, sizeof(policy_sel));
   auto cache_obj        = std::make_unique<transform::cache>();
   auto kernel_name_copy = std::unique_ptr<char[]>(duplicate_c_string(kernel_lowered_name));
@@ -438,7 +442,12 @@ CUresult cccl_device_unary_transform_build_ex(
   {
     return r;
   }
-  return cccl_device_transform_load(build_ptr);
+  CUresult load_r = cccl_device_transform_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_transform_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_unary_transform(
@@ -628,6 +637,10 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
   // avoid new and delete which requires the allocated and freed types to match
   static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
   std::unique_ptr<void, free_deleter> runtime_policy(std::malloc(sizeof(policy_sel)));
+  if (!runtime_policy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::memcpy(runtime_policy.get(), &policy_sel, sizeof(policy_sel));
   auto cache_obj        = std::make_unique<transform::cache>();
   auto kernel_name_copy = std::unique_ptr<char[]>(duplicate_c_string(kernel_lowered_name));
@@ -701,7 +714,12 @@ CUresult cccl_device_binary_transform_build_ex(
   {
     return r;
   }
-  return cccl_device_transform_load(build_ptr);
+  CUresult load_r = cccl_device_transform_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_transform_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_binary_transform(

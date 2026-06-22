@@ -274,6 +274,10 @@ static_assert(
   static_assert(::cuda::is_trivially_copyable_v<cub::detail::segmented_reduce::policy_selector>);
   const size_t policy_size = sizeof(policy_sel);
   std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  if (!policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(segmented_reduce_kernel_lowered_name));
 
@@ -386,7 +390,12 @@ CUresult cccl_device_segmented_reduce_build_ex(
   {
     return r;
   }
-  return cccl_device_segmented_reduce_load(build_ptr);
+  CUresult load_r = cccl_device_segmented_reduce_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_segmented_reduce_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_segmented_reduce(

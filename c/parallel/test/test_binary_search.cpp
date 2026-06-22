@@ -293,4 +293,44 @@ C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][aot]")
 
   REQUIRE(CUDA_SUCCESS == cccl_device_binary_search_cleanup(&build));
 }
+
+C2H_TEST("BinarySearch compile rejects kernel-only comparator op", "[binary_search][aot]")
+{
+  using T                 = int32_t;
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  // Kernel-only op: code_size == 0 with a non-empty name.
+  // binary_search wraps the comparator in a generated function, so the wrapper
+  // cannot be decoupled from the comparator type at link time.
+  cccl_op_t custom_op{};
+  custom_op.type      = CCCL_STATELESS;
+  custom_op.name      = "my_comparator";
+  custom_op.code_size = 0;
+  custom_op.code_type = CCCL_OP_LTOIR;
+  custom_op.size      = 1;
+  custom_op.alignment = 1;
+
+  pointer_t<T> dummy_data(1);
+  pointer_t<T> dummy_values(1);
+  pointer_t<std::ptrdiff_t> dummy_out(1);
+
+  cccl_device_binary_search_build_result_t build{};
+  REQUIRE(
+    CUDA_ERROR_INVALID_VALUE
+    == cccl_device_binary_search_compile(
+      &build,
+      CCCL_BINARY_SEARCH_LOWER_BOUND,
+      dummy_data,
+      dummy_values,
+      dummy_out,
+      custom_op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+}
 #endif // CCCL_C_PARALLEL_V2

@@ -257,7 +257,12 @@ CUresult cccl_device_for_build_ex(
   {
     return r;
   }
-  return cccl_device_for_load(build_ptr);
+  CUresult load_r = cccl_device_for_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_for_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_for(

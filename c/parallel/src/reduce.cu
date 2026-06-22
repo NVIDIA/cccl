@@ -363,6 +363,10 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   static_assert(::cuda::is_trivially_copyable_v<cub::detail::reduce_nondeterministic::policy_selector>);
   const size_t policy_size = build_nondeterministic ? sizeof(policy_sel_nd) : sizeof(policy_sel);
   std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  if (!policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   if (build_nondeterministic)
   {
     std::memcpy(policy_ptr.get(), &policy_sel_nd, sizeof(policy_sel_nd));
@@ -500,7 +504,12 @@ CUresult cccl_device_reduce_build_ex(
   {
     return r;
   }
-  return cccl_device_reduce_load(build);
+  CUresult load_r = cccl_device_reduce_load(build);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_reduce_cleanup(build);
+  }
+  return load_r;
 }
 
 // c.parallel provides two separate reduce functions, one for each determinism

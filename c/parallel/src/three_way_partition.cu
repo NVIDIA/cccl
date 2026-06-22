@@ -253,6 +253,10 @@ static_assert(
 
   cccl::detail::extend_args_with_build_config(args, config);
 
+  if (is_custom_op(select_first_part_op) != is_custom_op(select_second_part_op))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   const bool kernel_only = is_custom_op(select_first_part_op) && is_custom_op(select_second_part_op);
 
   constexpr size_t num_lto_args   = 2;
@@ -289,6 +293,10 @@ static_assert(
   static_assert(::cuda::is_trivially_copyable_v<cub::detail::three_way_partition::policy_selector>);
   const size_t policy_size = sizeof(policy_sel);
   std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  if (!policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto init_name   = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_init_kernel_lowered_name));
   auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_kernel_lowered_name));
@@ -409,7 +417,12 @@ CUresult cccl_device_three_way_partition_build_ex(
   {
     return result;
   }
-  return cccl_device_three_way_partition_load(build_ptr);
+  CUresult load_r = cccl_device_three_way_partition_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_three_way_partition_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_three_way_partition(

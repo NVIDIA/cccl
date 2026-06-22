@@ -229,6 +229,10 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
       ->compile_program({compile_args, num_compile_args})
       ->get_program_ltoir();
   char* code_copy = static_cast<char*>(std::malloc(lto_size));
+  if (!code_copy)
+  {
+    throw std::bad_alloc();
+  }
   std::memcpy(code_copy, lto_buf.get(), lto_size);
   selector_op.code      = code_copy;
   selector_op.code_size = lto_size;
@@ -238,6 +242,10 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
 
   selector_op_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
   auto* state_copy = static_cast<selector_state_t*>(std::malloc(sizeof(selector_state_t)));
+  if (!state_copy)
+  {
+    throw std::bad_alloc();
+  }
   std::memcpy(state_copy, selector_op_state.get(), sizeof(selector_state_t));
   selector_op.state = state_copy;
 
@@ -676,7 +684,15 @@ static_assert(
   const size_t sort_policy_size      = sizeof(policy_sel);
   const size_t partition_policy_size = sizeof(partition_policy_sel);
   std::unique_ptr<void, free_deleter> sort_policy_ptr(std::malloc(sort_policy_size));
+  if (!sort_policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::unique_ptr<void, free_deleter> partition_policy_ptr(std::malloc(partition_policy_size));
+  if (!partition_policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::memcpy(sort_policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   std::memcpy(partition_policy_ptr.get(), &partition_policy_sel, sizeof(partition_policy_sel));
   auto fallback_name   = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_fallback_kernel_lowered_name));
@@ -806,7 +822,12 @@ CUresult cccl_device_segmented_sort_build_ex(
   {
     return result;
   }
-  return cccl_device_segmented_sort_load(build_ptr);
+  CUresult load_r = cccl_device_segmented_sort_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_segmented_sort_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_segmented_sort_build(

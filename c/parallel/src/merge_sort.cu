@@ -349,6 +349,10 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
   static_assert(::cuda::is_trivially_copyable_v<cub::detail::merge_sort::policy_selector>);
   const size_t policy_size = sizeof(policy_sel);
   std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  if (!policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto block_sort_name = std::unique_ptr<char[]>(duplicate_c_string(block_sort_kernel_lowered_name));
   auto partition_name  = std::unique_ptr<char[]>(duplicate_c_string(partition_kernel_lowered_name));
@@ -471,7 +475,12 @@ CUresult cccl_device_merge_sort_build_ex(
   {
     return r;
   }
-  return cccl_device_merge_sort_load(build_ptr);
+  CUresult load_r = cccl_device_merge_sort_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_merge_sort_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_merge_sort(

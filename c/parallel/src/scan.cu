@@ -436,6 +436,10 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   static_assert(::cuda::is_trivially_copyable_v<cub::detail::scan::policy_selector>);
   const size_t policy_size = sizeof(policy_sel);
   std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  if (!policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto init_name = std::unique_ptr<char[]>(duplicate_c_string(init_kernel_lowered_name));
   auto scan_name = std::unique_ptr<char[]>(duplicate_c_string(scan_kernel_lowered_name));
@@ -692,7 +696,12 @@ CUresult cccl_device_scan_build_ex(
   {
     return r;
   }
-  return cccl_device_scan_load(build_ptr);
+  CUresult load_r = cccl_device_scan_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_scan_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_scan_build(

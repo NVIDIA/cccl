@@ -675,4 +675,52 @@ C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][aot
 
   REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_cleanup(&build));
 }
+
+C2H_TEST("ThreeWayPartition compile rejects mismatched custom ops", "[three_way_partition][aot]")
+{
+  using T                 = int32_t;
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+  constexpr T split_value = 21;
+
+  const auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, split_value);
+  operation_t regular_op             = make_operation("less_op", first_src);
+  (void) second_src;
+
+  // Kernel-only op: code_size == 0 with a non-empty name.
+  cccl_op_t custom_op{};
+  custom_op.type      = CCCL_STATELESS;
+  custom_op.name      = "greater_op";
+  custom_op.code_size = 0;
+  custom_op.code_type = CCCL_OP_LTOIR;
+  custom_op.size      = 1;
+  custom_op.alignment = 1;
+
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_first_out(1);
+  pointer_t<T> dummy_second_out(1);
+  pointer_t<T> dummy_unselected_out(1);
+  pointer_t<T> dummy_num_selected_out(1);
+
+  cccl_device_three_way_partition_build_result_t build{};
+  // One regular op + one kernel-only op is an invalid combination.
+  REQUIRE(
+    CUDA_ERROR_INVALID_VALUE
+    == cccl_device_three_way_partition_compile(
+      &build,
+      dummy_in,
+      dummy_first_out,
+      dummy_second_out,
+      dummy_unselected_out,
+      dummy_num_selected_out,
+      regular_op,
+      custom_op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+}
 #endif // CCCL_C_PARALLEL_V2

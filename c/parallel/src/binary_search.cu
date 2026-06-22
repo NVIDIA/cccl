@@ -211,6 +211,13 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
     comparator_offset,
     mode_t);
 
+  if (is_custom_op(op))
+  {
+    // kernel-only (link_ltoir) mode is not supported for binary_search: the
+    // binary_search_transform_op wrapper cannot be decoupled from the comparator type.
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   cccl_op_t transform_op = op;
   transform_op.type      = CCCL_STATEFUL;
   transform_op.name      = "binary_search_transform_op";
@@ -331,7 +338,12 @@ CUresult cccl_device_binary_search_build_ex(
   {
     return r;
   }
-  return cccl_device_binary_search_load(build_ptr);
+  CUresult load_r = cccl_device_binary_search_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_binary_search_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_binary_search(

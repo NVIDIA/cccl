@@ -391,6 +391,10 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
   static_assert(::cuda::is_trivially_copyable_v<cub::detail::radix_sort::policy_selector>);
   const size_t policy_size = sizeof(policy_sel);
   std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  if (!policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
   std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto single_tile_name            = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
   auto upsweep_name                = std::unique_ptr<char[]>(duplicate_c_string(upsweep_kernel_lowered_name));
@@ -565,7 +569,12 @@ CUresult cccl_device_radix_sort_build_ex(
   {
     return r;
   }
-  return cccl_device_radix_sort_load(build_ptr);
+  CUresult load_r = cccl_device_radix_sort_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_radix_sort_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 template <cub::SortOrder Order>
