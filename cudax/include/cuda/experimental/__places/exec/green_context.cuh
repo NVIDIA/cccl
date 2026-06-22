@@ -65,7 +65,8 @@ public:
 
   ::std::string to_string() const override
   {
-    return "green_ctx(dev=" + ::std::to_string(view_.devid) + ")";
+    return "green_ctx(dev=" + ::std::to_string(view_.devid) + ", ctx="
+         + ::std::to_string(reinterpret_cast<::std::uintptr_t>(view_.g_ctx)) + ")";
   }
 
   size_t hash() const override
@@ -104,6 +105,15 @@ public:
   bool allocation_is_stream_ordered() const override
   {
     return true;
+  }
+
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  {
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+    prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
+    prop.location.id         = view_.devid;
+    return cuMemCreate(handle, size, &prop, 0);
   }
 
   ::std::shared_ptr<void> get_affine_exec_impl() const override;
