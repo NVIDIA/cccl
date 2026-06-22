@@ -28,8 +28,10 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_array.h>
+#include <cuda/std/__type_traits/is_bounded_array.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -121,31 +123,6 @@ public:
   static constexpr ::cuda::std::size_t size = sizeof...(_Vs);
 };
 
-template <class _Tp>
-struct __is_builtin_array : ::cuda::std::false_type
-{};
-
-template <class _Tp, ::cuda::std::size_t _Size>
-struct __is_builtin_array<_Tp[_Size]> : ::cuda::std::true_type
-{};
-
-template <class _Tp>
-struct __is_cuda_array : ::cuda::std::false_type
-{};
-
-template <class _Tp, ::cuda::std::size_t _Size>
-struct __is_cuda_array<::cuda::std::array<_Tp, _Size>> : ::cuda::std::true_type
-{};
-
-template <class _Tp>
-struct __array_extent;
-
-template <class _Tp, ::cuda::std::size_t _Size>
-struct __array_extent<_Tp[_Size]> : ::cuda::std::integral_constant<::cuda::std::size_t, _Size>{};
-
-template <class _Tp, ::cuda::std::size_t _Size>
-struct __array_extent<::cuda::std::array<_Tp, _Size>> : ::cuda::std::integral_constant<::cuda::std::size_t, _Size>{};
-
 template <class>
 inline constexpr bool __always_false_v = false;
 
@@ -154,12 +131,12 @@ _CCCL_API constexpr auto __make_constant_sequence_impl(::cuda::std::index_sequen
 {
   using raw_array = ::cuda::std::remove_const_t<::cuda::std::remove_reference_t<decltype(Arr)>>;
 
-  if constexpr (__is_builtin_array<raw_array>::value)
+  if constexpr (::cuda::std::is_bounded_array_v<raw_array>)
   {
     using _Tp = ::cuda::std::remove_cv_t<::cuda::std::remove_extent_t<raw_array>>;
     return __constant_sequence<_Tp, Arr[Is]...>{};
   }
-  else if constexpr (__is_cuda_array<raw_array>::value)
+  else if constexpr (::cuda::std::__is_cuda_std_array_v<raw_array>)
   {
     using _Tp = typename raw_array::value_type;
     return __constant_sequence<_Tp, Arr[Is]...>{};
@@ -177,10 +154,19 @@ _CCCL_API constexpr auto __make_constant_sequence()
 {
   using raw_array = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(Arr)>>;
 
-  static_assert(__is_builtin_array<raw_array>::value || __is_cuda_array<raw_array>::value,
+  static_assert(::cuda::std::is_bounded_array_v<raw_array> || ::cuda::std::__is_cuda_std_array_v<raw_array>,
                 "make_constant_sequence requires a cuda::std::array or non-empty C-style array");
 
-  constexpr ::cuda::std::size_t N = __array_extent<raw_array>::value;
+  constexpr ::cuda::std::size_t N = []() constexpr {
+    if constexpr (::cuda::std::is_bounded_array_v<raw_array>)
+    {
+      return ::cuda::std::extent_v<raw_array>;
+    }
+    else
+    {
+      return ::cuda::std::tuple_size_v<raw_array>;
+    }
+  }();
 
   return __make_constant_sequence_impl<Arr>(::cuda::std::make_index_sequence<N>{});
 }
