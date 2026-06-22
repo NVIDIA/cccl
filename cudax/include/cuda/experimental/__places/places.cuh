@@ -1080,8 +1080,12 @@ public:
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
+    // This singleton is owned by the permanent shared_ptr created once in
+    // make_static_instance(), so shared_from_this() is valid here. Unlike
+    // re-wrapping ``this`` in a fresh shared_ptr, it does not mutate the
+    // enable_shared_from_this weak-this member; it only bumps the atomic
+    // reference count, which is safe to call concurrently from host threads.
+    return shared_from_this();
   }
 
   // Activation - no-op for host
@@ -1152,8 +1156,12 @@ public:
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for device_auto exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
+    // This singleton is owned by the permanent shared_ptr created once in
+    // make_static_instance(), so shared_from_this() is valid here. Unlike
+    // re-wrapping ``this`` in a fresh shared_ptr, it does not mutate the
+    // enable_shared_from_this weak-this member; it only bumps the atomic
+    // reference count, which is safe to call concurrently from host threads.
+    return shared_from_this();
   }
 
   ::std::string to_string() const override
