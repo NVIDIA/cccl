@@ -826,7 +826,7 @@ _CCCL_API constexpr _Tp __constant_sequence_compute_highest() noexcept
 {
   if constexpr (sizeof...(_Vs) == 0)
   {
-    return ::cuda::std::numeric_limits<_Tp>::max();
+    return (::cuda::std::numeric_limits<_Tp>::max)();
   }
   else
   {
