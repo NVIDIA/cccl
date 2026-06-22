@@ -173,7 +173,7 @@ public:
         };
 
         info.resolve_op = [logical_data](int offset, access_mode mode) mutable -> task_dep_untyped {
-          auto& ld = logical_data.get_ld(offset);
+          auto ld = logical_data.get_ld(offset);
           return task_dep_untyped(ld, mode);
         };
 
