@@ -18,17 +18,17 @@ struct policy_selector
       return radix_sort_onesweep_policy{
         scaled.threads_per_block,
         scaled.items_per_thread,
-        1,
-        ONESWEEP_RADIX_BITS,
+        cub::RADIX_SORT_STORE_DIRECT,
         cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         cub::BLOCK_SCAN_RAKING_MEMOIZE,
-        cub::RADIX_SORT_STORE_DIRECT};
+        1,
+        TUNE_RADIX_BITS};
     }();
 
     // These kernels are launched once, no point in tuning at the moment
     const auto histogram = radix_sort_histogram_policy{
-      128, 16, cub::detail::radix_sort::__scale_num_parts(1, sizeof(KeyT)), ONESWEEP_RADIX_BITS};
-    const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, ONESWEEP_RADIX_BITS};
+      128, 16, cub::detail::radix_sort::__scale_num_parts(1, sizeof(KeyT)), TUNE_RADIX_BITS};
+    const auto exclusive_sum = radix_sort_exclusive_sum_policy{256, TUNE_RADIX_BITS};
 
     const auto scan = [] {
       const auto scaled = cub::detail::scale_mem_bound(512, 23, sizeof(OffsetT));
@@ -49,17 +49,16 @@ struct policy_selector
       return cub::detail::radix_sort::radix_sort_downsweep_policy{
         scaled.threads_per_block,
         scaled.items_per_thread,
-        single_tile_radix_bits,
         cub::BLOCK_LOAD_DIRECT,
         cub::LOAD_LDG,
         cub::RADIX_RANK_MEMOIZE,
         cub::BLOCK_SCAN_WARP_SCANS,
+        single_tile_radix_bits,
       };
     }();
 
     return radix_sort_policy{
-      /* use_onesweep */ true,
-      /* onesweep_radix_bits */ TUNE_RADIX_BITS,
+      radix_sort::RadixSortAlgorithm::onesweep,
       histogram,
       exclusive_sum,
       onesweep,
@@ -86,8 +85,8 @@ constexpr std::size_t max_onesweep_temp_storage_size()
     0,
     0,
     void,
-    onesweep.rank_num_parts,
-    onesweep.rank_algorith,
+    onesweep.rank_num_private_partitions,
+    onesweep.rank_algorithm,
     onesweep.scan_algorithm,
     onesweep.store_algorithm,
     onesweep.radix_bits,
@@ -100,7 +99,7 @@ constexpr std::size_t max_onesweep_temp_storage_size()
   using histogram_policy_t =
     AgentRadixSortHistogramPolicy<histogram.block_threads,
                                   histogram.items_per_thread,
-                                  histogram.num_parts,
+                                  histogram.num_private_partitions,
                                   void,
                                   histogram.radix_bits>;
   using hist_agent = cub::AgentRadixSortHistogram<histogram_policy_t, SortOrder, KeyT, OffsetT>;
@@ -114,7 +113,7 @@ constexpr std::size_t max_temp_storage_size()
 {
   using offset_t               = cub::detail::choose_offset_t<OffsetT>;
   constexpr auto active_policy = policy_selector<KeyT, ValueT, offset_t>{}(cuda::compute_capability{});
-  static_assert(active_policy.use_onesweep);
+  static_assert(active_policy.algorithm == radix_sort::RadixSortAlgorithm::onesweep);
   return max_onesweep_temp_storage_size<KeyT, ValueT, offset_t, SortOrder>();
 }
 
