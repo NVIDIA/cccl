@@ -1827,7 +1827,11 @@ public:
       abort();
     }
 
-    return get_ctx(offset).wait(ldata.get_ld(offset));
+    // get_ld() returns a logical_data handle by value (a copy), so bind it to a
+    // named local: context::wait() takes a non-const lvalue reference and cannot
+    // bind to the temporary directly.
+    auto ld = ldata.get_ld(offset);
+    return get_ctx(offset).wait(ld);
   }
 
   auto get_dot()
