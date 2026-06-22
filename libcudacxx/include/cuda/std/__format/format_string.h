@@ -48,12 +48,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_string
       constexpr _FmtArgHandle __handles[] = {
         ::cuda::std::__fmt_make_validation_format_arg_handle<_FmtContext, remove_cvref_t<_Args>>()...};
 
-      ::cuda::std::__fmt_vformat_to(basic_format_parse_context<_CharT>{__str_, sizeof...(_Args)},
-                                    _FmtContext{__types, __handles, sizeof...(_Args)});
+      (void) ::cuda::std::__fmt_vformat_to(basic_format_parse_context<_CharT>{__str_, sizeof...(_Args)},
+                                           _FmtContext{__types, __handles, sizeof...(_Args)});
     }
     else
     {
-      ::cuda::std::__fmt_vformat_to(
+      (void) ::cuda::std::__fmt_vformat_to(
         basic_format_parse_context<_CharT>{__str_, sizeof...(_Args)}, _FmtContext{nullptr, nullptr, sizeof...(_Args)});
     }
   }

@@ -344,7 +344,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
-  [[maybe_unused]] static constexpr histogram_policy policy = current_policy<PolicySelector>();
+  [[maybe_unused]] static constexpr HistogramPolicy policy = current_policy<PolicySelector>();
   _CCCL_PDL_GRID_DEPENDENCY_SYNC(); // TODO(bgruber): if we had the guarantee that there would be no pending
                                     // writes/reads to the temp storage, we could omit the sync here
 
@@ -472,18 +472,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.threads_per_block,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.use_work_stealing,
+    hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
@@ -632,7 +632,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT const int tiles_per_row,
     _CCCL_GRID_CONSTANT const GridQueue<int> tile_queue)
 {
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
@@ -661,15 +661,15 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   }
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.threads_per_block,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.use_work_stealing,
+    hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,

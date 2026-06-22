@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___HYPERLOGLOG_IMPL_CUH
-#define _CUDAX___CUCO___HYPERLOGLOG_IMPL_CUH
+#ifndef _CUDAX___CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH
+#define _CUDAX___CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH
 
 #include <cuda/__cccl_config>
 
@@ -38,9 +38,9 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__cuco/__hyperloglog/finalizer.cuh>
-#include <cuda/experimental/__cuco/__hyperloglog/kernels.cuh>
-#include <cuda/experimental/__cuco/__utility/strong_type.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
+#include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -612,4 +612,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___HYPERLOGLOG_IMPL_CUH
+#endif // _CUDAX___CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH

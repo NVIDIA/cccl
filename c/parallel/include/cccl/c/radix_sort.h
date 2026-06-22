@@ -40,6 +40,8 @@ typedef struct cccl_device_radix_sort_build_result_t
   CUkernel alt_downsweep_kernel;
   CUkernel histogram_kernel;
   CUkernel exclusive_sum_kernel;
+  CUkernel init_bins_and_counters_kernel;
+  CUkernel init_lookback_kernel;
   CUkernel onesweep_kernel;
   cccl_sort_order_t order;
   void* runtime_policy;

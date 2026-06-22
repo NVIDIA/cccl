@@ -71,6 +71,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void operator()(_Tp* __ptr) const noexcept
   {
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     static_assert(sizeof(_Tp) >= 0, "cannot delete an incomplete type");
     static_assert(!is_void_v<_Tp>, "cannot delete an incomplete type");
     delete __ptr;
@@ -92,6 +93,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, void>
   operator()([[maybe_unused]] _Up* __ptr) const noexcept
   {
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
 #if _CCCL_TILE_COMPILATION()
     _CCCL_VERIFY(false, "Cannot call delete[] in a tile program");

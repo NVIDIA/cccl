@@ -191,6 +191,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 #  if _CCCL_COMPILER(CLANG, >=, 10)
   _CCCL_DIAG_SUPPRESS_CLANG("-Wsizeof-array-div")
 #  endif // _CCCL_COMPILER(CLANG, >=, 10)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   constexpr int total_words = static_cast<int>(sizeof(dst_items) / sizeof(device_word_t));
   _CCCL_DIAG_POP
   constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
