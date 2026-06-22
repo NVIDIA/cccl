@@ -41,7 +41,6 @@ Checks:
   - '-bugprone-return-const-ref-from-parameter'
   - '-bugprone-use-after-move'
   - '-bugprone-undefined-memory-manipulation'
-  - '-bugprone-assignment-in-if-condition'
   - '-bugprone-unchecked-optional-access'
   - '-bugprone-unintended-char-ostream-output'
   - '-bugprone-casting-through-void'
