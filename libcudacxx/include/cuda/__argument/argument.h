@@ -112,39 +112,39 @@ public:
 };
 
 //! @brief Wraps a compile-time constant argument sequence.
-template <class T, T... Vs>
+template <class _Tp, _Tp... _Vs>
 class __constant_sequence
 {
 public:
-  using __element_type                      = ::cuda::std::remove_cvref_t<T>;
-  using value_type                          = ::cuda::std::array<__element_type, sizeof...(Vs)>;
-  static constexpr ::cuda::std::size_t size = sizeof...(Vs);
+  using __element_type                      = ::cuda::std::remove_cvref_t<_Tp>;
+  using value_type                          = ::cuda::std::array<__element_type, sizeof...(_Vs)>;
+  static constexpr ::cuda::std::size_t size = sizeof...(_Vs);
 };
 
-template <class T>
+template <class _Tp>
 struct __is_builtin_array : ::cuda::std::false_type
 {};
 
-template <class T, ::cuda::std::size_t N>
-struct __is_builtin_array<T[N]> : ::cuda::std::true_type
+template <class _Tp, ::cuda::std::size_t _Size>
+struct __is_builtin_array<_Tp[_Size]> : ::cuda::std::true_type
 {};
 
-template <class T>
+template <class _Tp>
 struct __is_cuda_array : ::cuda::std::false_type
 {};
 
-template <class T, ::cuda::std::size_t N>
-struct __is_cuda_array<::cuda::std::array<T, N>> : ::cuda::std::true_type
+template <class _Tp, ::cuda::std::size_t _Size>
+struct __is_cuda_array<::cuda::std::array<_Tp, _Size>> : ::cuda::std::true_type
 {};
 
-template <class T>
+template <class _Tp>
 struct __array_extent;
 
-template <class T, ::cuda::std::size_t N>
-struct __array_extent<T[N]> : ::cuda::std::integral_constant<::cuda::std::size_t, N>{};
+template <class _Tp, ::cuda::std::size_t _Size>
+struct __array_extent<_Tp[_Size]> : ::cuda::std::integral_constant<::cuda::std::size_t, _Size>{};
 
-template <class T, ::cuda::std::size_t N>
-struct __array_extent<::cuda::std::array<T, N>> : ::cuda::std::integral_constant<::cuda::std::size_t, N>{};
+template <class _Tp, ::cuda::std::size_t _Size>
+struct __array_extent<::cuda::std::array<_Tp, _Size>> : ::cuda::std::integral_constant<::cuda::std::size_t, _Size>{};
 
 template <class>
 inline constexpr bool __always_false_v = false;
@@ -156,13 +156,13 @@ constexpr auto make_constant_sequence_impl(::cuda::std::index_sequence<Is...>)
 
   if constexpr (__is_builtin_array<raw_array>::value)
   {
-    using T = ::cuda::std::remove_cv_t<::cuda::std::remove_extent_t<raw_array>>;
-    return __constant_sequence<T, Arr[Is]...>{};
+    using _Tp = ::cuda::std::remove_cv_t<::cuda::std::remove_extent_t<raw_array>>;
+    return __constant_sequence<_Tp, Arr[Is]...>{};
   }
   else if constexpr (__is_cuda_array<raw_array>::value)
   {
-    using T = typename raw_array::value_type;
-    return __constant_sequence<T, Arr[Is]...>{};
+    using _Tp = typename raw_array::value_type;
+    return __constant_sequence<_Tp, Arr[Is]...>{};
   }
   else
   {
@@ -685,8 +685,8 @@ template <class _Arg, class _StaticBounds>
 inline constexpr bool __is_wrapper_v<immediate<_Arg, _StaticBounds>> = true;
 template <auto _Value, class _Tp>
 inline constexpr bool __is_wrapper_v<constant<_Value, _Tp>> = true;
-template <class T, T... Vs>
-inline constexpr bool __is_wrapper_v<__constant_sequence<T, Vs...>> = true;
+template <class _Tp, _Tp... _Vs>
+inline constexpr bool __is_wrapper_v<__constant_sequence<_Tp, _Vs...>> = true;
 template <class _Arg, class _StaticBounds>
 inline constexpr bool __is_wrapper_v<__immediate_sequence<_Arg, _StaticBounds>> = true;
 template <class _Arg, class _StaticBounds>
@@ -727,10 +727,10 @@ __unwrap(const constant<_Value, _Tp>&) noexcept
 }
 
 //! Unwraps a compile-time constant argument sequence into a canonical cuda::std::array value.
-template <class T, T... Vs>
-[[nodiscard]] _CCCL_API constexpr auto __unwrap(const __constant_sequence<T, Vs...>&) noexcept
+template <class _Tp, _Tp... _Vs>
+[[nodiscard]] _CCCL_API constexpr auto __unwrap(const __constant_sequence<_Tp, _Vs...>&) noexcept
 {
-  return ::cuda::std::array<T, sizeof...(Vs)>{Vs...};
+  return ::cuda::std::array<_Tp, sizeof...(_Vs)>{_Vs...};
 }
 
 template <class _Arg, class _StaticBounds>
@@ -799,18 +799,18 @@ _CCCL_API constexpr auto __constant_compute_highest() noexcept
   return constant<_Value, _Tp>::__get_value();
 }
 
-template <class T, T... Vs>
-_CCCL_API constexpr T __constant_sequence_compute_lowest() noexcept
+template <class _Tp, _Tp... _Vs>
+_CCCL_API constexpr _Tp __constant_sequence_compute_lowest() noexcept
 {
-  if constexpr (sizeof...(Vs) == 0)
+  if constexpr (sizeof...(_Vs) == 0)
   {
-    return ::cuda::std::numeric_limits<T>::lowest();
+    return ::cuda::std::numeric_limits<_Tp>::lowest();
   }
   else
   {
-    constexpr T values[] = {Vs...};
-    T __min              = values[0];
-    for (T __v : values)
+    constexpr _Tp values[] = {_Vs...};
+    _Tp __min              = values[0];
+    for (_Tp __v : values)
     {
       if (__v < __min)
       {
@@ -821,18 +821,18 @@ _CCCL_API constexpr T __constant_sequence_compute_lowest() noexcept
   }
 }
 
-template <class T, T... Vs>
-_CCCL_API constexpr T __constant_sequence_compute_highest() noexcept
+template <class _Tp, _Tp... _Vs>
+_CCCL_API constexpr _Tp __constant_sequence_compute_highest() noexcept
 {
-  if constexpr (sizeof...(Vs) == 0)
+  if constexpr (sizeof...(_Vs) == 0)
   {
-    return ::cuda::std::numeric_limits<T>::max();
+    return ::cuda::std::numeric_limits<_Tp>::max();
   }
   else
   {
-    constexpr T values[] = {Vs...};
-    T __max              = values[0];
-    for (T __v : values)
+    constexpr _Tp values[] = {_Vs...};
+    _Tp __max              = values[0];
+    for (_Tp __v : values)
     {
       if (__v > __max)
       {
@@ -891,16 +891,16 @@ struct __traits_impl<immediate<_Arg, _StaticBounds>>
   static constexpr element_type highest = __wrapper_static_highest<element_type, _StaticBounds>();
 };
 
-template <class T, T... Vs>
-struct __traits_impl<__constant_sequence<T, Vs...>>
+template <class _Tp, _Tp... _Vs>
+struct __traits_impl<__constant_sequence<_Tp, _Vs...>>
 {
-  using element_type                    = ::cuda::std::remove_cvref_t<T>;
-  using value_type                      = ::cuda::std::array<element_type, sizeof...(Vs)>;
+  using element_type                    = ::cuda::std::remove_cvref_t<_Tp>;
+  using value_type                      = ::cuda::std::array<element_type, sizeof...(_Vs)>;
   static constexpr bool is_constant     = true;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = false;
-  static constexpr element_type lowest  = __constant_sequence_compute_lowest<T, Vs...>();
-  static constexpr element_type highest = __constant_sequence_compute_highest<T, Vs...>();
+  static constexpr element_type lowest  = __constant_sequence_compute_lowest<_Tp, _Vs...>();
+  static constexpr element_type highest = __constant_sequence_compute_highest<_Tp, _Vs...>();
 };
 
 template <class _Arg, class _StaticBounds>
@@ -975,10 +975,10 @@ template <auto _Value, class _Tp>
   return __constant_compute_lowest<_Value, _Tp>();
 }
 
-template <class T, T... Vs>
-[[nodiscard]] _CCCL_API constexpr auto __lowest_(__constant_sequence<T, Vs...>) noexcept
+template <class _Tp, _Tp... _Vs>
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(__constant_sequence<_Tp, _Vs...>) noexcept
 {
-  return __constant_sequence_compute_lowest<T, Vs...>();
+  return __constant_sequence_compute_lowest<_Tp, _Vs...>();
 }
 
 template <class _Arg, class _StaticBounds>
@@ -1028,10 +1028,10 @@ template <auto _Value, class _Tp>
   return __constant_compute_highest<_Value, _Tp>();
 }
 
-template <class T, T... Vs>
-[[nodiscard]] _CCCL_API constexpr auto __highest_(__constant_sequence<T, Vs...>) noexcept
+template <class _Tp, _Tp... _Vs>
+[[nodiscard]] _CCCL_API constexpr auto __highest_(__constant_sequence<_Tp, _Vs...>) noexcept
 {
-  return __constant_sequence_compute_highest<T, Vs...>();
+  return __constant_sequence_compute_highest<_Tp, _Vs...>();
 }
 
 template <class _Arg, class _StaticBounds>
