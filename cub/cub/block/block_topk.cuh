@@ -27,19 +27,18 @@ class block_topk
 {
 private:
   using internal_block_topk_t = block_topk_air<KeyT, BlockDimX, ItemsPerThread, ValueT>;
+  using TempStorage_          = typename internal_block_topk_t::TempStorage;
 
 public:
-  struct TempStorage
-  {
-    typename internal_block_topk_t::TempStorage topk_storage;
-  };
+  struct TempStorage : Uninitialized<TempStorage_>
+  {};
 
 private:
-  TempStorage& storage;
+  TempStorage_& storage;
 
 public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk(TempStorage& storage)
-      : storage(storage)
+      : storage(storage.Alias())
   {}
 
   template <bool IsFullTile>
@@ -51,16 +50,16 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    internal_block_topk_t(storage.topk_storage)
-      .template select_pairs<detail::topk::select::max, IsFullTile>(keys, values, k, num_valid, begin_bit, end_bit);
+    internal_block_topk_t(storage).template select_pairs<detail::topk::select::max, IsFullTile>(
+      keys, values, k, num_valid, begin_bit, end_bit);
   }
 
   template <bool IsFullTile>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   max_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    internal_block_topk_t(storage.topk_storage)
-      .template select_keys<detail::topk::select::max, IsFullTile>(keys, k, num_valid, begin_bit, end_bit);
+    internal_block_topk_t(storage).template select_keys<detail::topk::select::max, IsFullTile>(
+      keys, k, num_valid, begin_bit, end_bit);
   }
 
   template <bool IsFullTile>
@@ -72,16 +71,16 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    internal_block_topk_t(storage.topk_storage)
-      .template select_pairs<detail::topk::select::min, IsFullTile>(keys, values, k, num_valid, begin_bit, end_bit);
+    internal_block_topk_t(storage).template select_pairs<detail::topk::select::min, IsFullTile>(
+      keys, values, k, num_valid, begin_bit, end_bit);
   }
 
   template <bool IsFullTile>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   min_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    internal_block_topk_t(storage.topk_storage)
-      .template select_keys<detail::topk::select::min, IsFullTile>(keys, k, num_valid, begin_bit, end_bit);
+    internal_block_topk_t(storage).template select_keys<detail::topk::select::min, IsFullTile>(
+      keys, k, num_valid, begin_bit, end_bit);
   }
 };
 } // namespace detail
