@@ -107,8 +107,8 @@ TEST_FUNC void test()
   static_assert(!cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::is_deferred);
   static constexpr int carr[]                         = {1, 2, 3};
   static constexpr ::cuda::std::array<int, 3> cudaarr = {1, 2, 3};
-  static_assert(!cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::is_deferred);
-  static_assert(!cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::is_deferred);
+  static_assert(!cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<carr>())>::is_deferred);
+  static_assert(!cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<cudaarr>())>::is_deferred);
 
   static_assert(cuda::args::__traits<cuda::args::deferred<cuda::std::span<int, 1>>>::is_deferred);
   static_assert(cuda::args::__traits<cuda::args::deferred_sequence<cuda::std::span<int>>>::is_deferred);
@@ -124,8 +124,8 @@ TEST_FUNC void test()
   static_assert(cuda::args::__traits<cuda::args::constant<42>>::is_single_value);
 
   static_assert(!cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::is_single_value);
-  static_assert(!cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::is_single_value);
-  static_assert(!cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::is_single_value);
+  static_assert(!cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<carr>())>::is_single_value);
+  static_assert(!cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<cudaarr>())>::is_single_value);
 
   static_assert(cuda::args::__traits<cuda::args::deferred<int*>>::is_single_value);
   static_assert(!cuda::args::__traits<cuda::args::deferred_sequence<cuda::std::span<int>>>::is_single_value);
@@ -143,10 +143,10 @@ TEST_FUNC void test()
   static_assert(cuda::std::is_same_v<cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::value_type,
                                      cuda::std::array<int, 3>>);
   static_assert(
-    cuda::std::is_same_v<cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::value_type,
+    cuda::std::is_same_v<cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<carr>())>::value_type,
                          cuda::std::array<int, 3>>);
   static_assert(
-    cuda::std::is_same_v<cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::value_type,
+    cuda::std::is_same_v<cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<cudaarr>())>::value_type,
                          cuda::std::array<int, 3>>);
 
   // --- argument_traits: lowest / highest ---
@@ -167,10 +167,10 @@ TEST_FUNC void test()
 
   static_assert(cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::lowest == 1);
   static_assert(cuda::args::__traits<cuda::args::__constant_sequence<int, 1, 2, 3>>::highest == 3);
-  static_assert(cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::lowest == 1);
-  static_assert(cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>::highest == 3);
-  static_assert(cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::lowest == 1);
-  static_assert(cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>::highest == 3);
+  static_assert(cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<carr>())>::lowest == 1);
+  static_assert(cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<carr>())>::highest == 3);
+  static_assert(cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<cudaarr>())>::lowest == 1);
+  static_assert(cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<cudaarr>())>::highest == 3);
 
   // --- Free function bounds on plain values ---
 

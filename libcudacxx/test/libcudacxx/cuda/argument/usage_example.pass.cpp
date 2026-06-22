@@ -108,13 +108,13 @@ TEST_FUNC constexpr bool test()
 
   // __constant_sequence: array sequence, highest fits in shared memory
   {
-    constexpr auto seg_sizes = cuda::args::make_constant_sequence<carr_shared>();
+    constexpr auto seg_sizes = cuda::args::__make_constant_sequence<carr_shared>();
     static_assert(select_variant(seg_sizes) == algorithm_variant::shared_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 256 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 256);
   }
   {
-    constexpr auto seg_sizes = cuda::args::make_constant_sequence<cudaarr_shared>();
+    constexpr auto seg_sizes = cuda::args::__make_constant_sequence<cudaarr_shared>();
     static_assert(select_variant(seg_sizes) == algorithm_variant::shared_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 256 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 256);
@@ -122,13 +122,13 @@ TEST_FUNC constexpr bool test()
 
   // __constant_sequence: array sequence, highest exceeds shared memory, buffer clamped
   {
-    constexpr auto seg_sizes = cuda::args::make_constant_sequence<carr_global>();
+    constexpr auto seg_sizes = cuda::args::__make_constant_sequence<carr_global>();
     static_assert(select_variant(seg_sizes) == algorithm_variant::global_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 512 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 512);
   }
   {
-    constexpr auto seg_sizes = cuda::args::make_constant_sequence<cudaarr_global>();
+    constexpr auto seg_sizes = cuda::args::__make_constant_sequence<cudaarr_global>();
     static_assert(select_variant(seg_sizes) == algorithm_variant::global_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 512 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 512);

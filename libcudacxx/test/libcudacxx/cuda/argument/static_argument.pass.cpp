@@ -58,7 +58,7 @@ TEST_FUNC void test()
   // Array sequence
   {
     static constexpr int carr[] = {128, 256, 512};
-    constexpr auto sa_arr       = cuda::args::make_constant_sequence<carr>();
+    constexpr auto sa_arr       = cuda::args::__make_constant_sequence<carr>();
     static_assert(cuda::args::__unwrap(sa_arr)[0] == 128);
     static_assert(cuda::args::__unwrap(sa_arr)[1] == 256);
     static_assert(cuda::args::__unwrap(sa_arr)[2] == 512);
@@ -67,7 +67,7 @@ TEST_FUNC void test()
 
   {
     static constexpr ::cuda::std::array<int, 3> cudaarr = {128, 256, 512};
-    constexpr auto sa_arr                               = cuda::args::make_constant_sequence<cudaarr>();
+    constexpr auto sa_arr                               = cuda::args::__make_constant_sequence<cudaarr>();
     static_assert(cuda::args::__unwrap(sa_arr)[0] == 128);
     static_assert(cuda::args::__unwrap(sa_arr)[1] == 256);
     static_assert(cuda::args::__unwrap(sa_arr)[2] == 512);
@@ -84,13 +84,13 @@ TEST_FUNC void test()
   // Bounds: array sequence computes lowest/highest of elements
   {
     static constexpr int carr[] = {128, 256, 512};
-    constexpr auto sa           = cuda::args::make_constant_sequence<carr>();
+    constexpr auto sa           = cuda::args::__make_constant_sequence<carr>();
     static_assert(cuda::args::__lowest_(sa) == 128);
     static_assert(cuda::args::__highest_(sa) == 512);
   }
   {
     static constexpr ::cuda::std::array<int, 3> cudaarr = {128, 256, 512};
-    constexpr auto sa                                   = cuda::args::make_constant_sequence<cudaarr>();
+    constexpr auto sa                                   = cuda::args::__make_constant_sequence<cudaarr>();
     static_assert(cuda::args::__lowest_(sa) == 128);
     static_assert(cuda::args::__highest_(sa) == 512);
   }
@@ -98,7 +98,7 @@ TEST_FUNC void test()
   // Bounds: empty array sequence has unconstrained element bounds
   {
     static constexpr ::cuda::std::array<int, 0> cudaarr = {};
-    constexpr auto sa                                   = cuda::args::make_constant_sequence<cudaarr>();
+    constexpr auto sa                                   = cuda::args::__make_constant_sequence<cudaarr>();
     static_assert(cuda::args::__lowest_(sa) == cuda::std::numeric_limits<int>::lowest());
     static_assert(cuda::args::__highest_(sa) == (cuda::std::numeric_limits<int>::max)());
   }
@@ -129,7 +129,7 @@ TEST_FUNC void test()
   // Sequence traits
   {
     static constexpr int carr[] = {1, 2, 3};
-    using traits                = cuda::args::__traits<decltype(cuda::args::make_constant_sequence<carr>())>;
+    using traits                = cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<carr>())>;
     static_assert(traits::is_constant);
     static_assert(!traits::is_deferred);
     static_assert(!traits::is_single_value);
@@ -138,7 +138,7 @@ TEST_FUNC void test()
   }
   {
     static constexpr ::cuda::std::array<int, 3> cudaarr = {1, 2, 3};
-    using traits = cuda::args::__traits<decltype(cuda::args::make_constant_sequence<cudaarr>())>;
+    using traits = cuda::args::__traits<decltype(cuda::args::__make_constant_sequence<cudaarr>())>;
     static_assert(traits::is_constant);
     static_assert(!traits::is_deferred);
     static_assert(!traits::is_single_value);

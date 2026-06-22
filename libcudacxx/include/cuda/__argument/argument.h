@@ -150,7 +150,7 @@ template <class>
 inline constexpr bool __always_false_v = false;
 
 template <const auto& Arr, ::cuda::std::size_t... Is>
-constexpr auto make_constant_sequence_impl(::cuda::std::index_sequence<Is...>)
+_CCCL_API constexpr auto __make_constant_sequence_impl(::cuda::std::index_sequence<Is...>)
 {
   using raw_array = ::cuda::std::remove_const_t<::cuda::std::remove_reference_t<decltype(Arr)>>;
 
@@ -173,7 +173,7 @@ constexpr auto make_constant_sequence_impl(::cuda::std::index_sequence<Is...>)
 //! @brief Makes a compile-time constant argument sequence.
 //! In C++17, Arr must have static storage duration.
 template <const auto& Arr>
-constexpr auto make_constant_sequence()
+_CCCL_API constexpr auto __make_constant_sequence()
 {
   using raw_array = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<decltype(Arr)>>;
 
@@ -182,7 +182,7 @@ constexpr auto make_constant_sequence()
 
   constexpr ::cuda::std::size_t N = __array_extent<raw_array>::value;
 
-  return make_constant_sequence_impl<Arr>(::cuda::std::make_index_sequence<N>{});
+  return __make_constant_sequence_impl<Arr>(::cuda::std::make_index_sequence<N>{});
 }
 
 // __assert_in_range
