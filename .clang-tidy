@@ -40,7 +40,6 @@ Checks:
   - '-bugprone-use-after-move'
   - '-bugprone-undefined-memory-manipulation'
   - '-bugprone-unchecked-optional-access'
-  - '-bugprone-unintended-char-ostream-output'
   - '-bugprone-casting-through-void'
   - '-bugprone-integer-division'
   - '-bugprone-move-forwarding-reference'

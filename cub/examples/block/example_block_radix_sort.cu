@@ -160,7 +160,7 @@ void Test()
     printf("Input data: ");
     for (int i = 0; i < TILE_SIZE; i++)
     {
-      std::cout << h_in[i] << ", ";
+      std::cout << h_in[i] << ", "; // NOLINT(bugprone-unintended-char-ostream-output)
     }
     printf("\n\n");
   }
