@@ -600,7 +600,8 @@ private:
     {
       return error;
     }
-    const bool use_pdl = cc >= ::cuda::compute_capability{9, 0};
+    constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 24;
+    const bool use_pdl              = num_items <= pdl_max_items && cc >= ::cuda::compute_capability{9, 0};
 
     const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
     const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
@@ -1104,9 +1105,9 @@ public:
 
 #if _CCCL_COMPILER(GCC, <, 10)
     // gcc 7-9 fail to use `policy` in a constant expression, so we just compute it again inplace
-    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().use_onesweep)
+    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().algorithm == detail::radix_sort::RadixSortAlgorithm::onesweep)
 #else // _CCCL_COMPILER(GCC, <, 8)
-    if CUB_DETAIL_CONSTEXPR_ISH (policy.use_onesweep)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy.algorithm == detail::radix_sort::RadixSortAlgorithm::onesweep)
 #endif // _CCCL_COMPILER(GCC, <, 8)
     {
       return __invoke_onesweep(policy);
