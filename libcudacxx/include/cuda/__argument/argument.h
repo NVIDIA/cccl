@@ -123,20 +123,20 @@ public:
   static constexpr ::cuda::std::size_t size = sizeof...(_Vs);
 };
 
-template <const auto& Arr, ::cuda::std::size_t... Is>
-_CCCL_API constexpr auto __make_constant_sequence_impl(::cuda::std::index_sequence<Is...>)
+template <const auto& _Arr, ::cuda::std::size_t... _Is>
+_CCCL_API constexpr auto __make_constant_sequence_impl(::cuda::std::index_sequence<_Is...>)
 {
-  using raw_array = ::cuda::std::remove_const_t<::cuda::std::remove_reference_t<decltype(Arr)>>;
+  using raw_array = ::cuda::std::remove_const_t<::cuda::std::remove_reference_t<decltype(_Arr)>>;
 
   if constexpr (::cuda::std::is_bounded_array_v<raw_array>)
   {
     using _Tp = ::cuda::std::remove_cv_t<::cuda::std::remove_extent_t<raw_array>>;
-    return __constant_sequence<_Tp, Arr[Is]...>{};
+    return __constant_sequence<_Tp, _Arr[_Is]...>{};
   }
   else if constexpr (::cuda::std::__is_cuda_std_array_v<raw_array>)
   {
     using _Tp = typename raw_array::value_type;
-    return __constant_sequence<_Tp, Arr[Is]...>{};
+    return __constant_sequence<_Tp, _Arr[_Is]...>{};
   }
   else
   {
