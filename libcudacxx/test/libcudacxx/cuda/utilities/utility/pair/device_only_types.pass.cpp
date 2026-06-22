@@ -15,6 +15,7 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
+#if _CCCL_TILE_COMPILATION() || _CCCL_DEVICE_COMPILATION()
 TEST_DEVICE_FUNC void test()
 {
   using pair = cuda::std::pair<device_only_type, device_only_type>;
@@ -84,6 +85,13 @@ TEST_DEVICE_FUNC void test()
     assert(rhs.first == 1337);
     assert(rhs.second == 42);
   }
+}
+#endif // _CCCL_TILE_COMPILATION() || _CCCL_DEVICE_COMPILATION()
+
+#if _CCCL_TILE_COMPILATION() //  cannot run main because its __tile_global__
+__global__ void test_kernel()
+{
+  test();
 }
 
 int main(int arg, char** argv)
