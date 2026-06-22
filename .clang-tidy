@@ -33,7 +33,6 @@ Checks:
   - '-bugprone-forward-declaration-namespace'
   - '-bugprone-narrowing-conversions'
   - '-bugprone-misplaced-widening-cast'
-  - '-bugprone-suspicious-include'
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-forwarding-reference-overload'
