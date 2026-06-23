@@ -4,8 +4,6 @@ import pytest
 
 import cuda.compute._bindings as bindings
 
-pytestmark = pytest.mark.no_numba
-
 
 @pytest.fixture(
     params=[

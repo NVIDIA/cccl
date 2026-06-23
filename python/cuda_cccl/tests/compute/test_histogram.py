@@ -12,8 +12,6 @@ from cuda.compute import (
     CountingIterator,
 )
 
-pytestmark = pytest.mark.no_numba
-
 DTYPE_LIST = [
     np.uint8,
     np.uint16,
