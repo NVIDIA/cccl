@@ -42,6 +42,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+
 namespace cuda::experimental::cuco::__open_addressing
 {
 //! @brief Open addressing implementation class.
@@ -384,6 +386,8 @@ public:
   }
 };
 } // namespace cuda::experimental::cuco::__open_addressing
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/epilogue.h>
 
