@@ -43,12 +43,12 @@ Support matrix
    * - ``cub::DeviceReduce`` (``Reduce``, ``Sum``, ``Min``, ``Max``, ``TransformReduce``, ...)
      - Yes
      - Yes
-     - Yes (constrained)
+     - Yes (partial)
      - ``run_to_run``
    * - ``cub::DeviceScan`` (``ExclusiveSum``, ``ExclusiveScan``, ``InclusiveSum``, ``InclusiveScan``, ...)
      - Yes
-     - Yes (constrained)
-     - Yes (constrained)
+     - Yes (partial)
+     - Yes (partial)
      - ``not_guaranteed``
    * - ``cub::DeviceSegmentedReduce``
      - Yes
