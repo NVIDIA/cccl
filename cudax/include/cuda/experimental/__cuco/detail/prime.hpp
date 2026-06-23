@@ -59,14 +59,13 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 {
   ::cuda::std::uint64_t __r = 1;
   __b %= __m;
-  while (__e > 0)
+  for (; __e > 0; __e >>= 1)
   {
     if (__e & 1)
     {
       __r = __detail::__mod_mul(__r, __b, __m);
     }
     __b = __detail::__mod_mul(__b, __b, __m);
-    __e >>= 1;
   }
   return __r;
 }
