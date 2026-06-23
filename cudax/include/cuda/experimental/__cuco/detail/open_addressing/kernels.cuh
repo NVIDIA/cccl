@@ -24,7 +24,7 @@
 #include <cub/block/block_reduce.cuh>
 
 #include <cuda/atomic>
-#include <cuda/std/iterator>
+#include <cuda/std/__iterator/iterator_traits.h>
 
 #include <cuda/experimental/__cuco/detail/utils.hpp>
 

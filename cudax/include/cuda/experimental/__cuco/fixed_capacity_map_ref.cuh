@@ -24,8 +24,8 @@
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/atomic>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/span>
-#include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>

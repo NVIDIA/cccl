@@ -30,8 +30,9 @@
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/atomic>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/kernels.cuh>

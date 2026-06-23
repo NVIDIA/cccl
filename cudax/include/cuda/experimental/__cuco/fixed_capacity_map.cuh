@@ -26,7 +26,7 @@
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/utility>
+#include <cuda/std/__utility/pair.h>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>

@@ -21,8 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/tuple>
-#include <cuda/std/type_traits>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>

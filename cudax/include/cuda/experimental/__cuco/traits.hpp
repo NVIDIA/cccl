@@ -23,9 +23,13 @@
 
 #include <thrust/device_reference.h>
 
-#include <cuda/std/tuple>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
