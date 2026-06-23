@@ -5,12 +5,11 @@
 from typing import Tuple
 
 import cupy as cp
+import numba
 import numpy as np
 import pytest
 
 import cuda.compute
-
-pytestmark = pytest.mark.no_numba
 
 DTYPE_LIST = [
     np.uint8,
@@ -119,8 +118,8 @@ def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
     h_in_keys = random_array(num_items, dtype, max_value=50)
     start_offsets, end_offsets = make_uniform_segments(num_segments, segment_size)
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_out_keys = cp.asarray(np.empty_like(h_in_keys))
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
 
     cuda.compute.segmented_sort(
         d_in_keys=d_in_keys,
@@ -134,7 +133,7 @@ def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
         order=order,
     )
 
-    h_out_keys = d_out_keys.get()
+    h_out_keys = d_out_keys.copy_to_host()
     expected_keys, _ = host_segmented_sort(
         h_in_keys, None, start_offsets, end_offsets, order
     )
@@ -154,10 +153,10 @@ def test_segmented_sort_pairs(dtype, num_segments, segment_size):
 
     start_offsets, end_offsets = make_uniform_segments(num_segments, segment_size)
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_in_vals = cp.asarray(h_in_vals)
-    d_out_keys = cp.asarray(np.empty_like(h_in_keys))
-    d_out_vals = cp.asarray(np.empty_like(h_in_vals))
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_in_vals = numba.cuda.to_device(h_in_vals)
+    d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
+    d_out_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
 
     cuda.compute.segmented_sort(
         d_in_keys=d_in_keys,
@@ -171,8 +170,8 @@ def test_segmented_sort_pairs(dtype, num_segments, segment_size):
         order=order,
     )
 
-    h_out_keys = d_out_keys.get()
-    h_out_vals = d_out_vals.get()
+    h_out_keys = d_out_keys.copy_to_host()
+    h_out_vals = d_out_vals.copy_to_host()
 
     expected_keys, expected_vals = host_segmented_sort(
         h_in_keys, h_in_vals, start_offsets, end_offsets, order
@@ -190,8 +189,8 @@ def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     start_offsets, end_offsets = make_uniform_segments(num_segments, segment_size)
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_tmp_keys = cp.asarray(np.empty_like(h_in_keys))
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_tmp_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
     keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
 
     cuda.compute.segmented_sort(
@@ -206,7 +205,7 @@ def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
         order=order,
     )
 
-    h_out_keys = keys_db.current().get()
+    h_out_keys = keys_db.current().copy_to_host()
     expected_keys, _ = host_segmented_sort(
         h_in_keys, None, start_offsets, end_offsets, order
     )
@@ -225,10 +224,10 @@ def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
 
     start_offsets, end_offsets = make_uniform_segments(num_segments, segment_size)
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_in_vals = cp.asarray(h_in_vals)
-    d_tmp_keys = cp.asarray(np.empty_like(h_in_keys))
-    d_tmp_vals = cp.asarray(np.empty_like(h_in_vals))
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_in_vals = numba.cuda.to_device(h_in_vals)
+    d_tmp_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
+    d_tmp_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
 
     keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
     vals_db = cuda.compute.DoubleBuffer(d_in_vals, d_tmp_vals)
@@ -245,8 +244,8 @@ def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
         order=order,
     )
 
-    h_out_keys = keys_db.current().get()
-    h_out_vals = vals_db.current().get()
+    h_out_keys = keys_db.current().copy_to_host()
+    h_out_vals = vals_db.current().copy_to_host()
 
     expected_keys, expected_vals = host_segmented_sort(
         h_in_keys, h_in_vals, start_offsets, end_offsets, order
@@ -298,10 +297,10 @@ def test_segmented_sort_variable_segment_sizes(num_segments):
     h_in_keys = random_array(num_items, np.int32, max_value=100)
     h_in_vals = random_array(num_items, np.float32)
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_in_vals = cp.asarray(h_in_vals)
-    d_out_keys = cp.asarray(np.empty_like(h_in_keys))
-    d_out_vals = cp.asarray(np.empty_like(h_in_vals))
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_in_vals = numba.cuda.to_device(h_in_vals)
+    d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
+    d_out_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
 
     cuda.compute.segmented_sort(
         d_in_keys=d_in_keys,
@@ -315,8 +314,8 @@ def test_segmented_sort_variable_segment_sizes(num_segments):
         order=order,
     )
 
-    h_out_keys = d_out_keys.get()
-    h_out_vals = d_out_vals.get()
+    h_out_keys = d_out_keys.copy_to_host()
+    h_out_vals = d_out_vals.copy_to_host()
     expected_keys, expected_vals = host_segmented_sort(
         h_in_keys, h_in_vals, start_offsets, end_offsets, order
     )

@@ -284,6 +284,42 @@ concept indirectly_copyable_storable =
 // Note: indirectly_swappable is located in iter_swap.h to prevent a dependency cycle
 // (both iter_swap and indirectly_swappable require indirectly_readable).
 
+// Extension of indirectly_unary_invocable to binary operators
+template <class _Fp, class _It1, class _It2>
+concept __indirectly_binary_invocable =
+  indirectly_readable<_It1> && indirectly_readable<_It2> && copy_constructible<_Fp>
+  && invocable<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>
+  && invocable<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>
+  && invocable<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>
+  && invocable<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>
+  && invocable<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>>;
+
+// Extension of indirectly_regular_unary_invocable to binary operators
+template <class _Fp, class _It1, class _It2>
+concept __indirectly_regular_binary_invocable =
+  indirectly_readable<_It1> && indirectly_readable<_It2> && copy_constructible<_Fp>
+  && regular_invocable<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>
+  && regular_invocable<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>
+  && regular_invocable<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>
+  && regular_invocable<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>
+  && regular_invocable<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>>;
+
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [iterator.concept.readable]
@@ -623,6 +659,44 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _In, class _Out>
 _CCCL_CONCEPT indirectly_copyable_storable = _CCCL_FRAGMENT(__indirectly_copyable_storable_, _In, _Out);
+
+template <class _Fp, class _It1, class _It2>
+_CCCL_CONCEPT __indirectly_binary_invocable = _CCCL_REQUIRES_EXPR((_Fp, _It1, _It2))(
+  requires(indirectly_readable<_It1>),
+  requires(indirectly_readable<_It2>),
+  requires(copy_constructible<_Fp>),
+  requires(invocable<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>),
+  requires(invocable<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>),
+  requires(invocable<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>),
+  requires(invocable<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>),
+  requires(invocable<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>>));
+
+template <class _Fp, class _It1, class _It2>
+_CCCL_CONCEPT __indirectly_regular_binary_invocable = _CCCL_REQUIRES_EXPR((_Fp, _It1, _It2))(
+  requires(indirectly_readable<_It1>),
+  requires(indirectly_readable<_It2>),
+  requires(copy_constructible<_Fp>),
+  requires(regular_invocable<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>),
+  requires(regular_invocable<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>),
+  requires(regular_invocable<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>),
+  requires(regular_invocable<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>),
+  requires(regular_invocable<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>>));
 
 template <class _Ip, class = void>
 inline constexpr bool __has_iter_category = false;

@@ -1,12 +1,10 @@
 import numpy as np
-import pytest
 
 from cuda.compute._caching import CachableFunction
 
 global_x = 1
 
 
-@pytest.mark.no_numba
 def test_func_caching_basic():
     def func(x):
         return x
@@ -21,7 +19,6 @@ def test_func_caching_basic():
     assert f1 == f2
 
 
-@pytest.mark.no_numba
 def test_func_caching_different_names():
     def func(x):
         return x
@@ -36,7 +33,6 @@ def test_func_caching_different_names():
     assert f1 != f2
 
 
-@pytest.mark.no_numba
 def test_func_caching_different_code():
     def func(x):
         return x
@@ -50,7 +46,6 @@ def test_func_caching_different_code():
     assert f1 != f2
 
 
-@pytest.mark.no_numba
 def test_func_caching_with_closure():
     def factory(x):
         def func(y):
@@ -66,7 +61,25 @@ def test_func_caching_with_closure():
     assert f1 != f3
 
 
-@pytest.mark.no_numba
+def test_func_caching_with_numpy_numeric_scalar_closure():
+    def factory(indexlength, regularsize):
+        index_dtype = np.int64
+        idx_len = index_dtype(indexlength)
+        reg_size = index_dtype(regularsize)
+
+        def func(counter):
+            return counter % idx_len + reg_size
+
+        return func
+
+    f1 = CachableFunction(factory(100_000, 16))
+    f2 = CachableFunction(factory(100_000, 16))
+    assert f1 == f2
+
+    f3 = CachableFunction(factory(100_000, 32))
+    assert f1 != f3
+
+
 def test_func_caching_with_global_variable():
     global global_x
 
@@ -113,7 +126,6 @@ def test_func_caching_wrapped_cuda_jit_function():
     assert CachableFunction(func1) != CachableFunction(func3)
 
 
-@pytest.mark.no_numba
 def test_func_caching_with_global_np_ufunc():
     def make_func():
         def func(x):
@@ -133,7 +145,6 @@ def test_func_caching_with_global_np_ufunc():
     assert CachableFunction(func1) != CachableFunction(func2)
 
 
-@pytest.mark.no_numba
 def test_func_caching_with_aliased_np_ufunc():
     def make_func1():
         amin = np.argmin
