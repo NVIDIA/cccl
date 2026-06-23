@@ -85,7 +85,7 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   typename _Ref::size_type* __num_successes,
   _Ref __ref)
 {
-  using __block_reduce = cub::BlockReduce<typename _Ref::size_type, _BlockSize>;
+  using __block_reduce = CUB_NS_QUALIFIER::BlockReduce<typename _Ref::size_type, _BlockSize>;
   __shared__ typename __block_reduce::TempStorage __temp_storage;
   typename _Ref::size_type __thread_num_successes = 0;
 

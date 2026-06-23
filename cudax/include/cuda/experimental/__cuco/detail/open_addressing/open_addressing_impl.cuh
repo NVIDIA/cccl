@@ -230,7 +230,7 @@ public:
     {
       return;
     }
-    [[maybe_unused]] const auto __status = ::cub::DeviceTransform::Fill(
+    [[maybe_unused]] const auto __status = CUB_NS_QUALIFIER::DeviceTransform::Fill(
       __slots.data(),
       static_cast<::cuda::experimental::cuco::__detail::__index_type>(__n),
       __empty_slot_sentinel,
@@ -282,7 +282,7 @@ public:
     {
       __open_addressing::__insert_if_fn __op{
         __first, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref};
-      [[maybe_unused]] const auto __status = ::cub::DeviceFor::Bulk(__num_keys, __op, __stream);
+      [[maybe_unused]] const auto __status = CUB_NS_QUALIFIER::DeviceFor::Bulk(__num_keys, __op, __stream);
       _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to insert keys");
     }
     else
@@ -314,7 +314,7 @@ public:
     {
       __open_addressing::__contains_if_fn __op{
         __first, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __output_begin, __container_ref};
-      [[maybe_unused]] const auto __status = ::cub::DeviceFor::Bulk(__num_keys, __op, __stream);
+      [[maybe_unused]] const auto __status = CUB_NS_QUALIFIER::DeviceFor::Bulk(__num_keys, __op, __stream);
       _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to query keys");
     }
     else
