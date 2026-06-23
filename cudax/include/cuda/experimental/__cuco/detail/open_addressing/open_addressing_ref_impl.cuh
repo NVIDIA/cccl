@@ -64,6 +64,7 @@ struct __bucket_probing_results
   ::cuda::experimental::cuco::__detail::__equal_result __state; ///< Equal result
   ::cuda::std::int32_t __intra_bucket_index; ///< Intra-bucket index
 
+#if _CCCL_CUDA_COMPILATION()
   //!
   //! @brief Constructs __bucket_probing_results.
   //!
@@ -74,6 +75,7 @@ struct __bucket_probing_results
       : __state{__state}
       , __intra_bucket_index{__index}
   {}
+#endif // _CCCL_CUDA_COMPILATION()
 };
 
 //!
@@ -280,6 +282,7 @@ public:
     return __storage_ref.end();
   }
 
+#if _CCCL_CUDA_COMPILATION()
   //!
   //! @brief Inserts an element.
   //!
@@ -586,6 +589,7 @@ public:
   {
     return __storage_ref.data() + __probing_idx + __intra_bucket_idx;
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
   //!
   //! @brief Extracts the __key from a given value type.
@@ -624,6 +628,7 @@ public:
     return ::thrust::raw_reference_cast(__value).second;
   }
 
+#if _CCCL_CUDA_COMPILATION()
   //!
   //! @brief Converts the given type to the container's native `__value_type`.
   //!
@@ -850,11 +855,11 @@ public:
     }
     else
     {
-#if (__CUDA_ARCH__ < 700)
+#  if (__CUDA_ARCH__ < 700)
       return cas_dependent_write(__address, __expected, __desired);
-#else
+#  else
       return back_to_back_cas(__address, __expected, __desired);
-#endif
+#  endif
     }
   }
 
@@ -909,6 +914,7 @@ public:
       __current = __ref.load(::cuda::std::memory_order_relaxed);
     } while (::cuda::experimental::cuco::__detail::__bitwise_compare(__current, __sentinel));
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
   // TODO: Clean up the sentinel handling since it's duplicated in ref and equal wrapper
 };

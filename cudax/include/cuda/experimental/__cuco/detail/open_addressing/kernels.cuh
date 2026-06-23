@@ -33,6 +33,8 @@
 #include <cooperative_groups/reduce.h>
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CUDA_COMPILATION()
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 
@@ -178,6 +180,8 @@ _CCCL_KERNEL_ATTRIBUTES void __contains_if_n(
 } // namespace cuda::experimental::cuco::__open_addressing
 
 _CCCL_DIAG_POP
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/std/__cccl/epilogue.h>
 

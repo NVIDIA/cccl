@@ -260,6 +260,7 @@ public:
     return storage_span_type{__impl.storage_ref().data(), __impl.capacity()};
   }
 
+#if _CCCL_CUDA_COMPILATION()
   // ===== Insert operations =====
 
   //! @brief Inserts a key-value pair.
@@ -315,6 +316,7 @@ public:
   {
     return __impl.contains(__group, __key);
   }
+#endif // _CCCL_CUDA_COMPILATION()
 };
 } // namespace cuda::experimental::cuco
 

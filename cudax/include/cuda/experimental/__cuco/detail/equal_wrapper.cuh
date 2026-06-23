@@ -70,6 +70,7 @@ struct __equal_wrapper
       , __equal{__eq}
   {}
 
+#if _CCCL_CUDA_COMPILATION()
   //! @brief Equality check with the given equality callable.
   //!
   //! @tparam _Lhs Left-hand side element type
@@ -126,6 +127,7 @@ struct __equal_wrapper
              : __equal_to(__lhs, __rhs);
     }
   }
+#endif // _CCCL_CUDA_COMPILATION()
 };
 } // namespace cuda::experimental::cuco::__detail
 

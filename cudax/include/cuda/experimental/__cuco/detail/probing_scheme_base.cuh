@@ -57,6 +57,7 @@ public:
       , __capacity_{__capacity}
   {}
 
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE constexpr auto operator*() const noexcept
   {
     return __curr_index;
@@ -74,6 +75,7 @@ public:
     ++(*this);
     return __temp;
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
 private:
   __size_type __curr_index;
