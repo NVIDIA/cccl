@@ -23,60 +23,21 @@
 
 #include <thrust/device_reference.h>
 
-#include <cuda/std/__tuple_dir/get.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
 {
-//! @brief Trait indicating if a type is tuple-like.
+//! @brief Trait value indicating whether `_Tp`, after unwrapping any thrust reference, is a pair-like
+//! type (tuple-like with exactly two elements).
 //!
 //! @tparam _Tp Type to inspect
-//! @tparam _Enable SFINAE hook
-template <class _Tp, class _Enable = void>
-struct is_tuple_like : ::cuda::std::false_type
-{};
-
 template <class _Tp>
-struct is_tuple_like<_Tp, ::cuda::std::void_t<decltype(::cuda::std::tuple_size<_Tp>::value)>> : ::cuda::std::true_type
-{};
-
-template <class _Tp>
-inline constexpr bool is_tuple_like_v = is_tuple_like<_Tp>::value;
-
-namespace __detail
-{
-//! @brief Detects cuda::std pair-like types.
-//!
-//! @tparam _Tp Type to inspect
-//! @tparam _Enable SFINAE hook
-template <class _Tp, class _Enable = void>
-struct __is_pair_like_impl : ::cuda::std::false_type
-{};
-
-template <class _Tp>
-struct __is_pair_like_impl<_Tp,
-                           ::cuda::std::void_t<decltype(::cuda::std::get<0>(::cuda::std::declval<_Tp>())),
-                                               decltype(::cuda::std::get<1>(::cuda::std::declval<_Tp>())),
-                                               decltype(::cuda::std::tuple_size<_Tp>::value)>>
-    : ::cuda::std::conditional_t<::cuda::std::tuple_size<_Tp>::value == 2, ::cuda::std::true_type, ::cuda::std::false_type>
-{};
-
-template <class _Tp>
-struct __is_pair_like
-    : __is_pair_like_impl<
-        ::cuda::std::remove_reference_t<decltype(thrust::raw_reference_cast(::cuda::std::declval<_Tp>()))>>
-{};
-
-template <class _Tp>
-using __is_pair_like_t = __is_pair_like<_Tp>;
-} // namespace __detail
+inline constexpr bool __is_pair_like_v = ::cuda::std::__pair_like<
+  ::cuda::std::remove_reference_t<decltype(::thrust::raw_reference_cast(::cuda::std::declval<_Tp>()))>>;
 } // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>

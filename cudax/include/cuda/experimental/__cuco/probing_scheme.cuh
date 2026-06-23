@@ -21,14 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
-#include <cuda/experimental/__cuco/traits.hpp>
 
 #include <cooperative_groups.h>
 
@@ -176,10 +177,10 @@ public:
   //! @param __hash Hasher
   //!
   //! @return Copy of the current probing scheme
-  template <class _NewHash, class _Enable = ::cuda::std::enable_if_t<is_tuple_like<_NewHash>::value>>
+  template <class _NewHash, class _Enable = ::cuda::std::enable_if_t<::cuda::std::__tuple_like<_NewHash>>>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
   {
-    static_assert(is_tuple_like<_NewHash>::value && ::cuda::std::tuple_size<_NewHash>::value == 2,
+    static_assert(::cuda::std::__tuple_like<_NewHash> && ::cuda::std::tuple_size<_NewHash>::value == 2,
                   "The given hasher must be a tuple-like object with exactly two elements");
 
     const auto& [__hash1, __hash2] = __hash;

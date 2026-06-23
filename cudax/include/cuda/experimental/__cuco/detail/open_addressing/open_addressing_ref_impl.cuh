@@ -654,7 +654,7 @@ public:
     if constexpr (__has_payload && !::cuda::std::is_same_v<_Value, __value_type>)
     {
       using mapped_type = decltype(empty_value_sentinel());
-      if constexpr (__detail::__is_pair_like<_Value>::value)
+      if constexpr (__is_pair_like_v<_Value>)
       {
         return ::cuda::std::pair{::cuda::std::get<0>(__value), mapped_type{::cuda::std::get<1>(__value)}};
       }
