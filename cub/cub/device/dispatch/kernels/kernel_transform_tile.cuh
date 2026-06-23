@@ -43,7 +43,7 @@ template <int TileSize, typename T, typename N>
   return ct::partition_view{span, ct::shape<TileSize>{}};
 }
 
-// Tile DSL kernels backing cub::DeviceTransform's tile path. They assume 16-byte pointer alignment + 16-divisible
+// Tile DSL kernel backing cub::DeviceTransform's tile path. It assumes 16-byte pointer alignment + 16-divisible
 // num_items (so the compiler picks LDG.E.128); the dispatch header honors that. NV_IF_TARGET(NV_PROVIDES_SM_80)
 // guards the body -- tile needs sm_80+, so sub-80 arches get a no-op kernel (dispatch only launches it on sm_80+).
 //   assume_divisible<16>     -- num_items % 16 == 0, so the tile DSL can elide tail handling.
@@ -61,18 +61,6 @@ transform_kernel(const ::cuda::std::int64_t num_items, Out* __restrict__ out, co
     (const auto bx = ct::bid().x; const auto n = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
      const auto out_view                       = make_aligned_partition_view<TileSize>(out, n);
      out_view.store_masked(Fn{}(make_aligned_partition_view<TileSize>(ins, n).load_masked(bx)...), bx);));
-}
-
-template <int TileSize, typename T>
-__tile_global__ void fill_kernel(const ::cuda::std::int64_t num_items, T* __restrict__ out, const T value)
-{
-  namespace ct = ::cuda::tiles;
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_80,
-    (const auto bx = ct::bid().x; const auto n = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-     const auto out_view                       = make_aligned_partition_view<TileSize>(out, n);
-     using tile_t                              = ct::tile<T, ct::shape<TileSize>>;
-     out_view.store_masked(ct::full<tile_t>(value), bx);));
 }
 } // namespace detail::transform::tile
 
