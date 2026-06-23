@@ -128,16 +128,12 @@ dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_item
     },
     inputs);
 
-  // The tile functor to run for TransformOp: its registered tile_operator mirror (a scalar functor can't be
-  // invoked on ct::tile).
   using tile_op_t = cub::transform::tile_operator_t<TransformOp>;
   static_assert(::cuda::std::is_empty_v<tile_op_t>,
                 "tile_operator type must be stateless (the tile kernel default-constructs it)");
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_operator type must be trivially default constructible");
 
-  // Pick the tile size from the element types (no caller override -- mirrors the regular path, where the policy
-  // drives the size), then launch.
   constexpr int tile_size =
     cub::detail::transform::tile::pick_tile_size<::cuda::std::iter_value_t<OutIter>,
                                                  ::cuda::std::iter_value_t<InIters>...>(
