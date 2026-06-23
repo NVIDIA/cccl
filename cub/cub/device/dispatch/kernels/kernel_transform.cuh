@@ -969,7 +969,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         auto chunks = ::cuda::std::tuple{load_chunk(aligned_ptrs)...};
 
         // must fully unroll to take full advantage of ILP. otherwise perf regress by half
-        alignas(sizeof(output_t) * store_vec) output_t res[store_vec];
+        ::cuda::__uninitialized_array<output_t, store_vec, sizeof(output_t) * store_vec> res;
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int k = 0; k < store_vec; ++k)
         {
@@ -979,7 +979,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
             },
             chunks);
         }
-        out_vec[g] = *reinterpret_cast<const store_t*>(res);
+        out_vec[g] = *reinterpret_cast<const store_t*>(res.data());
       }
 
       // scalar tail: the up to (store_vec - 1) trailing elements not covered by a whole store group. can_vectorize
