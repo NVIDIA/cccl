@@ -29,11 +29,7 @@ int host_ptr1[] = {1, 2, 3, 4};
 
 template <typename Pointer>
 void test_accessible_pointer(
-  Pointer ptr,
-  bool is_host_accessible,
-  bool is_device_accessible,
-  bool is_managed_memory,
-  cuda::device_ref device)
+  Pointer ptr, bool is_host_accessible, bool is_device_accessible, bool is_managed_memory, cuda::device_ref device)
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
   assert(cuda::__is_host_accessible_nothrow(ptr) == is_host_accessible);
