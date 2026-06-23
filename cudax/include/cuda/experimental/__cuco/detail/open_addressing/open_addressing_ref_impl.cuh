@@ -326,14 +326,11 @@ public:
           switch (__attempt_insert(__get_slot_ptr(*__probing_iter, __intra_bucket_index), __slot_content, __val))
           {
             case __insert_result::__duplicate: {
-              if constexpr (__allows_duplicates)
-              {
-                [[fallthrough]];
-              }
-              else
+              if constexpr (!__allows_duplicates)
               {
                 return false;
               }
+              [[fallthrough]];
             }
             case __insert_result::__continue:
               continue;
