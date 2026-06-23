@@ -24,11 +24,11 @@
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <cuda/__atomic/atomic.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
-#include <cuda/atomic>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__type_traits/is_base_of.h>

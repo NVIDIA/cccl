@@ -26,9 +26,9 @@
 #include <thrust/logical.h>
 #include <thrust/reduce.h>
 
+#include <cuda/__atomic/atomic.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
-#include <cuda/atomic>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
