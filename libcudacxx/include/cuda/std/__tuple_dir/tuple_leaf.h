@@ -137,12 +137,13 @@ public:
       : __value_(__a)
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API explicit constexpr __tuple_leaf( // NOLINT(bugprone-forwarding-reference-overload)
-    _Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
@@ -206,16 +207,17 @@ public:
     static_assert(!is_reference_v<_Hp>, "Attempted to default construct a reference element in a tuple");
   }
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API explicit constexpr __tuple_leaf( // NOLINT(bugprone-forwarding-reference-overload)
-    _Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
                   "Attempted construction of reference element "
                   "binds to a temporary whose lifetime has ended");
   }
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
@@ -308,12 +310,13 @@ public:
       : _Hp(__a)
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API explicit constexpr __tuple_leaf( // NOLINT(bugprone-forwarding-reference-overload)
-    _Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>

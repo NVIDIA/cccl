@@ -77,6 +77,7 @@ public:
   //! @post `has_value() == false`
   __basic_any() = default;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   //! @brief Constructs a `__basic_any` object that contains a copy of `__value`.
   //! @pre `__value` must be move constructible. `_Tp` must satisfy the
   //! requirements of `_Interface`.
@@ -86,12 +87,12 @@ public:
                  // The following constraint seems to trip up a lot of compilers, so leave it out.
                  // _CCCL_AND ::cuda::std::constructible_from<_Up, _Tp>
                  _CCCL_AND __satisfies<_Up, _Interface>)
-  _CCCL_HOST_DEVICE_API __basic_any( // NOLINT(bugprone-forwarding-reference-overload)
-    _Tp&& __value) noexcept(__is_small<_Up, __movable>(__size_, __align_)
-                            && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
+  _CCCL_HOST_DEVICE_API __basic_any(_Tp&& __value) noexcept(
+    __is_small<_Up, __movable>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
   {
     __emplace<_Up>(static_cast<_Tp&&>(__value));
   }
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   //! @brief Constructs a `__basic_any` object that contains a new object of type `_Tp`
   //! constructed as `_Tp(__args...)`, or as `_Tp{__args...}` if `_Tp(__args...)` is

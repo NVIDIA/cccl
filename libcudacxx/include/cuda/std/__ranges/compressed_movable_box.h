@@ -707,14 +707,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
-  _CCCL_API constexpr __compressed_movable_box( // NOLINT(bugprone-forwarding-reference-overload)
-    _Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
+  _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
@@ -801,15 +802,16 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>
     && is_nothrow_default_constructible_v<_Elem3>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
-  _CCCL_API constexpr __compressed_movable_box( // NOLINT(bugprone-forwarding-reference-overload)
-    _Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
+  _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
       , __base3()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
