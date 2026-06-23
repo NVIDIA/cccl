@@ -22,9 +22,10 @@
 #endif // no system header
 
 #include <cuda/__device/device_ref.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -39,6 +40,8 @@
 #include <cuda/experimental/__cuco/types.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if !_CCCL_COMPILER(NVRTC)
 
 namespace cuda::experimental::cuco
 {
@@ -115,9 +118,7 @@ private:
   //! @brief Returns the default memory pool of the current device.
   [[nodiscard]] _CCCL_HOST static ::cuda::device_memory_pool_ref __default_memory_resource()
   {
-    int __device = 0;
-    _CCCL_TRY_CUDA_API(cudaGetDevice, "Failed to query the current device", &__device);
-    return ::cuda::device_default_memory_pool(::cuda::device_ref{__device});
+    return ::cuda::device_default_memory_pool(::cuda::device_ref{::cuda::__driver::__ctxGetDevice()});
   }
 
 public:
@@ -445,6 +446,8 @@ public:
   }
 };
 } // namespace cuda::experimental::cuco
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/epilogue.h>
 
