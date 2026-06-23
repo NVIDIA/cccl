@@ -907,7 +907,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // 4. size is power-of-2 and <= 16 bytes
   // #TODO(nan): STG.256 (128 should have enough BIF already, but should check perf on blackwell)
   constexpr bool vectorize_eligible =
-    vec_size > 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
+    vec_size > 1 && StoreVec != 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
     && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
     && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && ::cuda::is_power_of_two(out_size)
     && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
@@ -921,8 +921,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // store, which bounds register pressure for heavy functors (whose stores aren't the bottleneck anyway). res[] is
       // indexed only by the fully-unrolled k, i.e. compile-time, so it stays in registers and never spills to local
       // memory regardless of S.
-      constexpr int store_vec = (StoreVec > 0) ? StoreVec : vec_size;
-      static_assert(store_vec <= vec_size, "store_vec (S) cannot exceed 16 / sizeof(output)");
+      constexpr int store_vec = (StoreVec > 0) ? (::cuda::std::min) (StoreVec, vec_size) : vec_size;
 
       using store_t        = decltype(load_store_type<store_vec * out_size>());
       auto* out_vec        = reinterpret_cast<store_t*>(out);
