@@ -35,37 +35,37 @@
 #  endif // CCCL_HOST_ARCH(X86_64)
 #endif // !X86_64
 
-#if CCCL_HOST_ARCH(ARM64) != _CCCL_ARCH(ARM64)
-#  error "CCCL_HOST_ARCH(ARM64) does not match _CCCL_ARCH(ARM64)"
-#endif // CCCL_HOST_ARCH(ARM64) != _CCCL_ARCH(ARM64)
+#if CCCL_HOST_ARCH(ARM64) != _CCCL_HOST_ARCH(ARM64)
+#  error "CCCL_HOST_ARCH(ARM64) does not match _CCCL_HOST_ARCH(ARM64)"
+#endif // CCCL_HOST_ARCH(ARM64) != _CCCL_HOST_ARCH(ARM64)
 
-#if CCCL_HOST_ARCH(X86_64) != _CCCL_ARCH(X86_64)
-#  error "CCCL_HOST_ARCH(X86_64) does not match _CCCL_ARCH(X86_64)"
-#endif // CCCL_HOST_ARCH(X86_64) != _CCCL_ARCH(X86_64)
+#if CCCL_HOST_ARCH(X86_64) != _CCCL_HOST_ARCH(X86_64)
+#  error "CCCL_HOST_ARCH(X86_64) does not match _CCCL_HOST_ARCH(X86_64)"
+#endif // CCCL_HOST_ARCH(X86_64) != _CCCL_HOST_ARCH(X86_64)
 
 #undef ARM64
 #undef X86_64
 
 #if !_CCCL_COMPILER(NVRTC)
-#  if _CCCL_ARCH(X86_64)
+#  if _CCCL_HOST_ARCH(X86_64)
 #    if _CCCL_COMPILER(MSVC)
 #      include <intrin.h>
 #    elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 #      include <cpuid.h>
 #    endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
-#  endif // _CCCL_ARCH(X86_64)
+#  endif // _CCCL_HOST_ARCH(X86_64)
 
 #  if !_CCCL_COMPILER(NVHPC) // nvbug5395777
-#    if _CCCL_ARCH(ARM64) && defined(__ARM_ACLE)
+#    if _CCCL_HOST_ARCH(ARM64) && defined(__ARM_ACLE)
 #      include <arm_acle.h>
-#    endif // _CCCL_ARCH(ARM64) && defined(__ARM_ACLE)
+#    endif // _CCCL_HOST_ARCH(ARM64) && defined(__ARM_ACLE)
 #  endif // !_CCCL_COMPILER(NVHPC)
 #endif // _CCCL_HOSTED()
 
 int main(int, char**)
 {
-  static_assert(CCCL_HOST_ARCH(ARM64) == _CCCL_ARCH(ARM64));
-  static_assert(CCCL_HOST_ARCH(X86_64) == _CCCL_ARCH(X86_64));
+  static_assert(CCCL_HOST_ARCH(ARM64) == _CCCL_HOST_ARCH(ARM64));
+  static_assert(CCCL_HOST_ARCH(X86_64) == _CCCL_HOST_ARCH(X86_64));
   static_assert(sizeof(void*) == 8);
   return 0;
 }

@@ -16,30 +16,30 @@
 
 // The header provides the following macros to determine the host architecture:
 //
-// _CCCL_ARCH(ARM64)      ARM64
-// _CCCL_ARCH(X86_64)     X86 64 bit
-// CCCL_HOST_ARCH(ARM64)  ARM64
-// CCCL_HOST_ARCH(X86_64) X86 64 bit
+// _CCCL_HOST_ARCH(ARM64)  ARM64
+// _CCCL_HOST_ARCH(X86_64) X86 64 bit
+// CCCL_HOST_ARCH(ARM64)   ARM64
+// CCCL_HOST_ARCH(X86_64)  X86 64 bit
 
 // Determine the host architecture
 
 // Arm 64-bit
 #if (defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC) /*emulation*/)
-#  define _CCCL_ARCH_ARM64_() 1
+#  define _CCCL_HOST_ARCH_ARM64_() 1
 #else
-#  define _CCCL_ARCH_ARM64_() 0
+#  define _CCCL_HOST_ARCH_ARM64_() 0
 #endif
 
 // X86 64-bit
 
 // _M_X64 is defined even if we are compiling in Arm64 emulation mode
 #if (defined(_M_X64) && !defined(_M_ARM64EC)) || defined(__amd64__) || defined(__x86_64__)
-#  define _CCCL_ARCH_X86_64_() 1
+#  define _CCCL_HOST_ARCH_X86_64_() 1
 #else
-#  define _CCCL_ARCH_X86_64_() 0
+#  define _CCCL_HOST_ARCH_X86_64_() 0
 #endif
 
-#define _CCCL_ARCH(...) _CCCL_ARCH_##__VA_ARGS__##_()
+#define _CCCL_HOST_ARCH(...) _CCCL_HOST_ARCH_##__VA_ARGS__##_()
 
 //! @def CCCL_HOST_ARCH(ARCH) /* implementation defined */
 //!
@@ -81,7 +81,7 @@
 #ifdef _CCCL_DOXYGEN_INVOKED
 #  define CCCL_HOST_ARCH(ARCH) /* implementation defined */
 #else
-#  define CCCL_HOST_ARCH(__arch__) _CCCL_ARCH_##__arch__##_()
+#  define CCCL_HOST_ARCH(__arch__) _CCCL_HOST_ARCH_##__arch__##_()
 #endif
 
 // Note: the public API is single-arg to constrain the API and allow for future expansion. The
@@ -94,7 +94,8 @@
 #define _CCCL_ENDIAN_BIG()    0xFACE
 #define _CCCL_ENDIAN_PDP()    0xBEEF
 
-#if _CCCL_COMPILER(NVRTC) || (_CCCL_COMPILER(MSVC) && (_CCCL_ARCH(X86_64) || _CCCL_ARCH(ARM64))) || __LITTLE_ENDIAN__
+#if _CCCL_COMPILER(NVRTC) || (_CCCL_COMPILER(MSVC) && (_CCCL_HOST_ARCH(X86_64) || _CCCL_HOST_ARCH(ARM64))) \
+  || __LITTLE_ENDIAN__
 #  define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_LITTLE()
 #elif __BIG_ENDIAN__
 #  define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_BIG()
