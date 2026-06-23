@@ -897,8 +897,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
 
-  using output_t         = it_value_t<RandomAccessIteratorOut>;
-  constexpr int out_size = int{size_of<output_t>};
+  using output_t          = it_value_t<RandomAccessIteratorOut>;
+  constexpr int out_size  = int{size_of<output_t>};
   constexpr int vec_size  = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
   constexpr int store_vec = (StoreVec > 0) ? (::cuda::std::min) (StoreVec, vec_size) : vec_size;
   // compile time eligibility for the vectorized store (STG.128):

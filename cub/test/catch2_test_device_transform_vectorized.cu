@@ -81,8 +81,8 @@ struct ublkcp_store_vec_3_selector
     auto async              = cub::TransformAsyncCopyPolicy{};
     async.threads_per_block = 256;
     async.store_vec         = 3;
-    const auto algorithm    = (cc < ::cuda::compute_capability{9, 0}) ? cub::TransformAlgorithm::prefetch
-                                                                      : cub::TransformAlgorithm::ublkcp;
+    const auto algorithm =
+      (cc < ::cuda::compute_capability{9, 0}) ? cub::TransformAlgorithm::prefetch : cub::TransformAlgorithm::ublkcp;
     return {64 * 1024, algorithm, cub::TransformPrefetchPolicy{256}, {}, async};
   }
 };
