@@ -132,7 +132,7 @@ public:
 
 private:
   /// Determines if the container is a key/value or key-only store
-  static constexpr auto __has_payload = not ::cuda::std::is_same_v<_Key, typename _StorageRef::__value_type>;
+  static constexpr auto __has_payload = !::cuda::std::is_same_v<_Key, typename _StorageRef::__value_type>;
 
   /// Flag indicating whether duplicate keys are allowed or not
   static constexpr auto __allows_duplicates = _AllowsDuplicates;
@@ -191,7 +191,7 @@ public:
   //! @brief Gets the sentinel value used to represent an empty payload slot.
   //!
   //! @return The sentinel value used to represent an empty payload slot
-  template <bool _Dummy = true, class _Enable = ::cuda::std::enable_if_t<__has_payload and _Dummy>>
+  template <bool _Dummy = true, class _Enable = ::cuda::std::enable_if_t<__has_payload && _Dummy>>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto empty_value_sentinel() const noexcept
   {
     return __extract_payload(empty_slot_sentinel());
@@ -312,7 +312,7 @@ public:
         const auto __eq_res = __predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
           __key, __extract_key(__slot_content));
 
-        if constexpr (not __allows_duplicates)
+        if constexpr (!__allows_duplicates)
         {
           // If the __key is already in the container, return false
           if (__eq_res == ::cuda::experimental::cuco::__detail::__equal_result::__equal)
@@ -376,7 +376,7 @@ public:
 
       const auto [__state, __intra_bucket_index] = __find_insert_slot(__key, __bucket_slots);
 
-      if constexpr (not __allows_duplicates)
+      if constexpr (!__allows_duplicates)
       {
         // If the __key is already in the container, return false
         if (__group.any(__state == ::cuda::experimental::cuco::__detail::__equal_result::__equal))
@@ -622,7 +622,7 @@ public:
   //! @param __value The input value
   //!
   //! @return The payload
-  template <class _Value, class _Enable = ::cuda::std::enable_if_t<__has_payload and sizeof(_Value)>>
+  template <class _Value, class _Enable = ::cuda::std::enable_if_t<__has_payload && sizeof(_Value)>>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __extract_payload(_Value __value) const noexcept
   {
     return ::thrust::raw_reference_cast(__value).second;
@@ -662,7 +662,7 @@ public:
   template <class _Value>
   [[nodiscard]] _CCCL_DEVICE constexpr auto __heterogeneous_value(_Value __value) const noexcept
   {
-    if constexpr (__has_payload and not ::cuda::std::is_same_v<_Value, __value_type>)
+    if constexpr (__has_payload && !::cuda::std::is_same_v<_Value, __value_type>)
     {
       using mapped_type = decltype(empty_value_sentinel());
       if constexpr (::cuda::experimental::cuco::__detail::__is_pair_like<_Value>::value)
@@ -768,7 +768,7 @@ public:
     // if __key success
     if (key_cas_success)
     {
-      while (not payload_cas_success)
+      while (!payload_cas_success)
       {
         payload_cas_success = payload_ref.compare_exchange_strong(
           __expected_payload = empty_value_sentinel(), __desired.second, ::cuda::memory_order_relaxed);
