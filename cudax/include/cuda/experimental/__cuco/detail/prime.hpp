@@ -79,9 +79,9 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __miller_rabin_test(
   ::cuda::std::uint64_t __n, ::cuda::std::uint64_t __a, ::cuda::std::uint64_t __d, ::cuda::std::uint32_t __s) noexcept
 {
-  ::cuda::std::uint64_t __x             = ::cuda::experimental::cuco::__detail::__mod_pow(__a % __n, __d, __n);
-  const ::cuda::std::uint64_t __neg_one = __n - ::cuda::std::uint64_t{1};
-  if (__x == ::cuda::std::uint64_t{1} || __x == __neg_one)
+  ::cuda::std::uint64_t __x = ::cuda::experimental::cuco::__detail::__mod_pow(__a % __n, __d, __n);
+  const auto __neg_one      = __n - 1;
+  if (__x == 1 || __x == __neg_one)
   {
     return true;
   }
@@ -104,7 +104,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 //! Bases from https://cp-algorithms.com/algebra/primality_tests.html.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __is_prime(::cuda::std::uint64_t __n) noexcept
 {
-  if (__n < ::cuda::std::uint64_t{2})
+  if (__n < 2)
   {
     return false;
   }
@@ -121,7 +121,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   }
 
   // Decompose `__n - 1 == 2^__s * __d`.
-  ::cuda::std::uint64_t __d = __n - ::cuda::std::uint64_t{1};
+  ::cuda::std::uint64_t __d = __n - 1;
   ::cuda::std::uint32_t __s = 0;
   while ((__d & 1) == 0)
   {
@@ -149,20 +149,21 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 //! `__n` (or `__n + 1` if `__n` is even).
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t __next_prime(::cuda::std::uint64_t __n) noexcept
 {
-  if (__n <= ::cuda::std::uint64_t{2})
+  if (__n <= 2)
   {
-    return ::cuda::std::uint64_t{2};
+    return 2;
   }
 
-  __n |= ::cuda::std::uint64_t{1}; // make odd
+  __n |= 1; // make odd
 
   while (!::cuda::experimental::cuco::__detail::__is_prime(__n))
   {
-    if (__n > ~::cuda::std::uint64_t{0} - ::cuda::std::uint64_t{2})
+    // explicit `uint64_t{0}`: `~0` would be a 32-bit `int`, not the 64-bit max
+    if (__n > ~::cuda::std::uint64_t{0} - 2)
     {
       return __n;
     }
-    __n += ::cuda::std::uint64_t{2};
+    __n += 2;
   }
 
   return __n;
