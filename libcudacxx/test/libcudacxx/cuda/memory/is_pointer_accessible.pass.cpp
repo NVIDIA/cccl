@@ -29,13 +29,18 @@ int host_ptr1[] = {1, 2, 3, 4};
 
 template <typename Pointer>
 void test_accessible_pointer(
-  Pointer ptr, bool is_host_accessible, bool is_device_accessible, bool is_managed_accessible, cuda::device_ref device)
+  Pointer ptr,
+  bool is_host_accessible,
+  bool is_device_accessible,
+  bool is_device_or_managed_memory,
+  bool is_managed_accessible,
+  cuda::device_ref device)
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
   assert(cuda::__is_host_accessible_nothrow(ptr) == is_host_accessible);
   assert(cuda::is_device_accessible(ptr, device) == is_device_accessible);
   // assert(cuda::__is_device_accessible_nothrow(ptr, device) == is_device_accessible);
-  assert(cuda::__is_device_or_managed_memory(ptr) == is_device_accessible);
+  assert(cuda::__is_device_or_managed_memory(ptr) == is_device_or_managed_memory);
   assert(cuda::is_managed(ptr) == is_managed_accessible);
   assert(cuda::__is_managed_nothrow(ptr) == is_managed_accessible);
   if constexpr (!cuda::std::is_same_v<Pointer, const void*> && !cuda::std::is_same_v<Pointer, void*>)
@@ -44,7 +49,7 @@ void test_accessible_pointer(
     assert(cuda::__is_host_accessible_nothrow(ptr + 1) == is_host_accessible);
     assert(cuda::is_device_accessible(ptr + 1, device) == is_device_accessible);
     // assert(cuda::__is_device_accessible_nothrow(ptr + 1, device) == is_device_accessible);
-    assert(cuda::__is_device_or_managed_memory(ptr + 1) == is_device_accessible);
+    assert(cuda::__is_device_or_managed_memory(ptr + 1) == is_device_or_managed_memory);
     assert(cuda::is_managed(ptr + 1) == is_managed_accessible);
     assert(cuda::__is_managed_nothrow(ptr + 1) == is_managed_accessible);
   }
@@ -72,26 +77,26 @@ bool test_basic()
   int* managed_ptr2 = nullptr;
   assert(cudaMallocManaged(&managed_ptr2, sizeof(int) * 2) == cudaSuccess);
 
-  test_accessible_pointer((void*) nullptr, false, false, false, dev);
+  test_accessible_pointer((void*) nullptr, false, false, false, false, dev);
 
-  test_accessible_pointer(host_ptr1, true, false, false, dev); // global host array
-  test_accessible_pointer(host_ptr2, true, false, false, dev); // local host array
-  test_accessible_pointer(host_ptr3, true, false, false, dev); // non-cuda malloc host memory
-  test_accessible_pointer(host_ptr4, true, true, false, dev); // pinned host memory
-  test_accessible_pointer(host_ptr5, true, true, false, dev); // mapped pinned host memory
+  test_accessible_pointer(host_ptr1, true, false, false, false, dev); // global host array
+  test_accessible_pointer(host_ptr2, true, false, false, false, dev); // local host array
+  test_accessible_pointer(host_ptr3, true, false, false, false, dev); // non-cuda malloc host memory
+  test_accessible_pointer(host_ptr4, true, true, false, false, dev); // pinned host memory
+  test_accessible_pointer(host_ptr5, true, true, false, false, dev); // mapped pinned host memory
 
-  test_accessible_pointer(device_ptr2, false, true, false, dev); // cudaMalloc device pointer
-  test_accessible_pointer(device_ptr3, false, true, false, dev); // cudaMallocAsync device pointer
+  test_accessible_pointer(device_ptr2, false, true, true, false, dev); // cudaMalloc device pointer
+  test_accessible_pointer(device_ptr3, false, true, true, false, dev); // cudaMallocAsync device pointer
 
   void* device_ptr4 = nullptr;
   assert(cudaGetSymbolAddress(&device_ptr4, device_ptr1) == cudaSuccess);
-  test_accessible_pointer(device_ptr4, false, true, false, dev); // cudaGetSymbolAddress device pointer
+  test_accessible_pointer(device_ptr4, false, true, true, false, dev); // cudaGetSymbolAddress device pointer
 
   const int* const_device_ptr2 = device_ptr2;
-  test_accessible_pointer(const_device_ptr2, false, true, false, dev); // const device pointer
+  test_accessible_pointer(const_device_ptr2, false, true, true, false, dev); // const device pointer
 
-  test_accessible_pointer(managed_ptr1, true, true, true, dev); // global managed memory
-  test_accessible_pointer(managed_ptr2, true, true, true, dev); // allocated managed memory
+  test_accessible_pointer(managed_ptr1, true, true, true, true, dev); // global managed memory
+  test_accessible_pointer(managed_ptr2, true, true, true, true, dev); // allocated managed memory
   return true;
 }
 
@@ -128,25 +133,27 @@ void test_memory_pool_impl(
   cudaMemLocationType location_type,
   bool is_host_accessible,
   bool is_device_accessible,
+  bool is_device_or_managed_memory,
   bool is_managed_accessible)
 {
   cuda::device_ref dev{0};
   cudaMemPool_t mem_pool = create_memory_pool(alloc_type, location_type, dev);
   void* ptr              = allocate_memory_from_pool(mem_pool);
 
-  test_accessible_pointer(ptr, is_host_accessible, is_device_accessible, is_managed_accessible, dev);
+  test_accessible_pointer(
+    ptr, is_host_accessible, is_device_accessible, is_device_or_managed_memory, is_managed_accessible, dev);
 }
 
 bool test_memory_pool()
 {
   if (cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED, 0))
   {
-    test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeDevice, false, true, false);
+    test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeDevice, false, true, true, false);
 
 #if _CCCL_CTK_AT_LEAST(12, 2)
     if (cuda::__is_host_memory_pool_supported())
     {
-      test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeHost, true, false, false);
+      test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeHost, true, false, false, false);
     }
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -154,8 +161,8 @@ bool test_memory_pool()
     if (cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_CONCURRENT_MANAGED_ACCESS, 0))
     {
       // TODO(fbusato): check if this can be improved in future releases
-      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, false, true);
-      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeDevice, false, true, true);
+      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, false, false, true);
+      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeDevice, false, true, true, true);
     }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
   }

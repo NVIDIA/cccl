@@ -193,7 +193,7 @@ _CCCL_HOST_API inline bool __is_device_or_managed_memory(const void* __p) noexce
     const auto __status2 = ::cuda::__driver::__mempoolGetAccessNoThrow(__pool_flags, __mempool, &__prop);
     return (__status2 == ::cudaSuccess) && (static_cast<bool>(__pool_flags));
   }
-  // (3) check if the pointer is a device accessible pointer or managed memory
+  // (3) check if the pointer is device memory or managed memory
   return __is_managed || __memory_type == ::CU_MEMORYTYPE_DEVICE;
 }
 
