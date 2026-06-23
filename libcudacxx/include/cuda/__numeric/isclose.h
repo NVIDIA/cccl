@@ -24,6 +24,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__complex/get_real_imag.h>
 #include <cuda/__complex/traits.h>
+#include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
@@ -80,7 +81,7 @@ inline constexpr bool __isclose_has_complex_abs_tol_v<_ComplexType, _AbsTol, tru
   __isclose_has_abs_tol_v<typename _ComplexType::value_type, _AbsTol>;
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr float __isclose_default_rel_tol() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL float __isclose_default_relative_tolerance() noexcept
 {
   constexpr auto __digits = ::cuda::ceil_div(::cuda::std::numeric_limits<_Tp>::max_digits10, 2);
   auto __tol              = 1.0f;
@@ -92,48 +93,27 @@ template <class _Tp>
 }
 
 template <class _Tp>
-_CCCL_API constexpr void __isclose_validate_tolerances(const float __rel_tol, const _Tp __abs_tol) noexcept
-{
-  _CCCL_ASSERT(::cuda::std::isfinite(__rel_tol) && __rel_tol >= 0.0f,
-               "cuda::isclose: relative tolerance must be finite and non-negative");
-  _CCCL_ASSERT(::cuda::std::isfinite(__abs_tol) && __abs_tol >= _Tp{0},
-               "cuda::isclose: absolute tolerance must be finite and non-negative");
-}
-
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __isclose_compare(
-  const _Tp __diff, const _Tp __lhs_abs, const _Tp __rhs_abs, const float __rel_tol, const _Tp __abs_tol) noexcept
-{
-  return __diff <= ::cuda::std::max(__abs_tol, static_cast<_Tp>(__rel_tol) * ::cuda::std::max(__lhs_abs, __rhs_abs));
-}
-
-template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool
 __isclose_impl(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, const _Tp __abs_tol) noexcept
 {
-  ::cuda::__isclose_validate_tolerances(__rel_tol, __abs_tol);
+  _CCCL_ASSERT(::cuda::in_range(__rel_tol, 0.0f, 1.0f),
+               "cuda::isclose: relative tolerance must be in the range [0.0, 1.0]");
+  _CCCL_ASSERT(::cuda::std::isfinite(__abs_tol) && __abs_tol >= _Tp{0},
+               "cuda::isclose: absolute tolerance must be finite and non-negative");
 
   if (__lhs == __rhs)
   {
     return true;
   }
-  if (::cuda::std::isnan(__lhs) || ::cuda::std::isnan(__rhs))
+  if (!::cuda::std::isfinite(__lhs) || !::cuda::std::isfinite(__rhs))
   {
     return false;
   }
-  if (::cuda::std::isinf(__lhs) || ::cuda::std::isinf(__rhs))
-  {
-    return false;
-  }
-
-  return ::cuda::__isclose_compare(
-    ::cuda::std::abs(__lhs - __rhs), ::cuda::std::abs(__lhs), ::cuda::std::abs(__rhs), __rel_tol, __abs_tol);
-}
-
-template <class _Tp>
-[[nodiscard]] _CCCL_API _Tp __isclose_hypot(const _Tp __real_part, const _Tp __imag_part) noexcept
-{
-  return ::cuda::std::hypot(__real_part, __imag_part);
+  const auto __diff      = ::cuda::std::abs(__lhs - __rhs);
+  const auto __lhs_abs   = ::cuda::std::abs(__lhs);
+  const auto __rhs_abs   = ::cuda::std::abs(__rhs);
+  const auto __rel_value = static_cast<_Tp>(__rel_tol * ::cuda::std::max(__lhs_abs, __rhs_abs));
+  return __diff <= ::cuda::std::max(__abs_tol, __rel_value);
 }
 
 template <class _ComplexType, class _AbsTol>
@@ -143,13 +123,16 @@ template <class _ComplexType, class _AbsTol>
   using _Value      = typename _ComplexType::value_type;
   using _Comparison = __isclose_comparison_t<_Value>;
 
+  _CCCL_ASSERT(::cuda::std::isfinite(__rel_tol) && __rel_tol >= 0.0f,
+               "cuda::isclose: relative tolerance must be finite and non-negative");
+  _CCCL_ASSERT(::cuda::std::isfinite(__abs_tol) && __abs_tol >= _Value{0},
+               "cuda::isclose: absolute tolerance must be finite and non-negative");
+
   const auto __lhs_real = static_cast<_Comparison>(::cuda::__get_real(__lhs));
   const auto __lhs_imag = static_cast<_Comparison>(::cuda::__get_imag(__lhs));
   const auto __rhs_real = static_cast<_Comparison>(::cuda::__get_real(__rhs));
   const auto __rhs_imag = static_cast<_Comparison>(::cuda::__get_imag(__rhs));
   const auto __abs      = static_cast<_Comparison>(__abs_tol);
-
-  ::cuda::__isclose_validate_tolerances(__rel_tol, __abs);
 
   if (__lhs_real == __rhs_real && __lhs_imag == __rhs_imag)
   {
@@ -166,12 +149,15 @@ template <class _ComplexType, class _AbsTol>
     return false;
   }
 
-  const auto __diff = ::cuda::__isclose_hypot(
+  const auto __diff = ::cuda::std::hypot(
     static_cast<_Comparison>(__lhs_real - __rhs_real), static_cast<_Comparison>(__lhs_imag - __rhs_imag));
-  const auto __lhs_abs = ::cuda::__isclose_hypot(__lhs_real, __lhs_imag);
-  const auto __rhs_abs = ::cuda::__isclose_hypot(__rhs_real, __rhs_imag);
-  return ::cuda::__isclose_compare(__diff, __lhs_abs, __rhs_abs, __rel_tol, __abs);
+  const auto __lhs_abs = ::cuda::std::hypot(__lhs_real, __lhs_imag);
+  const auto __rhs_abs = ::cuda::std::hypot(__rhs_real, __rhs_imag);
+  return __diff
+      <= ::cuda::std::max(__abs_tol, static_cast<_Comparison>(__rel_tol * ::cuda::std::max(__lhs_abs, __rhs_abs)));
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 
 //! @brief Checks whether two arithmetic values are close to each other using a relative and absolute tolerance.
 _CCCL_TEMPLATE(class _Tp, class _AbsTol)
@@ -199,7 +185,7 @@ _CCCL_REQUIRES(__isclose_has_comparison_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool isclose(const _Tp __lhs, const _Tp __rhs) noexcept
 {
   using _Comparison = __isclose_comparison_t<_Tp>;
-  return ::cuda::isclose(__lhs, __rhs, ::cuda::__isclose_default_rel_tol<_Comparison>(), _Comparison{0});
+  return ::cuda::isclose(__lhs, __rhs, ::cuda::__isclose_default_relative_tolerance<_Comparison>(), _Comparison{0});
 }
 
 //! @brief Checks whether two complex values are close to each other using a relative and absolute tolerance.
@@ -227,7 +213,7 @@ _CCCL_REQUIRES(__isclose_has_complex_comparison_v<_ComplexType>)
 [[nodiscard]] _CCCL_API bool isclose(const _ComplexType& __lhs, const _ComplexType& __rhs) noexcept
 {
   using _Comparison = __isclose_comparison_t<typename _ComplexType::value_type>;
-  return ::cuda::isclose(__lhs, __rhs, ::cuda::__isclose_default_rel_tol<_Comparison>(), _Comparison{0});
+  return ::cuda::isclose(__lhs, __rhs, ::cuda::__isclose_default_relative_tolerance<_Comparison>(), _Comparison{0});
 }
 
 _CCCL_END_NAMESPACE_CUDA
