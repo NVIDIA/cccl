@@ -26,7 +26,6 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
