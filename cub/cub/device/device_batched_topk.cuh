@@ -155,20 +155,20 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
                 "cub::DeviceBatchedTopK currently requires a single (uniform) number of segments resolved on the "
                 "host; pass num_segments as a single-value annotation (e.g. cuda::args::constant or "
                 "cuda::args::immediate), not a per-segment sequence.");
-  static_assert(::cuda::args::__is_wrapper_v<SegmentSizeParameterT>
-                  || ::cuda::std::is_integral_v<SegmentSizeParameterT>,
-                "cub::DeviceBatchedTopK: segment_sizes must be a cuda::args annotation or a plain integral value "
-                "(taken as a uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap "
-                "per-segment sizes in cuda::args::deferred_sequence, or a single device-side value in "
-                "cuda::args::deferred.");
+  static_assert(
+    ::cuda::args::__is_wrapper_v<SegmentSizeParameterT> || ::cuda::std::is_integral_v<SegmentSizeParameterT>,
+    "cub::DeviceBatchedTopK: segment_sizes must be a cuda::args annotation or a plain integral value "
+    "(taken as a uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap "
+    "per-segment sizes in cuda::args::deferred_sequence, or a single device-side value in "
+    "cuda::args::deferred.");
   static_assert(::cuda::args::__is_wrapper_v<KParameterT> || ::cuda::std::is_integral_v<KParameterT>,
                 "cub::DeviceBatchedTopK: k must be a cuda::args annotation or a plain integral value (taken as a "
                 "uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap a per-segment k "
                 "in cuda::args::deferred_sequence, or a single device-side value in cuda::args::deferred.");
-  static_assert(::cuda::args::__is_wrapper_v<NumSegmentsParameterT>
-                  || ::cuda::std::is_integral_v<NumSegmentsParameterT>,
-                "cub::DeviceBatchedTopK: num_segments must be a cuda::args annotation or a plain integral value. A "
-                "raw pointer or iterator is not accepted.");
+  static_assert(
+    ::cuda::args::__is_wrapper_v<NumSegmentsParameterT> || ::cuda::std::is_integral_v<NumSegmentsParameterT>,
+    "cub::DeviceBatchedTopK: num_segments must be a cuda::args annotation or a plain integral value. A "
+    "raw pointer or iterator is not accepted.");
 
   const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
@@ -240,11 +240,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!   the range is only known at runtime. When combined with a compile-time bound, the runtime bound must be at least
 //!   as narrow, lying within the compile-time range and only tightening it further.
 //!
-//! **Which form each parameter accepts.** ``segment_sizes`` and ``k`` accept all four forms. Only ``segment_sizes``
-//! needs a small compile-time upper bound that the kernel specializes on, so it must be a ``constant<N>`` or carry an
-//! explicit ``cuda::args::bounds<lo, hi>()`` (a plain integral value is not enough). ``k`` needs no bound, since it is
-//! capped per segment to the segment size, so a plain integral value or any annotation works. ``num_segments`` is a
-//! single host value given as a ``constant``, an ``immediate``, or a plain integral, and needs no bound.
+//! **Which form each parameter accepts.** ``segment_sizes`` and ``k`` accept all four forms. ``num_segments`` must be
+//! a single value (``constant``, ``immediate``, or a plain integral), never a per-segment sequence. ``segment_sizes``
+//! must also carry a small compile-time upper bound (a ``constant<N>`` or ``cuda::args::bounds<lo, hi>()``), and tight
+//! bounds on every parameter are encouraged.
 //!
 //! .. code-block:: c++
 //!
@@ -348,6 +347,18 @@ struct DeviceBatchedTopK
   //! @tparam KeyOutputIteratorItT
   //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
   //!
+  //! @tparam SegmentSizeParameterT
+  //!   **[inferred]** Type of the ``segment_sizes`` argument
+  //!
+  //! @tparam KParameterT
+  //!   **[inferred]** Type of the ``k`` argument
+  //!
+  //! @tparam NumSegmentsParameterT
+  //!   **[inferred]** Type of the ``num_segments`` argument
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
   //!   `temp_storage_bytes` and no work is done.
@@ -435,6 +446,18 @@ struct DeviceBatchedTopK
   //! @tparam KeyOutputIteratorItT
   //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
   //!
+  //! @tparam SegmentSizeParameterT
+  //!   **[inferred]** Type of the ``segment_sizes`` argument
+  //!
+  //! @tparam KParameterT
+  //!   **[inferred]** Type of the ``k`` argument
+  //!
+  //! @tparam NumSegmentsParameterT
+  //!   **[inferred]** Type of the ``num_segments`` argument
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_keys_in
   //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
   //!
@@ -509,7 +532,54 @@ struct DeviceBatchedTopK
   //!
   //! @endrst
   //!
-  //! @copydetails MaxKeys
+  //! @tparam KeyInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-input iterators @iterator
+  //!
+  //! @tparam KeyOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
+  //!
+  //! @tparam SegmentSizeParameterT
+  //!   **[inferred]** Type of the ``segment_sizes`` argument
+  //!
+  //! @tparam KParameterT
+  //!   **[inferred]** Type of the ``k`` argument
+  //!
+  //! @tparam NumSegmentsParameterT
+  //!   **[inferred]** Type of the ``num_segments`` argument
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
+  //!   `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
+  //!
+  //! @param[out] d_keys_out
+  //!   Iterator such that `d_keys_out[i]` yields a random-access output iterator for the top-k keys of segment `i`
+  //!
+  //! @param[in] segment_sizes
+  //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
+  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
+  //!   *Choosing argument bounds* section).
+  //!
+  //! @param[in] k
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!
+  //! @param[in] num_segments
+  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
+  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
             typename SegmentSizeParameterT,
@@ -564,6 +634,18 @@ struct DeviceBatchedTopK
   //!
   //! @tparam KeyOutputIteratorItT
   //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
+  //!
+  //! @tparam SegmentSizeParameterT
+  //!   **[inferred]** Type of the ``segment_sizes`` argument
+  //!
+  //! @tparam KParameterT
+  //!   **[inferred]** Type of the ``k`` argument
+  //!
+  //! @tparam NumSegmentsParameterT
+  //!   **[inferred]** Type of the ``num_segments`` argument
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
@@ -643,11 +725,42 @@ struct DeviceBatchedTopK
   //!
   //! @endrst
   //!
+  //! @tparam KeyInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-input iterators @iterator
+  //!
+  //! @tparam KeyOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
+  //!
   //! @tparam ValueInputIteratorItT
   //!   **[inferred]** Random-access input iterator over per-segment value-input iterators @iterator
   //!
   //! @tparam ValueOutputIteratorItT
   //!   **[inferred]** Random-access input iterator over per-segment value-output iterators @iterator
+  //!
+  //! @tparam SegmentSizeParameterT
+  //!   **[inferred]** Type of the ``segment_sizes`` argument
+  //!
+  //! @tparam KParameterT
+  //!   **[inferred]** Type of the ``k`` argument
+  //!
+  //! @tparam NumSegmentsParameterT
+  //!   **[inferred]** Type of the ``num_segments`` argument
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
+  //!   `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
+  //!
+  //! @param[out] d_keys_out
+  //!   Iterator such that `d_keys_out[i]` yields a random-access output iterator for the top-k keys of segment `i`
   //!
   //! @param[in] d_values_in
   //!   Iterator such that `d_values_in[i]` yields a random-access iterator to the values of segment `i`
@@ -656,7 +769,23 @@ struct DeviceBatchedTopK
   //!   Iterator such that `d_values_out[i]` yields a random-access output iterator for the values corresponding to the
   //!   top-k keys of segment `i`
   //!
-  //! @copydetails MaxKeys
+  //! @param[in] segment_sizes
+  //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
+  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
+  //!   *Choosing argument bounds* section).
+  //!
+  //! @param[in] k
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!
+  //! @param[in] num_segments
+  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
+  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
             typename ValueInputIteratorItT,
@@ -717,6 +846,18 @@ struct DeviceBatchedTopK
   //!
   //! @tparam ValueOutputIteratorItT
   //!   **[inferred]** Random-access input iterator over per-segment value-output iterators @iterator
+  //!
+  //! @tparam SegmentSizeParameterT
+  //!   **[inferred]** Type of the ``segment_sizes`` argument
+  //!
+  //! @tparam KParameterT
+  //!   **[inferred]** Type of the ``k`` argument
+  //!
+  //! @tparam NumSegmentsParameterT
+  //!   **[inferred]** Type of the ``num_segments`` argument
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
@@ -795,7 +936,67 @@ struct DeviceBatchedTopK
   //!
   //! @endrst
   //!
-  //! @copydetails MaxPairs
+  //! @tparam KeyInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-input iterators @iterator
+  //!
+  //! @tparam KeyOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
+  //!
+  //! @tparam ValueInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment value-input iterators @iterator
+  //!
+  //! @tparam ValueOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment value-output iterators @iterator
+  //!
+  //! @tparam SegmentSizeParameterT
+  //!   **[inferred]** Type of the ``segment_sizes`` argument
+  //!
+  //! @tparam KParameterT
+  //!   **[inferred]** Type of the ``k`` argument
+  //!
+  //! @tparam NumSegmentsParameterT
+  //!   **[inferred]** Type of the ``num_segments`` argument
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
+  //!   `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
+  //!
+  //! @param[out] d_keys_out
+  //!   Iterator such that `d_keys_out[i]` yields a random-access output iterator for the top-k keys of segment `i`
+  //!
+  //! @param[in] d_values_in
+  //!   Iterator such that `d_values_in[i]` yields a random-access iterator to the values of segment `i`
+  //!
+  //! @param[out] d_values_out
+  //!   Iterator such that `d_values_out[i]` yields a random-access output iterator for the values corresponding to the
+  //!   top-k keys of segment `i`
+  //!
+  //! @param[in] segment_sizes
+  //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
+  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
+  //!   *Choosing argument bounds* section).
+  //!
+  //! @param[in] k
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
+  //!
+  //! @param[in] num_segments
+  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
+  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
             typename ValueInputIteratorItT,
@@ -856,6 +1057,18 @@ struct DeviceBatchedTopK
   //!
   //! @tparam ValueOutputIteratorItT
   //!   **[inferred]** Random-access input iterator over per-segment value-output iterators @iterator
+  //!
+  //! @tparam SegmentSizeParameterT
+  //!   **[inferred]** Type of the ``segment_sizes`` argument
+  //!
+  //! @tparam KParameterT
+  //!   **[inferred]** Type of the ``k`` argument
+  //!
+  //! @tparam NumSegmentsParameterT
+  //!   **[inferred]** Type of the ``num_segments`` argument
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
