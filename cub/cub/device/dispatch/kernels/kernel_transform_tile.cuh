@@ -52,8 +52,7 @@ template <int TileSize, typename T, typename N>
 // NOTE: make_aligned_partition_view is invoked directly -- do NOT wrap these calls in a lambda: nvcc 13.4
 // miscompiles a templated __tile__ helper called via a lambda under --expt-relaxed-constexpr (invalid IR).
 template <int TileSize, typename Fn, typename Out, typename... Ins>
-__tile_global__ void
-transform_kernel(const ::cuda::std::int64_t num_items, Out* out, const Ins*... ins)
+__tile_global__ void transform_kernel(const ::cuda::std::int64_t num_items, Out* out, const Ins*... ins)
 {
   namespace ct = ::cuda::tiles;
   NV_IF_TARGET(
