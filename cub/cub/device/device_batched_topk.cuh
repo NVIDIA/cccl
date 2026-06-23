@@ -184,6 +184,9 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! DeviceBatchedTopK provides device-wide, parallel operations for finding the largest (or smallest) K items from
 //! many segments of unordered data items residing within device-accessible memory.
 //!
+//! .. versionadded:: 3.5.0
+//!    First appears in CUDA Toolkit 13.5.
+//!
 //! Overview
 //! ++++++++++++++++++++++++++
 //!
@@ -404,6 +407,36 @@ struct DeviceBatchedTopK
   //!     :end-before: example-end batched-topk-max-keys-env
   //!
   //! @endrst
+  //!
+  //! @tparam KeyInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-input iterators @iterator
+  //!
+  //! @tparam KeyOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
+  //!
+  //! @param[in] d_keys_in
+  //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
+  //!
+  //! @param[out] d_keys_out
+  //!   Iterator such that `d_keys_out[i]` yields a random-access output iterator for the top-k keys of segment `i`
+  //!
+  //! @param[in] segment_sizes
+  //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
+  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
+  //!   *Choosing argument bounds* section).
+  //!
+  //! @param[in] k
+  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!
+  //! @param[in] num_segments
+  //!   Annotated argument providing the (uniform) number of segments
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
+  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
             typename SegmentSizeParameterT,
@@ -504,6 +537,36 @@ struct DeviceBatchedTopK
   //!     :end-before: example-end batched-topk-min-keys-env
   //!
   //! @endrst
+  //!
+  //! @tparam KeyInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-input iterators @iterator
+  //!
+  //! @tparam KeyOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
+  //!
+  //! @param[in] d_keys_in
+  //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
+  //!
+  //! @param[out] d_keys_out
+  //!   Iterator such that `d_keys_out[i]` yields a random-access output iterator for the top-k keys of segment `i`
+  //!
+  //! @param[in] segment_sizes
+  //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
+  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
+  //!   *Choosing argument bounds* section).
+  //!
+  //! @param[in] k
+  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!
+  //! @param[in] num_segments
+  //!   Annotated argument providing the (uniform) number of segments
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
+  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
             typename SegmentSizeParameterT,
@@ -621,6 +684,49 @@ struct DeviceBatchedTopK
   //!     :end-before: example-end batched-topk-max-pairs-env
   //!
   //! @endrst
+  //!
+  //! @tparam KeyInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-input iterators @iterator
+  //!
+  //! @tparam KeyOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
+  //!
+  //! @tparam ValueInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment value-input iterators @iterator
+  //!
+  //! @tparam ValueOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment value-output iterators @iterator
+  //!
+  //! @param[in] d_keys_in
+  //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
+  //!
+  //! @param[out] d_keys_out
+  //!   Iterator such that `d_keys_out[i]` yields a random-access output iterator for the top-k keys of segment `i`
+  //!
+  //! @param[in] d_values_in
+  //!   Iterator such that `d_values_in[i]` yields a random-access iterator to the values of segment `i`
+  //!
+  //! @param[out] d_values_out
+  //!   Iterator such that `d_values_out[i]` yields a random-access output iterator for the values corresponding to the
+  //!   top-k keys of segment `i`
+  //!
+  //! @param[in] segment_sizes
+  //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
+  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
+  //!   *Choosing argument bounds* section).
+  //!
+  //! @param[in] k
+  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!
+  //! @param[in] num_segments
+  //!   Annotated argument providing the (uniform) number of segments
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
+  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
             typename ValueInputIteratorItT,
@@ -717,6 +823,49 @@ struct DeviceBatchedTopK
   //!     :end-before: example-end batched-topk-min-pairs-env
   //!
   //! @endrst
+  //!
+  //! @tparam KeyInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-input iterators @iterator
+  //!
+  //! @tparam KeyOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment key-output iterators @iterator
+  //!
+  //! @tparam ValueInputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment value-input iterators @iterator
+  //!
+  //! @tparam ValueOutputIteratorItT
+  //!   **[inferred]** Random-access input iterator over per-segment value-output iterators @iterator
+  //!
+  //! @param[in] d_keys_in
+  //!   Iterator such that `d_keys_in[i]` yields a random-access iterator to the keys of segment `i`
+  //!
+  //! @param[out] d_keys_out
+  //!   Iterator such that `d_keys_out[i]` yields a random-access output iterator for the top-k keys of segment `i`
+  //!
+  //! @param[in] d_values_in
+  //!   Iterator such that `d_values_in[i]` yields a random-access iterator to the values of segment `i`
+  //!
+  //! @param[out] d_values_out
+  //!   Iterator such that `d_values_out[i]` yields a random-access output iterator for the values corresponding to the
+  //!   top-k keys of segment `i`
+  //!
+  //! @param[in] segment_sizes
+  //!   Annotated argument providing the per-segment sizes (e.g. `cuda::args::constant<N>` for a uniform size,
+  //!   or `cuda::args::deferred_sequence{...}` for variable sizes). Must carry a small compile-time maximum.
+  //!   Prefer a sharp (tight) upper bound, since a looser bound may increase temporary-storage usage (see the
+  //!   *Choosing argument bounds* section).
+  //!
+  //! @param[in] k
+  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!
+  //! @param[in] num_segments
+  //!   Annotated argument providing the (uniform) number of segments
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
+  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
+  //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,
             typename ValueInputIteratorItT,
