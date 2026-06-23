@@ -73,3 +73,39 @@ C2H_TEST("DeviceTransform::Transform vectorized store widening from uint8",
   std::transform(in_h.begin(), in_h.end(), reference_h.begin(), cast_to<out_t>{});
   REQUIRE(reference_h == result);
 }
+
+struct ublkcp_store_vec_3_selector
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::TransformPolicy
+  {
+    auto async              = cub::TransformAsyncCopyPolicy{};
+    async.threads_per_block = 256;
+    async.store_vec         = 3;
+    const auto algorithm    = (cc < ::cuda::compute_capability{9, 0}) ? cub::TransformAlgorithm::prefetch
+                                                                      : cub::TransformAlgorithm::ublkcp;
+    return {64 * 1024, algorithm, cub::TransformPrefetchPolicy{256}, {}, async};
+  }
+};
+
+C2H_TEST("DeviceTransform::Transform non-power-of-two store_vec falls back to scalar", "[device][transform]")
+{
+  using in_t                         = std::uint32_t;
+  using out_t                        = std::uint8_t;
+  const cuda::std::int64_t num_items = GENERATE(GENERIC_COUNTS);
+  CAPTURE(num_items);
+
+  c2h::device_vector<in_t> in(num_items, thrust::no_init);
+  c2h::gen(C2H_SEED(1), in);
+
+  c2h::device_vector<out_t> result(num_items, thrust::no_init);
+  auto env = cuda::execution::tune(ublkcp_store_vec_3_selector{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(
+            cuda::std::make_tuple(in.begin()), result.begin(), num_items, cast_to<out_t>{}, env));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  c2h::host_vector<in_t> in_h = in;
+  c2h::host_vector<out_t> reference_h(num_items, thrust::no_init);
+  std::transform(in_h.begin(), in_h.end(), reference_h.begin(), cast_to<out_t>{});
+  REQUIRE(reference_h == result);
+}
