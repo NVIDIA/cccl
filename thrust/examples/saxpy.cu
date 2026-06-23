@@ -50,8 +50,7 @@ void saxpy_slow(float A, thrust::device_vector<float>& X, thrust::device_vector<
   thrust::transform(temp.begin(), temp.end(), Y.begin(), Y.begin(), cuda::std::plus<float>());
 }
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   // initialize host arrays
   thrust::host_vector<float> x{1.0, 1.0, 1.0, 1.0};

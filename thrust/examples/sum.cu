@@ -14,8 +14,7 @@ int my_rand()
   return dist(rng);
 }
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   // generate random data on the host
   thrust::host_vector<int> h_vec(100);

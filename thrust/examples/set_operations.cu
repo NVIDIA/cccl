@@ -134,8 +134,7 @@ void SetIntersectionSize(const Vector& A, const Vector& B)
   std::cout << "SetIntersectionSize(A,B) " << (C_end - C_begin) << '\n';
 }
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   int a[] = {0, 2, 4, 5, 6, 8, 9};
   int b[] = {0, 1, 2, 3, 5, 7, 8};

@@ -66,8 +66,7 @@ struct ScaledIntegerToValue
   }
 };
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   const size_t size = 4;
   thrust::device_vector<int> A(size);

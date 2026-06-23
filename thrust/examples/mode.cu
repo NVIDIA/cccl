@@ -18,8 +18,7 @@
 //
 // [1] http://en.wikipedia.org/wiki/Mode_(statistics)
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   const size_t N = 30;
   const size_t M = 10;

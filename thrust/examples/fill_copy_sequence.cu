@@ -6,8 +6,7 @@
 
 #include <iostream>
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   // initialize all ten integers of a device_vector to 1
   thrust::device_vector<int> D(10, 1);

@@ -121,8 +121,7 @@ struct evens_before_odds
   }
 };
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   size_t N = 16;
 

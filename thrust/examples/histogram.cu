@@ -136,8 +136,7 @@ void sparse_histogram(const Vector1& input, Vector2& histogram_values, Vector3& 
   print_vector("histogram counts", histogram_counts);
 }
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   thrust::default_random_engine rng;
   thrust::uniform_int_distribution<int> dist(0, 9);

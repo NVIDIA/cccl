@@ -36,8 +36,7 @@ struct saxpy_functor
   }
 };
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   // input data
   float a                             = 2.0f;

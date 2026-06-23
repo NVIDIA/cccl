@@ -331,8 +331,7 @@ void nontrivial_constructor_test()
   }
 }
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
+int main(int argc, char** argv)
 {
   CommandLineArgs args(argc, argv);
 

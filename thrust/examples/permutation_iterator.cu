@@ -7,8 +7,7 @@
 // this example fuses a gather operation with a reduction for
 // greater efficiency than separate gather() and reduce() calls
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   // gather locations
   thrust::device_vector<int> map = {3, 1, 0, 5};

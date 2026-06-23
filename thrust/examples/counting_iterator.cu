@@ -6,8 +6,7 @@
 #include <iostream>
 #include <iterator>
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   // this example computes indices for all the nonzero values in a sequence
 

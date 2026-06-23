@@ -52,8 +52,7 @@ int word_count(const thrust::device_vector<char>& input)
   return wc;
 }
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   // Paragraph from 'The Raven' by Edgar Allan Poe
   // http://en.wikipedia.org/wiki/The_Raven

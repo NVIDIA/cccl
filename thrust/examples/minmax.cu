@@ -49,8 +49,7 @@ struct minmax_binary_op
   }
 };
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   // input size
   size_t N = 10;

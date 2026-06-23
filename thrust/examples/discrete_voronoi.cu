@@ -208,8 +208,7 @@ void display_time(timer& t)
   std::cout << "  ( " << 1e3 * t.elapsed() << "ms )" << '\n';
 }
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   int m = 2048; // number of rows
   int n = 2048; // number of columns

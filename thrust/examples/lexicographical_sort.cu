@@ -49,8 +49,7 @@ thrust::host_vector<int> random_vector(size_t N)
   return vec;
 }
 
-// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
-int main() // NOLINT(bugprone-exception-escape)
+int main()
 {
   size_t N = 20;
 
