@@ -662,7 +662,7 @@ gpus:
   l4:         { name: 'L4',          sm: 89,  runner: 'l4-latest-1'         } # 24 GB,  48 runners
   rtx4090:    { name: 'RTX4090',     sm: 89,  runner: 'rtx4090-latest-1'    } # 24 GB,  10 runners
   h100:       { name: 'H100',        sm: 90,  runner: 'h100-latest-1'       } # 80 GB,  16 runners
-  h100_2gpu:  { name: 'H100 x2',     sm: 90,  runner: 'h100-latest-2'       } # 2 x 80 GB
+  h100_2gpu:  { name: 'H100 2-GPU',  sm: 90,  runner: 'h100-latest-2'       } # 2 x 80 GB
   # Very small number of runners on loan from cuda-python while we wait for our order to arrive.
   # Limit jobs on these:
   rtxpro6000: { name: 'RTXPRO6000',  sm: 120, runner: 'rtxpro6000-latest-1' }
