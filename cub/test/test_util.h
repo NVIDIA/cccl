@@ -101,9 +101,9 @@ struct CommandLineArgs
         continue;
       }
 
-      string::size_type pos;
       string key, val;
-      if ((pos = arg.find('=')) == string::npos)
+      string::size_type pos = arg.find('=');
+      if (pos == string::npos)
       {
         key = string(arg, 2, arg.length() - 2);
         val = "";

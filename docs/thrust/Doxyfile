@@ -124,6 +124,7 @@ PREDEFINED             = __device__= \
                         _CCCL_PUBLIC_HOST_API=inline \
                         _CCCL_VISIBILITY_DEFAULT= \
                         _CCCL_VISIBILITY_HIDDEN= \
+                        _CCCL_LIFETIMEBOUND= \
                         _CCCL_TRY=try \
                         _CCCL_CATCH=catch \
                         "_CCCL_CATCH_ALL=catch (...)" \

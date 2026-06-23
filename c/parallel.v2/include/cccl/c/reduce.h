@@ -26,8 +26,8 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_reduce_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
   void* jit_compiler; // hostjit::JITCompiler*
   void* reduce_fn; // int(*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*) — trailing void* is
                    // the CUstream

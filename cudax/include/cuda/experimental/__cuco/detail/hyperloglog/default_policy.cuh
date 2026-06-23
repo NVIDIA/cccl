@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___HYPERLOGLOG_DEFAULT_POLICY_CUH
-#define _CUDAX___CUCO___HYPERLOGLOG_DEFAULT_POLICY_CUH
+#ifndef _CUDAX___CUCO_DETAIL_HYPERLOGLOG_DEFAULT_POLICY_CUH
+#define _CUDAX___CUCO_DETAIL_HYPERLOGLOG_DEFAULT_POLICY_CUH
 
 #include <cuda/__cccl_config>
 
@@ -28,7 +28,7 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__cuco/__hyperloglog/finalizer.cuh>
+#include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -124,4 +124,4 @@ struct default_hll_policy
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___HYPERLOGLOG_DEFAULT_POLICY_CUH
+#endif // _CUDAX___CUCO_DETAIL_HYPERLOGLOG_DEFAULT_POLICY_CUH

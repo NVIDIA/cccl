@@ -340,7 +340,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
   }
   else
   {
-    using LoadWord              = typename UnitWord<T>::DeviceWord;
+    using LoadWord = typename UnitWord<T>::DeviceWord;
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     constexpr int LOAD_MULTIPLE = sizeof(T) / sizeof(LoadWord);
     LoadWord words[LOAD_MULTIPLE];
     UnrolledThreadLoad<LOAD_MULTIPLE, MODIFIER>(reinterpret_cast<const LoadWord*>(::cuda::std::to_address(itr)), words);
