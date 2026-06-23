@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Tile variant of the PyTorch-style transform benches. Each named op registers a tile_operator
 // substitute (gated); MUFU-heavy ops also opt into tile_mufu_heavy_v so the tile policy picker caps

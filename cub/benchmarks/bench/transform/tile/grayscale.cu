@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Tile variant of the grayscale transform bench. Unlike the base bench (a single rgb_t<T> struct
 // input), this uses three separate R/G/B streams so the inputs are plain element types the tile path

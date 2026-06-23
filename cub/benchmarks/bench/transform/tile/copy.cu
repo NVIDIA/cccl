@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Pure copy (identity transform) -- measures plain load/store bandwidth through the tile
 // load_masked/store_masked path. The identity op registers a tile_operator substitute (gated); under

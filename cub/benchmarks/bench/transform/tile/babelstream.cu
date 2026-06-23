@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Tile variant of the BabelStream transform bench. The lambdas of the base benchmark are replaced by
 // named, stateless ops that register a tile_operator substitute (gated). Under --enable-tile +
