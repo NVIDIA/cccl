@@ -72,41 +72,68 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   EnvT env)
 {
   // ---------------------------------------------------------------------------
-  // Execution requirements (mirrors cub::DeviceTopK): non-deterministic + unsorted output only.
+  // Execution requirements.
+  //
+  // Two orthogonal concerns govern the result: *which* items are selected (possibly refined by
+  // a tie-break preference) and the order in which they are written (output ordering). The committed default contract
+  // is the most reproducible behavior (determinism::gpu_to_gpu + tie_break::prefer_smaller_index +
+  // output_ordering::stable_sorted). Three rules are validated here:
+  //   1. determinism and tie_break must be acknowledged together (both specified, or both omitted default)
+  //   2. an explicit tie_break of prefer_smaller_index / prefer_larger_index fully pins the result set across GPUs and
+  //      therefore requires determinism::gpu_to_gpu (it cannot be paired with run_to_run or not_guaranteed)
+  //   3. this initial API surface only implements the fully opted-out configuration (non-deterministic, unsorted).
   // ---------------------------------------------------------------------------
   static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                "Determinism should be used inside requires to have an effect.");
+                "Determinism should be used inside cuda::execution::require to have an effect.");
+  static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::tie_break::__get_tie_break_t>,
+                "Tie-break should be used inside cuda::execution::require to have an effect.");
   using requirements_t = ::cuda::std::execution::
     __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+
+  constexpr bool determinism_specified =
+    ::cuda::std::execution::__queryable_with<requirements_t, ::cuda::execution::determinism::__get_determinism_t>;
+  constexpr bool tie_break_specified =
+    ::cuda::std::execution::__queryable_with<requirements_t, ::cuda::execution::tie_break::__get_tie_break_t>;
+
   using requested_determinism_t =
     ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                 ::cuda::execution::determinism::__get_determinism_t,
-                                                ::cuda::execution::determinism::run_to_run_t>;
-  using requested_order_t =
-    ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                ::cuda::execution::output_ordering::__get_output_ordering_t,
-                                                ::cuda::execution::output_ordering::sorted_t>;
-  static_assert(::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>
-                  && ::cuda::std::is_same_v<requested_order_t, ::cuda::execution::output_ordering::unsorted_t>,
-                "cub::DeviceBatchedTopK only supports non-deterministic, unsorted output. Acknowledge this by "
-                "passing cuda::execution::require(cuda::execution::determinism::not_guaranteed, "
-                "cuda::execution::output_ordering::unsorted) in the environment.");
-
-  // A tie-break requirement only constrains *which* of the elements that compare equal at the K-th position are
-  // selected (per segment); it is meaningless without determinism, so it must be paired with a deterministic
-  // requirement (run_to_run / gpu_to_gpu). Deterministic execution and tie-breaking are not implemented yet; this only
-  // validates the requirement combination so the eventual behavior is wired up.
+                                                ::cuda::execution::determinism::gpu_to_gpu_t>;
   using requested_tie_break_t =
     ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                 ::cuda::execution::tie_break::__get_tie_break_t,
-                                                ::cuda::execution::tie_break::unspecified_t>;
-  static_assert(
+                                                ::cuda::execution::tie_break::prefer_smaller_index_t>;
+  using requested_order_t =
+    ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                ::cuda::execution::output_ordering::__get_output_ordering_t,
+                                                ::cuda::execution::output_ordering::stable_sorted_t>;
+
+  constexpr bool determinism_and_tie_break_paired = (determinism_specified == tie_break_specified);
+
+  // Encodes rule 2 as the implication "a concrete tie-break requires gpu_to_gpu". The expression is the "or" form
+  // and satisfied in the two cases that are allowed: the tie-break is unspecified or the determinism is already
+  // gpu_to_gpu (which accepts any tie-break).
+  constexpr bool tie_break_compatible_with_determinism =
     ::cuda::std::is_same_v<requested_tie_break_t, ::cuda::execution::tie_break::unspecified_t>
-      || !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
-    "cub::DeviceBatchedTopK: a tie_break requirement (cuda::execution::tie_break::prefer_smaller_index or "
-    "prefer_larger_index) requires a deterministic execution requirement "
-    "(cuda::execution::determinism::run_to_run or gpu_to_gpu); it cannot be combined with "
-    "cuda::execution::determinism::not_guaranteed.");
+    || ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
+  constexpr bool is_non_deterministic_unsorted =
+    ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>
+    && ::cuda::std::is_same_v<requested_order_t, ::cuda::execution::output_ordering::unsorted_t>;
+
+  static_assert(determinism_and_tie_break_paired,
+                "cub::DeviceBatchedTopK: determinism and tie_break requirements must be acknowledged together. Either "
+                "omit both to accept the defaults (cuda::execution::determinism::gpu_to_gpu and "
+                "cuda::execution::tie_break::prefer_smaller_index), or pass both explicitly inside "
+                "cuda::execution::require(...).");
+  static_assert(!determinism_and_tie_break_paired || tie_break_compatible_with_determinism,
+                "cub::DeviceBatchedTopK: a tie_break of cuda::execution::tie_break::prefer_smaller_index or "
+                "prefer_larger_index pins the result set across GPUs and therefore requires "
+                "cuda::execution::determinism::gpu_to_gpu (it cannot be combined with run_to_run or not_guaranteed).");
+  static_assert(
+    !determinism_and_tie_break_paired || !tie_break_compatible_with_determinism || is_non_deterministic_unsorted,
+    "cub::DeviceBatchedTopK currently only implements non-deterministic, unsorted output. Request it "
+    "explicitly with cuda::execution::require(cuda::execution::determinism::not_guaranteed, "
+    "cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted).");
 
   // ---------------------------------------------------------------------------
   // Resolve the (optionally tuned) policy selector from the environment.
@@ -229,9 +256,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! - **Uniform number of segments.** ``num_segments`` must be a single value, never a per-segment sequence.
 //! - **Explicit opt-out required for the output guarantees.** The deterministic, stable-sorted default contract
 //!   described in *Determinism, tie-breaking, and output ordering* below (and in :ref:`cub-topk-requirements`) is not
-//!   yet implemented. Like :cpp:struct:`cub::DeviceTopK`, the caller must currently request non-deterministic,
-//!   unsorted output explicitly by passing ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-//!   cuda::execution::output_ordering::unsorted)`` in the environment.
+//!   yet implemented. The caller must currently request non-deterministic, unsorted output explicitly by passing
+//!   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+//!   cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted)`` in the environment
+//!   (``determinism`` and ``tie_break`` must always be specified together).
 //!
 //! Determinism, tie-breaking, and output ordering
 //! +++++++++++++++++++++++++++++++++++++++++++++++
@@ -240,10 +268,12 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! requirements: *which* items are selected per segment (``cuda::execution::determinism``, optionally refined by
 //! ``cuda::execution::tie_break``) and the order in which they are written (``cuda::execution::output_ordering``).
 //! When the caller does not opt out, the committed default is the most reproducible behavior: deterministic results
-//! (``cuda::execution::determinism::run_to_run``), ties resolved toward the smaller (lower) source index
+//! (``cuda::execution::determinism::gpu_to_gpu``), ties resolved toward the smaller (lower) source index
 //! (``cuda::execution::tie_break::prefer_smaller_index``), and stable-sorted output
 //! (``cuda::execution::output_ordering::stable_sorted``). Callers opt *out* of these guarantees to obtain faster
-//! implementations.
+//! implementations. ``determinism`` and ``tie_break`` must always be specified together, or both omitted to take the
+//! default. A specified ``tie_break`` of ``prefer_smaller_index`` or ``prefer_larger_index`` requires
+//! ``determinism::gpu_to_gpu``.
 //!
 //! See :ref:`cub-topk-requirements` for the full requirement model, worked examples, and guidance on choosing
 //! requirements.
@@ -252,10 +282,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!
 //!    **Current support.** This release only implements the fully opted-out configuration, which must be requested
 //!    explicitly: ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-//!    cuda::execution::output_ordering::unsorted)``. Any other combination (including an empty, no-requirement
-//!    environment) is rejected at compile time. In this configuration the per-segment output is unordered and may be
-//!    non-deterministic: if multiple items tie at the K-th position, the subset of tied elements returned is not
-//!    uniquely defined and may vary between runs.
+//!    cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted)``. Any other combination
+//!    (including an empty, no-requirement environment) is rejected at compile time. In this configuration the
+//!    per-segment output is unordered and may be non-deterministic: if multiple items tie at the K-th position, the
+//!    subset of tied elements returned is not uniquely defined and may vary between runs.
 //!
 //! Usage Considerations
 //! ++++++++++++++++++++++++++
@@ -321,8 +351,8 @@ struct DeviceBatchedTopK
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed` and
-  //!   `output_ordering::unsorted`.
+  //!   **[optional]** Execution environment. Must require `determinism::not_guaranteed`,
+  //!   `tie_break::unspecified`, and `output_ordering::unsorted`.
   //!   @endrst
   template <typename KeyInputIteratorItT,
             typename KeyOutputIteratorItT,

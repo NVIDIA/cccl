@@ -41,7 +41,9 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][de
 
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                             cuda::execution::tie_break::unspecified,
+                             cuda::execution::output_ordering::unsorted),
     cuda::stream_ref{stream}};
 
   // The env-based overload allocates and frees the temporary storage internally.
@@ -82,7 +84,9 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][de
 
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                             cuda::execution::tie_break::unspecified,
+                             cuda::execution::output_ordering::unsorted),
     cuda::stream_ref{stream}};
 
   auto error = cub::DeviceBatchedTopK::MinKeys(
@@ -126,7 +130,9 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
 
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                             cuda::execution::tie_break::unspecified,
+                             cuda::execution::output_ordering::unsorted),
     cuda::stream_ref{stream}};
 
   auto error = cub::DeviceBatchedTopK::MaxPairs(
@@ -191,7 +197,9 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][d
 
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                             cuda::execution::tie_break::unspecified,
+                             cuda::execution::output_ordering::unsorted),
     cuda::stream_ref{stream}};
 
   auto error = cub::DeviceBatchedTopK::MinPairs(

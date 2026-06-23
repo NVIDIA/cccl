@@ -72,7 +72,9 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
 {
   auto env = cuda::std::execution::env{
     cuda::stream_ref{stream},
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted)};
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                             cuda::execution::tie_break::unspecified,
+                             cuda::execution::output_ordering::unsorted)};
   if constexpr (SelectDirection == cub::detail::topk::select::max)
   {
     return cub::DeviceBatchedTopK::MaxPairs(

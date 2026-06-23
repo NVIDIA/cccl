@@ -45,8 +45,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_t
   auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
 
   // Top-k output is unordered and may be non-deterministic; this must be acknowledged via the environment.
-  auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted)};
+  auto env = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
 
   // Query temporary storage requirements
   size_t temp_storage_bytes = 0;
@@ -98,8 +100,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_t
   auto segment_sizes = cuda::args::constant<segment_size>{};
   auto k_arg         = cuda::args::constant<k>{};
   auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
-  auto env           = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted)};
+  auto env           = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
 
   size_t temp_storage_bytes = 0;
   auto error                = cub::DeviceBatchedTopK::MinKeys(
@@ -152,8 +156,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
   auto segment_sizes = cuda::args::constant<segment_size>{};
   auto k_arg         = cuda::args::constant<k>{};
   auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
-  auto env           = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted)};
+  auto env           = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
 
   size_t temp_storage_bytes = 0;
   auto error                = cub::DeviceBatchedTopK::MaxPairs(
@@ -226,8 +232,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
   auto segment_sizes = cuda::args::constant<segment_size>{};
   auto k_arg         = cuda::args::constant<k>{};
   auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
-  auto env           = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted)};
+  auto env           = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
 
   size_t temp_storage_bytes = 0;
   auto error                = cub::DeviceBatchedTopK::MinPairs(
