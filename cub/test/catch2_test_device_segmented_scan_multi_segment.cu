@@ -85,20 +85,28 @@ using itp_list =
                  cuda::std::integral_constant<int, 3>,
                  cuda::std::integral_constant<int, 8>>;
 
-template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock>
+template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock, int MaxSegmentsPerWarp>
 struct policy_selector_t
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
     -> cub::SegmentedScanPolicy
   {
-    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
-      ThreadsPerBlock,
-      ItemsPerThread,
-      cub::BLOCK_LOAD_WARP_TRANSPOSE,
-      cub::LOAD_DEFAULT,
-      cub::BLOCK_STORE_WARP_TRANSPOSE,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      MaxSegmentsPerBlock}};
+    return cub::SegmentedScanPolicy{
+      cub::SegmentedScanBlockPolicy{
+        ThreadsPerBlock,
+        ItemsPerThread,
+        cub::BLOCK_LOAD_WARP_TRANSPOSE,
+        cub::LOAD_DEFAULT,
+        cub::BLOCK_STORE_WARP_TRANSPOSE,
+        cub::BLOCK_SCAN_WARP_SCANS,
+        MaxSegmentsPerBlock},
+      cub::SegmentedScanWarpPolicy{
+        ThreadsPerBlock,
+        ItemsPerThread,
+        cub::WARP_LOAD_TRANSPOSE,
+        cub::LOAD_DEFAULT,
+        cub::WARP_STORE_TRANSPOSE,
+        MaxSegmentsPerWarp}};
   }
 };
 
@@ -236,7 +244,10 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   [[maybe_unused]] static constexpr int block_size             = 128;
   [[maybe_unused]] static constexpr int max_segments_per_block = 256;
 
-  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
+  [[maybe_unused]] static constexpr int warps_in_block        = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_warp = max_segments_per_block / warps_in_block;
+
+  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   unsigned num_items = block_size * items_per_thread * 101 + 1;
   c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
@@ -299,6 +310,23 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
     REQUIRE(h_expected == h_output);
   }
 
+  SECTION("worker-warp, one segment per worker")
+  {
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      one_segment_per_worker);
+
+    c2h::host_vector<pair_t> h_output(output);
+
+    REQUIRE(h_expected == h_output);
+  }
+
   const int two_segments_per_worker = 2;
 
   SECTION("worker-block, two segments per worker")
@@ -306,6 +334,23 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
     run_dispatch_scan(
       inclusive_scan_dispatch,
       cub::detail::segmented_scan::worker::block,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      two_segments_per_worker);
+
+    c2h::host_vector<pair_t> h_output(output);
+
+    REQUIRE(h_expected == h_output);
+  }
+
+  SECTION("worker-warp, two segments per worker")
+  {
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
       offsets,
       input,
       output,
@@ -350,7 +395,10 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   [[maybe_unused]] static constexpr int block_size             = 128;
   [[maybe_unused]] static constexpr int max_segments_per_block = 16;
 
-  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
+  [[maybe_unused]] static constexpr int warps_in_block        = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_warp = max_segments_per_block / warps_in_block;
+
+  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   using d_init_t               = cub::detail::InputValue<value_t>;
   auto exclusive_scan_dispatch = [](auto&&... args) {
@@ -403,6 +451,22 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
   }
+
+  SECTION("worker warp")
+  {
+    run_dispatch_scan(
+      exclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      input,
+      output,
+      op,
+      d_init_v,
+      segments_per_worker);
+
+    c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_expected == h_output);
+  }
 }
 
 C2H_TEST("Segmented inclusive scan works correctly for integer types",
@@ -418,7 +482,10 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   [[maybe_unused]] static constexpr int block_size             = 128;
   [[maybe_unused]] static constexpr int max_segments_per_block = 256;
 
-  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
+  [[maybe_unused]] static constexpr int warps_in_block        = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_warp = max_segments_per_block / warps_in_block;
+
+  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   const unsigned num_items = block_size * items_per_thread * 132;
   c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
@@ -479,6 +546,22 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
   }
+
+  SECTION("worker-warp")
+  {
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
+
+    c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_expected == h_output);
+  }
 }
 
 C2H_TEST("Segmented inclusive scan with init works for integer types",
@@ -513,7 +596,10 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   [[maybe_unused]] static constexpr int block_size             = 128;
   [[maybe_unused]] static constexpr int max_segments_per_block = 256;
 
-  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
+  [[maybe_unused]] static constexpr int warps_in_block        = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_warp = max_segments_per_block / warps_in_block;
+
+  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   using d_init_t                    = cub::detail::InputValue<value_t>;
   auto inclusive_init_scan_dispatch = [](auto&&... args) {
@@ -558,6 +644,22 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
     run_dispatch_scan(
       inclusive_init_scan_dispatch,
       cub::detail::segmented_scan::worker::block,
+      offsets,
+      input,
+      output,
+      op,
+      d_init_v,
+      segments_per_worker);
+
+    c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_expected == h_output);
+  }
+
+  SECTION("worker warp")
+  {
+    run_dispatch_scan(
+      inclusive_init_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
       offsets,
       input,
       output,
@@ -616,9 +718,11 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   [[maybe_unused]] static constexpr int items_per_thread       = c2h::get<0, TestType>::value;
   [[maybe_unused]] static constexpr int block_size             = 128;
+  [[maybe_unused]] static constexpr int warps_in_block         = block_size / 32;
   [[maybe_unused]] static constexpr int max_segments_per_block = 256;
+  [[maybe_unused]] static constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
 
-  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
+  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   static constexpr auto canary = value_t{0xDEADBEEF};
 
@@ -698,6 +802,24 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
     const c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_output == h_expected);
   }
+
+  SECTION("worker warp")
+  {
+    thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      out_offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
+
+    const c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_output == h_expected);
+  }
 }
 
 C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_segment][segmented][scan]")
@@ -710,7 +832,10 @@ C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
   [[maybe_unused]] static constexpr int block_size             = 128;
   [[maybe_unused]] static constexpr int max_segments_per_block = 256;
 
-  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
+  [[maybe_unused]] static constexpr int warps_in_block        = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_warp = max_segments_per_block / warps_in_block;
+
+  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   static constexpr auto canary = value_t{0xDEADBEEF};
 
@@ -804,6 +929,24 @@ C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
     const c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_output == h_expected);
   }
+
+  SECTION("worker warp")
+  {
+    thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      out_offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
+
+    const c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_output == h_expected);
+  }
 }
 
 template <typename DispatchT,
@@ -856,7 +999,10 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   [[maybe_unused]] static constexpr int block_size             = 128;
   [[maybe_unused]] static constexpr int max_segments_per_block = 256;
 
-  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
+  [[maybe_unused]] static constexpr int warps_in_block        = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_warp = max_segments_per_block / warps_in_block;
+
+  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   constexpr auto max_nelems = get_max_elems<value_t>();
 
@@ -927,6 +1073,22 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
     run_dispatch_scan_iterator(
       inclusive_init_scan_dispatch,
       cub::detail::segmented_scan::worker::block,
+      offsets,
+      input_it,
+      output_it,
+      op,
+      d_init_v,
+      segments_per_worker);
+
+    c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_expected == h_output);
+  }
+
+  SECTION("worker warp")
+  {
+    run_dispatch_scan_iterator(
+      inclusive_init_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
       offsets,
       input_it,
       output_it,

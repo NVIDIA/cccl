@@ -16,9 +16,13 @@
 #  if TUNE_TRANSPOSE == 0
 #    define TUNE_BLOCK_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
 #    define TUNE_BLOCK_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
+#    define TUNE_WARP_LOAD_ALGORITHM   cub::WARP_LOAD_DIRECT
+#    define TUNE_WARP_STORE_ALGORITHM  cub::WARP_STORE_DIRECT
 #  else // TUNE_TRANSPOSE == 1
 #    define TUNE_BLOCK_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
 #    define TUNE_BLOCK_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
+#    define TUNE_WARP_LOAD_ALGORITHM   cub::WARP_LOAD_TRANSPOSE
+#    define TUNE_WARP_STORE_ALGORITHM  cub::WARP_STORE_TRANSPOSE
 #  endif // TUNE_TRANSPOSE
 
 #  if TUNE_LOAD == 0
@@ -27,19 +31,27 @@
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 
-template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock>
+template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock, int MaxSegmentsPerWarp>
 struct policy_selector_t
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedScanPolicy
   {
-    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
-      ThreadsPerBlock,
-      ItemsPerThread,
-      TUNE_BLOCK_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
-      TUNE_BLOCK_STORE_ALGORITHM,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      MaxSegmentsPerBlock}};
+    return cub::SegmentedScanPolicy{
+      cub::SegmentedScanBlockPolicy{
+        ThreadsPerBlock,
+        ItemsPerThread,
+        TUNE_BLOCK_LOAD_ALGORITHM,
+        TUNE_LOAD_MODIFIER,
+        TUNE_BLOCK_STORE_ALGORITHM,
+        cub::BLOCK_SCAN_WARP_SCANS,
+        MaxSegmentsPerBlock},
+      cub::SegmentedScanWarpPolicy{
+        ThreadsPerBlock,
+        ItemsPerThread,
+        TUNE_WARP_LOAD_ALGORITHM,
+        TUNE_LOAD_MODIFIER,
+        TUNE_WARP_STORE_ALGORITHM,
+        MaxSegmentsPerWarp}};
   }
 };
 #endif // TUNE_BASE
@@ -64,7 +76,12 @@ template <size_t Wobble = 0, typename T, typename OffsetT>
 static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
 #if !TUNE_BASE
-  using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
+  // IMPORTANT: Make sure not to hurt occupancy
+  // since shared memory is allocated per warp, scale it down so that total amount of shared memory
+  // per CTA is the same as in block-level segmented scan
+  constexpr auto max_segments_per_warp =
+    ::cuda::ceil_div(TUNE_MAX_SEGMENTS_PER_BLOCK * cub::detail::warp_threads, TUNE_THREADS);
+  using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK, max_segments_per_warp>;
 #endif
 
   const auto elements     = static_cast<OffsetT>(state.get_int64("Elements{io}"));
