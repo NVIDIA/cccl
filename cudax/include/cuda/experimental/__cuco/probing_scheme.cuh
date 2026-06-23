@@ -26,7 +26,6 @@
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
@@ -47,7 +46,7 @@ namespace cuda::experimental::cuco
 //! @tparam _CgSize Cooperative group size
 //! @tparam _Hash Hash functor type
 template <int _CgSize, class _Hash>
-class linear_probing : private __detail::__probing_scheme_base<_CgSize>
+class linear_probing : __detail::__probing_scheme_base<_CgSize>
 {
   using __base_type = __detail::__probing_scheme_base<_CgSize>;
 
@@ -145,7 +144,7 @@ private:
 //! @tparam _Hash1 First hash functor
 //! @tparam _Hash2 Second hash functor
 template <int _CgSize, class _Hash1, class _Hash2 = _Hash1>
-class double_hashing : private __detail::__probing_scheme_base<_CgSize>
+class double_hashing : __detail::__probing_scheme_base<_CgSize>
 {
   using __base_type = __detail::__probing_scheme_base<_CgSize>;
 
@@ -252,27 +251,19 @@ private:
   _Hash2 __hash2;
 };
 
-//! @brief Trait indicating whether a probing scheme is double hashing.
+//! @brief Trait value indicating whether a probing scheme is double hashing.
 //!
 //! @tparam _Tp Input probing scheme type
 template <class _Tp>
-struct is_double_hashing : ::cuda::std::false_type
-{};
+inline constexpr bool is_double_hashing_v = false;
 
-//! @brief Trait indicating whether a probing scheme is double hashing.
+//! @brief Specialization indicating that `double_hashing` is a double hashing scheme.
 //!
 //! @tparam _CgSize Cooperative group size
 //! @tparam _Hash1 First hash functor
 //! @tparam _Hash2 Second hash functor
 template <int _CgSize, class _Hash1, class _Hash2>
-struct is_double_hashing<double_hashing<_CgSize, _Hash1, _Hash2>> : ::cuda::std::true_type
-{};
-
-//! @brief Trait value indicating whether a probing scheme is double hashing.
-//!
-//! @tparam _Tp Input probing scheme type
-template <class _Tp>
-inline constexpr bool is_double_hashing_v = is_double_hashing<_Tp>::value;
+inline constexpr bool is_double_hashing_v<double_hashing<_CgSize, _Hash1, _Hash2>> = true;
 } // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
