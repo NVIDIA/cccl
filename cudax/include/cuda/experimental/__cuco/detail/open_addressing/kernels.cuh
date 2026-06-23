@@ -96,7 +96,8 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   {
     if (__pred(*(__stencil + __idx)))
     {
-      const typename ::cuda::std::iterator_traits<_InputIt>::value_type __insert_element{*(__first + __idx)};
+      using __value_t = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+      const __value_t __insert_element{*(__first + __idx)};
       if constexpr (_CgSize == 1)
       {
         if (__ref.insert(__insert_element))
@@ -142,7 +143,8 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   {
     if (__pred(*(__stencil + __idx)))
     {
-      const typename ::cuda::std::iterator_traits<_InputIt>::value_type __insert_element{*(__first + __idx)};
+      using __value_t = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+      const __value_t __insert_element{*(__first + __idx)};
       const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
         ::cooperative_groups::this_thread_block());
       __ref.insert(__tile, __insert_element);
@@ -167,9 +169,10 @@ _CCCL_KERNEL_ATTRIBUTES void __contains_if_n(
 
   while (__idx < __n)
   {
-    const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
-    const typename ::cuda::std::iterator_traits<_InputIt>::value_type __key = *(__first + __idx);
-    const auto __found = __pred(*(__stencil + __idx)) ? __ref.contains(__tile, __key) : false;
+    const auto __tile     = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
+    using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+    const __value_t __key = *(__first + __idx);
+    const auto __found    = __pred(*(__stencil + __idx)) ? __ref.contains(__tile, __key) : false;
     if (__tile.thread_rank() == 0)
     {
       *(__output_begin + __idx) = __found;
