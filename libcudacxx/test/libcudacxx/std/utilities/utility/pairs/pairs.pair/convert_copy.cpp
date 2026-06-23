@@ -6,10 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: msvc
-
-// XFAIL: gcc-4
-
 // <utility>
 
 // template <class T1, class T2> struct pair
