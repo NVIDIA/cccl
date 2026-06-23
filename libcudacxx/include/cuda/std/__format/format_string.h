@@ -26,7 +26,7 @@
 #include <cuda/std/__format/format_arg_store.h>
 #include <cuda/std/__format/format_parse_context.h>
 #include <cuda/std/__format/validation.h>
-#include <cuda/std/__format/vformat.h>
+#include <cuda/std/__format/vformat_to.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/string_view>
 

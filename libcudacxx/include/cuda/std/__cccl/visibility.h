@@ -89,6 +89,12 @@
 #  define _CCCL_NOINLINE __attribute__((noinline))
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+#if _CCCL_DEVICE_COMPILATION()
+#  define _CCCL_NOINLINE_DEVICE _CCCL_NOINLINE
+#else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
+#  define _CCCL_NOINLINE_DEVICE
+#endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
+
 #if _CCCL_HAS_ATTRIBUTE(__exclude_from_explicit_instantiation__)
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((__exclude_from_explicit_instantiation__))
 #else // ^^^ exclude_from_explicit_instantiation ^^^ / vvv !exclude_from_explicit_instantiation vvv
