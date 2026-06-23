@@ -713,7 +713,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
 template <int threads_per_block,
           int UnrollFactor,
-          int StoreVec,
+          int StoreVecSize,
           typename Offset,
           typename Predicate,
           typename F,
@@ -897,10 +897,12 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
 
-  using output_t          = it_value_t<RandomAccessIteratorOut>;
-  constexpr int out_size  = int{size_of<output_t>};
-  constexpr int vec_size  = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
-  constexpr int store_vec = (StoreVec > 0) ? (::cuda::std::min) (StoreVec, vec_size) : vec_size;
+  using output_t         = it_value_t<RandomAccessIteratorOut>;
+  constexpr int out_size = int{size_of<output_t>};
+  constexpr int vec_size = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
+  static_assert(StoreVecSize == 0 || ::cuda::is_power_of_two(StoreVecSize),
+                "store_vec_size must be 0 (auto) or a power of two");
+  constexpr int store_vec_size = (StoreVecSize > 0) ? (::cuda::std::min) (StoreVecSize, vec_size) : vec_size;
   // compile time eligibility for the vectorized store (STG.128):
   // 1. there are no predicates
   // 2. memory layout is contiguous
@@ -908,7 +910,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // 4. size is power-of-2 and <= 16 bytes
   // #TODO(nan): STG.256 (128 should have enough BIF already, but should check perf on blackwell)
   constexpr bool vectorize_eligible =
-    store_vec > 1 && ::cuda::is_power_of_two(store_vec) && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
+    store_vec_size > 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
     && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
     && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && ::cuda::is_power_of_two(out_size)
     && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
@@ -917,14 +919,11 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   {
     if (can_vectorize)
     {
-      // store_vec (S) output elements per STG.128/64/.../8, defaulting to vec_size (= 16 / sizeof(output), today's
-      // 16-byte store). Shrinking S narrows the store but also reduces the number of fully-unrolled lambda calls per
-      // store, which bounds register pressure for heavy functors (whose stores aren't the bottleneck anyway). res[] is
-      // indexed only by the fully-unrolled k, i.e. compile-time, so it stays in registers and never spills to local
-      // memory regardless of S.
-      using store_t        = decltype(load_store_type<store_vec * out_size>());
+      // store_vec_size: element count for vectorized store. default = 16 / sizeof(output). must be pow2
+      // Shrinking store_vec_size narrows the store but also reduces register pressure
+      using store_t        = decltype(load_store_type<store_vec_size * out_size>());
       auto* out_vec        = reinterpret_cast<store_t*>(out);
-      const int num_groups = valid_items / store_vec;
+      const int num_groups = valid_items / store_vec_size;
       for (int g = threadIdx.x; g < num_groups; g += threads_per_block)
       {
         char* smem      = smem_base;
@@ -935,16 +934,15 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           // alignof(T) will always be powers of 2 per C++ standard
           const T* base = reinterpret_cast<const T*>(smem + aligned_ptr.head_padding);
           smem += tile_padding + int{sizeof(T)} * tile_size;
-          // Gather this input's vec_size elements for output-vector v into a register array. we take the maximal
-          // alignment out of alignof(T) and 16 bytes. If input is narrower, we will waste a few (0-16) registers
+          // Gather this input's store_vec_size elements for output-vector v into a register array.
+          // we take the maximal alignment out of alignof(T) and 16 bytes. This is because compiler assume
+          // natural alignment on bigger types (e.g. 32 bytes). If input is narrower, we will waste a few (0-16)
+          // registers
           constexpr ::cuda::std::size_t chunk_align = (::cuda::std::max) (alignof(T), alignof(int4));
-          ::cuda::__uninitialized_array<T, store_vec, chunk_align> elems;
-          constexpr int chunk_bytes = int{sizeof(T)} * store_vec;
-          // if same width or narrowing (e.g. int32 -> int8), we split it up into multiple 16 byte reads
-          // CAREFUL: the byte width sizeof(T) * vec_size can exceed 16 when the input is wider than the output.
-          // However, since input both input type size and output size is pow2, when the input is wider, it has to be
-          // pow2 times wider. Therefore, chunk_bytes = input size * vec_size is always divisible by 16
-          // (recall 16 = output size * vec_size) , i.e. we can read it as multiple int4 loads
+          ::cuda::__uninitialized_array<T, store_vec_size, chunk_align> elems;
+          constexpr int chunk_bytes = int{sizeof(T)} * store_vec_size;
+          // since store_vec_size is pow2, sizeof(T) is pow2, chunk_bytes must be pow2
+          // if chunk_bytes is a multiple of 16, we do vectorised load from smem into reg
           if constexpr (chunk_bytes % int{sizeof(int4)} == 0)
           {
             constexpr int n = chunk_bytes / int{sizeof(int4)};
@@ -955,9 +953,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
               reinterpret_cast<int4*>(elems.data())[i] = s[i];
             }
           }
-          // if widening (e.g. int8 -> int32), just load it in one go. recall chunk_bytes = input size * vec_size, and
-          // vec_size = 16 / output size. Since output size is pow2, vec_size is pow2. Hence chunk_bytes is always pow2.
-          // this ensures load_store_type<chunk_bytes> will never fail.
+          // if chunk_bytes is not a multiple of 16, since it is pow2, chunk_bytes < 16.
+          // this ensures load_store_type<chunk_bytes> never fail
           else
           {
             using sub_t                             = decltype(load_store_type<chunk_bytes>());
@@ -967,10 +964,11 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         };
         auto chunks = ::cuda::std::tuple{load_chunk(aligned_ptrs)...};
 
-        // must fully unroll to take full advantage of ILP. otherwise perf regress by half
-        ::cuda::__uninitialized_array<output_t, store_vec, sizeof(output_t) * store_vec> res;
+        // must fully unroll to make sure register index is static
+        // (otherwise it will be on local memory & perf regress by half)
+        ::cuda::__uninitialized_array<output_t, store_vec_size, sizeof(output_t) * store_vec_size> res;
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int k = 0; k < store_vec; ++k)
+        for (int k = 0; k < store_vec_size; ++k)
         {
           res[k] = ::cuda::std::apply(
             [&](auto&... c) {
@@ -981,9 +979,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         out_vec[g] = *reinterpret_cast<const store_t*>(res.data());
       }
 
-      // scalar tail: the up to (store_vec - 1) trailing elements not covered by a whole store group. can_vectorize
+      // we can scalar store tail when element count is not a multiple of store_vec_size
       // implies an always_true predicate, so we store unconditionally.
-      for (int idx = num_groups * store_vec + threadIdx.x; idx < valid_items; idx += threads_per_block)
+      for (int idx = num_groups * store_vec_size + threadIdx.x; idx < valid_items; idx += threads_per_block)
       {
         char* smem         = smem_base;
         auto fetch_operand = [&](auto aligned_ptr) {
@@ -1178,7 +1176,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
       NV_PROVIDES_SM_90,
       (transform_kernel_ublkcp<policy.async_copy.threads_per_block,
                                policy.async_copy.unroll_factor,
-                               policy.async_copy.store_vec>(
+                               policy.async_copy.store_vec_size>(
          num_items,
          num_elem_per_thread,
          can_vectorize,

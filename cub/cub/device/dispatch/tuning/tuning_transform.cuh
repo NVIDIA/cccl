@@ -145,17 +145,17 @@ struct TransformAsyncCopyPolicy
   // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
   int unroll_factor = 1; //!< The unroll factor for the transformation loop in the kernel. The value 0 retains the
                          //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling.
-  // Vectorized store width for the ublkcp kernel. 0 means "auto": store_vec = 16 / sizeof(output) (a 16-byte STG.128).
-  // Setting it smaller narrows the store but also reduces the number of fully-unrolled lambda calls per store, which
-  // bounds register pressure for heavy functors (their stores aren't the bottleneck anyway).
-  int store_vec = 0; //!< Output elements per vectorized store (S). 0 = auto (16 / sizeof(output)).
+  // Vectorized store width for the ublkcp kernel. 0 means "auto": store_vec_size = 16 / sizeof(output) (a 16-byte
+  // STG.128). Setting it smaller narrows the store but also reduces the number of fully-unrolled lambda calls per
+  // store, which bounds register pressure for heavy functors (their stores aren't the bottleneck anyway).
+  int store_vec_size = 0; //!< Output elements per vectorized store (S). 0 = auto (16 / sizeof(output)).
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.min_items_per_thread == rhs.min_items_per_thread
         && lhs.max_items_per_thread == rhs.max_items_per_thread && lhs.unroll_factor == rhs.unroll_factor
-        && lhs.store_vec == rhs.store_vec;
+        && lhs.store_vec_size == rhs.store_vec_size;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -171,7 +171,7 @@ struct TransformAsyncCopyPolicy
         << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
         << ", .min_items_per_thread = " << policy.min_items_per_thread
         << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
-        << ", .store_vec = " << policy.store_vec << " }";
+        << ", .store_vec_size = " << policy.store_vec_size << " }";
   }
 #endif // _CCCL_HOSTED()
 };
