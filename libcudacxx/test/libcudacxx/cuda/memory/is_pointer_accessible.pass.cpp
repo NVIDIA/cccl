@@ -241,11 +241,9 @@ bool test_multiple_devices_from_pool()
 void test()
 {
   assert(test_basic());
+  assert(test_multiple_devices());
   assert(test_memory_pool());
-
-  // TODO: Re-enable peer-access tests once cuda::is_device_accessible has fixed peer semantics.
-  // assert(test_multiple_devices());
-  // assert(test_multiple_devices_from_pool());
+  assert(test_multiple_devices_from_pool());
 }
 
 int main(int, char**)
