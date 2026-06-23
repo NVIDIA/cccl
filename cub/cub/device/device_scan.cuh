@@ -85,11 +85,11 @@ CUB_NAMESPACE_BEGIN
 //! ``cub::DeviceScan`` supports the :ref:`determinism guarantees <cccl-determinism>` as follows; the
 //! default is ``not_guaranteed``.
 //!
-//! - ``run_to_run`` is supported for integral types with a known CUDA binary operator, and for
-//!   floating-point types with ``cuda::std::plus``. The floating-point ``plus`` case engages a stable,
-//!   fixed reduction order so results are reproducible across runs on the same GPU.
-//! - ``gpu_to_gpu`` is supported for integral types with a known CUDA binary operator. (These are
-//!   exactly associative, so the result is already identical across GPUs.)
+//! - ``run_to_run`` is supported for integral types with a known CUDA binary operator, and for floating-point
+//!   types with ``cuda::std::plus``. The floating-point ``plus`` case engages a stable, fixed reduction order so
+//!   results are reproducible across runs on the same GPU.
+//! - ``gpu_to_gpu`` is supported for integral types with a known CUDA binary operator. (These are exactly
+//!   associative, so the result is already identical across GPUs.)
 //! - Other combinations under ``run_to_run``/``gpu_to_gpu`` are rejected at compile time.
 //!
 //! Performance

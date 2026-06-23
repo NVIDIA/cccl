@@ -48,15 +48,17 @@ The guarantees are ordered from weakest to strongest:
 run-to-run, and a ``run_to_run`` result is a valid (but stronger-than-required) answer wherever
 ``not_guaranteed`` would be accepted.
 
-For types and operators that are exactly associative (for example integral addition with well-known operators), every
-invocation is already reproducible across runs and GPUs, so the stronger guarantees come for free and
-the library simply selects the fastest valid implementation.
+For types and operators that are exactly associative (see
+:ref:`cuda::is_associative_v <libcudacxx-extended-api-functional-operator-properties>`; for example, integral
+addition with well-known operators), every invocation is already reproducible across runs and GPUs, so the
+stronger guarantees come for free and the library simply selects the fastest valid implementation.
 
 .. warning::
 
-   ``gpu_to_gpu``/``run_to_run`` reproducibility is guaranteed for a *fixed* CCCL version, not across
-   CCCL versions. If a policy selector is specified to change the used tuning, then reproducibility is only guaranteed for identical tunings. The bitwise result may also change between CCCL releases as algorithms, reduction structures,
-   or tuning evolve.
+   ``gpu_to_gpu``/``run_to_run`` reproducibility is guaranteed for a *fixed* CCCL and CUDA Toolkit version, not
+   across versions. If a policy selector is specified to change the used tuning, then reproducibility is only
+   guaranteed for identical tunings. The bitwise result may also change between CCCL or CUDA Toolkit releases as
+   algorithms, reduction structures, or tuning evolve.
 
 Requesting a determinism guarantee
 -----------------------------------
