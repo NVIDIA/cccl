@@ -4,10 +4,8 @@
 // Internal dispatch helpers for cub::DeviceTransform's tile path:
 //   tile_dispatch_eligible_v  -- compile-time predicate the hook consults
 //   runtime_preconditions_valid  -- runtime alignment + divisibility predicate
-//   dispatch                  -- bridge that launches the tile kernel with
-//                                the trait's substitute functor
-//   DeviceTransform           -- internal tile-local Transform/Fill wrappers
-//                                used by `dispatch`
+//   dispatch                  -- bridge that picks the tile size and launches
+//                                the tile kernel with the trait's substitute functor
 // User-facing extension points (tile_eligible / tile_mufu_heavy) live in
 // dispatch_transform_tile_traits.cuh under cub::transform.
 // Requires CTK 13.4 or newer and nvcc invoked with --enable-tile.
@@ -75,37 +73,6 @@ template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std:
   return CubDebug(::cudaGetLastError());
 }
 
-struct DeviceTransform
-{
-  template <int TileSize = 0, bool MufuHeavy = false, typename Fn, typename Out, typename... Ins>
-  [[nodiscard]] static ::cudaError_t Transform(
-    ::cuda::std::tuple<Ins*...> inputs, Out* output, ::cuda::std::int64_t num_items, Fn, ::cudaStream_t stream = nullptr)
-  {
-    constexpr int chosen =
-      (TileSize > 0) ? TileSize : cub::detail::transform::tile::pick_tile_size<Out, Ins...>(MufuHeavy);
-    return cub::detail::transform::tile::launch_impl<chosen, Fn>(
-      inputs, output, num_items, stream, ::cuda::std::index_sequence_for<Ins...>{});
-  }
-
-  // Fill
-  template <int TileSize = 0, typename T>
-  [[nodiscard]] static ::cudaError_t
-  Fill(T* output, ::cuda::std::int64_t num_items, T value, ::cudaStream_t stream = nullptr)
-  {
-    if (num_items <= 0)
-    {
-      return ::cudaSuccess;
-    }
-    constexpr int chosen = (TileSize > 0) ? TileSize : cub::detail::transform::tile::pick_tile_size<T>();
-    // One CTA per tile; see launch_impl -- num_blocks can't exceed the unsigned grid x-dim for
-    // any device-sized num_items.
-    const ::cuda::std::int64_t num_blocks = ::cuda::ceil_div(num_items, ::cuda::std::int64_t{chosen});
-    cub::detail::transform::tile::fill_kernel<chosen, T>
-      <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, value);
-    return CubDebug(::cudaGetLastError());
-  }
-};
-
 // Combined compile-time predicate for whether (Op, OutIter, InIters...) can use the tile path. We use this with
 // `if constexpr` for dispatch: when true the hook tries the tile kernel first and, on runtime alignment/divisibility
 // failure, falls through to the standard CUB dispatch; when false the tile branch is discarded entirely.
@@ -154,21 +121,29 @@ template <typename TransformOp, typename OutIter, typename... InIters, typename 
 [[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
 dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_items, ::cudaStream_t stream)
 {
-  auto out_ptr = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
-  auto in_ptrs = ::cuda::std::apply(
+  const auto out_ptr = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
+  const auto in_ptrs = ::cuda::std::apply(
     [](auto... iters) {
       return ::cuda::std::make_tuple(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(iters)...);
     },
     inputs);
-  // The tile functor to run for TransformOp: its registered tile_operator mirror.
+
+  // The tile functor to run for TransformOp: its registered tile_operator mirror (a scalar functor can't be
+  // invoked on ct::tile).
   using tile_op_t = cub::transform::tile_operator_t<TransformOp>;
   static_assert(::cuda::std::is_empty_v<tile_op_t>,
                 "tile_operator type must be stateless (the tile kernel default-constructs it)");
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_operator type must be trivially default constructible");
 
-  return DeviceTransform::Transform<0, cub::transform::tile_mufu_heavy_v<TransformOp>, tile_op_t>(
-    in_ptrs, out_ptr, static_cast<::cuda::std::int64_t>(num_items), tile_op_t{}, stream);
+  // Pick the tile size from the element types (no caller override -- mirrors the regular path, where the policy
+  // drives the size), then launch.
+  constexpr int tile_size =
+    cub::detail::transform::tile::pick_tile_size<::cuda::std::iter_value_t<OutIter>,
+                                                 ::cuda::std::iter_value_t<InIters>...>(
+      cub::transform::tile_mufu_heavy_v<TransformOp>);
+  return cub::detail::transform::tile::launch_impl<tile_size, tile_op_t>(
+    in_ptrs, out_ptr, static_cast<::cuda::std::int64_t>(num_items), stream, ::cuda::std::index_sequence_for<InIters...>{});
 }
 } // namespace detail::transform::tile
 
