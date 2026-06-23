@@ -325,13 +325,20 @@ struct SegmentedScanPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedScanPolicy
   {
-    return {.block = {.threads_per_block = 128,
-                      .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 11 : 9,
-                      .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                      .load_modifier     = cub::LOAD_DEFAULT,
-                      .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
-                      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-                      .max_segments      = 512}};
+    return {
+      .block = {.threads_per_block = 128,
+                .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 11 : 9,
+                .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                .load_modifier     = cub::LOAD_DEFAULT,
+                .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+                .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                .max_segments      = 512},
+      .warp  = {.threads_per_block = 128,
+                .items_per_thread  = 7,
+                .load_algorithm    = cub::WARP_LOAD_TRANSPOSE,
+                .load_modifier     = cub::LOAD_DEFAULT,
+                .store_algorithm   = cub::WARP_STORE_TRANSPOSE,
+                .max_segments      = 128}};
   }
 };
 // example-end segmented-scan-policy-selector
