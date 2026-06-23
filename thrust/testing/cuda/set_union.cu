@@ -2,13 +2,12 @@
 #include <thrust/set_operations.h>
 
 #include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/launch>
 #include <cuda/std/initializer_list>
 #include <cuda/stream>
 
 #include <unittest/unittest.h>
-
-#include "cccl_runtime_test_helper.h"
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 struct set_union_kernel
@@ -24,17 +23,17 @@ struct set_union_kernel
 template <typename ExecutionPolicy>
 void TestSetUnionDevice(ExecutionPolicy exec)
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
-  auto a          = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4});
-  auto b          = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4});
-  auto result     = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto a      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4});
+  auto b      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4});
+  auto result = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
-  cuda::launch(stream, test::single_thread_config(), set_union_kernel{}, exec, a, b, result);
+  cuda::launch(stream, test_runtime::single_thread_config(), set_union_kernel{}, exec, a, b, result);
   stream.sync();
 
-  test::assert_equal(stream, result, {0, 2, 3, 3, 4});
+  test_runtime::assert_equal(stream, result, {0, 2, 3, 3, 4});
 }
 
 void TestSetUnionDeviceSeq()
@@ -52,7 +51,7 @@ DECLARE_UNITTEST(TestSetUnionDeviceDevice);
 
 void TestSetUnionCudaStreams()
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
   auto a      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4});
@@ -63,6 +62,6 @@ void TestSetUnionCudaStreams()
     thrust::set_union(thrust::cuda::par.on(stream.get()), a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
-  test::assert_equal(stream, result, {0, 2, 3, 3, 4});
+  test_runtime::assert_equal(stream, result, {0, 2, 3, 3, 4});
 }
 DECLARE_UNITTEST(TestSetUnionCudaStreams);

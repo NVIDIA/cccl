@@ -3,13 +3,12 @@
 #include <thrust/sort.h>
 
 #include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/launch>
 #include <cuda/std/initializer_list>
 #include <cuda/stream>
 
 #include <unittest/unittest.h>
-
-#include "cccl_runtime_test_helper.h"
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 struct set_difference_by_key_kernel
@@ -48,19 +47,19 @@ struct set_difference_by_key_kernel
 template <typename ExecutionPolicy>
 void TestSetDifferenceByKeyDevice(ExecutionPolicy exec)
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
-  auto a_key       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
-  auto b_key       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 6});
-  auto a_val       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 0, 0, 0});
-  auto b_val       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{1, 1, 1, 1, 1});
-  auto result_key  = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
-  auto result_val  = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
+  auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
+  auto b_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 6});
+  auto a_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 0, 0, 0});
+  auto b_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{1, 1, 1, 1, 1});
+  auto result_key = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
+  auto result_val = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
 
   cuda::launch(
     stream,
-    test::single_thread_config(),
+    test_runtime::single_thread_config(),
     set_difference_by_key_kernel{},
     exec,
     a_key,
@@ -71,8 +70,8 @@ void TestSetDifferenceByKeyDevice(ExecutionPolicy exec)
     result_val);
   stream.sync();
 
-  test::assert_equal(stream, result_key, {2, 5});
-  test::assert_equal(stream, result_val, {0, 0});
+  test_runtime::assert_equal(stream, result_key, {2, 5});
+  test_runtime::assert_equal(stream, result_val, {0, 0});
 }
 
 void TestSetDifferenceByKeyDeviceSeq()
@@ -90,7 +89,7 @@ DECLARE_UNITTEST(TestSetDifferenceByKeyDeviceDevice);
 
 void TestSetDifferenceByKeyCudaStreams()
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
   auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
@@ -113,7 +112,7 @@ void TestSetDifferenceByKeyCudaStreams()
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  test::assert_equal(stream, result_key, {2, 5});
-  test::assert_equal(stream, result_val, {0, 0});
+  test_runtime::assert_equal(stream, result_key, {2, 5});
+  test_runtime::assert_equal(stream, result_val, {0, 0});
 }
 DECLARE_UNITTEST(TestSetDifferenceByKeyCudaStreams);

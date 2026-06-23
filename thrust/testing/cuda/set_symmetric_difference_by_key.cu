@@ -2,13 +2,12 @@
 #include <thrust/set_operations.h>
 
 #include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/launch>
 #include <cuda/std/initializer_list>
 #include <cuda/stream>
 
 #include <unittest/unittest.h>
-
-#include "cccl_runtime_test_helper.h"
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 struct set_symmetric_difference_by_key_kernel
@@ -47,19 +46,19 @@ struct set_symmetric_difference_by_key_kernel
 template <typename ExecutionPolicy>
 void TestSetSymmetricDifferenceByKeyDevice(ExecutionPolicy exec)
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
-  auto a_key       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 6});
-  auto b_key       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 7});
-  auto a_val       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 0, 0, 0});
-  auto b_val       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{1, 1, 1, 1, 1});
-  auto result_key  = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
-  auto result_val  = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 6});
+  auto b_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 7});
+  auto a_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 0, 0, 0});
+  auto b_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{1, 1, 1, 1, 1});
+  auto result_key = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto result_val = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
   cuda::launch(
     stream,
-    test::single_thread_config(),
+    test_runtime::single_thread_config(),
     set_symmetric_difference_by_key_kernel{},
     exec,
     a_key,
@@ -70,8 +69,8 @@ void TestSetSymmetricDifferenceByKeyDevice(ExecutionPolicy exec)
     result_val);
   stream.sync();
 
-  test::assert_equal(stream, result_key, {2, 3, 3, 6, 7});
-  test::assert_equal(stream, result_val, {0, 1, 1, 0, 1});
+  test_runtime::assert_equal(stream, result_key, {2, 3, 3, 6, 7});
+  test_runtime::assert_equal(stream, result_val, {0, 1, 1, 0, 1});
 }
 
 void TestSetSymmetricDifferenceByKeyDeviceSeq()
@@ -89,7 +88,7 @@ DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDeviceDevice);
 
 void TestSetSymmetricDifferenceByKeyCudaStreams()
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
   auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 6});
@@ -112,7 +111,7 @@ void TestSetSymmetricDifferenceByKeyCudaStreams()
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  test::assert_equal(stream, result_key, {2, 3, 3, 6, 7});
-  test::assert_equal(stream, result_val, {0, 1, 1, 0, 1});
+  test_runtime::assert_equal(stream, result_key, {2, 3, 3, 6, 7});
+  test_runtime::assert_equal(stream, result_val, {0, 1, 1, 0, 1});
 }
 DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyCudaStreams);

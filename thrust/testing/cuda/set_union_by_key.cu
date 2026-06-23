@@ -2,13 +2,12 @@
 #include <thrust/set_operations.h>
 
 #include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/launch>
 #include <cuda/std/initializer_list>
 #include <cuda/stream>
 
 #include <unittest/unittest.h>
-
-#include "cccl_runtime_test_helper.h"
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 struct set_union_by_key_kernel
@@ -47,19 +46,19 @@ struct set_union_by_key_kernel
 template <typename ExecutionPolicy>
 void TestSetUnionByKeyDevice(ExecutionPolicy exec)
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
-  auto a_key       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4});
-  auto b_key       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4});
-  auto a_val       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 0, 0});
-  auto b_val       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{1, 1, 1, 1});
-  auto result_key  = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
-  auto result_val  = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4});
+  auto b_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4});
+  auto a_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 0, 0});
+  auto b_val      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{1, 1, 1, 1});
+  auto result_key = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
+  auto result_val = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
   cuda::launch(
     stream,
-    test::single_thread_config(),
+    test_runtime::single_thread_config(),
     set_union_by_key_kernel{},
     exec,
     a_key,
@@ -70,8 +69,8 @@ void TestSetUnionByKeyDevice(ExecutionPolicy exec)
     result_val);
   stream.sync();
 
-  test::assert_equal(stream, result_key, {0, 2, 3, 3, 4});
-  test::assert_equal(stream, result_val, {0, 0, 1, 1, 0});
+  test_runtime::assert_equal(stream, result_key, {0, 2, 3, 3, 4});
+  test_runtime::assert_equal(stream, result_val, {0, 0, 1, 1, 0});
 }
 
 void TestSetUnionByKeyDeviceSeq()
@@ -89,7 +88,7 @@ DECLARE_UNITTEST(TestSetUnionByKeyDeviceDevice);
 
 void TestSetUnionByKeyCudaStreams()
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
   auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4});
@@ -112,7 +111,7 @@ void TestSetUnionByKeyCudaStreams()
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  test::assert_equal(stream, result_key, {0, 2, 3, 3, 4});
-  test::assert_equal(stream, result_val, {0, 0, 1, 1, 0});
+  test_runtime::assert_equal(stream, result_key, {0, 2, 3, 3, 4});
+  test_runtime::assert_equal(stream, result_val, {0, 0, 1, 1, 0});
 }
 DECLARE_UNITTEST(TestSetUnionByKeyCudaStreams);

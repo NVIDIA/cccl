@@ -2,13 +2,12 @@
 #include <thrust/set_operations.h>
 
 #include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
 #include <cuda/launch>
 #include <cuda/std/initializer_list>
 #include <cuda/stream>
 
 #include <unittest/unittest.h>
-
-#include "cccl_runtime_test_helper.h"
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 struct set_difference_kernel
@@ -24,17 +23,17 @@ struct set_difference_kernel
 template <typename ExecutionPolicy>
 void TestSetDifferenceDevice(ExecutionPolicy exec)
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
-  auto a          = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
-  auto b          = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 6});
-  auto result     = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
+  auto a      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
+  auto b      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 6});
+  auto result = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
 
-  cuda::launch(stream, test::single_thread_config(), set_difference_kernel{}, exec, a, b, result);
+  cuda::launch(stream, test_runtime::single_thread_config(), set_difference_kernel{}, exec, a, b, result);
   stream.sync();
 
-  test::assert_equal(stream, result, {2, 5});
+  test_runtime::assert_equal(stream, result, {2, 5});
 }
 
 void TestSetDifferenceDeviceSeq()
@@ -52,7 +51,7 @@ DECLARE_UNITTEST(TestSetDifferenceDeviceDevice);
 
 void TestSetDifferenceCudaStreams()
 {
-  const auto device = test::current_test_device();
+  const auto device = test_runtime::current_test_device();
   cuda::stream stream{device};
 
   auto a      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
@@ -63,6 +62,6 @@ void TestSetDifferenceCudaStreams()
     thrust::set_difference(thrust::cuda::par.on(stream.get()), a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
-  test::assert_equal(stream, result, {2, 5});
+  test_runtime::assert_equal(stream, result, {2, 5});
 }
 DECLARE_UNITTEST(TestSetDifferenceCudaStreams);
