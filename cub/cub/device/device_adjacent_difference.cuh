@@ -13,7 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
@@ -226,16 +225,10 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::adjacent_difference::policy_selector_from_types<InputIteratorT, false>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
-          storage, bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream, policy_selector);
+          storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
       });
   }
 
@@ -344,17 +337,10 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector =
-      detail::adjacent_difference::policy_selector_from_types<RandomAccessIteratorT, true>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
-          storage, bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream, policy_selector);
+          storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
       });
   }
 
@@ -477,16 +463,10 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::adjacent_difference::policy_selector_from_types<InputIteratorT, false>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
-          storage, bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream, policy_selector);
+          storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
       });
   }
 
@@ -584,17 +564,10 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector =
-      detail::adjacent_difference::policy_selector_from_types<RandomAccessIteratorT, true>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
-          storage, bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream, policy_selector);
+          storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
       });
   }
 
@@ -682,14 +655,10 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::adjacent_difference::policy_selector_from_types<InputIteratorT, false>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
-          storage, bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream, policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
+        storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -763,15 +732,10 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeft");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector =
-      detail::adjacent_difference::policy_selector_from_types<RandomAccessIteratorT, true>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
-          storage, bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream, policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+        storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -860,14 +824,10 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::adjacent_difference::policy_selector_from_types<InputIteratorT, false>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
-          storage, bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream, policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
+        storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -941,15 +901,10 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRight");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector =
-      detail::adjacent_difference::policy_selector_from_types<RandomAccessIteratorT, true>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
-          storage, bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream, policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+        storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
+    });
   }
 };
 
