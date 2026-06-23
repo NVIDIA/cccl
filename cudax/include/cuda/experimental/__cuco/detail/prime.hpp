@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -110,7 +109,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   }
 
   // Trial division by small primes.
-  constexpr ::cuda::std::array<::cuda::std::uint64_t, 12> __small_primes{
+  constexpr ::cuda::std::uint64_t __small_primes[]{
     2ull, 3ull, 5ull, 7ull, 11ull, 13ull, 17ull, 19ull, 23ull, 29ull, 31ull, 37ull};
   for (::cuda::std::uint64_t __p : __small_primes)
   {
@@ -130,8 +129,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   }
 
   // Deterministic witness bases for all `uint64_t` values.
-  constexpr ::cuda::std::array<::cuda::std::uint64_t, 7> __witnesses{
-    2ull, 325ull, 9375ull, 28178ull, 450775ull, 9780504ull, 1795265022ull};
+  constexpr ::cuda::std::uint64_t __witnesses[]{2ull, 325ull, 9375ull, 28178ull, 450775ull, 9780504ull, 1795265022ull};
   for (::cuda::std::uint64_t __a : __witnesses)
   {
     if (!::cuda::experimental::cuco::__detail::__miller_rabin_test(__n, __a, __d, __s))
