@@ -19,8 +19,10 @@
 #include <cuda/type_traits>
 
 #include <algorithm>
+#include <exception>
 #include <limits>
 #include <new>
+#include <string>
 #include <tuple>
 
 #include "catch2_test_launch_helper.h"
@@ -687,6 +689,10 @@ try
 catch (const std::bad_alloc&)
 {
   SUCCEED("allocation failure is not a test failure");
+}
+catch (const std::exception& e)
+{
+  FAIL("Unexpected exception: " + std::string(e.what()));
 }
 
 // Our bin computation for HistogramEven is guaranteed only for when (max_level - min_level) * num_bins does not

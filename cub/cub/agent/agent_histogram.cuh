@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -605,7 +606,7 @@ struct AgentHistogram
                                                : // prefer gmem privatized histograms
                       blockIdx.x & 1) // prefer blended privatized histograms
   {
-    const auto block_id = static_cast<int64_t>(blockIdx.y) * gridDim.x + blockIdx.x;
+    const auto block_id = static_cast<::cuda::std::int64_t>(blockIdx.y) * gridDim.x + blockIdx.x;
 
     // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
     // Initialize the locations of this block's privatized histograms
