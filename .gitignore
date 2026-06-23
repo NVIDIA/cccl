@@ -22,6 +22,8 @@ __pycache__
 *.log
 wheelhouse/
 bench-artifacts/
+# Local results written by pytest-benchmark --benchmark-save.
+.benchmarks/
 CLAUDE.local.md
 .codegraph/*
 .cursor/rules/codegraph.mdc

@@ -150,7 +150,7 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
 
   if constexpr (check_ldl_stl_in_sass && build_traits<Build>::should_check_sass(build_info.get_cc_major()))
   {
-    const std::string sass = inspect_sass(build.cubin, build.cubin_size);
+    const std::string sass = inspect_sass(build.payload, build.payload_size);
     REQUIRE(sass.find("LDL") == std::string::npos);
     REQUIRE(sass.find("STL") == std::string::npos);
   }

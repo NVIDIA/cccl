@@ -181,9 +181,14 @@ runs:
           extra_launch_args+=(--env "AWS_ROLE_ARN=")
         fi
 
-        # Explicitly pass which GPU to use if on a GPU runner
+        # Explicitly pass which GPU to use if on a GPU runner.
         if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
-          extra_launch_args+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
+          # Multi-GPU runner labels end with "-<gpu-count>"; expose the full set.
+          if [[ "${JOB_RUNNER}" =~ -gpu-.+-([0-9]+)(-testing)?$ ]] && (( BASH_REMATCH[1] > 1 )); then
+            extra_launch_args+=(--gpus all)
+          else
+            extra_launch_args+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
+          fi
         fi
 
         # If the image contains "cudaXX.Yext"...

@@ -97,7 +97,7 @@ inline constexpr bool __is_sequence_v =
 // spelling carries that intent.
 
 //! @brief Wraps a compile-time constant argument value.
-template <auto _Value, class _Tp = decltype(_Value)>
+template <auto _Value, class _Tp = ::cuda::std::remove_cvref_t<decltype(_Value)>>
 class constant
 {
 public:
