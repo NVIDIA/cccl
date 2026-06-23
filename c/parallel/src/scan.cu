@@ -234,11 +234,13 @@ struct scan_kernel_source
     return arg;
   }
 
-  static auto lookahead_make_tile_state_kernel_arg(void* ts)
+  static auto lookahead_make_tile_state_kernel_arg(void* ts, ::cuda::std::uint32_t* atomic_counter = nullptr)
   {
     // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
     cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    ::cuda::std::__construct_at(&arg.lookahead,
+                                cub::detail::scan::lookahead_tile_state_arg_t<char>{
+                                  static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts), atomic_counter});
     return arg;
   }
 };

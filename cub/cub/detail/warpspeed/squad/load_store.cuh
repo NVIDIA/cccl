@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
@@ -280,16 +282,20 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
         asm volatile("" : "+l"(srcSmem));
 #  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         // Copy a subset of the first 16 bytes
-        if (::cuda::ptx::elect_sync(~0))
-        {
-          ::cuda::ptx::cp_async_bulk_cp_mask(
-            ::cuda::ptx::space_global,
-            ::cuda::ptx::space_shared,
-            cpAsyncOobInfo.ptrGmemStartAlignDown,
-            srcSmem,
-            /*size*/ 16,
-            byteMaskStart);
-        }
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_100,
+          (if (::cuda::ptx::elect_sync(~0)) {
+            ::cuda::ptx::cp_async_bulk_cp_mask(
+              ::cuda::ptx::space_global,
+              ::cuda::ptx::space_shared,
+              cpAsyncOobInfo.ptrGmemStartAlignDown,
+              srcSmem,
+              /*size*/ 16,
+              byteMaskStart);
+          }),
+          (const int rank = squad.threadRank(); if (rank < 16 && ((byteMaskStart >> rank) & 1u)) {
+            cpAsyncOobInfo.ptrGmemStartAlignDown[rank] = srcSmem[rank];
+          }));
       }
       if (doEndCopy)
       {
@@ -299,32 +305,42 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
         asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemEndAlignDown));
 #  endif // _CCCL_CUDA_COMPILER(NVHPC)
 
-        // Copy a subset of the last 16 bytes
-        if (::cuda::ptx::elect_sync(~0))
-        {
-          ::cuda::ptx::cp_async_bulk_cp_mask(
-            ::cuda::ptx::space_global,
-            ::cuda::ptx::space_shared,
-            cpAsyncOobInfo.ptrGmemEndAlignDown,
-            ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
-            /*size*/ 16,
-            byteMaskEnd);
-        }
+        // Copy a subset of the first 16 bytes
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_100,
+          (if (::cuda::ptx::elect_sync(~0)) {
+            ::cuda::ptx::cp_async_bulk_cp_mask(
+              ::cuda::ptx::space_global,
+              ::cuda::ptx::space_shared,
+              cpAsyncOobInfo.ptrGmemEndAlignDown,
+              ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
+              /*size*/ 16,
+              byteMaskEnd);
+          }),
+          (const int rank                            = squad.threadRank();
+           const ::cuda::std::byte* tail_smem_source = ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes;
+           if (rank < 16 && ((byteMaskEnd >> rank) & 1u)) {
+             cpAsyncOobInfo.ptrGmemEndAlignDown[rank] = tail_smem_source[rank];
+           }));
       }
     }
     else
     {
       // Copy a subset of the first 16 bytes
-      if (::cuda::ptx::elect_sync(~0))
-      {
-        ::cuda::ptx::cp_async_bulk_cp_mask(
-          ::cuda::ptx::space_global,
-          ::cuda::ptx::space_shared,
-          cpAsyncOobInfo.ptrGmemStartAlignDown,
-          srcSmem,
-          /*size*/ 16,
-          byteMaskSmall);
-      }
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_100,
+        (if (::cuda::ptx::elect_sync(~0)) {
+          ::cuda::ptx::cp_async_bulk_cp_mask(
+            ::cuda::ptx::space_global,
+            ::cuda::ptx::space_shared,
+            cpAsyncOobInfo.ptrGmemStartAlignDown,
+            srcSmem,
+            /*size*/ 16,
+            byteMaskSmall);
+        }),
+        (const int rank = squad.threadRank(); if (rank < 16 && ((byteMaskSmall >> rank) & 1u)) {
+          cpAsyncOobInfo.ptrGmemStartAlignDown[rank] = srcSmem[rank];
+        }));
     }
     // Commit and wait for store to have completed reading from shared memory
     ::cuda::ptx::cp_async_bulk_commit_group();
