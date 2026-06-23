@@ -16,7 +16,7 @@
 
 #include <testing.cuh>
 
-#include "common_tests.cuh"
+#include "pool_availability.cuh"
 
 #if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
 #  define SHARED_TEST_TYPES \

@@ -21,7 +21,7 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-#include "common_tests.cuh"
+#include "pool_availability.cuh"
 
 static_assert(!cuda::std::is_trivial<cuda::device_memory_pool_ref>::value);
 static_assert(!cuda::std::is_trivially_default_constructible<cuda::device_memory_pool_ref>::value);

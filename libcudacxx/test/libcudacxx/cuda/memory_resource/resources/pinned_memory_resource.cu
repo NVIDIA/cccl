@@ -17,7 +17,7 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-#include "common_tests.cuh"
+#include "pool_availability.cuh"
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
 #  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref

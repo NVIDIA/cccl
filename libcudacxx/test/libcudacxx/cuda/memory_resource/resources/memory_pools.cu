@@ -19,7 +19,7 @@
 
 #include <testing.cuh>
 
-#include "common_tests.cuh"
+#include "pool_availability.cuh"
 
 #if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
 #  define TEST_TYPES cuda::managed_memory_pool, cuda::device_memory_pool, cuda::pinned_memory_pool

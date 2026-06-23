@@ -13,7 +13,7 @@
 
 #include <testing.cuh>
 
-#include "resources/common_tests.cuh"
+#include "resources/pool_availability.cuh"
 #include "test_resource.cuh"
 
 template <class Resource>
