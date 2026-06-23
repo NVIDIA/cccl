@@ -36,13 +36,10 @@ Checks:
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-forwarding-reference-overload'
   - '-bugprone-branch-clone'
-  - '-bugprone-return-const-ref-from-parameter'
   - '-bugprone-use-after-move'
-  - '-bugprone-undefined-memory-manipulation'
   - '-bugprone-unchecked-optional-access'
   - '-bugprone-casting-through-void'
   - '-bugprone-integer-division'
-  - '-bugprone-move-forwarding-reference'
   - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'
   # This is just noise

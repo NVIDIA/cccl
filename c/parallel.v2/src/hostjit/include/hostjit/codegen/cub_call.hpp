@@ -280,8 +280,8 @@ private:
   bool tuple_inputs_ = false;
 
   // Internal: just the per-function body (preamble + function defn), no
-  // shared #includes and no EXPORT macro. Used by the multi-compile path to
-  // wrap N bodies in N namespaces under a single shared include block.
+  // shared #includes. Used by the multi-compile path to wrap N bodies in
+  // N namespaces under a single shared include block.
   std::string body() const;
 
   // Internal: walk args_ and register any user-op / iterator bitcode with
