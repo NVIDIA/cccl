@@ -65,12 +65,14 @@ template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_107>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_107a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121a>();
@@ -132,6 +134,7 @@ C2H_CCCLRT_TEST("Traits", "[device]")
   compare_static_and_dynamic<90>();
   compare_static_and_dynamic<100>();
   compare_static_and_dynamic<103>();
+  compare_static_and_dynamic<107>();
   compare_static_and_dynamic<110>();
   compare_static_and_dynamic<120>();
 
