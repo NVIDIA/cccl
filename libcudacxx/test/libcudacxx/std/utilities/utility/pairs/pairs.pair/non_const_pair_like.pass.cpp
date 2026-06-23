@@ -12,7 +12,6 @@
 
 // template <pair-like Pair> EXPLICIT constexpr pair(Pair&& p);
 
-#include <cuda/std/__memory_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
@@ -33,125 +32,175 @@ TEST_FUNC constexpr bool test()
 {
   // test implicit conversions.
   {
+    using Pair = cuda::std::pair<ConvertibleFrom<MutableCopy>, ConvertibleFrom<int>>;
     cuda::std::tuple<MutableCopy, int> p{1, 2};
-    cuda::std::pair<ConvertibleFrom<MutableCopy>, ConvertibleFrom<int>> p2 = p;
+    Pair p2 = p;
     assert(cuda::std::get<0>(p2).v.val == 1);
     assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(cuda::std::is_nothrow_constructible_v<Pair, cuda::std::tuple<MutableCopy, int>&>);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB()
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ConvertibleFrom<MutableCopy, false>, ConvertibleFrom<int>>;
+    cuda::std::tuple<MutableCopy, int> p{1, 2};
+    Pair p2 = p;
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, cuda::std::tuple<MutableCopy, int>&>);
+  }
+
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ConvertibleFrom<MutableCopy>, ConvertibleFrom<int, false>>;
+    cuda::std::tuple<MutableCopy, int> p{1, 2};
+    Pair p2 = p;
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, cuda::std::tuple<MutableCopy, int>&>);
+  }
+
+#if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::tuple<MutableCopy, int> p{1, 2};
                  cuda::std::pair<ConvertibleFrom<MutableCopy>, ConvertibleFrom<int>> p2 = p;
                  assert(cuda::std::get<0>(p2).v.val == 1);
                  assert(cuda::std::get<1>(p2).v == 2);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
 
   {
-    cuda::std::array<MutableCopy, 2> p{1, 2};
+    cuda::std::array<MutableCopy, 2> p{1, 42};
     cuda::std::pair<ConvertibleFrom<MutableCopy>, ConvertibleFrom<MutableCopy>> p2 = p;
     assert(cuda::std::get<0>(p2).v.val == 1);
-    assert(cuda::std::get<1>(p2).v.val == 2);
+    assert(cuda::std::get<1>(p2).v.val == 42);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB()
+#if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::array<MutableCopy, 2> p{1, 2};
+                 std::array<MutableCopy, 2> p{1, 42};
                  cuda::std::pair<ConvertibleFrom<MutableCopy>, ConvertibleFrom<MutableCopy>> p2 = p;
                  assert(cuda::std::get<0>(p2).v.val == 1);
-                 assert(cuda::std::get<1>(p2).v.val == 2);
+                 assert(cuda::std::get<1>(p2).v.val == 42);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
 
   {
-    cuda::std::complex<float> p{1.0f, 2.0f};
+    cuda::std::complex<float> p{1.0f, 42.0f};
     cuda::std::pair<ConvertibleFrom<float>, ConvertibleFrom<float>> p2 = p;
     assert(cuda::std::get<0>(p2).v == 1.0f);
-    assert(cuda::std::get<1>(p2).v == 2.0f);
+    assert(cuda::std::get<1>(p2).v == 42.0f);
   }
 
 #if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::complex<float> p{1.0f, 2.0f};
+                 std::complex<float> p{1.0f, 42.0f};
                  cuda::std::pair<ConvertibleFrom<float>, ConvertibleFrom<float>> p2 = p;
                  assert(cuda::std::get<0>(p2).v == 1.0f);
-                 assert(cuda::std::get<1>(p2).v == 2.0f);
+                 assert(cuda::std::get<1>(p2).v == 42.0f);
                }))
 #endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
 
   // test explicit conversions.
   {
+    using Pair = cuda::std::pair<ExplicitConstructibleFrom<MutableCopy>, ExplicitConstructibleFrom<int>>;
     cuda::std::tuple<MutableCopy, int> p{1, 2};
-    cuda::std::pair<ExplicitConstructibleFrom<MutableCopy>, ExplicitConstructibleFrom<int>> p2{p};
+    Pair p2{p};
     assert(cuda::std::get<0>(p2).v.val == 1);
     assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(cuda::std::is_nothrow_constructible_v<Pair, cuda::std::tuple<MutableCopy, int>&>);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB()
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ExplicitConstructibleFrom<MutableCopy, false>, ConvertibleFrom<int>>;
+    cuda::std::tuple<MutableCopy, int> p{1, 2};
+    Pair p2{p};
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, cuda::std::tuple<MutableCopy, int>&>);
+  }
+
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ExplicitConstructibleFrom<MutableCopy>, ConvertibleFrom<int, false>>;
+    cuda::std::tuple<MutableCopy, int> p{1, 2};
+    Pair p2{p};
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, cuda::std::tuple<MutableCopy, int>&>);
+  }
+
+#if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::tuple<MutableCopy, int> p{1, 2};
+                 std::pair<MutableCopy, int> p{1, 2};
                  cuda::std::pair<ExplicitConstructibleFrom<MutableCopy>, ExplicitConstructibleFrom<int>> p2{p};
                  assert(cuda::std::get<0>(p2).v.val == 1);
                  assert(cuda::std::get<1>(p2).v == 2);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
 
   {
-    cuda::std::array<MutableCopy, 2> p{1, 2};
-    cuda::std::pair<ExplicitConstructibleFrom<MutableCopy>, ConvertibleFrom<MutableCopy>> p2{p};
+    using Pair = cuda::std::pair<ExplicitConstructibleFrom<MutableCopy>, ConvertibleFrom<MutableCopy>>;
+    cuda::std::array<MutableCopy, 2> p{1, 42};
+    Pair p2{p};
     assert(cuda::std::get<0>(p2).v.val == 1);
-    assert(cuda::std::get<1>(p2).v.val == 2);
+    assert(cuda::std::get<1>(p2).v.val == 42);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB()
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ConvertibleFrom<MutableCopy, false>, ConvertibleFrom<int>>;
+    cuda::std::tuple<MutableCopy, int> p{1, 2};
+    Pair p2{p};
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, cuda::std::tuple<MutableCopy, int>&>);
+  }
+
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ConvertibleFrom<MutableCopy>, ConvertibleFrom<int, false>>;
+    cuda::std::tuple<MutableCopy, int> p{1, 2};
+    Pair p2{p};
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, cuda::std::tuple<MutableCopy, int>&>);
+  }
+
+#if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::array<MutableCopy, 2> p{1, 2};
+                 std::array<MutableCopy, 2> p{1, 42};
                  cuda::std::pair<ExplicitConstructibleFrom<MutableCopy>, ConvertibleFrom<MutableCopy>> p2{p};
                  assert(cuda::std::get<0>(p2).v.val == 1);
-                 assert(cuda::std::get<1>(p2).v.val == 2);
+                 assert(cuda::std::get<1>(p2).v.val == 42);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
 
   {
-    cuda::std::complex<float> p{1.0f, 2.0f};
+    cuda::std::complex<float> p{1.0f, 42.0f};
     cuda::std::pair<ExplicitConstructibleFrom<float>, ConvertibleFrom<float>> p2{p};
     assert(cuda::std::get<0>(p2).v == 1.0f);
-    assert(cuda::std::get<1>(p2).v == 2.0f);
+    assert(cuda::std::get<1>(p2).v == 42.0f);
   }
 
 #if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::complex<float> p{1.0f, 2.0f};
+                 std::complex<float> p{1.0f, 42.0f};
                  cuda::std::pair<ExplicitConstructibleFrom<float>, ConvertibleFrom<float>> p2{p};
-                 assert(cuda::std::get<0>(p2).v.val == 1.0f);
-                 assert(cuda::std::get<1>(p2).v.val == 2.0f);
+                 assert(cuda::std::get<0>(p2).v == 1.0f);
+                 assert(cuda::std::get<1>(p2).v == 42.0f);
                }))
 #endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
 
-  // non const overload should be called
+  // overload should be called
   {
-    cuda::std::tuple<TracedCopyMove, TracedCopyMove> p;
+    cuda::std::tuple<TracedCopyMove, TracedCopyMove> p{};
     cuda::std::pair<ConvertibleFrom<TracedCopyMove>, TracedCopyMove> p2 = p;
     assert(nonConstCopyCtrCalled(cuda::std::get<0>(p2).v));
     assert(nonConstCopyCtrCalled(cuda::std::get<1>(p2)));
   }
 
   {
-    cuda::std::array<TracedCopyMove, 2> p;
+    cuda::std::array<TracedCopyMove, 2> p{};
     cuda::std::pair<ConvertibleFrom<TracedCopyMove>, TracedCopyMove> p2 = p;
     assert(nonConstCopyCtrCalled(cuda::std::get<0>(p2).v));
     assert(nonConstCopyCtrCalled(cuda::std::get<1>(p2)));
   }
-
-#if _CCCL_HAS_HOST_STD_LIB()
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::array<TracedCopyMove, 2> p;
-                 cuda::std::pair<ConvertibleFrom<TracedCopyMove>, TracedCopyMove> p2 = p;
-                 assert(nonConstCopyCtrCalled(cuda::std::get<0>(p2).v));
-                 assert(nonConstCopyCtrCalled(cuda::std::get<1>(p2)));
-               }))
-#endif // _CCCL_HAS_HOST_STD_LIB()
 
   return true;
 }

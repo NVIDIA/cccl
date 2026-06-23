@@ -32,10 +32,30 @@ TEST_FUNC constexpr bool test()
 {
   // test implicit conversions.
   {
+    using Pair = cuda::std::pair<ConvertibleFrom<ConstMove>, ConvertibleFrom<int>>;
     const cuda::std::tuple<ConstMove, int> p{1, 2};
-    cuda::std::pair<ConvertibleFrom<ConstMove>, ConvertibleFrom<int>> p2 = cuda::std::move(p);
+    Pair p2 = cuda::std::move(p);
     assert(cuda::std::get<0>(p2).v.val == 1);
     assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(cuda::std::is_nothrow_constructible_v<Pair, const cuda::std::tuple<ConstMove, int>&&>);
+  }
+
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ConvertibleFrom<ConstMove, false>, ConvertibleFrom<int>>;
+    const cuda::std::tuple<ConstMove, int> p{1, 2};
+    Pair p2 = cuda::std::move(p);
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, const cuda::std::tuple<ConstMove, int>&&>);
+  }
+
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ConvertibleFrom<ConstMove>, ConvertibleFrom<int, false>>;
+    const cuda::std::tuple<ConstMove, int> p{1, 2};
+    Pair p2 = cuda::std::move(p);
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, const cuda::std::tuple<ConstMove, int>&&>);
   }
 
 #if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
@@ -81,10 +101,29 @@ TEST_FUNC constexpr bool test()
 
   // test explicit conversions.
   {
+    using Pair = cuda::std::pair<ExplicitConstructibleFrom<ConstMove>, ExplicitConstructibleFrom<int>>;
     const cuda::std::pair<ConstMove, int> p{1, 2};
-    cuda::std::pair<ExplicitConstructibleFrom<ConstMove>, ExplicitConstructibleFrom<int>> p2{cuda::std::move(p)};
+    Pair p2{cuda::std::move(p)};
     assert(cuda::std::get<0>(p2).v.val == 1);
     assert(cuda::std::get<1>(p2).v == 2);
+  }
+
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ExplicitConstructibleFrom<ConstMove, false>, ConvertibleFrom<int>>;
+    const cuda::std::tuple<ConstMove, int> p{1, 2};
+    Pair p2{cuda::std::move(p)};
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, const cuda::std::tuple<ConstMove, int>&&>);
+  }
+
+  { // Ensure we properly detect noexcept
+    using Pair = cuda::std::pair<ExplicitConstructibleFrom<ConstMove>, ConvertibleFrom<int, false>>;
+    const cuda::std::tuple<ConstMove, int> p{1, 2};
+    Pair p2{cuda::std::move(p)};
+    assert(cuda::std::get<0>(p2).v.val == 1);
+    assert(cuda::std::get<1>(p2).v == 2);
+    static_assert(!cuda::std::is_nothrow_constructible_v<Pair, const cuda::std::tuple<ConstMove, int>&&>);
   }
 
 #if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)

@@ -136,7 +136,7 @@ struct cuda::std::uses_allocator<ConstMove, test_allocator<int>> : cuda::std::tr
 {};
 #endif // !TEST_COMPILER(NVRTC)
 
-template <class T>
+template <class T, bool NothrowConstructible = true>
 struct ConvertibleFrom
 {
   T v{};
@@ -145,30 +145,31 @@ struct ConvertibleFrom
   constexpr ConvertibleFrom() = default;
 
   template <class U = T, cuda::std::enable_if_t<cuda::std::is_constructible_v<U, U&>, int> = 0>
-  TEST_FUNC constexpr ConvertibleFrom(T& _v)
+  TEST_FUNC constexpr ConvertibleFrom(T& _v) noexcept(NothrowConstructible)
       : v(_v)
   {}
 
   template <class U                                                                                              = T,
             cuda::std::enable_if_t<cuda::std::is_constructible_v<U, const U&> && !cuda::std::is_const_v<U>, int> = 0>
-  TEST_FUNC constexpr ConvertibleFrom(const T& _v)
+  TEST_FUNC constexpr ConvertibleFrom(const T& _v) noexcept(NothrowConstructible)
       : v(_v)
   {}
 
   template <class U = T, cuda::std::enable_if_t<cuda::std::is_constructible_v<U, U&&>, int> = 0>
-  TEST_FUNC constexpr ConvertibleFrom(T&& _v)
+  TEST_FUNC constexpr ConvertibleFrom(T&& _v) noexcept(NothrowConstructible)
       : v(cuda::std::move(_v))
   {}
 
   template <class U                                                                                               = T,
             cuda::std::enable_if_t<cuda::std::is_constructible_v<U, const U&&> && !cuda::std::is_const_v<U>, int> = 0>
-  TEST_FUNC constexpr ConvertibleFrom(const T&& _v)
+  TEST_FUNC constexpr ConvertibleFrom(const T&& _v) noexcept(NothrowConstructible)
       : v(cuda::std::move(_v))
   {}
 
 #if !TEST_COMPILER(NVRTC)
   template <class U, cuda::std::enable_if_t<cuda::std::is_constructible_v<ConvertibleFrom, U&&>, int> = 0>
-  TEST_FUNC constexpr ConvertibleFrom(cuda::std::allocator_arg_t, const test_allocator<int>&, U&& _u)
+  TEST_FUNC constexpr ConvertibleFrom(cuda::std::allocator_arg_t, const test_allocator<int>&, U&& _u) noexcept(
+    NothrowConstructible)
       : ConvertibleFrom{cuda::std::forward<U>(_u)}
   {
     alloc_constructed = true;
@@ -182,7 +183,7 @@ struct cuda::std::uses_allocator<ConvertibleFrom<T>, test_allocator<int>> : cuda
 {};
 #endif // !TEST_COMPILER(NVRTC)
 
-template <class T>
+template <class T, bool NothrowConstructible = true>
 struct ExplicitConstructibleFrom
 {
   T v{};
@@ -191,30 +192,31 @@ struct ExplicitConstructibleFrom
   constexpr explicit ExplicitConstructibleFrom() = default;
 
   template <class U = T, cuda::std::enable_if_t<cuda::std::is_constructible_v<U, U&>, int> = 0>
-  TEST_FUNC constexpr explicit ExplicitConstructibleFrom(T& _v)
+  TEST_FUNC constexpr explicit ExplicitConstructibleFrom(T& _v) noexcept(NothrowConstructible)
       : v(_v)
   {}
 
   template <class U                                                                                              = T,
             cuda::std::enable_if_t<cuda::std::is_constructible_v<U, const U&> && !cuda::std::is_const_v<U>, int> = 0>
-  TEST_FUNC constexpr explicit ExplicitConstructibleFrom(const T& _v)
+  TEST_FUNC constexpr explicit ExplicitConstructibleFrom(const T& _v) noexcept(NothrowConstructible)
       : v(_v)
   {}
 
   template <class U = T, cuda::std::enable_if_t<cuda::std::is_constructible_v<U, U&&>, int> = 0>
-  TEST_FUNC constexpr explicit ExplicitConstructibleFrom(T&& _v)
+  TEST_FUNC constexpr explicit ExplicitConstructibleFrom(T&& _v) noexcept(NothrowConstructible)
       : v(cuda::std::move(_v))
   {}
 
   template <class U                                                                                               = T,
             cuda::std::enable_if_t<cuda::std::is_constructible_v<U, const U&&> && !cuda::std::is_const_v<U>, int> = 0>
-  TEST_FUNC constexpr explicit ExplicitConstructibleFrom(const T&& _v)
+  TEST_FUNC constexpr explicit ExplicitConstructibleFrom(const T&& _v) noexcept(NothrowConstructible)
       : v(cuda::std::move(_v))
   {}
 
 #if !TEST_COMPILER(NVRTC)
   template <class U, cuda::std::enable_if_t<cuda::std::is_constructible_v<ExplicitConstructibleFrom, U&&>, int> = 0>
-  TEST_FUNC constexpr ExplicitConstructibleFrom(cuda::std::allocator_arg_t, const test_allocator<int>&, U&& _u)
+  TEST_FUNC constexpr ExplicitConstructibleFrom(
+    cuda::std::allocator_arg_t, const test_allocator<int>&, U&& _u) noexcept(NothrowConstructible)
       : ExplicitConstructibleFrom{cuda::std::forward<U>(_u)}
   {
     alloc_constructed = true;
@@ -286,6 +288,16 @@ struct cuda::std::uses_allocator<TracedCopyMove, test_allocator<int>> : cuda::st
 TEST_FUNC constexpr bool nonConstCopyCtrCalled(const TracedCopyMove& obj)
 {
   return obj.nonConstCopy == 1 && obj.constCopy == 0 && obj.constMove == 0 && obj.nonConstMove == 0;
+}
+
+TEST_FUNC constexpr bool constCopyCtrCalled(const TracedCopyMove& obj)
+{
+  return obj.nonConstCopy == 0 && obj.constCopy == 1 && obj.constMove == 0 && obj.nonConstMove == 0;
+}
+
+TEST_FUNC constexpr bool moveCtrCalled(const TracedCopyMove& obj)
+{
+  return obj.nonConstMove == 1 && obj.constMove == 0 && obj.constCopy == 0 && obj.nonConstCopy == 0;
 }
 
 // If the constructor tuple(const tuple<UTypes...>&&) is not available,
