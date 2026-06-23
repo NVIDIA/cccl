@@ -13,9 +13,11 @@
 #include <cub/util_device.cuh>
 
 #include <format>
+#include <memory>
 #include <type_traits>
 #include <vector>
 
+#include "util/nvjitlink.h"
 #include <cccl/c/for.h>
 #include <cccl/c/types.h>
 #include <for/for_op_helper.h>
@@ -77,7 +79,7 @@ static std::string get_device_for_kernel_name()
     "cub::detail::for_each::static_kernel<device_for_policy_selector, {0}, {1}>", offset_t, function_op_t);
 }
 
-CUresult cccl_device_for_build_ex(
+CUresult cccl_device_for_compile(
   cccl_device_for_build_result_t* build_ptr,
   cccl_iterator_t d_data,
   cccl_op_t op,
@@ -114,42 +116,153 @@ try
 
   std::string lowered_name;
 
-  // Collect all LTO-IRs to be linked
-  nvrtc_linkable_list linkable_list;
-  nvrtc_linkable_list_appender appender{linkable_list};
+  const bool kernel_only = is_custom_op(op);
 
-  // Add operation if it's LTO-IR (C++ source not yet supported in for)
-  appender.append_operation(op);
-
-  // Add iterator definitions if present
-  if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
-  {
-    appender.append_operation(d_data.advance);
-    appender.append_operation(d_data.dereference);
-  }
-
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{device_for_kernel, name})
       ->add_expression({for_kernel_name})
       ->compile_program({args.data(), args.size()})
-      ->get_name({for_kernel_name, lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+      ->get_name({for_kernel_name, lowered_name});
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, lowered_name.c_str()));
+  auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(lowered_name));
 
-  build_ptr->cc         = cc;
-  build_ptr->cubin      = (void*) result.data.release();
-  build_ptr->cubin_size = result.size;
+  build_ptr->cc = cc;
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library       = nullptr;
+  build_ptr->static_kernel = nullptr;
+
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->payload            = ltoir_data.release();
+    build_ptr->payload_size       = ltoir_size;
+    build_ptr->payload_kind       = CCCL_PAYLOAD_LTOIR;
+  }
+  else
+  {
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
+    appender.append_operation(op);
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
+    {
+      appender.append_operation(d_data.advance);
+      appender.append_operation(d_data.dereference);
+    }
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->payload       = (void*) result.data.release();
+    build_ptr->payload_size  = result.size;
+    build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
+  }
+
+  build_ptr->static_kernel_lowered_name = kernel_name.release();
 
   return CUDA_SUCCESS;
 }
 catch (...)
 {
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_for_load(cccl_device_for_build_result_t* build_ptr)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_CUBIN || build_ptr->static_kernel_lowered_name == nullptr
+      || build_ptr->static_kernel_lowered_name[0] == '\0')
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  CUresult status =
+    cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    return status;
+  }
+  try
+  {
+    check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, build_ptr->static_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build_ptr->library);
+    build_ptr->library = nullptr;
+    throw;
+  }
+  return CUDA_SUCCESS;
+}
+catch (...)
+{
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_for_link_ltoir(
+  cccl_device_for_build_result_t* build_ptr, const void** input_blobs, const size_t* input_sizes, size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_LTOIR)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  all_blobs.push_back(build_ptr->payload);
+  all_sizes.push_back(build_ptr->payload_size);
+  if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    if (input_blobs[i] == nullptr || input_sizes[i] == 0)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = (void*) cubin.release();
+  build_ptr->payload_size = cubin_size;
+  build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_for_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_for_build_ex(
+  cccl_device_for_build_result_t* build_ptr,
+  cccl_iterator_t d_data,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  CUresult r = cccl_device_for_compile(
+    build_ptr, d_data, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  CUresult load_r = cccl_device_for_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_for_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_for(
@@ -201,8 +314,12 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  check(cuLibraryUnload(build_ptr->library));
+  std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
+  std::unique_ptr<char[]> kernel_name(build_ptr->static_kernel_lowered_name);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }

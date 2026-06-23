@@ -25,7 +25,12 @@ workflows:
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
-    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
+    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
+    - {jobs: ['build'], project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '12.0', cxx: 'gcc7'}
+    - {jobs: ['build_nolid', 'build_lid1', 'build_lid2'], project: 'cub', std: 'minmax', ctk: '12.0', cxx: 'gcc7'}
+    # CTK12.0/GCC7 CUB host-launch builds are memory-heavy with benchmarks enabled; keep this shard below
+    # the 61 GiB linux-amd64-cpu16 runner limit.
+    - {jobs: ['build_lid0'], project: 'cub', std: 'minmax', ctk: '12.0', cxx: 'gcc7', environment: ['PARALLEL_LEVEL=8']}
     - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc14',   'clang14', 'clang19', 'msvc2019', 'msvc2022' ]}
     - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc2022' ]}
     # Old CTK: cudax has a different support matrix:
