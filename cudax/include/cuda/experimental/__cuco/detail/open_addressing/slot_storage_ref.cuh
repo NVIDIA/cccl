@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___OPEN_ADDRESSING_SLOT_STORAGE_REF_CUH
-#define _CUDAX___CUCO___OPEN_ADDRESSING_SLOT_STORAGE_REF_CUH
+#ifndef _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_SLOT_STORAGE_REF_CUH
+#define _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_SLOT_STORAGE_REF_CUH
 
 #include <cuda/__cccl_config>
 
@@ -117,4 +117,4 @@ struct __slot_storage_ref
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___OPEN_ADDRESSING_SLOT_STORAGE_REF_CUH
+#endif // _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_SLOT_STORAGE_REF_CUH

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___DETAIL_UTILS_HPP
-#define _CUDAX___CUCO___DETAIL_UTILS_HPP
+#ifndef _CUDAX___CUCO_DETAIL_UTILS_HPP
+#define _CUDAX___CUCO_DETAIL_UTILS_HPP
 
 #include <cuda/__cccl_config>
 
@@ -122,4 +122,4 @@ template <class _Iterator>
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___DETAIL_UTILS_HPP
+#endif // _CUDAX___CUCO_DETAIL_UTILS_HPP

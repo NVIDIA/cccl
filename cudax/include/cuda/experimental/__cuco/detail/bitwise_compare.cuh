@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___DETAIL_BITWISE_COMPARE_CUH
-#define _CUDAX___CUCO___DETAIL_BITWISE_COMPARE_CUH
+#ifndef _CUDAX___CUCO_DETAIL_BITWISE_COMPARE_CUH
+#define _CUDAX___CUCO_DETAIL_BITWISE_COMPARE_CUH
 
 #include <cuda/__cccl_config>
 
@@ -89,4 +89,4 @@ template <class _Tp>
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___DETAIL_BITWISE_COMPARE_CUH
+#endif // _CUDAX___CUCO_DETAIL_BITWISE_COMPARE_CUH

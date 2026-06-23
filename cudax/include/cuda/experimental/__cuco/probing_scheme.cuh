@@ -24,7 +24,7 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__cuco/__detail/probing_scheme_base.cuh>
+#include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
 
 #include <cooperative_groups.h>

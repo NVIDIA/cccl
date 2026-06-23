@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___OPEN_ADDRESSING_KERNELS_CUH
-#define _CUDAX___CUCO___OPEN_ADDRESSING_KERNELS_CUH
+#ifndef _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_KERNELS_CUH
+#define _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_KERNELS_CUH
 
 #include <cuda/__cccl_config>
 
@@ -26,7 +26,7 @@
 #include <cuda/atomic>
 #include <cuda/std/iterator>
 
-#include <cuda/experimental/__cuco/__detail/utils.hpp>
+#include <cuda/experimental/__cuco/detail/utils.hpp>
 
 #include <cooperative_groups.h>
 
@@ -181,4 +181,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___OPEN_ADDRESSING_KERNELS_CUH
+#endif // _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_KERNELS_CUH

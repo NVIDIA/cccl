@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__cuco/__utility/strong_type.cuh>
+#include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 

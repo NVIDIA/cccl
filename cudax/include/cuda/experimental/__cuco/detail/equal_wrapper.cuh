@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___DETAIL_EQUAL_WRAPPER_CUH
-#define _CUDAX___CUCO___DETAIL_EQUAL_WRAPPER_CUH
+#ifndef _CUDAX___CUCO_DETAIL_EQUAL_WRAPPER_CUH
+#define _CUDAX___CUCO_DETAIL_EQUAL_WRAPPER_CUH
 
 #include <cuda/__cccl_config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>
+#include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -131,4 +131,4 @@ struct __equal_wrapper
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___DETAIL_EQUAL_WRAPPER_CUH
+#endif // _CUDAX___CUCO_DETAIL_EQUAL_WRAPPER_CUH

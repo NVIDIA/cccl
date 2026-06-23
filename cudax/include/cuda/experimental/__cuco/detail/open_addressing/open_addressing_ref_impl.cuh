@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___OPEN_ADDRESSING_REF_IMPL_CUH
-#define _CUDAX___CUCO___OPEN_ADDRESSING_REF_IMPL_CUH
+#ifndef _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_REF_IMPL_CUH
+#define _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_REF_IMPL_CUH
 
 #include <cuda/__cccl_config>
 
@@ -35,8 +35,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda/experimental/__cuco/__detail/equal_wrapper.cuh>
-#include <cuda/experimental/__cuco/__detail/utils.hpp>
+#include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
+#include <cuda/experimental/__cuco/detail/utils.hpp>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
 
@@ -913,4 +913,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___OPEN_ADDRESSING_REF_IMPL_CUH
+#endif // _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_REF_IMPL_CUH

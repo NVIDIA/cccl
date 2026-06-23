@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___DETAIL_PROBING_SCHEME_BASE_CUH
-#define _CUDAX___CUCO___DETAIL_PROBING_SCHEME_BASE_CUH
+#ifndef _CUDAX___CUCO_DETAIL_PROBING_SCHEME_BASE_CUH
+#define _CUDAX___CUCO_DETAIL_PROBING_SCHEME_BASE_CUH
 
 #include <cuda/__cccl_config>
 
@@ -84,4 +84,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___DETAIL_PROBING_SCHEME_BASE_CUH
+#endif // _CUDAX___CUCO_DETAIL_PROBING_SCHEME_BASE_CUH

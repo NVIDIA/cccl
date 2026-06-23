@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___OPEN_ADDRESSING_IMPL_CUH
-#define _CUDAX___CUCO___OPEN_ADDRESSING_IMPL_CUH
+#ifndef _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_IMPL_CUH
+#define _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_IMPL_CUH
 
 #include <cuda/__cccl_config>
 
@@ -33,10 +33,10 @@
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__cuco/__detail/utils.hpp>
-#include <cuda/experimental/__cuco/__open_addressing/kernels.cuh>
-#include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/capacity.cuh>
+#include <cuda/experimental/__cuco/detail/open_addressing/kernels.cuh>
+#include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
+#include <cuda/experimental/__cuco/detail/utils.hpp>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -386,4 +386,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___OPEN_ADDRESSING_IMPL_CUH
+#endif // _CUDAX___CUCO_DETAIL_OPEN_ADDRESSING_IMPL_CUH

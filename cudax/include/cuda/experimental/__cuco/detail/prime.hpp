@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO___DETAIL_PRIME_HPP
-#define _CUDAX___CUCO___DETAIL_PRIME_HPP
+#ifndef _CUDAX___CUCO_DETAIL_PRIME_HPP
+#define _CUDAX___CUCO_DETAIL_PRIME_HPP
 
 #include <cuda/__cccl_config>
 
@@ -171,4 +171,4 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO___DETAIL_PRIME_HPP
+#endif // _CUDAX___CUCO_DETAIL_PRIME_HPP
