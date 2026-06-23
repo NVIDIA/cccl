@@ -28,6 +28,7 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
@@ -323,7 +324,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
     using output_t         = it_value_t<RandomAccessIteratorOut>;
     constexpr int out_size = int{size_of<output_t>};
     constexpr int vec_size = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
-    if constexpr (vec_size > 1)
+    if constexpr (vec_size > 1 && ::cuda::is_power_of_two(out_size)
+                  && (... && ::cuda::is_power_of_two(int{sizeof(it_value_t<RandomAccessIteratorsIn>)})))
     {
       can_vectorize = kernel_source.CanVectorize(vec_size, out, ::cuda::std::get<Is>(in)...);
     }
