@@ -31,6 +31,7 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/argument>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -154,6 +155,20 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
                 "cub::DeviceBatchedTopK currently requires a single (uniform) number of segments resolved on the "
                 "host; pass num_segments as a single-value annotation (e.g. cuda::args::constant or "
                 "cuda::args::immediate), not a per-segment sequence.");
+  static_assert(::cuda::args::__is_wrapper_v<SegmentSizeParameterT>
+                  || ::cuda::std::is_integral_v<SegmentSizeParameterT>,
+                "cub::DeviceBatchedTopK: segment_sizes must be a cuda::args annotation or a plain integral value "
+                "(taken as a uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap "
+                "per-segment sizes in cuda::args::deferred_sequence, or a single device-side value in "
+                "cuda::args::deferred.");
+  static_assert(::cuda::args::__is_wrapper_v<KParameterT> || ::cuda::std::is_integral_v<KParameterT>,
+                "cub::DeviceBatchedTopK: k must be a cuda::args annotation or a plain integral value (taken as a "
+                "uniform immediate). A raw pointer or iterator is not interpreted as a sequence. Wrap a per-segment k "
+                "in cuda::args::deferred_sequence, or a single device-side value in cuda::args::deferred.");
+  static_assert(::cuda::args::__is_wrapper_v<NumSegmentsParameterT>
+                  || ::cuda::std::is_integral_v<NumSegmentsParameterT>,
+                "cub::DeviceBatchedTopK: num_segments must be a cuda::args annotation or a plain integral value. A "
+                "raw pointer or iterator is not accepted.");
 
   const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
@@ -210,6 +225,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //! - ``cuda::args::deferred{iterator}`` for a single value read in stream order through a pointer or iterator, for
 //!   example one produced on the device by a preceding launch.
 //! - ``cuda::args::deferred_sequence{iterator}`` for a distinct value per segment, also read in stream order.
+//!
+//! A plain integral value works too and is taken as a uniform ``immediate`` (no extra bounds). A pointer or iterator,
+//! by contrast, must be wrapped explicitly in ``deferred`` (single value) or ``deferred_sequence`` (per segment).
+//! Passing a raw pointer or iterator is rejected at compile time, because it would otherwise be misread as a single
+//! value rather than a sequence.
 //!
 //! **How it is bounded.** A bound lets the algorithm reason about a value it does not know exactly:
 //!
