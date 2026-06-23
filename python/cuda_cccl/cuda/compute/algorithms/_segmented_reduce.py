@@ -68,6 +68,34 @@ class _SegmentedReduce:
             self.h_init_cccl,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
+        start_offsets_in: DeviceArrayLike | IteratorT,
+        end_offsets_in: DeviceArrayLike | IteratorT,
+        op: Operator,
+        h_init: np.ndarray | GpuStruct,
+    ) -> "_SegmentedReduce":
+        """Reconstruct a segmented_reduce from a blob produced by :meth:`serialize`."""
+        obj = cls.__new__(cls)
+        obj.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        obj.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
+        obj.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
+        obj.h_init_cccl = cccl.to_cccl_value(h_init)
+        value_type = get_value_type(h_init)
+        op_adapter = make_op_adapter(op)
+        obj.op_cccl = op_adapter.compile((value_type, value_type), value_type)
+        obj.build_result = _bindings.DeviceSegmentedReduceBuildResult.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built segmented_reduce."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,

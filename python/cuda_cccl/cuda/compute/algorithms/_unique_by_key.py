@@ -59,6 +59,33 @@ class _UniqueByKey:
             self.op_cccl,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
+        d_out_num_selected: DeviceArrayLike,
+        op: Operator,
+    ) -> "_UniqueByKey":
+        """Reconstruct a unique_by_key from a blob produced by :meth:`serialize`."""
+        obj = cls.__new__(cls)
+        obj.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
+        obj.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
+        obj.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
+        obj.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
+        obj.d_out_num_selected_cccl = cccl.to_cccl_output_iter(d_out_num_selected)
+        value_type = cccl.get_value_type(d_in_keys)
+        obj.op_cccl = make_op_adapter(op).compile((value_type, value_type), types.uint8)
+        obj.build_result = _bindings.DeviceUniqueByKeyBuildResult.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built unique_by_key."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,

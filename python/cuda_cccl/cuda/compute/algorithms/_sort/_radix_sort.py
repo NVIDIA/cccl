@@ -67,6 +67,38 @@ class _RadixSort:
             decomposer_return_type,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in_keys: DeviceArrayLike | DoubleBuffer,
+        d_out_keys: DeviceArrayLike | None,
+        d_in_values: DeviceArrayLike | DoubleBuffer | None,
+        d_out_values: DeviceArrayLike | None,
+    ) -> "_RadixSort":
+        """Reconstruct a radix_sort from a blob produced by :meth:`serialize`."""
+        d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
+            _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
+        )
+        obj = cls.__new__(cls)
+        obj.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys_array)
+        obj.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys_array)
+        obj.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values_array)
+        obj.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values_array)
+        obj.decomposer_op = cccl.Op(
+            name="",
+            operator_type=cccl.OpKind.STATELESS,
+            ltoir=b"",
+            state_alignment=1,
+            state=None,
+        )
+        obj.build_result = _bindings.DeviceRadixSortBuildResult.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built radix_sort."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,

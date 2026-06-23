@@ -99,6 +99,9 @@ class _Scan:
             self.init_kind,
         )
 
+        self._select_device_scan_fn(force_inclusive)
+
+    def _select_device_scan_fn(self, force_inclusive: bool) -> None:
         match (force_inclusive, self.init_kind):
             case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
                 self.device_scan_fn = self.build_result.compute_inclusive_future_value
@@ -113,6 +116,44 @@ class _Scan:
                 self.device_scan_fn = self.build_result.compute_exclusive
             case (False, _bindings.InitKind.NO_INIT):
                 raise ValueError("Exclusive scan with No init value is not supported")
+
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
+        op: Operator,
+        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+        force_inclusive: bool,
+    ) -> "_Scan":
+        """Reconstruct a scan from a blob produced by :meth:`serialize`."""
+        obj = cls.__new__(cls)
+        obj.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        obj.init_kind = get_init_kind(init_value)
+        match obj.init_kind:
+            case _bindings.InitKind.NO_INIT:
+                obj.init_value_cccl = None
+                value_type = get_value_type(d_in)
+            case _bindings.InitKind.FUTURE_VALUE_INIT:
+                obj.init_value_cccl = cccl.to_cccl_input_iter(
+                    cast(DeviceArrayLike, init_value)
+                )
+                value_type = get_value_type(cast(DeviceArrayLike, init_value))
+            case _bindings.InitKind.VALUE_INIT:
+                init_value_typed = cast(np.ndarray | GpuStruct, init_value)
+                obj.init_value_cccl = cccl.to_cccl_value(init_value_typed)
+                value_type = get_value_type(init_value_typed)
+        op_adapter = make_op_adapter(op)
+        obj.op_cccl = op_adapter.compile((value_type, value_type), value_type)
+        obj.build_result = _bindings.DeviceScanBuildResult.deserialize(blob)
+        obj._select_device_scan_fn(force_inclusive)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built scan."""
+        return self.build_result.serialize()
 
     def __call__(
         self,

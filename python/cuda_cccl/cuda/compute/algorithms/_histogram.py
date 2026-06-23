@@ -65,6 +65,31 @@ class _Histogram:
             is_evenly_segmented,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_samples: DeviceArrayLike | IteratorT,
+        d_histogram: DeviceArrayLike,
+        h_num_output_levels: np.ndarray,
+        h_lower_level: np.ndarray,
+        h_upper_level: np.ndarray,
+    ) -> "_Histogram":
+        """Reconstruct a histogram from a blob produced by :meth:`serialize`."""
+        obj = cls.__new__(cls)
+        obj.num_rows = 1
+        obj.d_samples_cccl = cccl.to_cccl_input_iter(d_samples)
+        obj.d_histogram_cccl = cccl.to_cccl_output_iter(d_histogram)
+        obj.h_num_output_levels_cccl = cccl.to_cccl_value(h_num_output_levels)
+        obj.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
+        obj.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
+        obj.build_result = _bindings.DeviceHistogramBuildResult.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built histogram."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,

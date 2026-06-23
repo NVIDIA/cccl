@@ -65,6 +65,41 @@ class _ThreeWayPartition:
             self.select_second_part_op_cccl,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in: DeviceArrayLike | IteratorT,
+        d_first_part_out: DeviceArrayLike | IteratorT,
+        d_second_part_out: DeviceArrayLike | IteratorT,
+        d_unselected_out: DeviceArrayLike | IteratorT,
+        d_num_selected_out: DeviceArrayLike | IteratorT,
+        select_first_part_op: Operator,
+        select_second_part_op: Operator,
+    ) -> "_ThreeWayPartition":
+        """Reconstruct a three_way_partition from a blob produced by :meth:`serialize`."""
+        obj = cls.__new__(cls)
+        obj.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        obj.d_first_part_out_cccl = cccl.to_cccl_output_iter(d_first_part_out)
+        obj.d_second_part_out_cccl = cccl.to_cccl_output_iter(d_second_part_out)
+        obj.d_unselected_out_cccl = cccl.to_cccl_output_iter(d_unselected_out)
+        obj.d_num_selected_out_cccl = cccl.to_cccl_output_iter(d_num_selected_out)
+        value_type = cccl.get_value_type(d_in)
+        obj.select_first_part_op_cccl = make_op_adapter(select_first_part_op).compile(
+            (value_type,), types.uint8
+        )
+        obj.select_second_part_op_cccl = make_op_adapter(select_second_part_op).compile(
+            (value_type,), types.uint8
+        )
+        obj.build_result = _bindings.DeviceThreeWayPartitionBuildResult.deserialize(
+            blob
+        )
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built three_way_partition."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,
