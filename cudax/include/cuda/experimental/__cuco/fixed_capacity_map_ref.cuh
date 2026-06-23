@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO_STATIC_MAP_REF_CUH
-#define _CUDAX___CUCO_STATIC_MAP_REF_CUH
+#ifndef _CUDAX___CUCO_FIXED_CAPACITY_MAP_REF_CUH
+#define _CUDAX___CUCO_FIXED_CAPACITY_MAP_REF_CUH
 
 #include <cuda/__cccl_config>
 
@@ -41,7 +41,7 @@
 
 namespace cuda::experimental::cuco
 {
-//! @brief Device non-owning reference type for `static_map`.
+//! @brief Device non-owning reference type for `fixed_capacity_map`.
 //!
 //! This lightweight, trivially-copyable reference is intended to be passed by value to device code
 //! for performing insert and lookup operations on the hash map.
@@ -56,7 +56,7 @@ namespace cuda::experimental::cuco
 //! count. Pass `cuda::std::dynamic_extent` (the default) for runtime-sized maps; any concrete
 //! value encodes the requested slot count at compile time. The actual slot count is the
 //! prime/stride-adjusted value exposed as `capacity_v` and matches the owning map's
-//! `static_map::capacity_v` for the same parameters.
+//! `fixed_capacity_map::capacity_v` for the same parameters.
 //!
 //! @tparam _Key Type used for keys
 //! @tparam _Tp Type used for mapped values
@@ -72,7 +72,7 @@ template <class _Key,
           class _ProbingScheme,
           int _BucketSize,
           ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent>
-class static_map_ref
+class fixed_capacity_map_ref
 {
   static_assert(sizeof(_Key) <= 8, "Container does not support key types larger than 8 bytes.");
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "sizeof(mapped_type) must be either 4 bytes or 8 bytes.");
@@ -144,7 +144,7 @@ public:
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
   //! @param __slots Span over the slot storage; must contain `capacity()` slots
-  _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
+  _CCCL_HOST_DEVICE explicit constexpr fixed_capacity_map_ref(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __predicate,
@@ -164,7 +164,7 @@ public:
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
   //! @param __slots Span over the slot storage; must contain `capacity()` slots
-  _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
+  _CCCL_HOST_DEVICE explicit constexpr fixed_capacity_map_ref(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     erased_key<_Key> __erased_key_sentinel,
@@ -320,4 +320,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO_STATIC_MAP_REF_CUH
+#endif // _CUDAX___CUCO_FIXED_CAPACITY_MAP_REF_CUH

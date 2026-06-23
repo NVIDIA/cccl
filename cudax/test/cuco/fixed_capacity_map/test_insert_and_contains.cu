@@ -24,14 +24,12 @@
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
-#include <cuda/experimental/__cuco/static_map.cuh>
+#include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
 
 #include <testing.cuh>
 
 namespace cudax = cuda::experimental;
 
-// Matrix dimensions, mirroring the cuCollections static_map tests: key/value type x probing scheme x
-// cooperative-group size x bucket size. `C2H_TEST` forms the cartesian product of these lists.
 template <int _N>
 using _int_c = ::cuda::std::integral_constant<int, _N>;
 
@@ -49,7 +47,7 @@ struct iota_pair
   }
 };
 
-C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
+C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {
   using key_type                             = c2h::get<0, TestType>;
   [[maybe_unused]] constexpr int cg_size     = c2h::get<1, TestType>::value;
@@ -61,14 +59,14 @@ C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, b
     ::cuda::std::conditional_t<probing == 0,
                                cudax::cuco::linear_probing<cg_size, hasher>,
                                cudax::cuco::double_hashing<cg_size, hasher>>;
-  using map_type =
-    cudax::cuco::static_map<key_type,
-                            key_type,
-                            ::cuda::std::dynamic_extent,
-                            ::cuda::thread_scope_device,
-                            ::cuda::std::equal_to<key_type>,
-                            probing_type,
-                            bucket_size>;
+  using map_type = cudax::cuco::fixed_capacity_map<
+    key_type,
+    key_type,
+    ::cuda::std::dynamic_extent,
+    ::cuda::thread_scope_device,
+    ::cuda::std::equal_to<key_type>,
+    probing_type,
+    bucket_size>;
   using value_type = typename map_type::value_type;
 
   constexpr int num_keys = 400;

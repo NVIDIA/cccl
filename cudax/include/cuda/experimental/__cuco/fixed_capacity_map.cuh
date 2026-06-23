@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO_STATIC_MAP_CUH
-#define _CUDAX___CUCO_STATIC_MAP_CUH
+#ifndef _CUDAX___CUCO_FIXED_CAPACITY_MAP_CUH
+#define _CUDAX___CUCO_FIXED_CAPACITY_MAP_CUH
 
 #include <cuda/__cccl_config>
 
@@ -32,9 +32,9 @@
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_impl.cuh>
 #include <cuda/experimental/__cuco/capacity.cuh>
+#include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
-#include <cuda/experimental/__cuco/static_map_ref.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
 #include <cuda/experimental/__cuco/types.cuh>
 
@@ -73,7 +73,7 @@ template <class _Key,
           class _ProbingScheme  = ::cuda::experimental::cuco::linear_probing<1, ::cuda::experimental::cuco::hash<_Key>>,
           int _BucketSize       = 1,
           class _MemoryResource = ::cuda::device_memory_pool_ref>
-class static_map
+class fixed_capacity_map
 {
 public:
   using key_type            = _Key; ///< Key type
@@ -95,9 +95,10 @@ public:
   //! @brief Valid (post-rounding) slot count; `cuda::std::dynamic_extent` for dynamic maps.
   static constexpr size_type capacity_v = _Capacity;
 
-  using ref_type = static_map_ref<_Key, _Tp, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>; ///< Device
-                                                                                                         ///< non-owning
-                                                                                                         ///< ref type
+  using ref_type =
+    fixed_capacity_map_ref<_Key, _Tp, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>; ///< Device
+                                                                                                  ///< non-owning
+                                                                                                  ///< ref type
 
 private:
   using __impl_type = ::cuda::experimental::cuco::__open_addressing::
@@ -130,7 +131,7 @@ public:
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C != ::cuda::std::dynamic_extent, int> = 0>
-  _CCCL_HOST static_map(
+  _CCCL_HOST fixed_capacity_map(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
@@ -157,7 +158,7 @@ public:
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
-  _CCCL_HOST static_map(
+  _CCCL_HOST fixed_capacity_map(
     size_type __capacity,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
@@ -186,7 +187,7 @@ public:
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
-  _CCCL_HOST static_map(
+  _CCCL_HOST fixed_capacity_map(
     size_type __n,
     double __desired_load_factor,
     empty_key<_Key> __empty_key_sentinel,
@@ -216,7 +217,7 @@ public:
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C != ::cuda::std::dynamic_extent, int> = 0>
-  _CCCL_HOST static_map(
+  _CCCL_HOST fixed_capacity_map(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     erased_key<_Key> __erased_key_sentinel,
@@ -246,7 +247,7 @@ public:
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
-  _CCCL_HOST static_map(
+  _CCCL_HOST fixed_capacity_map(
     size_type __capacity,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
@@ -448,4 +449,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO_STATIC_MAP_CUH
+#endif // _CUDAX___CUCO_FIXED_CAPACITY_MAP_CUH

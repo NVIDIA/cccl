@@ -20,7 +20,7 @@
 #include <cuda/std/cstddef>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
-#include <cuda/experimental/__cuco/static_map.cuh>
+#include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
 
 #include <testing.cuh>
 
@@ -36,7 +36,7 @@ using default_probing               = cudax::cuco::linear_probing<1, cudax::cuco
 inline constexpr int default_bucket = 1;
 inline constexpr ::cuda::std::size_t static_capacity =
   cudax::cuco::make_valid_capacity<default_probing, default_bucket>(::cuda::std::size_t{512});
-using static_map_512_type = cudax::cuco::static_map<int, int, static_capacity>;
+using fixed_capacity_map_512_type = cudax::cuco::fixed_capacity_map<int, int, static_capacity>;
 
 template <class _Pair>
 struct iota_pair
@@ -49,9 +49,9 @@ struct iota_pair
 
 // Demonstrates compile-time __shared__ sizing via ref_type::capacity_v.
 template <class _PairIt>
-__global__ void insert_shmem_kernel(static_map_512_type::ref_type global_ref, _PairIt pairs, int n)
+__global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global_ref, _PairIt pairs, int n)
 {
-  using ref_t = static_map_512_type::ref_type;
+  using ref_t = fixed_capacity_map_512_type::ref_type;
   static_assert(ref_t::capacity_v != ::cuda::std::dynamic_extent,
                 "capacity_v must be a compile-time constant for static extents");
 
@@ -66,18 +66,18 @@ __global__ void insert_shmem_kernel(static_map_512_type::ref_type global_ref, _P
   }
 }
 
-C2H_TEST("static_map static extent — shared memory sizing via capacity_v", "[shmem][static]")
+C2H_TEST("fixed_capacity_map static extent — shared memory sizing via capacity_v", "[shmem][static]")
 {
   constexpr int num_keys = 64;
 
-  static_map_512_type map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
+  fixed_capacity_map_512_type map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
   const int block_size = 128;
   const int grid_size  = (num_keys + block_size - 1) / block_size;
 
   insert_shmem_kernel<<<grid_size, block_size>>>(
     map.ref(),
-    cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<static_map_512_type::value_type>{}),
+    cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<fixed_capacity_map_512_type::value_type>{}),
     num_keys);
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 

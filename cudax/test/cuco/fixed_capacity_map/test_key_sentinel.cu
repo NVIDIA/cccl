@@ -20,7 +20,7 @@
 #include <cuda/std/cstddef>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
-#include <cuda/experimental/__cuco/static_map.cuh>
+#include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
 
 #include <testing.cuh>
 
@@ -40,7 +40,7 @@ struct iota_pair
   }
 };
 
-C2H_TEST("static_map — empty and erased key sentinels", "[sentinel]")
+C2H_TEST("fixed_capacity_map — empty and erased key sentinels", "[sentinel]")
 {
   constexpr int erased_sentinel = -2;
   constexpr int num_keys        = 256;
@@ -49,7 +49,7 @@ C2H_TEST("static_map — empty and erased key sentinels", "[sentinel]")
   [[maybe_unused]] constexpr int bucket = 1;
   constexpr ::cuda::std::size_t capacity =
     cudax::cuco::make_valid_capacity<probing, bucket>(static_cast<::cuda::std::size_t>(num_keys * 2));
-  using map_type = cudax::cuco::static_map<int, int, capacity>;
+  using map_type = cudax::cuco::fixed_capacity_map<int, int, capacity>;
 
   map_type map{
     cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}, cudax::cuco::erased_key{erased_sentinel}};
