@@ -101,7 +101,7 @@ runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIte
   constexpr int byte_align    = 16;
   constexpr int items_divisor = 16;
 
-  auto out_ptr           = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
+  const auto out_ptr     = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
   const bool aligned_out = ::cuda::std::is_sufficiently_aligned<byte_align>(out_ptr);
   const bool aligned_in  = ::cuda::std::apply(
     [](auto... iters) {
