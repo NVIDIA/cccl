@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___FORMAT_VFORMAT_H
-#define _CUDA_STD___FORMAT_VFORMAT_H
+#ifndef _CUDA_STD___FORMAT_VFORMAT_TO_H
+#define _CUDA_STD___FORMAT_VFORMAT_TO_H
 
 #include <cuda/std/detail/__config>
 
@@ -127,8 +127,15 @@ __fmt_handle_replacement_field(_It __begin, _It __end, _ParseCtx& __parse_ctx, _
   return ++__begin;
 }
 
+// NVHPC warns about using __attribute__((noinline)) on an inline function.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_NVHPC(inline_gnu_noinline_conflict)
+
+// We mark this function as noinline during device compilation because ptxas takes a lot of time and resources to inline
+// and optimize the formatting function. We expect the function to be mostly used for debugging anyway.
 template <class _ParseCtx, class _Ctx>
-[[nodiscard]] _CCCL_API constexpr typename _Ctx::iterator __fmt_vformat_to(_ParseCtx&& __parse_ctx, _Ctx&& __ctx)
+[[nodiscard]] _CCCL_API _CCCL_NOINLINE_DEVICE constexpr typename _Ctx::iterator
+__fmt_vformat_to(_ParseCtx&& __parse_ctx, _Ctx&& __ctx)
 {
   using _CharT = typename _ParseCtx::char_type;
   static_assert(is_same_v<typename _Ctx::char_type, _CharT>);
@@ -175,10 +182,10 @@ template <class _ParseCtx, class _Ctx>
   return __out_it;
 }
 
-// We mark this function as noinline because ptxas takes a lot of time and resources to inline and optimize the
-// formatting function. We expect the function to be mostly used for debugging anyway.
+_CCCL_DIAG_POP
+
 template <class _OutIt, class _CharT, class _FormatOutIt>
-[[nodiscard]] _CCCL_API _CCCL_NOINLINE _OutIt __vformat_to_impl(
+[[nodiscard]] _CCCL_API _OutIt __vformat_to_impl(
   _OutIt __out_it, basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<_FormatOutIt, _CharT>> __args)
 {
   if constexpr (is_same_v<_OutIt, _FormatOutIt>)
@@ -216,4 +223,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___FORMAT_VFORMAT_H
+#endif // _CUDA_STD___FORMAT_VFORMAT_TO_H

@@ -424,6 +424,51 @@ public:
 };
 static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>);
 
+template <class Base = int*>
+struct common_input_iterator
+{
+  Base it_;
+
+  using value_type       = int;
+  using difference_type  = cuda::std::intptr_t;
+  using iterator_concept = cuda::std::input_iterator_tag;
+
+  constexpr common_input_iterator() = default;
+  TEST_FUNC constexpr explicit common_input_iterator(Base it)
+      : it_(it)
+  {}
+
+  TEST_FUNC constexpr common_input_iterator& operator++()
+  {
+    ++it_;
+    return *this;
+  }
+  TEST_FUNC constexpr void operator++(int)
+  {
+    ++it_;
+  }
+
+  TEST_FUNC constexpr decltype(auto) operator*() const
+  {
+    return *it_;
+  }
+
+  TEST_FUNC friend constexpr bool operator==(common_input_iterator const& lhs, common_input_iterator const& rhs)
+  {
+    return lhs.it_ == rhs.it_;
+  }
+
+  TEST_FUNC friend constexpr bool operator!=(common_input_iterator const& lhs, common_input_iterator const& rhs)
+  {
+    return lhs.it_ != rhs.it_;
+  }
+
+  TEST_FUNC friend constexpr Base base(const common_input_iterator& i)
+  {
+    return i.it_;
+  }
+};
+
 template <class It>
 class cpp20_random_access_iterator
 {

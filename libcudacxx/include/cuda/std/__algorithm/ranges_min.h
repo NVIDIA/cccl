@@ -88,6 +88,9 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto min = __min::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __min_cpo = __min::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
