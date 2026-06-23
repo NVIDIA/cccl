@@ -114,7 +114,7 @@ runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIte
   return aligned_out && aligned_in && (num_items % items_divisor) == 0;
 }
 
-// Bridge from cub::DeviceTransform::__transform_internal to the tile DeviceTransform. Precondition (the caller
+// Bridge from cub::DeviceTransform::__transform_internal to the tile kernel. Precondition (the caller
 // checks it): tile_dispatch_eligible_v is true AND runtime_preconditions_valid returned true. Launches the kernel
 // with tile_operator_t<Op> -- Op's registered __tile__ mirror (a scalar functor can't be invoked on ct::tile).
 template <typename TransformOp, typename OutIter, typename... InIters, typename OffsetT>
@@ -134,12 +134,15 @@ dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_item
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_operator type must be trivially default constructible");
 
-  constexpr int tile_size =
-    cub::detail::transform::tile::pick_tile_size<::cuda::std::iter_value_t<OutIter>,
-                                                 ::cuda::std::iter_value_t<InIters>...>(
-      cub::transform::tile_mufu_heavy_v<TransformOp>);
+  constexpr int tile_size = cub::detail::transform::tile::pick_tile_size<::cuda::std::iter_value_t<OutIter>,
+                                                                         ::cuda::std::iter_value_t<InIters>...>(
+    cub::transform::tile_mufu_heavy_v<TransformOp>);
   return cub::detail::transform::tile::launch_impl<tile_size, tile_op_t>(
-    in_ptrs, out_ptr, static_cast<::cuda::std::int64_t>(num_items), stream, ::cuda::std::index_sequence_for<InIters...>{});
+    in_ptrs,
+    out_ptr,
+    static_cast<::cuda::std::int64_t>(num_items),
+    stream,
+    ::cuda::std::index_sequence_for<InIters...>{});
 }
 } // namespace detail::transform::tile
 
