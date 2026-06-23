@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/devices>
 #include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
@@ -348,6 +349,16 @@ C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
     cuda::device_memory_pool_ref second = cuda::device_default_memory_pool(cuda::device_ref{0});
     CHECK((first == second));
     CHECK(!(first != second));
+  }
+
+  { // default pools are cached per physical device
+    if (cuda::devices.size() > 1)
+    {
+      cuda::device_memory_pool_ref second = cuda::device_default_memory_pool(cuda::device_ref{1});
+      CHECK(first.get() != second.get());
+      CHECK((first != second));
+      CHECK(!(first == second));
+    }
   }
 
   { // comparison against a plain device_memory_pool_ref with a different pool
