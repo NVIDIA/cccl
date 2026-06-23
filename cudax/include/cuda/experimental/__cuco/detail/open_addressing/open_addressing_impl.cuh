@@ -252,9 +252,9 @@ public:
 
     const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
-    __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
+    __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
       <<<static_cast<unsigned int>(__grid_size),
-         ::cuda::experimental::cuco::__detail::__default_block_size(),
+         ::cuda::experimental::cuco::__detail::__default_block_size,
          0,
          __stream.get()>>>(
         __first,
@@ -289,9 +289,9 @@ public:
     {
       const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
-      __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
+      __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
         <<<static_cast<unsigned int>(__grid_size),
-           ::cuda::experimental::cuco::__detail::__default_block_size(),
+           ::cuda::experimental::cuco::__detail::__default_block_size,
            0,
            __stream.get()>>>(
           __first, __num_keys, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
@@ -321,9 +321,9 @@ public:
     {
       const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
-      __open_addressing::__contains_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
+      __open_addressing::__contains_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
         <<<static_cast<unsigned int>(__grid_size),
-           ::cuda::experimental::cuco::__detail::__default_block_size(),
+           ::cuda::experimental::cuco::__detail::__default_block_size,
            0,
            __stream.get()>>>(
           __first,

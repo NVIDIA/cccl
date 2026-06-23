@@ -48,20 +48,11 @@ using __index_type = ::cuda::std::int64_t;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-constexpr _CCCL_HOST_DEVICE ::cuda::std::int32_t __default_block_size() noexcept
-{
-  return 128;
-}
+inline constexpr ::cuda::std::int32_t __default_block_size = 128;
 
-constexpr _CCCL_HOST_DEVICE ::cuda::std::int32_t __default_stride() noexcept
-{
-  return 1;
-}
+inline constexpr ::cuda::std::int32_t __default_stride = 1;
 
-constexpr _CCCL_HOST_DEVICE ::cuda::std::int32_t __warp_size() noexcept
-{
-  return 32;
-}
+inline constexpr ::cuda::std::int32_t __warp_size = 32;
 
 template <class _Tile>
 struct __tile_size;
@@ -78,8 +69,8 @@ inline constexpr ::cuda::std::uint32_t __tile_size_v = __tile_size<_Tile>::__val
 constexpr _CCCL_HOST_DEVICE __index_type __grid_size(
   __index_type __num,
   ::cuda::std::int32_t __cg_size    = 1,
-  ::cuda::std::int32_t __stride     = __default_stride(),
-  ::cuda::std::int32_t __block_size = __default_block_size()) noexcept
+  ::cuda::std::int32_t __stride     = __default_stride,
+  ::cuda::std::int32_t __block_size = __default_block_size) noexcept
 {
   return ::cuda::ceil_div(__cg_size * __num, __stride * __block_size);
 }
