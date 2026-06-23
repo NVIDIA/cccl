@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/attributes.h>
+#include <cuda/__device/device_ref.h>
+#include <cuda/__hierarchy/hierarchy_levels.h>
 #include <cuda/__runtime/api_wrapper.h>
-#include <cuda/cmath>
-#include <cuda/hierarchy>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/cstdint>
@@ -48,11 +50,11 @@ using __index_type = ::cuda::std::int64_t;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-inline constexpr ::cuda::std::int32_t __default_block_size = 128;
+inline constexpr int __default_block_size = 128;
 
-inline constexpr ::cuda::std::int32_t __default_stride = 1;
+inline constexpr int __default_stride = 1;
 
-inline constexpr ::cuda::std::int32_t __warp_size = 32;
+inline constexpr int __warp_size = 32;
 
 template <class _Tile>
 struct __tile_size;
@@ -60,40 +62,34 @@ struct __tile_size;
 template <::cuda::std::uint32_t _Size, class _ParentCG>
 struct __tile_size<::cooperative_groups::thread_block_tile<_Size, _ParentCG>>
 {
-  static constexpr ::cuda::std::uint32_t __value = _Size;
+  static constexpr int __value = _Size;
 };
 
 template <class _Tile>
-inline constexpr ::cuda::std::uint32_t __tile_size_v = __tile_size<_Tile>::__value;
+inline constexpr int __tile_size_v = __tile_size<_Tile>::__value;
 
 constexpr _CCCL_HOST_DEVICE __index_type __grid_size(
   __index_type __num,
-  ::cuda::std::int32_t __cg_size    = 1,
-  ::cuda::std::int32_t __stride     = __default_stride,
-  ::cuda::std::int32_t __block_size = __default_block_size) noexcept
+  int __cg_size    = 1,
+  int __stride     = __default_stride,
+  int __block_size = __default_block_size) noexcept
 {
   return ::cuda::ceil_div(__cg_size * __num, __stride * __block_size);
 }
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Kernel>
-constexpr auto __max_occupancy_grid_size(
-  ::cuda::std::int32_t __block_size, _Kernel __kernel, ::cuda::std::size_t __dynamic_shm_size = 0)
+_CCCL_HOST_API constexpr auto
+__max_occupancy_grid_size(int __block_size, _Kernel __kernel, ::cuda::std::size_t __dynamic_shm_size = 0)
 {
   int __device = 0;
-  _CCCL_TRY_CUDA_API(cudaGetDevice, "Failed to get current device", &__device);
+  _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to get current device", &__device);
 
-  int __num_multiprocessors = -1;
-  _CCCL_TRY_CUDA_API(
-    cudaDeviceGetAttribute,
-    "Failed to get multiprocessor count",
-    &__num_multiprocessors,
-    cudaDevAttrMultiProcessorCount,
-    __device);
+  const int __num_multiprocessors = ::cuda::device_attributes::multiprocessor_count(::cuda::device_ref{__device});
 
   int __max_active_blocks_per_multiprocessor{};
   _CCCL_TRY_CUDA_API(
-    cudaOccupancyMaxActiveBlocksPerMultiprocessor,
+    ::cudaOccupancyMaxActiveBlocksPerMultiprocessor,
     "Failed to get max active blocks per multiprocessor",
     &__max_active_blocks_per_multiprocessor,
     __kernel,
@@ -103,8 +99,8 @@ constexpr auto __max_occupancy_grid_size(
   return __max_active_blocks_per_multiprocessor * __num_multiprocessors;
 }
 #endif // !_CCCL_COMPILER(NVRTC)
-//! @brief Distance helper requiring random access iterators.
 
+//! @brief Distance helper requiring random access iterators.
 template <class _Iterator>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr __index_type __distance(_Iterator __begin, _Iterator __end)
 {
