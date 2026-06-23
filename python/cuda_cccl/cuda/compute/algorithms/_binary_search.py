@@ -67,6 +67,45 @@ class _BinarySearch:
             self.op_cccl,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_data: DeviceArrayLike,
+        d_values: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike,
+        comp: Operator | None = None,
+    ) -> "_BinarySearch":
+        """Reconstruct a binary_search from a blob produced by :meth:`serialize`."""
+        if not protocols.is_device_array(d_data):
+            raise ValueError("d_data must be a device array for index outputs.")
+        if not protocols.is_device_array(d_out):
+            raise ValueError("d_out must be a device array for index outputs.")
+        out_dtype = protocols.get_dtype(d_out)
+        if out_dtype.kind != "u":
+            raise TypeError("d_out must use an unsigned integer dtype for indices.")
+        if out_dtype.itemsize != np.dtype(np.uintp).itemsize:
+            raise ValueError(
+                "d_out must use a pointer-sized unsigned integer dtype (np.uintp)."
+            )
+        obj = cls.__new__(cls)
+        obj.data_ptr = protocols.get_data_pointer(d_data)
+        obj.out_ptr = protocols.get_data_pointer(d_out)
+        obj.d_data_cccl = cccl.to_cccl_input_iter(d_data)
+        obj.d_values_cccl = cccl.to_cccl_input_iter(d_values)
+        data_value_type = cccl.get_value_type(d_data)
+        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        comp_adapter = make_op_adapter(OpKind.LESS if comp is None else comp)
+        obj.op_cccl = comp_adapter.compile(
+            (data_value_type, data_value_type), types.uint8
+        )
+        obj.build_result = _bindings.DeviceBinarySearchBuildResult.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built binary_search."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,

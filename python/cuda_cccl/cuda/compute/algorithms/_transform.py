@@ -40,6 +40,28 @@ class _UnaryTransform:
             self.op_cccl,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
+        op: Operator,
+    ) -> "_UnaryTransform":
+        """Reconstruct a unary_transform from a blob produced by :meth:`serialize`."""
+        obj = cls.__new__(cls)
+        obj.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        in_type = cccl.get_value_type(d_in)
+        out_type = cccl.get_value_type(d_out)
+        obj.op_cccl = make_op_adapter(op).compile((in_type,), out_type)
+        obj.build_result = _bindings.DeviceUnaryTransform.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built unary_transform."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,
@@ -99,6 +121,31 @@ class _BinaryTransform:
             self.d_out_cccl,
             self.op_cccl,
         )
+
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in1: DeviceArrayLike | IteratorT,
+        d_in2: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
+        op: Operator,
+    ) -> "_BinaryTransform":
+        """Reconstruct a binary_transform from a blob produced by :meth:`serialize`."""
+        obj = cls.__new__(cls)
+        obj.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
+        obj.d_in2_cccl = cccl.to_cccl_input_iter(d_in2)
+        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        in1_type = cccl.get_value_type(d_in1)
+        in2_type = cccl.get_value_type(d_in2)
+        out_type = cccl.get_value_type(d_out)
+        obj.op_cccl = make_op_adapter(op).compile((in1_type, in2_type), out_type)
+        obj.build_result = _bindings.DeviceBinaryTransform.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built binary_transform."""
+        return self.build_result.serialize()
 
     def __call__(
         self,

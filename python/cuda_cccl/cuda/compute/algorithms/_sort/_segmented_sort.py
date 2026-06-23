@@ -63,6 +63,35 @@ class _SegmentedSort:
             self.end_offsets_in_cccl,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in_keys: DeviceArrayLike | DoubleBuffer,
+        d_out_keys: DeviceArrayLike | None,
+        d_in_values: DeviceArrayLike | DoubleBuffer | None,
+        d_out_values: DeviceArrayLike | None,
+        start_offsets_in: DeviceArrayLike,
+        end_offsets_in: DeviceArrayLike,
+    ) -> "_SegmentedSort":
+        """Reconstruct a segmented_sort from a blob produced by :meth:`serialize`."""
+        d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
+            _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
+        )
+        obj = cls.__new__(cls)
+        obj.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys_array)
+        obj.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys_array)
+        obj.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values_array)
+        obj.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values_array)
+        obj.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
+        obj.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
+        obj.build_result = _bindings.DeviceSegmentedSortBuildResult.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built segmented_sort."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,

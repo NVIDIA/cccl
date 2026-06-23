@@ -68,6 +68,9 @@ class _Reduce:
             determinism,
         )
 
+        self._select_device_reduce_fn(determinism)
+
+    def _select_device_reduce_fn(self, determinism: Determinism) -> None:
         match determinism:
             case Determinism.RUN_TO_RUN:
                 self.device_reduce_fn = self.build_result.compute
@@ -75,6 +78,36 @@ class _Reduce:
                 self.device_reduce_fn = self.build_result.compute_nondeterministic
             case _:
                 raise ValueError(f"Invalid determinism: {determinism}")
+
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
+        op: Operator,
+        h_init: np.ndarray | GpuStruct,
+    ) -> "_Reduce":
+        """Reconstruct a reducer from a blob produced by :meth:`serialize`."""
+        obj = cls.__new__(cls)
+        obj.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        obj.h_init_cccl = cccl.to_cccl_value(h_init)
+        value_type = get_value_type(h_init)
+        op_adapter = make_op_adapter(op)
+        obj.op_cccl = op_adapter.compile((value_type, value_type), value_type)
+        obj.build_result = _bindings.DeviceReduceBuildResult.deserialize(blob)
+        obj._select_device_reduce_fn(Determinism(obj.build_result.determinism))
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built reducer.
+
+        The blob is specific to the compute capability it was built for.
+        Reconstruct with :meth:`deserialize`, supplying matching
+        ``d_in``/``d_out``/``op``/``h_init`` to bind runtime state.
+        """
+        return self.build_result.serialize()
 
     def __call__(
         self,
