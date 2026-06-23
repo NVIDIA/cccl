@@ -36,6 +36,7 @@ namespace cuda::experimental::cuco::__detail
 {
 using __index_type = ::cuda::std::int64_t;
 
+#if _CCCL_CUDA_COMPILATION()
 [[nodiscard]] _CCCL_DEVICE inline __index_type __global_thread_id() noexcept
 {
   return ::cuda::gpu_thread.rank_as<__index_type>(::cuda::grid);
@@ -45,6 +46,7 @@ using __index_type = ::cuda::std::int64_t;
 {
   return ::cuda::gpu_thread.count_as<__index_type>(::cuda::grid);
 }
+#endif // _CCCL_CUDA_COMPILATION()
 
 constexpr _CCCL_HOST_DEVICE ::cuda::std::int32_t __default_block_size() noexcept
 {
