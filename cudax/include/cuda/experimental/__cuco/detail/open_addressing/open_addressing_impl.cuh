@@ -26,8 +26,8 @@
 
 #include <cuda/__atomic/atomic.h>
 #include <cuda/__container/buffer.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__iterator/constant_iterator.h>
-#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/identity.h>
@@ -143,14 +143,7 @@ private:
   __read_counter(const ::cuda::device_buffer<__size_type>& __counter, ::cuda::stream_ref __stream) const
   {
     __size_type __result;
-    _CCCL_TRY_CUDA_API(
-      cudaMemcpyAsync,
-      "Failed to copy counter to host",
-      &__result,
-      __counter.data(),
-      sizeof(__size_type),
-      cudaMemcpyDeviceToHost,
-      __stream.get());
+    ::cuda::__driver::__memcpyAsync(&__result, __counter.data(), sizeof(__size_type), __stream.get());
     __stream.sync();
     return __result;
   }
@@ -255,10 +248,7 @@ public:
     const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
     __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
-      <<<static_cast<unsigned int>(__grid_size),
-         ::cuda::experimental::cuco::__detail::__default_block_size,
-         0,
-         __stream.get()>>>(
+      <<<static_cast<unsigned>(__grid_size), ::cuda::experimental::cuco::__detail::__default_block_size, 0, __stream.get()>>>(
         __first,
         __num_keys,
         ::cuda::constant_iterator<bool>{true},
@@ -292,7 +282,7 @@ public:
       const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
       __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
-        <<<static_cast<unsigned int>(__grid_size),
+        <<<static_cast<unsigned>(__grid_size),
            ::cuda::experimental::cuco::__detail::__default_block_size,
            0,
            __stream.get()>>>(
@@ -324,7 +314,7 @@ public:
       const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
       __open_addressing::__contains_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
-        <<<static_cast<unsigned int>(__grid_size),
+        <<<static_cast<unsigned>(__grid_size),
            ::cuda::experimental::cuco::__detail::__default_block_size,
            0,
            __stream.get()>>>(
@@ -380,7 +370,7 @@ public:
   }
 
   //! @brief Returns a non-owning reference to the stored slots.
-  [[nodiscard]] _CCCL_HOST constexpr __storage_ref_type storage_ref() const noexcept
+  [[nodiscard]] _CCCL_HOST __storage_ref_type storage_ref() const noexcept
   {
     return __storage_ref_type{const_cast<__value_type*>(__slots.data()), capacity()};
   }
