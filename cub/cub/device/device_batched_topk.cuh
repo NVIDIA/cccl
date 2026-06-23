@@ -240,10 +240,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
 //!   the range is only known at runtime. When combined with a compile-time bound, the runtime bound must be at least
 //!   as narrow, lying within the compile-time range and only tightening it further.
 //!
-//! **Which form each parameter accepts.** ``segment_sizes`` and ``k`` accept all four forms. The kernel specializes
-//! on their upper bound, so each carries a compile-time bound (a ``constant`` is its own, the other forms take an
-//! explicit ``cuda::args::bounds<lo, hi>()``). ``num_segments`` must be a single value known on the host, supplied
-//! as ``constant`` or ``immediate``.
+//! **Which form each parameter accepts.** ``segment_sizes`` and ``k`` accept all four forms. Only ``segment_sizes``
+//! needs a small compile-time upper bound that the kernel specializes on, so it must be a ``constant<N>`` or carry an
+//! explicit ``cuda::args::bounds<lo, hi>()`` (a plain integral value is not enough). ``k`` needs no bound, since it is
+//! capped per segment to the segment size, so a plain integral value or any annotation works. ``num_segments`` is a
+//! single host value given as a ``constant``, an ``immediate``, or a plain integral, and needs no bound.
 //!
 //! .. code-block:: c++
 //!
@@ -367,10 +368,10 @@ struct DeviceBatchedTopK
   //!   *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   Annotated argument providing the (uniform) number of segments
+  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -447,10 +448,10 @@ struct DeviceBatchedTopK
   //!   *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   Annotated argument providing the (uniform) number of segments
+  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -577,10 +578,10 @@ struct DeviceBatchedTopK
   //!   *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   Annotated argument providing the (uniform) number of segments
+  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -737,10 +738,10 @@ struct DeviceBatchedTopK
   //!   *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   Annotated argument providing the (uniform) number of segments
+  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
@@ -876,10 +877,10 @@ struct DeviceBatchedTopK
   //!   *Choosing argument bounds* section).
   //!
   //! @param[in] k
-  //!   Annotated argument providing the number of selected items per segment. Capped per segment to the segment size.
+  //!   The number of selected items per segment, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] num_segments
-  //!   Annotated argument providing the (uniform) number of segments
+  //!   The (uniform) number of segments, given as a `cuda::args` annotation or a plain integral value.
   //!
   //! @param[in] env
   //!   @rst
