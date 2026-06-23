@@ -215,9 +215,9 @@ _CCCL_HOST_API inline bool __is_device_accessible(
   {
     ::cuda::__ensure_current_context __ctx_setter{__device};
 
-    void* __device_ptr  = nullptr;
-    const auto __status = ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(
-      __device_ptr, __p);
+    void* __device_ptr = nullptr;
+    const auto __status =
+      ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(__device_ptr, __p);
     if (__status == ::cudaErrorInvalidValue)
     {
       return false;
