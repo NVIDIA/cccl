@@ -22,7 +22,9 @@
 #include <sstream>
 #include <vector>
 
+#include "util/aot_serialize.h"
 #include "util/nvjitlink.h"
+#include <cccl/c/aot.h>
 #include <cccl/c/unique_by_key.h>
 #include <kernels/iterators.h>
 #include <kernels/operators.h>
@@ -660,5 +662,121 @@ try
 catch (const std::exception& exc)
 {
   printf("\nEXCEPTION in cccl_device_unique_by_key_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+namespace unique_by_key_aot
+{
+inline uint64_t aot_abi_hash()
+{
+  using namespace cccl::aot;
+  uint64_t h = fnv1a64("cccl_device_unique_by_key");
+  h          = fnv1a64_mix(h, CCCL_VERSION);
+  h          = fnv1a64_mix(h, sizeof(cccl_device_unique_by_key_build_result_t));
+  h          = fnv1a64_mix(h, sizeof(cub::detail::unique_by_key::policy_selector));
+  return h;
+}
+} // namespace unique_by_key_aot
+
+CUresult cccl_device_unique_by_key_serialize(
+  const cccl_device_unique_by_key_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0 || build_ptr->runtime_policy == nullptr
+      || build_ptr->runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_writer w;
+  write_header(
+    w, CCCL_AOT_ALGO_UNIQUE_BY_KEY, unique_by_key_aot::aot_abi_hash(), build_ptr->payload_kind, build_ptr->cc);
+  w.write_pod<uint64_t>(build_ptr->description_bytes_per_tile);
+  w.write_pod<uint64_t>(build_ptr->payload_bytes_per_tile);
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_cstring(build_ptr->compact_init_kernel_lowered_name);
+  w.write_cstring(build_ptr->sweep_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_unique_by_key_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult
+cccl_device_unique_by_key_deserialize(cccl_device_unique_by_key_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_UNIQUE_BY_KEY, unique_by_key_aot::aot_abi_hash());
+
+  const auto desc_bytes = r.read_pod<uint64_t>();
+  const auto pay_bytes  = r.read_pod<uint64_t>();
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  if (payload_size == 0)
+  {
+    throw std::runtime_error("aot blob: empty payload");
+  }
+
+  std::unique_ptr<cub::detail::unique_by_key::policy_selector, decltype(&std::free)> policy(
+    static_cast<cub::detail::unique_by_key::policy_selector*>(
+      std::malloc(sizeof(cub::detail::unique_by_key::policy_selector))),
+    std::free);
+  if (!policy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  r.read_into(policy.get(), sizeof(cub::detail::unique_by_key::policy_selector));
+
+  std::unique_ptr<char[]> n_init{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_sweep{r.read_cstring_dup()};
+
+  std::memset(build_ptr, 0, sizeof(*build_ptr));
+  build_ptr->cc                               = static_cast<int>(h.cc);
+  build_ptr->payload_kind                     = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  build_ptr->description_bytes_per_tile       = desc_bytes;
+  build_ptr->payload_bytes_per_tile           = pay_bytes;
+  build_ptr->payload                          = payload_owner.release();
+  build_ptr->payload_size                     = payload_size;
+  build_ptr->runtime_policy                   = policy.release();
+  build_ptr->runtime_policy_size              = sizeof(cub::detail::unique_by_key::policy_selector);
+  build_ptr->compact_init_kernel_lowered_name = n_init.release();
+  build_ptr->sweep_kernel_lowered_name        = n_sweep.release();
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  if (build_ptr != nullptr)
+  {
+    std::memset(build_ptr, 0, sizeof(*build_ptr));
+  }
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_unique_by_key_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }

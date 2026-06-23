@@ -18,11 +18,13 @@
 #include <vector>
 
 #include "util/nvjitlink.h"
+#include <cccl/c/aot.h>
 #include <cccl/c/for.h>
 #include <cccl/c/types.h>
 #include <for/for_op_helper.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/aot_serialize.h>
 #include <util/build_utils.h>
 #include <util/context.h>
 #include <util/errors.h>
@@ -325,5 +327,93 @@ try
 }
 catch (...)
 {
+  return CUDA_ERROR_UNKNOWN;
+}
+
+namespace for_aot
+{
+inline uint64_t aot_abi_hash()
+{
+  using namespace cccl::aot;
+  uint64_t h = fnv1a64("cccl_device_for");
+  h          = fnv1a64_mix(h, CCCL_VERSION);
+  h          = fnv1a64_mix(h, sizeof(cccl_device_for_build_result_t));
+  return h;
+}
+} // namespace for_aot
+
+CUresult cccl_device_for_serialize(const cccl_device_for_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_writer w;
+  write_header(w, CCCL_AOT_ALGO_FOR, for_aot::aot_abi_hash(), build_ptr->payload_kind, build_ptr->cc);
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_cstring(build_ptr->static_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_for_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_for_deserialize(cccl_device_for_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_FOR, for_aot::aot_abi_hash());
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  if (payload_size == 0)
+  {
+    throw std::runtime_error("aot blob: empty payload");
+  }
+
+  std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
+
+  std::memset(build_ptr, 0, sizeof(*build_ptr));
+  build_ptr->cc                         = static_cast<int>(h.cc);
+  build_ptr->payload_kind               = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  build_ptr->payload                    = payload_owner.release();
+  build_ptr->payload_size               = payload_size;
+  build_ptr->static_kernel_lowered_name = n_kernel.release();
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  if (build_ptr != nullptr)
+  {
+    std::memset(build_ptr, 0, sizeof(*build_ptr));
+  }
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_for_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }
