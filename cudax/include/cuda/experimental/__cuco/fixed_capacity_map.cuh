@@ -70,9 +70,9 @@ template <class _Key,
           ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent,
           ::cuda::thread_scope _Scope   = ::cuda::thread_scope_device,
           class _KeyEqual               = ::cuda::std::equal_to<_Key>,
-          class _ProbingScheme  = ::cuda::experimental::cuco::linear_probing<1, ::cuda::experimental::cuco::hash<_Key>>,
-          int _BucketSize       = 1,
-          class _MemoryResource = ::cuda::device_memory_pool_ref>
+          class _ProbingScheme          = linear_probing<1, hash<_Key>>,
+          int _BucketSize               = 1,
+          class _MemoryResource         = ::cuda::device_memory_pool_ref>
 class fixed_capacity_map
 {
 public:
@@ -88,8 +88,7 @@ public:
   static constexpr auto bucket_size  = _BucketSize; ///< Number of slots per bucket
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope for atomic operations
 
-  static_assert(_Capacity == ::cuda::std::dynamic_extent
-                  || ::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(_Capacity),
+  static_assert(_Capacity == ::cuda::std::dynamic_extent || is_valid_capacity<_ProbingScheme, _BucketSize>(_Capacity),
                 "Capacity must be a valid open-addressing capacity; obtain it via cuco::make_valid_capacity");
 
   //! @brief Valid (post-rounding) slot count; `cuda::std::dynamic_extent` for dynamic maps.
@@ -101,7 +100,7 @@ public:
                                                                                                   ///< ref type
 
 private:
-  using __impl_type = ::cuda::experimental::cuco::__open_addressing::
+  using __impl_type = __open_addressing::
     __open_addressing_impl<_Key, value_type, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, _MemoryResource>;
 
   ::cuda::std::unique_ptr<__impl_type> __impl;
@@ -431,7 +430,7 @@ public:
   [[nodiscard]] auto ref() const noexcept -> ref_type
   {
     auto __slots = typename ref_type::storage_span_type{__impl->storage_ref().data(), __impl->capacity()};
-    return ::cuda::experimental::cuco::__detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+    return __detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
            ? ref_type{empty_key{empty_key_sentinel()},
                       empty_value{empty_value_sentinel()},
                       __impl->key_eq(),

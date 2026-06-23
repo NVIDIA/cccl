@@ -92,10 +92,8 @@ public:
   static_assert(::cuda::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
                 "bitwise comparison via specialization of cuda::is_bitwise_comparable_v<Key>.");
-  static_assert(
-    ::cuda::std::is_base_of_v<::cuda::experimental::cuco::__detail::__probing_scheme_base<_ProbingScheme::cg_size>,
-                              _ProbingScheme>,
-    "ProbingScheme must inherit from cuda::experimental::cuco::__detail::__probing_scheme_base");
+  static_assert(::cuda::std::is_base_of_v<__detail::__probing_scheme_base<_ProbingScheme::cg_size>, _ProbingScheme>,
+                "ProbingScheme must inherit from cuda::experimental::cuco::__detail::__probing_scheme_base");
 
 private:
   __value_type __empty_slot_sentinel;
@@ -108,15 +106,13 @@ private:
   //! @brief Computes the number of buckets for a requested capacity.
   [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __requested_capacity)
   {
-    return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__requested_capacity)
-         / _BucketSize;
+    return make_valid_capacity<_ProbingScheme, _BucketSize>(__requested_capacity) / _BucketSize;
   }
 
   //! @brief Computes the number of buckets for a given number of keys and load factor.
   [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __n, double __load_factor)
   {
-    return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__n, __load_factor)
-         / _BucketSize;
+    return make_valid_capacity<_ProbingScheme, _BucketSize>(__n, __load_factor) / _BucketSize;
   }
 
   //! @brief Extracts the key from a slot.
@@ -226,10 +222,7 @@ public:
       return;
     }
     [[maybe_unused]] const auto __status = CUB_NS_QUALIFIER::DeviceTransform::Fill(
-      __slots.data(),
-      static_cast<::cuda::experimental::cuco::__detail::__index_type>(__n),
-      __empty_slot_sentinel,
-      __stream);
+      __slots.data(), static_cast<__detail::__index_type>(__n), __empty_slot_sentinel, __stream);
     _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to clear slot storage");
   }
 
@@ -237,7 +230,7 @@ public:
   template <class _InputIt, class _Ref>
   _CCCL_HOST __size_type insert(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
   {
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
+    const auto __num_keys = __detail::__distance(__first, __last);
     if (__num_keys == 0)
     {
       return 0;
@@ -245,10 +238,10 @@ public:
 
     auto __counter = __make_counter(__stream);
 
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
+    const auto __grid_size = __detail::__grid_size(__num_keys, __cg_size);
 
-    __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
-      <<<static_cast<unsigned>(__grid_size), ::cuda::experimental::cuco::__detail::__default_block_size, 0, __stream.get()>>>(
+    __open_addressing::__insert_if_n<__cg_size, __detail::__default_block_size>
+      <<<static_cast<unsigned>(__grid_size), __detail::__default_block_size, 0, __stream.get()>>>(
         __first,
         __num_keys,
         ::cuda::constant_iterator<bool>{true},
@@ -264,7 +257,7 @@ public:
   _CCCL_HOST void
   insert_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) noexcept
   {
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
+    const auto __num_keys = __detail::__distance(__first, __last);
     if (__num_keys == 0)
     {
       return;
@@ -279,13 +272,10 @@ public:
     }
     else
     {
-      const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
+      const auto __grid_size = __detail::__grid_size(__num_keys, __cg_size);
 
-      __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size),
-           ::cuda::experimental::cuco::__detail::__default_block_size,
-           0,
-           __stream.get()>>>(
+      __open_addressing::__insert_if_n<__cg_size, __detail::__default_block_size>
+        <<<static_cast<unsigned>(__grid_size), __detail::__default_block_size, 0, __stream.get()>>>(
           __first, __num_keys, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
     }
   }
@@ -296,7 +286,7 @@ public:
     _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
     const noexcept
   {
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
+    const auto __num_keys = __detail::__distance(__first, __last);
     if (__num_keys == 0)
     {
       return;
@@ -311,13 +301,10 @@ public:
     }
     else
     {
-      const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
+      const auto __grid_size = __detail::__grid_size(__num_keys, __cg_size);
 
-      __open_addressing::__contains_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size),
-           ::cuda::experimental::cuco::__detail::__default_block_size,
-           0,
-           __stream.get()>>>(
+      __open_addressing::__contains_if_n<__cg_size, __detail::__default_block_size>
+        <<<static_cast<unsigned>(__grid_size), __detail::__default_block_size, 0, __stream.get()>>>(
           __first,
           __num_keys,
           ::cuda::constant_iterator<bool>{true},

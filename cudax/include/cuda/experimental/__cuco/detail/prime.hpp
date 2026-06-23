@@ -63,9 +63,9 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   {
     if (__e & 1)
     {
-      __r = ::cuda::experimental::cuco::__detail::__mod_mul(__r, __b, __m);
+      __r = __detail::__mod_mul(__r, __b, __m);
     }
-    __b = ::cuda::experimental::cuco::__detail::__mod_mul(__b, __b, __m);
+    __b = __detail::__mod_mul(__b, __b, __m);
     __e >>= 1;
   }
   return __r;
@@ -78,7 +78,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __miller_rabin_test(
   ::cuda::std::uint64_t __n, ::cuda::std::uint64_t __a, ::cuda::std::uint64_t __d, ::cuda::std::uint32_t __s) noexcept
 {
-  ::cuda::std::uint64_t __x = ::cuda::experimental::cuco::__detail::__mod_pow(__a % __n, __d, __n);
+  ::cuda::std::uint64_t __x = __detail::__mod_pow(__a % __n, __d, __n);
   const auto __neg_one      = __n - 1;
   if (__x == 1 || __x == __neg_one)
   {
@@ -87,7 +87,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
   for (::cuda::std::uint32_t __i = 1; __i < __s; ++__i)
   {
-    __x = ::cuda::experimental::cuco::__detail::__mod_mul(__x, __x, __n);
+    __x = __detail::__mod_mul(__x, __x, __n);
     if (__x == __neg_one)
     {
       return true;
@@ -132,7 +132,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   constexpr ::cuda::std::uint64_t __witnesses[]{2ull, 325ull, 9375ull, 28178ull, 450775ull, 9780504ull, 1795265022ull};
   for (::cuda::std::uint64_t __a : __witnesses)
   {
-    if (!::cuda::experimental::cuco::__detail::__miller_rabin_test(__n, __a, __d, __s))
+    if (!__detail::__miller_rabin_test(__n, __a, __d, __s))
     {
       return false;
     }
@@ -154,7 +154,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
   __n |= 1; // make odd
 
-  while (!::cuda::experimental::cuco::__detail::__is_prime(__n))
+  while (!__detail::__is_prime(__n))
   {
     // explicit `uint64_t{0}`: `~0` would be a 32-bit `int`, not the 64-bit max
     if (__n > ~::cuda::std::uint64_t{0} - 2)

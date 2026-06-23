@@ -61,7 +61,7 @@ enum class __insert_result : ::cuda::std::int8_t
 //! @brief Helper struct to store intermediate bucket probing results.
 struct __bucket_probing_results
 {
-  ::cuda::experimental::cuco::__detail::__equal_result __state; ///< Equal result
+  __detail::__equal_result __state; ///< Equal result
   ::cuda::std::int32_t __intra_bucket_index; ///< Intra-bucket index
 
 #if _CCCL_CUDA_COMPILATION()
@@ -71,7 +71,7 @@ struct __bucket_probing_results
   //! @param __state The three way equality __result
   //! @param __index Intra-bucket index
   _CCCL_DEVICE explicit constexpr __bucket_probing_results(
-    ::cuda::experimental::cuco::__detail::__equal_result __state, ::cuda::std::int32_t __index) noexcept
+    __detail::__equal_result __state, ::cuda::std::int32_t __index) noexcept
       : __state{__state}
       , __intra_bucket_index{__index}
   {}
@@ -85,9 +85,9 @@ struct __bucket_probing_results
 //!
 //! @throw If the size of the given __key type is larger than 8 bytes
 //! @throw If the given __key type doesn't have unique object representations, i.e.,
-//! `::cuda::experimental::cuco::bitwise_comparable_v<Key> == false`
+//! `bitwise_comparable_v<Key> == false`
 //! @throw If the probing scheme type is not inherited from
-//! `::cuda::experimental::cuco::__detail::__probing_scheme_base`
+//! `__detail::__probing_scheme_base`
 //!
 //! @tparam Key Type used for keys. Requires `::cuda::is_bitwise_comparable_v<Key>` returning true
 //! @tparam Scope The scope in which operations will be performed by individual threads.
@@ -109,10 +109,8 @@ class __open_addressing_ref_impl
                 "Key type must have unique object representations or have been explicitly declared as safe for "
                 "bitwise comparison via specialization of ::cuda::is_bitwise_comparable_v<_Key>.");
 
-  static_assert(
-    ::cuda::std::is_base_of_v<::cuda::experimental::cuco::__detail::__probing_scheme_base<_ProbingScheme::cg_size>,
-                              _ProbingScheme>,
-    "ProbingScheme must inherit from ::cuda::experimental::cuco::__detail::__probing_scheme_base");
+  static_assert(::cuda::std::is_base_of_v<__detail::__probing_scheme_base<_ProbingScheme::cg_size>, _ProbingScheme>,
+                "ProbingScheme must inherit from ::cuda::experimental::cuco::__detail::__probing_scheme_base");
 
 public:
   using __key_type            = _Key; ///< Key type
@@ -138,8 +136,7 @@ private:
   static constexpr auto __allows_duplicates = _AllowsDuplicates;
 
   __value_type __empty_slot_sentinel; ///< Sentinel value indicating an empty slot
-  ::cuda::experimental::cuco::__detail::__equal_wrapper<__key_type, __key_equal, __allows_duplicates>
-    __predicate; ///< Key equality
+  __detail::__equal_wrapper<__key_type, __key_equal, __allows_duplicates> __predicate; ///< Key equality
   __probing_scheme_type __probing_scheme; ///< Probing scheme
   __storage_ref_type __storage_ref; ///< Slot storage ref
 
@@ -216,9 +213,8 @@ public:
   //! @brief Returns the function that compares keys for equality.
   //!
   //! @return The key equality predicate
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::experimental::cuco::__detail::
-    __equal_wrapper<__key_type, __key_equal, __allows_duplicates>
-    predicate() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __detail::__equal_wrapper<__key_type, __key_equal, __allows_duplicates>
+  predicate() const noexcept
   {
     return __predicate;
   }
@@ -309,18 +305,18 @@ public:
 
       for (auto& __slot_content : __bucket_slots)
       {
-        const auto __eq_res = __predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
-          __key, __extract_key(__slot_content));
+        const auto __eq_res =
+          __predicate.template operator()<__detail::__is_insert::__yes>(__key, __extract_key(__slot_content));
 
         if constexpr (!__allows_duplicates)
         {
           // If the __key is already in the container, return false
-          if (__eq_res == ::cuda::experimental::cuco::__detail::__equal_result::__equal)
+          if (__eq_res == __detail::__equal_result::__equal)
           {
             return false;
           }
         }
-        if (__eq_res == ::cuda::experimental::cuco::__detail::__equal_result::__available)
+        if (__eq_res == __detail::__equal_result::__available)
         {
           const auto __intra_bucket_index = &__slot_content - __bucket_slots.data();
           switch (__attempt_insert(__get_slot_ptr(*__probing_iter, __intra_bucket_index), __slot_content, __val))
@@ -376,14 +372,13 @@ public:
       if constexpr (!__allows_duplicates)
       {
         // If the __key is already in the container, return false
-        if (__group.any(__state == ::cuda::experimental::cuco::__detail::__equal_result::__equal))
+        if (__group.any(__state == __detail::__equal_result::__equal))
         {
           return false;
         }
       }
 
-      const auto __group_contains_available =
-        __group.ballot(__state == ::cuda::experimental::cuco::__detail::__equal_result::__available);
+      const auto __group_contains_available = __group.ballot(__state == __detail::__equal_result::__available);
       if (__group_contains_available)
       {
         const auto __src_lane = __ffs(__group_contains_available) - 1;
@@ -449,14 +444,13 @@ public:
 
       for (auto i = 0; i < __bucket_size; ++i)
       {
-        switch (__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__no>(
-          __key, __extract_key(__bucket_slots[i])))
+        switch (__predicate.template operator()<__detail::__is_insert::__no>(__key, __extract_key(__bucket_slots[i])))
         {
-          case ::cuda::experimental::cuco::__detail::__equal_result::__unequal:
+          case __detail::__equal_result::__unequal:
             continue;
-          case ::cuda::experimental::cuco::__detail::__equal_result::__empty:
+          case __detail::__equal_result::__empty:
             return false;
-          case ::cuda::experimental::cuco::__detail::__equal_result::__equal:
+          case __detail::__equal_result::__equal:
             return true;
         }
       }
@@ -495,11 +489,11 @@ public:
 
       const auto __state = __probe_bucket(__key, __bucket_slots);
 
-      if (__group.any(__state == ::cuda::experimental::cuco::__detail::__equal_result::__equal))
+      if (__group.any(__state == __detail::__equal_result::__equal))
       {
         return true;
       }
-      if (__group.any(__state == ::cuda::experimental::cuco::__detail::__equal_result::__empty))
+      if (__group.any(__state == __detail::__equal_result::__empty))
       {
         return false;
       }
@@ -530,22 +524,21 @@ public:
   {
     for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
     {
-      switch (__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
-        __key, __extract_key(__bucket_slots[__i])))
+      switch (__predicate.template operator()<__detail::__is_insert::__yes>(__key, __extract_key(__bucket_slots[__i])))
       {
-        case ::cuda::experimental::cuco::__detail::__equal_result::__available:
-          return __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__available, __i};
-        case ::cuda::experimental::cuco::__detail::__equal_result::__equal:
+        case __detail::__equal_result::__available:
+          return __bucket_probing_results{__detail::__equal_result::__available, __i};
+        case __detail::__equal_result::__equal:
           if constexpr (!__allows_duplicates)
           {
-            return __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__equal, __i};
+            return __bucket_probing_results{__detail::__equal_result::__equal, __i};
           }
           break;
         default:
           break;
       }
     }
-    return __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__unequal, -1};
+    return __bucket_probing_results{__detail::__equal_result::__unequal, -1};
   }
 
   //!
@@ -559,15 +552,14 @@ public:
   //! @return The first non-`__unequal` result in the bucket, or `__unequal` if every slot differs
   //!
   template <class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE ::cuda::experimental::cuco::__detail::__equal_result
+  [[nodiscard]] _CCCL_DEVICE __detail::__equal_result
   __probe_bucket(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
   {
-    auto __res = ::cuda::experimental::cuco::__detail::__equal_result::__unequal;
+    auto __res = __detail::__equal_result::__unequal;
     for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
     {
-      __res = __predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__no>(
-        __key, __extract_key(__bucket_slots[__i]));
-      if (__res != ::cuda::experimental::cuco::__detail::__equal_result::__unequal)
+      __res = __predicate.template operator()<__detail::__is_insert::__no>(__key, __extract_key(__bucket_slots[__i]));
+      if (__res != __detail::__equal_result::__unequal)
       {
         return __res;
       }
@@ -662,7 +654,7 @@ public:
     if constexpr (__has_payload && !::cuda::std::is_same_v<_Value, __value_type>)
     {
       using mapped_type = decltype(empty_value_sentinel());
-      if constexpr (::cuda::experimental::cuco::__detail::__is_pair_like<_Value>::value)
+      if constexpr (__detail::__is_pair_like<_Value>::value)
       {
         return ::cuda::std::pair{::cuda::std::get<0>(__value), mapped_type{::cuda::std::get<1>(__value)}};
       }
@@ -727,7 +719,7 @@ public:
     else
     {
       return __predicate.__equal_to(__extract_key(__desired), __extract_key(__expected))
-              == ::cuda::experimental::cuco::__detail::__equal_result::__equal
+              == __detail::__equal_result::__equal
              ? __insert_result::__duplicate
              : __insert_result::__continue;
     }
@@ -780,8 +772,7 @@ public:
 
     // Our __key was already present in the slot, so our __key is a duplicate
     // Shouldn't use `predicate` operator directly since it includes a redundant bitwise compare
-    if (__predicate.__equal_to(__desired.first, __expected_key)
-        == ::cuda::experimental::cuco::__detail::__equal_result::__equal)
+    if (__predicate.__equal_to(__desired.first, __expected_key) == __detail::__equal_result::__equal)
     {
       return __insert_result::__duplicate;
     }
@@ -820,8 +811,7 @@ public:
 
     // Our __key was already present in the slot, so our __key is a duplicate
     // Shouldn't use `predicate` operator directly since it includes a redundant bitwise compare
-    if (__predicate.__equal_to(__desired.first, __expected_key)
-        == ::cuda::experimental::cuco::__detail::__equal_result::__equal)
+    if (__predicate.__equal_to(__desired.first, __expected_key) == __detail::__equal_result::__equal)
     {
       return __insert_result::__duplicate;
     }
@@ -909,7 +899,7 @@ public:
     do
     {
       __current = __ref.load(::cuda::std::memory_order_relaxed);
-    } while (::cuda::experimental::cuco::__detail::__bitwise_compare(__current, __sentinel));
+    } while (__detail::__bitwise_compare(__current, __sentinel));
   }
 #endif // _CCCL_CUDA_COMPILATION()
 

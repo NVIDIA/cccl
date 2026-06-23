@@ -61,8 +61,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
   _SizeType __capacity{};
   if constexpr (is_double_hashing_v<_ProbingScheme>)
   {
-    const auto __prime =
-      ::cuda::experimental::cuco::__detail::__next_prime(static_cast<::cuda::std::uint64_t>(__cycles));
+    const auto __prime = __detail::__next_prime(static_cast<::cuda::std::uint64_t>(__cycles));
     if (::cuda::mul_overflow(__capacity, __prime, __stride))
     {
       _CCCL_THROW(::std::logic_error, "Invalid input capacity");
@@ -103,7 +102,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
                 "Invalid load factor: requested capacity divided by load factor exceeds the maximum representable "
                 "value");
   }
-  return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(static_cast<_SizeType>(__scaled));
+  return make_valid_capacity<_ProbingScheme, _BucketSize>(static_cast<_SizeType>(__scaled));
 }
 
 //! @brief Returns whether `__capacity` is already a valid capacity for the given probing scheme and
@@ -119,7 +118,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool is_valid_capacity(_SizeType __capacity)
 {
-  return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__capacity) == __capacity;
+  return make_valid_capacity<_ProbingScheme, _BucketSize>(__capacity) == __capacity;
 }
 } // namespace cuda::experimental::cuco
 

@@ -106,8 +106,7 @@ struct __equal_wrapper
   {
     if constexpr (_IsInsert == __is_insert::__yes)
     {
-      if (::cuda::experimental::cuco::__detail::__bitwise_compare(__rhs, __empty_sentinel)
-          || ::cuda::experimental::cuco::__detail::__bitwise_compare(__rhs, __erased_sentinel))
+      if (__detail::__bitwise_compare(__rhs, __empty_sentinel) || __detail::__bitwise_compare(__rhs, __erased_sentinel))
       {
         return __equal_result::__available;
       }
@@ -122,9 +121,7 @@ struct __equal_wrapper
     }
     else
     {
-      return ::cuda::experimental::cuco::__detail::__bitwise_compare(__rhs, __empty_sentinel)
-             ? __equal_result::__empty
-             : __equal_to(__lhs, __rhs);
+      return __detail::__bitwise_compare(__rhs, __empty_sentinel) ? __equal_result::__empty : __equal_to(__lhs, __rhs);
     }
   }
 #endif // _CCCL_CUDA_COMPILATION()

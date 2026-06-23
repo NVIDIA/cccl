@@ -82,8 +82,7 @@ class fixed_capacity_map_ref
 
   static constexpr bool __allows_duplicates = false;
 
-  static_assert(_Capacity == ::cuda::std::dynamic_extent
-                  || ::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(_Capacity),
+  static_assert(_Capacity == ::cuda::std::dynamic_extent || is_valid_capacity<_ProbingScheme, _BucketSize>(_Capacity),
                 "Capacity must be a valid open-addressing capacity; obtain it via cuco::make_valid_capacity");
 
 public:
@@ -113,8 +112,7 @@ private:
   // the (already valid) `capacity_v`, so when `_Capacity` is static the slot count travels through
   // the storage's extent at compile time and the probing iterator's modular reduction folds to a
   // constant.
-  using __storage_ref_type =
-    ::cuda::experimental::cuco::__open_addressing::__slot_storage_ref<value_type, _BucketSize, capacity_v>;
+  using __storage_ref_type = __open_addressing::__slot_storage_ref<value_type, _BucketSize, capacity_v>;
 
   //! @brief Returns the slot count of the given span, validating it for the dynamic case.
   //!
@@ -125,13 +123,13 @@ private:
   {
     if constexpr (_Capacity == ::cuda::std::dynamic_extent)
     {
-      _CCCL_ASSERT((::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(__slots.size())),
+      _CCCL_ASSERT((is_valid_capacity<_ProbingScheme, _BucketSize>(__slots.size())),
                    "storage size is not a valid capacity");
     }
     return __slots.size();
   }
 
-  using __impl_type = ::cuda::experimental::cuco::__open_addressing::
+  using __impl_type = __open_addressing::
     __open_addressing_ref_impl<_Key, _Scope, _KeyEqual, _ProbingScheme, __storage_ref_type, __allows_duplicates>;
 
   __impl_type __impl;
