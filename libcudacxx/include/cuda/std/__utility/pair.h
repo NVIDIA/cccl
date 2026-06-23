@@ -377,6 +377,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
+            enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
             __select_constructor _Trait = __pair_select_pair_like_constructible_v<_UPair, _T1, _T2>,
             enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
   _CCCL_API constexpr pair(_UPair&& __p) noexcept(
@@ -388,6 +389,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
+            enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
             __select_constructor _Trait = __pair_select_pair_like_constructible_v<_UPair, _T1, _T2>,
             enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
   _CCCL_API explicit constexpr pair(_UPair&& __p) noexcept(
@@ -539,8 +541,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 #  endif // _CCCL_HOSTED()
 #endif // _CCCL_STD_VER >= 2023
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
-  swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
+  _CCCL_API inline
+    _CCCL_CONSTEXPR_CXX20 void swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
     using ::cuda::std::swap;
     swap(this->first, __p.first);
