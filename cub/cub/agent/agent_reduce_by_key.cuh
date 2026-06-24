@@ -43,7 +43,8 @@ template <int ThreadsPerBlock,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
-          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+          typename DelayConstructorT     = detail::fixed_delay_constructor_t<350, 450>,
+          BlockLoadPrefetch LoadPrefetch = BlockLoadPrefetch::none>
 struct agent_reduce_by_key_policy
 {
   static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
@@ -51,6 +52,7 @@ struct agent_reduce_by_key_policy
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
+  static constexpr BlockLoadPrefetch LOAD_PREFETCH   = LoadPrefetch;
 
   struct detail
   {
@@ -740,12 +742,12 @@ struct AgentReduceByKey
     // Remaining items (including this tile)
     OffsetT num_remaining = num_items - tile_offset;
 
-    // Fire the prefetch here so the look-back scan inside ConsumeTile provides lead time.
-    if constexpr (AgentReduceByKeyPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_DIRECT_PREFETCH)
+    // Fire prefetch before look-back stall so data arrives in L2 in time
+    if constexpr (AgentReduceByKeyPolicyT::LOAD_PREFETCH != BlockLoadPrefetch::none)
     {
-      const int valid = (num_remaining > TILE_ITEMS) ? TILE_ITEMS : static_cast<int>(num_remaining);
-      ::cub::detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, valid);
-      ::cub::detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_values_in + tile_offset, valid);
+      const int items_to_prefetch = static_cast<int>(::cuda::std::min(num_remaining, static_cast<OffsetT>(TILE_ITEMS)));
+      ::cub::detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, items_to_prefetch);
+      ::cub::detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_values_in + tile_offset, items_to_prefetch);
     }
 
     if (num_remaining > TILE_ITEMS)

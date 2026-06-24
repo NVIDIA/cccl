@@ -24,7 +24,7 @@ struct my_policy_hub
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
                              6,
-                             BLOCK_LOAD_DIRECT_PREFETCH,
+                             BLOCK_LOAD_DIRECT,
                              LOAD_LDG,
                              BLOCK_SCAN_WARP_SCANS,
                              cub::detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
