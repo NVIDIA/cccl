@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco::detail
 {
 //! @brief Base class of public probing schemes.
 //!
@@ -82,7 +82,7 @@ private:
   _CCCL_NO_UNIQUE_ADDRESS _StepExtent __step_;
   _CCCL_NO_UNIQUE_ADDRESS _CapacityExtent __capacity_;
 };
-} // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco::detail
 
 #include <cuda/std/__cccl/epilogue.h>
 

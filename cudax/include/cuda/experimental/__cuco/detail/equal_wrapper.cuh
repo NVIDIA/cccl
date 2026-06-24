@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco::detail
 {
 //! @brief Enum of equality comparison results.
 //!
@@ -106,7 +106,7 @@ struct __equal_wrapper
   {
     if constexpr (_IsInsert == __is_insert::__yes)
     {
-      if (__detail::__bitwise_compare(__rhs, __empty_sentinel) || __detail::__bitwise_compare(__rhs, __erased_sentinel))
+      if (detail::__bitwise_compare(__rhs, __empty_sentinel) || detail::__bitwise_compare(__rhs, __erased_sentinel))
       {
         return __equal_result::__available;
       }
@@ -121,12 +121,12 @@ struct __equal_wrapper
     }
     else
     {
-      return __detail::__bitwise_compare(__rhs, __empty_sentinel) ? __equal_result::__empty : __equal_to(__lhs, __rhs);
+      return detail::__bitwise_compare(__rhs, __empty_sentinel) ? __equal_result::__empty : __equal_to(__lhs, __rhs);
     }
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };
-} // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco::detail
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -49,7 +49,7 @@ struct __insert_if_fn
   _Predicate __pred;
   _Ref __ref;
 
-  _CCCL_DEVICE void operator()(__detail::__index_type __idx)
+  _CCCL_DEVICE void operator()(detail::__index_type __idx)
   {
     if (__pred(*(__stencil + __idx)))
     {
@@ -68,7 +68,7 @@ struct __contains_if_fn
   _OutputIt __output_begin;
   _Ref __ref;
 
-  _CCCL_DEVICE void operator()(__detail::__index_type __idx) const
+  _CCCL_DEVICE void operator()(detail::__index_type __idx) const
   {
     *(__output_begin + __idx) = __pred(*(__stencil + __idx)) ? __ref.contains(*(__first + __idx)) : false;
   }
@@ -79,7 +79,7 @@ struct __contains_if_fn
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   _InputIt __first,
-  __detail::__index_type __n,
+  detail::__index_type __n,
   _StencilIt __stencil,
   _Predicate __pred,
   typename _Ref::size_type* __num_successes,
@@ -89,8 +89,8 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   __shared__ typename __block_reduce::TempStorage __temp_storage;
   typename _Ref::size_type __thread_num_successes = 0;
 
-  const auto __loop_stride = __detail::__grid_stride() / _CgSize;
-  auto __idx               = __detail::__global_thread_id() / _CgSize;
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
 
   while (__idx < __n)
   {
@@ -130,10 +130,10 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
 //! stencil returns true.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES void
-__insert_if_n(_InputIt __first, __detail::__index_type __n, _StencilIt __stencil, _Predicate __pred, _Ref __ref)
+__insert_if_n(_InputIt __first, detail::__index_type __n, _StencilIt __stencil, _Predicate __pred, _Ref __ref)
 {
-  const auto __loop_stride = __detail::__grid_stride() / _CgSize;
-  auto __idx               = __detail::__global_thread_id() / _CgSize;
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
 
   while (__idx < __n)
   {
@@ -153,15 +153,15 @@ __insert_if_n(_InputIt __first, __detail::__index_type __n, _StencilIt __stencil
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES void __contains_if_n(
   _InputIt __first,
-  __detail::__index_type __n,
+  detail::__index_type __n,
   _StencilIt __stencil,
   _Predicate __pred,
   _OutputIt __output_begin,
   _Ref __ref)
 {
   const auto __block       = ::cooperative_groups::this_thread_block();
-  const auto __loop_stride = __detail::__grid_stride() / _CgSize;
-  auto __idx               = __detail::__global_thread_id() / _CgSize;
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
 
   while (__idx < __n)
   {

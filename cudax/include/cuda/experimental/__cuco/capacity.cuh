@@ -60,7 +60,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
   _SizeType __capacity{};
   if constexpr (is_double_hashing_v<_ProbingScheme>)
   {
-    const auto __prime = __detail::__next_prime(static_cast<::cuda::std::uint64_t>(__cycles));
+    const auto __prime = detail::__next_prime(static_cast<::cuda::std::uint64_t>(__cycles));
     if (::cuda::mul_overflow(__capacity, __prime, __stride))
     {
       _CCCL_THROW(::std::logic_error, "Invalid input capacity");

@@ -36,7 +36,6 @@
 #include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
-#include <cuda/experimental/__cuco/traits.hpp>
 #include <cuda/experimental/__cuco/types.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -431,7 +430,7 @@ public:
   [[nodiscard]] auto ref() const noexcept -> ref_type
   {
     auto __slots = typename ref_type::storage_span_type{__impl->storage_ref().data(), __impl->capacity()};
-    return __detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+    return detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
            ? ref_type{empty_key{empty_key_sentinel()},
                       empty_value{empty_value_sentinel()},
                       __impl->key_eq(),

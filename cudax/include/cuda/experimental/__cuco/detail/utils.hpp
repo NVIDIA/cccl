@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco::detail
 {
 using __index_type = ::cuda::std::int64_t;
 
@@ -107,7 +107,7 @@ template <class _Iterator>
   static_assert(::cuda::std::random_access_iterator<_Iterator>, "Input iterator should be a random access iterator.");
   return __index_type{::cuda::std::distance(__begin, __end)};
 }
-} // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco::detail
 
 #include <cuda/std/__cccl/epilogue.h>
 

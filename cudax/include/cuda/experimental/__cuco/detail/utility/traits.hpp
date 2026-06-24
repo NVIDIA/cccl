@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO_TRAITS_HPP
-#define _CUDAX___CUCO_TRAITS_HPP
+#ifndef _CUDAX___CUCO_DETAIL_UTILITY_TRAITS_HPP
+#define _CUDAX___CUCO_DETAIL_UTILITY_TRAITS_HPP
 
 #include <cuda/__cccl_config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco
+namespace cuda::experimental::cuco::detail
 {
 //! @brief Trait value indicating whether `_Tp`, after unwrapping any thrust reference, is a pair-like
 //! type (tuple-like with exactly two elements).
@@ -38,8 +38,8 @@ namespace cuda::experimental::cuco
 template <class _Tp>
 inline constexpr bool __is_pair_like_v = ::cuda::std::__pair_like<
   ::cuda::std::remove_reference_t<decltype(::thrust::raw_reference_cast(::cuda::std::declval<_Tp>()))>>;
-} // namespace cuda::experimental::cuco
+} // namespace cuda::experimental::cuco::detail
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO_TRAITS_HPP
+#endif // _CUDAX___CUCO_DETAIL_UTILITY_TRAITS_HPP

@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco::detail
 {
 //! @brief Bitwise equality comparison.
 //!
@@ -52,7 +52,7 @@ template <class _Tp>
     return ::cuda::std::bit_cast<_Array>(__lhs) == ::cuda::std::bit_cast<_Array>(__rhs);
   }
 }
-} // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco::detail
 
 #include <cuda/std/__cccl/epilogue.h>
 
