@@ -41,6 +41,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h>
+#include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -141,11 +142,12 @@ _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
 {
   using _Result = __gather_result_t<_Vp, _Range, _Ip, _IAbi>;
   ::cuda::std::simd::__check_gather_mandates<_Result, _Range, _Ip, _IAbi, _Flags...>();
-  _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(::cuda::std::ranges::size(__in)),
+  const auto __range_size = ::cuda::std::ranges::__size_cpo{}(__in);
+  _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(__range_size),
                "cuda::std::simd::partial_gather_from: ranges::size(in) is not representable as __simd_size_type");
 
-  const auto __data = ::cuda::std::ranges::data(__in);
-  const auto __size = static_cast<__simd_size_type>(::cuda::std::ranges::size(__in));
+  const auto __data = ::cuda::std::ranges::__data_cpo{}(__in);
+  const auto __size = static_cast<__simd_size_type>(__range_size);
   _CCCL_ASSERT(__size == 0 || __data != nullptr,
                "cuda::std::simd::partial_gather_from: ranges::data(in) is null but ranges::size(in) > 0");
   ::cuda::std::simd::__assert_load_store_alignment<_Result, ranges::range_value_t<_Range>, _Flags...>(__data);
@@ -160,9 +162,8 @@ _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi>
 partial_gather_from(_Range&& __in, const basic_vec<_Ip, _IAbi>& __indices, flags<_Flags...> __f = {})
 {
-  using __mask_t = typename basic_vec<_Ip, _IAbi>::mask_type;
-  constexpr __mask_t __all_true{true};
-  return ::cuda::std::simd::partial_gather_from<_Vp>(static_cast<_Range&&>(__in), __all_true, __indices, __f);
+  constexpr auto __all_true = typename basic_vec<_Ip, _IAbi>::mask_type(true);
+  return ::cuda::std::simd::partial_gather_from<_Vp>(::cuda::std::forward<_Range>(__in), __all_true, __indices, __f);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -179,9 +180,10 @@ _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(::cuda::std::ranges::size(__in)),
+    const auto __range_size = ::cuda::std::ranges::__size_cpo{}(__in);
+    _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(__range_size),
                  "cuda::std::simd::unchecked_gather_from: ranges::size(in) is not representable as __simd_size_type");
-    const auto __range_size = static_cast<__simd_size_type>(::cuda::std::ranges::size(__in));
+    const auto __size = static_cast<__simd_size_type>(__range_size);
     _CCCL_PRAGMA_UNROLL_FULL()
     for (__simd_size_type __i = 0; __i < __simd_size_v<_Ip, _IAbi>; ++__i)
     {
@@ -189,13 +191,13 @@ _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
       {
         const auto __idx = static_cast<__simd_size_type>(__indices[__i]);
         _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(__indices[__i])
-                       && ::cuda::in_range(__idx, __simd_size_type{0}, __range_size),
+                       && ::cuda::in_range(__idx, __simd_size_type{0}, __size),
                      "cuda::std::simd::unchecked_gather_from: indices[i] must be in [0, ranges::size(in)) for every "
                      "selected i");
       }
     }
   }
-  return ::cuda::std::simd::partial_gather_from<_Vp>(static_cast<_Range&&>(__in), __mask, __indices, __f);
+  return ::cuda::std::simd::partial_gather_from<_Vp>(::cuda::std::forward<_Range>(__in), __mask, __indices, __f);
 }
 
 // unmasked: delegate to the masked overload with an all-true mask to avoid duplicating the precondition check.
@@ -204,9 +206,8 @@ _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi>
 unchecked_gather_from(_Range&& __in, const basic_vec<_Ip, _IAbi>& __indices, flags<_Flags...> __f = {})
 {
-  using __mask_t = typename basic_vec<_Ip, _IAbi>::mask_type;
-  constexpr __mask_t __all_true{true};
-  return ::cuda::std::simd::unchecked_gather_from<_Vp>(static_cast<_Range&&>(__in), __all_true, __indices, __f);
+  constexpr auto __all_true = typename basic_vec<_Ip, _IAbi>::mask_type(true);
+  return ::cuda::std::simd::unchecked_gather_from<_Vp>(::cuda::std::forward<_Range>(__in), __all_true, __indices, __f);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -249,11 +250,12 @@ _CCCL_HOST_DEVICE_API constexpr void partial_scatter_to(
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   ::cuda::std::simd::__check_scatter_mandates<_Tp, _Range, _Flags...>();
-  _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(::cuda::std::ranges::size(__out)),
+  const auto __range_size = ::cuda::std::ranges::__size_cpo{}(__out);
+  _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(__range_size),
                "cuda::std::simd::partial_scatter_to: ranges::size(out) is not representable as __simd_size_type");
 
-  const auto __data     = ::cuda::std::ranges::data(__out);
-  const auto __out_size = static_cast<__simd_size_type>(::cuda::std::ranges::size(__out));
+  const auto __data     = ::cuda::std::ranges::__data_cpo{}(__out);
+  const auto __out_size = static_cast<__simd_size_type>(__range_size);
   _CCCL_ASSERT(__out_size == 0 || __data != nullptr,
                "cuda::std::simd::partial_scatter_to: ranges::data(out) is null but ranges::size(out) > 0");
   ::cuda::std::simd::__assert_load_store_alignment<__vec_t, ranges::range_value_t<_Range>, _Flags...>(__data);
@@ -280,9 +282,8 @@ _CCCL_REQUIRES(__scatter_constraints<_Tp, _Abi, _Range, _Ip, _IAbi>)
 _CCCL_HOST_DEVICE_API constexpr void partial_scatter_to(
   const basic_vec<_Tp, _Abi>& __v, _Range&& __out, const basic_vec<_Ip, _IAbi>& __indices, flags<_Flags...> __f = {})
 {
-  using __mask_t = typename basic_vec<_Ip, _IAbi>::mask_type;
-  constexpr __mask_t __all_true{true};
-  ::cuda::std::simd::partial_scatter_to(__v, static_cast<_Range&&>(__out), __all_true, __indices, __f);
+  constexpr auto __all_true = typename basic_vec<_Ip, _IAbi>::mask_type(true);
+  ::cuda::std::simd::partial_scatter_to(__v, ::cuda::std::forward<_Range>(__out), __all_true, __indices, __f);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -300,9 +301,10 @@ _CCCL_HOST_DEVICE_API constexpr void unchecked_scatter_to(
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(::cuda::std::ranges::size(__out)),
+    const auto __range_size = ::cuda::std::ranges::__size_cpo{}(__out);
+    _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(__range_size),
                  "cuda::std::simd::unchecked_scatter_to: ranges::size(out) is not representable as __simd_size_type");
-    const auto __range_size = static_cast<__simd_size_type>(::cuda::std::ranges::size(__out));
+    const auto __size = static_cast<__simd_size_type>(__range_size);
     _CCCL_PRAGMA_UNROLL_FULL()
     for (__simd_size_type __i = 0; __i < basic_vec<_Tp, _Abi>::__size; ++__i)
     {
@@ -310,13 +312,13 @@ _CCCL_HOST_DEVICE_API constexpr void unchecked_scatter_to(
       {
         const auto __idx = static_cast<__simd_size_type>(__indices[__i]);
         _CCCL_ASSERT(::cuda::std::in_range<__simd_size_type>(__indices[__i])
-                       && ::cuda::in_range(__idx, __simd_size_type{0}, __range_size),
+                       && ::cuda::in_range(__idx, __simd_size_type{0}, __size),
                      "cuda::std::simd::unchecked_scatter_to: indices[i] must be in [0, ranges::size(out)) for every "
                      "selected i");
       }
     }
   }
-  ::cuda::std::simd::partial_scatter_to(__v, static_cast<_Range&&>(__out), __mask, __indices, __f);
+  ::cuda::std::simd::partial_scatter_to(__v, ::cuda::std::forward<_Range>(__out), __mask, __indices, __f);
 }
 
 // unmasked: delegate to the masked overload with an all-true mask to avoid duplicating the precondition check.
@@ -325,9 +327,8 @@ _CCCL_REQUIRES(__scatter_constraints<_Tp, _Abi, _Range, _Ip, _IAbi>)
 _CCCL_HOST_DEVICE_API constexpr void unchecked_scatter_to(
   const basic_vec<_Tp, _Abi>& __v, _Range&& __out, const basic_vec<_Ip, _IAbi>& __indices, flags<_Flags...> __f = {})
 {
-  using __mask_t = typename basic_vec<_Ip, _IAbi>::mask_type;
-  constexpr __mask_t __all_true{true};
-  ::cuda::std::simd::unchecked_scatter_to(__v, static_cast<_Range&&>(__out), __all_true, __indices, __f);
+  constexpr auto __all_true = typename basic_vec<_Ip, _IAbi>::mask_type(true);
+  ::cuda::std::simd::unchecked_scatter_to(__v, ::cuda::std::forward<_Range>(__out), __all_true, __indices, __f);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
