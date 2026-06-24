@@ -1222,8 +1222,7 @@ public:
     initialize_llvm();
 
     std::string temp_dir =
-      (tempDirectoryPath() / ("hostjit_bc_" + std::to_string(reinterpret_cast<uintptr_t>(this))))
-        .string();
+      (tempDirectoryPath() / ("hostjit_bc_" + std::to_string(reinterpret_cast<uintptr_t>(this)))).string();
     if (!createDirectories(temp_dir, result.diagnostics))
     {
       return result;
@@ -1556,8 +1555,7 @@ public:
     initialize_llvm();
 
     std::string temp_dir =
-      (tempDirectoryPath() / ("hostjit_" + std::to_string(reinterpret_cast<uintptr_t>(this))))
-        .string();
+      (tempDirectoryPath() / ("hostjit_" + std::to_string(reinterpret_cast<uintptr_t>(this)))).string();
     if (!createDirectories(temp_dir, result.diagnostics))
     {
       return result;
@@ -1792,13 +1790,12 @@ public:
     return result;
   }
 
-  bool createPCH(
-    const std::string& source_code,
-    libnvccPCHKind kind,
-    const std::string& pch_source_path,
-    const std::string& pch_output_path,
-    const CompilerOptions& config,
-    std::string& diagnostics)
+  bool createPCH(const std::string& source_code,
+                 libnvccPCHKind kind,
+                 const std::string& pch_source_path,
+                 const std::string& pch_output_path,
+                 const CompilerOptions& config,
+                 std::string& diagnostics)
   {
     std::string error_msg;
     if (!validateOptions(config, &error_msg))
@@ -2197,7 +2194,8 @@ void setProgramLog(libnvccProgram prog, std::string log)
   }
 }
 
-bool parseProgramOptions(libnvccProgram prog, int num_options, const char* const* raw_options, libnvcc::CompilerOptions& options)
+bool parseProgramOptions(
+  libnvccProgram prog, int num_options, const char* const* raw_options, libnvcc::CompilerOptions& options)
 {
   std::string error;
   if (!libnvcc::parseOptions(num_options, raw_options, options, error))
@@ -2207,7 +2205,6 @@ bool parseProgramOptions(libnvccProgram prog, int num_options, const char* const
   }
   return true;
 }
-
 } // anonymous namespace
 
 extern "C" const char* libnvccGetErrorString(libnvccResult result)
@@ -2265,10 +2262,7 @@ extern "C" libnvccResult libnvccDestroyProgram(libnvccProgram* prog)
 }
 
 extern "C" libnvccResult libnvccCompileProgramToDeviceBitcode(
-  libnvccProgram prog,
-  const char* outputBitcodePath,
-  int numOptions,
-  const char* const* options)
+  libnvccProgram prog, const char* outputBitcodePath, int numOptions, const char* const* options)
 {
   if (!prog)
   {
@@ -2386,7 +2380,8 @@ extern "C" libnvccResult libnvccCreatePCH(
   }
 
   std::string diagnostics;
-  bool success = prog->compiler.createPCH(prog->source, kind, pchSourcePath, pchOutputPath, parsed_options, diagnostics);
+  bool success =
+    prog->compiler.createPCH(prog->source, kind, pchSourcePath, pchOutputPath, parsed_options, diagnostics);
   setProgramLog(prog, diagnostics);
   return success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_PCH_CREATE;
 }
