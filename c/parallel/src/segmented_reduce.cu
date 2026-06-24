@@ -663,6 +663,7 @@ catch (const std::exception& exc)
 {
   if (build_ptr != nullptr)
   {
+    cccl_device_segmented_reduce_cleanup(build_ptr);
     std::memset(build_ptr, 0, sizeof(*build_ptr));
   }
   fflush(stderr);
