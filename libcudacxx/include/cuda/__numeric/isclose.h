@@ -45,7 +45,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-using __isclose_compare_t = ::cuda::std::
+using __isclose_compare_t _CCCL_NODEBUG_ALIAS = ::cuda::std::
   conditional_t<(::cuda::std::__is_extended_floating_point_v<_Tp> && sizeof(_Tp) <= sizeof(float)), float, _Tp>;
 
 template <typename _Tp>
