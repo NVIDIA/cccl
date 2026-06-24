@@ -32,7 +32,6 @@
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
-#include <cuda/experimental/__cuco/detail/utils.hpp>
 #include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>

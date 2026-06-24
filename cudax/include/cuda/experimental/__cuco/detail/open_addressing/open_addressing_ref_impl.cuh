@@ -39,8 +39,8 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
+#include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/detail/utility/traits.hpp>
-#include <cuda/experimental/__cuco/detail/utils.hpp>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cooperative_groups.h>

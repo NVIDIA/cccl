@@ -26,7 +26,7 @@
 #include <cuda/__atomic/atomic.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 
-#include <cuda/experimental/__cuco/detail/utils.hpp>
+#include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 
 #include <cooperative_groups.h>
 

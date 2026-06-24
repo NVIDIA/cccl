@@ -37,7 +37,7 @@
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
-#include <cuda/experimental/__cuco/detail/utils.hpp>
+#include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
