@@ -198,13 +198,15 @@ struct Tuning;
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
   static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U)
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
-  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
-    NOMINAL_4B_ITEMS_PER_THREAD,
-    ::cuda::std::max(
-      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+                        (::cuda::std::max) (1,
+                                            static_cast<int>(
+                                              ((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
+                                              / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -213,13 +215,15 @@ struct Tuning<core::detail::sm52, T, U>
 template <class T, class U>
 struct Tuning<core::detail::sm60, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
   static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U),
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 19;
-  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
-    NOMINAL_4B_ITEMS_PER_THREAD,
-    ::cuda::std::max(
-      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+                        (::cuda::std::max) (1,
+                                            static_cast<int>(
+                                              ((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
+                                              / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
