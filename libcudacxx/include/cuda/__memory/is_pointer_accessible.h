@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -185,7 +185,12 @@ _CCCL_HOST_API inline bool __is_device_or_managed_memory(const void* __p) noexce
   {
     return false;
   }
-  // (2) check if a memory pool is associated with the pointer
+  // (2) check if the pointer is managed memory
+  if (__is_managed)
+  {
+    return true;
+  }
+  // (3) check if a memory pool is associated with the pointer
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __ptr_dev_id};
@@ -193,8 +198,8 @@ _CCCL_HOST_API inline bool __is_device_or_managed_memory(const void* __p) noexce
     const auto __status2 = ::cuda::__driver::__mempoolGetAccessNoThrow(__pool_flags, __mempool, &__prop);
     return (__status2 == ::cudaSuccess) && (static_cast<bool>(__pool_flags));
   }
-  // (3) check if the pointer is device memory or managed memory
-  return __is_managed || __memory_type == ::CU_MEMORYTYPE_DEVICE;
+  // (4) check if the pointer is device memory
+  return __memory_type == ::CU_MEMORYTYPE_DEVICE;
 }
 
 template <bool _IsNothrow>

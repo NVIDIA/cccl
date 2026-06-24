@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -176,7 +176,7 @@ bool test_memory_pool()
     if (cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_CONCURRENT_MANAGED_ACCESS, 0))
     {
       // TODO(fbusato): check if this can be improved in future releases
-      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, false, false, true);
+      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, true, true, true);
       test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeDevice, false, true, true, true);
     }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
