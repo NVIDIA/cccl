@@ -614,6 +614,68 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
+
+// An un-annotated argument is auto-wrapped as an immediate with *loose* bounds, so its reported highest segment size is
+// `numeric_limits<T>::max()`. No fully-resident cluster config can cover that, so the dispatch must take the
+// oversize/streaming fallback (max cluster + max SMEM) without the analytic cluster-size math overflowing while
+// narrowing the derived sizes to `int`. The real (uniform) segment size stays small, so the streamed result must still
+// be exact. Exercises both the auto-wrapping of un-annotated args and the loose-bound fallback path.
+C2H_TEST("DeviceBatchedTopK::MaxKeys work with an un-annotated (loose-bound) segment size",
+         "[keys][segmented][topk][device][cluster]")
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  // The oversize/streaming fallback for a loose bound is a cluster-dispatch concern; the baseline backend selects its
+  // config differently, so only assert it where the new analytic selector runs.
+  if constexpr (selected_backend != topk_backend::cluster)
+  {
+    SKIP("The oversize/streaming fallback for loose segment-size bounds is exercised by the cluster backend");
+  }
+
+  constexpr auto direction              = cub::detail::topk::select::max;
+  constexpr segment_size_t static_max_k = 1024;
+
+  // Real, uniform segment size kept small; it is passed un-annotated below so the dispatch instead sees a loose
+  // `numeric_limits<segment_size_t>::max()` upper bound.
+  const segment_size_t segment_size =
+    GENERATE_COPY(values({segment_size_t{1}, segment_size_t{4096}, segment_size_t{8192}}));
+  const segment_size_t max_k = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k     = GENERATE_COPY(values({segment_size_t{1}, max_k}));
+  const segment_index_t num_segments =
+    GENERATE_COPY(values({segment_index_t{1}, segment_index_t{8}, segment_index_t{64}}));
+
+  CAPTURE(segment_size, k, num_segments, direction);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  // `segment_size` is passed un-annotated (a raw scalar): the args framework auto-wraps it as an immediate whose
+  // static upper bound is the loose `numeric_limits<segment_size_t>::max()`.
+  batched_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    segment_size,
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_segments * segment_size});
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+
+  // Top-k output is unordered; sort each output segment before comparison.
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
 #endif // TEST_TYPES == 1
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per-segment k",

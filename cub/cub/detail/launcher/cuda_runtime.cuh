@@ -165,6 +165,16 @@ struct TripleChevronFactory
     return CubDebug(
       ::cudaOccupancyMaxPotentialClusterSize(&cluster_size, reinterpret_cast<const void*>(kernel_ptr), config));
   }
+
+  // Query how many thread-block clusters can be co-resident on the whole device for `kernel_ptr` under `config`
+  // (device-wide clusters per wave). `config` must carry the cluster dimension; the query accounts for the kernel's
+  // static shared memory, the requested dynamic shared memory, register pressure, and GPC co-scheduling.
+  template <typename Kernel>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  max_active_clusters(int& num_clusters, Kernel kernel_ptr, const ::cudaLaunchConfig_t* config)
+  {
+    return CubDebug(::cudaOccupancyMaxActiveClusters(&num_clusters, reinterpret_cast<const void*>(kernel_ptr), config));
+  }
 };
 } // namespace detail
 
