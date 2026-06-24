@@ -10,9 +10,9 @@ Prerequisites
 
 Before installing cuda-cccl, ensure you have:
 
-* **Python 3.9 or later**
+* **Python 3.10 or later**
 * **CUDA Toolkit 12.x or 13.x**
-* **Compatible NVIDIA GPU** with Compute Capability 6.0 or higher
+* **Compatible NVIDIA GPU** with Compute Capability 7.5 or higher
 * **Operating Systems:** Linux (tested on Ubuntu 20.04+) or Windows 10/11 (with WSL2 support)
 
 Installation

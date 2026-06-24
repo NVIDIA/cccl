@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-#if _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
+#if _CCCL_HOST_ARCH(X86_64) && _CCCL_OS(LINUX)
 static const bool integral_types_trap = true;
 #else
 static const bool integral_types_trap = false;

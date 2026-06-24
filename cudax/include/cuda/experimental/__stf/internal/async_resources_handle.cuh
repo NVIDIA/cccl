@@ -232,14 +232,11 @@ public:
 
   ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> cached_graphs_query(cudaGraph_t g)
   {
-    size_t nedges;
-    size_t nnodes;
-
-    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+    const size_t nnodes = cuda_try<cudaGraphGetNodes>(g, nullptr);
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+    const size_t nedges = cuda_try<cudaGraphGetEdges>(g, nullptr, nullptr, nullptr);
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+    const size_t nedges = cuda_try<cudaGraphGetEdges>(g, nullptr, nullptr);
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     _CCCL_ASSERT(pimpl, "async_resources_handle is not initialized");

@@ -714,7 +714,7 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
   cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
-  cccl_device_scan_build_result_t build;
+  cccl_device_scan_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
@@ -809,3 +809,196 @@ C2H_TEST("Scan works with no init value", "[scan]")
     REQUIRE(expected == std::vector<T>(output_ptr));
   }
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("Scan build result has AoT metadata populated", "[scan][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> in(1);
+  pointer_t<T> out(1);
+  value_t<T> init{T{0}};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_scan_build(
+      &build,
+      in,
+      out,
+      op,
+      static_cast<cccl_value_t>(init).type,
+      /*force_inclusive=*/false,
+      CCCL_VALUE_INIT,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.init_kernel_lowered_name != nullptr);
+  CHECK(build.init_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.scan_kernel_lowered_name != nullptr);
+  CHECK(build.scan_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}
+
+C2H_TEST("Scan compile/load round-trip", "[scan][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  value_t<T> init{T{0}};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_scan_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      op,
+      static_cast<cccl_value_t>(init).type,
+      /*force_inclusive=*/false,
+      CCCL_VALUE_INIT,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.init_kernel_lowered_name != nullptr);
+  REQUIRE(build.scan_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.init_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.init_kernel != nullptr);
+  CHECK(build.scan_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(n);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_exclusive_scan(
+            build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_exclusive_scan(
+            build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
+
+  std::vector<T> expected(n);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), T{0});
+  REQUIRE(expected == std::vector<T>(output_ptr));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}
+
+C2H_TEST("Scan link_ltoir round-trip", "[scan][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  // Kernel-only compile: op has a name but no LTOIR (code_size == 0).
+  cccl_op_t op_ko{};
+  op_ko.type      = CCCL_STATELESS;
+  op_ko.name      = "op";
+  op_ko.code      = nullptr;
+  op_ko.code_size = 0;
+  op_ko.code_type = CCCL_OP_LTOIR;
+
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  value_t<T> init{T{0}};
+  cccl_type_info accum_ti = get_type_info<T>();
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_scan_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      op_ko,
+      accum_ti,
+      /*force_inclusive=*/false,
+      CCCL_VALUE_INIT,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  // After kernel-only compile: kernel_ltoir is populated, cubin is not.
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_LTOIR));
+  REQUIRE(build.payload_size > 0);
+  CHECK((build.payload_kind != CCCL_PAYLOAD_CUBIN));
+  CHECK(build.library == nullptr);
+
+  // Compile the operator LTOIR separately.
+  operation_t op_full = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const void* op_blob = op_full.code.data();
+  size_t op_size      = op_full.code.size();
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_link_ltoir(&build, &op_blob, &op_size, 1));
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.library == nullptr);
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK((build.payload_kind != CCCL_PAYLOAD_LTOIR));
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(n);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  cccl_op_t op_run    = op_full;
+  cccl_value_t init_v = init;
+
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_exclusive_scan(
+            build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init_v, null_stream));
+
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_exclusive_scan(
+            build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init_v, null_stream));
+
+  std::vector<T> expected(n);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), T{0});
+  REQUIRE(expected == std::vector<T>(output_ptr));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}
+#endif // CCCL_C_PARALLEL_V2

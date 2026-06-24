@@ -37,39 +37,39 @@ namespace detail::unique_by_key
 template <typename PolicyGetter>
 struct host_policy_provider
 {
-  static constexpr unique_by_key_policy selected_policy = PolicyGetter{}();
+  static constexpr UniqueByKeyPolicy selected_policy = PolicyGetter{}();
 
   struct fallback_pol_getter
   {
     _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
-      unique_by_key_policy policy = PolicyGetter{}();
-      policy.threads_per_block    = 64;
-      policy.items_per_thread     = 1;
+      UniqueByKeyPolicy policy = PolicyGetter{}();
+      policy.threads_per_block = 64;
+      policy.items_per_thread  = 1;
       return policy;
     }
   };
 
-  static constexpr unique_by_key_policy fallback_policy = fallback_pol_getter{}();
+  static constexpr UniqueByKeyPolicy fallback_policy = fallback_pol_getter{}();
 };
 
 template <typename PolicyGetter>
 struct device_policy_provider
 {
-  static constexpr unique_by_key_policy selected_policy = PolicyGetter{}();
+  static constexpr UniqueByKeyPolicy selected_policy = PolicyGetter{}();
 
   struct fallback_pol_getter
   {
     _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
-      unique_by_key_policy policy = PolicyGetter{}();
-      policy.threads_per_block    = 64;
-      policy.items_per_thread     = 1;
+      UniqueByKeyPolicy policy = PolicyGetter{}();
+      policy.threads_per_block = 64;
+      policy.items_per_thread  = 1;
       return policy;
     }
   };
 
-  static constexpr unique_by_key_policy fallback_policy = fallback_pol_getter{}();
+  static constexpr UniqueByKeyPolicy fallback_policy = fallback_pol_getter{}();
 };
 
 template <typename PolicyProvider,
@@ -81,29 +81,29 @@ template <typename PolicyProvider,
           typename OffsetT>
 class unique_by_key_vsmem_helper_impl
 {
-  static constexpr unique_by_key_policy selected_policy = PolicyProvider::selected_policy;
+  static constexpr UniqueByKeyPolicy selected_policy = PolicyProvider::selected_policy;
 
-  using selected_policy_t = AgentUniqueByKeyPolicy<
+  using selected_policy_t = agent_unique_by_key_policy<
     selected_policy.threads_per_block,
     selected_policy.items_per_thread,
     selected_policy.load_algorithm,
     selected_policy.load_modifier,
     selected_policy.scan_algorithm,
-    delay_constructor_t<selected_policy.delay_constructor.kind,
-                        selected_policy.delay_constructor.delay,
-                        selected_policy.delay_constructor.l2_write_latency>>;
+    delay_constructor_t<selected_policy.lookback_delay.kind,
+                        selected_policy.lookback_delay.delay,
+                        selected_policy.lookback_delay.l2_write_latency>>;
 
-  static constexpr unique_by_key_policy fallback_policy = PolicyProvider::fallback_policy;
+  static constexpr UniqueByKeyPolicy fallback_policy = PolicyProvider::fallback_policy;
 
-  using fallback_policy_t = AgentUniqueByKeyPolicy<
+  using fallback_policy_t = agent_unique_by_key_policy<
     fallback_policy.threads_per_block,
     fallback_policy.items_per_thread,
     fallback_policy.load_algorithm,
     fallback_policy.load_modifier,
     fallback_policy.scan_algorithm,
-    delay_constructor_t<fallback_policy.delay_constructor.kind,
-                        fallback_policy.delay_constructor.delay,
-                        fallback_policy.delay_constructor.l2_write_latency>>;
+    delay_constructor_t<fallback_policy.lookback_delay.kind,
+                        fallback_policy.lookback_delay.delay,
+                        fallback_policy.lookback_delay.l2_write_latency>>;
 
   using default_agent_t =
     AgentUniqueByKey<selected_policy_t,
@@ -128,7 +128,7 @@ class unique_by_key_vsmem_helper_impl
     (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 
 public:
-  static constexpr unique_by_key_policy policy    = uses_fallback_policy ? fallback_policy : selected_policy;
+  static constexpr UniqueByKeyPolicy policy       = uses_fallback_policy ? fallback_policy : selected_policy;
   static constexpr bool selected_policy_fits_smem = max_default_size <= max_smem_per_block;
 
   using selected_agent_t = default_agent_t;

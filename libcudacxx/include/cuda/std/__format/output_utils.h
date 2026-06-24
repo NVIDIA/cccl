@@ -23,7 +23,9 @@
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/fill_n.h>
 #include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
@@ -100,12 +102,20 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 //! Copy wrapper.
 //!
-//! This uses a "mass output function" of __format::__output_buffer when possible.
+//! This uses a "mass output function" of __fmt_output_buffer when possible.
 template <class _CharT, class _OutCharT = _CharT, class _OutIt>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_copy(basic_string_view<_CharT> __str, _OutIt __out_it)
 {
-  // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
-  return ::cuda::std::copy(__str.begin(), __str.end(), ::cuda::std::move(__out_it));
+  // todo: handle __fmt_retarget_buffer once implemented
+  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
+  {
+    __out_it.__get_container()->__copy(__str);
+    return __out_it;
+  }
+  else
+  {
+    return ::cuda::std::copy(__str.begin(), __str.end(), ::cuda::std::move(__out_it));
+  }
 }
 
 template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT, class _OutIt>
@@ -122,23 +132,39 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
 
 //! Transform wrapper.
 //!
-//! This uses a "mass output function" of __format::__output_buffer when possible.
+//! This uses a "mass output function" of __fmt_output_buffer when possible.
 template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT, class _OutIt, class _UnaryOp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
 {
-  // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
-  return ::cuda::std::transform(__first, __last, ::cuda::std::move(__out_it), __operation);
+  // todo: handle __fmt_retarget_buffer once implemented
+  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
+  {
+    __out_it.__get_container()->__transform(__first, __last, ::cuda::std::move(__operation));
+    return __out_it;
+  }
+  else
+  {
+    return ::cuda::std::transform(__first, __last, ::cuda::std::move(__out_it), __operation);
+  }
 }
 
 //! Fill wrapper.
 //!
-//! This uses a "mass output function" of __format::__output_buffer when possible.
+//! This uses a "mass output function" of __fmt_output_buffer when possible.
 template <class _CharT, class _OutIt>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, _CharT __value)
 {
-  // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
-  return ::cuda::std::fill_n(::cuda::std::move(__out_it), __n, __value);
+  // todo: handle __fmt_retarget_buffer once implemented
+  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_CharT>>>)
+  {
+    __out_it.__get_container()->__fill(__n, __value);
+    return __out_it;
+  }
+  else
+  {
+    return ::cuda::std::fill_n(::cuda::std::move(__out_it), __n, __value);
+  }
 }
 
 template <class _CharT, class _OutIt>

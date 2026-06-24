@@ -37,7 +37,7 @@ struct square_t
 template <typename T, typename OffsetT>
 void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using init_t         = T;
+  using init_value_t   = T;
   using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<T>;
 
@@ -62,7 +62,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<reduction_op_t, T, init_t>>{})
+      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<reduction_op_t, T, init_value_t>>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
@@ -73,7 +73,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       static_cast<OffsetT>(elements),
       reduction_op_t{},
       transform_op_t{},
-      init_t{},
+      init_value_t{},
       env);
   });
 }

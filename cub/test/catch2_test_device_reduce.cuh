@@ -224,7 +224,7 @@ template <typename InputItT,
           typename OffsetItT,
           typename SizeItT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename ResultOutItT>
 inline void compute_host_reference(
   InputItT h_in,
@@ -232,7 +232,7 @@ inline void compute_host_reference(
   SizeItT h_sizes_begin,
   std::size_t num_segments,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   ResultOutItT h_data_out)
 {
   for (std::size_t segment = 0; segment < num_segments; segment++)

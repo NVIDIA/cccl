@@ -25,12 +25,14 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 template <int ThreadsPerBlock,
           int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
           cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
-struct AgentMergeSortPolicy
+struct agent_merge_sort_policy
 {
   static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
@@ -40,6 +42,15 @@ struct AgentMergeSortPolicy
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
+} // namespace detail
+
+template <int ThreadsPerBlock,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
+using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceMergeSort") =
+  detail::agent_merge_sort_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 //! The tuning policy for all algorithms in @ref DeviceMergeSort.
 struct MergeSortPolicy
@@ -85,11 +96,11 @@ struct policy_hub
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<256,
-                           Nominal4BItemsToItems<KeyT>(11),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_LDG,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<256,
+                              Nominal4BItemsToItems<KeyT>(11),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_LDG,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   // NVBug 3384810
@@ -99,22 +110,22 @@ struct policy_hub
   struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<512,
-                           Nominal4BItemsToItems<KeyT>(15),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_LDG,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<512,
+                              Nominal4BItemsToItems<KeyT>(15),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_LDG,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 #endif
 
   struct Policy600 : ChainedPolicy<600, Policy600, Policy520>
   {
     using MergeSortPolicy =
-      AgentMergeSortPolicy<256,
-                           Nominal4BItemsToItems<KeyT>(17),
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_DEFAULT,
-                           BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_merge_sort_policy<256,
+                              Nominal4BItemsToItems<KeyT>(17),
+                              BLOCK_LOAD_WARP_TRANSPOSE,
+                              LOAD_DEFAULT,
+                              BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   using MaxPolicy = Policy600;

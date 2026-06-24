@@ -6,20 +6,19 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: msvc
-
 // <utility>
 
 // template <class T1, class T2> struct pair
 
 // pair& operator=(pair const& p);
 
-#include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_MSVC(4244) // 'initializing': conversion from '_Tp' to '_T2', possible loss of data
 
 struct NonAssignable
 {
@@ -61,8 +60,10 @@ struct CountAssign
   }
 };
 
+#if !TEST_COMPILER(MSVC) // an undefined class is not allowed as an argument to compiler intrinsic __is_assignable
 struct Incomplete;
 _CCCL_GLOBAL_VARIABLE extern Incomplete inc_obj;
+#endif // !TEST_COMPILER(MSVC)
 
 int main(int, char**)
 {
@@ -103,7 +104,8 @@ int main(int, char**)
     using P = cuda::std::pair<int, MoveAssignable>;
     static_assert(!cuda::std::is_copy_assignable<P>::value);
   }
-#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
+#if !TEST_COMPILER(MSVC) // an undefined class is not allowed as an argument to compiler intrinsic __is_assignable
+#  if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
   {
     using P = cuda::std::pair<int, Incomplete&>;
     static_assert(!cuda::std::is_copy_assignable<P>::value);
@@ -111,11 +113,13 @@ int main(int, char**)
     unused(p);
     assert(&p.second == &inc_obj);
   }
-#endif // !_CCCL_TILE_COMPILATION()
+#  endif // !_CCCL_TILE_COMPILATION()
+#endif // !TEST_COMPILER(MSVC)
 
   return 0;
 }
-
+#if !TEST_COMPILER(MSVC) // an undefined class is not allowed as an argument to compiler intrinsic __is_assignable
 struct Incomplete
 {};
 _CCCL_GLOBAL_VARIABLE Incomplete inc_obj;
+#endif // !TEST_COMPILER(MSVC)

@@ -33,6 +33,10 @@ CUresult cccl_device_for_build_ex(
   cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
@@ -47,7 +51,7 @@ try
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build_ptr->cc = cc_major * 10 + cc_minor;
-  cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
+  cccl::detail::copy_cubin(result.cubin, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler = result.compiler;
   build_ptr->for_fn       = result.fn_ptr;
 
@@ -55,7 +59,7 @@ try
 }
 catch (const std::exception& exc)
 {
-  fprintf(stderr, "\nEXCEPTION in cccl_device_for_build(): %s\n", exc.what());
+  fprintf(stderr, "\nEXCEPTION in cccl_device_for_build_ex(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 

@@ -55,7 +55,7 @@ template <typename PolicySelector, typename IteratorT, typename OffsetT, typenam
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
   IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
-  constexpr find_policy policy = current_policy<PolicySelector>();
+  constexpr FindPolicy policy = current_policy<PolicySelector>();
   using agent_find_t =
     agent_t<policy.threads_per_block,
             policy.items_per_thread,
@@ -112,7 +112,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const find_policy active_policy = policy_selector(cc);
+  const FindPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({

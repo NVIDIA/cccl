@@ -26,6 +26,24 @@
 CUB_NAMESPACE_BEGIN
 
 //! @brief cub::DeviceMemcpy provides device-wide, parallel operations for copying data.
+//!
+//! @par Tuning
+//! @rst
+//! All algorithms in DeviceMemcpy that accept an environment can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a @ref BatchedMemcpyPolicy, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin memcpy-batched-policy-selector
+//!      :end-before: example-end memcpy-batched-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin memcpy-batched-tuning
+//!      :end-before: example-end memcpy-batched-tuning
+//! @endrst
 struct DeviceMemcpy
 {
   //! @rst
@@ -122,8 +140,7 @@ struct DeviceMemcpy
   //!   to be copied for each pair of buffers
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

@@ -76,8 +76,11 @@ public:
   {
     static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "_Unit must be cuda::thread_level");
     static_assert(__group_mapping_result<_MappingResult>);
-    _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) == __mapping_result.count(),
-                 "lane_synchronizer can only synchronize units within the same warp");
+    if (__mapping_result.is_valid())
+    {
+      _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) == __mapping_result.count(),
+                   "lane_synchronizer can only synchronize units within the same warp");
+    }
     return {};
   }
 };

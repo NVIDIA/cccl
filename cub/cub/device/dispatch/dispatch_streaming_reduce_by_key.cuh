@@ -68,7 +68,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     return error;
   }
 
-  const reduce_by_key_policy policy = policy_selector(cc);
+  const ReduceByKeyPolicy policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({

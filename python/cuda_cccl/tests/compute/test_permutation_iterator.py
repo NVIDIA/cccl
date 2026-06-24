@@ -159,7 +159,7 @@ def test_unary_transform_of_permutation_iterator():
 
 def test_caching_permutation_iterator():
     """Test that iterator compilation is cached across instances with the same structure."""
-    from cuda.compute._cpp_compile import compile_cpp_to_ltoir
+    from cuda.compute._cpp_compile import compile_cpp_op_code
 
     # Test 1: Same structure → same kind
     it1 = PermutationIterator(
@@ -183,7 +183,7 @@ def test_caching_permutation_iterator():
     assert it1.kind != it4.kind, "Different value type should have different kind"
 
     # Test 4: Verify compilation caching with cache statistics
-    compile_cpp_to_ltoir.cache_clear()
+    compile_cpp_op_code.cache_clear()
 
     # Create multiple instances with same structure
     iterators = []
@@ -197,7 +197,7 @@ def test_caching_permutation_iterator():
         it.get_input_deref_op()
         iterators.append(it)
 
-    cache_info = compile_cpp_to_ltoir.cache_info()
+    cache_info = compile_cpp_op_code.cache_info()
     assert cache_info.hits >= 2, (
         f"Expected cache hits for same structure, got {cache_info.hits} hits, "
         f"{cache_info.misses} misses"

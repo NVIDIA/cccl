@@ -160,7 +160,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`
  *
- * @tparam InitT
+ * @tparam InitValueT
  *   Initial value type
  *
  * @tparam AccumT
@@ -185,7 +185,7 @@ template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
@@ -194,7 +194,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                     OutputIteratorT d_out,
                                                     int num_items,
                                                     ReductionOpT reduction_op,
-                                                    InitT init,
+                                                    InitValueT init,
                                                     TransformOpT transform_op)
 {
   constexpr rfa::single_tile_policy policy = current_policy<PolicySelector>().single_tile;

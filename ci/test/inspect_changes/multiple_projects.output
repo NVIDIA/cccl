@@ -1,2 +1,2 @@
-FULL_BUILD=python packaging
+FULL_BUILD=python_v2 python packaging
 LITE_BUILD=
