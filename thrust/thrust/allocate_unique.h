@@ -40,6 +40,14 @@ struct allocator_delete final
   _CCCL_HIDE_FROM_ABI allocator_delete(const allocator_delete&)     = default;
   _CCCL_HIDE_FROM_ABI allocator_delete(allocator_delete&&) noexcept = default;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  _CCCL_TEMPLATE(typename UAllocator)
+  _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<UAllocator>, allocator_delete>) )
+  allocator_delete(UAllocator&& other) noexcept
+      : alloc_(THRUST_FWD(other))
+  {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
+
   template <typename U, typename UAllocator>
   allocator_delete(allocator_delete<U, UAllocator> const& other) noexcept
       : alloc_(other.get_allocator())
