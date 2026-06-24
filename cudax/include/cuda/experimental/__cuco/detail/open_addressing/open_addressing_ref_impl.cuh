@@ -22,12 +22,8 @@
 #endif // no system header
 
 #include <thrust/device_reference.h>
-#include <thrust/execution_policy.h>
-#include <thrust/logical.h>
-#include <thrust/reduce.h>
 
 #include <cuda/__atomic/atomic.h>
-#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -38,6 +34,7 @@
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/detail/utility/traits.hpp>

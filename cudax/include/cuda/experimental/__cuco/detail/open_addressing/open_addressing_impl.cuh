@@ -24,7 +24,6 @@
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 
-#include <cuda/__atomic/atomic.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__iterator/constant_iterator.h>
