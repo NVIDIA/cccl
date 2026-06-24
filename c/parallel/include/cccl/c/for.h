@@ -87,8 +87,10 @@ cccl_device_for_serialize(const cccl_device_for_build_result_t* build, void** ou
 
 // Reconstructs a build_result from a buffer produced by cccl_device_for_serialize.
 // On success build is populated as if by compile(); CUlibrary/CUkernel handles
-// remain null until cccl_device_for_load is called. On failure build is
-// left zeroed and a non-success CUresult is returned.
+// remain null until cccl_device_for_load is called. If the deserialized payload
+// kind is CCCL_PAYLOAD_LTOIR, cccl_device_for_link_ltoir must be called before
+// cccl_device_for_load. On failure build is left zeroed and a non-success
+// CUresult is returned.
 CCCL_C_API CUresult cccl_device_for_deserialize(cccl_device_for_build_result_t* build, const void* buf, size_t size);
 
 CCCL_C_API CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr);
