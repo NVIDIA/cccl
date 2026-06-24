@@ -38,7 +38,6 @@ Checks:
   - '-bugprone-branch-clone'
   - '-bugprone-use-after-move'
   - '-bugprone-unchecked-optional-access'
-  - '-bugprone-casting-through-void'
   - '-bugprone-integer-division'
   - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'
