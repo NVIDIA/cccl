@@ -21,19 +21,19 @@
 
 namespace test_runtime
 {
-[[nodiscard]] _CCCL_HOST_API cuda::device_ref current_test_device()
+[[nodiscard]] _CCCL_HOST_API inline cuda::device_ref current_test_device()
 {
   int device = 0;
   ASSERT_EQUAL(cudaSuccess, cudaGetDevice(&device));
   return cuda::device_ref{device};
 }
 
-[[nodiscard]] _CCCL_HOST_API auto single_thread_config()
+[[nodiscard]] _CCCL_HOST_API inline auto single_thread_config()
 {
   return cuda::make_config(cuda::make_hierarchy(cuda::grid_dims(1), cuda::block_dims<1>()));
 }
 
-_CCCL_DEVICE_API void assert_device(bool condition, const char* expression, const char* file, int line) noexcept
+_CCCL_DEVICE_API inline void assert_device(bool condition, const char* expression, const char* file, int line) noexcept
 {
   if (!condition)
   {
@@ -43,7 +43,8 @@ _CCCL_DEVICE_API void assert_device(bool condition, const char* expression, cons
 }
 
 template <typename Buffer>
-_CCCL_HOST_API void assert_equal(cuda::stream_ref stream, Buffer& buffer, cuda::std::initializer_list<int> expected)
+_CCCL_HOST_API inline void
+assert_equal(cuda::stream_ref stream, Buffer& buffer, cuda::std::initializer_list<int> expected)
 {
   std::vector<int> actual(buffer.size());
   cuda::copy_bytes(stream, buffer, actual);
