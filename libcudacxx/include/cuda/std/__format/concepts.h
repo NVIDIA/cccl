@@ -26,8 +26,12 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__fwd/inplace_vector.h>
 #include <cuda/std/__iterator/wrap_iter.h>
+#include <cuda/std/__string/char_traits.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -48,19 +52,32 @@ _CCCL_CONCEPT __fmt_char_type = same_as<_CharT, char>
 template <class _CharT>
 using __fmt_iter_for _CCCL_NODEBUG_ALIAS = _CharT*;
 
+template <class _Tp, class _Context, class _Formatter, class = void>
+inline constexpr bool __formattable_with_impl_v = false;
+
 template <class _Tp, class _Context, class _Formatter>
-_CCCL_CONCEPT __formattable_with_helper = _CCCL_REQUIRES_EXPR(
-  (_Tp, _Context, _Formatter),
-  _Formatter& __f,
-  const _Formatter& __cf,
-  _Tp&& __t,
-  _Context __fc,
-  basic_format_parse_context<typename _Context::char_type> __pc)(
-  _Same_as(typename decltype(__pc)::iterator) __f.parse(__pc),
-  _Same_as(typename _Context::iterator) __cf.format(__t, __fc));
+inline constexpr bool __formattable_with_impl_v<
+  _Tp,
+  _Context,
+  _Formatter,
+  void_t<enable_if_t<!is_void_v<_Tp>, typename char_traits<typename _Context::char_type>::char_type>>> =
+  _CCCL_REQUIRES_EXPR(
+    (_Tp, _Context, _Formatter),
+    _Formatter& __f,
+    const _Formatter& __cf,
+    _Tp&& __t,
+    _Context __fc,
+    basic_format_parse_context<typename _Context::char_type> __pc)(
+    requires(semiregular<_Formatter>),
+    _Same_as(typename decltype(__pc)::iterator) __f.parse(__pc),
+    _Same_as(typename _Context::iterator) __cf.format(__t, __fc));
 
 template <class _Tp, class _Context, class _Formatter = typename _Context::template formatter_type<remove_const_t<_Tp>>>
-_CCCL_CONCEPT __formattable_with = semiregular<_Formatter> && __formattable_with_helper<_Tp, _Context, _Formatter>;
+_CCCL_CONCEPT __formattable_with = __formattable_with_impl_v<_Tp, _Context, _Formatter>;
+
+template <class _Tp, class _CharT>
+_CCCL_CONCEPT formattable =
+  __formattable_with<remove_reference_t<_Tp>, basic_format_context<__fmt_iter_for<_CharT>, _CharT>>;
 
 template <class _OutIt, class _CharT>
 _CCCL_CONCEPT __fmt_enable_direct_output =
