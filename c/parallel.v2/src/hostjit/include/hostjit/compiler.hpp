@@ -3,52 +3,47 @@
 #include <string>
 #include <vector>
 
-namespace hostjit
+#include <libnvcc/libnvcc.h>
+
+namespace hostjit::detail
 {
-struct CompilationResult
+struct LibnvccProgramGuard
 {
-  bool success;
-  std::string object_file_path; // Path to generated .o file
-  std::string diagnostics; // Compiler messages
-  std::vector<char> cubin; // Device cubin extracted during compilation
+  libnvccProgram program = nullptr;
+
+  ~LibnvccProgramGuard()
+  {
+    libnvccDestroyProgram(&program);
+  }
 };
 
-struct BitcodeResult
+inline std::vector<const char*> make_libnvcc_option_ptrs(const std::vector<std::string>& options)
 {
-  bool success;
-  std::string bitcode; // LLVM bitcode bytes
-  std::string diagnostics;
-};
+  std::vector<const char*> ptrs;
+  ptrs.reserve(options.size());
+  for (const auto& option : options)
+  {
+    ptrs.push_back(option.c_str());
+  }
+  return ptrs;
+}
 
-struct LinkResult
+inline std::string get_libnvcc_program_log(libnvccProgram program)
 {
-  bool success;
-  std::string library_path; // Path to .so file
-  std::string diagnostics;
-};
-
-// Forward declaration to avoid including heavy Clang headers
-struct CompilerConfig;
-
-class CUDACompiler
-{
-public:
-  CUDACompiler();
-  ~CUDACompiler();
-
-  // Compile CUDA device source to LLVM bitcode
-  BitcodeResult compileToDeviceBitcode(const std::string& source_code, const CompilerConfig& config);
-
-  // Compile CUDA source code to object file
-  CompilationResult
-  compileToObject(const std::string& source_code, const std::string& output_path, const CompilerConfig& config);
-
-  // Link object files to shared library
-  LinkResult linkToSharedLibrary(
-    const std::vector<std::string>& object_files, const std::string& output_path, const CompilerConfig& config);
-
-private:
-  class Impl;
-  Impl* impl_;
-};
-} // namespace hostjit
+  size_t log_size = 0;
+  if (libnvccGetProgramLogSize(program, &log_size) != LIBNVCC_SUCCESS || log_size == 0)
+  {
+    return {};
+  }
+  std::string log(log_size, '\0');
+  if (libnvccGetProgramLog(program, log.data()) != LIBNVCC_SUCCESS)
+  {
+    return {};
+  }
+  if (!log.empty() && log.back() == '\0')
+  {
+    log.pop_back();
+  }
+  return log;
+}
+} // namespace hostjit::detail

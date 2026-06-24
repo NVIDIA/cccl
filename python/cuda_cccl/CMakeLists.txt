@@ -75,8 +75,16 @@ set(CMAKE_INSTALL_INCLUDEDIR "${old_includedir}") # pop
 file(MAKE_DIRECTORY "cuda/compute/${CUDA_VERSION_DIR}/cccl")
 
 # Install version-specific binaries
+set(_cccl_c_parallel_install_targets ${_cccl_c_parallel_target})
+if (CCCL_PYTHON_USE_V2)
+  list(
+    APPEND
+    _cccl_c_parallel_install_targets
+    libnvcc
+  )
+endif()
 install(
-  TARGETS ${_cccl_c_parallel_target}
+  TARGETS ${_cccl_c_parallel_install_targets}
   DESTINATION cuda/compute/${CUDA_VERSION_DIR}/cccl
 )
 

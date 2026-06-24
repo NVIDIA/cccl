@@ -65,6 +65,13 @@ if (CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY)
   )
 endif()
 
+if (UNIX AND NOT APPLE)
+  set_target_properties(
+    cccl.c.parallel.v2
+    PROPERTIES BUILD_RPATH_USE_ORIGIN ON INSTALL_RPATH "$ORIGIN"
+  )
+endif()
+
 cccl_get_cub()
 cccl_get_cudatoolkit()
 cccl_get_thrust()

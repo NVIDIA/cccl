@@ -7,8 +7,7 @@
 #include <clang/Frontend/FrontendOptions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Lex/PreprocessorOptions.h>
-#include <hostjit/compiler.hpp>
-#include <hostjit/config.hpp>
+#include <libnvcc/libnvcc.h>
 #include <lld/Common/Driver.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -51,17 +50,23 @@ LLD_HAS_DRIVER(elf)
 #  include <llvm/Object/COFFImportFile.h>
 #endif
 
+#include <charconv>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <unordered_map>
 #include <vector>
 
 #include <nvFatbin.h>
 #include <nvJitLink.h>
 
-namespace hostjit
+namespace libnvcc
 {
 static bool llvm_initialized = false;
 
@@ -83,6 +88,589 @@ static void initialize_llvm()
   LLVMInitializeNVPTXAsmPrinter();
 
   llvm_initialized = true;
+}
+
+struct CompilerOptions
+{
+  std::string cuda_toolkit_path;
+  std::string hostjit_include_path;
+  std::string clang_headers_path;
+  std::vector<std::string> system_include_paths;
+  std::vector<std::string> include_paths;
+  std::vector<std::string> library_paths;
+  std::vector<std::string> device_bitcode_files;
+  std::vector<std::string> device_ltoir_files;
+  std::unordered_map<std::string, std::string> macro_definitions;
+  std::vector<std::string> extra_clang_args;
+  std::string device_pch_path;
+  std::string host_pch_path;
+  int sm_version         = 75;
+  int optimization_level = 2;
+  bool debug             = false;
+  bool verbose           = false;
+  bool trace_includes    = false;
+  bool keep_artifacts    = false;
+  std::string entry_point_name;
+};
+
+struct CompilationResult
+{
+  bool success = false;
+  std::string object_file_path;
+  std::string diagnostics;
+};
+
+struct BitcodeResult
+{
+  bool success = false;
+  std::string diagnostics;
+};
+
+struct LinkResult
+{
+  bool success = false;
+  std::string library_path;
+  std::string diagnostics;
+};
+
+static bool pathExists(const std::filesystem::path& path);
+
+static void addDefaultCudaLibraryPath(CompilerOptions& options)
+{
+  if (!options.cuda_toolkit_path.empty())
+  {
+    std::filesystem::path lib64_path = std::filesystem::path(options.cuda_toolkit_path) / "lib64";
+    std::filesystem::path lib_path   = std::filesystem::path(options.cuda_toolkit_path) / "lib";
+
+    if (pathExists(lib64_path))
+    {
+      options.library_paths.push_back(lib64_path.string());
+    }
+    else if (pathExists(lib_path))
+    {
+      options.library_paths.push_back(lib_path.string());
+    }
+  }
+}
+
+static void setDefaultOptions(CompilerOptions& options)
+{
+  if (const char* env = std::getenv("CUDA_PATH"))
+  {
+    options.cuda_toolkit_path = env;
+  }
+  else if (const char* env = std::getenv("CUDA_HOME"))
+  {
+    options.cuda_toolkit_path = env;
+  }
+#ifdef CUDA_TOOLKIT_PATH
+  else
+  {
+    options.cuda_toolkit_path = CUDA_TOOLKIT_PATH;
+  }
+#endif
+
+  if (const char* env = std::getenv("HOSTJIT_INCLUDE_PATH"))
+  {
+    options.hostjit_include_path = env;
+  }
+#ifdef HOSTJIT_INCLUDE_DIR
+  else
+  {
+    options.hostjit_include_path = HOSTJIT_INCLUDE_DIR;
+  }
+#endif
+
+  if (const char* env = std::getenv("HOSTJIT_CLANG_PATH"))
+  {
+    options.clang_headers_path = env;
+  }
+#ifdef CLANG_HEADERS_DIR
+  else
+  {
+    options.clang_headers_path = CLANG_HEADERS_DIR;
+  }
+#endif
+}
+
+static bool pathExists(const std::filesystem::path& path)
+{
+  std::error_code ec;
+  return std::filesystem::exists(path, ec);
+}
+
+static std::filesystem::path tempDirectoryPath()
+{
+  std::error_code ec;
+  auto path = std::filesystem::temp_directory_path(ec);
+  if (!ec)
+  {
+    return path;
+  }
+#ifdef _WIN32
+  if (const char* env = std::getenv("TEMP"))
+  {
+    return env;
+  }
+  if (const char* env = std::getenv("TMP"))
+  {
+    return env;
+  }
+#endif
+  if (const char* env = std::getenv("TMPDIR"))
+  {
+    return env;
+  }
+  return ".";
+}
+
+static bool createDirectories(const std::filesystem::path& path, std::string& diagnostics)
+{
+  std::error_code ec;
+  std::filesystem::create_directories(path, ec);
+  if (ec)
+  {
+    diagnostics += "Failed to create directory " + path.string() + ": " + ec.message() + "\n";
+    return false;
+  }
+  return true;
+}
+
+static void removeAll(const std::filesystem::path& path)
+{
+  std::error_code ec;
+  std::filesystem::remove_all(path, ec);
+}
+
+template <typename Fn>
+static void forEachDirectoryEntry(const std::filesystem::path& dir, Fn&& fn)
+{
+  std::error_code ec;
+  for (std::filesystem::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec))
+  {
+    fn(*it);
+  }
+}
+
+static bool parseInt(const std::string& value, int& out)
+{
+  if (value.empty())
+  {
+    return false;
+  }
+
+  int parsed        = 0;
+  const char* begin = value.data();
+  const char* end   = begin + value.size();
+  auto [ptr, ec]    = std::from_chars(begin, end, parsed);
+  if (ec != std::errc{} || ptr != end)
+  {
+    return false;
+  }
+  out = parsed;
+  return true;
+}
+
+static bool parseGpuArchitecture(const std::string& value, int& sm)
+{
+  std::string arch = value;
+  if (arch.starts_with("sm_"))
+  {
+    arch.erase(0, 3);
+  }
+  return parseInt(arch, sm);
+}
+
+static bool parseMacroDefinition(const std::string& value, CompilerOptions& options)
+{
+  if (value.empty())
+  {
+    return false;
+  }
+  auto eq = value.find('=');
+  if (eq == std::string::npos)
+  {
+    options.macro_definitions[value] = "";
+  }
+  else if (eq == 0)
+  {
+    return false;
+  }
+  else
+  {
+    options.macro_definitions[value.substr(0, eq)] = value.substr(eq + 1);
+  }
+  return true;
+}
+
+static bool parseOptions(int num_options, const char* const* raw_options, CompilerOptions& options, std::string& error)
+{
+  if (num_options < 0)
+  {
+    error = "Option count must be non-negative";
+    return false;
+  }
+  if (num_options > 0 && raw_options == nullptr)
+  {
+    error = "Options array is null";
+    return false;
+  }
+
+  setDefaultOptions(options);
+
+  auto value_after_equals = [](std::string_view option, std::string_view prefix) -> std::string {
+    return std::string(option.substr(prefix.size()));
+  };
+
+  for (int i = 0; i < num_options; ++i)
+  {
+    if (raw_options[i] == nullptr)
+    {
+      error = "Option string is null";
+      return false;
+    }
+
+    std::string_view option(raw_options[i]);
+    if (option.starts_with("--cuda-path="))
+    {
+      options.cuda_toolkit_path = value_after_equals(option, "--cuda-path=");
+    }
+    else if (option.starts_with("--hostjit-include-path="))
+    {
+      options.hostjit_include_path = value_after_equals(option, "--hostjit-include-path=");
+    }
+    else if (option.starts_with("--clang-headers-path="))
+    {
+      options.clang_headers_path = value_after_equals(option, "--clang-headers-path=");
+    }
+    else if (option.starts_with("--system-include-path="))
+    {
+      options.system_include_paths.push_back(value_after_equals(option, "--system-include-path="));
+    }
+    else if (option.starts_with("-isystem") && option.size() > 8)
+    {
+      options.system_include_paths.emplace_back(option.substr(8));
+    }
+    else if (option == "-isystem")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr)
+      {
+        error = "-isystem requires an argument";
+        return false;
+      }
+      options.system_include_paths.emplace_back(raw_options[i]);
+    }
+    else if (option.starts_with("--include-path="))
+    {
+      options.include_paths.push_back(value_after_equals(option, "--include-path="));
+    }
+    else if (option.starts_with("-I") && option.size() > 2)
+    {
+      options.include_paths.emplace_back(option.substr(2));
+    }
+    else if (option == "-I")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr)
+      {
+        error = "-I requires an argument";
+        return false;
+      }
+      options.include_paths.emplace_back(raw_options[i]);
+    }
+    else if (option.starts_with("--library-path="))
+    {
+      options.library_paths.push_back(value_after_equals(option, "--library-path="));
+    }
+    else if (option.starts_with("-L") && option.size() > 2)
+    {
+      options.library_paths.emplace_back(option.substr(2));
+    }
+    else if (option == "-L")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr)
+      {
+        error = "-L requires an argument";
+        return false;
+      }
+      options.library_paths.emplace_back(raw_options[i]);
+    }
+    else if (option.starts_with("--device-bitcode="))
+    {
+      options.device_bitcode_files.push_back(value_after_equals(option, "--device-bitcode="));
+    }
+    else if (option.starts_with("--device-ltoir="))
+    {
+      options.device_ltoir_files.push_back(value_after_equals(option, "--device-ltoir="));
+    }
+    else if (option.starts_with("--define-macro="))
+    {
+      if (!parseMacroDefinition(value_after_equals(option, "--define-macro="), options))
+      {
+        error = "Invalid macro definition: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option.starts_with("-D") && option.size() > 2)
+    {
+      if (!parseMacroDefinition(std::string(option.substr(2)), options))
+      {
+        error = "Invalid macro definition: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option == "-D")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr || !parseMacroDefinition(raw_options[i], options))
+      {
+        error = "-D requires a macro definition";
+        return false;
+      }
+    }
+    else if (option.starts_with("--gpu-architecture="))
+    {
+      if (!parseGpuArchitecture(value_after_equals(option, "--gpu-architecture="), options.sm_version))
+      {
+        error = "Invalid GPU architecture: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option.starts_with("--optimization-level="))
+    {
+      if (!parseInt(value_after_equals(option, "--optimization-level="), options.optimization_level))
+      {
+        error = "Invalid optimization level: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option.starts_with("-O") && option.size() > 2)
+    {
+      if (!parseInt(std::string(option.substr(2)), options.optimization_level))
+      {
+        error = "Invalid optimization level: " + std::string(option);
+        return false;
+      }
+    }
+    else if (option == "--debug")
+    {
+      options.debug = true;
+    }
+    else if (option == "--verbose")
+    {
+      options.verbose = true;
+    }
+    else if (option == "--trace-includes")
+    {
+      options.trace_includes = true;
+    }
+    else if (option == "--keep-artifacts")
+    {
+      options.keep_artifacts = true;
+    }
+    else if (option.starts_with("--entry-point="))
+    {
+      options.entry_point_name = value_after_equals(option, "--entry-point=");
+    }
+    else if (option.starts_with("--device-pch="))
+    {
+      options.device_pch_path = value_after_equals(option, "--device-pch=");
+    }
+    else if (option.starts_with("--host-pch="))
+    {
+      options.host_pch_path = value_after_equals(option, "--host-pch=");
+    }
+    else if (option.starts_with("-XClang="))
+    {
+      options.extra_clang_args.emplace_back(option.substr(8));
+    }
+    else if (option == "-XClang")
+    {
+      if (++i >= num_options || raw_options[i] == nullptr)
+      {
+        error = "-XClang requires an argument";
+        return false;
+      }
+      options.extra_clang_args.emplace_back(raw_options[i]);
+    }
+    else
+    {
+      error = "Unknown option: " + std::string(option);
+      return false;
+    }
+  }
+
+  if (options.library_paths.empty())
+  {
+    addDefaultCudaLibraryPath(options);
+  }
+
+  return true;
+}
+
+static bool validateOptions(const CompilerOptions& options, std::string* error_message)
+{
+  if (options.cuda_toolkit_path.empty())
+  {
+    if (error_message)
+    {
+      *error_message = "CUDA toolkit path not found. Please pass --cuda-path or set CUDA_PATH/CUDA_HOME.";
+    }
+    return false;
+  }
+
+  if (!pathExists(options.cuda_toolkit_path))
+  {
+    if (error_message)
+    {
+      *error_message = "CUDA toolkit path does not exist: " + options.cuda_toolkit_path;
+    }
+    return false;
+  }
+
+  std::filesystem::path cuda_h = std::filesystem::path(options.cuda_toolkit_path) / "include" / "cuda.h";
+  if (!pathExists(cuda_h))
+  {
+    if (error_message)
+    {
+      *error_message = "CUDA headers not found at: " + cuda_h.string();
+    }
+    return false;
+  }
+
+  for (const auto& include_path : options.include_paths)
+  {
+    if (!pathExists(include_path))
+    {
+      if (error_message)
+      {
+        *error_message = "Include path does not exist: " + include_path;
+      }
+      return false;
+    }
+  }
+
+  for (const auto& include_path : options.system_include_paths)
+  {
+    if (!pathExists(include_path))
+    {
+      if (error_message)
+      {
+        *error_message = "System include path does not exist: " + include_path;
+      }
+      return false;
+    }
+  }
+
+  for (const auto& library_path : options.library_paths)
+  {
+    if (!pathExists(library_path))
+    {
+      if (error_message)
+      {
+        *error_message = "Library path does not exist: " + library_path;
+      }
+      return false;
+    }
+  }
+
+  for (const auto& bitcode_path : options.device_bitcode_files)
+  {
+    if (!pathExists(bitcode_path))
+    {
+      if (error_message)
+      {
+        *error_message = "Device bitcode path does not exist: " + bitcode_path;
+      }
+      return false;
+    }
+  }
+
+  for (const auto& ltoir_path : options.device_ltoir_files)
+  {
+    if (!pathExists(ltoir_path))
+    {
+      if (error_message)
+      {
+        *error_message = "Device LTOIR path does not exist: " + ltoir_path;
+      }
+      return false;
+    }
+  }
+
+  if (!options.device_pch_path.empty() && !pathExists(options.device_pch_path))
+  {
+    if (error_message)
+    {
+      *error_message = "Device PCH path does not exist: " + options.device_pch_path;
+    }
+    return false;
+  }
+
+  if (!options.host_pch_path.empty() && !pathExists(options.host_pch_path))
+  {
+    if (error_message)
+    {
+      *error_message = "Host PCH path does not exist: " + options.host_pch_path;
+    }
+    return false;
+  }
+
+  if (options.sm_version < 30 || options.sm_version > 150)
+  {
+    if (error_message)
+    {
+      *error_message = "Invalid SM version: " + std::to_string(options.sm_version) + " (must be between 30 and 150)";
+    }
+    return false;
+  }
+
+  if (options.optimization_level < 0 || options.optimization_level > 3)
+  {
+    if (error_message)
+    {
+      *error_message =
+        "Invalid optimization level: " + std::to_string(options.optimization_level) + " (must be between 0 and 3)";
+    }
+    return false;
+  }
+
+  return true;
+}
+
+static void appendExtraClangArgs(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  args.insert(args.end(), options.extra_clang_args.begin(), options.extra_clang_args.end());
+}
+
+static void appendSystemIncludePaths(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  for (const auto& include_path : options.system_include_paths)
+  {
+    args.push_back("-internal-isystem");
+    args.push_back(include_path);
+  }
+}
+
+static void appendIncludePaths(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  for (const auto& include_path : options.include_paths)
+  {
+    args.push_back("-I" + include_path);
+  }
+}
+
+static void appendMacroDefinitions(std::vector<std::string>& args, const CompilerOptions& options)
+{
+  for (const auto& [macro_name, macro_value] : options.macro_definitions)
+  {
+    if (macro_value.empty())
+    {
+      args.push_back("-D" + macro_name);
+    }
+    else
+    {
+      args.push_back("-D" + macro_name + "=" + macro_value);
+    }
+  }
 }
 
 #ifdef _WIN32
@@ -135,59 +723,31 @@ static std::string findCudartDllName(const std::string& cuda_toolkit_path)
   for (const auto& subdir : {"bin/x64", "bin"})
   {
     fs::path dir = fs::path(cuda_toolkit_path) / subdir;
-    if (!fs::exists(dir))
+    if (!pathExists(dir))
     {
       continue;
     }
-    for (const auto& entry : fs::directory_iterator(dir))
-    {
+    std::string cudart_name;
+    forEachDirectoryEntry(dir, [&](const std::filesystem::directory_entry& entry) {
       auto name = entry.path().filename().string();
-      if (name.starts_with("cudart64_") && name.ends_with(".dll"))
+      if (cudart_name.empty() && name.starts_with("cudart64_") && name.ends_with(".dll"))
       {
-        return name;
+        cudart_name = name;
       }
+    });
+    if (!cudart_name.empty())
+    {
+      return cudart_name;
     }
   }
   return "cudart64_12.dll"; // fallback
 }
 #endif
 
-// Headers precompiled into the PCH cache.  Covers the algorithms exposed
-// by the C parallel library so that a single pair of PCH files (device +
-// host) is reused across reduce, adjacent-difference, etc.
-static constexpr const char* pch_preamble_source =
-  "#include <cuda_runtime.h>\n"
-  "#include <cuda/std/iterator>\n"
-  "#include <cuda/std/functional>\n"
-  "#include <cuda/functional>\n"
-  "#include <cub/device/device_reduce.cuh>\n"
-  "#include <cub/device/device_adjacent_difference.cuh>\n";
-
-class CUDACompiler::Impl
+class CompilerImpl
 {
 public:
-  Impl() {}
-
-  // Get the persistent PCH cache directory.
-  static std::filesystem::path getPCHCacheDir()
-  {
-    auto dir = std::filesystem::temp_directory_path() / "hostjit_pch";
-    std::filesystem::create_directories(dir);
-    return dir;
-  }
-
-  // Get a persistent cache path for a PCH file.
-  static std::string getPCHPath(const std::string& kind, int sm_version)
-  {
-    return (getPCHCacheDir() / (kind + "_sm" + std::to_string(sm_version) + ".pch")).string();
-  }
-
-  // Get the persistent path for the PCH preamble source file.
-  // The PCH stores a reference to this path, so it must be stable across runs.
-  static std::string getPCHSourcePath(const std::string& kind, int sm_version)
-  {
-    return (getPCHCacheDir() / (kind + "_sm" + std::to_string(sm_version) + "_preamble.cu")).string();
-  }
+  CompilerImpl() {}
 
   // Write preamble to a persistent file and generate a PCH from it.
   // arg_strings[0] will be replaced with the persistent preamble path.
@@ -263,7 +823,7 @@ public:
     const std::string& source_code,
     const std::string& input_file,
     const std::string& output_ptx,
-    const CompilerConfig& config,
+    const CompilerOptions& config,
     std::string& diagnostics)
   {
     std::string temp_dir    = std::filesystem::path(output_ptx).parent_path().string();
@@ -271,9 +831,9 @@ public:
 
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    // PTX version floor is 7.8 — CUB's instruction selection assumes
-    // features added in PTX 7.6 (e.g. `bmsk`), so anything older fails to
-    // assemble even on sm_75/sm_80.
+    // PTX version floor is 7.8. Some generated device code uses features
+    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
+    // even on sm_75/sm_80.
     int ptx_version = 78;
     if (config.sm_version >= 120)
     {
@@ -323,63 +883,20 @@ public:
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/cub");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/thrust");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
+    appendSystemIncludePaths(arg_strings, config);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.cuda_toolkit_path + "/include");
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
 
-    for (const auto& include_path : config.include_paths)
-    {
-      arg_strings.push_back("-I" + include_path);
-    }
+    appendIncludePaths(arg_strings, config);
 
     arg_strings.push_back("-D__HOSTJIT_DEVICE_COMPILATION__=1");
     arg_strings.push_back("-DNDEBUG");
-    arg_strings.push_back("-DCCCL_DISABLE_CTK_COMPATIBILITY_CHECK");
-    arg_strings.push_back("-D_CCCL_ENABLE_FREESTANDING=1");
-    arg_strings.push_back("-DCCCL_DISABLE_NVTX=1");
-    arg_strings.push_back("-DCCCL_DISABLE_EXCEPTIONS=1");
 
     std::vector<std::string> bitcode_files_to_link = config.device_bitcode_files;
 
-    for (const auto& [macro_name, macro_value] : config.macro_definitions)
-    {
-      if (macro_value.empty())
-      {
-        arg_strings.push_back("-D" + macro_name);
-      }
-      else
-      {
-        arg_strings.push_back("-D" + macro_name + "=" + macro_value);
-      }
-    }
+    appendMacroDefinitions(arg_strings, config);
 
     arg_strings.push_back("-fdeprecated-macro");
     arg_strings.push_back("--offload-new-driver");
@@ -394,29 +911,11 @@ public:
       arg_strings.push_back("-H");
     }
 
+    appendExtraClangArgs(arg_strings, config);
     arg_strings.push_back("-x");
     arg_strings.push_back("cuda");
 
-    // --- PCH: ensure device PCH exists ---
-    std::string device_pch_path;
-    if (config.enable_pch)
-    {
-      device_pch_path = getPCHPath("device", config.sm_version);
-      if (!std::filesystem::exists(device_pch_path))
-      {
-        auto pch_src_path = getPCHSourcePath("device", config.sm_version);
-        std::string pch_diag;
-        if (!generatePCH(pch_preamble_source, pch_src_path, device_pch_path, arg_strings, pch_diag))
-        {
-          diagnostics += "Device PCH generation failed: " + pch_diag + "\n";
-          device_pch_path.clear();
-        }
-        else if (config.verbose)
-        {
-          diagnostics += "Generated device PCH: " + device_pch_path + "\n";
-        }
-      }
-    }
+    std::string device_pch_path = config.device_pch_path;
 
     std::vector<const char*> args;
     for (const auto& arg : arg_strings)
@@ -455,7 +954,7 @@ public:
     }
 
     // --- PCH: load cached device PCH ---
-    if (!device_pch_path.empty() && std::filesystem::exists(device_pch_path))
+    if (!device_pch_path.empty() && pathExists(device_pch_path))
     {
       invocation.getPreprocessorOpts().ImplicitPCHInclude = device_pch_path;
     }
@@ -656,10 +1155,10 @@ public:
                 pass.run(*mod);
                 dest.flush();
 
-                // Debug: when CCCL_HOSTJIT_DUMP_DIR is set, dump the optimized IR
+                // Debug: when LIBNVCC_DUMP_DIR is set, dump the optimized IR
                 // and the PTX fed to ptxas, keyed by entry point name. Lets us
                 // inspect codegen (register pressure, launch bounds) post-inline.
-                if (const char* dump_dir = std::getenv("CCCL_HOSTJIT_DUMP_DIR"))
+                if (const char* dump_dir = std::getenv("LIBNVCC_DUMP_DIR"))
                 {
                   std::error_code dec;
                   std::filesystem::create_directories(dump_dir, dec);
@@ -704,13 +1203,17 @@ public:
     return success;
   }
 
-  BitcodeResult compileToDeviceBitcode(const std::string& source_code, const CompilerConfig& config)
+  BitcodeResult compileToDeviceBitcode(
+    const std::string& source_code,
+    const std::string& input_name,
+    const std::string& output_bitcode_path,
+    const CompilerOptions& config)
   {
     BitcodeResult result;
     result.success = false;
 
     std::string error_msg;
-    if (!validateConfig(config, &error_msg))
+    if (!validateOptions(config, &error_msg))
     {
       result.diagnostics = "Configuration error: " + error_msg;
       return result;
@@ -719,17 +1222,20 @@ public:
     initialize_llvm();
 
     std::string temp_dir =
-      (std::filesystem::temp_directory_path() / ("hostjit_bc_" + std::to_string(reinterpret_cast<uintptr_t>(this))))
+      (tempDirectoryPath() / ("hostjit_bc_" + std::to_string(reinterpret_cast<uintptr_t>(this))))
         .string();
-    std::filesystem::create_directories(temp_dir);
+    if (!createDirectories(temp_dir, result.diagnostics))
+    {
+      return result;
+    }
 
-    std::string input_file   = "input.cu";
+    std::string input_file   = input_name.empty() ? std::string("input.cu") : input_name;
     std::string source_file  = temp_dir + "/" + input_file;
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    // PTX version floor is 7.8 — CUB's instruction selection assumes
-    // features added in PTX 7.6 (e.g. `bmsk`), so anything older fails to
-    // assemble even on sm_75/sm_80.
+    // PTX version floor is 7.8. Some generated device code uses features
+    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
+    // even on sm_75/sm_80.
     int ptx_version = 78;
     if (config.sm_version >= 120)
     {
@@ -779,49 +1285,26 @@ public:
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/cub");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/thrust");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
+    appendSystemIncludePaths(arg_strings, config);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.cuda_toolkit_path + "/include");
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
+
+    appendIncludePaths(arg_strings, config);
+
     arg_strings.push_back("-D__HOSTJIT_DEVICE_COMPILATION__=1");
     arg_strings.push_back("-DNDEBUG");
-    arg_strings.push_back("-DCCCL_DISABLE_CTK_COMPATIBILITY_CHECK");
-    arg_strings.push_back("-D_CCCL_ENABLE_FREESTANDING=1");
-    arg_strings.push_back("-DCCCL_DISABLE_NVTX=1");
-    arg_strings.push_back("-DCCCL_DISABLE_EXCEPTIONS=1");
+
+    appendMacroDefinitions(arg_strings, config);
+
     arg_strings.push_back("-fdeprecated-macro");
     arg_strings.push_back("-fcxx-exceptions");
     arg_strings.push_back("-fexceptions");
     arg_strings.push_back("-O" + std::to_string(config.optimization_level));
     arg_strings.push_back("-Wno-c++11-narrowing");
     arg_strings.push_back("-std=c++17");
+    appendExtraClangArgs(arg_strings, config);
     arg_strings.push_back("-x");
     arg_strings.push_back("cuda");
 
@@ -847,8 +1330,13 @@ public:
     {
       diag_stream.flush();
       result.diagnostics = diag_output + "\nFailed to create compiler invocation";
-      std::filesystem::remove_all(temp_dir);
+      removeAll(temp_dir);
       return result;
+    }
+
+    if (!config.device_pch_path.empty())
+    {
+      invocation.getPreprocessorOpts().ImplicitPCHInclude = config.device_pch_path;
     }
 
     auto vfs = createVFSWithSource(source_code, source_file);
@@ -865,11 +1353,18 @@ public:
       std::unique_ptr<llvm::Module> mod = emit_llvm_action.takeModule();
       if (mod)
       {
-        llvm::SmallVector<char, 0> buffer;
-        llvm::raw_svector_ostream os(buffer);
-        llvm::WriteBitcodeToFile(*mod, os);
-        result.bitcode = std::string(buffer.begin(), buffer.end());
-        result.success = true;
+        std::error_code ec;
+        llvm::raw_fd_ostream os(output_bitcode_path, ec, llvm::sys::fs::OF_None);
+        if (ec)
+        {
+          result.diagnostics = "Failed to open bitcode output file: " + output_bitcode_path + "\n";
+        }
+        else
+        {
+          llvm::WriteBitcodeToFile(*mod, os);
+          os.flush();
+          result.success = true;
+        }
       }
       else
       {
@@ -879,7 +1374,7 @@ public:
 
     diag_stream.flush();
     result.diagnostics += diag_output;
-    std::filesystem::remove_all(temp_dir);
+    removeAll(temp_dir);
     return result;
   }
 
@@ -888,7 +1383,7 @@ public:
     const std::string& input_file,
     const std::string& fatbin_path,
     const std::string& output_obj,
-    const CompilerConfig& config,
+    const CompilerOptions& config,
     std::string& diagnostics)
   {
     std::string temp_dir    = std::filesystem::path(output_obj).parent_path().string();
@@ -928,60 +1423,17 @@ public:
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/cub");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/thrust");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path);
-    }
+    appendSystemIncludePaths(arg_strings, config);
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(config.cuda_toolkit_path + "/include");
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
 
-    for (const auto& include_path : config.include_paths)
-    {
-      arg_strings.push_back("-I" + include_path);
-    }
+    appendIncludePaths(arg_strings, config);
 
     arg_strings.push_back("-DNDEBUG");
-    arg_strings.push_back("-DCCCL_DISABLE_CTK_COMPATIBILITY_CHECK");
-    arg_strings.push_back("-D_CCCL_ENABLE_FREESTANDING=1");
-    arg_strings.push_back("-DCCCL_DISABLE_NVTX=1");
-    arg_strings.push_back("-DCCCL_DISABLE_EXCEPTIONS=1");
 
-    for (const auto& [macro_name, macro_value] : config.macro_definitions)
-    {
-      if (macro_value.empty())
-      {
-        arg_strings.push_back("-D" + macro_name);
-      }
-      else
-      {
-        arg_strings.push_back("-D" + macro_name + "=" + macro_value);
-      }
-    }
+    appendMacroDefinitions(arg_strings, config);
 
     arg_strings.push_back("-fdeprecated-macro");
     arg_strings.push_back("--offload-new-driver");
@@ -994,29 +1446,11 @@ public:
       arg_strings.push_back("-H");
     }
 
+    appendExtraClangArgs(arg_strings, config);
     arg_strings.push_back("-x");
     arg_strings.push_back("cuda");
 
-    // --- PCH: ensure host PCH exists (before adding fatbin-specific args) ---
-    std::string host_pch_path;
-    if (config.enable_pch)
-    {
-      host_pch_path = getPCHPath("host", config.sm_version);
-      if (!std::filesystem::exists(host_pch_path))
-      {
-        auto pch_src_path = getPCHSourcePath("host", config.sm_version);
-        std::string pch_diag;
-        if (!generatePCH(pch_preamble_source, pch_src_path, host_pch_path, arg_strings, pch_diag))
-        {
-          diagnostics += "Host PCH generation failed: " + pch_diag + "\n";
-          host_pch_path.clear();
-        }
-        else if (config.verbose)
-        {
-          diagnostics += "Generated host PCH: " + host_pch_path + "\n";
-        }
-      }
-    }
+    std::string host_pch_path = config.host_pch_path;
 
     // Add fatbin embedding (per-build, not part of PCH)
     arg_strings.push_back("-fcuda-include-gpubinary");
@@ -1059,7 +1493,7 @@ public:
     }
 
     // --- PCH: load cached host PCH ---
-    if (!host_pch_path.empty() && std::filesystem::exists(host_pch_path))
+    if (!host_pch_path.empty() && pathExists(host_pch_path))
     {
       invocation.getPreprocessorOpts().ImplicitPCHInclude = host_pch_path;
     }
@@ -1101,15 +1535,19 @@ public:
     return success;
   }
 
-  CompilationResult
-  compileToObject(const std::string& source_code, const std::string& output_path, const CompilerConfig& config)
+  CompilationResult compileToObject(
+    const std::string& source_code,
+    const std::string& input_name,
+    const std::string& output_path,
+    const std::string& output_cubin_path,
+    const CompilerOptions& config)
   {
     CompilationResult result;
     result.success          = false;
     result.object_file_path = output_path;
 
     std::string error_msg;
-    if (!validateConfig(config, &error_msg))
+    if (!validateOptions(config, &error_msg))
     {
       result.diagnostics = "Configuration error: " + error_msg;
       return result;
@@ -1118,11 +1556,14 @@ public:
     initialize_llvm();
 
     std::string temp_dir =
-      (std::filesystem::temp_directory_path() / ("hostjit_" + std::to_string(reinterpret_cast<uintptr_t>(this))))
+      (tempDirectoryPath() / ("hostjit_" + std::to_string(reinterpret_cast<uintptr_t>(this))))
         .string();
-    std::filesystem::create_directories(temp_dir);
+    if (!createDirectories(temp_dir, result.diagnostics))
+    {
+      return result;
+    }
 
-    std::string input_file  = "input.cu";
+    std::string input_file  = input_name.empty() ? std::string("input.cu") : input_name;
     std::string ptx_file    = temp_dir + "/device.ptx";
     std::string fatbin_file = temp_dir + "/device.fatbin";
 
@@ -1134,7 +1575,7 @@ public:
     if (!compileDeviceToPTX(source_code, input_file, ptx_file, config, result.diagnostics))
     {
       result.diagnostics += "\nDevice compilation failed";
-      std::filesystem::remove_all(temp_dir);
+      removeAll(temp_dir);
       return result;
     }
 
@@ -1152,7 +1593,7 @@ public:
       if (ptx_data.empty())
       {
         result.diagnostics += "\nFailed to read ptx file";
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
       if (ptx_data.back() != '\0')
@@ -1183,7 +1624,12 @@ public:
       if (jlr != NVJITLINK_SUCCESS)
       {
         result.diagnostics += "\nnvJitLinkCreate failed (error " + std::to_string(static_cast<int>(jlr)) + ")";
-        std::filesystem::remove_all(temp_dir);
+        result.diagnostics += "\nnvJitLink options:";
+        for (const auto& option : jitlink_option_strs)
+        {
+          result.diagnostics += " " + option;
+        }
+        removeAll(temp_dir);
         return result;
       }
 
@@ -1200,7 +1646,7 @@ public:
         }
         result.diagnostics += "\nnvJitLinkAddData failed";
         nvJitLinkDestroy(&jitlink_handle);
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
 
@@ -1230,7 +1676,7 @@ public:
           }
           result.diagnostics += "\nnvJitLinkAddData(LTOIR) failed for " + ltoir_path;
           nvJitLinkDestroy(&jitlink_handle);
-          std::filesystem::remove_all(temp_dir);
+          removeAll(temp_dir);
           return result;
         }
       }
@@ -1248,7 +1694,7 @@ public:
         }
         result.diagnostics += "\nnvJitLinkComplete failed";
         nvJitLinkDestroy(&jitlink_handle);
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
 
@@ -1258,8 +1704,17 @@ public:
       nvJitLinkGetLinkedCubin(jitlink_handle, cubin_data.data());
       nvJitLinkDestroy(&jitlink_handle);
 
-      // Store cubin in the result for inspection
-      result.cubin = cubin_data;
+      if (!output_cubin_path.empty())
+      {
+        std::ofstream cubin_out(output_cubin_path, std::ios::binary);
+        cubin_out.write(cubin_data.data(), static_cast<std::streamsize>(cubin_data.size()));
+        if (!cubin_out)
+        {
+          result.diagnostics += "\nFailed to write cubin file";
+          removeAll(temp_dir);
+          return result;
+        }
+      }
 
       std::string arch             = std::to_string(config.sm_version);
       const char* fatbin_options[] = {"-64", "-cuda"};
@@ -1268,7 +1723,7 @@ public:
       if (fbr != NVFATBIN_SUCCESS)
       {
         result.diagnostics += std::string("\nnvFatbinCreate failed: ") + nvFatbinGetErrorString(fbr);
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
 
@@ -1277,7 +1732,7 @@ public:
       {
         result.diagnostics += std::string("\nnvFatbinAddCubin failed: ") + nvFatbinGetErrorString(fbr);
         nvFatbinDestroy(&fatbin_handle);
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
 
@@ -1286,7 +1741,7 @@ public:
       {
         result.diagnostics += std::string("\nnvFatbinAddPTX failed: ") + nvFatbinGetErrorString(fbr);
         nvFatbinDestroy(&fatbin_handle);
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
 
@@ -1296,7 +1751,7 @@ public:
       {
         result.diagnostics += std::string("\nnvFatbinSize failed: ") + nvFatbinGetErrorString(fbr);
         nvFatbinDestroy(&fatbin_handle);
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
 
@@ -1306,7 +1761,7 @@ public:
       if (fbr != NVFATBIN_SUCCESS)
       {
         result.diagnostics += std::string("\nnvFatbinGet failed: ") + nvFatbinGetErrorString(fbr);
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
 
@@ -1315,7 +1770,7 @@ public:
       if (!out)
       {
         result.diagnostics += "\nFailed to write fatbin file";
-        std::filesystem::remove_all(temp_dir);
+        removeAll(temp_dir);
         return result;
       }
     }
@@ -1328,17 +1783,164 @@ public:
     if (!compileHostCode(source_code, input_file, fatbin_file, output_path, config, result.diagnostics))
     {
       result.diagnostics += "\nHost compilation failed";
-      std::filesystem::remove_all(temp_dir);
+      removeAll(temp_dir);
       return result;
     }
 
-    std::filesystem::remove_all(temp_dir);
+    removeAll(temp_dir);
     result.success = true;
     return result;
   }
 
+  bool createPCH(
+    const std::string& source_code,
+    libnvccPCHKind kind,
+    const std::string& pch_source_path,
+    const std::string& pch_output_path,
+    const CompilerOptions& config,
+    std::string& diagnostics)
+  {
+    std::string error_msg;
+    if (!validateOptions(config, &error_msg))
+    {
+      diagnostics = "Configuration error: " + error_msg;
+      return false;
+    }
+
+    initialize_llvm();
+
+    std::string resource_dir = CLANG_RESOURCE_DIR;
+    std::vector<std::string> arg_strings;
+    arg_strings.push_back(pch_source_path);
+
+    if (kind == LIBNVCC_PCH_DEVICE)
+    {
+      int ptx_version = 78;
+      if (config.sm_version >= 120)
+      {
+        ptx_version = 87;
+      }
+      else if (config.sm_version >= 100)
+      {
+        ptx_version = 85;
+      }
+      else if (config.sm_version >= 90)
+      {
+        ptx_version = 80;
+      }
+
+      arg_strings.push_back("-triple");
+      arg_strings.push_back("nvptx64-nvidia-cuda");
+      arg_strings.push_back("-aux-triple");
+#ifdef _WIN32
+      arg_strings.push_back("x86_64-pc-windows-msvc");
+#else
+      arg_strings.push_back("x86_64-pc-linux-gnu");
+#endif
+      arg_strings.push_back("-S");
+      arg_strings.push_back("-aux-target-cpu");
+      arg_strings.push_back("x86-64");
+      arg_strings.push_back("-fcuda-is-device");
+      arg_strings.push_back("-fcuda-allow-variadic-functions");
+#ifdef _WIN32
+      arg_strings.push_back("-fms-compatibility");
+      arg_strings.push_back("-fms-compatibility-version=19.40");
+#else
+      arg_strings.push_back("-fgnuc-version=4.2.1");
+#endif
+      arg_strings.push_back("-mlink-builtin-bitcode");
+      arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
+      arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
+      arg_strings.push_back("-target-cpu");
+      arg_strings.push_back("sm_" + std::to_string(config.sm_version));
+      arg_strings.push_back("-target-feature");
+      arg_strings.push_back("+ptx" + std::to_string(ptx_version));
+    }
+    else if (kind == LIBNVCC_PCH_HOST)
+    {
+      arg_strings.push_back("-triple");
+#ifdef _WIN32
+      arg_strings.push_back("x86_64-pc-windows-msvc");
+#else
+      arg_strings.push_back("x86_64-pc-linux-gnu");
+#endif
+      arg_strings.push_back("-aux-triple");
+      arg_strings.push_back("nvptx64-nvidia-cuda");
+      arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
+      arg_strings.push_back("-emit-obj");
+      arg_strings.push_back("-target-cpu");
+      arg_strings.push_back("x86-64");
+      arg_strings.push_back("-fcuda-allow-variadic-functions");
+#ifdef _WIN32
+      arg_strings.push_back("-fms-compatibility");
+      arg_strings.push_back("-fms-compatibility-version=19.40");
+#else
+      arg_strings.push_back("-fgnuc-version=4.2.1");
+#endif
+      arg_strings.push_back("-mrelocation-model");
+      arg_strings.push_back("pic");
+      arg_strings.push_back("-pic-level");
+      arg_strings.push_back("2");
+    }
+    else
+    {
+      diagnostics = "Invalid PCH kind";
+      return false;
+    }
+
+    arg_strings.push_back("-resource-dir");
+    arg_strings.push_back(resource_dir);
+    arg_strings.push_back("-internal-isystem");
+    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs");
+    arg_strings.push_back("-internal-isystem");
+    arg_strings.push_back(
+      config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
+    appendSystemIncludePaths(arg_strings, config);
+    arg_strings.push_back("-internal-isystem");
+    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    arg_strings.push_back("-include");
+    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
+
+    appendIncludePaths(arg_strings, config);
+
+    if (kind == LIBNVCC_PCH_DEVICE)
+    {
+      arg_strings.push_back("-D__HOSTJIT_DEVICE_COMPILATION__=1");
+    }
+    arg_strings.push_back("-DNDEBUG");
+
+    appendMacroDefinitions(arg_strings, config);
+
+    arg_strings.push_back("-fdeprecated-macro");
+    if (kind == LIBNVCC_PCH_DEVICE)
+    {
+      arg_strings.push_back("--offload-new-driver");
+      arg_strings.push_back("-fskip-odr-check-in-gmf");
+      arg_strings.push_back("-fcxx-exceptions");
+      arg_strings.push_back("-fexceptions");
+    }
+    else
+    {
+      arg_strings.push_back("--offload-new-driver");
+      arg_strings.push_back("-fskip-odr-check-in-gmf");
+    }
+    arg_strings.push_back("-O" + std::to_string(config.optimization_level));
+    arg_strings.push_back("-std=c++17");
+
+    if (config.trace_includes)
+    {
+      arg_strings.push_back("-H");
+    }
+
+    appendExtraClangArgs(arg_strings, config);
+    arg_strings.push_back("-x");
+    arg_strings.push_back("cuda");
+
+    return generatePCH(source_code, pch_source_path, pch_output_path, arg_strings, diagnostics);
+  }
+
   LinkResult linkToSharedLibrary(
-    const std::vector<std::string>& object_files, const std::string& output_path, const CompilerConfig& config)
+    const std::vector<std::string>& object_files, const std::string& output_path, const CompilerOptions& config)
   {
     LinkResult result;
     result.success      = false;
@@ -1513,21 +2115,18 @@ public:
       bool found_cudart = false;
       for (const auto& lib_path : config.library_paths)
       {
-        namespace fs = std::filesystem;
-        if (!fs::exists(lib_path))
+        if (!pathExists(lib_path))
         {
           continue;
         }
-        for (const auto& entry : fs::directory_iterator(lib_path))
-        {
+        forEachDirectoryEntry(lib_path, [&](const std::filesystem::directory_entry& entry) {
           auto fname = entry.path().filename().string();
-          if (fname.starts_with("libcudart.so"))
+          if (!found_cudart && fname.starts_with("libcudart.so"))
           {
             arg_strings.push_back(entry.path().string());
             found_cudart = true;
-            break;
           }
-        }
+        });
         if (found_cudart)
         {
           break;
@@ -1578,29 +2177,244 @@ public:
     return result;
   }
 };
+} // namespace libnvcc
 
-CUDACompiler::CUDACompiler()
-    : impl_(new Impl())
-{}
-CUDACompiler::~CUDACompiler()
+struct libnvccProgram_st
 {
-  delete impl_;
+  std::string source;
+  std::string name;
+  std::string log;
+  libnvcc::CompilerImpl compiler;
+};
+
+namespace
+{
+void setProgramLog(libnvccProgram prog, std::string log)
+{
+  if (prog)
+  {
+    prog->log = std::move(log);
+  }
 }
 
-BitcodeResult CUDACompiler::compileToDeviceBitcode(const std::string& source_code, const CompilerConfig& config)
+bool parseProgramOptions(libnvccProgram prog, int num_options, const char* const* raw_options, libnvcc::CompilerOptions& options)
 {
-  return impl_->compileToDeviceBitcode(source_code, config);
+  std::string error;
+  if (!libnvcc::parseOptions(num_options, raw_options, options, error))
+  {
+    setProgramLog(prog, "Option error: " + error);
+    return false;
+  }
+  return true;
 }
 
-CompilationResult CUDACompiler::compileToObject(
-  const std::string& source_code, const std::string& output_path, const CompilerConfig& config)
+} // anonymous namespace
+
+extern "C" const char* libnvccGetErrorString(libnvccResult result)
 {
-  return impl_->compileToObject(source_code, output_path, config);
+  switch (result)
+  {
+    case LIBNVCC_SUCCESS:
+      return "LIBNVCC_SUCCESS";
+    case LIBNVCC_ERROR_OUT_OF_MEMORY:
+      return "LIBNVCC_ERROR_OUT_OF_MEMORY";
+    case LIBNVCC_ERROR_PROGRAM_CREATION_FAILURE:
+      return "LIBNVCC_ERROR_PROGRAM_CREATION_FAILURE";
+    case LIBNVCC_ERROR_INVALID_INPUT:
+      return "LIBNVCC_ERROR_INVALID_INPUT";
+    case LIBNVCC_ERROR_INVALID_PROGRAM:
+      return "LIBNVCC_ERROR_INVALID_PROGRAM";
+    case LIBNVCC_ERROR_INVALID_OPTION:
+      return "LIBNVCC_ERROR_INVALID_OPTION";
+    case LIBNVCC_ERROR_COMPILATION:
+      return "LIBNVCC_ERROR_COMPILATION";
+    case LIBNVCC_ERROR_LINKING:
+      return "LIBNVCC_ERROR_LINKING";
+    case LIBNVCC_ERROR_PCH_CREATE:
+      return "LIBNVCC_ERROR_PCH_CREATE";
+    case LIBNVCC_ERROR_INTERNAL_ERROR:
+      return "LIBNVCC_ERROR_INTERNAL_ERROR";
+  }
+  return "LIBNVCC_ERROR_UNKNOWN";
 }
 
-LinkResult CUDACompiler::linkToSharedLibrary(
-  const std::vector<std::string>& object_files, const std::string& output_path, const CompilerConfig& config)
+extern "C" libnvccResult libnvccCreateProgram(libnvccProgram* prog, const char* src, const char* name)
 {
-  return impl_->linkToSharedLibrary(object_files, output_path, config);
+  if (!prog || !src)
+  {
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+  *prog = nullptr;
+
+  auto* program   = new libnvccProgram_st;
+  program->source = src;
+  program->name   = (name && name[0]) ? name : "input.cu";
+  *prog           = program;
+  return LIBNVCC_SUCCESS;
 }
-} // namespace hostjit
+
+extern "C" libnvccResult libnvccDestroyProgram(libnvccProgram* prog)
+{
+  if (!prog || !*prog)
+  {
+    return LIBNVCC_SUCCESS;
+  }
+  delete *prog;
+  *prog = nullptr;
+  return LIBNVCC_SUCCESS;
+}
+
+extern "C" libnvccResult libnvccCompileProgramToDeviceBitcode(
+  libnvccProgram prog,
+  const char* outputBitcodePath,
+  int numOptions,
+  const char* const* options)
+{
+  if (!prog)
+  {
+    return LIBNVCC_ERROR_INVALID_PROGRAM;
+  }
+  if (!outputBitcodePath || outputBitcodePath[0] == '\0')
+  {
+    setProgramLog(prog, "outputBitcodePath must be non-empty");
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+
+  libnvcc::CompilerOptions parsed_options;
+  if (!parseProgramOptions(prog, numOptions, options, parsed_options))
+  {
+    return LIBNVCC_ERROR_INVALID_OPTION;
+  }
+
+  auto result = prog->compiler.compileToDeviceBitcode(prog->source, prog->name, outputBitcodePath, parsed_options);
+  setProgramLog(prog, result.diagnostics);
+  return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_COMPILATION;
+}
+
+extern "C" libnvccResult libnvccCompileProgramToObject(
+  libnvccProgram prog,
+  const char* outputObjectPath,
+  const char* outputCubinPath,
+  int numOptions,
+  const char* const* options)
+{
+  if (!prog)
+  {
+    return LIBNVCC_ERROR_INVALID_PROGRAM;
+  }
+  if (!outputObjectPath || outputObjectPath[0] == '\0')
+  {
+    setProgramLog(prog, "outputObjectPath must be non-empty");
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+
+  libnvcc::CompilerOptions parsed_options;
+  if (!parseProgramOptions(prog, numOptions, options, parsed_options))
+  {
+    return LIBNVCC_ERROR_INVALID_OPTION;
+  }
+
+  const std::string cubin_path = outputCubinPath ? outputCubinPath : "";
+  auto result = prog->compiler.compileToObject(prog->source, prog->name, outputObjectPath, cubin_path, parsed_options);
+  setProgramLog(prog, result.diagnostics);
+  return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_COMPILATION;
+}
+
+extern "C" libnvccResult libnvccLinkToSharedLibrary(
+  libnvccProgram prog,
+  int numObjectFiles,
+  const char* const* objectFiles,
+  const char* outputLibraryPath,
+  int numOptions,
+  const char* const* options)
+{
+  if (!prog)
+  {
+    return LIBNVCC_ERROR_INVALID_PROGRAM;
+  }
+  if (numObjectFiles < 0 || (numObjectFiles > 0 && !objectFiles) || !outputLibraryPath || outputLibraryPath[0] == '\0')
+  {
+    setProgramLog(prog, "Invalid link input");
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+
+  libnvcc::CompilerOptions parsed_options;
+  if (!parseProgramOptions(prog, numOptions, options, parsed_options))
+  {
+    return LIBNVCC_ERROR_INVALID_OPTION;
+  }
+
+  std::vector<std::string> object_files;
+  object_files.reserve(static_cast<size_t>(numObjectFiles));
+  for (int i = 0; i < numObjectFiles; ++i)
+  {
+    if (!objectFiles[i] || objectFiles[i][0] == '\0')
+    {
+      setProgramLog(prog, "Object file path must be non-empty");
+      return LIBNVCC_ERROR_INVALID_INPUT;
+    }
+    object_files.emplace_back(objectFiles[i]);
+  }
+
+  auto result = prog->compiler.linkToSharedLibrary(object_files, outputLibraryPath, parsed_options);
+  setProgramLog(prog, result.diagnostics);
+  return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_LINKING;
+}
+
+extern "C" libnvccResult libnvccCreatePCH(
+  libnvccProgram prog,
+  libnvccPCHKind kind,
+  const char* pchSourcePath,
+  const char* pchOutputPath,
+  int numOptions,
+  const char* const* options)
+{
+  if (!prog)
+  {
+    return LIBNVCC_ERROR_INVALID_PROGRAM;
+  }
+  if (!pchSourcePath || pchSourcePath[0] == '\0' || !pchOutputPath || pchOutputPath[0] == '\0')
+  {
+    setProgramLog(prog, "PCH source and output paths must be non-empty");
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+
+  libnvcc::CompilerOptions parsed_options;
+  if (!parseProgramOptions(prog, numOptions, options, parsed_options))
+  {
+    return LIBNVCC_ERROR_INVALID_OPTION;
+  }
+
+  std::string diagnostics;
+  bool success = prog->compiler.createPCH(prog->source, kind, pchSourcePath, pchOutputPath, parsed_options, diagnostics);
+  setProgramLog(prog, diagnostics);
+  return success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_PCH_CREATE;
+}
+
+extern "C" libnvccResult libnvccGetProgramLogSize(libnvccProgram prog, size_t* logSizeRet)
+{
+  if (!prog)
+  {
+    return LIBNVCC_ERROR_INVALID_PROGRAM;
+  }
+  if (!logSizeRet)
+  {
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+  *logSizeRet = prog->log.size() + 1;
+  return LIBNVCC_SUCCESS;
+}
+
+extern "C" libnvccResult libnvccGetProgramLog(libnvccProgram prog, char* log)
+{
+  if (!prog)
+  {
+    return LIBNVCC_ERROR_INVALID_PROGRAM;
+  }
+  if (!log)
+  {
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+  std::memcpy(log, prog->log.c_str(), prog->log.size() + 1);
+  return LIBNVCC_SUCCESS;
+}
