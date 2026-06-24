@@ -11,6 +11,17 @@ from cuda.compute import OpKind, make_segmented_reduce
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 from cuda.compute.algorithms._segmented_reduce import _SegmentedReduce
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+)
+
 
 def _run(reducer, *, d_in, d_out, num_segments, start, end, op, h_init):
     bytes_needed = reducer(

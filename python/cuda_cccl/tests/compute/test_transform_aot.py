@@ -10,6 +10,17 @@ import numpy as np
 from cuda.compute import OpKind, make_binary_transform, make_unary_transform
 from cuda.compute.algorithms._transform import _BinaryTransform, _UnaryTransform
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+)
+
 
 def _add_one(a):
     return a + 1
