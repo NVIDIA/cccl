@@ -6,18 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: msvc
-
 // <utility>
 
 // template <class T1, class T2> struct pair
 
 // template<class U, class V> pair& operator=(pair<U, V>&& p);
 
-#include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "archetypes.h"
 #include "test_macros.h"
@@ -34,18 +31,15 @@ struct Derived : public Base
 
 int main(int, char**)
 {
-  // cuda/std/memory not supported
-  /*
   {
-      using P1 = cuda::std::pair<cuda::std::unique_ptr<Derived>, short>;
-      using P2 = cuda::std::pair<cuda::std::unique_ptr<Base>, long>;
-      P1 p1(cuda::std::unique_ptr<Derived>(), static_cast<short>(4));
-      P2 p2;
-      p2 = cuda::std::move(p1);
-      assert(p2.first == nullptr);
-      assert(p2.second == 4);
+    using P1 = cuda::std::pair<cuda::std::unique_ptr<Derived>, short>;
+    using P2 = cuda::std::pair<cuda::std::unique_ptr<Base>, long>;
+    P1 p1(cuda::std::unique_ptr<Derived>(), static_cast<short>(4));
+    P2 p2;
+    p2 = cuda::std::move(p1);
+    assert(p2.first == nullptr);
+    assert(p2.second == 4);
   }
-  */
   {
     using C = TestTypes::TestType;
     using P = cuda::std::pair<int, C>;
