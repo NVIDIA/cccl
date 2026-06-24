@@ -47,6 +47,16 @@ class _OpAdapter:
         """
         return b""
 
+    def compile_for_load(self, input_types, output_type=None) -> Op:
+        """Construct an Op for the deserialize (load) path.
+
+        The compiled CUBIN is already embedded in the blob after the first
+        compile; only operator_type and state are read at execute time.
+        Subclasses that require JIT (e.g. numba-cuda callables) override this
+        to return a minimal stub that skips compilation entirely.
+        """
+        return self.compile(input_types, output_type)
+
     def get_return_type(self, input_types):
         """Get the return type for this op given input types."""
         raise NotImplementedError(

@@ -95,7 +95,7 @@ class _Reduce:
         obj.h_init_cccl = cccl.to_cccl_value(h_init)
         value_type = get_value_type(h_init)
         op_adapter = make_op_adapter(op)
-        obj.op_cccl = op_adapter.compile((value_type, value_type), value_type)
+        obj.op_cccl = op_adapter.compile_for_load((value_type, value_type), value_type)
         obj.build_result = _bindings.DeviceReduceBuildResult.deserialize(blob)
         obj._select_device_reduce_fn(Determinism(obj.build_result.determinism))
         return obj

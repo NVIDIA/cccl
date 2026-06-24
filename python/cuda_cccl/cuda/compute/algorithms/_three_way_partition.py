@@ -85,12 +85,12 @@ class _ThreeWayPartition:
         obj.d_unselected_out_cccl = cccl.to_cccl_output_iter(d_unselected_out)
         obj.d_num_selected_out_cccl = cccl.to_cccl_output_iter(d_num_selected_out)
         value_type = cccl.get_value_type(d_in)
-        obj.select_first_part_op_cccl = make_op_adapter(select_first_part_op).compile(
-            (value_type,), types.uint8
-        )
-        obj.select_second_part_op_cccl = make_op_adapter(select_second_part_op).compile(
-            (value_type,), types.uint8
-        )
+        obj.select_first_part_op_cccl = make_op_adapter(
+            select_first_part_op
+        ).compile_for_load((value_type,), types.uint8)
+        obj.select_second_part_op_cccl = make_op_adapter(
+            select_second_part_op
+        ).compile_for_load((value_type,), types.uint8)
         obj.build_result = _bindings.DeviceThreeWayPartitionBuildResult.deserialize(
             blob
         )

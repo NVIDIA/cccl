@@ -78,7 +78,9 @@ class _UniqueByKey:
         obj.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
         obj.d_out_num_selected_cccl = cccl.to_cccl_output_iter(d_out_num_selected)
         value_type = cccl.get_value_type(d_in_keys)
-        obj.op_cccl = make_op_adapter(op).compile((value_type, value_type), types.uint8)
+        obj.op_cccl = make_op_adapter(op).compile_for_load(
+            (value_type, value_type), types.uint8
+        )
         obj.build_result = _bindings.DeviceUniqueByKeyBuildResult.deserialize(blob)
         return obj
 
