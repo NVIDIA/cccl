@@ -68,6 +68,20 @@ CUB_NAMESPACE_BEGIN
 //!      :start-after: example-begin partition-if-tuning
 //!      :end-before: example-end partition-if-tuning
 //!
+//! The environment overload of the three-way @p If algorithm can be tuned using a @ref ThreeWayPartitionPolicy instead:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin partition-three-way-policy-selector
+//!      :end-before: example-end partition-three-way-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin partition-three-way-tuning
+//!      :end-before: example-end partition-three-way-tuning
+//!
 //! @endrst
 struct DevicePartition
 {

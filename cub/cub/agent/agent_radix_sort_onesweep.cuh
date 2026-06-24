@@ -241,6 +241,9 @@ struct AgentRadixSortOnesweep
       {
         bins[u] = other_bins[u];
       }
+
+      // Wait for lookback init
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       agent.LookbackPartial(bins);
 
       agent.TryShortCircuit(keys, bins);
@@ -282,6 +285,7 @@ struct AgentRadixSortOnesweep
         s.global_offsets[bin] += inc_sum - bins[u];
       }
     }
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])

@@ -514,7 +514,7 @@ struct DispatchSegmentedSort
       // This approach propagates the type erasure to partition.
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
       using PartitionOffsetT             = typename ChooseOffsetT::type;
-      using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
+      using DispatchThreeWayPartitionIfT = cub::detail::three_way_partition::dispatch_three_way_partition_if<
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
         decltype(small_segments_indices.get()),
@@ -789,7 +789,7 @@ private:
       // This approach propagates the type erasure to partition.
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
       using PartitionOffsetT             = typename ChooseOffsetT::type;
-      using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
+      using DispatchThreeWayPartitionIfT = cub::detail::three_way_partition::dispatch_three_way_partition_if<
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
         decltype(small_segments_indices.get()),

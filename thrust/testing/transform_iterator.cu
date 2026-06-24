@@ -145,7 +145,7 @@ struct flip_value
 
 struct pass_ref
 {
-  _CCCL_HOST_DEVICE const bool& operator()(const bool& b) const
+  _CCCL_HOST_DEVICE const bool& operator()(const bool& b _CCCL_LIFETIMEBOUND) const
   {
     return b;
   }

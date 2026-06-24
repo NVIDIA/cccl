@@ -27,8 +27,8 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_histogram_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
   void* jit_compiler;
   void* histogram_fn;
   cccl_type_info counter_type;

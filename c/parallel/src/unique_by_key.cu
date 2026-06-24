@@ -13,10 +13,16 @@
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_select.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
+#include <cstdlib>
+#include <cstring>
 #include <format>
+#include <mutex>
 #include <sstream>
 #include <vector>
 
+#include "util/nvjitlink.h"
 #include <cccl/c/unique_by_key.h>
 #include <kernels/iterators.h>
 #include <kernels/operators.h>
@@ -153,7 +159,7 @@ struct unique_by_key_kernel_source
 };
 } // namespace unique_by_key
 
-CUresult cccl_device_unique_by_key_build_ex(
+CUresult cccl_device_unique_by_key_compile(
   cccl_device_unique_by_key_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_values_it,
@@ -331,7 +337,9 @@ static_assert(
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked.
+  const bool kernel_only = is_custom_op(op);
+
+  // Collect all LTO-IRs to be linked (empty in kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
@@ -342,42 +350,154 @@ static_assert(
   appender.add_iterator_definition(output_values_it);
   appender.add_iterator_definition(output_num_selected_it);
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
       ->add_expression({compact_init_kernel_name})
       ->add_expression({sweep_kernel_name})
       ->compile_program({args.data(), args.size()})
       ->get_name({compact_init_kernel_name, compact_init_kernel_lowered_name})
-      ->get_name({sweep_kernel_name, sweep_kernel_lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
-
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(
-    cuLibraryGetKernel(&build_ptr->compact_init_kernel, build_ptr->library, compact_init_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
+      ->get_name({sweep_kernel_name, sweep_kernel_lowered_name});
 
   auto [description_bytes_per_tile,
         payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args.data(), args.size(), arch);
 
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::unique_by_key::policy_selector>);
+  const size_t policy_size = sizeof(policy_sel);
+  std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  if (!policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
+  auto init_name  = std::unique_ptr<char[]>(duplicate_c_string(compact_init_kernel_lowered_name));
+  auto sweep_name = std::unique_ptr<char[]>(duplicate_c_string(sweep_kernel_lowered_name));
+
   build_ptr->cc                         = cc.get();
-  build_ptr->cubin                      = (void*) result.data.release();
-  build_ptr->cubin_size                 = result.size;
   build_ptr->description_bytes_per_tile = description_bytes_per_tile;
   build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
-  build_ptr->runtime_policy             = new cub::detail::unique_by_key::policy_selector{policy_sel};
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library             = nullptr;
+  build_ptr->compact_init_kernel = nullptr;
+  build_ptr->sweep_kernel        = nullptr;
+
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->payload            = ltoir_data.release();
+    build_ptr->payload_size       = ltoir_size;
+    build_ptr->payload_kind       = CCCL_PAYLOAD_LTOIR;
+  }
+  else
+  {
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->payload       = (void*) result.data.release();
+    build_ptr->payload_size  = result.size;
+    build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
+  }
+
+  build_ptr->runtime_policy                   = policy_ptr.release();
+  build_ptr->runtime_policy_size              = policy_size;
+  build_ptr->compact_init_kernel_lowered_name = init_name.release();
+  build_ptr->sweep_kernel_lowered_name        = sweep_name.release();
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_unique_by_key_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_unique_by_key_compile(): %s\n", exc.what());
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_unique_by_key_load(cccl_device_unique_by_key_build_result_t* build)
+try
+{
+  if (build == nullptr || build->payload == nullptr || build->payload_size == 0
+      || build->payload_kind != CCCL_PAYLOAD_CUBIN || build->compact_init_kernel_lowered_name == nullptr
+      || build->compact_init_kernel_lowered_name[0] == '\0' || build->sweep_kernel_lowered_name == nullptr
+      || build->sweep_kernel_lowered_name[0] == '\0')
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  CUresult status = cuLibraryLoadData(&build->library, build->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    return status;
+  }
+  try
+  {
+    check(cuLibraryGetKernel(&build->compact_init_kernel, build->library, build->compact_init_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build->sweep_kernel, build->library, build->sweep_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build->library);
+    build->library = nullptr;
+    throw;
+  }
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_unique_by_key_load(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_unique_by_key_build_ex(
+  cccl_device_unique_by_key_build_result_t* build_ptr,
+  cccl_iterator_t input_keys_it,
+  cccl_iterator_t input_values_it,
+  cccl_iterator_t output_keys_it,
+  cccl_iterator_t output_values_it,
+  cccl_iterator_t output_num_selected_it,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  CUresult result = cccl_device_unique_by_key_compile(
+    build_ptr,
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (result != CUDA_SUCCESS)
+  {
+    return result;
+  }
+  CUresult load_r = cccl_device_unique_by_key_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_unique_by_key_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_unique_by_key(
@@ -479,10 +599,14 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<cub::detail::unique_by_key::policy_selector> policy(
-    static_cast<cub::detail::unique_by_key::policy_selector*>(build_ptr->runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
+  std::free(build_ptr->runtime_policy);
+  std::unique_ptr<char[]> init_name(build_ptr->compact_init_kernel_lowered_name);
+  std::unique_ptr<char[]> sweep_name(build_ptr->sweep_kernel_lowered_name);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }
@@ -492,5 +616,49 @@ catch (const std::exception& exc)
   printf("\nEXCEPTION in cccl_device_unique_by_key_cleanup(): %s\n", exc.what());
   fflush(stdout);
 
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_unique_by_key_link_ltoir(
+  cccl_device_unique_by_key_build_result_t* build_ptr,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_LTOIR)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  all_blobs.push_back(build_ptr->payload);
+  all_sizes.push_back(build_ptr->payload_size);
+  if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    if (input_blobs[i] == nullptr || input_sizes[i] == 0)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = (void*) cubin.release();
+  build_ptr->payload_size = cubin_size;
+  build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_unique_by_key_link_ltoir(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }

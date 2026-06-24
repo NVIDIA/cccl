@@ -314,8 +314,7 @@ public:
 
     this->prepare_interface();
 
-    cudaError_t error = cudaSuccess;
-    if ((error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
+    if (cudaError_t error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
     {
       return error;
     }
@@ -326,7 +325,7 @@ public:
     }
 
     m_layout_was_mapped = true;
-    return error;
+    return cudaSuccess;
   }
 
 private:

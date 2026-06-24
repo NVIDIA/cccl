@@ -398,6 +398,14 @@ pre-commit run --all-files
 pre-commit run --files <file1> <file2>
 ```
 
+### Style Guidance
+
+When editing or reviewing CCCL code for style, read `.agent/skills/cccl-style/SKILL.md`. It routes to the common CCCL style reference and any path-specific style reference that applies to the files being changed.
+
+### Test Guidance
+
+When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills/cccl-test/SKILL.md`. It routes to the common CCCL test reference and any path-specific test reference that applies to the files being changed.
+
 ---
 
 ## General Guidelines
