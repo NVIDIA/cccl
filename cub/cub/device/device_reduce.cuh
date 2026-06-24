@@ -122,9 +122,10 @@ inline constexpr bool is_non_deterministic_v =
 //! - ``gpu_to_gpu`` reproducibility depends on the type and operator:
 //!
 //!   - ``float`` and ``double`` with ``cuda::std::plus`` use a dedicated, hardware-independent implementation
-//!     based on a *Reproducible Floating-point Accumulator* (RFA): input values are grouped into a fixed number
-//!     of exponent-range bins and accumulated in that fixed, hardware-independent order, so the same inputs yield
-//!     the same bits on any GPU architecture.
+//!     based on a `Reproducible Floating-point Accumulator (RFA)
+//!     <https://people.eecs.berkeley.edu/~demmel/ma221_Fall23/J115_Efficient_Reproducible_Summation_TOMS_2020.pdf>`__:
+//!     input values are grouped into a fixed number of exponent-range bins and accumulated in that fixed,
+//!     hardware-independent order, so the same inputs yield the same bits on any GPU architecture.
 //!   - Exactly-associative cases — integral types with a known CUDA binary operator, and ``float``/``double``
 //!     with ``min``/``max`` — are already identical across GPUs, so the request is satisfied by the (faster)
 //!     ``run_to_run`` path.
