@@ -13,6 +13,7 @@
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
+// %RANGE% TUNE_LOAD_PREFETCH prf 0:1:1
 
 #if !TUNE_BASE
 struct bench_reduce_by_key_policy_selector
@@ -26,6 +27,7 @@ struct bench_reduce_by_key_policy_selector
       TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
       cub::BLOCK_SCAN_WARP_SCANS,
       lookback_delay_policy,
+      TUNE_LOAD_PREFETCH == 0 ? cub::BlockLoadPrefetch::none : cub::BlockLoadPrefetch::l2,
     };
   }
 };
