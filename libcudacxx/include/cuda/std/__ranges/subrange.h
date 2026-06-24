@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 #ifndef _CUDA_STD___RANGES_SUBRANGE_H
@@ -250,16 +250,12 @@ public:
       : subrange(::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range), __n)
   {}
 
-  // This often ICEs all of clang and old gcc when it encounteres a rvalue subrange in a pipe
-#if _CCCL_HAS_CONCEPTS()
   _CCCL_TEMPLATE(class _Pair)
-  _CCCL_REQUIRES(__different_from<_Pair, subrange<_Iter, _Sent, _Kind>> _CCCL_AND
-                   __pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>)
+  _CCCL_REQUIRES(__pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>)
   _CCCL_API constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
   }
-#endif // _CCCL_HAS_CONCEPTS()
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(copyable<_It>)
