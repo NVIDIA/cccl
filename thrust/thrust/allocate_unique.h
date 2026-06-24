@@ -37,12 +37,8 @@ struct allocator_delete final
   using allocator_type = typename std::remove_cv_t<std::remove_reference_t<Allocator>>::template rebind<T>::other;
   using pointer        = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
 
-  _CCCL_TEMPLATE(typename UAllocator)
-  _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<UAllocator>, allocator_delete>) )
-  allocator_delete( // NOLINT(bugprone-forwarding-reference-overload)
-    UAllocator&& other) noexcept
-      : alloc_(THRUST_FWD(other))
-  {}
+  _CCCL_HIDE_FROM_ABI allocator_delete(const allocator_delete&)     = default;
+  _CCCL_HIDE_FROM_ABI allocator_delete(allocator_delete&&) noexcept = default;
 
   template <typename U, typename UAllocator>
   allocator_delete(allocator_delete<U, UAllocator> const& other) noexcept
