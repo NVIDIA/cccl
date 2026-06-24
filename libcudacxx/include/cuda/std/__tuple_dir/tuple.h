@@ -677,7 +677,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -
 
 template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_base(
+_CCCL_API constexpr __pair_base<_T1, _T2, _IsRef>::__pair_base(
   piecewise_construct_t,
   tuple<_Args1...>& __first_args,
   tuple<_Args2...>& __second_args,

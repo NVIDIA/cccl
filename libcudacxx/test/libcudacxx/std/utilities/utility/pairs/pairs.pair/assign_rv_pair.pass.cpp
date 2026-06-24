@@ -12,10 +12,9 @@
 
 // pair& operator=(pair&& p);
 
-#include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -60,17 +59,14 @@ struct CountAssign
 
 int main(int, char**)
 {
-  // cuda/std/memory not supported
-  /*
   {
-      using P = cuda::std::pair<cuda::std::unique_ptr<int>, int>;
-      P p1(cuda::std::unique_ptr<int>(new int(3)), 4);
-      P p2;
-      p2 = cuda::std::move(p1);
-      assert(*p2.first == 3);
-      assert(p2.second == 4);
+    using P = cuda::std::pair<cuda::std::unique_ptr<int>, int>;
+    P p1(cuda::std::unique_ptr<int>(new int(3)), 4);
+    P p2;
+    p2 = cuda::std::move(p1);
+    assert(*p2.first == 3);
+    assert(p2.second == 4);
   }
-  */
   {
     using P = cuda::std::pair<int&, int&&>;
     int x   = 42;
