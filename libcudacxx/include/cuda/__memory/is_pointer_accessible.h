@@ -207,29 +207,23 @@ template <bool _IsNothrow>
 _CCCL_HOST_API inline bool __is_device_accessible(
   const void* __p, device_ref __device, ::cuda::std::bool_constant<_IsNothrow>) noexcept(_IsNothrow)
 {
+  static_assert(!_IsNothrow, "TODO: implement a no-throw context setter for __is_device_accessible_nothrow");
   if (__p == nullptr)
   {
     return false;
   }
-  if constexpr (_IsNothrow)
+
+  const ::cuda::__ensure_current_context __ctx_setter{__device};
+
+  void* __device_ptr = nullptr;
+  const auto __status =
+    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(__device_ptr, __p);
+  if (__status == ::cudaErrorInvalidValue)
   {
-    static_assert(!_IsNothrow, "TODO: implement a no-throw context setter for __is_device_accessible_nothrow");
     return false;
   }
-  else
-  {
-    ::cuda::__ensure_current_context __ctx_setter{__device};
-
-    void* __device_ptr = nullptr;
-    const auto __status =
-      ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(__device_ptr, __p);
-    if (__status == ::cudaErrorInvalidValue)
-    {
-      return false;
-    }
-    _CCCL_THROW_OR_RETURN(__status, "Failed to get attributes of a pointer");
-    return __device_ptr != nullptr;
-  }
+  _CCCL_THROW_OR_RETURN(__status, "Failed to get attributes of a pointer");
+  return __device_ptr != nullptr;
 }
 
 /**
