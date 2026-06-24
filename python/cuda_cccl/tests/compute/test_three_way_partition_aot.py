@@ -11,6 +11,17 @@ from cuda.compute import make_three_way_partition
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 from cuda.compute.algorithms._three_way_partition import _ThreeWayPartition
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+)
+
 
 def _less_than_8(x):
     return x < 8 and x >= 0

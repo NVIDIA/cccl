@@ -11,6 +11,17 @@ from cuda.compute import SortOrder, make_segmented_sort
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 from cuda.compute.algorithms._sort._segmented_sort import _SegmentedSort
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+)
+
 
 def _run(
     sorter,

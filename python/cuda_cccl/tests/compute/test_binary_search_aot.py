@@ -10,6 +10,17 @@ import numpy as np
 from cuda.compute import make_lower_bound, make_upper_bound
 from cuda.compute.algorithms._binary_search import _BinarySearch
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+)
+
 
 def test_serialize_deserialize_lower_bound_round_trip():
     h_data = np.array([1, 3, 3, 5, 7, 9], dtype=np.int32)

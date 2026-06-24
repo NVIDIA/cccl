@@ -11,6 +11,17 @@ from cuda.compute import SortOrder, make_radix_sort
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 from cuda.compute.algorithms._sort._radix_sort import _RadixSort
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+)
+
 
 def _run(sorter, *, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items):
     bytes_needed = sorter(

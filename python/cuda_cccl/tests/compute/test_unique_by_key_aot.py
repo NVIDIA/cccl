@@ -11,6 +11,17 @@ from cuda.compute import OpKind, make_unique_by_key
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 from cuda.compute.algorithms._unique_by_key import _UniqueByKey
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+)
+
 
 def _run(
     uniquer,

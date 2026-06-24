@@ -15,6 +15,15 @@ from cuda.compute import (
 )
 from cuda.compute.algorithms._reduce import _Reduce
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
+pytestmark = pytest.mark.skipif(
+    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+)
+
 
 def _add(a, b):
     return a + b
