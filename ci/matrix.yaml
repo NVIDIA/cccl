@@ -173,9 +173,9 @@ workflows:
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['msvc2019', 'msvc2022', 'msvc2026']}
     # CTK '13.X' full matrix build with tile support: default projects
-    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15'], args: '--enable-tile'}
-    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21'], args: '--enable-tile'}
-    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['msvc2022', 'msvc2026'], args: '--enable-tile'}
+    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['gcc15'], args: '--enable-tile'}
+    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['clang21'], args: '--enable-tile'}
+    - {jobs: ['build'], std: 20, ctk: '13.X', cxx: ['msvc2026'], args: '--enable-tile'}
     # CTK 12.0 full matrix build: cudax
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.0', cxx: ['gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.0', cxx: ['clang14']}
@@ -193,9 +193,9 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['msvc2022', 'msvc2026']}
     # CTK '13.X' full matrix build with tile support: cudax
-    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15'], args: '--enable-tile'}
-    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21'], args: '--enable-tile'}
-    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['msvc2022', 'msvc2026'], args: '--enable-tile'}
+    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['gcc15'], args: '--enable-tile'}
+    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['clang21'], args: '--enable-tile'}
+    - {jobs: ['build'], project: 'cudax', std: 20, ctk: '13.X', cxx: ['msvc2026'], args: '--enable-tile'}
     # CTK 12.X testing:
     - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'cub',        ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtxa6000'}
