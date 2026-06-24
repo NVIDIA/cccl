@@ -6,6 +6,8 @@
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/argument>
 #include <cuda/iterator>
 #include <cuda/std/__execution/env.h>
@@ -27,6 +29,17 @@ enum class topk_backend
 };
 
 inline constexpr topk_backend selected_backend = topk_backend::baseline;
+
+// Determinism / tie-break requirement benchmarked by the cluster backend (a single combination for now).
+inline constexpr auto selected_determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+inline constexpr auto selected_tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+
+// The baseline/device backends ignore these requirements, so require the defaults there to avoid a silent mismatch.
+static_assert(selected_backend == topk_backend::cluster
+                || (selected_determinism == cuda::execution::determinism::__determinism_t::__not_guaranteed
+                    && selected_tie_break == cuda::execution::tie_break::__tie_break_t::__unspecified),
+              "Only the cluster backend implements determinism/tie-break requirements; keep selected_determinism and "
+              "selected_tie_break at their defaults for the baseline/device backends.");
 
 #if !TUNE_BASE
 struct tuned_policy_selector
@@ -80,7 +93,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
 {
   if constexpr (selected_backend == topk_backend::cluster)
   {
-    return cub::detail::batched_topk_cluster::dispatch_with_env(
+    return cub::detail::batched_topk_cluster::dispatch_with_env<selected_determinism, selected_tie_break>(
       d_keys_in,
       d_keys_out,
       static_cast<cub::NullType**>(nullptr),
@@ -94,7 +107,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
   }
   else if constexpr (selected_backend == topk_backend::device)
   {
-    using num_segments_val_t = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
+    using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
     const auto num_segs      = cub::detail::params::get_param(num_segments, num_segments_val_t{0});
 
     // The per-segment device backend uses the unsorted / not-guaranteed-determinism fast path. Layer the requirement

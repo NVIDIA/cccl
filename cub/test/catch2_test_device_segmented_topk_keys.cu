@@ -14,6 +14,8 @@
 #include <thrust/sequence.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
 
@@ -31,9 +33,8 @@ struct is_minus_zero
   }
 };
 
-// Maps a flat element index to one of only 8 distinct key values, so a large segment contains many duplicates and the
-// k-th key's bucket holds a large tied-candidate set. Used to stress the cluster agent's candidate/tie-break path (and
-// the deterministic tie-break scan when CUB_ENABLE_CLUSTER_TOPK_DETERMINISM is defined).
+// Maps a flat element index to one of only 8 distinct key values, so a large segment has many duplicates and the k-th
+// key's bucket holds a large tied-candidate set. Stresses the cluster agent's candidate/tie-break path.
 template <typename KeyT>
 struct heavy_tie_key_op
 {
@@ -54,6 +55,9 @@ enum class topk_backend
 inline constexpr topk_backend selected_backend = topk_backend::cluster;
 
 template <cub::detail::topk::select Direction,
+          cuda::execution::determinism::__determinism_t Determinism =
+            cuda::execution::determinism::__determinism_t::__not_guaranteed,
+          cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
@@ -73,7 +77,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
 {
   if constexpr (selected_backend == topk_backend::cluster)
   {
-    return cub::detail::batched_topk_cluster::dispatch(
+    return cub::detail::batched_topk_cluster::dispatch<Determinism, TieBreak>(
       d_temp_storage,
       temp_storage_bytes,
       d_key_segments_it,
@@ -108,7 +112,14 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 DECLARE_TMPL_LAUNCH_WRAPPER(
-  dispatch_batched_topk_keys, batched_topk_keys, cub::detail::topk::select Direction, Direction);
+  dispatch_batched_topk_keys,
+  batched_topk_keys,
+  ESCAPE_LIST(
+    cub::detail::topk::select Direction,
+    cuda::execution::determinism::__determinism_t Determinism =
+      cuda::execution::determinism::__determinism_t::__not_guaranteed,
+    cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified),
+  ESCAPE_LIST(Direction, Determinism, TieBreak));
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
@@ -143,6 +154,30 @@ using key_types =
 // Selection direction is a compile-time option; cover both as a static test axis.
 using select_direction_list =
   c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
+
+// A (determinism, tie-break) requirement pair, used as a single compile-time test axis. Not a full cross product: a
+// tie-break preference is only meaningful with a deterministic requirement and is `gpu_to_gpu` by definition.
+template <cuda::execution::determinism::__determinism_t Determinism, cuda::execution::tie_break::__tie_break_t TieBreak>
+struct det_tie
+{
+  static constexpr auto determinism = Determinism;
+  static constexpr auto tie_break   = TieBreak;
+};
+
+// The 5 valid determinism/tie-break combinations. The selected key multiset is identical for all of them (which tied
+// index wins is not observable in keys-only output), so each is verified against the same reference -- confirming every
+// code path computes the correct top-k, including the boundary tie count.
+using det_tie_combos =
+  c2h::type_list<det_tie<cuda::execution::determinism::__determinism_t::__not_guaranteed,
+                         cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie<cuda::execution::determinism::__determinism_t::__run_to_run,
+                         cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                         cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                         cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
+                 det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                         cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
@@ -226,12 +261,28 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
 }
 
 #if TEST_TYPES == 1
-TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned segments",
-          "[keys][segmented][topk][device][cluster]")
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned segments",
+         "[keys][segmented][topk][device][cluster][determinism]",
+         det_tie_combos)
 {
   using key_t           = float;
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
+
+  // Requirement under test. Random keys rarely tie at the boundary, so this mainly exercises the blocked-partition +
+  // streaming/edge interaction; the key result is invariant to the requirement, so all combinations match the
+  // reference.
+  using combo                = c2h::get<0, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+
+  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
+  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
+  if constexpr (selected_backend != topk_backend::cluster
+                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
+  {
+    SKIP("Determinism requirements are only provided by the cluster backend");
+  }
 
   // `static_max_segment_size` is chosen to exceed the largest all-resident cluster coverage (~16 blocks worth of
   // resident SMEM), so the 1 Mi-element segments force the agent's gmem-streaming overflow path (including an
@@ -262,7 +313,7 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned
   c2h::device_vector<key_t> expected_keys(num_segments * segment_size, thrust::no_init);
   thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
 
-  batched_topk_keys<direction>(
+  batched_topk_keys<direction, determinism, tie_break>(
     d_keys_in,
     d_keys_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
@@ -306,12 +357,26 @@ struct counting_segment_keys_op
   }
 };
 
-TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-contiguous key iterator",
-          "[keys][segmented][topk][device][cluster]")
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-contiguous key iterator",
+         "[keys][segmented][topk][device][cluster][determinism]",
+         det_tie_combos)
 {
   using key_t           = float;
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
+
+  // Requirement under test (the key result is invariant to it; exercises the generic streaming path).
+  using combo                = c2h::get<0, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+
+  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
+  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
+  if constexpr (selected_backend != topk_backend::cluster
+                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
+  {
+    SKIP("Determinism requirements are only provided by the cluster backend");
+  }
 
   // The counting-iterator key source is non-contiguous, so the agent uses its generic overflow-streaming path rather
   // than BlockLoadToShared. `static_max_segment_size` exceeds the largest all-resident cluster coverage, so the 1 Mi
@@ -340,7 +405,7 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-
   auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
   auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
 
-  batched_topk_keys<direction>(
+  batched_topk_keys<direction, determinism, tie_break>(
     d_keys_in,
     d_keys_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
@@ -462,12 +527,26 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
 }
 
 #if TEST_TYPES == 1
-TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unaligned segments",
-          "[keys][segmented][topk][device][cluster]")
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unaligned segments",
+         "[keys][segmented][topk][device][cluster][determinism]",
+         det_tie_combos)
 {
   using key_t           = float;
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
+
+  // Requirement under test (the key result is invariant to it; exercises mixed resident/streaming segments).
+  using combo                = c2h::get<0, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+
+  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
+  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
+  if constexpr (selected_backend != topk_backend::cluster
+                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
+  {
+    SKIP("Determinism requirements are only provided by the cluster backend");
+  }
 
   // `static_max_segment_size` exceeds the largest all-resident cluster coverage, so a single per-segment launch
   // mixes streaming segments (the 1 Mi-element ones, one with an unaligned `- 31` overflow tail) with fully-resident
@@ -519,7 +598,7 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalig
   c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
   thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
 
-  batched_topk_keys<direction>(
+  batched_topk_keys<direction, determinism, tie_break>(
     d_keys_in,
     d_keys_out,
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
@@ -735,22 +814,32 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
 }
 #if TEST_TYPES == 2
 // Heavy-tie stress/regression: collapse the keys to only a handful of distinct values so the k-th key's bucket holds a
-// large set of tied candidates. This exercises the cluster agent's candidate path and, when built with
-// CUB_ENABLE_CLUSTER_TOPK_DETERMINISM, the deterministic cross-CTA tie-break scan (cand_prefix + BlockScan ranks). The
-// returned top-k *value* set must be correct in either mode (tied keys are equal, so which tied index is chosen is not
-// observable in keys-only output, but the count of each value at the boundary must be exact).
+// large set of tied candidates. Exercises the cluster agent's candidate path and, on a deterministic requirement, the
+// cross-CTA tie-break scan (cand_prefix + BlockScan ranks); the boundary value counts must be exact in either mode.
 //
-// The tie-break / candidate-count path is independent of the key type: after radix conversion the 8 small, non-negative
-// values twiddle trivially, so a single representative key exercises the same code. We therefore fix the key type and
-// build this test only in the matching `TEST_TYPES` variant (the one whose axis already targets this type) instead of
-// redundantly across every type axis. The float key path is additionally covered by the float-keyed cluster tests
-// above, and per-type behavior by the generic tests.
+// The tie-break path is key-type-independent (the 8 small values twiddle trivially), so we fix the key type and build
+// this only in the matching `TEST_TYPES` variant. Float keys and per-type behavior are covered by the tests above.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundary",
-         "[keys][segmented][topk][device][cluster]",
-         select_direction_list)
+         "[keys][segmented][topk][device][cluster][determinism]",
+         select_direction_list,
+         det_tie_combos)
 {
   using key_t              = cuda::std::uint64_t;
   constexpr auto direction = c2h::get<0, TestType>::value;
+
+  // Requirement under test. The key multiset is invariant to the preference, so every combination matches the same
+  // reference; tie-rich data makes the deterministic scan do real work, so a boundary miscount would surface here.
+  using combo                = c2h::get<1, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+
+  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
+  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
+  if constexpr (selected_backend != topk_backend::cluster
+                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
+  {
+    SKIP("Determinism requirements are only provided by the cluster backend");
+  }
 
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
@@ -780,7 +869,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundar
 
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
-  batched_topk_keys<direction>(
+  batched_topk_keys<direction, determinism, tie_break>(
     d_keys_in,
     d_keys_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},

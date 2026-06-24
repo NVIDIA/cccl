@@ -42,6 +42,8 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/__numeric/narrow.h>
 #include <cuda/argument>
 #include <cuda/std/__algorithm/min.h>
@@ -89,6 +91,8 @@ template <int ThreadsPerBlock,
           int LoadAlignBytes,
           int BitsPerPass,
           int TieBreakItemsPerThread,
+          ::cuda::execution::determinism::__determinism_t Determinism,
+          ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -116,6 +120,8 @@ __launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void 
     LoadAlignBytes,
     BitsPerPass,
     TieBreakItemsPerThread,
+    Determinism,
+    TieBreak,
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -163,6 +169,8 @@ template <int ThreadsPerBlock,
           int LoadAlignBytes,
           int BitsPerPass,
           int TieBreakItemsPerThread,
+          ::cuda::execution::determinism::__determinism_t Determinism,
+          ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -191,6 +199,8 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
     LoadAlignBytes,
     BitsPerPass,
     TieBreakItemsPerThread,
+    Determinism,
+    TieBreak,
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -250,6 +260,8 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
       LoadAlignBytes,                                                                   \
       BitsPerPass,                                                                      \
       TieBreakItemsPerThread,                                                           \
+      Determinism,                                                                      \
+      TieBreak,                                                                         \
       KeyInputItItT,                                                                    \
       KeyOutputItItT,                                                                   \
       ValueInputItItT,                                                                  \
@@ -276,16 +288,22 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
     }
 #endif // CUB_RDC_ENABLED
 
-template <typename KeyInputItItT,
-          typename KeyOutputItItT,
-          typename ValueInputItItT,
-          typename ValueOutputItItT,
-          typename SegmentSizeParameterT,
-          typename KParameterT,
-          typename SelectDirectionT,
-          typename NumSegmentsParameterT,
-          typename TotalNumItemsGuaranteeT,
-          typename PolicySelector = policy_selector>
+// `Determinism`/`TieBreak` carry the requested `cuda::execution` requirements down to the kernel and agent (the public
+// env-based interface is handled separately). They default to the nondeterministic, racing-atomics behavior.
+template <
+  ::cuda::execution::determinism::__determinism_t Determinism =
+    ::cuda::execution::determinism::__determinism_t::__not_guaranteed,
+  ::cuda::execution::tie_break::__tie_break_t TieBreak = ::cuda::execution::tie_break::__tie_break_t::__unspecified,
+  typename KeyInputItItT,
+  typename KeyOutputItItT,
+  typename ValueInputItItT,
+  typename ValueOutputItItT,
+  typename SegmentSizeParameterT,
+  typename KParameterT,
+  typename SelectDirectionT,
+  typename NumSegmentsParameterT,
+  typename TotalNumItemsGuaranteeT,
+  typename PolicySelector = policy_selector>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -328,6 +346,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
      LoadAlignBytes,
      BitsPerPass,
      TieBreakItemsPerThread,
+     Determinism,
+     TieBreak,
      KeyInputItItT,
      KeyOutputItItT,
      ValueInputItItT,
@@ -336,6 +356,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
      KParameterT,
      SelectDirectionParameterT,
      NumSegmentsParameterT>;
+
+  // TODO: This should be taken care of in the public env-based interface.
+  // A tie-break preference is only meaningful once the result set itself is deterministic.
+  static_assert(Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed
+                  || TieBreak == ::cuda::execution::tie_break::__tie_break_t::__unspecified,
+                "A tie-break preference requires a deterministic execution requirement");
 
   static_assert(ChunkBytes % LoadAlignBytes == 0);
   static_assert(LoadAlignBytes % int{sizeof(key_t)} == 0);
@@ -396,6 +422,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     LoadAlignBytes,
     BitsPerPass,
     TieBreakItemsPerThread,
+    Determinism,
+    TieBreak,
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -677,16 +705,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 // algorithm is single-phase (one kernel launch over a placeholder allocation), but routing it through the shared
 // env-based machinery keeps the call shape identical to the baseline backend and lets it pick up the stream, memory
 // resource, and tuning carried by the environment.
-template <typename KeyInputItItT,
-          typename KeyOutputItItT,
-          typename ValueInputItItT,
-          typename ValueOutputItItT,
-          typename SegmentSizeParameterT,
-          typename KParameterT,
-          typename SelectDirectionT,
-          typename NumSegmentsParameterT,
-          typename TotalNumItemsGuaranteeT,
-          typename EnvT = ::cuda::std::execution::env<>>
+//
+// `Determinism`/`TieBreak` are forwarded verbatim to `dispatch` (the public env-based interface is handled separately);
+// they default to the nondeterministic, unspecified-tie-break behavior.
+template <
+  ::cuda::execution::determinism::__determinism_t Determinism =
+    ::cuda::execution::determinism::__determinism_t::__not_guaranteed,
+  ::cuda::execution::tie_break::__tie_break_t TieBreak = ::cuda::execution::tie_break::__tie_break_t::__unspecified,
+  typename KeyInputItItT,
+  typename KeyOutputItItT,
+  typename ValueInputItItT,
+  typename ValueOutputItItT,
+  typename SegmentSizeParameterT,
+  typename KParameterT,
+  typename SelectDirectionT,
+  typename NumSegmentsParameterT,
+  typename TotalNumItemsGuaranteeT,
+  typename EnvT = ::cuda::std::execution::env<>>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_env(
   KeyInputItItT d_key_segments_it,
   KeyOutputItItT d_key_segments_out_it,
@@ -701,7 +736,7 @@ template <typename KeyInputItItT,
 {
   return detail::dispatch_with_env_and_tuning<policy_selector>(
     env, [&](auto policy_sel, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-      return dispatch(
+      return dispatch<Determinism, TieBreak>(
         d_temp_storage,
         temp_storage_bytes,
         d_key_segments_it,

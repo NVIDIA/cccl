@@ -8,6 +8,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/argument>
 #include <cuda/iterator>
 #include <cuda/std/cstdint>
@@ -25,6 +27,18 @@ enum class topk_backend
 // Which backend computes the indexed (key + segment-local-index value) top-k. The cluster backend exercises the new
 // key-value-pair path through `agent_batched_topk_cluster`; the baseline backend is kept for A/B comparison.
 inline constexpr topk_backend selected_backend = topk_backend::cluster;
+
+// Determinism / tie-break requirement benchmarked by the cluster backend (a single combination for now). Only forwarded
+// to the cluster backend -- the baseline backend does not implement these requirements.
+inline constexpr auto selected_determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+inline constexpr auto selected_tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+
+// The baseline backend ignores these requirements, so require the defaults there to avoid a silently ignored selection.
+static_assert(selected_backend == topk_backend::cluster
+                || (selected_determinism == cuda::execution::determinism::__determinism_t::__not_guaranteed
+                    && selected_tie_break == cuda::execution::tie_break::__tie_break_t::__unspecified),
+              "Only the cluster backend implements determinism/tie-break requirements; keep selected_determinism and "
+              "selected_tie_break at their defaults for the baseline backend.");
 
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
@@ -50,7 +64,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_indexed(
 {
   if constexpr (selected_backend == topk_backend::cluster)
   {
-    return cub::detail::batched_topk_cluster::dispatch_with_env(
+    return cub::detail::batched_topk_cluster::dispatch_with_env<selected_determinism, selected_tie_break>(
       d_keys_in,
       d_keys_out,
       d_values_in,
