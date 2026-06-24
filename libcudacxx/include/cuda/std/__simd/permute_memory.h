@@ -87,7 +87,7 @@ struct __gather_generator
   const _Mp& __mask_;
 
   template <__simd_size_type _Idx>
-  [[nodiscard]] _CCCL_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
   {
     if (!__mask_[_Idx])
     {
@@ -104,7 +104,7 @@ struct __gather_generator
 };
 
 template <typename _Result, typename _Range, typename _Ip, typename _IAbi, typename... _Flags>
-_CCCL_API _CCCL_CONSTEVAL void __check_gather_mandates() noexcept
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL void __check_gather_mandates() noexcept
 {
   // same_as<remove_cvref_t<V>, V> is true (checked first so that later accesses to _Result's members are well-formed)
   static_assert(is_same_v<remove_cvref_t<_Result>, _Result>,
@@ -133,7 +133,7 @@ _CCCL_API _CCCL_CONSTEVAL void __check_gather_mandates() noexcept
 // masked
 _CCCL_TEMPLATE(typename _Vp = void, typename _Range, typename _Ip, typename _IAbi, typename... _Flags)
 _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
-[[nodiscard]] _CCCL_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi> partial_gather_from(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi> partial_gather_from(
   _Range&& __in,
   const typename basic_vec<_Ip, _IAbi>::mask_type& __mask,
   const basic_vec<_Ip, _IAbi>& __indices,
@@ -157,7 +157,7 @@ _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
 // unmasked: delegate to the masked overload with an all-true mask.
 _CCCL_TEMPLATE(typename _Vp = void, typename _Range, typename _Ip, typename _IAbi, typename... _Flags)
 _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
-[[nodiscard]] _CCCL_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi>
 partial_gather_from(_Range&& __in, const basic_vec<_Ip, _IAbi>& __indices, flags<_Flags...> __f = {})
 {
   using __mask_t = typename basic_vec<_Ip, _IAbi>::mask_type;
@@ -171,7 +171,7 @@ partial_gather_from(_Range&& __in, const basic_vec<_Ip, _IAbi>& __indices, flags
 // masked
 _CCCL_TEMPLATE(typename _Vp = void, typename _Range, typename _Ip, typename _IAbi, typename... _Flags)
 _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
-[[nodiscard]] _CCCL_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi> unchecked_gather_from(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi> unchecked_gather_from(
   _Range&& __in,
   const typename basic_vec<_Ip, _IAbi>::mask_type& __mask,
   const basic_vec<_Ip, _IAbi>& __indices,
@@ -201,7 +201,7 @@ _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
 // unmasked: delegate to the masked overload with an all-true mask to avoid duplicating the precondition check.
 _CCCL_TEMPLATE(typename _Vp = void, typename _Range, typename _Ip, typename _IAbi, typename... _Flags)
 _CCCL_REQUIRES(__gather_constraints<_Vp, _Range, _Ip, _IAbi>)
-[[nodiscard]] _CCCL_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __gather_result_t<_Vp, _Range, _Ip, _IAbi>
 unchecked_gather_from(_Range&& __in, const basic_vec<_Ip, _IAbi>& __indices, flags<_Flags...> __f = {})
 {
   using __mask_t = typename basic_vec<_Ip, _IAbi>::mask_type;
@@ -225,7 +225,7 @@ _CCCL_CONCEPT __scatter_constraints =
 // scatter mandates
 
 template <typename _Tp, typename _Range, typename... _Flags>
-_CCCL_API _CCCL_CONSTEVAL void __check_scatter_mandates() noexcept
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL void __check_scatter_mandates() noexcept
 {
   static_assert(__is_vectorizable_v<ranges::range_value_t<_Range>>,
                 "cuda::std::simd::partial_scatter_to / unchecked_scatter_to: range_value_t<R> must be vectorizable");
@@ -240,7 +240,7 @@ _CCCL_API _CCCL_CONSTEVAL void __check_scatter_mandates() noexcept
 // masked
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Range, typename _Ip, typename _IAbi, typename... _Flags)
 _CCCL_REQUIRES(__scatter_constraints<_Tp, _Abi, _Range, _Ip, _IAbi>)
-_CCCL_API constexpr void partial_scatter_to(
+_CCCL_HOST_DEVICE_API constexpr void partial_scatter_to(
   const basic_vec<_Tp, _Abi>& __v,
   _Range&& __out,
   const typename basic_vec<_Ip, _IAbi>::mask_type& __mask,
@@ -277,7 +277,7 @@ _CCCL_API constexpr void partial_scatter_to(
 // unmasked: delegate to the masked overload with an all-true mask.
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Range, typename _Ip, typename _IAbi, typename... _Flags)
 _CCCL_REQUIRES(__scatter_constraints<_Tp, _Abi, _Range, _Ip, _IAbi>)
-_CCCL_API constexpr void partial_scatter_to(
+_CCCL_HOST_DEVICE_API constexpr void partial_scatter_to(
   const basic_vec<_Tp, _Abi>& __v, _Range&& __out, const basic_vec<_Ip, _IAbi>& __indices, flags<_Flags...> __f = {})
 {
   using __mask_t = typename basic_vec<_Ip, _IAbi>::mask_type;
@@ -291,7 +291,7 @@ _CCCL_API constexpr void partial_scatter_to(
 // masked
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Range, typename _Ip, typename _IAbi, typename... _Flags)
 _CCCL_REQUIRES(__scatter_constraints<_Tp, _Abi, _Range, _Ip, _IAbi>)
-_CCCL_API constexpr void unchecked_scatter_to(
+_CCCL_HOST_DEVICE_API constexpr void unchecked_scatter_to(
   const basic_vec<_Tp, _Abi>& __v,
   _Range&& __out,
   const typename basic_vec<_Ip, _IAbi>::mask_type& __mask,
@@ -322,7 +322,7 @@ _CCCL_API constexpr void unchecked_scatter_to(
 // unmasked: delegate to the masked overload with an all-true mask to avoid duplicating the precondition check.
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Range, typename _Ip, typename _IAbi, typename... _Flags)
 _CCCL_REQUIRES(__scatter_constraints<_Tp, _Abi, _Range, _Ip, _IAbi>)
-_CCCL_API constexpr void unchecked_scatter_to(
+_CCCL_HOST_DEVICE_API constexpr void unchecked_scatter_to(
   const basic_vec<_Tp, _Abi>& __v, _Range&& __out, const basic_vec<_Ip, _IAbi>& __indices, flags<_Flags...> __f = {})
 {
   using __mask_t = typename basic_vec<_Ip, _IAbi>::mask_type;
