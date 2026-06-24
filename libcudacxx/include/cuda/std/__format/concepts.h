@@ -25,11 +25,9 @@
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__fwd/inplace_vector.h>
-#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__iterator/wrap_iter.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__utility/pair.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
