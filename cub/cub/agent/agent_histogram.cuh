@@ -606,13 +606,14 @@ struct AgentHistogram
                                                : // prefer gmem privatized histograms
                       blockIdx.x & 1) // prefer blended privatized histograms
   {
-    const auto block_id = static_cast<::cuda::std::int64_t>(blockIdx.y) * gridDim.x + blockIdx.x;
+    const int blockId = (blockIdx.y * gridDim.x) + blockIdx.x;
 
     // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
     // Initialize the locations of this block's privatized histograms
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + (block_id * num_privatized_bins[ch]);
+      const auto offset                 = static_cast<::cuda::std::int64_t>(blockId) * num_privatized_bins[ch];
+      this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
     }
   }
 
