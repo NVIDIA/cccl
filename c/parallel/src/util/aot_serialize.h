@@ -11,11 +11,13 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 #include <cccl/c/aot.h>
