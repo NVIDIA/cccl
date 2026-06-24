@@ -58,13 +58,13 @@ make_policy(::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_c
 {
   return cluster_topk_policy{
     /*threads_per_block=*/512,
-    /*histogram_items_per_thread=*/4,
-    /*pipeline_stages=*/3,
+    /*histogram_items_per_thread=*/8,
+    /*pipeline_stages=*/8,
     /*chunk_bytes=*/16 * 1024,
     /*load_align_bytes=*/128,
     /*bits_per_pass=*/11,
     /*min_blocks_per_sm=*/1,
-    /*tie_break_items_per_thread=*/4,
+    /*tie_break_items_per_thread=*/8,
     launch_configs};
 }
 
