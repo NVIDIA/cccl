@@ -108,10 +108,7 @@ libnvccResult libnvccDestroyProgram(libnvccProgram* prog);
  * only in-memory input accepted by libnvcc.
  */
 libnvccResult libnvccCompileProgramToDeviceBitcode(
-  libnvccProgram prog,
-  const char* outputBitcodePath,
-  int numOptions,
-  const char* const* options);
+  libnvccProgram prog, const char* outputBitcodePath, int numOptions, const char* const* options);
 
 /**
  * \brief Compile a program to a host object file and optionally a cubin file.
