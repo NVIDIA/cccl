@@ -54,7 +54,7 @@ class _UnaryTransform:
         obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         in_type = cccl.get_value_type(d_in)
         out_type = cccl.get_value_type(d_out)
-        obj.op_cccl = make_op_adapter(op).compile((in_type,), out_type)
+        obj.op_cccl = make_op_adapter(op).compile_for_load((in_type,), out_type)
         obj.build_result = _bindings.DeviceUnaryTransform.deserialize(blob)
         return obj
 
@@ -139,7 +139,9 @@ class _BinaryTransform:
         in1_type = cccl.get_value_type(d_in1)
         in2_type = cccl.get_value_type(d_in2)
         out_type = cccl.get_value_type(d_out)
-        obj.op_cccl = make_op_adapter(op).compile((in1_type, in2_type), out_type)
+        obj.op_cccl = make_op_adapter(op).compile_for_load(
+            (in1_type, in2_type), out_type
+        )
         obj.build_result = _bindings.DeviceBinaryTransform.deserialize(blob)
         return obj
 

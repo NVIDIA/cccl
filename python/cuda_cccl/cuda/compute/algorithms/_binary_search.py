@@ -96,7 +96,7 @@ class _BinarySearch:
         data_value_type = cccl.get_value_type(d_data)
         obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         comp_adapter = make_op_adapter(OpKind.LESS if comp is None else comp)
-        obj.op_cccl = comp_adapter.compile(
+        obj.op_cccl = comp_adapter.compile_for_load(
             (data_value_type, data_value_type), types.uint8
         )
         obj.build_result = _bindings.DeviceBinarySearchBuildResult.deserialize(blob)
