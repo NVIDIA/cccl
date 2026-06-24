@@ -206,7 +206,7 @@ template <class _Tp>
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_100, (return return ::__nv_fp128_fabs(__x) == ::cuda::std::__fp_inf<__float128>();))
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fabs(__x) == ::cuda::std::__fp_inf<__float128>();))
   }
   return ::cuda::std::__isinf_impl(__x);
 }
