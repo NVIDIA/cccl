@@ -85,23 +85,20 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 
-template <class V>
-struct is_thrust_vector : std::false_type
-{};
+template <typename T>
+inline constexpr bool is_thrust_vector_v = false;
 
-template <class T, class Alloc>
-struct is_thrust_vector<thrust::host_vector<T, Alloc>> : std::true_type
-{};
+template <typename T, typename Alloc>
+inline constexpr bool is_thrust_vector_v<thrust::host_vector<T, Alloc>> = true;
 
-template <class T, class Alloc>
-struct is_thrust_vector<thrust::device_vector<T, Alloc>> : std::true_type
-{};
+template <typename T, typename Alloc>
+inline constexpr bool is_thrust_vector_v<thrust::device_vector<T, Alloc>> = true;
 
-// Add exec policy function alternative
+// TODO: Add exec policy function alternative
 
 template <class Vector,
-          class U                                                        = typename Vector::value_type,
-          ::cuda::std::enable_if_t<is_thrust_vector<Vector>::value, int> = 0>
+          class U                                                   = typename Vector::value_type,
+          ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
 typename Vector::size_type erase(Vector& c, const U& value)
 {
   using value_type = typename Vector::value_type;
