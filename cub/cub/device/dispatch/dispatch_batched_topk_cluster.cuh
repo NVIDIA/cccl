@@ -542,7 +542,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       int cluster_blocks   = 0;
       int dynamic_smem_sel = 0;
 
-      if (c_lo <= static_cast<::cuda::std::uint64_t>(max_supported_cluster_blocks))
+      if (c_lo == 1)
+      {
+        // Single-CTA fast path: the segment fits resident in one CTA, so launch a width-1 "cluster" (the agent's
+        // cluster-barrier-free path) instead of spreading it across more CTAs for parallelism. `S_res(seg)` is within
+        // budget and one CTA is always launchable, so the occupancy probe is skipped (the shared
+        // `ensure_dynamic_smem_limit` below raises the opt-in for the selected SMEM).
+        cluster_blocks   = 1;
+        dynamic_smem_sel = smem_for_block_capacity(seg);
+      }
+      else if (c_lo <= static_cast<::cuda::std::uint64_t>(max_supported_cluster_blocks))
       {
         // Full residency is achievable. `seg <= C_lo * max_block_tile_capacity` with `C_lo <= HW max`, so every
         // per-CTA capacity (and thus its slot count and SMEM bytes) below stays well within `int` -- no overflow.
