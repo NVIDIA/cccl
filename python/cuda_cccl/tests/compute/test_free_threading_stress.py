@@ -15,7 +15,6 @@ from typing import Callable
 import numpy as np
 import pytest
 
-
 pytestmark = [
     pytest.mark.free_threading,
     pytest.mark.no_numba,
@@ -158,15 +157,19 @@ def _run_thread_local_algorithm_case(cp, cc, case: _AlgorithmCase) -> None:
             return thread
 
         _run_threaded(
-            [make_thread(worker_id, worker) for worker_id, worker in enumerate(worker_state)]
+            [
+                make_thread(worker_id, worker)
+                for worker_id, worker in enumerate(worker_state)
+            ]
         )
 
         assert len({id(algorithm) for algorithm in returned_algorithms}) == len(
             returned_algorithms
         )
-        assert len(
-            {id(_get_build_result(algorithm)) for algorithm in returned_algorithms}
-        ) == 1
+        assert (
+            len({id(_get_build_result(algorithm)) for algorithm in returned_algorithms})
+            == 1
+        )
 
 
 def _make_reduce_worker(cp, cc, worker_id, iteration):
@@ -309,7 +312,9 @@ def _run_binary(cp, cc, transformer, worker):
 
 def _check_binary(cp, cc, worker):
     worker["stream"].synchronize()
-    np.testing.assert_array_equal(worker["d_out"].get(), worker["h_in1"] + worker["h_in2"])
+    np.testing.assert_array_equal(
+        worker["d_out"].get(), worker["h_in1"] + worker["h_in2"]
+    )
 
 
 def _make_scan_worker(cp, cc, worker_id, iteration):
@@ -508,7 +513,9 @@ def _check_histogram(cp, cc, worker):
         bins=int(worker["h_num_levels"][0] - 1),
         range=(float(worker["h_lower"][0]), float(worker["h_upper"][0])),
     )
-    np.testing.assert_array_equal(worker["d_histogram"].get(), expected.astype(np.int32))
+    np.testing.assert_array_equal(
+        worker["d_histogram"].get(), expected.astype(np.int32)
+    )
 
 
 def _make_binary_search_worker(cp, cc, worker_id, iteration):
@@ -675,14 +682,17 @@ def _check_three_way(cp, cc, worker):
         worker["d_out"].get()[:true_count], np.ones(true_count, dtype=np.bool_)
     )
     np.testing.assert_array_equal(
-        worker["d_second_out"].get()[:false_count], np.zeros(false_count, dtype=np.bool_)
+        worker["d_second_out"].get()[:false_count],
+        np.zeros(false_count, dtype=np.bool_),
     )
 
 
 def _make_unique_worker(cp, cc, worker_id, iteration):
     stream, cuda_stream = _make_stream(cp)
     base = worker_id * 10 + iteration
-    h_keys = np.array([base, base, base + 1, base + 2, base + 2, base + 3], dtype=np.int32)
+    h_keys = np.array(
+        [base, base, base + 1, base + 2, base + 2, base + 3], dtype=np.int32
+    )
     h_items = np.arange(h_keys.size, dtype=np.int32) + worker_id * 100
     with stream:
         d_in_keys = cp.asarray(h_keys)
@@ -791,7 +801,9 @@ def _check_merge_sort(cp, cc, worker):
     worker["stream"].synchronize()
     order = np.argsort(worker["h_keys"], kind="stable")
     np.testing.assert_array_equal(worker["d_out_keys"].get(), worker["h_keys"][order])
-    np.testing.assert_array_equal(worker["d_out_values"].get(), worker["h_values"][order])
+    np.testing.assert_array_equal(
+        worker["d_out_values"].get(), worker["h_values"][order]
+    )
 
 
 def _make_radix_sort_worker(cp, cc, worker_id, iteration):
@@ -840,8 +852,12 @@ def _run_radix_sort(cp, cc, sorter, worker):
 def _check_radix_sort(cp, cc, worker):
     worker["stream"].synchronize()
     order = np.argsort(worker["h_keys"], kind="stable")
-    np.testing.assert_array_equal(worker["keys"].current().get(), worker["h_keys"][order])
-    np.testing.assert_array_equal(worker["values"].current().get(), worker["h_values"][order])
+    np.testing.assert_array_equal(
+        worker["keys"].current().get(), worker["h_keys"][order]
+    )
+    np.testing.assert_array_equal(
+        worker["values"].current().get(), worker["h_values"][order]
+    )
     assert worker["keys"].selector == worker["values"].selector
 
 
@@ -915,9 +931,15 @@ def _check_segmented_sort(cp, cc, worker):
 
 
 SHARED_ALGORITHM_CASES = [
-    _AlgorithmCase("reduce", _make_reduce_shared, _make_reduce_worker, _run_reduce, _check_reduce),
     _AlgorithmCase(
-        "unary_transform", _make_unary_shared, _make_unary_worker, _run_unary, _check_unary
+        "reduce", _make_reduce_shared, _make_reduce_worker, _run_reduce, _check_reduce
+    ),
+    _AlgorithmCase(
+        "unary_transform",
+        _make_unary_shared,
+        _make_unary_worker,
+        _run_unary,
+        _check_unary,
     ),
     _AlgorithmCase(
         "binary_transform",
@@ -968,7 +990,9 @@ SHARED_ALGORITHM_CASES = [
         _run_binary_search,
         _check_upper_bound,
     ),
-    _AlgorithmCase("select", _make_select_shared, _make_select_worker, _run_select, _check_select),
+    _AlgorithmCase(
+        "select", _make_select_shared, _make_select_worker, _run_select, _check_select
+    ),
     _AlgorithmCase(
         "three_way_partition",
         _make_three_way_shared,
@@ -977,7 +1001,11 @@ SHARED_ALGORITHM_CASES = [
         _check_three_way,
     ),
     _AlgorithmCase(
-        "unique_by_key", _make_unique_shared, _make_unique_worker, _run_unique, _check_unique
+        "unique_by_key",
+        _make_unique_shared,
+        _make_unique_worker,
+        _run_unique,
+        _check_unique,
     ),
     _AlgorithmCase(
         "merge_sort",
@@ -1146,7 +1174,9 @@ def test_shared_raw_op_object_direct_algorithm_stress(compute_modules):
         assert len({id(reducer) for reducer in returned_reducers}) == len(
             returned_reducers
         )
-        assert len({id(_get_build_result(reducer)) for reducer in returned_reducers}) == 1
+        assert (
+            len({id(_get_build_result(reducer)) for reducer in returned_reducers}) == 1
+        )
 
 
 @dataclass(frozen=True)
@@ -1208,9 +1238,10 @@ def _run_cold_transform_native_cache_case(cp, cc, case: _ColdTransformCase) -> N
         assert len({id(algorithm) for algorithm in returned_algorithms}) == len(
             returned_algorithms
         )
-        assert len(
-            {id(_get_build_result(algorithm)) for algorithm in returned_algorithms}
-        ) == 1
+        assert (
+            len({id(_get_build_result(algorithm)) for algorithm in returned_algorithms})
+            == 1
+        )
 
 
 @pytest.mark.parametrize(
@@ -1250,7 +1281,12 @@ def _iterator_constant(cp, cc):
 def _iterator_cache_modified(cp, cc):
     h_in = np.arange(32, dtype=np.int32)
     d_in = cp.asarray(h_in)
-    return cc.CacheModifiedInputIterator(d_in, "stream"), h_in.dtype, h_in.size, int(h_in.sum())
+    return (
+        cc.CacheModifiedInputIterator(d_in, "stream"),
+        h_in.dtype,
+        h_in.size,
+        int(h_in.sum()),
+    )
 
 
 def _iterator_reverse(cp, cc):
@@ -1295,7 +1331,9 @@ def _iterator_transform(cp, cc):
     """
     op = RawOp(ltoir=compile_cpp_op_code(source), name="negate_i32")
     return (
-        cc.TransformIterator(cc.CountingIterator(np.int32(0)), op, value_type=types.int32),
+        cc.TransformIterator(
+            cc.CountingIterator(np.int32(0)), op, value_type=types.int32
+        ),
         np.dtype(np.int32),
         num_items,
         -sum(range(num_items)),

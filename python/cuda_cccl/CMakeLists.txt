@@ -94,11 +94,21 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 if (NOT _python_gil_disabled_result EQUAL 0)
-  message(FATAL_ERROR "Failed to query Py_GIL_DISABLED from ${Python3_EXECUTABLE}")
+  message(
+    FATAL_ERROR
+    "Failed to query Py_GIL_DISABLED from ${Python3_EXECUTABLE}"
+  )
 endif()
 
-if (Python3_VERSION_MAJOR EQUAL 3 AND Python3_VERSION_MINOR EQUAL 14 AND "${_python_gil_disabled}" STREQUAL "1")
-  target_compile_definitions(${_cccl_c_parallel_target} PRIVATE CCCL_PYTHON_FREE_THREADED=1)
+if (
+  Python3_VERSION_MAJOR EQUAL 3
+  AND Python3_VERSION_MINOR EQUAL 14
+  AND "${_python_gil_disabled}" STREQUAL "1"
+)
+  target_compile_definitions(
+    ${_cccl_c_parallel_target}
+    PRIVATE CCCL_PYTHON_FREE_THREADED=1
+  )
   message(STATUS "Enabling CCCL_PYTHON_FREE_THREADED for Python 3.14t")
 endif()
 
