@@ -449,10 +449,12 @@ struct AssignableFrom
 
   constexpr AssignableFrom() = default;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class U, cuda::std::enable_if_t<cuda::std::is_constructible_v<T, U&&>, int> = 0>
-  TEST_FUNC constexpr AssignableFrom(U&& u) // NOLINT(bugprone-forwarding-reference-overload)
+  TEST_FUNC constexpr AssignableFrom(U&& u)
       : v(cuda::std::forward<U>(u))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class U = T, cuda::std::enable_if_t<cuda::std::is_copy_assignable_v<U>, int> = 0>
   TEST_FUNC constexpr AssignableFrom& operator=(const T& t)

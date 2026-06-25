@@ -401,7 +401,7 @@ struct AgentRadixSortUpsweep
     for (int BIN_BASE = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
          BIN_BASE += BLOCK_THREADS)
     {
-      int bin_idx       = BIN_BASE + threadIdx.x;
+      int bin_idx       = static_cast<int>(BIN_BASE + threadIdx.x);
       OffsetT bin_count = 0;
 
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -421,7 +421,7 @@ struct AgentRadixSortUpsweep
     // Remainder
     if ((RADIX_DIGITS % BLOCK_THREADS != 0) && (threadIdx.x < RADIX_DIGITS))
     {
-      int bin_idx       = threadIdx.x;
+      int bin_idx       = static_cast<int>(threadIdx.x);
       OffsetT bin_count = 0;
 
       _CCCL_PRAGMA_UNROLL_FULL()

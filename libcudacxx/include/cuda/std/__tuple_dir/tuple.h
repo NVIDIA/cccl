@@ -219,6 +219,7 @@ public:
   {}
 
   // Horrible hack to make tuple_of_iterator_references work
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _TupleOfIteratorReferences,
             // clang-tidy has fallen off its rocker and claims we can use the non-existent
             // __tuple_of_iterato_references_v here.
@@ -229,12 +230,16 @@ public:
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
       : tuple(::cuda::std::forward<_TupleOfIteratorReferences>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{})
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
 private:
   template <class _TupleOfIteratorReferences,
             size_t... _Indices,
             enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t, __tuple_indices<_Indices...>)
+      // clang-tidy incorrectly reports "'__t' used after it was forwarded".
+      // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
+      // NOLINTNEXTLINE(bugprone-use-after-move)
       : tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_TupleOfIteratorReferences>(__t))...)
   {}
 
@@ -311,6 +316,7 @@ public:
   using __disambiguate_tuple_like =
     bool_constant<!is_same_v<remove_cvref_t<_Tuple>, tuple> && __tuple_like_with_size<_Tuple, sizeof...(_Tp)>>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
             __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
@@ -318,7 +324,9 @@ public:
   _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _Tuple,
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
             __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
@@ -326,6 +334,7 @@ public:
   _CCCL_API explicit constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Alloc,
             class _Tuple,

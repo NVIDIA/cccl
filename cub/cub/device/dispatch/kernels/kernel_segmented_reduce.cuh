@@ -177,8 +177,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     typename AgentSmallReduceT::TempStorage small_storage[segments_per_small_block];
   } temp_storage;
 
-  const int bid = blockIdx.x;
-  const int tid = threadIdx.x;
+  const int bid = static_cast<int>(blockIdx.x);
+  const int tid = static_cast<int>(threadIdx.x);
 
   auto small_medium_seg_reduction =
     [&](auto agent_tag, auto& storage, auto threads_per_warp_tag, auto segments_per_block_tag) {
@@ -381,8 +381,8 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
     typename AgentSmallReduceT::TempStorage small_storage[segments_per_small_block];
   } temp_storage;
 
-  const int bid = blockIdx.x;
-  const int tid = threadIdx.x;
+  const int bid = static_cast<int>(blockIdx.x);
+  const int tid = static_cast<int>(threadIdx.x);
 
   if (segment_size <= small_items_per_tile)
   {

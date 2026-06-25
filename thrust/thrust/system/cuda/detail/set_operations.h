@@ -420,7 +420,7 @@ struct SetOpAgent
       }
       __syncthreads();
 
-      for (int item = threadIdx.x; item < tile_output_count; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += BLOCK_THREADS)
       {
         output[tile_output_prefix + item] = shared[item];
       }
@@ -636,8 +636,8 @@ struct SetOpAgent
         , partitions(partitions_)
         , output_count(output_count_)
     {
-      int tile_idx  = blockIdx.x;
-      int num_tiles = gridDim.x;
+      int tile_idx  = static_cast<int>(blockIdx.x);
+      int num_tiles = static_cast<int>(gridDim.x);
 
       if (tile_idx < num_tiles - 1)
       {

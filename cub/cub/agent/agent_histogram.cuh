@@ -240,7 +240,7 @@ struct AgentHistogram
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      for (int bin = threadIdx.x; bin < num_privatized_bins[ch]; bin += threads_per_block)
+      for (int bin = static_cast<int>(threadIdx.x); bin < num_privatized_bins[ch]; bin += threads_per_block)
       {
         privatized_histograms[ch][bin] = 0;
       }
@@ -263,7 +263,7 @@ struct AgentHistogram
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
       const int channel_bins = num_privatized_bins[ch];
-      for (int bin = threadIdx.x; bin < channel_bins; bin += threads_per_block)
+      for (int bin = static_cast<int>(threadIdx.x); bin < channel_bins; bin += threads_per_block)
       {
         int output_bin       = -1;
         const CounterT count = privatized_histograms[ch][bin];
@@ -480,7 +480,7 @@ struct AgentHistogram
     ::cuda::std::true_type is_work_stealing)
   {
     int num_tiles                = num_rows * tiles_per_row;
-    int tile_idx                 = (blockIdx.y * gridDim.x) + blockIdx.x;
+    int tile_idx                 = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
     OffsetT num_even_share_tiles = gridDim.x * gridDim.y;
 
     while (tile_idx < num_tiles)
@@ -531,7 +531,7 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
   {
-    for (int row = blockIdx.y; row < num_rows; row += gridDim.y)
+    for (int row = static_cast<int>(blockIdx.y); row < num_rows; row += static_cast<int>(gridDim.y))
     {
       OffsetT row_begin   = row * row_stride_samples;
       OffsetT row_end     = row_begin + (num_row_pixels * NumChannels);
@@ -606,7 +606,7 @@ struct AgentHistogram
                                                : // prefer gmem privatized histograms
                       blockIdx.x & 1) // prefer blended privatized histograms
   {
-    const int blockId = (blockIdx.y * gridDim.x) + blockIdx.x;
+    const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
 
     // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
     // Initialize the locations of this block's privatized histograms

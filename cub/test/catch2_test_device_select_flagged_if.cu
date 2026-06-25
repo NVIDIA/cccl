@@ -9,7 +9,9 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 
-#include <cuda/functional>
+#include <cuda/devices>
+#include <cuda/iterator>
+#include <cuda/std/execution>
 
 #include <algorithm>
 
@@ -200,6 +202,229 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   out.resize(num_selected_out[0]);
   REQUIRE(reference_out == out);
 }
+
+#if TEST_LAUNCH == 0
+C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environment",
+         "[device][select_if]",
+         all_types,
+         flag_types)
+{
+  using input_type = typename c2h::get<0, TestType>;
+  using flag_type  = typename c2h::get<1, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<input_type> in(num_items, thrust::default_init);
+  c2h::device_vector<input_type> out(num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(2), in);
+
+  is_even_t<flag_type> is_even{};
+
+  c2h::device_vector<flag_type> flags(num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(1), flags);
+  const c2h::host_vector<input_type> reference = get_reference(in, flags, is_even);
+  const int num_selected                       = static_cast<int>(reference.size());
+
+  // Needs to be device accessible
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  size_t expected_allocation_size = 0;
+  auto error                      = cub::DeviceSelect::FlaggedIf(
+    static_cast<void*>(nullptr),
+    expected_allocation_size,
+    in.begin(),
+    flags.begin(),
+    out.begin(),
+    d_first_num_selected_out,
+    num_items,
+    is_even);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_flagged_if = [&, num_selected](const auto& env) { // Avoid GCC-7 ICE when taking num_selected by reference
+    size_t num_bytes = 0;
+    error            = cub::DeviceSelect::FlaggedIf(
+      static_cast<void*>(nullptr),
+      num_bytes,
+      in.begin(),
+      flags.begin(),
+      out.begin(),
+      d_first_num_selected_out,
+      num_items,
+      is_even,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_allocation_size == num_bytes);
+
+    error = cub::DeviceSelect::FlaggedIf(
+      temp_storage, num_bytes, in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, is_even, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    out.resize(num_selected_out[0]);
+    REQUIRE(num_selected == num_selected_out[0]);
+    REQUIRE(reference == out);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_flagged_if(stream.get());
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_flagged_if(stream);
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_flagged_if(stream_ref);
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_flagged_if(env);
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_flagged_if(policy);
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_flagged_if(policy);
+  }
+}
+
+C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
+         "[device][select_if]",
+         all_types,
+         flag_types)
+{
+  using input_type = typename c2h::get<0, TestType>;
+  using flag_type  = typename c2h::get<1, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<input_type> in(num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(2), in);
+
+  is_even_t<flag_type> is_even{};
+
+  c2h::device_vector<flag_type> flags(num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(1), flags);
+  const c2h::host_vector<input_type> reference = get_reference(in, flags, is_even);
+  const int num_selected                       = static_cast<int>(reference.size());
+
+  // Needs to be device accessible
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  size_t expected_allocation_size = 0;
+  auto error                      = cub::DeviceSelect::FlaggedIf(
+    static_cast<void*>(nullptr),
+    expected_allocation_size,
+    in.begin(),
+    flags.begin(),
+    d_first_num_selected_out,
+    num_items,
+    is_even);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_flagged_if = [&, num_selected](const auto& env) { // Avoid GCC-7 ICE when taking num_selected by reference
+    size_t num_bytes = 0;
+    error            = cub::DeviceSelect::FlaggedIf(
+      static_cast<void*>(nullptr),
+      num_bytes,
+      in.begin(),
+      flags.begin(),
+      d_first_num_selected_out,
+      num_items,
+      is_even,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_allocation_size == num_bytes);
+
+    error = cub::DeviceSelect::FlaggedIf(
+      temp_storage, num_bytes, in.begin(), flags.begin(), d_first_num_selected_out, num_items, is_even, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    in.resize(num_selected_out[0]);
+    REQUIRE(num_selected == num_selected_out[0]);
+    REQUIRE(reference == in);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_flagged_if(stream.get());
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_flagged_if(stream);
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_flagged_if(stream_ref);
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_flagged_if(env);
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_flagged_if(policy);
+  }
+
+  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_flagged_if(policy);
+  }
+}
+#endif // TEST_LAUNCH == 0
 
 C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", all_types, flag_types)
 {

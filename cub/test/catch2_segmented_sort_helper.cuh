@@ -1640,7 +1640,7 @@ inline int generate_unspecified_segments_offsets(
   c2h::gen(make_offset_eraser_seed(seed), erase_indices, 1, num_segments - 2);
 
   auto const_zero_begin = cuda::constant_iterator<int>(0);
-  auto const_zero_end   = const_zero_begin + erase_indices.size();
+  auto const_zero_end   = const_zero_begin + static_cast<std::ptrdiff_t>(erase_indices.size());
 
   thrust::scatter(
     c2h::nosync_device_policy, const_zero_begin, const_zero_end, erase_indices.cbegin(), d_begin_offsets.begin());
