@@ -17,16 +17,13 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/util_math.cuh>
-
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/extrema.h>
-#  include <thrust/iterator/counting_iterator.h>
-#  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__iterator/discard_iterator.h>
+#  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -37,305 +34,6 @@ namespace cuda_cub
 {
 namespace __extrema
 {
-template <class InputType, class IndexType, class Predicate>
-struct arg_min_f
-{
-  Predicate predicate;
-  using pair_type = ::cuda::std::tuple<InputType, IndexType>;
-
-  _CCCL_HOST_DEVICE arg_min_f(Predicate p)
-      : predicate(p)
-  {}
-
-  pair_type _CCCL_DEVICE operator()(pair_type const& lhs, pair_type const& rhs)
-  {
-    InputType const& rhs_value = ::cuda::std::get<0>(rhs);
-    InputType const& lhs_value = ::cuda::std::get<0>(lhs);
-    IndexType const& rhs_key   = ::cuda::std::get<1>(rhs);
-    IndexType const& lhs_key   = ::cuda::std::get<1>(lhs);
-
-    // check values first
-    if (predicate(lhs_value, rhs_value))
-    {
-      return lhs;
-    }
-    else if (predicate(rhs_value, lhs_value))
-    {
-      return rhs;
-    }
-
-    // values are equivalent, prefer smaller index
-    if (lhs_key < rhs_key)
-    {
-      return lhs;
-    }
-    else
-    {
-      return rhs;
-    }
-  }
-}; // struct arg_min_f
-
-template <class InputType, class IndexType, class Predicate>
-struct arg_max_f
-{
-  Predicate predicate;
-  using pair_type = ::cuda::std::tuple<InputType, IndexType>;
-
-  _CCCL_HOST_DEVICE arg_max_f(Predicate p)
-      : predicate(p)
-  {}
-
-  pair_type _CCCL_DEVICE operator()(pair_type const& lhs, pair_type const& rhs)
-  {
-    InputType const& rhs_value = ::cuda::std::get<0>(rhs);
-    InputType const& lhs_value = ::cuda::std::get<0>(lhs);
-    IndexType const& rhs_key   = ::cuda::std::get<1>(rhs);
-    IndexType const& lhs_key   = ::cuda::std::get<1>(lhs);
-
-    // check values first
-    if (predicate(lhs_value, rhs_value))
-    {
-      return rhs;
-    }
-    else if (predicate(rhs_value, lhs_value))
-    {
-      return lhs;
-    }
-
-    // values are equivalent, prefer smaller index
-    if (lhs_key < rhs_key)
-    {
-      return lhs;
-    }
-    else
-    {
-      return rhs;
-    }
-  }
-}; // struct arg_max_f
-
-template <class InputType, class IndexType, class Predicate>
-struct arg_minmax_f
-{
-  Predicate predicate;
-
-  using pair_type      = ::cuda::std::tuple<InputType, IndexType>;
-  using two_pairs_type = ::cuda::std::tuple<pair_type, pair_type>;
-
-  using arg_min_t = arg_min_f<InputType, IndexType, Predicate>;
-  using arg_max_t = arg_max_f<InputType, IndexType, Predicate>;
-
-  _CCCL_HOST_DEVICE arg_minmax_f(Predicate p)
-      : predicate(p)
-  {}
-
-  two_pairs_type _CCCL_DEVICE operator()(two_pairs_type const& lhs, two_pairs_type const& rhs)
-  {
-    pair_type const& rhs_min = ::cuda::std::get<0>(rhs);
-    pair_type const& lhs_min = ::cuda::std::get<0>(lhs);
-    pair_type const& rhs_max = ::cuda::std::get<1>(rhs);
-    pair_type const& lhs_max = ::cuda::std::get<1>(lhs);
-
-    auto result =
-      ::cuda::std::make_tuple(arg_min_t(predicate)(lhs_min, rhs_min), arg_max_t(predicate)(lhs_max, rhs_max));
-
-    return result;
-  }
-
-  struct duplicate_tuple
-  {
-    _CCCL_DEVICE two_pairs_type operator()(pair_type const& t)
-    {
-      return ::cuda::std::make_tuple(t, t);
-    }
-  };
-}; // struct arg_minmax_f
-
-template <class T, class InputIt, class OutputIt, class Size, class ReductionOp>
-cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt input_it,
-  Size num_items,
-  ReductionOp reduction_op,
-  OutputIt output_it,
-  cudaStream_t stream)
-{
-  using core::detail::AgentLauncher;
-  using core::detail::AgentPlan;
-  using core::detail::cuda_optional;
-  using core::detail::get_agent_plan;
-
-  using UnsignedSize = typename detail::make_unsigned_special<Size>::type;
-
-  if (num_items == 0)
-  {
-    return cudaErrorNotSupported;
-  }
-
-  using reduce_agent = AgentLauncher<__reduce::ReduceAgent<InputIt, OutputIt, T, Size, ReductionOp>>;
-
-  typename reduce_agent::Plan reduce_plan = reduce_agent::get_plan(stream);
-
-  cudaError_t status = cudaSuccess;
-
-  if (num_items <= reduce_plan.items_per_tile)
-  {
-    size_t vshmem_size = core::detail::vshmem_size(reduce_plan.shared_memory_size, 1);
-
-    // small, single tile size
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = max<size_t>(1, vshmem_size);
-      return status;
-    }
-    char* vshmem_ptr = vshmem_size > 0 ? (char*) d_temp_storage : nullptr;
-
-    reduce_agent ra(reduce_plan, num_items, stream, vshmem_ptr, "reduce_agent: single_tile only");
-    ra.launch(input_it, output_it, num_items, reduction_op);
-    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
-  }
-  else
-  {
-    // regular size
-    cuda_optional<int> sm_count = core::detail::get_sm_count();
-    _CUDA_CUB_RET_IF_FAIL(sm_count.status());
-
-    // reduction will not use more cta counts than requested
-    cuda_optional<int> max_blocks_per_sm = reduce_agent::template get_max_blocks_per_sm<
-      InputIt,
-      OutputIt,
-      Size,
-      cub::GridEvenShare<Size>,
-      cub::GridQueue<UnsignedSize>,
-      ReductionOp>(reduce_plan);
-    _CUDA_CUB_RET_IF_FAIL(max_blocks_per_sm.status());
-
-    int reduce_device_occupancy = (int) max_blocks_per_sm * sm_count;
-
-    int sm_oversubscription = 5;
-    int max_blocks          = reduce_device_occupancy * sm_oversubscription;
-
-    cub::GridEvenShare<Size> even_share;
-    even_share.DispatchInit(num_items, max_blocks, reduce_plan.items_per_tile);
-
-    // we will launch at most "max_blocks" blocks in a grid
-    // so preallocate virtual shared memory storage for this if required
-    //
-    size_t vshmem_size = core::detail::vshmem_size(reduce_plan.shared_memory_size, max_blocks);
-
-    // Temporary storage allocation requirements
-    void* allocations[3]       = {nullptr, nullptr, nullptr};
-    size_t allocation_sizes[3] = {
-      max_blocks * sizeof(T), // bytes needed for privatized block reductions
-      cub::GridQueue<UnsignedSize>::AllocationSize(), // bytes needed for grid queue descriptor0
-      vshmem_size // size of virtualized shared memory storage
-    };
-    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    _CUDA_CUB_RET_IF_FAIL(status);
-    if (d_temp_storage == nullptr)
-    {
-      return status;
-    }
-
-    T* d_block_reductions = (T*) allocations[0];
-    cub::GridQueue<UnsignedSize> queue(allocations[1]);
-    char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[2] : nullptr;
-
-    // Get grid size for device_reduce_sweep_kernel
-    int reduce_grid_size = 0;
-    if (reduce_plan.grid_mapping == cub::GRID_MAPPING_RAKE)
-    {
-      // Work is distributed evenly
-      reduce_grid_size = even_share.grid_size;
-    }
-    else if (reduce_plan.grid_mapping == cub::GRID_MAPPING_DYNAMIC)
-    {
-      // Work is distributed dynamically
-      size_t num_tiles = ::cuda::ceil_div(num_items, reduce_plan.items_per_tile);
-
-      // if not enough to fill the device with threadblocks
-      // then fill the device with threadblocks
-      reduce_grid_size = static_cast<int>((min) (num_tiles, static_cast<size_t>(reduce_device_occupancy)));
-
-      using drain_agent    = AgentLauncher<__reduce::DrainAgent<Size>>;
-      AgentPlan drain_plan = drain_agent::get_plan();
-      drain_plan.grid_size = 1;
-      drain_agent da(drain_plan, stream, "__reduce::drain_agent");
-      da.launch(queue, num_items);
-      _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
-    }
-    else
-    {
-      _CUDA_CUB_RET_IF_FAIL(cudaErrorNotSupported);
-    }
-
-    reduce_plan.grid_size = reduce_grid_size;
-    reduce_agent ra(reduce_plan, stream, vshmem_ptr, "reduce_agent: regular size reduce");
-    ra.launch(input_it, d_block_reductions, num_items, even_share, queue, reduction_op);
-    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
-
-    using reduce_agent_single = AgentLauncher<__reduce::ReduceAgent<T*, OutputIt, T, Size, ReductionOp>>;
-
-    reduce_plan.grid_size = 1;
-    reduce_agent_single ra1(reduce_plan, stream, vshmem_ptr, "reduce_agent: single tile reduce");
-
-    ra1.launch(d_block_reductions, output_it, reduce_grid_size, reduction_op);
-    _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
-  }
-
-  return status;
-} // func doit_step
-
-// this is an init-less reduce, needed for min/max-element functionality
-// this will avoid copying the first value from device->host
-template <typename Derived, typename InputIt, typename Size, typename BinaryOp, typename T>
-THRUST_RUNTIME_FUNCTION T
-extrema(execution_policy<Derived>& policy, InputIt first, Size num_items, BinaryOp binary_op, T*)
-{
-  size_t temp_storage_bytes = 0;
-  cudaStream_t stream       = cuda_cub::stream(policy);
-
-  cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    doit_step<T>,
-    num_items,
-    (nullptr, temp_storage_bytes, first, num_items_fixed, binary_op, static_cast<T*>(nullptr), stream));
-  cuda_cub::throw_on_error(status, "extrema failed on 1st step");
-
-  size_t allocation_sizes[2] = {sizeof(T*), temp_storage_bytes};
-  void* allocations[2]       = {nullptr, nullptr};
-
-  size_t storage_size = 0;
-  status              = core::detail::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
-  cuda_cub::throw_on_error(status, "extrema failed on 1st alias storage");
-
-  // Allocate temporary storage.
-  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
-  void* ptr = static_cast<void*>(tmp.data().get());
-
-  status = core::detail::alias_storage(ptr, storage_size, allocations, allocation_sizes);
-  cuda_cub::throw_on_error(status, "extrema failed on 2nd alias storage");
-
-  T* d_result = thrust::detail::aligned_reinterpret_cast<T*>(allocations[0]);
-
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    doit_step<T>,
-    num_items,
-    (allocations[1], temp_storage_bytes, first, num_items_fixed, binary_op, d_result, stream));
-  cuda_cub::throw_on_error(status, "extrema failed on 2nd step");
-
-  status = cuda_cub::synchronize(policy);
-  cuda_cub::throw_on_error(status, "extrema failed to synchronize");
-
-  T result = cuda_cub::get_value(policy, d_result);
-
-  return result;
-}
-
 template <class Derived, class ItemsIt, class BinaryPred>
 ItemsIt CUB_RUNTIME_FUNCTION
 cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
@@ -374,6 +72,109 @@ cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, 
 
   return first + get_value(policy, index_ptr);
 }
+
+template <typename OffsetT, typename T>
+struct minmax_accum_t
+{
+  ::cuda::std::pair<OffsetT, T> min, max;
+};
+
+template <typename OffsetT, typename T>
+struct minmax_load_transformation
+{
+  // convert from zip_iterator
+  template <typename TRef>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::tuple<OffsetT, TRef> input) const
+    -> minmax_accum_t<OffsetT, T>
+  {
+    auto p = ::cuda::std::pair<OffsetT, T>{::cuda::std::get<0>(input), ::cuda::std::get<1>(input)};
+    return {p, p};
+  }
+};
+
+template <typename OffsetT>
+struct output_t
+{
+  OffsetT min_offset;
+  OffsetT max_offset;
+
+  output_t() = default;
+
+  // convert from accumulator type (during assignment at the end of the kernel)
+  template <typename T>
+  _CCCL_API _CCCL_FORCEINLINE output_t(minmax_accum_t<OffsetT, T> result)
+      : min_offset(result.min.first)
+      , max_offset(result.max.first)
+  {}
+};
+
+template <typename OffsetT, typename T, typename ValueLessThen = ::cuda::std::less<>>
+struct minmax_reduce_op : ValueLessThen
+{
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
+  operator()(const minmax_accum_t<OffsetT, T>& a, const minmax_accum_t<OffsetT, T>& b) const
+    -> minmax_accum_t<OffsetT, T>
+  {
+    const auto& less = static_cast<const ValueLessThen&>(*this);
+    const auto min   = cub::detail::arg_less<ValueLessThen>{less}(a.min, b.min);
+    const auto max   = cub::detail::arg_less<cub::detail::swap_args<ValueLessThen>>{less}(a.max, b.max);
+    return {min, max};
+  }
+
+  // needed for __accumulator_t, never called at runtime
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(
+    const cub::detail::reduce::empty_problem_init_t<output_t<OffsetT>>&, const minmax_accum_t<OffsetT, T>&) const
+    -> minmax_accum_t<OffsetT, T>;
+};
+
+template <class Derived, class ItemsIt, class BinaryPred>
+::cuda::std::pair<ItemsIt, ItemsIt> CUB_RUNTIME_FUNCTION
+cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
+{
+  cudaStream_t stream      = cuda_cub::stream(policy);
+  using offset_t           = thrust::detail::it_difference_t<ItemsIt>;
+  const offset_t num_items = ::cuda::std::distance(first, last);
+
+  if (num_items == 0)
+  {
+    return {first, first};
+  }
+
+  using input_t = thrust::detail::it_value_t<ItemsIt>;
+  auto indexed_first =
+    ::cuda::make_zip_iterator(::cuda::counting_iterator<offset_t>(0), thrust::try_unwrap_contiguous_iterator(first));
+  auto reduction_op = minmax_reduce_op<offset_t, input_t, BinaryPred>{binary_pred};
+  auto transform_op = minmax_load_transformation<offset_t, input_t>{};
+  using output_t    = output_t<offset_t>;
+  const auto init   = cub::detail::reduce::empty_problem_init_t<output_t>{};
+
+  size_t tmp_size = 0;
+  auto error      = cub::DeviceReduce::TransformReduce(
+    nullptr,
+    tmp_size,
+    indexed_first,
+    static_cast<output_t*>(nullptr),
+    num_items,
+    reduction_op,
+    transform_op,
+    init,
+    stream);
+  throw_on_error(error, "minmax_element failed to allocate temporary storages");
+
+  // We allocate both the temporary storage needed for the algorithm, and a `size_type` to store the result.
+  thrust::detail::temporary_array<char, Derived> tmp(policy, sizeof(output_t) + tmp_size);
+  output_t* out_ptr = thrust::detail::aligned_reinterpret_cast<output_t*>(tmp.data().get());
+  void* tmp_ptr     = static_cast<void*>(tmp.data().get() + sizeof(output_t));
+
+  error = cub::DeviceReduce::TransformReduce(
+    tmp_ptr, tmp_size, indexed_first, out_ptr, num_items, reduction_op, transform_op, init, stream);
+  cuda_cub::throw_on_error(error, "minmax_element failed to launch cub::DeviceReduce::ArgMin");
+
+  cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "min_element failed to synchronize");
+
+  const auto [min_offset, max_offset] = get_value(policy, out_ptr);
+  return {first + min_offset, first + max_offset};
+}
 } // namespace __extrema
 
 /// min element
@@ -402,47 +203,12 @@ max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 /// minmax element
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived, class ItemsIt, class BinaryPred>
+template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
 ::cuda::std::pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
-minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
+minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
-  auto ret = ::cuda::std::make_pair(last, last);
-  if (first == last)
-  {
-    return ret;
-  }
-
-  THRUST_CDP_DISPATCH(
-    (using InputType = thrust::detail::it_value_t<ItemsIt>; using IndexType = thrust::detail::it_difference_t<ItemsIt>;
-
-     const auto num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
-
-     using iterator_tuple = ::cuda::std::tuple<ItemsIt, counting_iterator<IndexType>>;
-     using zip_iterator   = thrust::zip_iterator<iterator_tuple>;
-
-     iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, counting_iterator<IndexType>(0));
-
-     using arg_minmax_t   = __extrema::arg_minmax_f<InputType, IndexType, BinaryPred>;
-     using two_pairs_type = typename arg_minmax_t::two_pairs_type;
-     using duplicate_t    = typename arg_minmax_t::duplicate_tuple;
-     using transform_t    = thrust::transform_iterator<duplicate_t, zip_iterator, two_pairs_type, two_pairs_type>;
-
-     zip_iterator begin    = thrust::make_zip_iterator(iter_tuple);
-     two_pairs_type result = __extrema::extrema(
-       policy, transform_t(begin, duplicate_t()), num_items, arg_minmax_t(binary_pred), (two_pairs_type*) (nullptr));
-     ret = ::cuda::std::make_pair(first + ::cuda::std::get<1>(::cuda::std::get<0>(result)),
-                                  first + ::cuda::std::get<1>(::cuda::std::get<1>(result)));),
-    // CDP Sequential impl:
-    (ret = thrust::minmax_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
-  return ret;
-}
-
-template <class Derived, class ItemsIt>
-::cuda::std::pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
-minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
-{
-  using value_type = thrust::detail::it_value_t<ItemsIt>;
-  return cuda_cub::minmax_element(policy, first, last, ::cuda::std::less<value_type>());
+  THRUST_CDP_DISPATCH(({ return __extrema::cub_minmax_element(policy, first, last, binary_pred); }),
+                      ({ return thrust::minmax_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred); }));
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
