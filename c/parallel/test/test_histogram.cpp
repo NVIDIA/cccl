@@ -228,7 +228,7 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
   value_t<level_t> lower_level_val{lower_level};
   value_t<level_t> upper_level_val{upper_level};
 
-  size_t row_stride_samples = num_samples;
+  int64_t row_stride_samples = static_cast<int64_t>(num_samples);
 
   histogram_even(
     d_samples_ptr,

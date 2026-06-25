@@ -46,7 +46,7 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
     throw std::runtime_error("Failed to create temporary file.");
   }
 
-  temp_in_file.write(static_cast<const char*>(cubin), cubin_size);
+  temp_in_file.write(static_cast<const char*>(cubin), static_cast<std::streamsize>(cubin_size));
   temp_in_file.close();
 
   std::string command = "nvdisasm -gi ";

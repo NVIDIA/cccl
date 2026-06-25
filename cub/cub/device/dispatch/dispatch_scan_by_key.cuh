@@ -178,7 +178,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
 
-  const int tid           = blockDim.x * blockIdx.x + threadIdx.x;
+  const int tid           = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
   const OffsetT tile_base = static_cast<OffsetT>(tid) * items_per_tile;
   if (tid > 0 && tid < num_tiles)
   {

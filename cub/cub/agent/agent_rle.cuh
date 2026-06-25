@@ -433,7 +433,7 @@ struct AgentRle
   {
     // Perform warpscans
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = ::cuda::ptx::get_sreg_laneid();
+    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     LengthOffsetPair identity;
     identity.key   = 0;
@@ -518,7 +518,7 @@ struct AgentRle
     ::cuda::std::true_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = ::cuda::ptx::get_sreg_laneid();
+    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     // Locally compact items within the warp (first warp)
     if (warp_id == 0)
@@ -588,7 +588,7 @@ struct AgentRle
     ::cuda::std::false_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = ::cuda::ptx::get_sreg_laneid();
+    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     // Unzip
     OffsetT run_offsets[ITEMS_PER_THREAD];
@@ -1012,7 +1012,7 @@ struct AgentRle
   ConsumeRange(int num_tiles, ScanTileStateT& tile_status, NumRunsIteratorT d_num_runs_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
-    int tile_idx          = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    int tile_idx          = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
     OffsetT tile_offset   = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
     OffsetT num_remaining = num_items - tile_offset; // Remaining items (including this tile)
 
