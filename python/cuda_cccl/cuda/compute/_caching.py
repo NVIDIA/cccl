@@ -320,9 +320,15 @@ def clear_all_caches():
     """
     Clear all algorithm caches.
 
-    This function clears all cached algorithm build results, forcing
-    recompilation on the next invocation. Useful for benchmarking
-    compilation time.
+    This function clears cached algorithm wrappers and completed build results
+    in the current process, forcing recompilation on the next invocation.
+    Useful for benchmarking compilation time.
+
+    This function is not synchronized with active factory calls or algorithm
+    execution. Callers that use it in a multi-threaded program must externally
+    synchronize with all threads that may create or use cuda.compute algorithm
+    objects. If a build is already in progress, that build may complete after
+    this function returns and repopulate the completed build-result cache.
 
     Example
     -------
@@ -332,7 +338,6 @@ def clear_all_caches():
     _clear_wrapper_caches()
     with _shared_build_cache_lock:
         _shared_build_cache.clear()
-        _in_flight_builds.clear()
 
 
 class CachableFunction:
