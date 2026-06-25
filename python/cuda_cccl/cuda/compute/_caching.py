@@ -88,8 +88,8 @@ def _make_cache_key_from_args(*args, **kwargs) -> tuple:
     return positional_keys
 
 
-# Central registry of all algorithm caches
-_cache_registry: dict[str, object] = {}
+# Process-wide registry of all algorithm caches.
+_process_wide_cache_registry: dict[str, object] = {}
 
 
 class _ThreadLocalCaches:
@@ -131,12 +131,14 @@ class _InFlightBuild:
 _thread_local = threading.local()
 # Process wide registry of per-thread caches. It enables a thread to call
 # clear_all_caches() to clear all caches across all threads.
-_thread_cache_registry: weakref.WeakSet[_ThreadLocalCaches] = weakref.WeakSet()
-_thread_cache_registry_lock = threading.Lock()
+_process_wide_thread_cache_registry: weakref.WeakSet[_ThreadLocalCaches] = (
+    weakref.WeakSet()
+)
+_process_wide_thread_cache_registry_lock = threading.Lock()
 
-_shared_build_cache: dict[Hashable, Any] = {}
-_in_flight_builds: dict[Hashable, _InFlightBuild] = {}
-_shared_build_cache_lock = threading.Lock()
+_process_wide_shared_build_cache: dict[Hashable, Any] = {}
+_process_wide_in_flight_builds: dict[Hashable, _InFlightBuild] = {}
+_process_wide_shared_build_cache_lock = threading.Lock()
 
 
 def _get_current_device_info() -> tuple[int, tuple[int, int]]:
@@ -150,14 +152,14 @@ def _get_thread_caches() -> _ThreadLocalCaches:
     if caches is None:
         caches = _ThreadLocalCaches()
         _thread_local.caches = caches
-        with _thread_cache_registry_lock:
-            _thread_cache_registry.add(caches)
+        with _process_wide_thread_cache_registry_lock:
+            _process_wide_thread_cache_registry.add(caches)
     return caches
 
 
 def _clear_wrapper_caches(cache_name: str | None = None) -> None:
-    with _thread_cache_registry_lock:
-        thread_caches = list(_thread_cache_registry)
+    with _process_wide_thread_cache_registry_lock:
+        thread_caches = list(_process_wide_thread_cache_registry)
 
     for caches in thread_caches:
         if cache_name is None:
@@ -195,14 +197,14 @@ def cache_build_result(
     user_cache_key = _make_cache_key_from_args(*key_args)
     cache_key = (build_result_type, device_id, cc_key, user_cache_key)
 
-    with _shared_build_cache_lock:
-        if cache_key in _shared_build_cache:
-            return _shared_build_cache[cache_key]
+    with _process_wide_shared_build_cache_lock:
+        if cache_key in _process_wide_shared_build_cache:
+            return _process_wide_shared_build_cache[cache_key]
 
-        in_flight = _in_flight_builds.get(cache_key)
+        in_flight = _process_wide_in_flight_builds.get(cache_key)
         if in_flight is None:
             in_flight = _InFlightBuild()
-            _in_flight_builds[cache_key] = in_flight
+            _process_wide_in_flight_builds[cache_key] = in_flight
             is_builder = True
         else:
             is_builder = False
@@ -211,17 +213,17 @@ def cache_build_result(
         try:
             result = builder()
         except BaseException as exc:
-            with _shared_build_cache_lock:
-                _in_flight_builds.pop(cache_key, None)
+            with _process_wide_shared_build_cache_lock:
+                _process_wide_in_flight_builds.pop(cache_key, None)
             with in_flight.condition:
                 in_flight.exception = exc
                 in_flight.done = True
                 in_flight.condition.notify_all()
             raise
 
-        with _shared_build_cache_lock:
-            _shared_build_cache[cache_key] = result
-            _in_flight_builds.pop(cache_key, None)
+        with _process_wide_shared_build_cache_lock:
+            _process_wide_shared_build_cache[cache_key] = result
+            _process_wide_in_flight_builds.pop(cache_key, None)
         with in_flight.condition:
             in_flight.result = result
             in_flight.done = True
@@ -273,7 +275,7 @@ class _CacheWithRegisteredKeyFunctions:
         inner.cache_clear = lambda: _clear_wrapper_caches(cache_name)  # type: ignore[attr-defined]
 
         # Register the cache in the central registry
-        _cache_registry[func.__qualname__] = inner
+        _process_wide_cache_registry[func.__qualname__] = inner
 
         return inner
 
@@ -336,8 +338,8 @@ def clear_all_caches():
     >>> cuda.compute.clear_all_caches()
     """
     _clear_wrapper_caches()
-    with _shared_build_cache_lock:
-        _shared_build_cache.clear()
+    with _process_wide_shared_build_cache_lock:
+        _process_wide_shared_build_cache.clear()
 
 
 class CachableFunction:

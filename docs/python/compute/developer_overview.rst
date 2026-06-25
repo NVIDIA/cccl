@@ -458,6 +458,29 @@ The user-facing cache behavior is described in :ref:`cuda.compute.caching`. This
 section describes the implementation contracts that keep that behavior correct
 for free-threaded Python and multi-GPU use.
 
+Two cache layers
+++++++++++++++++
+
+Internally, ``cuda.compute`` separates two kinds of cached state:
+
+* **Wrapper objects** are the Python objects returned by ``make_*`` APIs, such as
+  ``make_reduce_into``. They own per-call descriptor state and are cached per
+  Python thread by ``cache_with_registered_key_functions`` in
+  ``cuda/compute/_caching.py``. Keeping wrapper caches thread-local avoids
+  sharing mutable wrapper state across concurrent calls from free-threaded
+  Python.
+* **Build results** are the Cython objects that own the native C parallel build
+  state, such as loaded CUDA libraries, kernels, policy state, and other
+  read-only data needed to invoke an algorithm. They are cached by
+  ``cache_build_result`` and may be shared by wrapper objects in different
+  Python threads.
+
+The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
+thread-local and does not take the shared build-cache lock. The shared
+build-cache lock is used when constructing a wrapper that needs to look up,
+coordinate, or create a native build result, not during ordinary execution of an
+already-returned wrapper object.
+
 Design requirements
 +++++++++++++++++++
 
@@ -500,28 +523,6 @@ criteria for a free-threaded build are:
 * the free-threading stress suite passes without forcing ``PYTHON_GIL=0`` or
   ``-X gil=0``.
 
-Two cache layers
-++++++++++++++++
-
-Internally, ``cuda.compute`` separates two kinds of cached state:
-
-* **Wrapper objects** are the Python objects returned by ``make_*`` APIs, such as
-  ``make_reduce_into``. They own per-call descriptor state and are cached per
-  Python thread by ``cache_with_registered_key_functions`` in
-  ``cuda/compute/_caching.py``. Keeping wrapper caches thread-local avoids
-  sharing mutable wrapper state across concurrent calls from free-threaded
-  Python.
-* **Build results** are the Cython objects that own the native C parallel build
-  state, such as loaded CUDA libraries, kernels, policy state, and other
-  read-only data needed to invoke an algorithm. They are cached by
-  ``cache_build_result`` and may be shared by wrapper objects in different
-  Python threads.
-
-The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
-thread-local and does not take the shared build-cache lock. The shared
-build-cache lock is used when constructing a wrapper that needs to look up,
-coordinate, or create a native build result, not during ordinary execution of an
-already-returned wrapper object.
 
 Device keying
 +++++++++++++
