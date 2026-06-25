@@ -41,7 +41,7 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
     estimator.clear(block);
     block.sync();
 
-    for (int i = block.thread_rank(); i < n; i += block.num_threads())
+    for (int i = static_cast<int>(block.thread_rank()); i < n; i += static_cast<int>(block.num_threads()))
     {
       estimator.add(*(in + i));
     }

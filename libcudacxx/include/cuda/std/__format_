@@ -23,12 +23,14 @@
 
 #include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/concepts.h>
+#include <cuda/std/__format/dynamic_format.h>
 #include <cuda/std/__format/format_arg.h>
 #include <cuda/std/__format/format_arg_store.h>
 #include <cuda/std/__format/format_args.h>
 #include <cuda/std/__format/format_context.h>
 #include <cuda/std/__format/format_error.h>
 #include <cuda/std/__format/format_integral.h>
+#include <cuda/std/__format/format_kind.h>
 #include <cuda/std/__format/format_parse_context.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__format/format_string.h>

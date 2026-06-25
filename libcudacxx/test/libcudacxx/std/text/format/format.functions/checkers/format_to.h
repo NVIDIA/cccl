@@ -56,15 +56,51 @@ check(cuda::std::basic_string_view<CharT> expected, test_format_string<CharT, Ar
       return false;
     }
   }
+  {
+    CharT out[4096];
+    CharT* it = cuda::std::format_to(out, cuda::std::dynamic_format(fmt.get()), cuda::std::forward<Args>(args)...);
+    if (cuda::std::distance(out, it) != int(expected.size()))
+    {
+      return false;
+    }
+    if (cuda::std::basic_string_view<CharT>{out, it} != expected)
+    {
+      return false;
+    }
+  }
   return true;
 }
 
 template <class CharT, class... Args>
-TEST_FUNC bool check_exception(cuda::std::string_view, cuda::std::basic_string_view<CharT>, Args&&...)
+TEST_FUNC bool check_exception([[maybe_unused]] cuda::std::string_view what,
+                               [[maybe_unused]] cuda::std::basic_string_view<CharT> fmt,
+                               [[maybe_unused]] Args&&... args)
 {
   // After P2216 most exceptions thrown by std::format become ill-formed.
   // Therefore this tests does nothing.
   // A basic ill-formed test is done in format.verify.cpp
   // The exceptions are tested by other functions that don't use the basic-format-string as fmt argument.
+
+#if _CCCL_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 try
+                 {
+                   CharT out[4096];
+                   cuda::std::format_to(out, cuda::std::dynamic_format(fmt), cuda::std::forward<Args>(args)...);
+                   return false;
+                 }
+                 catch (const cuda::std::format_error& e)
+                 {
+                   if (e.what() != what)
+                   {
+                     return false;
+                   }
+                 }
+                 catch (...)
+                 {
+                   return false;
+                 }
+               }))
+#endif // _CCCL_HAS_EXCEPTIONS()
   return true;
 }

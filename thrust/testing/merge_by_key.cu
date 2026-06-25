@@ -135,11 +135,12 @@ void TestMergeByKey(size_t n)
   {
     const size_t size_a = n / denom;
 
-    thrust::host_vector<T> h_a_keys(random_keys.begin(), random_keys.begin() + size_a);
-    thrust::host_vector<T> h_b_keys(random_keys.begin() + size_a, random_keys.end());
+    thrust::host_vector<T> h_a_keys(random_keys.begin(), random_keys.begin() + static_cast<std::ptrdiff_t>(size_a));
+    thrust::host_vector<T> h_b_keys(random_keys.begin() + static_cast<std::ptrdiff_t>(size_a), random_keys.end());
 
-    const thrust::host_vector<T> h_a_vals(random_vals.begin(), random_vals.begin() + size_a);
-    const thrust::host_vector<T> h_b_vals(random_vals.begin() + size_a, random_vals.end());
+    const thrust::host_vector<T> h_a_vals(
+      random_vals.begin(), random_vals.begin() + static_cast<std::ptrdiff_t>(size_a));
+    const thrust::host_vector<T> h_b_vals(random_vals.begin() + static_cast<std::ptrdiff_t>(size_a), random_vals.end());
 
     if constexpr (::cuda::std::is_void<CompareOp>::value)
     {
@@ -241,7 +242,7 @@ void TestMergeByKeyToDiscardIterator(size_t n)
     thrust::make_discard_iterator(),
     thrust::make_discard_iterator());
 
-  const thrust::discard_iterator<> reference(2 * n);
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
   ASSERT_EQUAL_QUIET(reference, h_result.first);
   ASSERT_EQUAL_QUIET(reference, h_result.second);

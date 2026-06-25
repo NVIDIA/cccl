@@ -51,7 +51,7 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
 {
   using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads, SyncPhysicalWarp>;
   __shared__ typename warp_reduce_batched_t::TempStorage temp_storage[block_size / LogicalWarpThreads];
-  const int tid             = threadIdx.x;
+  const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / LogicalWarpThreads;
   const int lane_id         = tid % LogicalWarpThreads;
 
@@ -94,7 +94,7 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
 {
   using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads, SyncPhysicalWarp>;
   __shared__ typename warp_reduce_batched_t::TempStorage temp_storage[block_size / LogicalWarpThreads];
-  const int tid             = threadIdx.x;
+  const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / LogicalWarpThreads;
   const int lane_id         = tid % LogicalWarpThreads;
 
@@ -145,7 +145,7 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
   using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
   __shared__ typename warp_reduce_batched_t::TempStorage temp_storage[block_size / LogicalWarpThreads];
 
-  const int tid               = threadIdx.x;
+  const int tid               = static_cast<int>(threadIdx.x);
   const int logical_warp_id   = tid / LogicalWarpThreads;
   const int lane_id           = tid % LogicalWarpThreads;
   const bool is_participating = (logical_warp_id % 2 == 0);

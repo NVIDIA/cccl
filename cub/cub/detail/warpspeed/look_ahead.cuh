@@ -184,7 +184,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   const int idxTileNext,
   ScanOpT& scan_op)
 {
-  const int laneIdx                                       = specialRegisters.laneIdx;
+  const int laneIdx                                       = static_cast<int>(specialRegisters.laneIdx);
   [[maybe_unused]] const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
 
   int idxTileCur             = idxTilePrev;
@@ -268,7 +268,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   const int idxTileNext,
   ScanOpT& scan_op)
 {
-  const int laneIdx                      = specialRegisters.laneIdx;
+  const int laneIdx                      = static_cast<int>(specialRegisters.laneIdx);
   const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
 
   int idxTileCur             = idxTilePrev;
