@@ -237,6 +237,9 @@ private:
             size_t... _Indices,
             enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t, __tuple_indices<_Indices...>)
+      // clang-tidy incorrectly reports "'__t' used after it was forwarded".
+      // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
+      // NOLINTNEXTLINE(bugprone-use-after-move)
       : tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_TupleOfIteratorReferences>(__t))...)
   {}
 
