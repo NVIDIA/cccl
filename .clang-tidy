@@ -37,7 +37,6 @@ Checks:
   - '-bugprone-forwarding-reference-overload'
   - '-bugprone-branch-clone'
   - '-bugprone-use-after-move'
-  - '-bugprone-unchecked-optional-access'
   - '-bugprone-integer-division'
   - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'

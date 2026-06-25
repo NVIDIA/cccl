@@ -598,14 +598,25 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
+        cuda_safe_call(cudaStreamSynchronize(stream));
+      };
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      out = owning_container_of<T>::get_value(data);
-    };
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+        cuda_safe_call(cudaStreamSynchronize(stream));
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      return out;
+    }
   }
 
 private:
