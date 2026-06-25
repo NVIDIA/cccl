@@ -30,6 +30,7 @@ struct cluster_topk_policy
   int bits_per_pass;
   int min_blocks_per_sm;
   int tie_break_items_per_thread;
+  int single_cta_max_segment_size;
 };
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_policy() -> cluster_topk_policy
@@ -42,7 +43,8 @@ struct cluster_topk_policy
     /*load_align_bytes=*/128,
     /*bits_per_pass=*/11,
     /*min_blocks_per_sm=*/1,
-    /*tie_break_items_per_thread=*/8};
+    /*tie_break_items_per_thread=*/8,
+    /*single_cta_max_segment_size=*/8 * 1024};
 }
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto is_valid_policy(cluster_topk_policy policy) -> bool

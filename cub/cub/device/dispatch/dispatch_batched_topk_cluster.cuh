@@ -537,17 +537,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       const int c_full = static_cast<int>(
         (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(max_supported_cluster_blocks),
                             ::cuda::ceil_div(seg, chunk_items_u64)));
-      const auto c_lo = ::cuda::ceil_div(seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity));
+      const auto c_lo              = ::cuda::ceil_div(seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity));
+      const bool prefer_single_cta = seg <= static_cast<::cuda::std::uint64_t>(policy.single_cta_max_segment_size);
 
       int cluster_blocks   = 0;
       int dynamic_smem_sel = 0;
 
-      if (c_lo == 1)
+      if (c_lo == 1 && prefer_single_cta)
       {
-        // Single-CTA fast path: the segment fits resident in one CTA, so launch a width-1 "cluster" (the agent's
-        // cluster-barrier-free path) instead of spreading it across more CTAs for parallelism. `S_res(seg)` is within
-        // budget and one CTA is always launchable, so the occupancy probe is skipped (the shared
-        // `ensure_dynamic_smem_limit` below raises the opt-in for the selected SMEM).
+        // Single-CTA fast path: the segment fits resident in one CTA and is small enough that the agent's
+        // cluster-barrier-free path beats spreading it across more CTAs. `S_res(seg)` is within budget and one CTA is
+        // always launchable, so the occupancy probe is skipped (the shared `ensure_dynamic_smem_limit` below raises the
+        // opt-in for the selected SMEM). Larger fully-resident segments fall through to the wave-aware search below.
         cluster_blocks   = 1;
         dynamic_smem_sel = smem_for_block_capacity(seg);
       }
@@ -555,8 +556,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       {
         // Full residency is achievable. `seg <= C_lo * max_block_tile_capacity` with `C_lo <= HW max`, so every
         // per-CTA capacity (and thus its slot count and SMEM bytes) below stays well within `int` -- no overflow.
-        // Scan `C` in `[max(1, C_lo), C_full]`, minimize waves, tie-break largest `C`.
-        const int c_begin                = (::cuda::std::max) (1, static_cast<int>(c_lo));
+        // Scan `C` in `[max(C_lo, 2), C_full]`, minimize waves, tie-break largest `C`. `C = 1` is handled above.
+        const int c_begin                = (::cuda::std::max) (2, static_cast<int>(c_lo));
         const int c_end                  = (::cuda::std::max) (c_begin, c_full);
         ::cuda::std::uint64_t best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
         for (int c = c_begin; c <= c_end; ++c)
@@ -598,6 +599,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             cluster_blocks   = c;
             dynamic_smem_sel = s_res;
           }
+        }
+
+        if (cluster_blocks == 0 && c_lo == 1)
+        {
+          // No multi-CTA config was launchable; fall back to single-CTA full residency. Slower for large segments,
+          // but `C_lo == 1` guarantees `S_res(seg)` fits the budget and one CTA is always launchable.
+          cluster_blocks   = 1;
+          dynamic_smem_sel = smem_for_block_capacity(seg);
         }
       }
 
