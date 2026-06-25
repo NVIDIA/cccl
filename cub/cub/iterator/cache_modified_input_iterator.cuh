@@ -27,6 +27,7 @@
 
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
 
@@ -213,6 +214,12 @@ public:
     return os;
   }
 #endif // _CCCL_HOSTED()
+
+  /// Structure dereference
+  _CCCL_HOST_DEVICE_API ValueType* __unwrap() const noexcept
+  {
+    return ptr;
+  }
 };
 
 namespace detail
@@ -243,3 +250,24 @@ using try_make_cache_modified_iterator_t =
 } // namespace detail
 
 CUB_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <CUB_NS_QUALIFIER::CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
+struct pointer_traits<CUB_NS_QUALIFIER::CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT>,
+                      enable_if_t<MODIFIER != LOAD_CV && MODIFIER != LOAD_VOLATILE>>
+{
+  using pointer         = CUB_NS_QUALIFIER::CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT>;
+  using element_type    = ValueType;
+  using difference_type = OffsetT;
+
+  //! @brief Retrieve the address of the element pointed at by a CacheModifiedInputIterator
+  //! @param iter A CacheModifiedInputIterator
+  //! @return A pointer to the element pointed to by the CacheModifiedInputIterator
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ValueType* to_address(const pointer iter) noexcept
+  {
+    return iter.__unwrap();
+  }
+};
+
+_CCCL_END_NAMESPACE_CUDA_STD
