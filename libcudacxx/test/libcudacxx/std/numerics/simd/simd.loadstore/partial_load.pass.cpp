@@ -57,7 +57,7 @@ TEST_FUNC constexpr void test_partial_load_range_masked()
   using Mask = typename Vec::mask_type;
   auto arr   = make_iota_array<T, N>();
 
-  Mask even_mask(is_even{});
+  Mask even_mask(c2h::is_even);
   Vec vec = simd::partial_load<Vec>(arr, even_mask);
   for (int i = 0; i < N; ++i)
   {
@@ -106,7 +106,7 @@ TEST_FUNC constexpr void test_partial_load_iter_count()
   assert(vec == arr);
 
   using Mask = typename Vec::mask_type;
-  Mask even_mask(is_even{});
+  Mask even_mask(c2h::is_even);
   Vec masked_vec = simd::partial_load<Vec>(arr.data(), N, even_mask);
   for (int i = 0; i < N; ++i)
   {
@@ -128,7 +128,7 @@ TEST_FUNC constexpr void test_partial_load_iter_sentinel()
   assert(vec == arr);
 
   using Mask = typename Vec::mask_type;
-  Mask even_mask(is_even{});
+  Mask even_mask(c2h::is_even);
   Vec masked_vec = simd::partial_load<Vec>(arr.data(), arr.data() + N, even_mask);
   for (int i = 0; i < N; ++i)
   {

@@ -38,7 +38,7 @@ TEST_FUNC constexpr void test_reduce_min_index()
     Mask last_only(is_index<N - 1>{});
     assert(simd::reduce_min_index(last_only) == N - 1);
 
-    Mask even(is_even{});
+    Mask even(c2h::is_even);
     assert(simd::reduce_min_index(even) == 0);
   }
   if constexpr (N >= 4)

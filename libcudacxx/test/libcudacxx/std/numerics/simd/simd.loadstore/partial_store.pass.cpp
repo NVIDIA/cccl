@@ -71,7 +71,7 @@ TEST_FUNC constexpr void test_partial_store_range_masked()
     dest[i] = static_cast<T>(99);
   }
 
-  Mask even_mask(is_even{});
+  Mask even_mask(c2h::is_even);
   simd::partial_store(vec, dest, even_mask);
   for (int i = 0; i < N; ++i)
   {
@@ -123,7 +123,7 @@ TEST_FUNC constexpr void test_partial_store_iter_count()
   {
     masked_dest[i] = static_cast<T>(99);
   }
-  Mask even_mask(is_even{});
+  Mask even_mask(c2h::is_even);
   simd::partial_store(vec, masked_dest.data(), N, even_mask);
   for (int i = 0; i < N; ++i)
   {
@@ -154,7 +154,7 @@ TEST_FUNC constexpr void test_partial_store_iter_sentinel()
   {
     masked_dest[i] = static_cast<T>(99);
   }
-  Mask even_mask(is_even{});
+  Mask even_mask(c2h::is_even);
   simd::partial_store(vec, masked_dest.data(), masked_dest.data() + N, even_mask);
   for (int i = 0; i < N; ++i)
   {

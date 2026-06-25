@@ -36,7 +36,7 @@ TEST_FUNC constexpr void test_implicit_conv()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
-  Mask mask(is_even{});
+  Mask mask(c2h::is_even);
 
   static_assert(cuda::std::is_convertible_v<const Mask&, Vec>);
   static_assert(noexcept(static_cast<Vec>(mask)));
@@ -57,7 +57,7 @@ TEST_FUNC constexpr void test_explicit_conv()
   static_assert(sizeof(U) != Bytes);
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Vec  = simd::basic_vec<U, simd::fixed_size<N>>;
-  Mask mask(is_even{});
+  Mask mask(c2h::is_even);
 
   static_assert(!cuda::std::is_convertible_v<const Mask&, Vec>);
   static_assert(cuda::std::is_same_v<decltype(static_cast<Vec>(mask)), Vec>);
@@ -92,7 +92,7 @@ TEST_FUNC constexpr void test_to_bitset()
   auto bitset_true = all_true.to_bitset();
   assert(bitset_true.all());
 
-  Mask mixed(is_even{});
+  Mask mixed(c2h::is_even);
   auto bitset = mixed.to_bitset();
   for (int i = 0; i < N; ++i)
   {
@@ -122,7 +122,7 @@ TEST_FUNC constexpr void test_to_ullong()
   constexpr unsigned long long expected = (N == 64) ? ~0ULL : (~0ULL >> (64 - N));
   assert(all_true.to_ullong() == expected);
 
-  Mask mixed(is_even{});
+  Mask mixed(c2h::is_even);
   unsigned long long expected_mixed = 0ULL;
   for (int i = 0; i < N; ++i)
   {

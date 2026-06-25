@@ -30,7 +30,7 @@ template <int Bytes>
 TEST_FUNC constexpr void test_and()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<4>>;
-  Mask a(is_even{});
+  Mask a(c2h::is_even);
   Mask b(is_first_half{});
 
   static_assert(cuda::std::is_same_v<decltype(a &= b), Mask&>);
@@ -47,7 +47,7 @@ template <int Bytes>
 TEST_FUNC constexpr void test_or()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<4>>;
-  Mask a(is_even{});
+  Mask a(c2h::is_even);
   Mask b(is_first_half{});
 
   static_assert(cuda::std::is_same_v<decltype(a |= b), Mask&>);
@@ -64,7 +64,7 @@ template <int Bytes>
 TEST_FUNC constexpr void test_xor()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<4>>;
-  Mask a(is_even{});
+  Mask a(c2h::is_even);
   Mask b(is_first_half{});
 
   static_assert(cuda::std::is_same_v<decltype(a ^= b), Mask&>);

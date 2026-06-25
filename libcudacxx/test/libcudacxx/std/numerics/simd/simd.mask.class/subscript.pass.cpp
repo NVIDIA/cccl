@@ -40,7 +40,7 @@ TEST_FUNC constexpr void test_subscript()
 
   Mask all_true(true);
   Mask all_false(false);
-  Mask alternating(is_even{});
+  Mask alternating(c2h::is_even);
   for (int i = 0; i < N; ++i)
   {
     assert(all_true[i] == true);

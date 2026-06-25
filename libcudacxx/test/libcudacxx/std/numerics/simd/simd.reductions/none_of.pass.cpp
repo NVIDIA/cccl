@@ -44,7 +44,7 @@ TEST_FUNC constexpr void test_none_of()
 
   if constexpr (N > 1)
   {
-    Mask even(is_even{});
+    Mask even(c2h::is_even);
     assert(simd::none_of(even) == false);
     assert(simd::none_of(even) == !simd::any_of(even));
   }

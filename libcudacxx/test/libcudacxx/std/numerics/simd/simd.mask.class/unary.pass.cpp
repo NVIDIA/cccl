@@ -42,7 +42,7 @@ TEST_FUNC constexpr void test_logical_not()
 
   Mask all_true(true);
   Mask all_false(false);
-  Mask mixed(is_even{});
+  Mask mixed(c2h::is_even);
   for (int i = 0; i < N; ++i)
   {
     assert((!all_true)[i] == false);
@@ -60,7 +60,7 @@ TEST_FUNC constexpr void test_unary_plus()
   using Mask    = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Integer = integer_from_t<Bytes>;
   using Vec     = simd::basic_vec<Integer, simd::fixed_size<N>>;
-  Mask mask(is_even{});
+  Mask mask(c2h::is_even);
   static_assert(cuda::std::is_same_v<decltype(+mask), Vec>);
   static_assert(noexcept(+mask));
 
@@ -87,7 +87,7 @@ TEST_FUNC constexpr void test_unary_minus()
   using Mask    = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Integer = integer_from_t<Bytes>;
   using Vec     = simd::basic_vec<Integer, simd::fixed_size<N>>;
-  Mask mask(is_even{});
+  Mask mask(c2h::is_even);
   static_assert(cuda::std::is_same_v<decltype(-mask), Vec>);
   static_assert(noexcept(-mask));
 
@@ -114,7 +114,7 @@ TEST_FUNC constexpr void test_bitwise_not()
   using Mask    = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Integer = integer_from_t<Bytes>;
   using Vec     = simd::basic_vec<Integer, simd::fixed_size<N>>;
-  Mask mask(is_even{});
+  Mask mask(c2h::is_even);
   static_assert(cuda::std::is_same_v<decltype(~mask), Vec>);
   static_assert(noexcept(~mask));
 
