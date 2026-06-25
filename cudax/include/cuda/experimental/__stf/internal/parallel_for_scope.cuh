@@ -896,12 +896,11 @@ public:
 
   // Executes the loop on a device, or use the host implementation
   template <typename Fun, typename sub_shape_t>
-  void do_parallel_for(
-    Fun&& f,
-    const exec_place& sub_exec_place,
-    const sub_shape_t& sub_shape,
-    typename context::task_type& t,
-    size_t place_index = 0)
+  void do_parallel_for(Fun&& f,
+                       const exec_place& sub_exec_place,
+                       const sub_shape_t& sub_shape,
+                       typename context::task_type& t,
+                       size_t place_index = 0)
   {
     // parallel_for never calls this function with a host.
     _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
