@@ -35,6 +35,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/swap.h>
@@ -1072,21 +1073,39 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
   return cudaSuccess;
 }
 
-template <
-  SelectImpl SelectionOpt,
-  typename InputIteratorT,
-  typename FlagsInputIteratorT,
-  typename SelectedOutputIteratorT,
-  typename NumSelectedIteratorT,
-  typename SelectOpT,
-  typename EqualityOpT,
-  typename OffsetT,
-  typename PolicySelector =
-    policy_selector_from_types<InputIteratorT, FlagsInputIteratorT, SelectedOutputIteratorT, OffsetT, SelectionOpt>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-#if _CCCL_HAS_CONCEPTS()
-  requires select_if_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+// Several partition algorithms dispatch to DeviceSelect, but we want to have a dedicated PartitionPolicy, so we need to
+// adapt the policy selector to convert the tuning policy
+template <typename PolicySelector>
+struct PartitionPolicyAdaptor
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
+  {
+    // the user-provided policy selector returns a PartitionPolicy, the default one a SelectPolicy
+    using policy_t = ::cuda::std::remove_cvref_t<decltype(PolicySelector{}(cc))>;
+    static_assert(::cuda::std::is_same_v<policy_t, PartitionPolicy> || ::cuda::std::is_same_v<policy_t, SelectPolicy>);
+    const auto policy = PolicySelector{}(cc);
+    return SelectPolicy{
+      policy.threads_per_block,
+      policy.items_per_thread,
+      policy.load_algorithm,
+      policy.load_modifier,
+      policy.scan_algorithm,
+      policy.lookback_delay};
+  }
+};
+#endif // _CCCL_DOXYGEN_INVOKED
+
+template <SelectImpl SelectionOpt,
+          typename InputIteratorT,
+          typename FlagsInputIteratorT,
+          typename SelectedOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename SelectOpT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename TuningEnvT            = ::cuda::std::execution::env<>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -1098,9 +1117,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   EqualityOpT equality_op,
   OffsetT num_items,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  TuningEnvT                             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using DefaultPolicySelector =
+    policy_selector_from_types<InputIteratorT, FlagsInputIteratorT, SelectedOutputIteratorT, OffsetT, SelectionOpt>;
+  using ExpectedPolicy =
+    ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition,
+                               PartitionPolicy,
+                               decltype(DefaultPolicySelector{}(::cuda::compute_capability{}))>;
+  using OrigPolicySelector =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ExpectedPolicy, DefaultPolicySelector>;
+
+  using PolicySelector = ::cuda::std::
+    conditional_t<SelectionOpt == SelectImpl::Partition, PartitionPolicyAdaptor<OrigPolicySelector>, OrigPolicySelector>;
+
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(select_if_policy_selector<PolicySelector>, "Invalid PolicySelector for device_select::dispatch");
+#endif // _CCCL_HAS_CONCEPTS()
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
@@ -1118,7 +1153,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return dispatch_compute_cap(PolicySelector{}, cc, [&](auto policy_getter) {
     return dispatch_policy<SelectionOpt, decltype(policy_getter)>(
       policy_getter,
       d_temp_storage,
@@ -1131,7 +1166,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       equality_op,
       num_items,
       stream,
-      policy_selector,
+      PolicySelector{},
       launcher_factory);
   });
 }
