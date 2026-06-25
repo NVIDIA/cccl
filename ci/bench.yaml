@@ -32,6 +32,7 @@ benchmarks:
       # Examples:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
+      - '^cub\.bench\.reduce\.block_reduce_sum\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:
