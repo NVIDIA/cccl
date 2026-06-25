@@ -65,6 +65,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// On Windows we are getting a warning when compiling the const assignment operators with a reference type
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1770) // type qualifiers are ignored (underlying type is a reference)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -866,6 +869,8 @@ struct tuple_element<1, ::cuda::std::pair<_Tp, _Up>>
 };
 
 _CCCL_END_NAMESPACE_STD
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/std/__cccl/epilogue.h>
 
