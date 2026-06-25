@@ -100,7 +100,7 @@ private:
 };
 
 #define NCCL_COMM_TEST(NAME, ...) \
-  C2H_TEST_WITH_FIXTURE(::nccl_helpers::nccl_comm_fixture, NAME, "[multi_gpu][nccl]", __VA_ARGS__)
+  C2H_TEST_WITH_FIXTURE(::nccl_test_util::nccl_comm_fixture, NAME, "[multi_gpu][nccl]", __VA_ARGS__)
 } // namespace nccl_test_util
 
 #endif // CUDAX_TEST_MULTI_GPU_COMMUNICATORS_NCCL_TEST_HELPERS_CUH
