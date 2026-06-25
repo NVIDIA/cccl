@@ -632,7 +632,7 @@ struct AgentSelectIf
 
     __syncthreads();
 
-    for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += BLOCK_THREADS)
     {
       *((d_selected_out + streaming_context.num_previously_selected()) + (num_selections_prefix + item)) =
         temp_storage.raw_exchange.Alias()[item];
@@ -1040,11 +1040,11 @@ struct AgentSelectIf
     int tile_idx{};
     if constexpr (SELECT_METHOD != USE_DISCONTINUITY)
     {
-      tile_idx = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+      tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
     }
     else
     {
-      tile_idx = blockIdx.x; // Current tile index
+      tile_idx = static_cast<int>(blockIdx.x); // Current tile index
     }
     OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
 

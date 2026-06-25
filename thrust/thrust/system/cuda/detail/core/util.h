@@ -427,7 +427,7 @@ THRUST_RUNTIME_FUNCTION int get_ptx_version()
     char str[]      = "This program was not compiled for SM     \n";
 
     auto print_1_helper = [&](int v) {
-      str[code_offset] = static_cast<char>(v) + '0';
+      str[code_offset] = static_cast<char>(static_cast<char>(v) + '0');
       code_offset++;
     };
 

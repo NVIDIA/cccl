@@ -19,7 +19,7 @@ __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
 
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  const int tid = threadIdx.x;
+  const int tid = static_cast<int>(threadIdx.x);
 
   // Get warp index
   int warp_id = tid / LOGICAL_WARP_THREADS;
