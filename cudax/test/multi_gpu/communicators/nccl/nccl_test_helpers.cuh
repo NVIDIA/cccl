@@ -24,10 +24,10 @@
 
 #include <c2h/catch2_test_helper.h>
 
-namespace nccl_test_util
-{
 namespace cudax = ::cuda::experimental;
 
+namespace nccl_test_util
+{
 // One stream per rank, each current on its own device.
 [[nodiscard]] inline std::vector<cudax::stream> make_streams()
 {
