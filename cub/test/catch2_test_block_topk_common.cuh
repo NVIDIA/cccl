@@ -41,7 +41,7 @@ template <typename T>
 c2h::host_vector<T> distinct_keys(cuda::std::size_t n, rng_t& rng)
 {
   constexpr T mean = cuda::std::is_signed_v<T> ? T{0} : (cuda::std::numeric_limits<T>::max() / T{2});
-  const T start    = static_cast<T>(mean - static_cast<T>(n / 2));
+  const T start    = static_cast<T>(mean - static_cast<T>(n / 2)); // NOLINT(bugprone-integer-division)
   c2h::host_vector<T> v(n);
   for (cuda::std::size_t i = 0; i < n; ++i)
   {

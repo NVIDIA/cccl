@@ -26,7 +26,7 @@ __global__ void warp_load_kernel(InputIteratorT input_iterator, ActionT action, 
 
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  const int linear_tid = threadIdx.x;
+  const int linear_tid = static_cast<int>(threadIdx.x);
 
   const int warp_id = linear_tid / LOGICAL_WARP_THREADS;
   warp_load_t load(storage[warp_id]);
@@ -74,8 +74,9 @@ struct guarded_load_t
   template <int ITEMS_PER_THREAD>
   __device__ void verify(T (&reg)[ITEMS_PER_THREAD], int* error_counter)
   {
-    const auto linear_tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
-    const auto lane_id    = linear_tid % LOGICAL_WARP_THREADS;
+    const auto linear_tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
+    const auto lane_id = linear_tid % LOGICAL_WARP_THREADS;
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
       const auto expected_value = static_cast<T>(linear_tid * ITEMS_PER_THREAD + item);

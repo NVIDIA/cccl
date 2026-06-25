@@ -6,20 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: msvc
-
-// XFAIL: gcc-4
-
 // <utility>
 
 // template <class T1, class T2> struct pair
 
 // template <class U, class V> pair(pair<U, V>&& p);
 
-#include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
 #include <cuda/std/cassert>
+#include <cuda/std/memory>
+#include <cuda/std/utility>
 
 #include "archetypes.h"
 #include "test_convertible.h"
@@ -33,9 +28,9 @@ TEST_FUNC void test_pair_rv()
   using P2  = cuda::std::pair<int, T1>;
   using UP1 = cuda::std::pair<U1, int>&&;
   using UP2 = cuda::std::pair<int, U1>&&;
-  static_assert(cuda::std::is_constructible<P1, UP1>::value == CanCopy);
+  static_assert(cuda::std::is_constructible_v<P1, UP1> == CanCopy);
   static_assert(test_convertible<P1, UP1>() == CanConvert);
-  static_assert(cuda::std::is_constructible<P2, UP2>::value == CanCopy);
+  static_assert(cuda::std::is_constructible_v<P2, UP2> == CanCopy);
   static_assert(test_convertible<P2, UP2>() == CanConvert);
 }
 
@@ -72,19 +67,17 @@ struct ImplicitT
   int value;
 };
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
-  // cuda/std/memory not supported
-  /*
   {
-      using P1 = cuda::std::pair<cuda::std::unique_ptr<Derived>, int>;
-      using P2 = cuda::std::pair<cuda::std::unique_ptr<Base>, long>;
-      P1 p1(cuda::std::unique_ptr<Derived>(), 4);
-      P2 p2 = cuda::std::move(p1);
-      assert(p2.first == nullptr);
-      assert(p2.second == 4);
+    using P1 = cuda::std::pair<cuda::std::unique_ptr<Derived>, int>;
+    using P2 = cuda::std::pair<cuda::std::unique_ptr<Base>, long>;
+    P1 p1(cuda::std::unique_ptr<Derived>(), 4);
+    P2 p2 = cuda::std::move(p1);
+    assert(p2.first == nullptr);
+    assert(p2.second == 4);
   }
-  */
+
   {
     // We allow derived types to use this constructor
     using P1 = DPair<long, long>;
@@ -93,6 +86,18 @@ int main(int, char**)
     P2 p2(cuda::std::move(p1));
     assert(p2.first == 42);
     assert(p2.second == 101);
+  }
+  {
+    cuda::std::pair<int, int> p1(42, 43);
+    const cuda::std::pair<ExplicitT, ExplicitT> p2(cuda::std::move(p1));
+    assert(p2.first.value == 42);
+    assert(p2.second.value == 43);
+  }
+  {
+    cuda::std::pair<int, int> p1(42, 43);
+    const cuda::std::pair<ImplicitT, ImplicitT> p2 = cuda::std::move(p1);
+    assert(p2.first.value == 42);
+    assert(p2.second.value == 43);
   }
   {
     test_pair_rv<AllCtors, AllCtors>();
@@ -171,18 +176,12 @@ int main(int, char**)
     test_pair_rv<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&, true, false>();
     test_pair_rv<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&&, true, false>();
   }
-  { // explicit constexpr test
-    constexpr cuda::std::pair<int, int> p1(42, 43);
-    constexpr cuda::std::pair<ExplicitT, ExplicitT> p2(cuda::std::move(p1));
-    static_assert(p2.first.value == 42);
-    static_assert(p2.second.value == 43);
-  }
-  { // implicit constexpr test
-    constexpr cuda::std::pair<int, int> p1(42, 43);
-    constexpr cuda::std::pair<ImplicitT, ImplicitT> p2 = cuda::std::move(p1);
-    static_assert(p2.first.value == 42);
-    static_assert(p2.second.value == 43);
-  }
+  return true;
+}
 
+int main(int, char**)
+{
+  test();
+  static_assert(test());
   return 0;
 }

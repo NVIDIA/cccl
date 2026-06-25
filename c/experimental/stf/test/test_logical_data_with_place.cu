@@ -23,7 +23,7 @@
 
 __global__ void scale_inplace(int n, float* data, float factor)
 {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (i < n)
   {
     data[i] *= factor;
