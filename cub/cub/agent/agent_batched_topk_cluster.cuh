@@ -1078,6 +1078,23 @@ private:
   // Stripped on sub-SM-9.0 device passes; uses `cluster_group`, which is only
   // declared when `_CG_HAS_CLUSTER_GROUP` is set.
 #if defined(_CG_HAS_CLUSTER_GROUP)
+  // Synchronize the segment's cluster. A width-1 "cluster" is a single CTA whose state is entirely block-local, so a
+  // cluster-scoped barrier is unnecessary and `__syncthreads()` provides sufficient ordering. `single_cta` is derived
+  // from `cluster.num_blocks()` and is therefore uniform across the cluster, so the branch is reached uniformly and
+  // barrier reachability is preserved.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void
+  cluster_or_block_sync(::cooperative_groups::cluster_group& cluster, bool single_cta)
+  {
+    if (single_cta)
+    {
+      __syncthreads();
+    }
+    else
+    {
+      cluster.sync();
+    }
+  }
+
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   run(::cooperative_groups::cluster_group& cluster,
@@ -1096,6 +1113,9 @@ private:
     auto block_keys_in              = d_key_segments_it[segment_id];
     const auto segment_size_u32     = static_cast<offset_t>(segment_size);
     const unsigned int cluster_size = cluster.num_blocks();
+    // A width-1 cluster is a lone CTA: route barriers to `__syncthreads()`, keep `state`/atomics block-local, and use
+    // CTA-scope histogram atomics (no cross-rank DSMEM folds exist to be mutually atomic with).
+    const bool single_cta = (cluster_size == 1u);
 
     // Leader rank. The leader owns the cluster-merged histogram and the shared `state`. The deterministic tie-break
     // makes the leader the *last* CTA in scan order so it never needs its own (merged-away) local candidate count:
@@ -1105,7 +1125,8 @@ private:
 
     // DSMEM pointer into the leader block's shared memory. The Step 2 histogram fold reaches the leader's `hist`
     // through a `mapa`-formed `shared::cluster` address instead (see `hist_fold_remote`).
-    state_t* leader_state = cluster.map_shared_rank(&temp_storage.state, leader_rank);
+    state_t* leader_state =
+      single_cta ? &temp_storage.state : cluster.map_shared_rank(&temp_storage.state, leader_rank);
 
     // Per-block local copy of `kth_key_bits` so each key check hits the
     // block's own SMEM rather than DSMEM during the histogram loop. Built up one splitter digit per pass from the
@@ -1262,10 +1283,12 @@ private:
     {
       extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
       const ::cuda::std::uint32_t hist_smem32 = hist_base32();
-      const bool is_leader_block              = cluster_rank == leader_rank;
-      auto add_first_pass                     = [&](const key_t& key) {
+      // Cluster-scope leader atomics are only needed to stay mutually atomic with the non-leaders' DSMEM folds; a lone
+      // CTA has none, so it uses the cheaper CTA scope.
+      const bool leader_cluster_scope = (cluster_rank == leader_rank) && !single_cta;
+      auto add_first_pass             = [&](const key_t& key) {
         const int bucket = extract_op(key);
-        hist_inc(hist_smem32, bucket, is_leader_block);
+        hist_inc(hist_smem32, bucket, leader_cluster_scope);
       };
 
       if constexpr (use_block_load_to_shared)
@@ -1427,12 +1450,12 @@ private:
         // Step 1: block-private histogram via shared-space `red` (see `hist_inc`): leader uses cluster scope to be
         // mutually atomic with the non-leaders' Step 2 DSMEM folds, non-leaders use the cheaper cta scope.
         const ::cuda::std::uint32_t hist_smem32 = hist_base32();
-        const bool is_leader_block              = cluster_rank == leader_rank;
+        const bool leader_cluster_scope         = (cluster_rank == leader_rank) && !single_cta;
         auto add_hist                           = [&](const key_t& key) {
           if (identify_op(key) == detail::topk::candidate_class::candidate)
           {
             const int bucket = extract_op(key);
-            hist_inc(hist_smem32, bucket, is_leader_block);
+            hist_inc(hist_smem32, bucket, leader_cluster_scope);
           }
         };
 
@@ -1494,7 +1517,7 @@ private:
         }
       }
 
-      cluster.sync();
+      cluster_or_block_sync(cluster, single_cta);
 
       // Step 3: the leader walks the merged `hist` (raw counts in the
       // reduce-then-scan path, cluster-wide inclusive scan in the
@@ -1514,7 +1537,7 @@ private:
         }
         reset_hist();
       }
-      cluster.sync();
+      cluster_or_block_sync(cluster, single_cta);
 
       // End-of-pass splitter fold. Every thread reads the leader's just-published `kth_bucket` directly through DSMEM
       // (a single `u32`, ordered by the `cluster.sync()` above) and folds it into its own `kth_key_bits_local`, so the
@@ -1586,7 +1609,7 @@ private:
         {
           temp_storage.cand_prefix = 0;
         }
-        cluster.sync();
+        cluster_or_block_sync(cluster, single_cta);
         if (threadIdx.x == 0 && local_count != offset_t{0})
         {
           if constexpr (tie_reversed)
@@ -1604,7 +1627,7 @@ private:
             }
           }
         }
-        cluster.sync();
+        cluster_or_block_sync(cluster, single_cta);
 
         running    = temp_storage.cand_prefix; // candidates owned by preceding CTAs (this CTA's exclusive prefix)
         tie_active = running < static_cast<offset_t>(num_back);
@@ -2127,8 +2150,9 @@ private:
     // atomics into the leader's state are complete. Without this, a fast
     // block (e.g. one whose block_tile is entirely padding) can return while another
     // block is still writing to leader-resident memory through DSMEM, which
-    // surfaces as a "cluster target block not present" exception.
-    cluster.sync();
+    // surfaces as a "cluster target block not present" exception. A lone CTA has no remote writers, so a block barrier
+    // suffices (and orders its own final writes).
+    cluster_or_block_sync(cluster, single_cta);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_impl()
@@ -2138,6 +2162,7 @@ private:
     // Runtime cluster width matches the launch attribute the dispatch passed
     // to `cudaLaunchKernelExC` (or the kernel's `__cluster_dims__` on CDP).
     const unsigned int cluster_blocks = cluster.num_blocks();
+    const bool single_cta             = (cluster_blocks == 1u);
     const auto segment_id             = static_cast<num_segments_val_t>(blockIdx.x / cluster_blocks);
 
     if (segment_id >= detail::params::get_param(num_segments, num_segments_val_t{0}))
@@ -2184,7 +2209,7 @@ private:
       temp_storage.state.early_stop   = 0;
     }
     reset_hist();
-    cluster.sync();
+    cluster_or_block_sync(cluster, single_cta);
 
     [[maybe_unused]] const bool ok = detail::params::dispatch_discrete(
       select_directions, segment_id, [this, &cluster, segment_id, cluster_rank, segment_size, k](auto direction_tag) {
