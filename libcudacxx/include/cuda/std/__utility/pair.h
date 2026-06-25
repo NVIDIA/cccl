@@ -88,13 +88,15 @@ template <class _UPair, class _T1, class _T2>
   { // [pairs#pair]-15.3: is_constructible<T2, decltype(get<1>(std​::​forward<UTuple>(u)))>... is true
     return __select_constructor::__none;
   }
-  else
+  else if constexpr (is_convertible_v<decltype(get<0>(::cuda::std::declval<_UPair>())), _T1>
+                     && is_convertible_v<decltype(get<1>(::cuda::std::declval<_UPair>())), _T2>)
   { // [pairs#pair]-17 !is_convertible_v<decltype(get<0>(FWD(u))), T1> &&
     //                 !is_convertible_v<decltype(get<1>(FWD(u))), T2>
-    return (is_convertible_v<decltype(get<0>(::cuda::std::declval<_UPair>())), _T1>
-            && is_convertible_v<decltype(get<1>(::cuda::std::declval<_UPair>())), _T2>)
-           ? __select_constructor::__implicit
-           : __select_constructor::__explicit;
+    return __select_constructor::__implicit;
+  }
+  else
+  {
+    return __select_constructor::__explicit;
   }
 }
 
@@ -132,12 +134,14 @@ template <bool _IsConst, class _UPair, class _T1, class _T2>
     { // [pairs.pair]-45.4: is_assignable_v<const T2&, decltype(get<1>(std​::​forward<P>(p)))> is true
       return __select_assignment::__none;
     }
+    else if constexpr (is_nothrow_assignable_v<const _T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>
+                       && is_nothrow_assignable_v<const _T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
+    {
+      return __select_assignment::__is_nothrow;
+    }
     else
     {
-      return (is_nothrow_assignable_v<const _T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>
-              && is_nothrow_assignable_v<const _T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
-             ? __select_assignment::__is_nothrow
-             : __select_assignment::__may_throw;
+      return __select_assignment::__may_throw;
     }
   }
   else if constexpr (!is_assignable_v<_T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>)
@@ -148,12 +152,14 @@ template <bool _IsConst, class _UPair, class _T1, class _T2>
   { // [pairs.pair]-42.4: is_assignable_v<const T2&, decltype(get<1>(std​::​forward<P>(p)))> is true
     return __select_assignment::__none;
   }
+  else if constexpr (is_nothrow_assignable_v<_T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>
+                     && is_nothrow_assignable_v<_T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
+  {
+    return __select_assignment::__is_nothrow;
+  }
   else
   {
-    return (is_nothrow_assignable_v<_T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>
-            && is_nothrow_assignable_v<_T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
-           ? __select_assignment::__is_nothrow
-           : __select_assignment::__may_throw;
+    return __select_assignment::__may_throw;
   }
 }
 
@@ -250,8 +256,8 @@ struct __pair_base<_T1, _T2, true>
   operator=(conditional_t<is_move_assignable_v<_T1> && is_move_assignable_v<_T2>, __pair_base, __nat>&& __p) noexcept(
     is_nothrow_move_assignable_v<_T1> && is_nothrow_move_assignable_v<_T2>)
   {
-    first  = ::cuda::std::forward<_T1>(__p.first);
-    second = ::cuda::std::forward<_T2>(__p.second);
+    first  = ::cuda::std::move(__p.first);
+    second = ::cuda::std::move(__p.second);
     return *this;
   }
 

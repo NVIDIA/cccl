@@ -22,24 +22,17 @@
 // is_assignable_v<const first_type&, const U1&> is true, and
 // is_assignable_v<const second_type&, const U2&> is true.
 
-// clang-format off
-static_assert( cuda::std::is_assignable_v<const cuda::std::pair<int&, int&>&,
-                                    const cuda::std::pair<long&, long&>&>);
-static_assert(!cuda::std::is_assignable_v<const cuda::std::pair<int, int>&,
-                                    const cuda::std::pair<long, long>&>);
-static_assert(!cuda::std::is_assignable_v<const cuda::std::pair<int, int&>&,
-                                    const cuda::std::pair<long, long&>&>);
-static_assert(!cuda::std::is_assignable_v<const cuda::std::pair<int&, int>&,
-                                    const cuda::std::pair<long&, long>&>);
+static_assert(cuda::std::is_assignable_v<const cuda::std::pair<int&, int&>&, const cuda::std::pair<long&, long&>&>);
+static_assert(!cuda::std::is_assignable_v<const cuda::std::pair<int, int>&, const cuda::std::pair<long, long>&>);
+static_assert(!cuda::std::is_assignable_v<const cuda::std::pair<int, int&>&, const cuda::std::pair<long, long&>&>);
+static_assert(!cuda::std::is_assignable_v<const cuda::std::pair<int&, int>&, const cuda::std::pair<long&, long>&>);
 
-static_assert(cuda::std::is_assignable_v<
-    const cuda::std::pair<AssignableFrom<ConstCopyAssign>, AssignableFrom<ConstCopyAssign>>&,
-    const cuda::std::pair<ConstCopyAssign, ConstCopyAssign>&>);
+static_assert(
+  cuda::std::is_assignable_v<const cuda::std::pair<AssignableFrom<ConstCopyAssign>, AssignableFrom<ConstCopyAssign>>&,
+                             const cuda::std::pair<ConstCopyAssign, ConstCopyAssign>&>);
 
-static_assert(!cuda::std::is_assignable_v<
-    const cuda::std::pair<AssignableFrom<CopyAssign>, AssignableFrom<CopyAssign>>&,
-    const cuda::std::pair<CopyAssign, CopyAssign>&>);
-// clang-format on
+static_assert(!cuda::std::is_assignable_v<const cuda::std::pair<AssignableFrom<CopyAssign>, AssignableFrom<CopyAssign>>&,
+                                          const cuda::std::pair<CopyAssign, CopyAssign>&>);
 
 TEST_FUNC constexpr bool test()
 {
