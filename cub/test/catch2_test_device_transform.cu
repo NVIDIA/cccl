@@ -324,7 +324,8 @@ struct sum_five
   __host__ __device__ auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const
     -> double
   {
-    return a + b + c + d + e;
+    return static_cast<double>(a) + static_cast<double>(b) + static_cast<double>(c) + static_cast<double>(d)
+         + static_cast<double>(e);
   }
 };
 

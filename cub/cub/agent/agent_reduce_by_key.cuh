@@ -429,7 +429,7 @@ struct AgentReduceByKey
 
     __syncthreads();
 
-    for (int item = threadIdx.x; item < num_tile_segments; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
     {
       KeyValuePairT pair                                = temp_storage.raw_exchange.Alias()[item];
       d_unique_out[num_tile_segments_prefix + item]     = pair.key;
@@ -732,7 +732,7 @@ struct AgentReduceByKey
     // block
 
     // Current tile index
-    int tile_idx = start_tile + blockIdx.x;
+    int tile_idx = static_cast<int>(start_tile + blockIdx.x);
 
     // Global offset for the current tile
     OffsetT tile_offset = OffsetT(TILE_ITEMS) * tile_idx;

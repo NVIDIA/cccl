@@ -27,7 +27,13 @@ C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error = cub::DeviceSelect::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, stream_ref);
+  auto error = cub::DeviceSelect::If(
+    input.begin(),
+    output.begin(),
+    num_selected.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    le,
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::If failed with status: " << error << '\n';
@@ -55,7 +61,12 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
   cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::Flagged(
-    input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), stream_ref);
+    input.begin(),
+    flags.begin(),
+    output.begin(),
+    num_selected.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Flagged failed with status: " << error << '\n';
@@ -84,7 +95,13 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]"
   cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::FlaggedIf(
-    input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), select_op, stream_ref);
+    input.begin(),
+    flags.begin(),
+    output.begin(),
+    num_selected.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    select_op,
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::FlaggedIf failed with status: " << error << '\n';
@@ -110,7 +127,8 @@ C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error = cub::DeviceSelect::Flagged(data.begin(), flags.begin(), num_selected.begin(), data.size(), stream_ref);
+  auto error = cub::DeviceSelect::Flagged(
+    data.begin(), flags.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(data.size()), stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Flagged in-place failed with status: " << error << '\n';
@@ -137,7 +155,8 @@ C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error = cub::DeviceSelect::If(data.begin(), num_selected.begin(), data.size(), le, stream_ref);
+  auto error = cub::DeviceSelect::If(
+    data.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(data.size()), le, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::If in-place failed with status: " << error << '\n';
@@ -165,8 +184,13 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[sele
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error =
-    cub::DeviceSelect::FlaggedIf(data.begin(), flags.begin(), num_selected.begin(), data.size(), select_op, stream_ref);
+  auto error = cub::DeviceSelect::FlaggedIf(
+    data.begin(),
+    flags.begin(),
+    num_selected.begin(),
+    static_cast<::cuda::std::int64_t>(data.size()),
+    select_op,
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::FlaggedIf in-place failed with status: " << error << '\n';
@@ -193,7 +217,8 @@ C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error = cub::DeviceSelect::Unique(input.begin(), output.begin(), num_selected.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceSelect::Unique(
+    input.begin(), output.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(input.size()), stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Unique failed with status: " << error << '\n';
@@ -222,8 +247,13 @@ C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with str
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error =
-    cub::DeviceSelect::Unique(input.begin(), output.begin(), num_selected.begin(), input.size(), eq_mod3, stream_ref);
+  auto error = cub::DeviceSelect::Unique(
+    input.begin(),
+    output.begin(),
+    num_selected.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    eq_mod3,
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Unique with custom equality_op failed with status: " << error << '\n';
@@ -251,7 +281,8 @@ C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select]
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error = cub::DeviceSelect::Unique(data.begin(), num_selected.begin(), data.size(), stream_ref);
+  auto error = cub::DeviceSelect::Unique(
+    data.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(data.size()), stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Unique in-place failed with status: " << error << '\n';
@@ -280,7 +311,8 @@ C2H_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error = cub::DeviceSelect::Unique(data.begin(), num_selected.begin(), data.size(), eq_mod3, stream_ref);
+  auto error = cub::DeviceSelect::Unique(
+    data.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(data.size()), eq_mod3, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Unique in-place with custom equality_op failed with status: " << error << '\n';

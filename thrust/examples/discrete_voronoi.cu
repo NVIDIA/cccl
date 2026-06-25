@@ -199,7 +199,7 @@ void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsign
       thrust::counting_iterator<int>(0))
       + n * m,
     out.begin(),
-    voronoi_site_selector(m, n, k));
+    voronoi_site_selector(m, n, static_cast<int>(k)));
 }
 /********************************************/
 
@@ -243,7 +243,7 @@ int main()
   }
 
   display_time(t);
-  std::cout << "  ( " << seeds.size() / (1e6 * t.elapsed()) << " MPixel/s ) " << '\n';
+  std::cout << "  ( " << static_cast<double>(seeds.size()) / (1e6 * t.elapsed()) << " MPixel/s ) " << '\n';
 
   std::cout << "[Device to Host Copy]" << '\n';
   t.restart();

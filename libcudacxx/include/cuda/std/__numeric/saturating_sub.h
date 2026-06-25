@@ -60,7 +60,7 @@ template <class _Tp>
 #  else // ^^^ _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT ^^^ / vvv !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT vvv
   if constexpr (is_signed_v<_Tp>)
   {
-#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(int8_t))
     {
       return ::_sat_sub_i8(__x, __y);
@@ -78,14 +78,14 @@ template <class _Tp>
       return ::_sat_sub_i64(__x, __y);
     }
     else
-#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     {
       return ::cuda::saturating_sub_overflow(__x, __y).value;
     }
   }
   else
   {
-#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(uint8_t))
     {
       return ::_sat_sub_u8(__x, __y);
@@ -103,7 +103,7 @@ template <class _Tp>
       return ::_sat_sub_u64(__x, __y);
     }
     else
-#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_HOST_ARCH(X86_64)
     {
       return ::cuda::saturating_sub_overflow(__x, __y).value;
     }
