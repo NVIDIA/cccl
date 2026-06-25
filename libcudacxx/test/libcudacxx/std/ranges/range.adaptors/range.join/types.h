@@ -564,7 +564,7 @@ struct move_swap_aware_iter
 
   TEST_FUNC constexpr reference operator*() const
   {
-    return reference(*i_, *i_);
+    return {*i_, *i_};
   }
   TEST_FUNC constexpr friend bool operator==(const move_swap_aware_iter& x, const move_swap_aware_iter& y)
   {
@@ -618,7 +618,7 @@ struct IterMoveSwapAwareView : BufferView<int*>
     return move_swap_aware_iter{&iter_move_called, &iter_swap_called, data_ + size_};
   }
 };
-// static_assert(cuda::std::ranges::input_range<IterMoveSwapAwareView>);
+static_assert(cuda::std::ranges::input_range<IterMoveSwapAwareView>);
 
 #ifdef _LIBCUDACXX_HAS_STRING
 class StashingIterator
