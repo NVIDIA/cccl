@@ -253,7 +253,7 @@ private:
 
     WarpBitonicSort<first_half_len, KeyT, ValueT>::template Sort_<CompareOp, !REVERSE>(keys, values, compare_op);
     WarpBitonicSort<second_half_len, KeyT, ValueT>::template Sort_<CompareOp, REVERSE>(
-      keys + first_half_len, values + first_half_len, compare_op);
+      keys + first_half_len, (KEYS_ONLY_ ? nullptr : values + first_half_len), compare_op);
     Merge_<CompareOp, REVERSE>(keys, values, compare_op);
   }
 
@@ -312,7 +312,7 @@ private:
 
     WarpBitonicSort<first_half_len, KeyT, ValueT>::template Merge_<CompareOp, REVERSE>(keys, values, compare_op);
     WarpBitonicSort<second_half_len, KeyT, ValueT>::template Merge_<CompareOp, REVERSE>(
-      keys + first_half_len, values + first_half_len, compare_op);
+      keys + first_half_len, (KEYS_ONLY_ ? nullptr : values + first_half_len), compare_op);
   }
 
   template <typename CompareOp, bool REVERSE>
@@ -326,7 +326,10 @@ private:
     {
       WarpBitonicSort<first_half_len, KeyT, ValueT>::template Sort_<CompareOp, !REVERSE>(keys, values, compare_op);
       WarpBitonicSort<second_half_len, KeyT, ValueT>::template Sort_<CompareOp, REVERSE>(
-        keys + first_half_len, values + first_half_len, compare_op, valid_items - first_half_len * WARP_THREADS_);
+        keys + first_half_len,
+        (KEYS_ONLY_ ? nullptr : values + first_half_len),
+        compare_op,
+        valid_items - first_half_len * WARP_THREADS_);
       Merge_<CompareOp, REVERSE>(keys, values, compare_op, valid_items);
     }
     else
@@ -392,7 +395,10 @@ private:
     {
       WarpBitonicSort<first_half_len, KeyT, ValueT>::template Merge_<CompareOp, REVERSE>(keys, values, compare_op);
       WarpBitonicSort<second_half_len, KeyT, ValueT>::template Merge_<CompareOp, REVERSE>(
-        keys + first_half_len, values + first_half_len, compare_op, valid_items - first_half_len * WARP_THREADS_);
+        keys + first_half_len,
+        (KEYS_ONLY_ ? nullptr : values + first_half_len),
+        compare_op,
+        valid_items - first_half_len * WARP_THREADS_);
     }
     else
     {
