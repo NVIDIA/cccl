@@ -687,7 +687,7 @@ public:
           {
             auto active          = t.activate_place(i);
             const auto sub_shape = partitioner_t::apply(shape, pos4(i), e_place.get_dims());
-            do_parallel_for(f, active.place(), sub_shape, t);
+            do_parallel_for(f, active.place(), sub_shape, t, i);
           }
         }
       }
@@ -897,7 +897,11 @@ public:
   // Executes the loop on a device, or use the host implementation
   template <typename Fun, typename sub_shape_t>
   void do_parallel_for(
-    Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
+    Fun&& f,
+    const exec_place& sub_exec_place,
+    const sub_shape_t& sub_shape,
+    typename context::task_type& t,
+    size_t place_index = 0)
   {
     // parallel_for never calls this function with a host.
     _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
@@ -905,7 +909,7 @@ public:
     if (sub_exec_place == exec_place::device_auto())
     {
       // We have all latitude - recurse with the current device.
-      return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t);
+      return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t, place_index);
     }
 
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
@@ -941,7 +945,7 @@ public:
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>
-        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
+        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream(place_index)>>>(
           static_cast<int>(n), sub_shape, mv(f), arg_instances);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
