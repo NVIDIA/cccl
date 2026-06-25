@@ -123,7 +123,8 @@ private:
   }
 };
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   std::size_t num_elements = 32768;
 

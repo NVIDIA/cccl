@@ -130,7 +130,8 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   std::cout << "\n";
 }
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   using T = float;
 

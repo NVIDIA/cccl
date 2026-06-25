@@ -11,7 +11,8 @@
 //
 // [1] http://en.wikipedia.org/wiki/Run-length_encoding
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   // input data on the host
   const char data[] = "aaabbbbbcddeeeeeeeeeff";
