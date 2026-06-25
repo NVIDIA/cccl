@@ -89,19 +89,24 @@ target_compile_definitions(
     HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
 )
 
-if (CUDAToolkit_FOUND)
-  target_include_directories(
-    libnvcc
-    PRIVATE ${CUDAToolkit_INCLUDE_DIRS}
-  )
-  cmake_path(GET CUDAToolkit_BIN_DIR PARENT_PATH CUDA_TOOLKIT_ROOT_FROM_CMAKE)
-  target_compile_definitions(
-    libnvcc
-    PRIVATE
-      CUDA_TOOLKIT_PATH="${CUDA_TOOLKIT_ROOT_FROM_CMAKE}"
-      CUDA_SDK_VERSION="${CUDAToolkit_VERSION_MAJOR}.0"
-  )
+# A toolkit is required because we need to call into nvfatbin/nvjitlink.
+# FIXME: Statically link against those libraries individually rather than
+# requiring a toolkit.
+if (NOT CUDAToolkit_FOUND)
+  message(FATAL_ERROR "libnvcc requires a CUDA toolkit")
 endif()
+
+target_include_directories(
+  libnvcc
+  PRIVATE ${CUDAToolkit_INCLUDE_DIRS}
+)
+cmake_path(GET CUDAToolkit_BIN_DIR PARENT_PATH CUDA_TOOLKIT_ROOT_FROM_CMAKE)
+target_compile_definitions(
+  libnvcc
+  PRIVATE
+    CUDA_TOOLKIT_PATH="${CUDA_TOOLKIT_ROOT_FROM_CMAKE}"
+    CUDA_SDK_VERSION="${CUDAToolkit_VERSION_MAJOR}.0"
+)
 
 # Link against LLVM/Clang/LLD
 target_link_libraries(

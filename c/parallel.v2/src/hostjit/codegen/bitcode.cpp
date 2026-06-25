@@ -118,10 +118,7 @@ bool BitcodeCollector::compile_and_add(const char* source, size_t source_size, c
   }
 
   auto result = libnvccCompileProgramToDeviceBitcode(
-    program.program,
-    path.c_str(),
-    static_cast<int>(option_ptrs.size()),
-    option_ptrs.empty() ? nullptr : option_ptrs.data());
+    program.program, path.c_str(), static_cast<int>(option_ptrs.size()), option_ptrs.data());
   if (result != LIBNVCC_SUCCESS)
   {
     auto log = hostjit::detail::get_libnvcc_program_log(program.program);
