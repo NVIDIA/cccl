@@ -38,7 +38,6 @@ Checks:
   - '-bugprone-branch-clone'
   - '-bugprone-use-after-move'
   - '-bugprone-integer-division'
-  - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'
   # This is just noise
   - '-bugprone-signed-char-misuse'
