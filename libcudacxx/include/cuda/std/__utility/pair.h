@@ -375,6 +375,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
             enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
@@ -386,7 +387,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
                ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
             enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
@@ -398,6 +401,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
                ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class... _Args1, class... _Args2>
   _CCCL_API constexpr pair(piecewise_construct_t __pc,
