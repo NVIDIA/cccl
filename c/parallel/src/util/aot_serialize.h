@@ -40,37 +40,11 @@ struct blob_header
   char magic[8]; // kBlobMagic
   uint32_t algo_tag; // cccl_aot_algo_t
   uint32_t format_version; // kFormatVersion at write time
-  uint64_t abi_hash; // identifies CCCL+CUB+struct ABI; mismatched → reject
+  uint64_t cccl_version; // CCCL_C_PARALLEL_VERSION at serialize time; mismatched → reject
   uint32_t payload_kind; // cccl_payload_kind_t
   uint32_t cc; // cc_major*10 + cc_minor
 };
 static_assert(sizeof(blob_header) == 32, "blob_header layout must be stable");
-
-// Compile-time string hash; used to derive the ABI hash without pulling in
-// runtime hashing machinery. Algorithm: FNV-1a 64-bit. Stable across builds.
-constexpr uint64_t fnv1a64(std::string_view s) noexcept
-{
-  uint64_t h = 0xcbf29ce484222325ULL;
-  for (char c : s)
-  {
-    h ^= static_cast<uint8_t>(c);
-    h *= 0x100000001b3ULL;
-  }
-  return h;
-}
-
-// Mixes a numeric value into a running FNV-1a hash. Used to fold sizeof
-// values (struct ABI footprint) into the blob's abi_hash.
-constexpr uint64_t fnv1a64_mix(uint64_t h, uint64_t v) noexcept
-{
-  for (int i = 0; i < 8; ++i)
-  {
-    h ^= static_cast<uint8_t>(v & 0xff);
-    h *= 0x100000001b3ULL;
-    v >>= 8;
-  }
-  return h;
-}
 
 // Append-only byte buffer used by *_serialize implementations.
 // Owns a std::vector<char> internally; release() hands back a heap buffer
@@ -238,23 +212,23 @@ public:
   }
 };
 
-// Writes the standard blob header. Caller supplies algo_tag + abi_hash.
-inline void write_header(buffer_writer& w, cccl_aot_algo_t algo_tag, uint64_t abi_hash, cccl_payload_kind_t kind, int cc)
+// Writes the standard blob header.
+inline void write_header(buffer_writer& w, cccl_aot_algo_t algo_tag, cccl_payload_kind_t kind, int cc)
 {
   blob_header h{};
   std::memcpy(h.magic, kBlobMagic, sizeof(kBlobMagic));
   h.algo_tag       = static_cast<uint32_t>(algo_tag);
   h.format_version = kFormatVersion;
-  h.abi_hash       = abi_hash;
+  h.cccl_version   = static_cast<uint64_t>(CCCL_C_PARALLEL_VERSION);
   h.payload_kind   = static_cast<uint32_t>(kind);
   h.cc             = static_cast<uint32_t>(cc);
   w.write_pod(h);
 }
 
-// Reads + validates a blob header. Throws on magic / algo_tag / version /
-// abi_hash mismatch. Returns the parsed header for the caller to use
+// Reads + validates a blob header. Throws on magic / algo_tag / format_version /
+// cccl_version mismatch. Returns the parsed header for the caller to use
 // (payload_kind, cc).
-inline blob_header read_and_validate_header(buffer_reader& r, cccl_aot_algo_t expected_algo, uint64_t expected_abi_hash)
+inline blob_header read_and_validate_header(buffer_reader& r, cccl_aot_algo_t expected_algo)
 {
   const auto h = r.read_pod<blob_header>();
   if (std::memcmp(h.magic, kBlobMagic, sizeof(kBlobMagic)) != 0)
@@ -269,9 +243,10 @@ inline blob_header read_and_validate_header(buffer_reader& r, cccl_aot_algo_t ex
   {
     throw std::runtime_error("aot blob: unsupported format version");
   }
-  if (h.abi_hash != expected_abi_hash)
+  if (h.cccl_version != static_cast<uint64_t>(CCCL_C_PARALLEL_VERSION))
   {
-    throw std::runtime_error("aot blob: ABI mismatch (CCCL/CUB version drift)");
+    throw std::runtime_error(std::format(
+      "aot blob: CCCL C parallel version mismatch (blob={}, current={})", h.cccl_version, CCCL_C_PARALLEL_VERSION));
   }
   if (h.payload_kind != CCCL_PAYLOAD_LTOIR && h.payload_kind != CCCL_PAYLOAD_CUBIN)
   {

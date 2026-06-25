@@ -601,19 +601,6 @@ catch (const std::exception& exc)
   return CUDA_ERROR_UNKNOWN;
 }
 
-namespace three_way_partition_aot
-{
-inline uint64_t aot_abi_hash()
-{
-  using namespace cccl::aot;
-  uint64_t h = fnv1a64("cccl_device_three_way_partition");
-  h          = fnv1a64_mix(h, CCCL_VERSION);
-  h          = fnv1a64_mix(h, sizeof(cccl_device_three_way_partition_build_result_t));
-  h          = fnv1a64_mix(h, sizeof(cub::detail::three_way_partition::policy_selector));
-  return h;
-}
-} // namespace three_way_partition_aot
-
 CUresult cccl_device_three_way_partition_serialize(
   const cccl_device_three_way_partition_build_result_t* build_ptr, void** out_buf, size_t* out_size)
 try
@@ -632,11 +619,7 @@ try
 
   using namespace cccl::aot;
   buffer_writer w;
-  write_header(w,
-               CCCL_AOT_ALGO_THREE_WAY_PARTITION,
-               three_way_partition_aot::aot_abi_hash(),
-               build_ptr->payload_kind,
-               build_ptr->cc);
+  write_header(w, CCCL_AOT_ALGO_THREE_WAY_PARTITION, build_ptr->payload_kind, build_ptr->cc);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
   w.write_cstring(build_ptr->three_way_partition_init_kernel_lowered_name);
@@ -663,8 +646,7 @@ try
 
   using namespace cccl::aot;
   buffer_reader r{buf, size};
-  const auto h =
-    read_and_validate_header(r, CCCL_AOT_ALGO_THREE_WAY_PARTITION, three_way_partition_aot::aot_abi_hash());
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_THREE_WAY_PARTITION);
 
   std::unique_ptr<char[]> payload_owner;
   size_t payload_size = 0;

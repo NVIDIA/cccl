@@ -878,22 +878,6 @@ catch (const std::exception& exc)
   return CUDA_ERROR_UNKNOWN;
 }
 
-namespace transform_aot
-{
-inline uint64_t aot_abi_hash()
-{
-  using namespace cccl::aot;
-  // Note: transform stores either policy_selector<1> (unary) or
-  // policy_selector<2> (binary). The size of the policy bytes is recorded in
-  // the blob's runtime_policy_size field; we don't fold either into the ABI
-  // hash since both forms share the same build_result_t.
-  uint64_t h = fnv1a64("cccl_device_transform");
-  h          = fnv1a64_mix(h, CCCL_VERSION);
-  h          = fnv1a64_mix(h, sizeof(cccl_device_transform_build_result_t));
-  return h;
-}
-} // namespace transform_aot
-
 CUresult
 cccl_device_transform_serialize(const cccl_device_transform_build_result_t* build_ptr, void** out_buf, size_t* out_size)
 try
@@ -912,7 +896,7 @@ try
 
   using namespace cccl::aot;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_TRANSFORM, transform_aot::aot_abi_hash(), build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_AOT_ALGO_TRANSFORM, build_ptr->payload_kind, build_ptr->cc);
   w.write_pod<int32_t>(build_ptr->loaded_bytes_per_iteration);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
@@ -938,7 +922,7 @@ try
 
   using namespace cccl::aot;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_TRANSFORM, transform_aot::aot_abi_hash());
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_TRANSFORM);
 
   const int32_t loaded_bpi = r.read_pod<int32_t>();
 

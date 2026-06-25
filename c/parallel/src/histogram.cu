@@ -751,19 +751,6 @@ catch (const std::exception& exc)
   return CUDA_ERROR_UNKNOWN;
 }
 
-namespace histogram_aot
-{
-inline uint64_t aot_abi_hash()
-{
-  using namespace cccl::aot;
-  uint64_t h = fnv1a64("cccl_device_histogram");
-  h          = fnv1a64_mix(h, CCCL_VERSION);
-  h          = fnv1a64_mix(h, sizeof(cccl_device_histogram_build_result_t));
-  h          = fnv1a64_mix(h, sizeof(cub::detail::histogram::policy_selector));
-  return h;
-}
-} // namespace histogram_aot
-
 CUresult
 cccl_device_histogram_serialize(const cccl_device_histogram_build_result_t* build_ptr, void** out_buf, size_t* out_size)
 try
@@ -782,7 +769,7 @@ try
 
   using namespace cccl::aot;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_HISTOGRAM, histogram_aot::aot_abi_hash(), build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_AOT_ALGO_HISTOGRAM, build_ptr->payload_kind, build_ptr->cc);
   write_type_info(w, build_ptr->counter_type);
   write_type_info(w, build_ptr->level_type);
   write_type_info(w, build_ptr->sample_type);
@@ -813,7 +800,7 @@ try
 
   using namespace cccl::aot;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_HISTOGRAM, histogram_aot::aot_abi_hash());
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_HISTOGRAM);
 
   const auto counter_t  = read_type_info(r);
   const auto level_t    = read_type_info(r);

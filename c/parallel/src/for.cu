@@ -330,18 +330,6 @@ catch (...)
   return CUDA_ERROR_UNKNOWN;
 }
 
-namespace for_aot
-{
-inline uint64_t aot_abi_hash()
-{
-  using namespace cccl::aot;
-  uint64_t h = fnv1a64("cccl_device_for");
-  h          = fnv1a64_mix(h, CCCL_VERSION);
-  h          = fnv1a64_mix(h, sizeof(cccl_device_for_build_result_t));
-  return h;
-}
-} // namespace for_aot
-
 CUresult cccl_device_for_serialize(const cccl_device_for_build_result_t* build_ptr, void** out_buf, size_t* out_size)
 try
 {
@@ -358,7 +346,7 @@ try
 
   using namespace cccl::aot;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_FOR, for_aot::aot_abi_hash(), build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_AOT_ALGO_FOR, build_ptr->payload_kind, build_ptr->cc);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_cstring(build_ptr->static_kernel_lowered_name);
   w.release(out_buf, out_size);
@@ -382,7 +370,7 @@ try
 
   using namespace cccl::aot;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_FOR, for_aot::aot_abi_hash());
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_FOR);
 
   std::unique_ptr<char[]> payload_owner;
   size_t payload_size = 0;

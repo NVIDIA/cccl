@@ -475,11 +475,7 @@ try
   buffer_writer w;
   // Outer header re-uses the transform's payload_kind / cc fields, since the
   // binary_search build_result_t doesn't carry its own copies.
-  write_header(w,
-               CCCL_AOT_ALGO_BINARY_SEARCH,
-               fnv1a64_mix(fnv1a64("cccl_device_binary_search"), CCCL_VERSION),
-               build_ptr->transform.payload_kind,
-               build_ptr->transform.cc);
+  write_header(w, CCCL_AOT_ALGO_BINARY_SEARCH, build_ptr->transform.payload_kind, build_ptr->transform.cc);
   w.write_pod<uint64_t>(static_cast<uint64_t>(build_ptr->op_state_size));
   w.write_pod<uint64_t>(static_cast<uint64_t>(build_ptr->op_state_alignment));
   w.write_blob(inner_owner.get(), inner_buf_size);
@@ -505,8 +501,7 @@ try
 
   using namespace cccl::aot;
   buffer_reader r{buf, size};
-  read_and_validate_header(
-    r, CCCL_AOT_ALGO_BINARY_SEARCH, fnv1a64_mix(fnv1a64("cccl_device_binary_search"), CCCL_VERSION));
+  read_and_validate_header(r, CCCL_AOT_ALGO_BINARY_SEARCH);
 
   const uint64_t state_size  = r.read_pod<uint64_t>();
   const uint64_t state_align = r.read_pod<uint64_t>();

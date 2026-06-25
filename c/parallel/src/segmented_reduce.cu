@@ -561,19 +561,6 @@ catch (const std::exception& exc)
   return CUDA_ERROR_UNKNOWN;
 }
 
-namespace segmented_reduce
-{
-inline uint64_t aot_abi_hash()
-{
-  using namespace cccl::aot;
-  uint64_t h = fnv1a64("cccl_device_segmented_reduce");
-  h          = fnv1a64_mix(h, CCCL_VERSION);
-  h          = fnv1a64_mix(h, sizeof(cccl_device_segmented_reduce_build_result_t));
-  h          = fnv1a64_mix(h, sizeof(cub::detail::segmented_reduce::policy_selector));
-  return h;
-}
-} // namespace segmented_reduce
-
 CUresult cccl_device_segmented_reduce_serialize(
   const cccl_device_segmented_reduce_build_result_t* build_ptr, void** out_buf, size_t* out_size)
 try
@@ -592,8 +579,7 @@ try
 
   using namespace cccl::aot;
   buffer_writer w;
-  write_header(
-    w, CCCL_AOT_ALGO_SEGMENTED_REDUCE, segmented_reduce::aot_abi_hash(), build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_AOT_ALGO_SEGMENTED_REDUCE, build_ptr->payload_kind, build_ptr->cc);
   w.write_pod<uint64_t>(build_ptr->accumulator_size);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
@@ -620,7 +606,7 @@ try
 
   using namespace cccl::aot;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SEGMENTED_REDUCE, segmented_reduce::aot_abi_hash());
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SEGMENTED_REDUCE);
 
   const uint64_t accum_size = r.read_pod<uint64_t>();
 

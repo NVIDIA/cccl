@@ -1075,17 +1075,6 @@ catch (const std::exception& exc)
 
 namespace segmented_sort_aot
 {
-inline uint64_t aot_abi_hash()
-{
-  using namespace cccl::aot;
-  uint64_t h = fnv1a64("cccl_device_segmented_sort");
-  h          = fnv1a64_mix(h, CCCL_VERSION);
-  h          = fnv1a64_mix(h, sizeof(cccl_device_segmented_sort_build_result_t));
-  h          = fnv1a64_mix(h, sizeof(cub::detail::segmented_sort::policy_selector));
-  h          = fnv1a64_mix(h, sizeof(cub::detail::three_way_partition::policy_selector));
-  return h;
-}
-
 // Selector op names are compile-time constants (set in make_segments_selector_op).
 // Deserialize simply points back at these literals — cleanup never frees op.name.
 inline constexpr const char* kLargeSegmentsName = "cccl_large_segments_selector_op";
@@ -1174,8 +1163,7 @@ try
 
   using namespace cccl::aot;
   buffer_writer w;
-  write_header(
-    w, CCCL_AOT_ALGO_SEGMENTED_SORT, segmented_sort_aot::aot_abi_hash(), build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_AOT_ALGO_SEGMENTED_SORT, build_ptr->payload_kind, build_ptr->cc);
   write_type_info(w, build_ptr->key_type);
   write_type_info(w, build_ptr->offset_type);
   w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->order));
@@ -1211,7 +1199,7 @@ try
 
   using namespace cccl::aot;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SEGMENTED_SORT, segmented_sort_aot::aot_abi_hash());
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SEGMENTED_SORT);
 
   const auto key_t    = read_type_info(r);
   const auto offset_t = read_type_info(r);
