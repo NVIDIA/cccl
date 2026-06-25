@@ -95,6 +95,9 @@ struct CompilerOptions
   std::string cuda_toolkit_path;
   std::string hostjit_include_path;
   std::string clang_headers_path;
+  std::string device_pch_path;
+  std::string host_pch_path;
+  std::string entry_point_name;
   std::vector<std::string> system_include_paths;
   std::vector<std::string> include_paths;
   std::vector<std::string> library_paths;
@@ -102,15 +105,12 @@ struct CompilerOptions
   std::vector<std::string> device_ltoir_files;
   std::unordered_map<std::string, std::string> macro_definitions;
   std::vector<std::string> extra_clang_args;
-  std::string device_pch_path;
-  std::string host_pch_path;
   int sm_version         = 75;
   int optimization_level = 2;
   bool debug             = false;
   bool verbose           = false;
   bool trace_includes    = false;
   bool keep_artifacts    = false;
-  std::string entry_point_name;
 };
 
 struct CompilationResult
@@ -1362,7 +1362,14 @@ public:
         {
           llvm::WriteBitcodeToFile(*mod, os);
           os.flush();
-          result.success = true;
+          if (os.has_error())
+          {
+            result.diagnostics = "Failed to write bitcode output file: " + output_bitcode_path + "\n";
+          }
+          else
+          {
+            result.success = true;
+          }
         }
       }
       else
@@ -1373,7 +1380,10 @@ public:
 
     diag_stream.flush();
     result.diagnostics += diag_output;
-    removeAll(temp_dir);
+    if (!config.keep_artifacts)
+    {
+      removeAll(temp_dir);
+    }
     return result;
   }
 
@@ -1785,7 +1795,10 @@ public:
       return result;
     }
 
-    removeAll(temp_dir);
+    if (!config.keep_artifacts)
+    {
+      removeAll(temp_dir);
+    }
     result.success = true;
     return result;
   }
