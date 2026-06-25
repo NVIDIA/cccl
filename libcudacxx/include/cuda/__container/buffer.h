@@ -873,6 +873,7 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
+// Require at least one explicit property on the source, so it doesn't look applicable for initializer list inputs
 _CCCL_TEMPLATE(class _Tp,
                class _FirstProperty,
                class... _RestProperties,
