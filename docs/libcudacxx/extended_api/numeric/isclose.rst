@@ -13,19 +13,25 @@ Defined in ``<cuda/numeric>`` header.
    [[nodiscard]] constexpr bool isclose(T lhs, T rhs) noexcept;
 
    template <class T>
-   [[nodiscard]] constexpr bool isclose(T lhs, T rhs, float relative_tolerance) noexcept;
+   [[nodiscard]] constexpr bool isclose(T lhs, T rhs,
+                                        float relative_tolerance) noexcept;
 
-   template <class T, class AbsTol>
-   [[nodiscard]] constexpr bool isclose(T lhs, T rhs, float relative_tolerance, AbsTol absolute_tolerance) noexcept;
+   template <class T>
+   [[nodiscard]] constexpr bool isclose(T lhs, T rhs,
+                                        float relative_tolerance,
+                                        T     absolute_tolerance) noexcept;
 
    template <class Complex>
    [[nodiscard]] bool isclose(const Complex& lhs, const Complex& rhs) noexcept;
 
    template <class Complex>
-   [[nodiscard]] bool isclose(const Complex& lhs, const Complex& rhs, float relative_tolerance) noexcept;
+   [[nodiscard]] bool isclose(const Complex& lhs, const Complex& rhs,
+                              float relative_tolerance) noexcept;
 
    template <class Complex, class AbsTol>
-   [[nodiscard]] bool isclose(const Complex& lhs, const Complex& rhs, float relative_tolerance, AbsTol absolute_tolerance) noexcept;
+   [[nodiscard]] bool isclose(const Complex& lhs, const Complex& rhs,
+                              float  relative_tolerance,
+                              AbsTol absolute_tolerance) noexcept;
 
    } // namespace cuda
 
@@ -43,7 +49,7 @@ Defined in ``<cuda/numeric>`` header.
 - ``lhs``: The first value to compare.
 - ``rhs``: The second value to compare.
 - ``relative_tolerance``: The relative tolerance. Passing ``0`` performs a purely absolute tolerance check when ``absolute_tolerance`` is non-zero.
-- ``absolute_tolerance``: The absolute tolerance. This is useful for comparisons near zero. 
+- ``absolute_tolerance``: The absolute tolerance. This is useful for comparisons near zero.
 
 **Precision**
 
@@ -56,8 +62,9 @@ Defined in ``<cuda/numeric>`` header.
 
 **Constraints**
 
-- Scalar overloads require ``lhs``, ``rhs``, ``absolute_tolerance`` to have the same arithmetic type (interger or floating point).
+- Scalar overloads require ``lhs``, ``rhs``, ``absolute_tolerance`` to have the same arithmetic type (integer or floating point).
 - Complex overloads accept ``cuda::std::complex<T>``, ``cuda::complex<T>``, ``std::complex<T>`` operands.
+- ``AbsTol`` must be the same type as the complex value type.
 
 **Special values**
 
