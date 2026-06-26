@@ -157,6 +157,16 @@ public:
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items)
   {
+    // Padding keys beyond valid_items ensures no uninitialized data is read.
+    // Faster than guarding reads with valid_items check.
+    const int lane = threadIdx.x % WARP_THREADS_;
+    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    {
+      if (i * WARP_THREADS_ + lane >= valid_items)
+      {
+        keys[i] = KeyT{};
+      }
+    }
     Sort_<CompareOp, false>(keys, nullptr, compare_op, valid_items);
   }
 
@@ -210,7 +220,8 @@ public:
     {
       if (i * WARP_THREADS_ + lane >= valid_items)
       {
-        keys[i] = oob_default;
+        keys[i]   = oob_default;
+        values[i] = ValueT{};
       }
     }
     Sort_<CompareOp, false>(keys, values, compare_op);
@@ -233,6 +244,15 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items)
   {
+    const int lane = threadIdx.x % WARP_THREADS_;
+    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    {
+      if (i * WARP_THREADS_ + lane >= valid_items)
+      {
+        keys[i]   = KeyT{};
+        values[i] = ValueT{};
+      }
+    }
     Sort_<CompareOp, false>(keys, values, compare_op, valid_items);
   }
 
@@ -434,6 +454,11 @@ public:
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items)
   {
+    const int lane = threadIdx.x % WARP_THREADS_;
+    if (lane >= valid_items)
+    {
+      keys[0] = KeyT{};
+    }
     Sort_<CompareOp, false>(keys, nullptr, compare_op, valid_items);
   }
 
@@ -450,7 +475,8 @@ public:
     const int lane = threadIdx.x % WARP_THREADS_;
     if (lane >= valid_items)
     {
-      keys[0] = oob_default;
+      keys[0]   = oob_default;
+      values[0] = ValueT{};
     }
     Sort_<CompareOp, false>(keys, values, compare_op);
   }
@@ -459,6 +485,12 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items)
   {
+    const int lane = threadIdx.x % WARP_THREADS_;
+    if (lane >= valid_items)
+    {
+      keys[0]   = KeyT{};
+      values[0] = ValueT{};
+    }
     Sort_<CompareOp, false>(keys, values, compare_op, valid_items);
   }
 
