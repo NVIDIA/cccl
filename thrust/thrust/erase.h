@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/erase.h
- *  \brief TODO
+ *  \brief Functions to erase and erase_if elements from Thrust vectors
  */
 
 #pragma once
@@ -32,58 +32,42 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-// TODO: FIx documentation
-/*! \p copy copies elements from the range [\p first, \p last) to the range
- *  [\p result, \p result + (\p last - \p first)). That is, it performs
- *  the assignments *\p result = *\p first, *(\p result + \c 1) = *(\p first + \c 1),
- *  and so on. Generally, for every integer \c n from \c 0 to \p last - \p first, \p copy
- *  performs the assignment *(\p result + \c n) = *(\p first + \c n). Unlike
- *  \c std::copy, \p copy offers no guarantee on order of operation.  As a result,
- *  calling \p copy with overlapping source and destination ranges has undefined
- *  behavior.
+/*! \p erase removes all elements equal to \p value from the vector \p c.
+ *  It performs the operation of erasing matching elements and shifting the remaining
+ *  elements towards the beginning of the vector. The size of the vector is reduced
+ *  by the number of erased elements.
  *
- *  The return value is \p result + (\p last - \p first).
+ *  The return value is the number of elements that were erased.
  *
- *  The algorithm's execution is parallelized as determined by \p exec.
+ *  \param c The vector from which to erase elements.
+ *  \param value The value to erase from the vector.
+ *  \return The number of elements erased.
+ *  \see https://en.cppreference.com/cpp/container/vector/erase2
  *
- *  \param exec The execution policy to use for parallelization.
- *  \param first The beginning of the sequence to copy.
- *  \param last The end of the sequence to copy.
- *  \param result The destination sequence.
- *  \return The end of the destination sequence.
- *  \see https://en.cppreference.com/w/cpp/algorithm/copy
+ *  \tparam Vector must be a Thrust vector type.
+ *  \tparam U must be a type convertible to \c Vector's \c value_type.
  *
- *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type must be convertible to \c OutputIterator's \c value_type. \tparam
- * OutputIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
- * Iterator</a>.
- *
- *  \pre \p result may be equal to \p first, but \p result shall not be in the range <tt>[first, last)</tt> otherwise.
- *
- *  The following code snippet demonstrates how to use \p copy
- *  to copy from one range to another using the \p thrust::device parallelization policy:
+ *  The following code snippet demonstrates how to use \p erase
+ *  to remove all instances of a value from a vector:
  *
  *  \code
- *  #include <thrust/copy.h>
+ *  #include <thrust/erase.h>
  *  #include <thrust/device_vector.h>
- *  #include <thrust/execution_policy.h>
  *  ...
  *
- *  thrust::device_vector<int> vec0(100);
- *  thrust::device_vector<int> vec1(100);
+ *  thrust::device_vector<int> vec{1, 2, 3, 2, 4};
  *  ...
  *
- *  thrust::copy(thrust::device, vec0.begin(), vec0.end(), vec1.begin());
+ *  auto erased = thrust::erase(vec, 2);
  *
- *  // vec1 is now a copy of vec0
+ *  // vec is now {1, 3, 4}
+ *  // erased is 2
  *  \endcode
  *
  *  \verbatim embed:rst:leading-asterisk
- *     .. versionadded:: 2.2.0
+ *     .. versionadded:: ?.?.?
  *  \endverbatim
  */
-
 template <class Vector,
           class U                                                   = typename Vector::value_type,
           ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
@@ -100,6 +84,47 @@ typename Vector::size_type erase(Vector& c, const U& value)
   return removed;
 }
 
+/*! \p erase removes all elements equal to \p value from the vector \p c.
+ *  It performs the operation of erasing matching elements and shifting the remaining
+ *  elements towards the beginning of the vector. The size of the vector is reduced
+ *  by the number of erased elements.
+ *
+ *  The return value is the number of elements that were erased.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec The execution policy to use for parallelization.
+ *  \param c The vector from which to erase elements.
+ *  \param value The value to erase from the vector.
+ *  \return The number of elements erased.
+ *  \see https://en.cppreference.com/cpp/container/vector/erase2
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam Vector must be a Thrust vector type.
+ *  \tparam U must be a type convertible to \c Vector's \c value_type.
+ *
+ *  The following code snippet demonstrates how to use \p erase
+ *  to remove all instances of a value from a vector using the \p thrust::device parallelization policy:
+ *
+ *  \code
+ *  #include <thrust/erase.h>
+ *  #include <thrust/device_vector.h>
+ *  #include <thrust/execution_policy.h>
+ *  ...
+ *
+ *  thrust::device_vector<int> vec{1, 2, 3, 2, 4};
+ *  ...
+ *
+ *  auto erased = thrust::erase(thrust::device, vec, 2);
+ *
+ *  // vec is now {1, 3, 4}
+ *  // erased is 2
+ *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: ?.?.?
+ *  \endverbatim
+ */
 template <typename DerivedPolicy,
           class Vector,
           class U                                                   = typename Vector::value_type,
@@ -118,6 +143,48 @@ erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& 
   return removed;
 }
 
+/*! \p erase_if removes all elements from the vector \p c that satisfy the predicate \p pred.
+ *  It performs the operation of erasing matching elements and shifting the remaining
+ *  elements towards the beginning of the vector. The size of the vector is reduced
+ *  by the number of erased elements.
+ *
+ *  The return value is the number of elements that were erased.
+ *
+ *  \param c The vector from which to erase elements.
+ *  \param pred The predicate used to determine which elements to erase.
+ *  \return The number of elements erased.
+ *  \see https://en.cppreference.com/cpp/container/vector/erase2
+ *
+ *  \tparam Vector must be a Thrust vector type.
+ *  \tparam Predicate must be a unary functor that returns \c true for elements to erase.
+ *
+ *  The following code snippet demonstrates how to use \p erase_if
+ *  to remove all elements satisfying a predicate from a vector:
+ *
+ *  \code
+ *  #include <thrust/erase.h>
+ *  #include <thrust/device_vector.h>
+ *  ...
+ *
+ *  struct is_negative
+ *  {
+ *    __host__ __device__
+ *    bool operator()(int x) { return x < 0; }
+ *  };
+ *
+ *  thrust::device_vector<int> vec{1, -2, 3, -4, 5};
+ *  ...
+ *
+ *  auto erased = thrust::erase_if(vec, is_negative());
+ *
+ *  // vec is now {1, 3, 5}
+ *  // erased is 2
+ *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: ?.?.?
+ *  \endverbatim
+ */
 template <class Vector, class Predicate, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
 typename Vector::size_type erase_if(Vector& c, Predicate pred)
 {
@@ -130,6 +197,53 @@ typename Vector::size_type erase_if(Vector& c, Predicate pred)
   return removed;
 }
 
+/*! \p erase_if removes all elements from the vector \p c that satisfy the predicate \p pred.
+ *  It performs the operation of erasing matching elements and shifting the remaining
+ *  elements towards the beginning of the vector. The size of the vector is reduced
+ *  by the number of erased elements.
+ *
+ *  The return value is the number of elements that were erased.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec The execution policy to use for parallelization.
+ *  \param c The vector from which to erase elements.
+ *  \param pred The predicate used to determine which elements to erase.
+ *  \return The number of elements erased.
+ *  \see https://en.cppreference.com/cpp/container/vector/erase2
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam Vector must be a Thrust vector type.
+ *  \tparam Predicate must be a unary functor that returns \c true for elements to erase.
+ *
+ *  The following code snippet demonstrates how to use \p erase_if
+ *  to remove all elements satisfying a predicate from a vector using the \p thrust::device parallelization policy:
+ *
+ *  \code
+ *  #include <thrust/erase.h>
+ *  #include <thrust/device_vector.h>
+ *  #include <thrust/execution_policy.h>
+ *  ...
+ *
+ *  struct is_negative
+ *  {
+ *    __host__ __device__
+ *    bool operator()(int x) { return x < 0; }
+ *  };
+ *
+ *  thrust::device_vector<int> vec{1, -2, 3, -4, 5};
+ *  ...
+ *
+ *  auto erased = thrust::erase_if(thrust::device, vec, is_negative());
+ *
+ *  // vec is now {1, 3, 5}
+ *  // erased is 2
+ *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: ?.?.?
+ *  \endverbatim
+ */
 template <typename DerivedPolicy,
           class Vector,
           class Predicate,

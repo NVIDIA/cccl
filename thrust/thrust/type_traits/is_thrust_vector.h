@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/*! \file TODO
- *  \brief A type trait that determines if a type is an \a ExecutionPolicy.
+/*! \file thrust/type_traits/is_thrust_vector.h
+ *  \brief A type trait that determines if a type is a Thrust vector.
  */
 
 #pragma once
@@ -32,14 +32,8 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-// TODO
-/*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/UnaryTypeTrait"><i>UnaryTypeTrait</i></a>
- *  that returns \c true_type if \c T is an \a ExecutionPolicy and \c false_type
- *  otherwise.
- */
-
-/*! \brief <tt>constexpr bool</tt> that is \c true if \c T is an
- *  \a ExecutionPolicy and \c false otherwise.
+/*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a
+ *  Thrust vector and \c false otherwise.
  */
 template <typename T>
 inline constexpr bool is_thrust_vector_v = false;
