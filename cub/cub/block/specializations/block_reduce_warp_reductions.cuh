@@ -23,6 +23,7 @@
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/warp/specializations/warp_redux.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -177,7 +178,7 @@ struct BlockReduceWarpReductions
     // When __reduce_<op>_sync is available (redux), the parallel path is a single HW instruction,
     // so we use a lower threshold.
     // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
-    constexpr int small_block_warp_threshold = is_redux_enabled_cuda_operator<ReductionOp, T> ? 2 : 4;
+    constexpr int small_block_warp_threshold = is_warp_redux_op_supported<ReductionOp, T> ? 2 : 4;
     constexpr bool use_parallel_reduction =
       (warps >= small_block_warp_threshold) && (threads_per_block >= warp_threads);
 
@@ -221,11 +222,13 @@ struct BlockReduceWarpReductions
         NullType dummy_storage;
         WarpReduceShfl<T, logical_lanes> warp_reduce(dummy_storage);
 
-        if constexpr (is_redux_enabled_cuda_operator<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>)
+        if constexpr (is_warp_redux_op_supported<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>)
         {
-          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, //
-                            (return cub::detail::reduce_op_sync(val, 0xFFFFFFFFu, reduction_op);),
-                            ({ warp_aggregate = warp_reduce.template Reduce<true>(val, num_warps, reduction_op); }))
+          if (const auto result = cub::detail::warp_redux(val, 0xFFFFFFFFu, reduction_op))
+          {
+            return *result;
+          }
+          warp_aggregate = warp_reduce.template Reduce<true>(val, num_warps, reduction_op);
         }
         else
         {
