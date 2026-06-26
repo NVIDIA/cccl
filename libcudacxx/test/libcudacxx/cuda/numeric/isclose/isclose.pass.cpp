@@ -70,11 +70,32 @@ TEST_FUNC constexpr bool test_integral()
   static_assert(noexcept(cuda::isclose(T{}, T{}, 0.0f)));
   static_assert(noexcept(cuda::isclose(T{}, T{}, 0.0f, T{})));
 
+  // equal values
   assert(cuda::isclose(T{1}, T{1}));
   assert(!cuda::isclose(T{1}, T{2}));
+
+  // relative tolerance values
   assert(cuda::isclose(T{100}, T{101}, 0.02f));
   assert(cuda::isclose(T{101}, T{100}, 0.02f));
   assert(!cuda::isclose(T{100}, T{103}, 0.02f));
+
+  //  absolute tolerance values, positive/negative values
+  assert(cuda::isclose(-3, 4, 0.0f, 7));
+  assert(!cuda::isclose(-3, 4, 0.0f, 6));
+  assert(cuda::isclose(3, -4, 0.0f, 7));
+  assert(!cuda::isclose(3, -4, 0.0f, 6));
+
+  //  absolute tolerance values, negative values
+  assert(cuda::isclose(-3, -5, 0.0f, 2));
+  assert(!cuda::isclose(-3, -5, 0.0f, 1));
+  assert(cuda::isclose(-5, -3, 0.0f, 2));
+  assert(!cuda::isclose(-5, -3, 0.0f, 1));
+
+  // absolute tolerance values, positive values
+  assert(cuda::isclose(3u, 5u, 0.0f, 2u));
+  assert(!cuda::isclose(3u, 5u, 0.0f, 1u));
+  assert(cuda::isclose(5u, 3u, 0.0f, 2u));
+  assert(!cuda::isclose(5u, 3u, 0.0f, 1u));
   return true;
 }
 

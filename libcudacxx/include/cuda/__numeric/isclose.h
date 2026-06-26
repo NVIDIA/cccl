@@ -49,6 +49,7 @@ template <typename _Tp>
 using __isclose_compare_t _CCCL_NODEBUG_ALIAS = ::cuda::std::
   conditional_t<(::cuda::std::__is_extended_floating_point_v<_Tp> && sizeof(_Tp) <= sizeof(float)), float, _Tp>;
 
+// compute 10^-(digits10 / 2)
 template <typename _Tp>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL float __isclose_default_relative_tolerance() noexcept
 {
