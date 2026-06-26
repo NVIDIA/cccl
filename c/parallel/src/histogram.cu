@@ -236,7 +236,7 @@ CUresult cccl_device_histogram_compile(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -254,7 +254,7 @@ try
   const cuda::compute_capability cc{cc_major, cc_minor};
   const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
   const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
-  const auto level_cpp   = cccl_type_enum_to_name(lower_level.type.type);
+  const auto level_cpp   = cccl_type_enum_to_name(level_type.type);
 
   const std::string offset_cpp =
     ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)
@@ -402,7 +402,7 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
 
   build_ptr->cc                  = cc.get();
   build_ptr->counter_type        = d_output_histograms.value_type;
-  build_ptr->level_type          = lower_level.type;
+  build_ptr->level_type          = level_type;
   build_ptr->sample_type         = d_samples.value_type;
   build_ptr->num_active_channels = num_active_channels;
   build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
@@ -475,7 +475,7 @@ CUresult cccl_device_histogram_build_ex(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -494,7 +494,7 @@ CUresult cccl_device_histogram_build_ex(
     d_samples,
     num_output_levels_val,
     d_output_histograms,
-    lower_level,
+    level_type,
     num_rows,
     row_stride_samples,
     is_evenly_segmented,
@@ -647,7 +647,7 @@ CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -665,7 +665,7 @@ CUresult cccl_device_histogram_build(
     d_samples,
     num_output_levels_val,
     d_output_histograms,
-    lower_level,
+    level_type,
     num_rows,
     row_stride_samples,
     is_evenly_segmented,

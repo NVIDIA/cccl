@@ -172,7 +172,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   {
     __vptr_for<interface_type> __vptr = ::cuda::__get_vtable_ptr_for<interface_type, _Vp>();
     __ref_.__set_ref(__obj ? __vptr : nullptr, __obj);
-    return *static_cast<::cuda::std::__maybe_const<__is_const_ptr, _Vp>**>(static_cast<void*>(&__ref_.__optr_));
+    return *reinterpret_cast<::cuda::std::__maybe_const<__is_const_ptr, _Vp>**>(&__ref_.__optr_);
   }
 
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
