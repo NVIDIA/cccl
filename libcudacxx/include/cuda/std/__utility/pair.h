@@ -512,6 +512,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     return *this;
   }
 
+  // ``get`` will specifically only move the sub-object, it's therefore OK to
+  // "move" the outer pair twice
+  // NOLINTBEGIN(bugprone-use-after-move)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
             __select_assignment _Trait = __pair_select_pair_like_assignable_v</*__is_const=*/false, _UPair, _T1, _T2>,
@@ -535,6 +538,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     this->second = get<1>(::cuda::std::forward<_UPair>(__p));
     return *this;
   }
+  // NOLINTEND(bugprone-use-after-move)
 
   _CCCL_API constexpr void swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
