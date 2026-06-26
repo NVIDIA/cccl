@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/cstdint>
@@ -42,11 +42,9 @@
 
 namespace cuda::experimental
 {
-class __shared_library
-{
 #  if _CCCL_OS(WINDOWS)
-  static constexpr ::cuda::std::int32_t __platform_default_flags = LOAD_LIBRARY_SEARCH_SYSTEM32;
-
+class __shared_library_base
+{
   struct __platform_deleter
   {
     using pointer _CCCL_NODEBUG_ALIAS = HMODULE;
@@ -57,18 +55,19 @@ class __shared_library
     }
   };
 
+protected:
+  static constexpr ::cuda::std::int32_t __platform_default_flags = LOAD_LIBRARY_SEARCH_SYSTEM32;
+
   using __platform_handle_t _CCCL_NODEBUG_ALIAS =
-    ::std::unique_ptr<::cuda::std::remove_pointer_t<HMODULE>, __platform_deleter>;
+    ::cuda::std::unique_ptr<::cuda::std::remove_pointer_t<HMODULE>, __platform_deleter>;
 
-  [[nodiscard]] _CCCL_HOST_API static __platform_handle_t
-  __load_lib_platform(const char* const __lib_name, const ::cuda::std::int32_t __flags)
-  {
-    return __platform_handle_t{::LoadLibraryExA(__lib_name, /*hFile=*/nullptr, static_cast<DWORD>(__flags))};
-  }
+  _CCCL_HOST_API __shared_library_base(const char* const __lib_path, const ::cuda::std::int32_t __flags)
+      : __handle_{::LoadLibraryExA(__lib_name, /*hFile=*/nullptr, static_cast<DWORD>(__flags))}
+  {}
 
-  [[nodiscard]] _CCCL_HOST_API void* __load_symbol_platform(const char* const __sym_name, bool __can_fail) const
+  [[nodiscard]] _CCCL_HOST_API void* __load_symbol_platform(const char* const __sym_name, const bool __can_fail) const
   {
-    void* const __sym = ::GetProcAddress(handle(), __sym_name);
+    void* const __sym = ::GetProcAddress(__handle_.get(), __sym_name);
 
     if (__sym == nullptr && !__can_fail)
     {
@@ -76,9 +75,12 @@ class __shared_library
     }
     return __sym;
   }
-#  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
-  static constexpr ::cuda::std::int32_t __platform_default_flags = RTLD_LAZY | RTLD_LOCAL;
 
+  __platform_handle_t __handle_{};
+};
+#  elif _CCCL_OS(LINUX) || _CCCL_OS(APPLE) // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv _CCCL_OS(LINUX) vvv
+class __shared_library_base
+{
   struct __platform_deleter
   {
     _CCCL_HOST_API void operator()(void* const __mod) const noexcept
@@ -87,8 +89,10 @@ class __shared_library
     }
   };
 
-  using __platform_handle_t _CCCL_NODEBUG_ALIAS = ::std::unique_ptr<void, __platform_deleter>;
+protected:
+  using __platform_handle_t _CCCL_NODEBUG_ALIAS = ::cuda::std::unique_ptr<void, __platform_deleter>;
 
+private:
   [[nodiscard]] _CCCL_HOST_API static __platform_handle_t
   __load_lib_platform(const char* const __lib_name, const ::cuda::std::int32_t __flags)
   {
@@ -97,11 +101,18 @@ class __shared_library
     return __platform_handle_t{::dlopen(__lib_name, __flags)};
   }
 
-  [[nodiscard]] _CCCL_HOST_API void* __load_symbol_platform(const char* const __sym_name, bool __can_fail) const
+protected:
+  static constexpr ::cuda::std::int32_t __platform_default_flags = RTLD_LAZY | RTLD_LOCAL;
+
+  _CCCL_HOST_API __shared_library_base(const char* const __lib_path, const ::cuda::std::int32_t __flags)
+      : __handle_{__load_lib_platform(__lib_path, __flags)}
+  {}
+
+  [[nodiscard]] _CCCL_HOST_API void* __load_symbol_platform(const char* const __sym_name, const bool __can_fail) const
   {
     static_cast<void>(::dlerror());
 
-    auto* __sym = ::dlsym(handle(), __sym_name);
+    auto* __sym = ::dlsym(__handle_.get(), __sym_name);
 
     if (const char* const __error = ::dlerror(); __error || !__sym)
     {
@@ -117,12 +128,22 @@ class __shared_library
     }
     return __sym;
   }
-#  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
 
+  __platform_handle_t __handle_{};
+};
+#  else // ^^^ _CCCL_OS(LINUX) ^^^ / vvv unknown arch vvv
+#    error "Unsupported system architecture. Please file a bug report at https://github.com/NVIDIA/cccl/issues"
+#  endif // ^^^ unknown arch ^^^
+
+class __shared_library : __shared_library_base
+{
 public:
-  using native_handle_type = typename __platform_handle_t::pointer;
+  using native_handle_type = typename __shared_library_base::__platform_handle_t::pointer;
 
-  __shared_library() = delete;
+  /**
+   * @brief __shared_library may not be default constructed
+   */
+  _CCCL_HIDE_FROM_ABI __shared_library() = delete;
 
   /**
    * @brief Construct and load a named shared library with the provided flags
@@ -136,9 +157,9 @@ public:
    *
    * @throw std::runtime_error if the library could not be loaded.
    */
-  _CCCL_HOST_API explicit __shared_library(const char* __lib_path,
-                                           ::cuda::std::int32_t __flags = __platform_default_flags)
-      : __handle_{__load_lib_platform(__lib_path, __flags)}
+  _CCCL_HOST_API explicit __shared_library(
+    const char* __lib_path, ::cuda::std::int32_t __flags = __shared_library_base::__platform_default_flags)
+      : __shared_library_base{__lib_path, __flags}
   {
     if (!__handle_)
     {
@@ -170,9 +191,6 @@ public:
   {
     return reinterpret_cast<::cuda::std::decay_t<_Tp>>(__load_symbol_platform(__symbol_name, __can_fail));
   }
-
-private:
-  __platform_handle_t __handle_;
 };
 } // namespace cuda::experimental
 

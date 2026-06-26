@@ -27,6 +27,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__functional/operations_traits.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstdint>
@@ -34,17 +35,18 @@
 
 #include <cuda/experimental/__nccl/shared_library.h>
 
-#include <exception>
-
 #if _CCCL_HOSTED()
 #  include <cstdio> // snprintf
+#  include <exception> // uncaught_exceptions
 #endif // _CCCL_HOSTED()
 
-#define _CCCL_NCCL() _CCCL_VERSION_INVALID()
+#define _CCCL_NCCL()     _CCCL_VERSION_INVALID()
+#define _CCCL_HAS_NCCL() 0
 
 #if __has_include(<nccl.h>)
 #  include <nccl.h>
 
+#  undef _CCCL_HAS_NCCL
 #  define _CCCL_HAS_NCCL() 1
 
 #  if !defined(NCCL_MAJOR) || !defined(NCCL_MINOR)
@@ -55,9 +57,7 @@
 #  define _CCCL_NCCL() (NCCL_MAJOR, NCCL_MINOR)
 
 #  include <cuda/experimental/__nccl/abi_compatible.h>
-#else // ^^^ __has_include(<nccl.h>) ^^^ / vvv !__has_include(<nccl.h>) vvv
-#  define _CCCL_HAS_NCCL() 0
-#endif // !__has_include(<nccl.h>)
+#endif // __has_include(<nccl.h>)
 
 #include <cuda/std/__cccl/prologue.h>
 

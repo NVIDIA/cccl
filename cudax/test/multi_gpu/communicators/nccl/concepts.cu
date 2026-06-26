@@ -12,7 +12,7 @@
 #include <cuda/std/functional>
 
 #include <cuda/experimental/__multi_gpu/concepts.h>
-#include <cuda/experimental/__multi_gpu/nccl_communicator.h>
+#include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 
 #include <functional>
 
@@ -37,37 +37,37 @@ struct unsupported_op
 {};
 } // namespace
 
-C2H_TEST("nccl_communicator concept conformance", "[multi_gpu][nccl]")
+C2H_TEST("nccl_communicator_ref concept conformance", "[multi_gpu][nccl]")
 {
-  STATIC_REQUIRE(cudax::__communicator<cudax::nccl_communicator>);
-  STATIC_REQUIRE(cudax::__has_send<cudax::nccl_communicator, int*>);
-  STATIC_REQUIRE(cudax::__has_send<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(!cudax::__has_send<cudax::nccl_communicator, non_trivial*>);
-  STATIC_REQUIRE(cudax::__has_recv<cudax::nccl_communicator, int*>);
-  STATIC_REQUIRE(cudax::__has_recv<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(!cudax::__has_recv<cudax::nccl_communicator, non_trivial*>);
-  STATIC_REQUIRE(cudax::__has_reduce<cudax::nccl_communicator, int*>);
-  STATIC_REQUIRE(!cudax::__has_reduce<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(cudax::__has_all_reduce<cudax::nccl_communicator>);
-  STATIC_REQUIRE(!cudax::__has_all_reduce<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(cudax::__has_gather<cudax::nccl_communicator>);
-  STATIC_REQUIRE(cudax::__has_gather<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(!cudax::__has_gather<cudax::nccl_communicator, non_trivial*>);
-  STATIC_REQUIRE(cudax::__has_gather_v<cudax::nccl_communicator>);
-  STATIC_REQUIRE(cudax::__has_gather_v<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(!cudax::__has_gather_v<cudax::nccl_communicator, non_trivial*>);
-  STATIC_REQUIRE(cudax::__has_all_gather<cudax::nccl_communicator>);
-  STATIC_REQUIRE(cudax::__has_all_gather<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(!cudax::__has_all_gather<cudax::nccl_communicator, non_trivial*>);
-  STATIC_REQUIRE(cudax::__has_broadcast<cudax::nccl_communicator>);
-  STATIC_REQUIRE(cudax::__has_broadcast<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(!cudax::__has_broadcast<cudax::nccl_communicator, non_trivial*>);
-  STATIC_REQUIRE(cudax::__has_all_to_all<cudax::nccl_communicator>);
-  STATIC_REQUIRE(cudax::__has_all_to_all<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(!cudax::__has_all_to_all<cudax::nccl_communicator, non_trivial*>);
-  STATIC_REQUIRE(cudax::__has_all_to_all_v<cudax::nccl_communicator>);
-  STATIC_REQUIRE(cudax::__has_all_to_all_v<cudax::nccl_communicator, payload*>);
-  STATIC_REQUIRE(!cudax::__has_all_to_all_v<cudax::nccl_communicator, non_trivial*>);
+  STATIC_REQUIRE(cudax::__communicator<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(cudax::__has_send<cudax::nccl_communicator_ref, int*>);
+  STATIC_REQUIRE(cudax::__has_send<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_send<cudax::nccl_communicator_ref, non_trivial*>);
+  STATIC_REQUIRE(cudax::__has_recv<cudax::nccl_communicator_ref, int*>);
+  STATIC_REQUIRE(cudax::__has_recv<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_recv<cudax::nccl_communicator_ref, non_trivial*>);
+  STATIC_REQUIRE(cudax::__has_reduce<cudax::nccl_communicator_ref, int*>);
+  STATIC_REQUIRE(!cudax::__has_reduce<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(cudax::__has_all_reduce<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(!cudax::__has_all_reduce<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(cudax::__has_gather<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(cudax::__has_gather<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_gather<cudax::nccl_communicator_ref, non_trivial*>);
+  STATIC_REQUIRE(cudax::__has_gather_v<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(cudax::__has_gather_v<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_gather_v<cudax::nccl_communicator_ref, non_trivial*>);
+  STATIC_REQUIRE(cudax::__has_all_gather<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(cudax::__has_all_gather<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_all_gather<cudax::nccl_communicator_ref, non_trivial*>);
+  STATIC_REQUIRE(cudax::__has_broadcast<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(cudax::__has_broadcast<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_broadcast<cudax::nccl_communicator_ref, non_trivial*>);
+  STATIC_REQUIRE(cudax::__has_all_to_all<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(cudax::__has_all_to_all<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_all_to_all<cudax::nccl_communicator_ref, non_trivial*>);
+  STATIC_REQUIRE(cudax::__has_all_to_all_v<cudax::nccl_communicator_ref>);
+  STATIC_REQUIRE(cudax::__has_all_to_all_v<cudax::nccl_communicator_ref, payload*>);
+  STATIC_REQUIRE(!cudax::__has_all_to_all_v<cudax::nccl_communicator_ref, non_trivial*>);
 
   STATIC_REQUIRE(cudax::nccl_transportable<int>);
   STATIC_REQUIRE(cudax::nccl_transportable<int*>);

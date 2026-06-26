@@ -8,15 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <thrust/detail/raw_pointer_cast.h>
-
+#include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/memory_pool>
 #include <cuda/std/cstdint>
 
 #include <vector>
 
 #include "nccl_test_helpers.cuh"
-#include <c2h/vector.h>
 
 namespace
 {
@@ -28,7 +27,7 @@ struct payload
 } // namespace
 
 // Ring exchange via send/recv. Rank r contributes {r, r, r}.
-NCCL_COMM_TEST("nccl_communicator send/recv ring")
+NCCL_COMM_TEST("nccl_communicator_ref send/recv ring")
 {
   if (cuda::devices.size() == 1)
   {
@@ -41,14 +40,15 @@ NCCL_COMM_TEST("nccl_communicator send/recv ring")
   const int n  = static_cast<int>(cuda::devices.size());
   auto streams = nccl_test_util::make_streams();
 
-  std::vector<c2h::device_vector<cuda::std::int32_t>> send;
-  std::vector<c2h::device_vector<cuda::std::int32_t>> recv;
+  std::vector<cuda::device_buffer<cuda::std::int32_t>> send;
+  std::vector<cuda::device_buffer<cuda::std::int32_t>> recv;
 
   for (int i = 0; i < n; ++i)
   {
-    REQUIRE_CUDART(cudaSetDevice(i));
-    auto& s = send.emplace_back(c2h::host_vector<cuda::std::int32_t>(/*size*/ 3, i));
-    recv.emplace_back(s.size(), -1);
+    auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
+
+    auto& s = send.emplace_back(streams[i], pool, 3, i);
+    recv.emplace_back(cuda::make_buffer<cuda::std::int32_t>(streams[i], pool, s.size(), -1));
   }
 
   {
@@ -59,8 +59,8 @@ NCCL_COMM_TEST("nccl_communicator send/recv ring")
       const int prev = (i + n - 1) % n;
       const int next = (i + 1) % n;
 
-      this->communicators()[i].recv(g, thrust::raw_pointer_cast(recv[i].data()), recv[i].size(), prev, streams[i]);
-      this->communicators()[i].send(g, thrust::raw_pointer_cast(send[i].data()), send[i].size(), next, streams[i]);
+      this->communicators()[i].recv(g, recv[i].data(), recv[i].size(), prev, streams[i]);
+      this->communicators()[i].send(g, send[i].data(), send[i].size(), next, streams[i]);
     }
   }
 
@@ -72,16 +72,18 @@ NCCL_COMM_TEST("nccl_communicator send/recv ring")
   // Rank r received from its predecessor (r-1): {r-1, r-1, r-1}.
   for (int r = 0; r < n; ++r)
   {
-    const int prev = (r + n - 1) % n;
+    const cuda::std::int32_t prev = (r + n - 1) % n;
 
-    const c2h::host_vector<cuda::std::int32_t> expected(recv[r].size(), prev);
-    const c2h::host_vector<cuda::std::int32_t> actual = recv[r];
+    auto pool = cuda::pinned_default_memory_pool();
+    const cuda::host_buffer<cuda::std::int32_t> expected =
+      cuda::make_buffer(recv[r].stream(), pool, recv[r].size(), prev);
+    const cuda::host_buffer<cuda::std::int32_t> actual = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
     REQUIRE_THAT(actual, Equals(expected));
   }
 }
 
-NCCL_COMM_TEST("nccl_communicator send/recv transports trivially copyable payload")
+NCCL_COMM_TEST("nccl_communicator_ref send/recv transports trivially copyable payload")
 {
   if (cuda::devices.size() == 1)
   {
@@ -94,22 +96,22 @@ NCCL_COMM_TEST("nccl_communicator send/recv transports trivially copyable payloa
   const int n  = static_cast<int>(cuda::devices.size());
   auto streams = nccl_test_util::make_streams();
 
-  std::vector<c2h::device_vector<payload>> send;
-  std::vector<c2h::device_vector<payload>> recv;
+  std::vector<cuda::device_buffer<payload>> send;
+  std::vector<cuda::device_buffer<payload>> recv;
 
   for (int i = 0; i < n; ++i)
   {
-    REQUIRE_CUDART(cudaSetDevice(i));
+    auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
 
-    c2h::host_vector<payload> h(3);
+    std::vector<payload> h(3);
 
     for (cuda::std::size_t k = 0; k < h.size(); ++k)
     {
       h[k] = payload{static_cast<cuda::std::int32_t>(i), static_cast<cuda::std::int32_t>(k)};
     }
 
-    auto& s = send.emplace_back(h);
-    recv.emplace_back(s.size());
+    auto& s = send.emplace_back(streams[i], pool, h);
+    recv.emplace_back(cuda::make_buffer<payload>(streams[i], pool, s.size(), cuda::no_init));
   }
 
   {
@@ -120,8 +122,8 @@ NCCL_COMM_TEST("nccl_communicator send/recv transports trivially copyable payloa
       const int prev = (i + n - 1) % n;
       const int next = (i + 1) % n;
 
-      this->communicators()[i].recv(g, thrust::raw_pointer_cast(recv[i].data()), recv[i].size(), prev, streams[i]);
-      this->communicators()[i].send(g, thrust::raw_pointer_cast(send[i].data()), send[i].size(), next, streams[i]);
+      this->communicators()[i].recv(g, recv[i].data(), recv[i].size(), prev, streams[i]);
+      this->communicators()[i].send(g, send[i].data(), send[i].size(), next, streams[i]);
     }
   }
 
@@ -132,8 +134,10 @@ NCCL_COMM_TEST("nccl_communicator send/recv transports trivially copyable payloa
 
   for (int r = 0; r < n; ++r)
   {
-    const int prev                         = (r + n - 1) % n;
-    const c2h::host_vector<payload> actual = recv[r];
+    const int prev = (r + n - 1) % n;
+
+    auto pool                               = cuda::pinned_default_memory_pool();
+    const cuda::host_buffer<payload> actual = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
     for (cuda::std::size_t k = 0; k < actual.size(); ++k)
     {

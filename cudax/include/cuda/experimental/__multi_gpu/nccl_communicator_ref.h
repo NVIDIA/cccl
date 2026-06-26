@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_H
-#define _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_H
+#ifndef _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_REF_H
+#define _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -68,7 +68,7 @@ _CCCL_CONCEPT nccl_reducible =
 
 //! @brief A non-owning wrapper around a NCCL communicator (`ncclComm_t`).
 //!
-//! `nccl_communicator` adapts a previously-created NCCL communicator to the
+//! `nccl_communicator_ref` adapts a previously-created NCCL communicator to the
 //! `cuda::experimental` communicator model, exposing NCCL's point-to-point and collective
 //! operations as member functions. It does not own the underlying communicator: the caller
 //! is responsible for creating it (e.g. via `ncclCommInitRank`) and destroying it once it is
@@ -82,7 +82,7 @@ _CCCL_CONCEPT nccl_reducible =
 //! the matching call on its peers, so issuing interdependent operations one at a time without
 //! a group can deadlock. The guard is obtained from `group_guard()` and submits the
 //! grouped operations when it is destroyed.
-class _CCCL_VISIBILITY_DEFAULT nccl_communicator
+class _CCCL_VISIBILITY_DEFAULT nccl_communicator_ref
 {
   template <class _Tp>
   [[nodiscard]] _CCCL_HOST_API static constexpr ::cuda::std::size_t
@@ -113,7 +113,7 @@ public:
 #endif
 
   //! @brief Disallow direct construction from `NCCL_COMM_NULL`.
-  _CCCL_HIDE_FROM_ABI nccl_communicator(::cuda::std::nullptr_t) = delete;
+  _CCCL_HIDE_FROM_ABI nccl_communicator_ref(::cuda::std::nullptr_t) = delete;
 
   //! @brief Construct a communicator from an existing NCCL communicator handle.
   //!
@@ -123,8 +123,8 @@ public:
   //! @param __comm The NCCL communicator handle to wrap. Must outlive this object.
   //!
   //! @throws std::invalid_argument If `__comm` is `NCCL_COMM_NULL`.
-  _CCCL_HOST_API nccl_communicator(native_handle_type __comm)
-      : nccl_communicator{__comm, logical_device{::cuda::experimental::__nccl::__ncclCommCuDevice(__comm)}}
+  _CCCL_HOST_API nccl_communicator_ref(native_handle_type __comm)
+      : nccl_communicator_ref{__comm, logical_device{::cuda::experimental::__nccl::__ncclCommCuDevice(__comm)}}
   {}
 
   //! @brief Construct a communicator from an existing NCCL communicator handle.
@@ -137,7 +137,7 @@ public:
   //!
   //! @throws std::invalid_argument If `__comm` is `NCCL_COMM_NULL`.
   //! @throws std::runtime_error If the device reported by NCCL does not match `__device`.
-  _CCCL_HOST_API nccl_communicator(native_handle_type __comm, logical_device __device)
+  _CCCL_HOST_API nccl_communicator_ref(native_handle_type __comm, logical_device __device)
       : __comm_{[&] {
         if (__comm == nullptr)
         {
@@ -150,7 +150,7 @@ public:
       , __size_{::cuda::experimental::__nccl::__ncclCommCount(native_handle())}
   {
     if (const auto __nccl_device = ::cuda::experimental::__nccl::__ncclCommCuDevice(native_handle());
-        __nccl_device != device().underlying_device())
+        __nccl_device != logical_device().underlying_device())
     {
       _CCCL_THROW(::std::runtime_error,
                   "Inconsistent devices, NCCL communicator device and provided logical device do not match");
@@ -197,7 +197,7 @@ public:
   //! @brief Retrieve the logical device this communicator is associated with.
   //!
   //! @return A reference to the logical device passed at construction.
-  [[nodiscard]] _CCCL_HOST_API constexpr const logical_device& device() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr const logical_device& logical_device() const noexcept
   {
     return __device_;
   }
@@ -424,7 +424,7 @@ private:
           continue;
         }
 
-        auto* const __recv_ptr = __recvbuf_bytes + __displs_bytes;
+        auto* const __recv_ptr_bytes = __recvbuf_bytes + __displs_bytes;
 
         if (__peer == __root)
         {
@@ -436,14 +436,14 @@ private:
           }
 
           // Unclear whether CUDA driver also makes this optimization
-          if (__sendbuf_bytes != __recv_ptr)
+          if (__sendbuf_bytes != __recv_ptr_bytes)
           {
-            ::cuda::__driver::__memcpyAsync(__recv_ptr, __sendbuf_bytes, __send_count_bytes, __stream.get());
+            ::cuda::__driver::__memcpyAsync(__recv_ptr_bytes, __sendbuf_bytes, __send_count_bytes, __stream.get());
           }
         }
         else
         {
-          recv(__guard, __recv_ptr, __recv_count_bytes, __peer, __stream);
+          recv(__guard, __recv_ptr_bytes, __recv_count_bytes, __peer, __stream);
         }
       }
     }
@@ -726,4 +726,4 @@ private:
 
 // NOLINTEND(bugprone-reserved-identifier)
 
-#endif // _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_H
+#endif // _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_REF_H

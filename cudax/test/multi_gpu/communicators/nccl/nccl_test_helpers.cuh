@@ -15,7 +15,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/nccl_communicator.h>
+#include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 #include <cuda/experimental/stream.cuh>
 
 #include <vector>
@@ -84,7 +84,7 @@ public:
     }
   }
 
-  [[nodiscard]] cuda::std::span<cudax::nccl_communicator> communicators()
+  [[nodiscard]] cuda::std::span<cudax::nccl_communicator_ref> communicators()
   {
     return wrappers_;
   }
@@ -96,7 +96,7 @@ public:
 
 private:
   std::vector<ncclComm_t> comms_{};
-  std::vector<cudax::nccl_communicator> wrappers_{};
+  std::vector<cudax::nccl_communicator_ref> wrappers_{};
 };
 
 #define NCCL_COMM_TEST(NAME, ...) \

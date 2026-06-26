@@ -12,71 +12,75 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda/experimental/__multi_gpu/nccl_communicator.h>
+#include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 
 #include <nccl.h>
 
 #include "nccl_test_helpers.cuh"
 
-NCCL_COMM_TEST("nccl_communicator typedefs")
+C2H_TEST("nccl_communicator_ref typedefs", "[multi_gpu]")
 {
-  static_assert(::cuda::std::is_same_v<cudax::nccl_communicator::native_handle_type, ncclComm_t>);
-  static_assert(
-    ::cuda::std::is_same_v<cudax::nccl_communicator::group_guard_type,
-                           decltype(::cuda::std::declval<const cudax::nccl_communicator&>().group_guard())>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<cudax::nccl_communicator_ref::native_handle_type, ncclComm_t>);
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<cudax::nccl_communicator_ref::group_guard_type,
+                           decltype(::cuda::std::declval<const cudax::nccl_communicator_ref&>().group_guard())>);
 }
 
-NCCL_COMM_TEST("nccl_communicator rank and size")
+C2H_TEST("nccl_communicator_ref not constructible from NCCL_COMM_NULL", "[multi_gpu]")
 {
-  int i = 0;
+  STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, decltype(NCCL_COMM_NULL)>);
+  STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, cuda::std::nullptr_t>);
+}
 
-  for (auto& comm : this->communicators())
+NCCL_COMM_TEST("nccl_communicator_ref basic")
+{
+  SECTION("rank and size")
   {
-    REQUIRE(comm.rank() == i);
-    REQUIRE(comm.size() == static_cast<int>(cuda::devices.size()));
-    ++i;
+    int i = 0;
+
+    for (auto& comm : this->communicators())
+    {
+      REQUIRE(comm.rank() == i);
+      REQUIRE(comm.size() == static_cast<int>(cuda::devices.size()));
+      ++i;
+    }
   }
-}
 
-NCCL_COMM_TEST("nccl_communicator native_handle")
-{
-  int i = 0;
-
-  for (auto& comm : this->communicators())
+  SECTION("native handle")
   {
-    REQUIRE(comm.native_handle() == this->handles()[i]);
-    ++i;
+    int i = 0;
+
+    for (auto& comm : this->communicators())
+    {
+      REQUIRE(comm.native_handle() == this->handles()[i]);
+      ++i;
+    }
   }
-}
 
-NCCL_COMM_TEST("nccl_communicator logical device")
-{
-  int i = 0;
-
-  for (auto& comm : this->communicators())
+  SECTION("logical device")
   {
-    REQUIRE(comm.device().underlying_device() == cuda::devices[i]);
-    ++i;
+    int i = 0;
+
+    for (auto& comm : this->communicators())
+    {
+      REQUIRE(comm.logical_device().underlying_device() == cuda::devices[i]);
+      ++i;
+    }
   }
-}
 
-NCCL_COMM_TEST("nccl_communicator group_guard round-trip")
-{
-  // Opening and closing a guard with no enqueued ops must not throw.
-  [[maybe_unused]] auto g = this->communicators().front().group_guard();
-}
-
-NCCL_COMM_TEST("nccl_communicator device mismatch throws")
-{
-  if (cuda::devices.size() > 1)
+  SECTION("group_guard round trip")
   {
-    REQUIRE_THROWS_WITH(cudax::nccl_communicator(this->handles().front(), cudax::logical_device{cuda::devices[1]}),
-                        "Inconsistent devices, NCCL communicator device and provided logical device do not match");
+    // Opening and closing a guard with no enqueued ops must not throw.
+    [[maybe_unused]] auto g = this->communicators().front().group_guard();
   }
-}
 
-NCCL_COMM_TEST("nccl_communicator not constructible from NCCL_COMM_NULL")
-{
-  STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, decltype(NCCL_COMM_NULL)>);
-  STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, cuda::std::nullptr_t>);
+  SECTION("device mismatch throws")
+  {
+    if (cuda::devices.size() > 1)
+    {
+      REQUIRE_THROWS_WITH(
+        cudax::nccl_communicator_ref(this->handles().front(), cudax::logical_device{cuda::devices[1]}),
+        "Inconsistent devices, NCCL communicator device and provided logical device do not match");
+    }
+  }
 }

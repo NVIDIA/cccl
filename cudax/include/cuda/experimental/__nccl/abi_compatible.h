@@ -34,8 +34,51 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
+#ifndef _CCCL_DOXYGEN_INVOKED // do not document
+
 namespace cuda::experimental::__nccl::__abi_detail
 {
+//! @brief A helper that checks at compile-time whether two types are ABI compatible.
+//!
+//! @tparam _Tp The left type to check.
+//! @tparam _Up The right type to check.
+//!
+//! @return `true` if `_Tp` and `_Up` are considered to be ABI compatible, `false` otherwise.
+//!
+//! ABI compatibility is stricter than type compatibility because it cannot allow conversions of any
+//! kind, implicit or otherwise. The mental test is essentially "are _Tp and _Up bitwise convertible
+//! through void *?":
+//!
+//! ```c++
+//! void *opaque_function()
+//! {
+//!   _Tp inner = ...;
+//!
+//!   return &inner;
+//! }
+//!
+//! _Up value = *(_Up *)opaque_function(); // is this OK?
+//! ```
+//! If `__abi_compatible<_Tp, _Up>()` is `true`, then this conversion is legal and always correct.
+//!
+//! For most types, we must have an exact type match for this to be legal. The only exception is
+//! enums, where we only need to ensure that the underlying types of the enums are identical. This
+//! rule therefore makes it possible to approximate an enum using just the raw underlying type. For
+//! example:
+//!
+//! ```c++
+//! enum OpaqueEnum : int8_t { FOO };
+//!
+//! void *opaque_function()
+//! {
+//!   OpaqueEnum inner = FOO;
+//!
+//!   return &inner;
+//! }
+//!
+//! // Assignment is OK, the underlying type is int8_t
+//! int8_t value = *(int8_t *)opaque_function();
+//! ```
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_HOST_API constexpr bool __abi_compatible() noexcept;
 
@@ -53,53 +96,47 @@ template <class _R1, class... _Args1, class _R2, class... _Args2>
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_HOST_API constexpr bool __abi_compatible() noexcept
 {
-  using _RawTp = ::cuda::std::remove_cv_t<_Tp>;
-  using _RawUp = ::cuda::std::remove_cv_t<_Up>;
-
-  if constexpr (::cuda::std::is_same_v<_RawTp, _RawUp>)
+  if constexpr (::cuda::std::is_same_v<_Tp, _Up>)
   {
     // Equal types are obviously ABI compatible
     return true;
   }
-  else if constexpr (::cuda::std::is_function_v<_RawTp> && ::cuda::std::is_function_v<_RawUp>)
+  else if constexpr (::cuda::std::is_function_v<_Tp> && ::cuda::std::is_function_v<_Up>)
   {
     // Functions need all arguments checked
     return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible_func(
-      ::cuda::std::decay_t<_RawTp>{}, ::cuda::std::decay_t<_RawUp>{});
+      ::cuda::std::decay_t<_Tp>{}, ::cuda::std::decay_t<_Up>{});
   }
-  else if constexpr (::cuda::std::is_enum_v<_RawTp> || ::cuda::std::is_enum_v<_RawUp>)
+  else if constexpr (::cuda::std::is_enum_v<_Tp> || ::cuda::std::is_enum_v<_Up>)
   {
     // If either side is an enum, we need to unwrap to check whether the underlying types
     // match. These must match *exactly*, otherwise we perform the moral equivalent of a
     // bitcast when we reinterpret them
-    if constexpr (::cuda::std::is_enum_v<_RawTp> && ::cuda::std::is_enum_v<_RawUp>)
+    if constexpr (::cuda::std::is_enum_v<_Tp> && ::cuda::std::is_enum_v<_Up>)
     {
-      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::underlying_type_t<_RawTp>,
-                                                                          ::cuda::std::underlying_type_t<_RawUp>>();
+      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::underlying_type_t<_Tp>,
+                                                                          ::cuda::std::underlying_type_t<_Up>>();
     }
-    else if constexpr (::cuda::std::is_enum_v<_RawTp>)
+    else if constexpr (::cuda::std::is_enum_v<_Tp>)
     {
-      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::underlying_type_t<_RawTp>,
-                                                                          _RawUp>();
+      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::underlying_type_t<_Tp>, _Up>();
     }
     else
     {
-      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<_RawTp,
-                                                                          ::cuda::std::underlying_type_t<_RawUp>>();
+      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<_Tp, ::cuda::std::underlying_type_t<_Up>>();
     }
   }
-  else if constexpr (::cuda::std::is_pointer_v<_RawTp> && ::cuda::std::is_pointer_v<_RawUp>)
+  else if constexpr (::cuda::std::is_pointer_v<_Tp> && ::cuda::std::is_pointer_v<_Up>)
   {
     // Note the &&. If one is a pointer but the other is not, that's an error
-    return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::remove_pointer_t<_RawTp>,
-                                                                        ::cuda::std::remove_pointer_t<_RawUp>>();
+    return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::remove_pointer_t<_Tp>,
+                                                                        ::cuda::std::remove_pointer_t<_Up>>();
   }
-  else
-  {
-    return false;
-  }
+  return false;
 }
 } // namespace cuda::experimental::__nccl::__abi_detail
+
+#endif // _CCCL_DOXYGEN_INVOKED
 
 // NOLINTEND(bugprone-reserved-identifier)
 
