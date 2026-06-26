@@ -87,17 +87,24 @@ int main(int, char**)
 {
   NV_DISPATCH_TARGET(
     NV_IS_HOST,
-    (TestEachIntegralRefType<TestFn, local_memory_selector>()(); testp<int*, local_memory_selector>();
+    (TestEachIntegralRefType<TestFn, local_memory_selector>()();
+     TestEachFLoatingPointRefType<TestFn, local_memory_selector>()();
+     testp<int*, local_memory_selector>();
      testp<const int*, local_memory_selector>();),
     NV_PROVIDES_SM_70,
-    (TestEachIntegralRefType<TestFn, local_memory_selector>()(); testp<int*, local_memory_selector>();
+    (TestEachIntegralRefType<TestFn, local_memory_selector>()();
+     TestEachFLoatingPointRefType<TestFn, local_memory_selector>()();
+     testp<int*, local_memory_selector>();
      testp<const int*, local_memory_selector>();))
 
   NV_IF_TARGET(
     NV_IS_DEVICE,
-    (TestEachIntegralRefType<TestFn, shared_memory_selector>()(); testp<int*, shared_memory_selector>();
+    (TestEachIntegralRefType<TestFn, shared_memory_selector>()();
+     TestEachFLoatingPointRefType<TestFn, shared_memory_selector>()();
+     testp<int*, shared_memory_selector>();
      testp<const int*, shared_memory_selector>();
      TestEachIntegralRefType<TestFn, global_memory_selector>()();
+     TestEachFLoatingPointRefType<TestFn, global_memory_selector>()();
      testp<int*, global_memory_selector>();
      testp<const int*, global_memory_selector>();))
 
