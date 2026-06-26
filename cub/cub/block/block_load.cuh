@@ -817,12 +817,14 @@ struct std::formatter<CUB_NS_QUALIFIER::BlockLoadAlgorithm, CharT> : formatter<c
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 //! @rst
 //! Enumerates the cache levels that :cpp:class:`cub::BlockLoad` can prefetch into when using
 //! :cpp:enumerator:`cub::BLOCK_LOAD_DIRECT`.
 //!
 //! Pass as the ``Prefetch`` template argument of :cpp:class:`cub::BlockLoad`. The default is
-//! ``BlockLoadPrefetch::none`` (no prefetch).
+//! ``detail::BlockLoadPrefetch::none`` (no prefetch).
 //!
 //! @endrst
 enum class BlockLoadPrefetch
@@ -842,16 +844,17 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadPrefetch prefetch
   switch (prefetch)
   {
     case BlockLoadPrefetch::none:
-      return os << "BlockLoadPrefetch::none";
+      return os << "detail::BlockLoadPrefetch::none";
     case BlockLoadPrefetch::l2:
-      return os << "BlockLoadPrefetch::l2";
+      return os << "detail::BlockLoadPrefetch::l2";
     case BlockLoadPrefetch::l1:
-      return os << "BlockLoadPrefetch::l1";
+      return os << "detail::BlockLoadPrefetch::l1";
     default:
-      return os << "<unknown BlockLoadPrefetch: " << static_cast<int>(prefetch) << ">";
+      return os << "<unknown detail::BlockLoadPrefetch: " << static_cast<int>(prefetch) << ">";
   }
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+} // namespace detail
 
 //! @rst
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear
@@ -868,7 +871,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadPrefetch prefetch
 //!
 //!   #. :cpp:enumerator:`cub::BLOCK_LOAD_DIRECT`:
 //!      A :ref:`blocked arrangement <flexible-data-arrangement>` of data is read directly from memory.
-//!      Combine with ``Prefetch = cub::BlockLoadPrefetch::l2`` to emit L2 prefetch hints before each load.
+//!      Combine with ``Prefetch = cub::detail::BlockLoadPrefetch::l2`` to emit L2 prefetch hints before each load.
 //!   #. :cpp:enumerator:`cub::BLOCK_LOAD_STRIPED`:
 //!      A :ref:`striped arrangement <flexible-data-arrangement>` of data is read directly from memory.
 //!   #. :cpp:enumerator:`cub::BLOCK_LOAD_VECTORIZE`:
@@ -946,10 +949,10 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadPrefetch prefetch
 template <typename T,
           int BlockDimX,
           int ItemsPerThread,
-          BlockLoadAlgorithm Algorithm = BLOCK_LOAD_DIRECT,
-          int BlockDimY                = 1,
-          int BlockDimZ                = 1,
-          BlockLoadPrefetch Prefetch   = BlockLoadPrefetch::none>
+          BlockLoadAlgorithm Algorithm       = BLOCK_LOAD_DIRECT,
+          int BlockDimY                      = 1,
+          int BlockDimZ                      = 1,
+          detail::BlockLoadPrefetch Prefetch = detail::BlockLoadPrefetch::none>
 class BlockLoad
 {
   static constexpr int ThreadsPerBlock = BlockDimX * BlockDimY * BlockDimZ; // total threads in the block
@@ -1077,7 +1080,7 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT)
     {
-      if constexpr (Prefetch != BlockLoadPrefetch::none)
+      if constexpr (Prefetch != detail::BlockLoadPrefetch::none)
       {
         detail::prefetch_block_load_tile<ThreadsPerBlock>(linear_tid, block_src_it, ThreadsPerBlock * ItemsPerThread);
       }
@@ -1085,13 +1088,13 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>)
       {
@@ -1109,14 +1112,14 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
@@ -1178,7 +1181,7 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT)
     {
-      if constexpr (Prefetch != BlockLoadPrefetch::none)
+      if constexpr (Prefetch != detail::BlockLoadPrefetch::none)
       {
         detail::prefetch_block_load_tile<ThreadsPerBlock>(linear_tid, block_src_it, block_items_end);
       }
@@ -1186,26 +1189,26 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
@@ -1270,7 +1273,7 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT)
     {
-      if constexpr (Prefetch != BlockLoadPrefetch::none)
+      if constexpr (Prefetch != detail::BlockLoadPrefetch::none)
       {
         detail::prefetch_block_load_tile<ThreadsPerBlock>(linear_tid, block_src_it, block_items_end);
       }
@@ -1278,26 +1281,26 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      static_assert(Prefetch == BlockLoadPrefetch::none,
+      static_assert(Prefetch == detail::BlockLoadPrefetch::none,
                     "BlockLoadPrefetch is only supported with BLOCK_LOAD_DIRECT in this release.");
       LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);

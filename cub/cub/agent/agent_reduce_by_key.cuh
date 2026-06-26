@@ -43,16 +43,16 @@ template <int ThreadsPerBlock,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
-          typename DelayConstructorT     = detail::fixed_delay_constructor_t<350, 450>,
-          BlockLoadPrefetch LoadPrefetch = BlockLoadPrefetch::none>
+          typename DelayConstructorT             = detail::fixed_delay_constructor_t<350, 450>,
+          detail::BlockLoadPrefetch LoadPrefetch = detail::BlockLoadPrefetch::none>
 struct agent_reduce_by_key_policy
 {
-  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
-  static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
-  static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
-  static constexpr BlockLoadPrefetch LOAD_PREFETCH   = LoadPrefetch;
+  static constexpr int BLOCK_THREADS                       = ThreadsPerBlock;
+  static constexpr int ITEMS_PER_THREAD                    = ItemsPerThread;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM       = LoadAlgorithm;
+  static constexpr CacheLoadModifier LOAD_MODIFIER         = LoadModifier;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = ScanAlgorithm;
+  static constexpr detail::BlockLoadPrefetch LOAD_PREFETCH = LoadPrefetch;
 
   struct detail
   {
@@ -743,7 +743,7 @@ struct AgentReduceByKey
     OffsetT num_remaining = num_items - tile_offset;
 
     // Fire prefetch before look-back stall so data arrives in L2 in time
-    if constexpr (AgentReduceByKeyPolicyT::LOAD_PREFETCH != BlockLoadPrefetch::none)
+    if constexpr (AgentReduceByKeyPolicyT::LOAD_PREFETCH != detail::BlockLoadPrefetch::none)
     {
       const int items_to_prefetch = static_cast<int>(::cuda::std::min(num_remaining, static_cast<OffsetT>(TILE_ITEMS)));
       detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, items_to_prefetch);

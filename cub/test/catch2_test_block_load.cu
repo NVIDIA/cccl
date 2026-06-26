@@ -23,7 +23,7 @@ template <int ItemsPerThread,
           cub::BlockLoadAlgorithm LoadAlgorithm,
           typename InputIteratorT,
           typename OutputIteratorT,
-          cub::BlockLoadPrefetch Prefetch = cub::BlockLoadPrefetch::none>
+          cub::detail::BlockLoadPrefetch Prefetch = cub::detail::BlockLoadPrefetch::none>
 __global__ void kernel(cuda::std::true_type, InputIteratorT input, OutputIteratorT output, int num_items)
 {
   using input_t      = cub::detail::it_value_t<InputIteratorT>;
@@ -75,7 +75,7 @@ template <int ItemsPerThread,
           cub::BlockLoadAlgorithm LoadAlgorithm,
           typename T,
           typename InputIteratorT,
-          cub::BlockLoadPrefetch Prefetch = cub::BlockLoadPrefetch::none>
+          cub::detail::BlockLoadPrefetch Prefetch = cub::detail::BlockLoadPrefetch::none>
 void test_block_load(const c2h::device_vector<T>& d_input, InputIteratorT input)
 {
   using block_load_t = cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, LoadAlgorithm, 1, 1, Prefetch>;
@@ -218,13 +218,13 @@ C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_t
 #if IPT == 1
 C2H_TEST("Block load direct with L2 prefetch works with cache modified iterators", "[load][block]", cache_load_modifier)
 {
-  using type                                              = int;
-  constexpr int items_per_thread                          = 4;
-  constexpr int threads_in_block                          = 64;
-  constexpr int tile_size                                 = items_per_thread * threads_in_block;
-  static constexpr cub::BlockLoadAlgorithm load_algorithm = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT;
-  static constexpr cub::BlockLoadPrefetch prefetch        = cub::BlockLoadPrefetch::l2;
-  static constexpr cub::CacheLoadModifier load_modifier   = c2h::get<0, TestType>::value;
+  using type                                               = int;
+  constexpr int items_per_thread                           = 4;
+  constexpr int threads_in_block                           = 64;
+  constexpr int tile_size                                  = items_per_thread * threads_in_block;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm  = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT;
+  static constexpr cub::detail::BlockLoadPrefetch prefetch = cub::detail::BlockLoadPrefetch::l2;
+  static constexpr cub::CacheLoadModifier load_modifier    = c2h::get<0, TestType>::value;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(0, tile_size / 2, tile_size), thrust::no_init);
   c2h::gen(C2H_SEED(10), d_input);

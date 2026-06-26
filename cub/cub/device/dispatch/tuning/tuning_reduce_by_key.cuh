@@ -38,8 +38,8 @@ struct ReduceByKeyPolicy
   int items_per_thread; //!< Number of items processed per thread
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
-  BlockLoadPrefetch load_prefetch = BlockLoadPrefetch::none; //!< The @ref BlockLoadPrefetch level for global-memory
-                                                             //!< prefetch hints
+  detail::BlockLoadPrefetch load_prefetch = detail::BlockLoadPrefetch::none; //!< The @ref detail::BlockLoadPrefetch
+                                                                             //!< level for global-memory prefetch hints
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
   LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
 
@@ -1015,7 +1015,7 @@ struct policy_selector
       items_per_thread,
       BLOCK_LOAD_DIRECT,
       load_mod,
-      BlockLoadPrefetch::none,
+      detail::BlockLoadPrefetch::none,
       BLOCK_SCAN_WARP_SCANS,
       default_reduce_by_key_delay_constructor_policy(
         accum_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
@@ -1648,7 +1648,7 @@ struct policy_selector_from_hub
       ReduceByKeyPolicyT::ITEMS_PER_THREAD,
       ReduceByKeyPolicyT::LOAD_ALGORITHM,
       ReduceByKeyPolicyT::LOAD_MODIFIER,
-      BlockLoadPrefetch::none,
+      detail::BlockLoadPrefetch::none,
       ReduceByKeyPolicyT::SCAN_ALGORITHM,
       lookback_delay_policy_from_type<typename ReduceByKeyPolicyT::detail::delay_constructor_t>,
     };

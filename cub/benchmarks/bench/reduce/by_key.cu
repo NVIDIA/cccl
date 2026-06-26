@@ -27,7 +27,7 @@ struct bench_reduce_by_key_policy_selector
       TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
       cub::BLOCK_SCAN_WARP_SCANS,
       lookback_delay_policy,
-      TUNE_LOAD_PREFETCH == 0 ? cub::BlockLoadPrefetch::none : cub::BlockLoadPrefetch::l2,
+      TUNE_LOAD_PREFETCH == 0 ? cub::detail::BlockLoadPrefetch::none : cub::detail::BlockLoadPrefetch::l2,
     };
   }
 };
