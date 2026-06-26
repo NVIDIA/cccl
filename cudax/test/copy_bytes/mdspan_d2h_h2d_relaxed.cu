@@ -118,7 +118,7 @@ TEST_CASE("copy_bytes layout_stride_relaxed, 2D column-reversed", "[copy_bytes][
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i * N + j] = i * N + (N - 1 - j);
+      expected[static_cast<std::size_t>(i) * N + j] = static_cast<int>(static_cast<std::size_t>(i) * N + (N - 1 - j));
     }
   }
   using extents_t = cuda::std::extents<int, M, N>;

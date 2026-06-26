@@ -428,7 +428,7 @@ struct AgentScanByKey
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
   {
-    int tile_idx          = blockIdx.x;
+    int tile_idx          = static_cast<int>(blockIdx.x);
     OffsetT tile_base     = OffsetT(ITEMS_PER_TILE) * tile_idx;
     OffsetT num_remaining = num_items - tile_base;
 

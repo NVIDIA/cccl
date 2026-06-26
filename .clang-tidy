@@ -30,15 +30,10 @@ Checks:
   - '-modernize-use-auto'
   - 'clang-diagnostic-*'
   - 'bugprone-*'
-  - '-bugprone-narrowing-conversions'
   - '-bugprone-misplaced-widening-cast'
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
-  - '-bugprone-forwarding-reference-overload'
   - '-bugprone-branch-clone'
-  - '-bugprone-use-after-move'
-  - '-bugprone-integer-division'
-  - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'
   # This is just noise
   - '-bugprone-signed-char-misuse'
@@ -196,7 +191,6 @@ Checks:
   - '-cppcoreguidelines-noexcept-move-operations'
   # REVIEW ME: This warns about any usage of operator[], suggesting usage of .at() instead. Could
   - '-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
-  # Covered by bugprone-narrowing-conversions
   - '-cppcoreguidelines-narrowing-conversions'
   # Covered by misc-unconventional-assign-operator
   - '-cppcoreguidelines-c-copy-assignment-signature'

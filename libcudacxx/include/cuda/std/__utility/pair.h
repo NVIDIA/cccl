@@ -375,6 +375,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
             enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
@@ -383,10 +384,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   _CCCL_API constexpr pair(_UPair&& __p) noexcept(
     is_nothrow_constructible_v<_T1, decltype(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)))>
     && is_nothrow_constructible_v<_T2, decltype(::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))>)
-      : __base(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
-               ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))
+      : __base(
+          // __adl_get() specifically will only move the sub-object, it's therefore OK to
+          // "move" the outer pair twice
+          // NOLINTBEGIN(bugprone-use-after-move)
+          ::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
+          ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p))
+          // NOLINTEND(bugprone-use-after-move)
+        )
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
             enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
@@ -398,6 +407,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
                ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class... _Args1, class... _Args2>
   _CCCL_API constexpr pair(piecewise_construct_t __pc,
