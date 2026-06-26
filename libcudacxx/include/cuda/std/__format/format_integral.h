@@ -54,8 +54,7 @@ __fmt_format_char(_Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __spec
     }
   }
   const auto __c = static_cast<_CharT>(__value);
-  return ::cuda::std::__fmt_write(
-    ::cuda::std::addressof(__c), ::cuda::std::addressof(__c) + 1, ::cuda::std::move(__out_it), __specs);
+  return ::cuda::std::__fmt_write(&__c, &__c + 1, ::cuda::std::move(__out_it), __specs);
 }
 
 //! Helper to determine the buffer size to output an unsigned integer in Base @em x.
@@ -110,18 +109,14 @@ __fmt_insert_sign(char* __buf, bool __negative, __fmt_spec_sign __sign)
   return __buf;
 }
 
-template <class _Tp, class _CharT, class _FmtCtx>
-[[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator __fmt_format_int_impl(
-  _Tp __value,
-  _FmtCtx& __ctx,
-  __fmt_parsed_spec<_CharT> __specs,
-  bool __negative,
-  char* __array,
-  int __size,
-  const char* __prefix,
-  int __base)
+template <int _Base, class _Tp, class _CharT, class _OutIt>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_format_int_impl(
+  _Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs, bool __negative, const char* __prefix)
 {
-  char* __first = ::cuda::std::__fmt_insert_sign(__array, __negative, __fmt_spec_sign{__specs.__std_.__sign_});
+  constexpr auto __buffer_size = __fmt_int_buffer_size_v<_Tp, _Base>;
+  char __buffer[__buffer_size];
+
+  char* __first = ::cuda::std::__fmt_insert_sign(__buffer, __negative, __fmt_spec_sign{__specs.__std_.__sign_});
   if (__specs.__std_.__alternate_form_ && __prefix != nullptr)
   {
     while (*__prefix)
@@ -132,15 +127,14 @@ template <class _Tp, class _CharT, class _FmtCtx>
 
   char* __last{};
   {
-    const auto __r = ::cuda::std::to_chars(__first, __array + __size, __value, __base);
+    const auto __r = ::cuda::std::to_chars(__first, __buffer + __buffer_size, __value, _Base);
     _CCCL_ASSERT(__r.ec == errc(0), "Internal buffer too small");
     __last = __r.ptr;
   }
 
-  auto __out_it = __ctx.out();
   if (__fmt_spec_alignment{__specs.__alignment_} != __fmt_spec_alignment::__zero_padding)
   {
-    __first = __array;
+    __first = __buffer;
   }
   else
   {
@@ -149,71 +143,59 @@ template <class _Tp, class _CharT, class _FmtCtx>
     // The zero padding is done like:
     // - Write [sign][prefix]
     // - Write data right aligned with '0' as fill character.
-    __out_it                  = ::cuda::std::__fmt_copy(__array, __first, ::cuda::std::move(__out_it));
+    __out_it                  = ::cuda::std::__fmt_copy(__buffer, __first, ::cuda::std::move(__out_it));
     __specs.__alignment_      = ::cuda::std::to_underlying(__fmt_spec_alignment::__right);
     __specs.__fill_.__data[0] = _CharT{'0'};
-    __specs.__width_ -= ::cuda::std::min(static_cast<uint32_t>(__first - __array), __specs.__width_);
+    __specs.__width_ -= ::cuda::std::min(static_cast<uint32_t>(__first - __buffer), __specs.__width_);
   }
 
   if (__specs.__std_.__type_ != __fmt_spec_type::__hexadecimal_upper_case)
   {
-    return ::cuda::std::__fmt_write(__first, __last, __ctx.out(), __specs);
+    return ::cuda::std::__fmt_write(__first, __last, ::cuda::std::move(__out_it), __specs);
   }
-  return ::cuda::std::__fmt_write_transformed(__first, __last, __ctx.out(), __specs, ::cuda::std::__fmt_hex_to_upper);
+  return ::cuda::std::__fmt_write_transformed(
+    __first, __last, ::cuda::std::move(__out_it), __specs, ::cuda::std::__fmt_hex_to_upper);
 }
 
-template <class _Tp, class _CharT, class _FmtCtx>
-[[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator
-__fmt_format_int(_Tp __value, _FmtCtx& __ctx, __fmt_parsed_spec<_CharT> __specs)
+template <class _Tp, class _CharT, class _OutIt>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_format_int(
+  _Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs, [[maybe_unused]] bool __negative = false)
 {
   static_assert(__cccl_is_integer_v<_Tp>);
 
-  using _Up             = make_unsigned_t<_Tp>;
-  const auto __uvalue   = ::cuda::uabs(__value);
-  const auto __negative = is_signed_v<_Tp> && __value < 0;
-
-  switch (__specs.__std_.__type_)
+  if constexpr (is_signed_v<_Tp>)
   {
-    case __fmt_spec_type::__binary_lower_case: {
-      char __array[__fmt_int_buffer_size_v<_Up, 2>];
-      return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 2>, "0b", 2);
+    return ::cuda::std::__fmt_format_int(::cuda::uabs(__value), ::cuda::std::move(__out_it), __specs, __value < 0);
+  }
+  else
+  {
+    switch (__specs.__std_.__type_)
+    {
+      case __fmt_spec_type::__binary_lower_case:
+        return ::cuda::std::__fmt_format_int_impl<2>(__value, ::cuda::std::move(__out_it), __specs, __negative, "0b");
+      case __fmt_spec_type::__binary_upper_case:
+        return ::cuda::std::__fmt_format_int_impl<2>(__value, ::cuda::std::move(__out_it), __specs, __negative, "0B");
+      case __fmt_spec_type::__octal:
+        // Octal is special; if __value == 0 there's no prefix.
+        return ::cuda::std::__fmt_format_int_impl<8>(
+          __value, ::cuda::std::move(__out_it), __specs, __negative, __value != 0 ? "0" : nullptr);
+      case __fmt_spec_type::__default:
+      case __fmt_spec_type::__decimal:
+        return ::cuda::std::__fmt_format_int_impl<10>(
+          __value, ::cuda::std::move(__out_it), __specs, __negative, nullptr);
+      case __fmt_spec_type::__hexadecimal_lower_case:
+        return ::cuda::std::__fmt_format_int_impl<16>(__value, ::cuda::std::move(__out_it), __specs, __negative, "0x");
+      case __fmt_spec_type::__hexadecimal_upper_case:
+        return ::cuda::std::__fmt_format_int_impl<16>(__value, ::cuda::std::move(__out_it), __specs, __negative, "0X");
+      default:
+        _CCCL_UNREACHABLE();
     }
-    case __fmt_spec_type::__binary_upper_case: {
-      char __array[__fmt_int_buffer_size_v<_Up, 2>];
-      return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 2>, "0B", 2);
-    }
-    case __fmt_spec_type::__octal: {
-      // Octal is special; if __uvalue == 0 there's no prefix.
-      char __array[__fmt_int_buffer_size_v<_Up, 8>];
-      return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 8>, __uvalue != 0 ? "0" : nullptr, 8);
-    }
-    case __fmt_spec_type::__default:
-    case __fmt_spec_type::__decimal: {
-      char __array[__fmt_int_buffer_size_v<_Up, 10>];
-      return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 10>, nullptr, 10);
-    }
-    case __fmt_spec_type::__hexadecimal_lower_case: {
-      char __array[__fmt_int_buffer_size_v<_Up, 16>];
-      return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 16>, "0x", 16);
-    }
-    case __fmt_spec_type::__hexadecimal_upper_case: {
-      char __array[__fmt_int_buffer_size_v<_Up, 16>];
-      return ::cuda::std::__fmt_format_int_impl(
-        __uvalue, __ctx, __specs, __negative, __array, __fmt_int_buffer_size_v<_Up, 16>, "0X", 16);
-    }
-    default:
-      _CCCL_UNREACHABLE();
   }
 }
 
-template <class _CharT, class _FmtContext>
-[[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtContext::iterator
-__fmt_format_bool(bool __value, _FmtContext& __ctx, __fmt_parsed_spec<_CharT> __specs)
+template <class _CharT, class _OutIt>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
+__fmt_format_bool(bool __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs)
 {
   basic_string_view<_CharT> __str{};
   if constexpr (is_same_v<_CharT, char>)
@@ -230,7 +212,7 @@ __fmt_format_bool(bool __value, _FmtContext& __ctx, __fmt_parsed_spec<_CharT> __
   {
     static_assert(__always_false_v<_CharT>, "Unsupported character type for boolean formatting");
   }
-  return ::cuda::std::__fmt_write(__str, __ctx.out(), __specs, static_cast<ptrdiff_t>(__str.size()));
+  return ::cuda::std::__fmt_write(__str, ::cuda::std::move(__out_it), __specs, static_cast<ptrdiff_t>(__str.size()));
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
