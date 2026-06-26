@@ -256,6 +256,17 @@ void sort_values_for_equal_keys(KeyItT keys_begin, KeyItT keys_end, ValueItT val
   }
 }
 
+template <typename KeyItT, typename ValueItT>
+void sort_values_for_equal_keys(KeyItT keys, ValueItT values, int valid_items, int total_warps)
+{
+  for (int i = 0; i < total_warps; i++)
+  {
+    sort_values_for_equal_keys(keys, keys + valid_items, values);
+    keys += valid_items;
+    values += valid_items;
+  }
+}
+
 // List of key types to test
 using custom_t  = c2h::custom_type_t<c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 using key_types = c2h::type_list<std::uint8_t, std::int32_t, std::int64_t, custom_t>;
@@ -281,18 +292,19 @@ C2H_TEST("Warp sort on keys-only works", "[sort][warp]", key_types, items_per_th
   using type   = typename params::type;
 
   // Prepare test data
-  const int valid_items = params::items_per_thread * 32;
-  const int total_items = params::total_warps * valid_items;
+  const int valid_items     = params::items_per_thread * WARP_THREADS;
+  constexpr int total_warps = params::total_warps;
+  const int total_items     = total_warps * valid_items;
   c2h::device_vector<type> d_in(total_items);
   c2h::device_vector<type> d_out(total_items);
   c2h::gen(C2H_SEED(10), d_in);
 
   // Run test
-  warp_bitonic_sort<params::items_per_thread, params::total_warps>(d_in, d_out, valid_items, sort_keys_t{});
+  warp_bitonic_sort<params::items_per_thread, total_warps>(d_in, d_out, valid_items, sort_keys_t{});
 
   // Prepare verification data
   c2h::host_vector<type> h_in_out = d_in;
-  compute_host_reference(h_in_out.begin(), valid_items, params::total_warps);
+  compute_host_reference(h_in_out.begin(), valid_items, total_warps);
 
   // Verify results
   REQUIRE(h_in_out == d_out);
@@ -304,18 +316,19 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works", "[sort][warp]", key_t
   using type   = typename params::type;
 
   // Prepare test data
-  const int valid_items = GENERATE(0, take(5, random(1, params::items_per_thread * 32)));
-  const int total_items = params::total_warps * valid_items;
+  const int valid_items     = GENERATE(0, take(5, random(1, params::items_per_thread * WARP_THREADS)));
+  constexpr int total_warps = params::total_warps;
+  const int total_items     = total_warps * valid_items;
   c2h::device_vector<type> d_in(total_items);
   c2h::device_vector<type> d_out(total_items);
   c2h::gen(C2H_SEED(5), d_in);
 
   // Run test
-  warp_bitonic_sort<params::items_per_thread, params::total_warps>(d_in, d_out, valid_items, partial_sort_keys_t{});
+  warp_bitonic_sort<params::items_per_thread, total_warps>(d_in, d_out, valid_items, partial_sort_keys_t{});
 
   // Prepare verification data
   c2h::host_vector<type> h_in_out = d_in;
-  compute_host_reference(h_in_out.begin(), valid_items, params::total_warps);
+  compute_host_reference(h_in_out.begin(), valid_items, total_warps);
 
   // Verify results
   REQUIRE(h_in_out == d_out);
@@ -328,8 +341,9 @@ C2H_TEST("Warp sort on keys-value pairs works", "[sort][warp]", key_types, items
   using value_type = typename c2h::get<2, TestType>;
 
   // Prepare test data
-  const int valid_items = params::items_per_thread * 32;
-  const int total_items = params::total_warps * valid_items;
+  const int valid_items     = params::items_per_thread * WARP_THREADS;
+  constexpr int total_warps = params::total_warps;
+  const int total_items     = total_warps * valid_items;
   c2h::device_vector<key_type> d_keys_in(total_items);
   c2h::device_vector<key_type> d_keys_out(total_items);
   c2h::device_vector<value_type> d_values_in(total_items);
@@ -338,19 +352,19 @@ C2H_TEST("Warp sort on keys-value pairs works", "[sort][warp]", key_types, items
   c2h::gen(C2H_SEED(1), d_values_in);
 
   // Run test
-  warp_bitonic_sort<params::items_per_thread, params::total_warps>(
+  warp_bitonic_sort<params::items_per_thread, total_warps>(
     d_keys_in, d_keys_out, d_values_in, d_values_out, valid_items, sort_pairs_t{});
 
   // Prepare verification data
   c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
   c2h::host_vector<value_type> h_values_in_out = d_values_in;
   auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
-  compute_host_reference(cpu_kv_pairs, valid_items, params::total_warps);
+  compute_host_reference(cpu_kv_pairs, valid_items, total_warps);
 
   // Verify results
   REQUIRE(h_keys_in_out == d_keys_out);
-  sort_values_for_equal_keys(h_keys_in_out.begin(), h_keys_in_out.end(), h_values_in_out.begin());
-  sort_values_for_equal_keys(d_keys_out.begin(), d_keys_out.end(), d_values_out.begin());
+  sort_values_for_equal_keys(h_keys_in_out.begin(), h_values_in_out.begin(), valid_items, total_warps);
+  sort_values_for_equal_keys(d_keys_out.begin(), d_values_out.begin(), valid_items, total_warps);
   REQUIRE(h_values_in_out == d_values_out);
 }
 
@@ -365,8 +379,9 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   using value_type = typename c2h::get<2, TestType>;
 
   // Prepare test data
-  const int valid_items = GENERATE(0, take(5, random(1, params::items_per_thread * 32)));
-  const int total_items = params::total_warps * valid_items;
+  const int valid_items     = GENERATE(0, take(5, random(1, params::items_per_thread * WARP_THREADS)));
+  constexpr int total_warps = params::total_warps;
+  const int total_items     = total_warps * valid_items;
   c2h::device_vector<key_type> d_keys_in(total_items);
   c2h::device_vector<key_type> d_keys_out(total_items);
   c2h::device_vector<value_type> d_values_in(total_items);
@@ -375,18 +390,18 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   c2h::gen(C2H_SEED(1), d_values_in);
 
   // Run test
-  warp_bitonic_sort<params::items_per_thread, params::total_warps>(
+  warp_bitonic_sort<params::items_per_thread, total_warps>(
     d_keys_in, d_keys_out, d_values_in, d_values_out, valid_items, partial_sort_pairs_t{});
 
   // Prepare verification data
   c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
   c2h::host_vector<value_type> h_values_in_out = d_values_in;
   auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
-  compute_host_reference(cpu_kv_pairs, valid_items, params::total_warps);
+  compute_host_reference(cpu_kv_pairs, valid_items, total_warps);
 
   // Verify results
   REQUIRE(h_keys_in_out == d_keys_out);
-  sort_values_for_equal_keys(h_keys_in_out.begin(), h_keys_in_out.end(), h_values_in_out.begin());
-  sort_values_for_equal_keys(d_keys_out.begin(), d_keys_out.end(), d_values_out.begin());
+  sort_values_for_equal_keys(h_keys_in_out.begin(), h_values_in_out.begin(), valid_items, total_warps);
+  sort_values_for_equal_keys(d_keys_out.begin(), d_values_out.begin(), valid_items, total_warps);
   REQUIRE(h_values_in_out == d_values_out);
 }
