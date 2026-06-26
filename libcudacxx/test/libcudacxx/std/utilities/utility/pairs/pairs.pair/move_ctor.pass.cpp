@@ -12,7 +12,6 @@
 
 // pair(pair&&) = default;
 
-#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 
