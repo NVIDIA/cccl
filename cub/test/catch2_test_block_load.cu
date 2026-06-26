@@ -213,6 +213,8 @@ C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_t
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, in);
 }
 
+// Guarded to compile in only one IPT unit — test uses hardcoded items_per_thread and does not exercise the IPT sweep
+// axis.
 #if IPT == 1
 C2H_TEST("Block load direct with L2 prefetch works with cache modified iterators", "[load][block]", cache_load_modifier)
 {
@@ -224,7 +226,7 @@ C2H_TEST("Block load direct with L2 prefetch works with cache modified iterators
   static constexpr cub::BlockLoadPrefetch prefetch        = cub::BlockLoadPrefetch::l2;
   static constexpr cub::CacheLoadModifier load_modifier   = c2h::get<0, TestType>::value;
 
-  c2h::device_vector<type> d_input(GENERATE_COPY(0, tile_size / 2, tile_size));
+  c2h::device_vector<type> d_input(GENERATE_COPY(0, tile_size / 2, tile_size), thrust::no_init);
   c2h::gen(C2H_SEED(10), d_input);
   cub::CacheModifiedInputIterator<load_modifier, type> in(thrust::raw_pointer_cast(d_input.data()));
   test_block_load<items_per_thread, threads_in_block, load_algorithm, type, decltype(in), prefetch>(d_input, in);

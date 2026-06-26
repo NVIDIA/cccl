@@ -1110,6 +1110,7 @@ C2H_TEST("ReduceByKeyPolicy", "[reduce][device]")
     7,
     cub::BLOCK_LOAD_DIRECT,
     cub::LOAD_DEFAULT,
+    cub::BlockLoadPrefetch::none,
     cub::BLOCK_SCAN_WARP_SCANS,
     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
 
