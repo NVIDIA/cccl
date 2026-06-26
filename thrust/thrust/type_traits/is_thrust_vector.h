@@ -1,0 +1,59 @@
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+/*! \file TODO
+ *  \brief A type trait that determines if a type is an \a ExecutionPolicy.
+ */
+
+#pragma once
+
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <thrust/detail/execution_policy.h>
+#include <thrust/detail/type_traits.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+
+THRUST_NAMESPACE_BEGIN
+
+/*! \addtogroup utility
+ *  \{
+ */
+
+/*! \addtogroup type_traits Type Traits
+ *  \{
+ */
+
+// TODO
+/*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/UnaryTypeTrait"><i>UnaryTypeTrait</i></a>
+ *  that returns \c true_type if \c T is an \a ExecutionPolicy and \c false_type
+ *  otherwise.
+ */
+
+/*! \brief <tt>constexpr bool</tt> that is \c true if \c T is an
+ *  \a ExecutionPolicy and \c false otherwise.
+ */
+template <typename T>
+inline constexpr bool is_thrust_vector_v = false;
+
+template <typename T, typename Alloc>
+inline constexpr bool is_thrust_vector_v<thrust::host_vector<T, Alloc>> = true;
+
+template <typename T, typename Alloc>
+inline constexpr bool is_thrust_vector_v<thrust::device_vector<T, Alloc>> = true;
+
+/*! \} // type traits
+ */
+
+/*! \} // utility
+ */
+
+THRUST_NAMESPACE_END

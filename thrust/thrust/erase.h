@@ -20,8 +20,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/remove.h>
-
-#include <type_traits>
+#include <thrust/type_traits/is_thrust_vector.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -84,17 +83,6 @@ THRUST_NAMESPACE_BEGIN
  *     .. versionadded:: 2.2.0
  *  \endverbatim
  */
-
-template <typename T>
-inline constexpr bool is_thrust_vector_v = false;
-
-template <typename T, typename Alloc>
-inline constexpr bool is_thrust_vector_v<thrust::host_vector<T, Alloc>> = true;
-
-template <typename T, typename Alloc>
-inline constexpr bool is_thrust_vector_v<thrust::device_vector<T, Alloc>> = true;
-
-// TODO: Add exec policy function alternative
 
 template <class Vector,
           class U                                                   = typename Vector::value_type,
