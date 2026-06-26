@@ -22,6 +22,9 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['build'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20'] }
+    - {jobs: ['build'], std: 'max',    cxx: ['gcc12', 'gcc13', 'gcc14'] }
+    - {jobs: ['build'], std: 'max',    cxx: ['msvc2022'] }
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
