@@ -64,7 +64,8 @@ Container selection
 With no ``--cuda`` and no ``--host``, ``launch.sh`` uses the top-level
 ``.devcontainer/devcontainer.json`` (the default environment).
 
-When either flag is set, ``launch.sh`` builds a directory name and loads
+Set both ``--cuda`` and ``--host`` to select a generated container.
+With both set, ``launch.sh`` builds a directory name and loads
 ``.devcontainer/<name>/devcontainer.json``:
 
 .. code-block:: text

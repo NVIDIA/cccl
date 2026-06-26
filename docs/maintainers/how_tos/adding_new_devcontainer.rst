@@ -48,7 +48,7 @@ From the repository root, regenerate every ``.devcontainer/<name>/devcontainer.j
 
 .. code-block:: bash
 
-    .devcontainer/make_devcontainers.sh --clear
+    .devcontainer/make_devcontainers.sh --clean
 
 The script reads all matrix workflow entries, expands aliases, and writes one directory per combination
 using the naming pattern ``cuda<version>[ext]-<compiler><version>``.

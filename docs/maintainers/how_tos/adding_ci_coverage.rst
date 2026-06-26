@@ -45,7 +45,7 @@ This entry adds a Thrust test run pinned to one CTK and one GPU, across three ho
    - {jobs: ['test'], project: 'thrust', ctk: '<ctk-name>', std: 'max', cxx: ['<cxx-name-1>', '<cxx-name-2>', '<cxx-name-3>'], gpu: '<gpu-name>'}
 
 Use the CTK name from the ``ctk_versions:`` map in ``ci/matrix.yaml`` and the compiler name
-from the ``cxx:`` map. Use the GPU pool name from the ``gpus:`` map.
+from the ``host_compilers:`` map. Use the GPU pool name from the ``gpus:`` map.
 
 Field by field:
 
