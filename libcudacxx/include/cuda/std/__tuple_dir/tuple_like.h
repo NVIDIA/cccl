@@ -77,6 +77,11 @@ inline constexpr bool __tuple_like_ext<complex<_Tp>> = true;
 template <class _Tp>
 inline constexpr bool __tuple_like_ext<::cuda::complex<_Tp>> = true;
 
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
+template <class _Tp>
+inline constexpr bool __tuple_like_ext<::std::complex<_Tp>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
+
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 inline constexpr bool __tuple_like_ext<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> = true;
 
