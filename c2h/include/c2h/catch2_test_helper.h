@@ -372,6 +372,7 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
   result.expected_size = expected.size();
   if (result.actual_size != result.expected_size)
   {
+    result.total_mismatches = actual.size();
     return result;
   }
 
@@ -408,6 +409,22 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
   }
 
   return result;
+}
+
+template <typename T>
+auto compare_vectors(const device_vector<T>& actual, const device_vector<T>& expected) -> vector_compare_result_t<T>
+{
+  return compare_vectors<T>(host_vector<T>(actual), host_vector<T>(expected));
+}
+
+template <typename T, typename... LhsProps, typename... RhsProps>
+auto compare_vectors(const cuda::buffer<T, LhsProps...>& actual, const cuda::buffer<T, RhsProps...>& expected)
+  -> vector_compare_result_t<T>
+{
+  actual.stream().sync();
+  expected.stream().sync();
+  return compare_vectors<T>(host_vector<T>(actual.begin(), actual.end()),
+                            host_vector<T>(expected.begin(), expected.end()));
 }
 
 template <typename T>
@@ -468,8 +485,8 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
   bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
     using T           = typename Vec::value_type;
-    comparison_result = compare_vectors(host_vector<T>(actual_vec), host_vector<T>(expected_vec));
-    return actual_vec == expected_vec;
+    comparison_result = compare_vectors(actual_vec, expected_vec);
+    return comparison_result.total_mismatches == 0;
   }
 
   std::string describe() const override

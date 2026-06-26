@@ -12,7 +12,6 @@
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/memory_pool>
-#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -78,9 +77,9 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce maximum")
 
   for (int i = 0; i < static_cast<int>(cuda::devices.size()); ++i)
   {
-    auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
-
-    auto& s = send.emplace_back(streams[i], pool, {i, 100 - i, 2 * i});
+    auto pool         = cuda::device_default_memory_pool(cuda::devices[i]);
+    const auto values = {i, 100 - i, 2 * i};
+    auto& s           = send.emplace_back(streams[i], pool, values);
     recv.emplace_back(cuda::make_buffer(streams[i], pool, s.size(), cuda::std::int32_t{-1}));
   }
 
@@ -103,10 +102,10 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce maximum")
 
   for (auto& buf : recv)
   {
-    auto pool = cuda::pinned_default_memory_pool();
-    const cuda::std::array expected_values{n - 1, cuda::std::int32_t{100}, 2 * (n - 1)};
-    const auto expected = cuda::make_buffer(buf.stream(), pool, expected_values);
-    const auto actual   = cuda::make_buffer(buf.stream(), pool, buf);
+    auto pool                  = cuda::pinned_default_memory_pool();
+    const auto expected_values = {n - 1, cuda::std::int32_t{100}, 2 * (n - 1)};
+    const auto expected        = cuda::make_buffer(buf.stream(), pool, expected_values);
+    const auto actual          = cuda::make_buffer(buf.stream(), pool, buf);
 
     REQUIRE_THAT(actual, Equals(expected));
   }
@@ -121,9 +120,9 @@ NCCL_COMM_TEST("nccl_communicator_ref reduce sum to root 0")
 
   for (int i = 0; i < static_cast<int>(cuda::devices.size()); ++i)
   {
-    auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
-
-    auto& s = send.emplace_back(streams[i], pool, {i + 1, i + 1, i + 1, i + 1});
+    auto pool         = cuda::device_default_memory_pool(cuda::devices[i]);
+    const auto values = {i + 1, i + 1, i + 1, i + 1};
+    auto& s           = send.emplace_back(streams[i], pool, values);
     recv.emplace_back(cuda::make_buffer(streams[i], pool, s.size(), cuda::std::int32_t{-1}));
   }
 
@@ -160,9 +159,9 @@ NCCL_COMM_TEST("nccl_communicator_ref broadcast from root 0")
 
   for (int i = 0; i < static_cast<int>(cuda::devices.size()); ++i)
   {
-    auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
-
-    auto& s = send.emplace_back(streams[i], pool, {10, 20, 30, 40});
+    auto pool         = cuda::device_default_memory_pool(cuda::devices[i]);
+    const auto values = {10, 20, 30, 40};
+    auto& s           = send.emplace_back(streams[i], pool, values);
     recv.emplace_back(cuda::make_buffer(streams[i], pool, s.size(), cuda::std::int32_t{-1}));
   }
 
@@ -182,8 +181,8 @@ NCCL_COMM_TEST("nccl_communicator_ref broadcast from root 0")
 
   for (auto& buf : recv)
   {
-    auto pool = cuda::pinned_default_memory_pool();
-    const cuda::std::array expected_values{
+    auto pool                  = cuda::pinned_default_memory_pool();
+    const auto expected_values = {
       cuda::std::int32_t{10}, cuda::std::int32_t{20}, cuda::std::int32_t{30}, cuda::std::int32_t{40}};
     const auto expected = cuda::make_buffer(buf.stream(), pool, expected_values);
     const auto actual   = cuda::make_buffer(buf.stream(), pool, buf);
@@ -202,9 +201,9 @@ NCCL_COMM_TEST("nccl_communicator_ref all_gather")
 
   for (int i = 0; i < static_cast<int>(cuda::devices.size()); ++i)
   {
-    auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
-
-    auto& s = send.emplace_back(streams[i], pool, {10 * i, 10 * i + 1});
+    auto pool         = cuda::device_default_memory_pool(cuda::devices[i]);
+    const auto values = {10 * i, 10 * i + 1};
+    auto& s           = send.emplace_back(streams[i], pool, values);
     recv.emplace_back(cuda::make_buffer(streams[i], pool, s.size() * cuda::devices.size(), cuda::std::int32_t{-1}));
   }
 
@@ -234,7 +233,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_gather")
   for (auto& buf : recv)
   {
     auto pool           = cuda::pinned_default_memory_pool();
-    const auto expected = cuda::make_buffer(buf.stream(), pool, expected_values);
+    const auto expected = cuda::make_buffer<cuda::std::int32_t>(buf.stream(), pool, expected_values);
     const auto actual   = cuda::make_buffer(buf.stream(), pool, buf);
 
     REQUIRE_THAT(actual, Equals(expected));
@@ -302,7 +301,7 @@ NCCL_COMM_TEST("nccl_communicator_ref gather_v to root 0")
   }
 
   auto pool           = cuda::pinned_default_memory_pool();
-  const auto expected = cuda::make_buffer(recv.stream(), pool, expected_values);
+  const auto expected = cuda::make_buffer<cuda::std::int32_t>(recv.stream(), pool, expected_values);
   const auto actual   = cuda::make_buffer(recv.stream(), pool, recv);
 
   REQUIRE_THAT(actual, Equals(expected));
@@ -370,7 +369,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_to_all_v")
     }
 
     auto pool           = cuda::pinned_default_memory_pool();
-    const auto expected = cuda::make_buffer(recv[r].stream(), pool, expected_values);
+    const auto expected = cuda::make_buffer<cuda::std::int32_t>(recv[r].stream(), pool, expected_values);
     const auto actual   = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
     REQUIRE_THAT(actual, Equals(expected));
@@ -388,9 +387,9 @@ NCCL_COMM_TEST("nccl_communicator_ref gather to root 0")
 
   for (int i = 0; i < static_cast<int>(cuda::devices.size()); ++i)
   {
-    auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
-
-    auto& s = send.emplace_back(streams[i], pool, {10 * i, 10 * i + 1});
+    auto pool         = cuda::device_default_memory_pool(cuda::devices[i]);
+    const auto values = {10 * i, 10 * i + 1};
+    auto& s           = send.emplace_back(streams[i], pool, values);
     recv.emplace_back(cuda::make_buffer(streams[i], pool, s.size() * cuda::devices.size(), cuda::std::int32_t{-1}));
   }
 
@@ -418,7 +417,7 @@ NCCL_COMM_TEST("nccl_communicator_ref gather to root 0")
   }
 
   auto pool           = cuda::pinned_default_memory_pool();
-  const auto expected = cuda::make_buffer(recv[ROOT_RANK].stream(), pool, expected_values);
+  const auto expected = cuda::make_buffer<cuda::std::int32_t>(recv[ROOT_RANK].stream(), pool, expected_values);
   const auto actual   = cuda::make_buffer(recv[ROOT_RANK].stream(), pool, recv[ROOT_RANK]);
 
   REQUIRE_THAT(actual, Equals(expected));
@@ -477,7 +476,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_to_all")
     }
 
     auto pool           = cuda::pinned_default_memory_pool();
-    const auto expected = cuda::make_buffer(recv[r].stream(), pool, expected_values);
+    const auto expected = cuda::make_buffer<cuda::std::int32_t>(recv[r].stream(), pool, expected_values);
     const auto actual   = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
     REQUIRE_THAT(actual, Equals(expected));

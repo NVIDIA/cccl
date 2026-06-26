@@ -47,7 +47,7 @@ NCCL_COMM_TEST("nccl_communicator_ref send/recv ring")
   {
     auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
 
-    auto& s = send.emplace_back(streams[i], pool, 3, i);
+    auto& s = send.emplace_back(cuda::make_buffer(streams[i], pool, 3, i));
     recv.emplace_back(cuda::make_buffer<cuda::std::int32_t>(streams[i], pool, s.size(), -1));
   }
 
