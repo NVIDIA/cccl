@@ -875,6 +875,10 @@ try
   const auto key_t   = read_type_info(r);
   const auto value_t = read_type_info(r);
   const auto order   = static_cast<cccl_sort_order_t>(r.read_pod<uint32_t>());
+  if (order != CCCL_ASCENDING && order != CCCL_DESCENDING)
+  {
+    throw std::runtime_error(std::format("aot blob: invalid sort order ({})", static_cast<uint32_t>(order)));
+  }
 
   std::unique_ptr<char[]> payload_owner;
   size_t payload_size = 0;
@@ -910,7 +914,6 @@ try
   std::unique_ptr<char[]> n_il{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_os{r.read_cstring_dup()};
 
-  std::memset(build_ptr, 0, sizeof(*build_ptr));
   build_ptr->cc                                         = static_cast<int>(h.cc);
   build_ptr->payload_kind                               = static_cast<cccl_payload_kind_t>(h.payload_kind);
   build_ptr->key_type                                   = key_t;
@@ -935,11 +938,6 @@ try
 }
 catch (const std::exception& exc)
 {
-  if (build_ptr != nullptr)
-  {
-    cccl_device_radix_sort_cleanup(build_ptr);
-    std::memset(build_ptr, 0, sizeof(*build_ptr));
-  }
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_radix_sort_deserialize(): %s\n", exc.what());
   fflush(stdout);

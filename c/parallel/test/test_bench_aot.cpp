@@ -70,23 +70,49 @@ static void print_row(const char* algo, double jit_ms, double link_ms, double fu
 
 // Runs execute(nullptr, &size) to query temp storage, allocates, then runs execute(ptr, &size).
 // Includes cudaDeviceSynchronize(). Suitable for use inside a timed block.
-#  define WITH_TEMP(execute)                                     \
-    do                                                           \
-    {                                                            \
-      size_t _tmp_bytes = 0;                                     \
-      REQUIRE(CUDA_SUCCESS == (execute) (nullptr, &_tmp_bytes)); \
-      void* _d_tmp = nullptr;                                    \
-      if (_tmp_bytes > 0)                                        \
-      {                                                          \
-        REQUIRE(cudaSuccess == cudaMalloc(&_d_tmp, _tmp_bytes)); \
-      }                                                          \
-      REQUIRE(CUDA_SUCCESS == (execute) (_d_tmp, &_tmp_bytes));  \
-      REQUIRE(cudaSuccess == cudaDeviceSynchronize());           \
-      if (_d_tmp)                                                \
-      {                                                          \
-        REQUIRE(cudaSuccess == cudaFree(_d_tmp));                \
-      }                                                          \
+#  define WITH_TEMP(execute)                                             \
+    do                                                                   \
+    {                                                                    \
+      struct _CudaFreeGuard                                              \
+      {                                                                  \
+        void* ptr = nullptr;                                             \
+        ~_CudaFreeGuard()                                                \
+        {                                                                \
+          if (ptr)                                                       \
+          {                                                              \
+            cudaFree(ptr);                                               \
+          }                                                              \
+        }                                                                \
+      } _tmp_guard;                                                      \
+      size_t _tmp_bytes = 0;                                             \
+      REQUIRE(CUDA_SUCCESS == (execute) (nullptr, &_tmp_bytes));         \
+      if (_tmp_bytes > 0)                                                \
+      {                                                                  \
+        REQUIRE(cudaSuccess == cudaMalloc(&_tmp_guard.ptr, _tmp_bytes)); \
+      }                                                                  \
+      REQUIRE(CUDA_SUCCESS == (execute) (_tmp_guard.ptr, &_tmp_bytes));  \
+      REQUIRE(cudaSuccess == cudaDeviceSynchronize());                   \
     } while (false)
+
+// RAII wrapper that calls a cleanup function on the pointed-to build result
+// when it goes out of scope (including on exception / REQUIRE failure).
+template <typename T, CUresult (*Cleanup)(T*)>
+struct BuildGuard
+{
+  T* ptr;
+  bool dismissed = false;
+  ~BuildGuard()
+  {
+    if (!dismissed && ptr)
+    {
+      Cleanup(ptr);
+    }
+  }
+  void dismiss()
+  {
+    dismissed = true;
+  }
+};
 
 C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 {
@@ -120,6 +146,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── Pre-compile: kernel-only (for link_ltoir timed path) ─────────────────
     cccl_device_reduce_build_result_t link_build{};
+    BuildGuard<cccl_device_reduce_build_result_t, cccl_device_reduce_cleanup> _link_guard{&link_build};
     REQUIRE(
       CUDA_SUCCESS
       == cccl_device_reduce_compile(
@@ -140,6 +167,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── Pre-compile: full op into cubin (for Full AoT timed path) ────────────
     cccl_device_reduce_build_result_t full_build{};
+    BuildGuard<cccl_device_reduce_build_result_t, cccl_device_reduce_cleanup> _full_guard{&full_build};
     REQUIRE(
       CUDA_SUCCESS
       == cccl_device_reduce_compile(
@@ -161,6 +189,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── JIT ──────────────────────────────────────────────────────────────────
     cccl_device_reduce_build_result_t jit_build{};
+    BuildGuard<cccl_device_reduce_build_result_t, cccl_device_reduce_cleanup> _jit_guard{&jit_build};
     auto t0 = clk::now();
     REQUIRE(
       CUDA_SUCCESS
@@ -184,6 +213,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     });
     const double jit_ms = ms_since(t0);
     REQUIRE(d_out[0] == int32_t(N));
+    _jit_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&jit_build));
 
     // ── link_ltoir ───────────────────────────────────────────────────────────
@@ -197,6 +227,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     });
     const double link_ms = ms_since(t0);
     REQUIRE(d_out[0] == int32_t(N));
+    _link_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&link_build));
 
     // ── Full AoT ─────────────────────────────────────────────────────────────
@@ -207,6 +238,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     });
     const double full_ms = ms_since(t0);
     REQUIRE(d_out[0] == int32_t(N));
+    _full_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&full_build));
 
     print_row("reduce (int32)", jit_ms, link_ms, full_ms);
@@ -235,6 +267,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── Pre-compile: kernel-only ──────────────────────────────────────────────
     cccl_device_scan_build_result_t link_build{};
+    BuildGuard<cccl_device_scan_build_result_t, cccl_device_scan_cleanup> _link_guard{&link_build};
     REQUIRE(
       CUDA_SUCCESS
       == cccl_device_scan_compile(
@@ -256,6 +289,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── Pre-compile: full op into cubin ───────────────────────────────────────
     cccl_device_scan_build_result_t full_build{};
+    BuildGuard<cccl_device_scan_build_result_t, cccl_device_scan_cleanup> _full_guard{&full_build};
     REQUIRE(
       CUDA_SUCCESS
       == cccl_device_scan_compile(
@@ -278,6 +312,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── JIT ──────────────────────────────────────────────────────────────────
     cccl_device_scan_build_result_t jit_build{};
+    BuildGuard<cccl_device_scan_build_result_t, cccl_device_scan_cleanup> _jit_guard{&jit_build};
     auto t0 = clk::now();
     REQUIRE(
       CUDA_SUCCESS
@@ -303,6 +338,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     const double jit_ms = ms_since(t0);
     REQUIRE(d_out[0] == int32_t(0));
     REQUIRE(d_out[int(N) - 1] == int32_t(N - 1));
+    _jit_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&jit_build));
 
     // ── link_ltoir ───────────────────────────────────────────────────────────
@@ -317,6 +353,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     const double link_ms = ms_since(t0);
     REQUIRE(d_out[0] == int32_t(0));
     REQUIRE(d_out[int(N) - 1] == int32_t(N - 1));
+    _link_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&link_build));
 
     // ── Full AoT ─────────────────────────────────────────────────────────────
@@ -328,6 +365,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     const double full_ms = ms_since(t0);
     REQUIRE(d_out[0] == int32_t(0));
     REQUIRE(d_out[int(N) - 1] == int32_t(N - 1));
+    _full_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&full_build));
 
     print_row("scan (int32, excl.)", jit_ms, link_ms, full_ms);
@@ -359,6 +397,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── Pre-compile: kernel-only ──────────────────────────────────────────────
     cccl_device_merge_sort_build_result_t link_build{};
+    BuildGuard<cccl_device_merge_sort_build_result_t, cccl_device_merge_sort_cleanup> _link_guard{&link_build};
     REQUIRE(
       CUDA_SUCCESS
       == cccl_device_merge_sort_compile(
@@ -379,6 +418,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── Pre-compile: full op into cubin ───────────────────────────────────────
     cccl_device_merge_sort_build_result_t full_build{};
+    BuildGuard<cccl_device_merge_sort_build_result_t, cccl_device_merge_sort_cleanup> _full_guard{&full_build};
     REQUIRE(
       CUDA_SUCCESS
       == cccl_device_merge_sort_compile(
@@ -400,6 +440,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
 
     // ── JIT ──────────────────────────────────────────────────────────────────
     cccl_device_merge_sort_build_result_t jit_build{};
+    BuildGuard<cccl_device_merge_sort_build_result_t, cccl_device_merge_sort_cleanup> _jit_guard{&jit_build};
     auto t0 = clk::now();
     REQUIRE(
       CUDA_SUCCESS
@@ -424,6 +465,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     const double jit_ms = ms_since(t0);
     REQUIRE(d_keys_out[0] == int32_t(1));
     REQUIRE(d_keys_out[int(N) - 1] == int32_t(N));
+    _jit_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&jit_build));
 
     // ── link_ltoir ───────────────────────────────────────────────────────────
@@ -439,6 +481,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     const double link_ms = ms_since(t0);
     REQUIRE(d_keys_out[0] == int32_t(1));
     REQUIRE(d_keys_out[int(N) - 1] == int32_t(N));
+    _link_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&link_build));
 
     // ── Full AoT ─────────────────────────────────────────────────────────────
@@ -451,6 +494,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     const double full_ms = ms_since(t0);
     REQUIRE(d_keys_out[0] == int32_t(1));
     REQUIRE(d_keys_out[int(N) - 1] == int32_t(N));
+    _full_guard.dismiss();
     REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&full_build));
 
     print_row("merge_sort (int32, keys)", jit_ms, link_ms, full_ms);

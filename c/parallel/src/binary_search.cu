@@ -505,6 +505,13 @@ try
 
   const uint64_t state_size  = r.read_pod<uint64_t>();
   const uint64_t state_align = r.read_pod<uint64_t>();
+  if (state_size > 0)
+  {
+    if (state_align == 0 || (state_align & (state_align - 1)) != 0)
+    {
+      throw std::runtime_error(std::format("aot blob: invalid binary_search state alignment ({})", state_align));
+    }
+  }
 
   // Pull the inner transform blob and hand it to the transform deserializer.
   std::unique_ptr<char[]> inner_owner;
@@ -519,23 +526,19 @@ try
     throw std::runtime_error("aot blob: empty payload");
   }
 
-  std::memset(build_ptr, 0, sizeof(*build_ptr));
-  CUresult rc = cccl_device_transform_deserialize(&build_ptr->transform, inner_owner.get(), inner_size);
+  cccl_device_binary_search_build_result_t result{};
+  CUresult rc = cccl_device_transform_deserialize(&result.transform, inner_owner.get(), inner_size);
   if (rc != CUDA_SUCCESS)
   {
     return rc;
   }
-  build_ptr->op_state_size      = static_cast<size_t>(state_size);
-  build_ptr->op_state_alignment = static_cast<size_t>(state_align);
+  result.op_state_size      = static_cast<size_t>(state_size);
+  result.op_state_alignment = static_cast<size_t>(state_align);
+  *build_ptr                = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
-  if (build_ptr != nullptr)
-  {
-    cccl_device_transform_cleanup(&build_ptr->transform);
-    std::memset(build_ptr, 0, sizeof(*build_ptr));
-  }
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_binary_search_deserialize(): %s\n", exc.what());
   fflush(stdout);

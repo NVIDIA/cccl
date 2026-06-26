@@ -634,7 +634,6 @@ try
 
   std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
 
-  std::memset(build_ptr, 0, sizeof(*build_ptr));
   build_ptr->cc                                   = static_cast<int>(h.cc);
   build_ptr->payload_kind                         = static_cast<cccl_payload_kind_t>(h.payload_kind);
   build_ptr->accumulator_size                     = accum_size;
@@ -647,11 +646,6 @@ try
 }
 catch (const std::exception& exc)
 {
-  if (build_ptr != nullptr)
-  {
-    cccl_device_segmented_reduce_cleanup(build_ptr);
-    std::memset(build_ptr, 0, sizeof(*build_ptr));
-  }
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_segmented_reduce_deserialize(): %s\n", exc.what());
   fflush(stdout);

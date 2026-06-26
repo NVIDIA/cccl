@@ -893,6 +893,19 @@ try
     *out_size = 0;
     return CUDA_ERROR_INVALID_VALUE;
   }
+  {
+    static constexpr size_t kPolicy1Size = sizeof(cub::detail::transform::policy_selector<1>);
+    static constexpr size_t kPolicy2Size = sizeof(cub::detail::transform::policy_selector<2>);
+    if (build_ptr->runtime_policy_size != kPolicy1Size && build_ptr->runtime_policy_size != kPolicy2Size)
+    {
+      *out_buf  = nullptr;
+      *out_size = 0;
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+  }
+
+  *out_buf  = nullptr;
+  *out_size = 0;
 
   using namespace cccl::aot;
   buffer_writer w;
@@ -952,6 +965,14 @@ try
   {
     throw std::runtime_error("aot blob: invalid transform policy size");
   }
+  {
+    static constexpr uint64_t kPolicy1Size = sizeof(cub::detail::transform::policy_selector<1>);
+    static constexpr uint64_t kPolicy2Size = sizeof(cub::detail::transform::policy_selector<2>);
+    if (policy_size != kPolicy1Size && policy_size != kPolicy2Size)
+    {
+      throw std::runtime_error(std::format("aot blob: unrecognized transform policy size ({})", policy_size));
+    }
+  }
   std::unique_ptr<void, free_deleter> policy(std::malloc(static_cast<size_t>(policy_size)));
   if (!policy)
   {
@@ -961,7 +982,6 @@ try
 
   std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
 
-  std::memset(build_ptr, 0, sizeof(*build_ptr));
   build_ptr->cc                            = static_cast<int>(h.cc);
   build_ptr->payload_kind                  = static_cast<cccl_payload_kind_t>(h.payload_kind);
   build_ptr->loaded_bytes_per_iteration    = loaded_bpi;
@@ -977,11 +997,6 @@ try
 }
 catch (const std::exception& exc)
 {
-  if (build_ptr != nullptr)
-  {
-    cccl_device_transform_cleanup(build_ptr);
-    std::memset(build_ptr, 0, sizeof(*build_ptr));
-  }
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_transform_deserialize(): %s\n", exc.what());
   fflush(stdout);

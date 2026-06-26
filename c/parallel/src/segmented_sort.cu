@@ -1119,6 +1119,11 @@ inline cccl_op_t deserialize_selector_op(cccl::aot::buffer_reader& r, const char
 
   // state blob (also malloc/free)
   uint64_t state_n = r.read_pod<uint64_t>();
+  if (state_n != static_cast<uint64_t>(op.size))
+  {
+    throw std::runtime_error(
+      std::format("aot blob: selector op state size mismatch (blob={}, expected={})", state_n, op.size));
+  }
   if (state_n > 0)
   {
     void* p = std::malloc(static_cast<size_t>(state_n));
@@ -1285,7 +1290,6 @@ try
     throw;
   }
 
-  std::memset(build_ptr, 0, sizeof(*build_ptr));
   build_ptr->cc                                           = static_cast<int>(h.cc);
   build_ptr->payload_kind                                 = static_cast<cccl_payload_kind_t>(h.payload_kind);
   build_ptr->key_type                                     = key_t;
@@ -1308,11 +1312,6 @@ try
 }
 catch (const std::exception& exc)
 {
-  if (build_ptr != nullptr)
-  {
-    cccl_device_segmented_sort_cleanup(build_ptr);
-    std::memset(build_ptr, 0, sizeof(*build_ptr));
-  }
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_segmented_sort_deserialize(): %s\n", exc.what());
   fflush(stdout);
