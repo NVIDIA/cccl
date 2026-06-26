@@ -1,3 +1,0 @@
-cuda_thread_count: 1
-cuda_block_shmem_size: 0
-builds:
