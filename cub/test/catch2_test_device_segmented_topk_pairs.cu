@@ -794,6 +794,125 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   }
   REQUIRE(h_values_a == h_values_b);
 }
+
+// Determinism/tie-break combinations for the mixed-width pairs test below. The selected key/value multiset is invariant
+// to the tie-break preference, so every combo is verified the same way (pairs consistency + per-segment uniqueness +
+// sorted-key equality); tie-break preferences only pair with a deterministic requirement.
+template <cuda::execution::determinism::__determinism_t Determinism, cuda::execution::tie_break::__tie_break_t TieBreak>
+struct det_tie_pair
+{
+  static constexpr auto determinism = Determinism;
+  static constexpr auto tie_break   = TieBreak;
+};
+using det_tie_pair_combos =
+  c2h::type_list<det_tie_pair<cuda::execution::determinism::__determinism_t::__not_guaranteed,
+                              cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                              cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                              cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
+                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                              cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
+
+// Effective-cluster-width coverage for pairs: the large `deferred_sequence` bound sizes a wide (16-CTA) launch, but the
+// actual segments are small, so a single launch mixes a fully-resident multi-CTA segment (96 Ki + 17, every rank
+// works), two medium segments that leave surplus cluster CTAs idle (the runtime effective-width path, one unaligned),
+// and a tiny single-CTA-collapsed segment (257). Confirms each value payload stays attached to its key through that
+// path, for every determinism requirement. Streaming (overflowing) pairs are covered by the large-segment tests above,
+// so this one stays small enough for `compute-sanitizer --tool racecheck`.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with mixed effective-width variable-size segments",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         det_tie_pair_combos)
+{
+  using key_t           = float;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using combo                = c2h::get<0, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+
+  if constexpr (selected_backend != topk_backend::cluster
+                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
+  {
+    SKIP("Determinism requirements are only provided by the cluster backend");
+  }
+
+  // The bound far exceeds the actual segments, so the launch picks a wide cluster while the segments stay small.
+  constexpr segment_size_t static_max_segment_size = 1100 * 1024;
+  constexpr segment_size_t static_max_k            = 4 * 1024;
+  constexpr auto direction                         = cub::detail::topk::select::max;
+  const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, static_max_k / 2, static_max_k}));
+
+  constexpr segment_size_t full_segment_size = 96 * 1024 + 17; // enough chunks to fill the launched cluster (no idle)
+  constexpr segment_size_t med_segment_a     = 12 * 1024 + 1; // a few chunks -> most cluster CTAs idle (unaligned)
+  constexpr segment_size_t med_segment_b     = 40 * 1024; // more chunks, still below the launched width
+  c2h::host_vector<segment_size_t> h_segment_offsets{
+    0,
+    full_segment_size,
+    full_segment_size + med_segment_a,
+    full_segment_size + med_segment_a + med_segment_b,
+    full_segment_size + med_segment_a + med_segment_b + 257};
+  c2h::device_vector<segment_size_t> segment_offsets = h_segment_offsets;
+  const segment_index_t num_segments                 = static_cast<segment_index_t>(h_segment_offsets.size() - 1);
+  const segment_size_t num_items                     = h_segment_offsets.back();
+
+  auto segment_offsets_it = thrust::raw_pointer_cast(segment_offsets.data());
+  auto segment_size_it    = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), segment_size_op<segment_size_t*>{segment_offsets_it});
+
+  CAPTURE(static_max_segment_size, static_max_k, k, num_segments, num_items);
+
+  // Each output segment holds exactly min(k, segment_size[i]) items, tightly packed.
+  auto compacted_output_sizes_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}),
+    get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k), num_segments});
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
+  thrust::exclusive_scan(
+    compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
+  const segment_size_t total_output_size = compacted_offsets.back();
+
+  c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(total_output_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_offsets.cbegin());
+  auto d_keys_out =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_out_ptr), compacted_offsets.cbegin());
+
+  // Values = global flattened index, so each selected value points back into the flattened input.
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  c2h::device_vector<val_t> values_out_buffer(total_output_size, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_in =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(values_in_it), segment_offsets.cbegin());
+  auto d_values_out =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_values_out_ptr), compacted_offsets.cbegin());
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  batched_topk_pairs<direction, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_items});
+
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, compacted_offsets, num_segments) == true);
+
+  segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
+  expected_keys = compact_to_topk_batched(expected_keys, segment_offsets, k);
+  segmented_sort_keys(
+    keys_out_buffer, num_segments, compacted_offsets.cbegin(), compacted_offsets.cbegin() + 1, direction);
+  REQUIRE(expected_keys == keys_out_buffer);
+}
 #endif // TEST_TYPES == 1
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segments",

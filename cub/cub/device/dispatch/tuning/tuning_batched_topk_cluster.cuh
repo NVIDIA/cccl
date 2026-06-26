@@ -18,7 +18,7 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk_cluster
 {
-// Per-block execution shape. The dispatch picks the cluster size and the dynamic shared-memory block_tile capacity at
+// Per-block execution shape. The dispatch picks the cluster blocks and the dynamic shared-memory block_tile capacity at
 // runtime (occupancy/wave-aware), so the policy carries only the per-block tuning knobs.
 struct cluster_topk_policy
 {
@@ -31,6 +31,10 @@ struct cluster_topk_policy
   int min_blocks_per_sm;
   int tie_break_items_per_thread;
   int single_cta_max_segment_size;
+  // Minimum chunks a CTA must own to belong to a segment's effective cluster. At 1 the effective cluster is just the
+  // CTAs that receive any chunk; a larger value trades parallelism for fewer, busier CTAs (and shrinks the
+  // host-launched cluster). Used by both the host cluster-blocks cap and the device per-segment effective cluster.
+  int min_chunks_per_cta;
 };
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_policy() -> cluster_topk_policy
@@ -44,7 +48,8 @@ struct cluster_topk_policy
     /*bits_per_pass=*/11,
     /*min_blocks_per_sm=*/1,
     /*tie_break_items_per_thread=*/8,
-    /*single_cta_max_segment_size=*/8 * 1024};
+    /*single_cta_max_segment_size=*/8 * 1024,
+    /*min_chunks_per_cta=*/1};
 }
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto is_valid_policy(cluster_topk_policy policy) -> bool

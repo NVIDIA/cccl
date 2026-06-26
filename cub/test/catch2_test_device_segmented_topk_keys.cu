@@ -682,9 +682,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
     SKIP("Determinism requirements are only provided by the cluster backend");
   }
 
-  // `static_max_segment_size` exceeds the largest all-resident cluster coverage, so a single per-segment launch
-  // mixes streaming segments (the 1 Mi-element ones, one with an unaligned `- 31` overflow tail) with fully-resident
-  // segments (96 Ki + 17 and 257 elements).
+  // `static_max_segment_size` exceeds the largest all-resident cluster coverage, so a single per-segment launch sizes a
+  // wide (16-CTA) cluster and mixes every effective-width regime: streaming segments (the 1 Mi-element ones, one with
+  // an unaligned `- 31` overflow tail), a fully-resident multi-CTA segment (96 Ki + 17), two *medium* segments that
+  // exceed the single-CTA threshold but need only a few chunks (so surplus cluster CTAs go idle -- the runtime
+  // effective-cluster-width path), and a tiny segment that collapses onto a single CTA (257 elements).
   constexpr segment_size_t static_max_segment_size = 1100 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
 
@@ -693,12 +695,16 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
   const segment_size_t k   = GENERATE_COPY(values({segment_size_t{1}, static_max_k / 2, static_max_k}));
 
   constexpr segment_size_t big_segment_size = 1024 * 1024;
+  constexpr segment_size_t med_segment_a    = 12 * 1024 + 1; // a few chunks, unaligned tail -> most cluster CTAs idle
+  constexpr segment_size_t med_segment_b    = 40 * 1024; // more chunks, still well below the 16-CTA launch width
   c2h::host_vector<segment_size_t> h_segment_offsets{
     0,
     big_segment_size,
     big_segment_size + (big_segment_size - 31),
     big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17),
-    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257};
+    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257,
+    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257 + med_segment_a,
+    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257 + med_segment_a + med_segment_b};
   c2h::device_vector<segment_size_t> segment_offsets = h_segment_offsets;
   const segment_index_t num_segments                 = static_cast<segment_index_t>(h_segment_offsets.size() - 1);
   const segment_size_t num_items                     = h_segment_offsets.back();

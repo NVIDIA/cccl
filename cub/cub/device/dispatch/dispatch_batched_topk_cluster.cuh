@@ -12,7 +12,7 @@
 //!
 //! Two kernels share the agent body:
 //!   * Host: no `__cluster_dims__`, launched via `cudaLaunchKernelExC` with the
-//!     cluster width chosen at runtime (up to 16 on Hopper).
+//!     cluster blocks chosen at runtime (up to 16 on Hopper).
 //!   * CDP: static `__cluster_dims__(max_portable_cluster_blocks, 1, 1)`,
 //!     gated on `CUB_RDC_ENABLED` so CDP-disabled builds skip emitting it
 //!     (same pattern as `dispatch_segmented_sort.cuh`).
@@ -86,6 +86,7 @@ template <int ThreadsPerBlock,
           int BitsPerPass,
           int TieBreakItemsPerThread,
           int SingleCtaMaxSegmentSize,
+          int MinChunksPerCta,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -116,6 +117,7 @@ __launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void 
     BitsPerPass,
     TieBreakItemsPerThread,
     SingleCtaMaxSegmentSize,
+    MinChunksPerCta,
     Determinism,
     TieBreak,
     KeyInputItItT,
@@ -166,6 +168,7 @@ template <int ThreadsPerBlock,
           int BitsPerPass,
           int TieBreakItemsPerThread,
           int SingleCtaMaxSegmentSize,
+          int MinChunksPerCta,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -197,6 +200,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
     BitsPerPass,
     TieBreakItemsPerThread,
     SingleCtaMaxSegmentSize,
+    MinChunksPerCta,
     Determinism,
     TieBreak,
     KeyInputItItT,
@@ -259,6 +263,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
       BitsPerPass,                                                                      \
       TieBreakItemsPerThread,                                                           \
       SingleCtaMaxSegmentSize,                                                          \
+      MinChunksPerCta,                                                                  \
       Determinism,                                                                      \
       TieBreak,                                                                         \
       KeyInputItItT,                                                                    \
@@ -334,6 +339,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   constexpr int BitsPerPass             = policy.bits_per_pass;
   constexpr int TieBreakItemsPerThread  = policy.tie_break_items_per_thread;
   constexpr int SingleCtaMaxSegmentSize = policy.single_cta_max_segment_size;
+  constexpr int MinChunksPerCta         = policy.min_chunks_per_cta;
 
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
@@ -347,6 +353,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
      BitsPerPass,
      TieBreakItemsPerThread,
      SingleCtaMaxSegmentSize,
+     MinChunksPerCta,
      Determinism,
      TieBreak,
      KeyInputItItT,
@@ -423,6 +430,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     BitsPerPass,
     TieBreakItemsPerThread,
     SingleCtaMaxSegmentSize,
+    MinChunksPerCta,
     Determinism,
     TieBreak,
     KeyInputItItT,
@@ -441,7 +449,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       // performs the cluster launch via `cudaLaunchKernelEx`. The factory also wraps the pre-launch driver queries.
       detail::TripleChevronFactory launcher_factory{};
 
-      // Opt in to non-portable cluster widths (>8 on Hopper).
+      // Opt in to non-portable cluster blocks (>8 on Hopper).
       if (const auto error = launcher_factory.set_non_portable_cluster_allowed(dynamic_kernel))
       {
         return error;
@@ -516,8 +524,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         return cudaSuccess;
       };
 
-      // Wave-aware cluster-size selection. The free variable is the cluster size `C` (one cluster per segment); each
-      // `C` is paired with the smallest dynamic SMEM that keeps a segment fully resident. A smaller `C` needs more
+      // Wave-aware cluster-blocks selection. The free variable is the cluster blocks `C` (one cluster per segment);
+      // each `C` is paired with the smallest dynamic SMEM that keeps a segment fully resident. A smaller `C` needs more
       // SMEM (fewer clusters-per-wave, less L1); a larger `C` needs less SMEM (more clusters-per-wave, more L1). We
       // pick the `C` that minimizes the number of waves, breaking ties toward the largest `C` (= smallest SMEM = most
       // L1), which matches the profiled fast configs. We enumerate `C` analytically rather than discovering SMEM tiers
@@ -545,13 +553,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       const int c_full = static_cast<int>(
         (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(max_supported_cluster_blocks),
                             ::cuda::ceil_div(seg, chunk_items_u64)));
-      const auto c_lo              = ::cuda::ceil_div(seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity));
-      const bool prefer_single_cta = seg <= static_cast<::cuda::std::uint64_t>(policy.single_cta_max_segment_size);
+      const auto c_lo = ::cuda::ceil_div(seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity));
+      // Cluster blocks the max segment actually needs (shared with the device so the launch is never wider than
+      // necessary). At `min_chunks_per_cta == 1` this equals `c_full`; a larger knob shrinks it.
+      const int desired_cluster_blocks = static_cast<int>(effective_cluster_blocks_from_chunks(
+        ::cuda::ceil_div(seg, chunk_items_u64),
+        MinChunksPerCta,
+        static_cast<unsigned int>(max_supported_cluster_blocks)));
 
       int cluster_blocks   = 0;
       int dynamic_smem_sel = 0;
 
-      if (c_lo == 1 && prefer_single_cta)
+      if (single_cta_eligible(seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity), SingleCtaMaxSegmentSize))
       {
         // Single-CTA fast path: the segment fits resident in one CTA and is small enough that the agent's
         // cluster-barrier-free path beats spreading it across more CTAs. `S_res(seg)` is within budget and one CTA is
@@ -564,9 +577,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       {
         // Full residency is achievable. `seg <= C_lo * max_block_tile_capacity` with `C_lo <= HW max`, so every
         // per-CTA capacity (and thus its slot count and SMEM bytes) below stays well within `int` -- no overflow.
-        // Scan `C` in `[max(C_lo, 2), C_full]`, minimize waves, tie-break largest `C`. `C = 1` is handled above.
-        const int c_begin                = (::cuda::std::max) (2, static_cast<int>(c_lo));
-        const int c_end                  = (::cuda::std::max) (c_begin, c_full);
+        // Scan `C` in `[max(C_lo, 2), C_end]`, minimize waves, tie-break largest `C`. `C = 1` is handled above. The
+        // upper bound is capped at the cluster blocks the max segment needs (`desired_cluster_blocks`), so the host
+        // never launches a wider cluster than necessary; at `min_chunks_per_cta == 1` the cap equals `c_full`.
+        const int c_begin = (::cuda::std::max) (2, static_cast<int>(c_lo));
+        const int c_end   = (::cuda::std::max) (c_begin, (::cuda::std::min) (c_full, desired_cluster_blocks));
         ::cuda::std::uint64_t best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
         for (int c = c_begin; c <= c_end; ++c)
         {
@@ -583,7 +598,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           }
 
           // `cudaOccupancyMaxActiveClusters` needs the cluster dimension and the matching dynamic SMEM; the grid must
-          // be a multiple of the cluster size. The returned value is the device-wide clusters-per-wave (capacity),
+          // be a multiple of the cluster blocks. The returned value is the device-wide clusters-per-wave (capacity),
           // independent of grid size, and accounts for the static footprint and register pressure internally.
           cluster_attr.val.clusterDim.x = static_cast<unsigned int>(c);
           cfg.gridDim                   = dim3(static_cast<unsigned int>(c), 1, 1);
@@ -595,7 +610,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           }
           if (clusters_per_wave <= 0)
           {
-            continue; // cluster size not launchable at this SMEM.
+            continue; // cluster blocks not launchable at this SMEM.
           }
 
           const auto waves = ::cuda::ceil_div(
@@ -685,7 +700,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }),
     ({
       // CDP path: device-side launches cannot opt in to more than portable
-      // total SMEM or non-portable cluster widths. Segments that exceed the
+      // total SMEM or non-portable cluster blocks. Segments that exceed the
       // portable resident coverage are still handled: the agent re-streams the
       // overflow chunks from gmem.
       constexpr int portable_total_smem_bytes = 48 * 1024;
