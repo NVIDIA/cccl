@@ -176,5 +176,11 @@ typedef enum cccl_binary_search_mode_t
   CCCL_BINARY_SEARCH_UPPER_BOUND = 1,
 } cccl_binary_search_mode_t;
 
+typedef enum cccl_payload_kind_t
+{
+  CCCL_PAYLOAD_LTOIR = 0,
+  CCCL_PAYLOAD_CUBIN = 1,
+} cccl_payload_kind_t;
+
 CCCL_C_EXTERN_C_END
 // NOLINTEND(modernize-use-using)

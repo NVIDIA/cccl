@@ -86,7 +86,7 @@ template <typename T>
 void TestTabulateToDiscardIterator(size_t n)
 {
   thrust::tabulate(thrust::discard_iterator<thrust::device_system_tag>(),
-                   thrust::discard_iterator<thrust::device_system_tag>(n),
+                   thrust::discard_iterator<thrust::device_system_tag>(static_cast<std::ptrdiff_t>(n)),
                    ::cuda::std::identity{});
 
   // nothing to check -- just make sure it compiles

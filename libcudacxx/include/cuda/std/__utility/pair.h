@@ -29,10 +29,13 @@
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/pair.h>
+#include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__tuple_dir/tuple_constraints.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -64,6 +67,41 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
+template <class _UPair, class _T1, class _T2>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor __pair_select_pair_like_constructible() noexcept
+{
+  using ::cuda::std::get;
+  if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>>)
+  { // [pairs#pair]-15.1: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+    return __select_constructor::__none;
+  }
+  else if constexpr (!__pair_like<_UPair>)
+  {
+    return __select_constructor::__none;
+  }
+  else if constexpr (!is_constructible_v<_T1, decltype(get<0>(::cuda::std::declval<_UPair>()))>)
+  { // [pairs#pair]-15.2: is_constructible<T1, decltype(get<0>(std​::​forward<UTuple>(u)))>... is true
+    return __select_constructor::__none;
+  }
+  else if constexpr (!is_constructible_v<_T2, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
+  { // [pairs#pair]-15.3: is_constructible<T2, decltype(get<1>(std​::​forward<UTuple>(u)))>... is true
+    return __select_constructor::__none;
+  }
+  else
+  { // [pairs#pair]-17 !is_convertible_v<decltype(get<0>(FWD(u))), T1> &&
+    //                 !is_convertible_v<decltype(get<1>(FWD(u))), T2>
+    return (is_convertible_v<decltype(get<0>(::cuda::std::declval<_UPair>())), _T1>
+            && is_convertible_v<decltype(get<1>(::cuda::std::declval<_UPair>())), _T2>)
+           ? __select_constructor::__implicit
+           : __select_constructor::__explicit;
+  }
+}
+
+template <class _UPair, class _T1, class _T2>
+inline constexpr __select_constructor __pair_select_pair_like_constructible_v =
+  ::cuda::std::__pair_select_pair_like_constructible<_UPair, _T1, _T2>();
+
 struct __invalid_pair_constraints
 {
   static constexpr bool __implicit_constructible = false;
@@ -74,20 +112,6 @@ struct __invalid_pair_constraints
 template <class _T1, class _T2>
 struct __pair_constraints
 {
-  static constexpr bool __implicit_default_constructible =
-    __is_implicitly_default_constructible<_T1>::value && __is_implicitly_default_constructible<_T2>::value;
-
-  static constexpr bool __explicit_default_constructible =
-    !__implicit_default_constructible && is_default_constructible_v<_T1> && is_default_constructible_v<_T2>;
-
-  static constexpr bool __explicit_constructible_from_elements =
-    is_copy_constructible_v<_T1> && is_copy_constructible_v<_T2>
-    && (!is_convertible_v<__make_const_lvalue_ref<_T1>, _T1> || !is_convertible_v<__make_const_lvalue_ref<_T2>, _T2>);
-
-  static constexpr bool __implicit_constructible_from_elements =
-    is_copy_constructible_v<_T1> && is_copy_constructible_v<_T2> && is_convertible_v<__make_const_lvalue_ref<_T1>, _T1>
-    && is_convertible_v<__make_const_lvalue_ref<_T2>, _T2>;
-
   template <class _U1, class _U2>
   struct __constructible
   {
@@ -115,19 +139,19 @@ struct __pair_base
   _T2 second;
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
-  _CCCL_API explicit constexpr __pair_base() noexcept(
-    is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
+  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_T1, _T2>{}),
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr __pair_base() noexcept(is_nothrow_default_constructible_v<_T1>
+                                             && is_nothrow_default_constructible_v<_T2>)
       : first()
       , second()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
-  _CCCL_API constexpr __pair_base() noexcept(is_nothrow_default_constructible_v<_T1>
-                                             && is_nothrow_default_constructible_v<_T2>)
+  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_T1, _T2>{}),
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr __pair_base() noexcept(
+    is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
       : first()
       , second()
   {}
@@ -142,7 +166,7 @@ struct __pair_base
 
 protected:
   template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base(
+  _CCCL_API constexpr __pair_base(
     piecewise_construct_t,
     tuple<_Args1...>& __first_args,
     tuple<_Args2...>& __second_args,
@@ -157,19 +181,19 @@ struct __pair_base<_T1, _T2, true>
   _T2 second;
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
-  _CCCL_API explicit constexpr __pair_base() noexcept(
-    is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
+  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_T1, _T2>{}),
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr __pair_base() noexcept(is_nothrow_default_constructible_v<_T1>
+                                             && is_nothrow_default_constructible_v<_T2>)
       : first()
       , second()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
-  _CCCL_API constexpr __pair_base() noexcept(is_nothrow_default_constructible_v<_T1>
-                                             && is_nothrow_default_constructible_v<_T2>)
+  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_T1, _T2>{}),
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr __pair_base() noexcept(
+    is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
       : first()
       , second()
   {}
@@ -211,7 +235,7 @@ struct __pair_base<_T1, _T2, true>
 
 protected:
   template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base(
+  _CCCL_API constexpr __pair_base(
     piecewise_construct_t,
     tuple<_Args1...>& __first_args,
     tuple<_Args2...>& __second_args,
@@ -227,145 +251,175 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   using first_type  = _T1;
   using second_type = _T2;
 
-  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
+  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_T1, _T2>{}),
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr pair() noexcept(is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
+      : __base()
+  {}
+
+  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_T1, _T2>{}),
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
   _CCCL_API explicit constexpr pair() noexcept(is_nothrow_default_constructible_v<_T1>
                                                && is_nothrow_default_constructible_v<_T2>)
       : __base()
   {}
 
-  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
-  _CCCL_API constexpr pair() noexcept(is_nothrow_default_constructible_v<_T1> && is_nothrow_default_constructible_v<_T2>)
-      : __base()
-  {}
+  // copy and move constructors
+  _CCCL_HIDE_FROM_ABI pair(const pair&) = default;
+  _CCCL_HIDE_FROM_ABI pair(pair&&)      = default;
 
   // element wise constructors
-  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__explicit_constructible_from_elements, int> = 0>
+  template <__select_constructor _Trait = __tuple_select_variadic_copy_constructible_v<__tuple_types<_T1, _T2>>,
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
+    is_nothrow_copy_constructible_v<_T1> && is_nothrow_copy_constructible_v<_T2>)
+      : __base(__t1, __t2)
+  {}
+  template <__select_constructor _Trait = __tuple_select_variadic_copy_constructible_v<__tuple_types<_T1, _T2>>,
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
   _CCCL_API explicit constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     is_nothrow_copy_constructible_v<_T1> && is_nothrow_copy_constructible_v<_T2>)
       : __base(__t1, __t2)
   {}
 
-  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
-            enable_if_t<_Constraints::__implicit_constructible_from_elements, int> = 0>
-  _CCCL_API constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
-    is_nothrow_copy_constructible_v<_T1> && is_nothrow_copy_constructible_v<_T2>)
-      : __base(__t1, __t2)
-  {}
-
-  template <class _U1, class _U2>
-  using __pair_constructible = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>;
-
-  template <class _U1                                                = _T1,
-            class _U2                                                = _T2,
-            class _Constraints                                       = __pair_constructible<_U1, _U2>,
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _CCCL_API explicit constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
-    is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
-  {}
-
-  template <class _U1                                                = _T1,
-            class _U2                                                = _T2,
-            class _Constraints                                       = __pair_constructible<_U1, _U2>,
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  template <class _U1 = _T1,
+            class _U2 = _T2,
+            __select_constructor _Trait =
+              __tuple_select_variadic_constructible_v<__tuple_types<_T1, _T2>, __tuple_types<_U1, _U2>>,
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
   _CCCL_API constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
       : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
   {}
 
+  template <class _U1 = _T1,
+            class _U2 = _T2,
+            __select_constructor _Trait =
+              __tuple_select_variadic_constructible_v<__tuple_types<_T1, _T2>, __tuple_types<_U1, _U2>>,
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
+    is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
+      : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
+  {}
+
+  // converting constructors
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<pair<_U1, _U2>&, _T1, _T2>,
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr pair(pair<_U1, _U2>& __p) noexcept(
+    is_nothrow_constructible_v<_T1, _U1&> && is_nothrow_constructible_v<_T2, _U2&>)
+      : __base(__p.first, __p.second)
+  {}
+
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<pair<_U1, _U2>&, _T1, _T2>,
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr pair(pair<_U1, _U2>& __p) noexcept(
+    is_nothrow_constructible_v<_T1, _U1&> && is_nothrow_constructible_v<_T2, _U2&>)
+      : __base(__p.first, __p.second)
+  {}
+
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<const pair<_U1, _U2>&, _T1, _T2>,
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr pair(const pair<_U1, _U2>& __p) noexcept(
+    is_nothrow_constructible_v<_T1, const _U1&> && is_nothrow_constructible_v<_T2, const _U2&>)
+      : __base(__p.first, __p.second)
+  {}
+
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<const pair<_U1, _U2>&, _T1, _T2>,
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr pair(const pair<_U1, _U2>& __p) noexcept(
+    is_nothrow_constructible_v<_T1, const _U1&> && is_nothrow_constructible_v<_T2, const _U2&>)
+      : __base(__p.first, __p.second)
+  {}
+
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<pair<_U1, _U2>&&, _T1, _T2>,
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr pair(pair<_U1, _U2>&& __p) noexcept(
+    is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
+      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+  {}
+
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<pair<_U1, _U2>&&, _T1, _T2>,
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr pair(pair<_U1, _U2>&& __p) noexcept(
+    is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
+      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+  {}
+
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<const pair<_U1, _U2>&&, _T1, _T2>,
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
+    is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
+      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+  {}
+
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<const pair<_U1, _U2>&&, _T1, _T2>,
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
+    is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
+      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+  {}
+
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _UPair,
+            enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<_UPair, _T1, _T2>,
+            enable_if_t<__can_construct_implicitly<_Trait>, int> = 0>
+  _CCCL_API constexpr pair(_UPair&& __p) noexcept(
+    is_nothrow_constructible_v<_T1, decltype(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)))>
+    && is_nothrow_constructible_v<_T2, decltype(::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))>)
+      : __base(
+          // __adl_get() specifically will only move the sub-object, it's therefore OK to
+          // "move" the outer pair twice
+          // NOLINTBEGIN(bugprone-use-after-move)
+          ::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
+          ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p))
+          // NOLINTEND(bugprone-use-after-move)
+        )
+  {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
+
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _UPair,
+            enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<_UPair, _T1, _T2>,
+            enable_if_t<__can_construct_explicitly<_Trait>, int> = 0>
+  _CCCL_API explicit constexpr pair(_UPair&& __p) noexcept(
+    is_nothrow_constructible_v<_T1, decltype(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)))>
+    && is_nothrow_constructible_v<_T2, decltype(::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))>)
+      : __base(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
+               ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))
+  {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
+
   template <class... _Args1, class... _Args2>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20
-  pair(piecewise_construct_t __pc, tuple<_Args1...> __first_args, tuple<_Args2...> __second_args) noexcept(
-    (is_nothrow_constructible_v<_T1, _Args1...> && is_nothrow_constructible_v<_T2, _Args2...>) )
+  _CCCL_API constexpr pair(piecewise_construct_t __pc,
+                           tuple<_Args1...> __first_args,
+                           tuple<_Args2...> __second_args) noexcept((is_nothrow_constructible_v<_T1, _Args1...>
+                                                                     && is_nothrow_constructible_v<_T2, _Args2...>) )
       : __base(__pc,
                __first_args,
                __second_args,
                __make_tuple_indices_t<sizeof...(_Args1)>(),
                __make_tuple_indices_t<sizeof...(_Args2)>())
   {}
-
-  // copy and move constructors
-  _CCCL_HIDE_FROM_ABI pair(pair const&) = default;
-  _CCCL_HIDE_FROM_ABI pair(pair&&)      = default;
-
-  template <class _U1                                                = _T1,
-            class _U2                                                = _T2,
-            class _Constraints                                       = __pair_constructible<const _U1&, const _U2&>,
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _CCCL_API explicit constexpr pair(const pair<_U1, _U2>& __p) noexcept(
-    is_nothrow_constructible_v<_T1, const _U1&> && is_nothrow_constructible_v<_T2, const _U2&>)
-      : __base(__p.first, __p.second)
-  {}
-
-  template <class _U1                                                = _T1,
-            class _U2                                                = _T2,
-            class _Constraints                                       = __pair_constructible<const _U1&, const _U2&>,
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_API constexpr pair(const pair<_U1, _U2>& __p) noexcept(
-    is_nothrow_constructible_v<_T1, const _U1&> && is_nothrow_constructible_v<_T2, const _U2&>)
-      : __base(__p.first, __p.second)
-  {}
-
-  // move constructors
-  template <class _U1                                                = _T1,
-            class _U2                                                = _T2,
-            class _Constraints                                       = __pair_constructible<_U1, _U2>,
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _CCCL_API explicit constexpr pair(pair<_U1, _U2>&& __p) noexcept(
-    is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::forward<_U1>(__p.first), ::cuda::std::forward<_U2>(__p.second))
-  {}
-
-  template <class _U1                                                = _T1,
-            class _U2                                                = _T2,
-            class _Constraints                                       = __pair_constructible<_U1, _U2>,
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_API constexpr pair(pair<_U1, _U2>&& __p) noexcept(
-    is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::forward<_U1>(__p.first), ::cuda::std::forward<_U2>(__p.second))
-  {}
-
-  // std compatibility
-#if _CCCL_HOSTED()
-  template <class _U1,
-            class _U2,
-            class _Constraints                                       = __pair_constructible<const _U1&, const _U2&>,
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _CCCL_HOST_API explicit constexpr pair(const ::std::pair<_U1, _U2>& __p) noexcept(
-    is_nothrow_constructible_v<_T1, const _U1&> && is_nothrow_constructible_v<_T2, const _U2&>)
-      : __base(__p.first, __p.second)
-  {}
-
-  template <class _U1,
-            class _U2,
-            class _Constraints                                       = __pair_constructible<const _U1&, const _U2&>,
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_HOST_API constexpr pair(const ::std::pair<_U1, _U2>& __p) noexcept(
-    is_nothrow_constructible_v<_T1, const _U1&> && is_nothrow_constructible_v<_T2, const _U2&>)
-      : __base(__p.first, __p.second)
-  {}
-
-  template <class _U1,
-            class _U2,
-            class _Constraints                                       = __pair_constructible<_U1, _U2>,
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _CCCL_HOST_API explicit constexpr pair(::std::pair<_U1, _U2>&& __p) noexcept(
-    is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::forward<_U1>(__p.first), ::cuda::std::forward<_U2>(__p.second))
-  {}
-
-  template <class _U1,
-            class _U2,
-            class _Constraints                                       = __pair_constructible<_U1, _U2>,
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_HOST_API constexpr pair(::std::pair<_U1, _U2>&& __p) noexcept(
-    is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::forward<_U1>(__p.first), ::cuda::std::forward<_U2>(__p.second))
-  {}
-#endif // _CCCL_HOSTED()
 
   // assignments
   _CCCL_HIDE_FROM_ABI pair& operator=(const pair&) = default;
@@ -498,8 +552,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 #  endif // _CCCL_HOSTED()
 #endif // _CCCL_STD_VER >= 2023
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
-  swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
+  _CCCL_API constexpr void swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
     using ::cuda::std::swap;
     swap(this->first, __p.first);
@@ -607,21 +660,21 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 };
 #endif // _CCCL_STD_VER >= 2023
 
-template <class _T1, class _T2>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>, void>
+_CCCL_TEMPLATE(class _T1, class _T2)
+_CCCL_REQUIRES(is_nothrow_swappable_v<_T1> _CCCL_AND is_nothrow_swappable_v<_T2>)
+_CCCL_API constexpr void
 swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y) noexcept((is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>) )
 {
   __x.swap(__y);
 }
 
-#if _CCCL_STD_VER >= 2023
-template <class _T1, class _T2>
-  requires(is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>)
-_CCCL_API constexpr void swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(noexcept(__x.swap(__y)))
+_CCCL_TEMPLATE(class _T1, class _T2)
+_CCCL_REQUIRES(is_nothrow_swappable_v<const _T1> _CCCL_AND is_nothrow_swappable_v<const _T2>)
+_CCCL_API constexpr void swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(
+  (is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>) )
 {
   __x.swap(__y);
 }
-#endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
 _CCCL_API constexpr pair<unwrap_ref_decay_t<_T1>, unwrap_ref_decay_t<_T2>> make_pair(_T1&& __t1, _T2&& __t2)
@@ -692,73 +745,73 @@ struct __get_pair<1>
 template <size_t _Ip, class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>& __p) noexcept
 {
-  return __get_pair<_Ip>::get(__p);
+  return ::cuda::std::__get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>& get(const pair<_T1, _T2>& __p) noexcept
 {
-  return __get_pair<_Ip>::get(__p);
+  return ::cuda::std::__get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&& __p) noexcept
 {
-  return __get_pair<_Ip>::get(::cuda::std::move(__p));
+  return ::cuda::std::__get_pair<_Ip>::get(::cuda::std::move(__p));
 }
 
 template <size_t _Ip, class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>&& get(const pair<_T1, _T2>&& __p) noexcept
 {
-  return __get_pair<_Ip>::get(::cuda::std::move(__p));
+  return ::cuda::std::__get_pair<_Ip>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
 {
-  return __get_pair<0>::get(__p);
+  return ::cuda::std::__get_pair<0>::get(__p);
 }
 
 template <class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr _T1 const& get(pair<_T1, _T2> const& __p) noexcept
 {
-  return __get_pair<0>::get(__p);
+  return ::cuda::std::__get_pair<0>::get(__p);
 }
 
 template <class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
 {
-  return __get_pair<0>::get(::cuda::std::move(__p));
+  return ::cuda::std::__get_pair<0>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr _T1 const&& get(pair<_T1, _T2> const&& __p) noexcept
 {
-  return __get_pair<0>::get(::cuda::std::move(__p));
+  return ::cuda::std::__get_pair<0>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr _T1& get(pair<_T2, _T1>& __p) noexcept
 {
-  return __get_pair<1>::get(__p);
+  return ::cuda::std::__get_pair<1>::get(__p);
 }
 
 template <class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr _T1 const& get(pair<_T2, _T1> const& __p) noexcept
 {
-  return __get_pair<1>::get(__p);
+  return ::cuda::std::__get_pair<1>::get(__p);
 }
 
 template <class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr _T1&& get(pair<_T2, _T1>&& __p) noexcept
 {
-  return __get_pair<1>::get(::cuda::std::move(__p));
+  return ::cuda::std::__get_pair<1>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
 [[nodiscard]] _CCCL_API constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) noexcept
 {
-  return __get_pair<1>::get(::cuda::std::move(__p));
+  return ::cuda::std::__get_pair<1>::get(::cuda::std::move(__p));
 }
 
 // specialize cuda::std::tuple_size and cuda::std::tuple_element for std::pair and cuda::std::pair

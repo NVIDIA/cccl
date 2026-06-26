@@ -27,8 +27,8 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_radix_sort_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
   void* jit_compiler; /* Owns both wrappers below — one TU, one cubin */
   void* sort_fn; /* Wrapper around CUB's copy-overload (selector always 0) */
   void* sort_fn_overwrite; /* Wrapper around CUB's DoubleBuffer overload; reports selector */
