@@ -36,9 +36,9 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce sum")
 
   for (int i = 0; i < static_cast<int>(cuda::devices.size()); ++i)
   {
-    auto pool = cuda::device_default_memory_pool(cuda::devices[i]);
-
-    auto& s = send.emplace_back(streams[i], pool, {i + 1, i + 1, i + 1, i + 1});
+    auto pool         = cuda::device_default_memory_pool(cuda::devices[i]);
+    const auto values = {i + 1, i + 1, i + 1, i + 1};
+    auto& s           = send.emplace_back(streams[i], pool, values);
     recv.emplace_back(cuda::make_buffer(streams[i], pool, s.size(), cuda::std::int32_t{-1}));
   }
 
@@ -62,7 +62,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce sum")
   for (auto& buf : recv)
   {
     auto pool           = cuda::pinned_default_memory_pool();
-    const auto expected = cuda::make_buffer(buf.stream(), pool, buf.size(), sum);
+    const auto expected = std::vector<cuda::std::int32_t>(buf.size(), sum);
     const auto actual   = cuda::make_buffer(buf.stream(), pool, buf);
 
     REQUIRE_THAT(actual, Equals(expected));

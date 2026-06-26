@@ -6,6 +6,7 @@
 #include <cuda/std/detail/__config>
 
 #include <cuda/__nvtx/nvtx.h>
+#include <cuda/buffer>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -488,6 +489,12 @@ private:
 template <typename T, typename Alloc>
 auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
   -> c2h::detail::vector_matcher<THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>>
+{
+  return {expected};
+}
+
+template <typename T, typename... Props>
+auto Equals(const cuda::buffer<T, Props...>& expected) -> c2h::detail::vector_matcher<cuda::buffer<T, Props...>>
 {
   return {expected};
 }
