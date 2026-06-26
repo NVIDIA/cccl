@@ -53,6 +53,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/lazy.h>
+#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>
@@ -91,9 +92,10 @@ inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
 //! @brief Determines whether a constructor is valid and whether it is implicit or explicit
 enum class __select_constructor
 {
-  __none, //!< The constructor is not valid
+  __invalid, //!< The constructor is not valid
   __implicit, //!< The constructor is valid and implicit
   __explicit, //!< The constructor is valid and explicit
+  __deleted, //!< The constructor is marked as deleted
 };
 
 template <__select_constructor _Trait>
@@ -101,7 +103,10 @@ inline constexpr bool __can_construct_implicitly = _Trait == __select_constructo
 template <__select_constructor _Trait>
 inline constexpr bool __can_construct_explicitly = _Trait == __select_constructor::__explicit;
 template <__select_constructor _Trait>
-inline constexpr bool __can_construct = _Trait != __select_constructor::__none;
+inline constexpr bool __can_construct =
+  (_Trait == __select_constructor::__implicit) || (_Trait == __select_constructor::__explicit);
+template <__select_constructor _Trait>
+inline constexpr bool __is_deleted = _Trait == __select_constructor::__deleted;
 
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
@@ -109,7 +114,7 @@ __tuple_select_default_constructible(__tuple_types<_Types...>) noexcept
 {
   if constexpr (!(is_default_constructible_v<_Types> && ...))
   {
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr ((__is_implicitly_default_constructible<_Types>::value && ...))
   {
@@ -127,7 +132,7 @@ __tuple_select_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
 {
   if constexpr (!(is_copy_constructible_v<_Types> && ...))
   {
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr ((is_convertible_v<const _Types&, _Types> && ...))
   {
@@ -149,7 +154,7 @@ __tuple_select_variadic_move_constructible(__tuple_types<_Types...>) noexcept
 {
   if constexpr (!(is_move_constructible_v<_Types> && ...))
   {
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr ((is_convertible_v<_Types&&, _Types> && ...))
   {
@@ -171,42 +176,62 @@ __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_U
 {
   if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
   { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (sizeof...(_Types) == 0)
   { // [tuple.cnstr]-13.2: sizeof...(Types) >= 1,
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (sizeof...(_Types) == 2 || sizeof...(_Types) == 3)
   { // [tuple.cnstr]-12.2: otherwise, if sizeof...(Types) is 2 or 3
-    //    !is_same_v<remove_cvref_t<U0>, allocator_arg_t> || is_same_v<remove_cvref_t<T0>, allocator_arg_t>>
     using _U0 = __type_index_c<0, _UTypes...>;
     using _T0 = __type_index_c<0, _Types...>;
     if constexpr (!is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>)
-    { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-      if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
-      {
-        constexpr bool __can_construct_implicitly = (is_convertible_v<_UTypes, _Types> && ...);
-        return __can_construct_implicitly ? __select_constructor::__implicit : __select_constructor::__explicit;
+    { // [tuple.cnstr]-13.3: !is_same_v<remove_cvref_t<U0>, allocator_arg_t> || is_same_v<remove_cvref_t<T0>,
+      // allocator_arg_t>>
+      if constexpr (!(is_constructible_v<_Types, _UTypes> && ...))
+      { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+        return __select_constructor::__invalid;
+      }
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+      else if constexpr ((reference_constructs_from_temporary_v<_Types, _UTypes&&> || ...))
+      { // [tuple.cnstr]-15: This constructor is defined as deleted if
+        // (reference_constructs_from_temporary_v<Types, UTypes&&> || ...) is true
+        return __select_constructor::__deleted;
+      }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+      else if constexpr (!(is_convertible_v<_UTypes, _Types> && ...))
+      { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+        return __select_constructor::__explicit;
       }
       else
       {
-        return __select_constructor::__none;
+        return __select_constructor::__implicit;
       }
     }
     else
     {
-      return __select_constructor::__none;
+      return __select_constructor::__invalid;
     }
   }
-  else if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
+  else if constexpr (!(is_constructible_v<_Types, _UTypes> && ...))
   { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-    constexpr bool __can_construct_implicitly = (is_convertible_v<_UTypes, _Types> && ...);
-    return __can_construct_implicitly ? __select_constructor::__implicit : __select_constructor::__explicit;
+    return __select_constructor::__invalid;
+  }
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  else if constexpr ((reference_constructs_from_temporary_v<_Types, _UTypes&&> || ...))
+  { // [tuple.cnstr]-15: This constructor is defined as deleted if
+    // (reference_constructs_from_temporary_v<Types, UTypes&&> || ...) is true
+    return __select_constructor::__deleted;
+  }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+  else if constexpr (!(is_convertible_v<_UTypes, _Types> && ...))
+  { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+    return __select_constructor::__explicit;
   }
   else
   {
-    return __select_constructor::__none;
+    return __select_constructor::__implicit;
   }
 }
 
@@ -216,15 +241,26 @@ __tuple_select_variadic_constructible(__tuple_types<_Type>, __tuple_types<_UType
 {
   if constexpr (is_same_v<remove_cvref_t<_UType>, tuple<_Type>>)
   { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (!is_constructible_v<_Type, _UType>)
   { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
+  }
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  else if constexpr (reference_constructs_from_temporary_v<_Type, _UType&&>)
+  { // [tuple.cnstr]-15: This constructor is defined as deleted if
+    // (reference_constructs_from_temporary_v<Types, UTypes&&> || ...) is true
+    return __select_constructor::__deleted;
+  }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+  else if constexpr (!is_convertible_v<_UType, _Type>)
+  { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+    return __select_constructor::__explicit;
   }
   else
-  { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
-    return is_convertible_v<_UType, _Type> ? __select_constructor::__implicit : __select_constructor::__explicit;
+  {
+    return __select_constructor::__implicit;
   }
 }
 
@@ -238,31 +274,36 @@ __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tupl
 {
   if constexpr (!(sizeof...(_UTypes) < sizeof...(_Types)))
   {
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (sizeof...(_UTypes) == 0)
   {
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else
   {
     using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
     using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-    if constexpr (::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
-                  == __select_constructor::__none)
+    [[maybe_unused]] constexpr __select_constructor __variadic_trait =
+      ::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{});
+    [[maybe_unused]] constexpr __select_constructor __defaulted_trait =
+      ::cuda::std::__tuple_select_default_constructible(__defaulted_list{});
+    if constexpr (__variadic_trait == __select_constructor::__invalid
+                  || __variadic_trait == __select_constructor::__deleted)
     {
-      return __select_constructor::__none;
+      return __select_constructor::__invalid;
     }
-    else if constexpr (::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
-                       == __select_constructor::__none)
+    else if constexpr (__defaulted_trait == __select_constructor::__invalid
+                       || __defaulted_trait == __select_constructor::__deleted)
     {
-      return __select_constructor::__none;
+      return __select_constructor::__invalid;
     }
     else
     {
       return __select_constructor::__explicit;
     }
   }
+  _CCCL_UNREACHABLE();
 }
 
 template <class _TupleTypes, class _TupleUTypes>
@@ -277,35 +318,49 @@ __tuple_select_tuple_like_constructible(__tuple_types<_Types...>, __tuple_indice
   using ::cuda::std::get;
   if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
   { // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (is_same_v<_UTuple, const tuple<_Types...>&> || is_same_v<_UTuple, tuple<_Types...>&&>)
   { // Prefers the copy/move constructor
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (sizeof...(_Types) == 0)
   { // Avoids issues with the size 1 constructor below
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (!__tuple_like_with_size<_UTuple, sizeof...(_Types)>)
   { // [tuple#cnstr]-21.1: sizeof...(Types) equals sizeof...(UTypes), and
     // [tuple#cnstr]-25.1: sizeof...(Types) is 2,
     // [tuple#cnstr]-29.3: sizeof...(Types) equals sizeof...(UTypes), and
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (!(is_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...))
   { // [tuple.cnstr]-21.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
     // [tuple.cnstr]-25.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
     // [tuple.cnstr]-29.4: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
-  else
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  else if constexpr ((reference_constructs_from_temporary_v<_Types,
+                                                            decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))>
+                      || ...))
+  { // [tuple.cnstr]-23: This constructor is defined as deleted if
+    // [tuple.cnstr]-27: This constructor is defined as deleted if
+    // [tuple.cnstr]-31: This constructor is defined as deleted if
+    // (reference_constructs_from_temporary_v<Types, decltype(get<I>(FWD(u)))> || ...) is true
+    return __select_constructor::__deleted;
+  }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+  else if constexpr (!(is_convertible_v<decltype(get<_Indices>(::cuda::std::declval<_UTuple>())), _Types> && ...))
   { // [tuple.cnstr]-15: The expression inside explicit is equivalent to:
     // [tuple.cnstr]-23: The expression inside explicit is equivalent to:
+    // [tuple.cnstr]-31: The expression inside explicit is equivalent to:
     // !(is_convertible_v<decltype(get<I>(FWD(u))), Types> && ...)
-    return (is_convertible_v<decltype(get<_Indices>(::cuda::std::declval<_UTuple>())), _Types> && ...)
-           ? __select_constructor::__implicit
-           : __select_constructor::__explicit;
+    return __select_constructor::__explicit;
+  }
+  else
+  {
+    return __select_constructor::__implicit;
   }
 }
 
@@ -317,46 +372,55 @@ __tuple_select_tuple_like_constructible(__tuple_types<_Type>, __tuple_indices<_I
   using ::cuda::std::get;
   if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
   { // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (is_same_v<_UTuple, const tuple<_Type>&> || is_same_v<_UTuple, tuple<_Type>&&>)
   { // Prefers the copy/move constructor
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (!__tuple_like_with_size<_UTuple, 1>)
   { // [tuple#cnstr]-21.1: sizeof...(Types) equals sizeof...(UTypes), and
     // [tuple#cnstr]-29.3: sizeof...(Types) equals sizeof...(UTypes), and
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (__is_cuda_std_tuple<remove_cvref_t<_UTuple>>
                      && is_same_v<_Type, tuple_element_t<_Index, remove_cvref_t<_UTuple>>>)
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1
     // [tuple#cnstr]-21.3: is_same_v<T, U> is false
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (is_constructible_v<_Type, _UTuple>)
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
     // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (is_convertible_v<_UTuple, _Type>)
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
     // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
   else if constexpr (!is_constructible_v<_Type, decltype(get<_Index>(::cuda::std::declval<_UTuple>()))>)
   { // [tuple.cnstr]-21.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
-    // [tuple.cnstr]-25.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
     // [tuple.cnstr]-29.4: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
-    return __select_constructor::__none;
+    return __select_constructor::__invalid;
   }
-  else
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  else if constexpr (reference_constructs_from_temporary_v<_Type, decltype(get<_Index>(::cuda::std::declval<_UTuple>()))>)
+  { // [tuple.cnstr]-23: This constructor is defined as deleted if
+    // [tuple.cnstr]-31: This constructor is defined as deleted if
+    // (reference_constructs_from_temporary_v<Types, decltype(get<I>(FWD(u)))> || ...) is true
+    return __select_constructor::__deleted;
+  }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+  else if constexpr (!is_convertible_v<decltype(get<_Index>(::cuda::std::declval<_UTuple>())), _Type>)
   { // [tuple.cnstr]-15: The expression inside explicit is equivalent to:
     // [tuple.cnstr]-23: The expression inside explicit is equivalent to:
     // !(is_convertible_v<decltype(get<I>(FWD(u))), Types> && ...)
-    return is_convertible_v<decltype(get<_Index>(::cuda::std::declval<_UTuple>())), _Type>
-           ? __select_constructor::__implicit
-           : __select_constructor::__explicit;
+    return __select_constructor::__explicit;
+  }
+  else
+  {
+    return __select_constructor::__implicit;
   }
 }
 
