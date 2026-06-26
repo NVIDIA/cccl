@@ -112,4 +112,22 @@ typename Vector::size_type erase(Vector& c, const U& value)
   return removed;
 }
 
+template <typename DerivedPolicy,
+          class Vector,
+          class U                                                   = typename Vector::value_type,
+          ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
+typename Vector::size_type
+erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, const U& value)
+{
+  using value_type = typename Vector::value_type;
+
+  auto first = thrust::remove(exec, c.begin(), c.end(), static_cast<value_type>(value));
+
+  auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
+
+  c.erase(first, c.end());
+
+  return removed;
+}
+
 THRUST_NAMESPACE_END
