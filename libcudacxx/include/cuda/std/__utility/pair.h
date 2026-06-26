@@ -65,6 +65,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// On Windows we are getting a warning when compiling the const assignment operators with a reference type
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1770) // type qualifiers are ignored (underlying type is a reference)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -88,13 +91,15 @@ template <class _UPair, class _T1, class _T2>
   { // [pairs#pair]-15.3: is_constructible<T2, decltype(get<1>(std​::​forward<UTuple>(u)))>... is true
     return __select_constructor::__none;
   }
-  else
+  else if constexpr (is_convertible_v<decltype(get<0>(::cuda::std::declval<_UPair>())), _T1>
+                     && is_convertible_v<decltype(get<1>(::cuda::std::declval<_UPair>())), _T2>)
   { // [pairs#pair]-17 !is_convertible_v<decltype(get<0>(FWD(u))), T1> &&
     //                 !is_convertible_v<decltype(get<1>(FWD(u))), T2>
-    return (is_convertible_v<decltype(get<0>(::cuda::std::declval<_UPair>())), _T1>
-            && is_convertible_v<decltype(get<1>(::cuda::std::declval<_UPair>())), _T2>)
-           ? __select_constructor::__implicit
-           : __select_constructor::__explicit;
+    return __select_constructor::__implicit;
+  }
+  else
+  {
+    return __select_constructor::__explicit;
   }
 }
 
@@ -102,34 +107,68 @@ template <class _UPair, class _T1, class _T2>
 inline constexpr __select_constructor __pair_select_pair_like_constructible_v =
   ::cuda::std::__pair_select_pair_like_constructible<_UPair, _T1, _T2>();
 
-struct __invalid_pair_constraints
+_CCCL_EXEC_CHECK_DISABLE
+template <bool _IsConst, class _UPair, class _T1, class _T2>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment __pair_select_pair_like_assignable() noexcept
 {
-  static constexpr bool __implicit_constructible = false;
-  static constexpr bool __explicit_constructible = false;
-  static constexpr bool __enable_assign          = false;
-};
-
-template <class _T1, class _T2>
-struct __pair_constraints
-{
-  template <class _U1, class _U2>
-  struct __constructible
+  using ::cuda::std::get;
+  if constexpr (is_same_v<remove_cvref_t<_UPair>, pair<_T1, _T2>>)
+  { // [pairs.pair]-42.1: different-from<UPair, pair>
+    // [pairs.pair]-45.1: different-from<UPair, pair>
+    return __select_assignment::__none;
+  }
+  else if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>>)
+  { // [pairs.pair]-42.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+    // [pairs.pair]-45.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+    return __select_assignment::__none;
+  }
+  else if constexpr (!__pair_like<_UPair>)
+  { // [pairs.pair]-42: pair-like P
+    // [pairs.pair]-45: pair-like P
+    return __select_assignment::__none;
+  }
+  else if constexpr (_IsConst)
   {
-    static constexpr bool __explicit_constructible =
-      is_constructible_v<_T1, _U1> && is_constructible_v<_T2, _U2>
-      && (!is_convertible_v<_U1, _T1> || !is_convertible_v<_U2, _T2>);
-
-    static constexpr bool __implicit_constructible =
-      is_constructible_v<_T1, _U1> && is_constructible_v<_T2, _U2> && is_convertible_v<_U1, _T1>
-      && is_convertible_v<_U2, _T2>;
-  };
-
-  template <class _U1, class _U2>
-  struct __assignable
+    if constexpr (!is_assignable_v<const _T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>)
+    { // [pairs.pair]-45.3: is_assignable_v<const T1&, decltype(get<0>(std​::​forward<P>(p)))> is true
+      return __select_assignment::__none;
+    }
+    else if constexpr (!is_assignable_v<const _T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
+    { // [pairs.pair]-45.4: is_assignable_v<const T2&, decltype(get<1>(std​::​forward<P>(p)))> is true
+      return __select_assignment::__none;
+    }
+    else if constexpr (is_nothrow_assignable_v<const _T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>
+                       && is_nothrow_assignable_v<const _T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
+    {
+      return __select_assignment::__is_nothrow;
+    }
+    else
+    {
+      return __select_assignment::__may_throw;
+    }
+  }
+  else if constexpr (!is_assignable_v<_T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>)
+  { // [pairs.pair]-42.3: is_assignable_v<const T1&, decltype(get<0>(std​::​forward<P>(p)))> is true
+    return __select_assignment::__none;
+  }
+  else if constexpr (!is_assignable_v<_T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
+  { // [pairs.pair]-42.4: is_assignable_v<const T2&, decltype(get<1>(std​::​forward<P>(p)))> is true
+    return __select_assignment::__none;
+  }
+  else if constexpr (is_nothrow_assignable_v<_T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>
+                     && is_nothrow_assignable_v<_T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
   {
-    static constexpr bool __enable_assign = is_assignable_v<_T1&, _U1> && is_assignable_v<_T2&, _U2>;
-  };
-};
+    return __select_assignment::__is_nothrow;
+  }
+  else
+  {
+    return __select_assignment::__may_throw;
+  }
+}
+
+template <bool _IsConst, class _UPair, class _T1, class _T2>
+inline constexpr __select_assignment __pair_select_pair_like_assignable_v =
+  ::cuda::std::__pair_select_pair_like_assignable<_IsConst, _UPair, _T1, _T2>();
 
 // base class to ensure `is_trivially_copyable` when possible
 template <class _T1, class _T2, bool = __must_synthesize_assignment_v<_T1> || __must_synthesize_assignment_v<_T2>>
@@ -206,7 +245,7 @@ struct __pair_base<_T1, _T2, true>
   // We need to ensure that a reference type, which would inhibit the implicit copy assignment still works
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr __pair_base&
-  operator=(conditional_t<is_copy_assignable_v<_T1> && is_copy_assignable_v<_T2>, __pair_base, __nat> const&
+  operator=(const conditional_t<is_copy_assignable_v<_T1> && is_copy_assignable_v<_T2>, __pair_base, __nat>&
               __p) noexcept(is_nothrow_copy_assignable_v<_T1> && is_nothrow_copy_assignable_v<_T2>)
   {
     first  = __p.first;
@@ -220,8 +259,8 @@ struct __pair_base<_T1, _T2, true>
   operator=(conditional_t<is_move_assignable_v<_T1> && is_move_assignable_v<_T2>, __pair_base, __nat>&& __p) noexcept(
     is_nothrow_move_assignable_v<_T1> && is_nothrow_move_assignable_v<_T2>)
   {
-    first  = ::cuda::std::forward<_T1>(__p.first);
-    second = ::cuda::std::forward<_T2>(__p.second);
+    first  = ::cuda::std::move(__p.first);
+    second = ::cuda::std::move(__p.second);
     return *this;
   }
 
@@ -427,10 +466,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   template <class _U1,
             class _U2,
-            class _Constraints = typename __pair_constraints<_T1, _T2>::template __assignable<const _U1&, const _U2&>,
-            enable_if_t<_Constraints::__enable_assign, int> = 0>
+            enable_if_t<is_assignable_v<_T1&, const _U1&>, int> = 0,
+            enable_if_t<is_assignable_v<_T2&, const _U2&>, int> = 0>
   _CCCL_API constexpr pair& operator=(const pair<_U1, _U2>& __p) noexcept(
-    is_nothrow_assignable_v<_T1, const _U1&> && is_nothrow_assignable_v<_T2, const _U2&>)
+    is_nothrow_assignable_v<_T1&, const _U1&> && is_nothrow_assignable_v<_T2&, const _U2&>)
   {
     this->first  = __p.first;
     this->second = __p.second;
@@ -439,118 +478,67 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   template <class _U1,
             class _U2,
-            class _Constraints = typename __pair_constraints<_T1, _T2>::template __assignable<_U1, _U2>,
-            enable_if_t<_Constraints::__enable_assign, int> = 0>
-  _CCCL_API constexpr pair&
-  operator=(pair<_U1, _U2>&& __p) noexcept(is_nothrow_assignable_v<_T1, _U1> && is_nothrow_assignable_v<_T2, _U2>)
-  {
-    this->first  = ::cuda::std::forward<_U1>(__p.first);
-    this->second = ::cuda::std::forward<_U2>(__p.second);
-    return *this;
-  }
-
-  // std assignments
-#if _CCCL_HOSTED()
-  template <class _UT1 = _T1, enable_if_t<is_copy_assignable_v<_UT1> && is_copy_assignable_v<_T2>, int> = 0>
-  _CCCL_HOST_API constexpr pair& operator=(::std::pair<_T1, _T2> const& __p) noexcept(
-    is_nothrow_copy_assignable_v<_T1> && is_nothrow_copy_assignable_v<_T2>)
-  {
-    this->first  = __p.first;
-    this->second = __p.second;
-    return *this;
-  }
-
-  template <class _UT1 = _T1, enable_if_t<is_move_assignable_v<_UT1> && is_move_assignable_v<_T2>, int> = 0>
-  _CCCL_HOST_API constexpr pair& operator=(::std::pair<_T1, _T2>&& __p) noexcept(
-    is_nothrow_copy_assignable_v<_T1> && is_nothrow_copy_assignable_v<_T2>)
-  {
-    this->first  = ::cuda::std::forward<_T1>(__p.first);
-    this->second = ::cuda::std::forward<_T2>(__p.second);
-    return *this;
-  }
-#endif // _CCCL_HOSTED()
-
-#if _CCCL_STD_VER >= 2023
-  _CCCL_API constexpr const pair& operator=(pair const& __p) const
-    noexcept(is_nothrow_copy_assignable_v<const _T1> && is_nothrow_copy_assignable_v<const _T2>)
-    requires(is_copy_assignable_v<const _T1> && is_copy_assignable_v<const _T2>)
-  {
-    this->first  = __p.first;
-    this->second = __p.second;
-    return *this;
-  }
-
-#  if _CCCL_HOSTED()
-  _CCCL_HOST_API inline constexpr const pair& operator=(::std::pair<_T1, _T2> const& __p) const
-    noexcept(is_nothrow_copy_assignable_v<const _T1> && is_nothrow_copy_assignable_v<const _T2>)
-    requires(is_copy_assignable_v<const _T1> && is_copy_assignable_v<const _T2>)
-  {
-    this->first  = __p.first;
-    this->second = __p.second;
-    return *this;
-  }
-#  endif // _CCCL_HOSTED()
-
-  _CCCL_API constexpr const pair& operator=(pair&& __p) const
-    noexcept(is_nothrow_assignable_v<const _T1&, _T1> && is_nothrow_assignable_v<const _T2&, _T2>)
-    requires(is_assignable_v<const _T1&, _T1> && is_assignable_v<const _T2&, _T2>)
-  {
-    this->first  = ::cuda::std::forward<_T1>(__p.first);
-    this->second = ::cuda::std::forward<_T2>(__p.second);
-    return *this;
-  }
-
-#  if _CCCL_HOSTED()
-  _CCCL_HOST_API inline constexpr const pair& operator=(::std::pair<_T1, _T2>&& __p) const
-    noexcept(is_nothrow_assignable_v<const _T1&, _T1> && is_nothrow_assignable_v<const _T2&, _T2>)
-    requires(is_assignable_v<const _T1&, _T1> && is_assignable_v<const _T2&, _T2>)
-  {
-    this->first  = ::cuda::std::forward<_T1>(__p.first);
-    this->second = ::cuda::std::forward<_T2>(__p.second);
-    return *this;
-  }
-#  endif // _CCCL_HOSTED()
-
-  template <class _U1, class _U2>
+            enable_if_t<is_assignable_v<const _T1&, const _U1&>, int> = 0,
+            enable_if_t<is_assignable_v<const _T2&, const _U2&>, int> = 0>
   _CCCL_API constexpr const pair& operator=(const pair<_U1, _U2>& __p) const
-    requires(is_assignable_v<const _T1&, const _U1&> && is_assignable_v<const _T2&, const _U2&>)
+    noexcept(is_nothrow_assignable_v<const _T1&, const _U1&> && is_nothrow_assignable_v<const _T2&, const _U2&>)
   {
     this->first  = __p.first;
     this->second = __p.second;
     return *this;
   }
 
-#  if _CCCL_HOSTED()
-  template <class _U1, class _U2>
-  _CCCL_HOST_API inline constexpr const pair& operator=(const ::std::pair<_U1, _U2>& __p) const
-    requires(is_assignable_v<const _T1&, const _U1&> && is_assignable_v<const _T2&, const _U2&>)
+  template <class _U1,
+            class _U2,
+            enable_if_t<is_assignable_v<_T1&, _U1>, int> = 0,
+            enable_if_t<is_assignable_v<_T2&, _U2>, int> = 0>
+  _CCCL_API constexpr pair&
+  operator=(pair<_U1, _U2>&& __p) noexcept(is_nothrow_assignable_v<_T1&, _U1> && is_nothrow_assignable_v<_T2&, _U2>)
   {
-    this->first  = __p.first;
-    this->second = __p.second;
+    this->first  = ::cuda::std::forward<_U1>(__p.first);
+    this->second = ::cuda::std::forward<_U2>(__p.second);
     return *this;
   }
-#  endif // _CCCL_HOSTED()
 
-  template <class _U1, class _U2>
+  template <class _U1,
+            class _U2,
+            enable_if_t<is_assignable_v<const _T1&, _U1>, int> = 0,
+            enable_if_t<is_assignable_v<const _T2&, _U2>, int> = 0>
   _CCCL_API constexpr const pair& operator=(pair<_U1, _U2>&& __p) const
-    requires(is_assignable_v<const _T1&, _U1> && is_assignable_v<const _T2&, _U2>)
+    noexcept(is_nothrow_assignable_v<const _T1&, _U1> && is_nothrow_assignable_v<const _T2&, _U2>)
   {
     this->first  = ::cuda::std::forward<_U1>(__p.first);
     this->second = ::cuda::std::forward<_U2>(__p.second);
     return *this;
   }
 
-#  if _CCCL_HOSTED()
-  template <class _U1, class _U2>
-  _CCCL_HOST_API inline constexpr const pair& operator=(::std::pair<_U1, _U2>&& __p) const
-    requires(is_assignable_v<const _T1&, _U1> && is_assignable_v<const _T2&, _U2>)
+  // ``get`` will specifically only move the sub-object, it's therefore OK to
+  // "move" the outer pair twice
+  // NOLINTBEGIN(bugprone-use-after-move)
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _UPair,
+            __select_assignment _Trait = __pair_select_pair_like_assignable_v</*__is_const=*/false, _UPair, _T1, _T2>,
+            enable_if_t<__can_assign<_Trait>, int> = 0>
+  _CCCL_API constexpr pair& operator=(_UPair&& __p) noexcept(__can_nothrow_assign<_Trait>)
   {
-    this->first  = ::cuda::std::forward<_U1>(__p.first);
-    this->second = ::cuda::std::forward<_U2>(__p.second);
+    using ::cuda::std::get;
+    this->first  = get<0>(::cuda::std::forward<_UPair>(__p));
+    this->second = get<1>(::cuda::std::forward<_UPair>(__p));
     return *this;
   }
-#  endif // _CCCL_HOSTED()
-#endif // _CCCL_STD_VER >= 2023
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _UPair,
+            __select_assignment _Trait = __pair_select_pair_like_assignable_v</*__is_const=*/true, _UPair, _T1, _T2>,
+            enable_if_t<__can_assign<_Trait>, int> = 0>
+  _CCCL_API constexpr const pair& operator=(_UPair&& __p) const noexcept(__can_nothrow_assign<_Trait>)
+  {
+    using ::cuda::std::get;
+    this->first  = get<0>(::cuda::std::forward<_UPair>(__p));
+    this->second = get<1>(::cuda::std::forward<_UPair>(__p));
+    return *this;
+  }
+  // NOLINTEND(bugprone-use-after-move)
 
   _CCCL_API constexpr void swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
@@ -661,7 +649,7 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 #endif // _CCCL_STD_VER >= 2023
 
 _CCCL_TEMPLATE(class _T1, class _T2)
-_CCCL_REQUIRES(is_nothrow_swappable_v<_T1> _CCCL_AND is_nothrow_swappable_v<_T2>)
+_CCCL_REQUIRES(is_swappable_v<_T1> _CCCL_AND is_swappable_v<_T2>)
 _CCCL_API constexpr void
 swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y) noexcept((is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>) )
 {
@@ -669,7 +657,7 @@ swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y) noexcept((is_nothrow_swappable_v<
 }
 
 _CCCL_TEMPLATE(class _T1, class _T2)
-_CCCL_REQUIRES(is_nothrow_swappable_v<const _T1> _CCCL_AND is_nothrow_swappable_v<const _T2>)
+_CCCL_REQUIRES(is_swappable_v<const _T1> _CCCL_AND is_swappable_v<const _T2>)
 _CCCL_API constexpr void swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(
   (is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>) )
 {
@@ -773,7 +761,7 @@ template <class _T1, class _T2>
 }
 
 template <class _T1, class _T2>
-[[nodiscard]] _CCCL_API constexpr _T1 const& get(pair<_T1, _T2> const& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr const _T1& get(const pair<_T1, _T2>& __p) noexcept
 {
   return ::cuda::std::__get_pair<0>::get(__p);
 }
@@ -785,7 +773,7 @@ template <class _T1, class _T2>
 }
 
 template <class _T1, class _T2>
-[[nodiscard]] _CCCL_API constexpr _T1 const&& get(pair<_T1, _T2> const&& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr const _T1&& get(const pair<_T1, _T2>&& __p) noexcept
 {
   return ::cuda::std::__get_pair<0>::get(::cuda::std::move(__p));
 }
@@ -797,7 +785,7 @@ template <class _T1, class _T2>
 }
 
 template <class _T1, class _T2>
-[[nodiscard]] _CCCL_API constexpr _T1 const& get(pair<_T2, _T1> const& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr const _T1& get(const pair<_T2, _T1>& __p) noexcept
 {
   return ::cuda::std::__get_pair<1>::get(__p);
 }
@@ -809,7 +797,7 @@ template <class _T1, class _T2>
 }
 
 template <class _T1, class _T2>
-[[nodiscard]] _CCCL_API constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr const _T1&& get(const pair<_T2, _T1>&& __p) noexcept
 {
   return ::cuda::std::__get_pair<1>::get(::cuda::std::move(__p));
 }
@@ -885,6 +873,8 @@ struct tuple_element<1, ::cuda::std::pair<_Tp, _Up>>
 };
 
 _CCCL_END_NAMESPACE_STD
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/std/__cccl/epilogue.h>
 
