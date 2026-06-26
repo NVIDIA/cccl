@@ -409,68 +409,14 @@ public:
     return __rhs;
   }
 
-  struct __zip_op_minus
-  {
-    struct __less_abs
-    {
-      // abs in cstdlib is not constexpr
-      _CCCL_EXEC_CHECK_DISABLE
-      [[nodiscard]] _CCCL_API static constexpr difference_type
-      __abs(difference_type __t) noexcept(noexcept(__t < 0 ? -__t : __t))
-      {
-        return __t < 0 ? -__t : __t;
-      }
-
-      _CCCL_EXEC_CHECK_DISABLE
-      [[nodiscard]] _CCCL_API constexpr bool operator()(difference_type __n, difference_type __y) const
-        noexcept(noexcept(__abs(__n) < __abs(__y)))
-      {
-        return __abs(__n) < __abs(__y);
-      }
-    };
-
-    _CCCL_EXEC_CHECK_DISABLE
-    template <size_t _Zero, size_t... _Indices>
-    [[nodiscard]] _CCCL_API constexpr difference_type
-    operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
-               const ::cuda::std::tuple<_Iterators...>& __iters2,
-               ::cuda::std::index_sequence<_Zero, _Indices...>) const //
-      noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) - ::cuda::std::get<_Indices>(__iters2)) && ...)))
-    {
-      const auto __first = static_cast<difference_type>(::cuda::std::get<0>(__iters1) - ::cuda::std::get<0>(__iters2));
-      if (__first == 0)
-      {
-        return __first;
-      }
-
-      const difference_type __temp[] = {
-        __first,
-        static_cast<difference_type>(::cuda::std::get<_Indices>(__iters1) - ::cuda::std::get<_Indices>(__iters2))...};
-      return *::cuda::std::ranges::min_element(__temp, __zip_op_minus::__less_abs{});
-    }
-  };
-
   //! @brief Returns the distance between two @c zip_transform_iterators
   //! @returns The minimal distance between any of the stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator-(const zip_transform_iterator& __n, const zip_transform_iterator& __y)
     _CCCL_TRAILING_REQUIRES(difference_type)(_Constraints::__all_sized_sentinel)
   {
-    return __zip_apply(__zip_op_minus{}, __n.__iters(), __y.__iters());
+    return __zip_apply(__zip_op_minus<difference_type>{}, __n.__iters(), __y.__iters());
   }
-
-  struct __zip_op_eq
-  {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <size_t... _Indices>
-    _CCCL_API constexpr bool operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
-                                        const ::cuda::std::tuple<_Iterators...>& __iters2,
-                                        ::cuda::std::index_sequence<_Indices...>) const
-      noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...)))
-    {
-      return ((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...);
-    }
-  };
 
   //! @brief Compares two @c zip_transform_iterator for equality by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>

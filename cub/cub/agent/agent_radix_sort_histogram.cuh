@@ -153,7 +153,7 @@ struct AgentRadixSortHistogram
   {
     // Initialize bins to 0.
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -213,7 +213,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -234,6 +234,7 @@ struct AgentRadixSortHistogram
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     // Within a portion, avoid overflowing (u)int32 counters.
     // Between portions, accumulate results in global memory.
     constexpr OffsetT MAX_PORTION_SIZE = 1 << 30;
@@ -242,7 +243,6 @@ struct AgentRadixSortHistogram
     {
       // Reset the counters.
       Init();
-      __syncthreads();
 
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;
@@ -257,6 +257,8 @@ struct AgentRadixSortHistogram
       __syncthreads();
 
       // Accumulate the result in global memory.
+      // Wait for global histogram init
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       AccumulateGlobalHistograms();
       __syncthreads();
     }

@@ -107,8 +107,8 @@ int main()
   std::cout << std::fixed;
   for (size_t i = 0; i < 4; i++)
   {
-    Float3 a  = A_first[i];
-    Float3 b  = B_first[i];
+    Float3 a  = A_first[static_cast<std::ptrdiff_t>(i)];
+    Float3 b  = B_first[static_cast<std::ptrdiff_t>(i)];
     float dot = result[i];
 
     std::cout << "(" << cuda::std::get<0>(a) << "," << cuda::std::get<1>(a) << "," << cuda::std::get<2>(a) << ")";

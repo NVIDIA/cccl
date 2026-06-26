@@ -34,7 +34,7 @@ namespace detail::for_each
 {
 template <typename PolicySelector, typename OffsetT, typename OpT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, for_policy active_policy)
+invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPolicy active_policy)
 {
   int threads_per_block = 256;
   auto kernel           = detail::for_each::dynamic_kernel<PolicySelector, OffsetT, OpT>;
@@ -77,7 +77,7 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, for_po
 
 template <class PolicySelector, class OffsetT, class OpT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, for_policy active_policy)
+invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPolicy active_policy)
 {
   const int threads_per_block = active_policy.threads_per_block;
   const int items_per_thread  = active_policy.items_per_thread;
@@ -138,7 +138,7 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   return CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    constexpr for_policy active_policy = policy_getter();
+    constexpr ForPolicy active_policy = policy_getter();
     if constexpr (active_policy.threads_per_block > 0)
     {
       return invoke_static_block_size<PolicySelector>(num_items, op, stream, active_policy);

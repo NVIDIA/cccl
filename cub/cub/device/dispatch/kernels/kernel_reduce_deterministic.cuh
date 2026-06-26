@@ -81,7 +81,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   ftype* shared_bins = detail::rfa::get_shared_bin_array<ftype, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < bin_length; index += threads_per_block)
+  for (int index = static_cast<int>(threadIdx.x); index < bin_length; index += threads_per_block)
   {
     shared_bins[index] = AccumT::initialize_bin(index);
   }
@@ -160,7 +160,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`
  *
- * @tparam InitT
+ * @tparam InitValueT
  *   Initial value type
  *
  * @tparam AccumT
@@ -185,7 +185,7 @@ template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
@@ -194,7 +194,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                     OutputIteratorT d_out,
                                                     int num_items,
                                                     ReductionOpT reduction_op,
-                                                    InitT init,
+                                                    InitValueT init,
                                                     TransformOpT transform_op)
 {
   constexpr rfa::single_tile_policy policy = current_policy<PolicySelector>().single_tile;
@@ -221,7 +221,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   float_type* shared_bins = detail::rfa::get_shared_bin_array<float_type, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < bin_length; index += threads_per_block)
+  for (int index = static_cast<int>(threadIdx.x); index < bin_length; index += threads_per_block)
   {
     shared_bins[index] = AccumT::initialize_bin(index);
   }
@@ -232,7 +232,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
 
   // Consume block aggregates of previous kernel
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = threadIdx.x; i < num_items; i += threads_per_block)
+  for (int i = static_cast<int>(threadIdx.x); i < num_items; i += threads_per_block)
   {
     thread_aggregate += transform_op(d_in[i]);
   }

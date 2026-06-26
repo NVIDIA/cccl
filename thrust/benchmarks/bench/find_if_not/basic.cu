@@ -31,7 +31,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   // set up input
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
+  const auto mismatch_point = static_cast<std::size_t>(static_cast<double>(elements) * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
   thrust::fill(dinput.begin(), dinput.begin() + mismatch_point, T{0});

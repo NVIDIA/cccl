@@ -77,11 +77,58 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceScan}
+//! @determinism{not_guaranteed}
+//!
+//! Determinism
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! ``cub::DeviceScan`` supports the :ref:`determinism guarantees <cccl-determinism>` as follows; the
+//! default is ``not_guaranteed``.
+//!
+//! - ``run_to_run`` is supported for integral types with a known CUDA binary operator, and for floating-point
+//!   types with ``cuda::std::plus``. The floating-point ``plus`` case engages a stable, fixed reduction order so
+//!   results are reproducible across runs on the same GPU.
+//! - ``gpu_to_gpu`` is supported for integral types with a known CUDA binary operator. (These are exactly
+//!   associative, so the result is already identical across GPUs.)
+//! - Other combinations under ``run_to_run``/``gpu_to_gpu`` are rejected at compile time.
 //!
 //! Performance
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! @linear_performance{prefix scan}
+//!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All non-ByKey algorithms in DeviceScan that accept an environment can be tuned by passing a custom :ref:`policy
+//! selector <cub-policy-selectors>` that returns a @ref ScanPolicy, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-policy-selector
+//!      :end-before: example-end exclusive-sum-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-tuning
+//!      :end-before: example-end exclusive-sum-tuning
+//!
+//! All ByKey algorithms in DeviceScan that accept an environment can be tuned by passing a custom :ref:`policy
+//! selector <cub-policy-selectors>` that returns a @ref ScanByKeyPolicy, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-by-key-policy-selector
+//!      :end-before: example-end exclusive-sum-by-key-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-by-key-tuning
+//!      :end-before: example-end exclusive-sum-by-key-tuning
 //!
 //! @endrst
 struct DeviceScan
@@ -213,8 +260,8 @@ struct DeviceScan
                                                       cub::detail::it_value_t<ValuesInputIteratorT>,
                                                       ScanOpT>;
 
-    using policy_selector_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
 
     // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
     return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
@@ -298,8 +345,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -329,11 +375,11 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
 
     // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::it_value_t<InputIteratorT>;
+    using OffsetT      = detail::choose_offset_t<NumItemsT>;
+    using init_value_t = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
-    InitT init_value{};
+    init_value_t init_value{};
 
     return detail::scan::dispatch(
       d_temp_storage,
@@ -341,7 +387,7 @@ struct DeviceScan
       d_in,
       d_out,
       ::cuda::std::plus<>{},
-      detail::InputValue<InitT>(init_value),
+      detail::InputValue<init_value_t>(init_value),
       static_cast<OffsetT>(num_items),
       stream);
   }
@@ -412,10 +458,11 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
-    using init_t = cub::detail::it_value_t<InputIteratorT>;
-    init_t init_value{};
+    using init_value_t = cub::detail::it_value_t<InputIteratorT>;
+    init_value_t init_value{};
 
-    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_t>(init_value), num_items, env);
+    return scan_impl_env(
+      d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
   }
 
   //! @rst
@@ -474,8 +521,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -644,8 +690,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -871,8 +916,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1068,8 +1112,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1204,8 +1247,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1488,8 +1530,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1587,8 +1628,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1817,10 +1857,8 @@ struct DeviceScan
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
-  //! @param[in]
-  //!   d_temp_storage Device-accessible allocation of temporary storage.
-  //!   When `nullptr`, the required allocation size is written to
-  //!   `temp_storage_bytes` and no work is done.
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1907,9 +1945,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage.
-  //!   When `nullptr`, the required allocation size is written to
-  //!   `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to the size in bytes of the `d_temp_storage` allocation
@@ -2028,10 +2064,8 @@ struct DeviceScan
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
-  //! @param[in]
-  //!   d_temp_storage Device-accessible allocation of temporary storage.
-  //!   When `nullptr`, the required allocation size is written to
-  //!   `temp_storage_bytes` and no work is done.
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2373,8 +2407,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2415,8 +2448,8 @@ struct DeviceScan
     cudaStream_t stream     = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
-    using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    init_t init_value{};
+    using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
+    init_value_t init_value{};
     return scan_by_key_impl<::cuda::std::execution::env<>>(
       d_temp_storage,
       temp_storage_bytes,
@@ -2537,8 +2570,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //!  @param[in] d_temp_storage
-  //!    Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!    required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!    @devicestorage
   //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
@@ -2676,8 +2708,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //!  @param[in] d_temp_storage
-  //!    Device-accessible allocation of temporary storage.
-  //!    When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!    @devicestorage
   //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
@@ -2830,8 +2861,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //!  @param[in] d_temp_storage
-  //!    Device-accessible allocation of temporary storage.
-  //!    When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!    @devicestorage
   //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
@@ -2983,7 +3013,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
-    using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
+    using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return scan_by_key_impl<tuning_t>(
@@ -2994,7 +3024,7 @@ struct DeviceScan
         d_values_out,
         equality_op,
         ::cuda::std::plus<>{},
-        init_t{},
+        init_value_t{},
         num_items,
         stream);
     });

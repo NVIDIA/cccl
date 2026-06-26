@@ -392,19 +392,19 @@ __global__ void examples_kernel(Hierarchy hierarchy)
   }
   {
     // Can be called with the instances of level types
-    int num_threads_in_block = cuda::gpu_thread.count(cuda::block);
-    int num_blocks_in_grid   = cuda::block.count(cuda::grid);
+    int num_threads_in_block = static_cast<int>(cuda::gpu_thread.count(cuda::block));
+    int num_blocks_in_grid   = static_cast<int>(cuda::block.count(cuda::grid));
 
     // Or using the level types as template arguments
-    int num_threads_in_grid = cuda::gpu_thread.count(cuda::grid);
+    int num_threads_in_grid = static_cast<int>(cuda::gpu_thread.count(cuda::grid));
   }
   {
     // Can be called with the instances of level types
-    int thread_rank_in_block = cuda::gpu_thread.rank(cuda::block);
-    int block_rank_in_grid   = cuda::block.rank(cuda::grid);
+    int thread_rank_in_block = static_cast<int>(cuda::gpu_thread.rank(cuda::block));
+    int block_rank_in_grid   = static_cast<int>(cuda::block.rank(cuda::grid));
 
     // Or using the level types as template arguments
-    int thread_rank_in_grid = cuda::gpu_thread.rank(cuda::grid);
+    int thread_rank_in_grid = static_cast<int>(cuda::gpu_thread.rank(cuda::grid));
   }
   {
     // Can be called with the instances of level types
@@ -508,7 +508,7 @@ C2H_TEST("cuda::distribute", "[hierarchy]")
 {
   unsigned numElements          = 50000;
   constexpr int threadsPerBlock = 256;
-  auto config                   = cuda::distribute<threadsPerBlock>(numElements);
+  auto config                   = cuda::distribute<threadsPerBlock>(static_cast<int>(numElements));
 
   CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, config) == 256);
   CCCLRT_REQUIRE(cuda::block.count(cuda::grid, config) == (numElements + threadsPerBlock - 1) / threadsPerBlock);

@@ -330,7 +330,7 @@ struct __interface_cast_fn<_Interface<>>
   }
 
   template <class _Super>
-  [[nodiscard]] _CCCL_NODEBUG_API auto operator()(_Interface<_Super> const& __self) noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API auto operator()(_Interface<_Super> const& __self _CCCL_LIFETIMEBOUND) noexcept
     -> _Interface<_Super> const&
   {
     return __self;

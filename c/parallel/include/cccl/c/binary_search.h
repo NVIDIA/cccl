@@ -61,6 +61,23 @@ CCCL_C_API CUresult cccl_device_binary_search_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+CCCL_C_API CUresult cccl_device_binary_search_compile(
+  cccl_device_binary_search_build_result_t* build,
+  cccl_binary_search_mode_t mode,
+  cccl_iterator_t d_data,
+  cccl_iterator_t d_values,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_binary_search_load(cccl_device_binary_search_build_result_t* build);
+
 CCCL_C_API CUresult cccl_device_binary_search(
   cccl_device_binary_search_build_result_t build,
   cccl_iterator_t d_data,
@@ -70,6 +87,19 @@ CCCL_C_API CUresult cccl_device_binary_search(
   cccl_iterator_t d_out,
   cccl_op_t op,
   CUstream stream);
+
+CCCL_C_API CUresult cccl_device_binary_search_link_ltoir(
+  cccl_device_binary_search_build_result_t* build,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs,
+  const char* kernel_lowered_name,
+  size_t values_value_size,
+  size_t output_value_size,
+  size_t op_state_size,
+  size_t op_state_alignment,
+  int cc_major,
+  int cc_minor);
 
 CCCL_C_API CUresult cccl_device_binary_search_cleanup(cccl_device_binary_search_build_result_t* bld_ptr);
 

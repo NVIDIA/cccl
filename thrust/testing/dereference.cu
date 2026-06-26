@@ -49,7 +49,7 @@ void TestDeviceDereferenceDevicePtr()
   thrust::device_vector<int> output(input.size(), 0);
 
   thrust::device_ptr<int> _first1 = &input[0];
-  thrust::device_ptr<int> _last1  = _first1 + input.size();
+  thrust::device_ptr<int> _last1  = _first1 + static_cast<std::ptrdiff_t>(input.size());
   thrust::device_ptr<int> _first2 = &output[0];
 
   simple_copy(_first1, _last1, _first2);

@@ -70,8 +70,16 @@ def run_example_module(module_name, display_name):
     try:
         print(f"Testing {display_name}...")
 
-        # Import the module
-        module = importlib.import_module(module_name)
+        # Import the module. Examples may sys.exit(0) at module load to skip
+        # when their preconditions aren't met on this build (e.g. v2-only
+        # RawOp examples loaded against a v1 wheel). Treat that as a pass.
+        try:
+            module = importlib.import_module(module_name)
+        except SystemExit as exit_exc:
+            if exit_exc.code in (None, 0):
+                print(f"  {display_name} skipped (sys.exit({exit_exc.code}))")
+                return True
+            raise
 
         # Check if module has a main function - if so, run it
         if hasattr(module, "__main__") or hasattr(module, "main"):

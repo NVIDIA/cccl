@@ -38,6 +38,12 @@ from numba.extending import lower_builtin, lower_cast
 from . import types as cccl_types
 from ._bindings import Op, OpKind
 from ._caching import CachableFunction, cache_with_registered_key_functions
+
+try:
+    from ._build_info import USING_V2  # type: ignore[import-not-found]
+except ImportError:
+    USING_V2 = False
+
 from ._odr_helpers import create_stateful_op_void_ptr_wrapper
 from ._utils import sanitize_identifier
 from ._utils.protocols import (
@@ -50,6 +56,84 @@ from .op import OpAdapter
 
 if TYPE_CHECKING:
     from .typing import DeviceArrayLike
+
+
+def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
+    """Compile a Numba device op to LLVM bitcode (.bc) bytes.
+
+    Used on the v2 (HostJIT) backend, which prefers LLVM bitcode over NVRTC
+    LTO-IR — the JIT linker routes "BC"-magic blobs through LLVM's native
+    bitcode linker instead of nvJitLink's LTO codegen.
+
+    Numba's public ``cuda.compile`` only emits PTX or LTO-IR. To get LLVM IR
+    with the C-ABI wrapper (the form CUB's PTX references by name), we go one
+    layer deeper to ``_compile_pyfunc_with_fixup`` with ``abi="c"`` and pull
+    the LLVM string off the code library before NVVM lowering to PTX.
+    """
+    import os
+    import re
+
+    import llvmlite.binding as llvm
+    from numba.cuda.compiler import _compile_pyfunc_with_fixup
+
+    target_name = wrapped_op.__name__
+    lib, _ = _compile_pyfunc_with_fixup(
+        wrapped_op,
+        wrapper_sig,
+        device=True,
+        abi="c",
+        abi_info={"abi_name": target_name},
+        lto=False,
+    )
+    text_ir = lib.get_llvm_str()
+
+    debug_dir = os.environ.get("CCCL_JIT_DEBUG")
+    if debug_dir:
+        os.makedirs(debug_dir, exist_ok=True)
+        with open(os.path.join(debug_dir, f"{target_name}.raw.ll"), "w") as f:
+            f.write(text_ir)
+
+    # get_llvm_str joins all modules in the library with "\n\n". Split on
+    # ModuleID markers so each chunk parses standalone, then link them.
+    parts = [p for p in re.split(r"(?m)^(?=; ModuleID = )", text_ir) if p.strip()]
+    if not parts:
+        parts = [text_ir]
+
+    # Strip Numba's `target datalayout = ...` line — llvmlite ships with an
+    # older NVVM layout (`e-p:64:64:64-...`) that doesn't match the modern
+    # CUDA layout (`e-p6:32:32-...`) emitted by hostjit's Clang. Linking
+    # modules with mismatched layouts triggers LLVM warnings and can lead to
+    # miscompiles. Removing the line lets LLVM default to the target triple's
+    # canonical layout, which agrees with Clang.
+    parts = [re.sub(r"(?m)^target datalayout =.*\n", "", p) for p in parts]
+
+    modules = []
+    for i, part in enumerate(parts):
+        try:
+            m = llvm.parse_assembly(part)
+            m.verify()
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to parse LLVM IR module {i} for '{target_name}': {exc}"
+            ) from exc
+        modules.append(m)
+
+    main = modules[0]
+    for m in modules[1:]:
+        main.link_in(m, preserve=True)
+
+    if debug_dir:
+        with open(os.path.join(debug_dir, f"{target_name}.merged.ll"), "w") as f:
+            f.write(str(main))
+        with open(os.path.join(debug_dir, f"{target_name}.symbols.txt"), "w") as f:
+            f.write(f"target_name={target_name}\n")
+            for fn in main.functions:
+                f.write(
+                    f"  {fn.linkage} {'decl' if fn.is_declaration else 'def '} {fn.name}\n"
+                )
+
+    return bytes(main.as_bitcode())
+
 
 # -----------------------------------------------------------------------------
 # Struct registration and casting
@@ -494,12 +578,22 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type):
 
     sig = numba_output_type(*numba_input_types)
     wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
-    ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+
+    from ._device_code import DeviceCode
+
+    if USING_V2:
+        code = DeviceCode(
+            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
+            kind="llvm_ir",
+        )
+    else:
+        ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+        code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
     return Op(
         operator_type=OpKind.STATELESS,
         name=wrapped_op.__name__,
-        ltoir=ltoir,
+        ltoir=code,
         state_alignment=1,
         state=None,
     )
@@ -823,8 +917,17 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
         op, sig, state_array_types, state_info
     )
 
-    # Compile the wrapper to LTOIR
-    ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+    # Compile the wrapper — LLVM bitcode for v2 (HostJIT), LTO-IR for v1 (NVRTC).
+    from ._device_code import DeviceCode
+
+    if USING_V2:
+        code = DeviceCode(
+            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
+            kind="llvm_ir",
+        )
+    else:
+        ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+        code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
     # Pack all data pointers as bytes (sequentially)
     state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
@@ -833,7 +936,7 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     return Op(
         operator_type=OpKind.STATEFUL,
         name=wrapped_op.__name__,
-        ltoir=ltoir,
+        ltoir=code,
         state_alignment=state_alignment,
         state=state_bytes,
     )

@@ -125,6 +125,18 @@ projects:
     include_regexes:
       - "c/parallel\\.v2/"
 
+  python_v2:
+    name: "Python (cuda.compute on v2/HostJIT)"
+    matrix_project: "python_v2"
+    # cccl_c_parallel_v2 already pulls in libcudacxx/cub/thrust, so listing
+    # it here transitively triggers python_v2 on any of those upstream
+    # changes too. Direct includes catch Python-only edits.
+    lite_dependencies: [cccl_c_parallel_v2]
+    full_dependencies: []
+    include_regexes:
+      - "python/cuda_cccl/"
+      - "pyproject\\.toml"
+
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
     matrix_project: "cccl_c_stf"
