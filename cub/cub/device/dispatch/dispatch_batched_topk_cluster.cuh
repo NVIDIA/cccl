@@ -85,6 +85,7 @@ template <int ThreadsPerBlock,
           int LoadAlignBytes,
           int BitsPerPass,
           int TieBreakItemsPerThread,
+          int SingleCtaMaxSegmentSize,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -114,6 +115,7 @@ __launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void 
     LoadAlignBytes,
     BitsPerPass,
     TieBreakItemsPerThread,
+    SingleCtaMaxSegmentSize,
     Determinism,
     TieBreak,
     KeyInputItItT,
@@ -163,6 +165,7 @@ template <int ThreadsPerBlock,
           int LoadAlignBytes,
           int BitsPerPass,
           int TieBreakItemsPerThread,
+          int SingleCtaMaxSegmentSize,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -193,6 +196,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
     LoadAlignBytes,
     BitsPerPass,
     TieBreakItemsPerThread,
+    SingleCtaMaxSegmentSize,
     Determinism,
     TieBreak,
     KeyInputItItT,
@@ -254,6 +258,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
       LoadAlignBytes,                                                                   \
       BitsPerPass,                                                                      \
       TieBreakItemsPerThread,                                                           \
+      SingleCtaMaxSegmentSize,                                                          \
       Determinism,                                                                      \
       TieBreak,                                                                         \
       KeyInputItItT,                                                                    \
@@ -328,6 +333,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   constexpr int LoadAlignBytes          = policy.load_align_bytes;
   constexpr int BitsPerPass             = policy.bits_per_pass;
   constexpr int TieBreakItemsPerThread  = policy.tie_break_items_per_thread;
+  constexpr int SingleCtaMaxSegmentSize = policy.single_cta_max_segment_size;
 
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
@@ -340,6 +346,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
      LoadAlignBytes,
      BitsPerPass,
      TieBreakItemsPerThread,
+     SingleCtaMaxSegmentSize,
      Determinism,
      TieBreak,
      KeyInputItItT,
@@ -415,6 +422,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     LoadAlignBytes,
     BitsPerPass,
     TieBreakItemsPerThread,
+    SingleCtaMaxSegmentSize,
     Determinism,
     TieBreak,
     KeyInputItItT,

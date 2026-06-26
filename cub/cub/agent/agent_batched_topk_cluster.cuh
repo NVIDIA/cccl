@@ -59,6 +59,7 @@
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/argument>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -134,6 +135,17 @@ struct smem_block_tile_layout
   }
 };
 
+// True for `cuda::args` segment-size arguments whose exact per-segment value the host cannot know at dispatch time, so
+// the launch is sized for a static upper bound: the `deferred` forms. Combined with `!is_single_value` (any
+// per-segment sequence) this gates the runtime effective-single-CTA path; host-exact `immediate`/`constant` singles,
+// which the dispatch already sizes exactly, are excluded.
+template <class>
+inline constexpr bool __is_deferred_arg_v = false;
+template <class _Arg, class _Bounds>
+inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred<_Arg, _Bounds>> = true;
+template <class _Arg, class _Bounds>
+inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred_sequence<_Arg, _Bounds>> = true;
+
 // -----------------------------------------------------------------------------
 // Cluster top-k agent
 // -----------------------------------------------------------------------------
@@ -152,6 +164,7 @@ template <int ThreadsPerBlock,
           int LoadAlignBytes,
           int BitsPerPass,
           int TieBreakItemsPerThread,
+          int SingleCtaMaxSegmentSize,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -188,6 +201,16 @@ struct agent_batched_topk_cluster
   static constexpr bool deterministic =
     Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed;
   static constexpr bool tie_reversed = TieBreak == ::cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
+
+  // Segments at or below this size that also fit resident in one CTA take the single-CTA fast path (see
+  // `process_impl`).
+  static constexpr int single_cta_max_segment_size = SingleCtaMaxSegmentSize;
+
+  // Enable the per-segment effective-single-CTA runtime path only when the host could not size the launch to each
+  // segment's exact size: any per-segment sequence (`!is_single_value`) or a `deferred` single value. For host-exact
+  // `immediate`/`constant` singles the dispatch already picks the matching cluster size, so the logic is compiled out.
+  static constexpr bool enable_runtime_single_cta =
+    !::cuda::args::__traits<SegmentSizeParameterT>::is_single_value || __is_deferred_arg_v<SegmentSizeParameterT>;
 
   static constexpr int threads_per_block          = ThreadsPerBlock;
   static constexpr int histogram_items_per_thread = HistogramItemsPerThread;
@@ -1078,10 +1101,11 @@ private:
   // Stripped on sub-SM-9.0 device passes; uses `cluster_group`, which is only
   // declared when `_CG_HAS_CLUSTER_GROUP` is set.
 #if defined(_CG_HAS_CLUSTER_GROUP)
-  // Synchronize the segment's cluster. A width-1 "cluster" is a single CTA whose state is entirely block-local, so a
-  // cluster-scoped barrier is unnecessary and `__syncthreads()` provides sufficient ordering. `single_cta` is derived
-  // from `cluster.num_blocks()` and is therefore uniform across the cluster, so the branch is reached uniformly and
-  // barrier reachability is preserved.
+  // Synchronize the segment's cluster. An effective width-1 "cluster" is a single CTA whose state is entirely
+  // block-local, so a cluster-scoped barrier is unnecessary and `__syncthreads()` provides sufficient ordering.
+  // `single_cta` derives from the effective cluster width chosen in `process_impl` (which may collapse a multi-CTA
+  // launch onto rank 0); it is per-segment uniform across the surviving block(s), so the branch is reached uniformly
+  // and barrier reachability is preserved.
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   cluster_or_block_sync(::cooperative_groups::cluster_group& cluster, bool single_cta)
   {
@@ -1100,6 +1124,7 @@ private:
   run(::cooperative_groups::cluster_group& cluster,
       num_segments_val_t segment_id,
       unsigned int cluster_rank,
+      unsigned int cluster_size,
       segment_size_val_t segment_size,
       out_offset_t k)
   {
@@ -1110,11 +1135,12 @@ private:
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
 
-    auto block_keys_in              = d_key_segments_it[segment_id];
-    const auto segment_size_u32     = static_cast<offset_t>(segment_size);
-    const unsigned int cluster_size = cluster.num_blocks();
-    // A width-1 cluster is a lone CTA: route barriers to `__syncthreads()`, keep `state`/atomics block-local, and use
-    // CTA-scope histogram atomics (no cross-rank DSMEM folds exist to be mutually atomic with).
+    auto block_keys_in          = d_key_segments_it[segment_id];
+    const auto segment_size_u32 = static_cast<offset_t>(segment_size);
+    // `cluster_size`/`cluster_rank` are the *effective* width/rank chosen by `process_impl` (see the
+    // effective-single-CTA path), which may be smaller than the launched `cluster.num_blocks()`. A width-1 cluster is a
+    // lone CTA: route barriers to `__syncthreads()`, keep `state`/atomics block-local, and use CTA-scope histogram
+    // atomics (no cross-rank DSMEM folds exist to be mutually atomic with).
     const bool single_cta = (cluster_size == 1u);
 
     // Leader rank. The leader owns the cluster-merged histogram and the shared `state`. The deterministic tie-break
@@ -2162,7 +2188,6 @@ private:
     // Runtime cluster width matches the launch attribute the dispatch passed
     // to `cudaLaunchKernelExC` (or the kernel's `__cluster_dims__` on CDP).
     const unsigned int cluster_blocks = cluster.num_blocks();
-    const bool single_cta             = (cluster_blocks == 1u);
     const auto segment_id             = static_cast<num_segments_val_t>(blockIdx.x / cluster_blocks);
 
     if (segment_id >= detail::params::get_param(num_segments, num_segments_val_t{0}))
@@ -2194,6 +2219,32 @@ private:
       return;
     }
 
+    // Effective cluster width/rank. For a per-segment (deferred) size argument the launch is sized for the maximum
+    // segment, so an individual small segment can be served by a single CTA: when it fits resident in one CTA and is at
+    // or below the single-CTA tuning threshold, rank 0 processes it alone via the cluster-barrier-free path and the
+    // cluster's other CTAs exit immediately, freeing their SM slots for other clusters/waves. The decision is uniform
+    // across the block (its inputs are per-segment uniform), so a redundant CTA returns whole. Compiled out for
+    // host-exact sizes, which the dispatch already sized to an exact cluster width.
+    unsigned int eff_cluster_blocks = cluster_blocks;
+    unsigned int eff_cluster_rank   = cluster_rank;
+    if constexpr (enable_runtime_single_cta)
+    {
+      const bool fits_single_cta =
+        static_cast<::cuda::std::uint64_t>(segment_size) <= static_cast<::cuda::std::uint64_t>(block_tile_capacity)
+        && static_cast<::cuda::std::uint64_t>(segment_size)
+             <= static_cast<::cuda::std::uint64_t>(single_cta_max_segment_size);
+      if (fits_single_cta)
+      {
+        if (cluster_rank != 0u)
+        {
+          return;
+        }
+        eff_cluster_blocks = 1u;
+        eff_cluster_rank   = 0u;
+      }
+    }
+    const bool single_cta = (eff_cluster_blocks == 1u);
+
     // Every block's thread 0 initializes its local `state`. Only the
     // leader's copy is semantically read (non-leaders reach the cluster
     // state through `leader_state`), but mirroring the writes everywhere
@@ -2212,9 +2263,11 @@ private:
     cluster_or_block_sync(cluster, single_cta);
 
     [[maybe_unused]] const bool ok = detail::params::dispatch_discrete(
-      select_directions, segment_id, [this, &cluster, segment_id, cluster_rank, segment_size, k](auto direction_tag) {
+      select_directions,
+      segment_id,
+      [this, &cluster, segment_id, eff_cluster_rank, eff_cluster_blocks, segment_size, k](auto direction_tag) {
         constexpr detail::topk::select Direction = decltype(direction_tag)::value;
-        this->template run<Direction>(cluster, segment_id, cluster_rank, segment_size, k);
+        this->template run<Direction>(cluster, segment_id, eff_cluster_rank, eff_cluster_blocks, segment_size, k);
       });
     _CCCL_ASSERT(ok, "Unsupported select direction for cluster top-k");
   }

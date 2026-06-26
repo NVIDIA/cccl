@@ -64,7 +64,9 @@ template <class _Arg, class _StaticBounds, class _SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 get_param(const ::cuda::args::deferred<_Arg, _StaticBounds>& __arg, [[maybe_unused]] _SegmentIndexT __index) noexcept
 {
-  return ::cuda::args::__unwrap(__arg);
+  // A single `deferred` wraps a device-accessible 1-element handle (pointer / iterator / 1-element span), not a value;
+  // the value is read on the device via element 0 (mirroring the `deferred_sequence` per-index read below).
+  return ::cuda::args::__unwrap(__arg)[0];
 }
 
 template <class _Arg, class _StaticBounds, class _SegmentIndexT>
