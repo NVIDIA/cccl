@@ -484,7 +484,6 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
   template <typename OtherVec>
   bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
-    using T           = typename Vec::value_type;
     comparison_result = compare_vectors(actual_vec, expected_vec);
     return comparison_result.total_mismatches == 0;
   }
