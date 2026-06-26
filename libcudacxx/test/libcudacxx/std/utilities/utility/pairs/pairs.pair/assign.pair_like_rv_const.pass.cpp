@@ -36,8 +36,10 @@ struct ConstAssignable
     return *this;
   }
 
-  constexpr ConstAssignable(ConstAssignable const&)            = default; // defeat -Wdeprecated-copy
+  constexpr ConstAssignable(ConstAssignable const&) = default; // defeat -Wdeprecated-copy
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
   constexpr ConstAssignable& operator=(ConstAssignable const&) = default; // defeat -Wdeprecated-copy
+#endif // TEST_STD_VER >=2020 || !TEST_COMPILER(MSVC)
 };
 
 struct ConstAssignableInt
