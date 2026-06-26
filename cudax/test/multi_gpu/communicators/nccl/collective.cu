@@ -62,7 +62,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce sum")
   for (auto& buf : recv)
   {
     auto pool           = cuda::pinned_default_memory_pool();
-    const auto expected = std::vector<cuda::std::int32_t>(buf.size(), sum);
+    const auto expected = cuda::make_buffer(buf.stream(), pool, buf.size(), sum);
     const auto actual   = cuda::make_buffer(buf.stream(), pool, buf);
 
     REQUIRE_THAT(actual, Equals(expected));
