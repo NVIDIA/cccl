@@ -93,8 +93,7 @@ Current defaults for all tags are defined in the ``tags`` section of ``ci/matrix
    * - ``cxx``
      - Host compiler. A bare name resolves to the latest version (see below).
    * - ``cudacxx``
-     - Device compiler from ``device_compilers``.
-     - Rarely needed; default is ``nvcc``.
+     - Device compiler from ``device_compilers``; rarely needed, defaulting to ``nvcc``.
    * - ``std``
      - C++ standard. Accepts an integer or the ``all`` / ``min`` / ``max`` / ``minmax`` shortcuts.
    * - ``cpu``
