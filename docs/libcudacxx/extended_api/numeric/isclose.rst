@@ -10,28 +10,30 @@ Defined in ``<cuda/numeric>`` header.
    namespace cuda {
 
    template <class T>
-   [[nodiscard]] constexpr bool isclose(T lhs, T rhs) noexcept;
+   [[nodiscard]] __host__ __device__ __tile__ constexpr
+    bool isclose(T lhs, T rhs) noexcept;
 
    template <class T>
-   [[nodiscard]] constexpr bool isclose(T lhs, T rhs,
-                                        float relative_tolerance) noexcept;
+   [[nodiscard]] __host__ __device__ __tile__ constexpr
+    bool isclose(T lhs, T rhs, float relative_tol) noexcept;
 
    template <class T>
-   [[nodiscard]] constexpr bool isclose(T lhs, T rhs,
-                                        float relative_tolerance,
-                                        T     absolute_tolerance) noexcept;
+   [[nodiscard]] __host__ __device__ __tile__ constexpr
+   bool isclose(T lhs, T rhs, float relative_tol, T absolute_tol) noexcept;
 
    template <class Complex>
-   [[nodiscard]] bool isclose(const Complex& lhs, const Complex& rhs) noexcept;
+   [[nodiscard]] __host__ __device__ constexpr
+   bool isclose(const Complex& lhs, const Complex& rhs) noexcept;
 
    template <class Complex>
-   [[nodiscard]] bool isclose(const Complex& lhs, const Complex& rhs,
-                              float relative_tolerance) noexcept;
+   [[nodiscard]] __host__ __device__ constexpr
+   bool isclose(const Complex& lhs, const Complex& rhs, float relative_tol) noexcept;
 
    template <class Complex, class AbsTol>
-   [[nodiscard]] bool isclose(const Complex& lhs, const Complex& rhs,
-                              float  relative_tolerance,
-                              AbsTol absolute_tolerance) noexcept;
+   [[nodiscard]] __host__ __device__ constexpr
+   bool isclose(const Complex& lhs, const Complex& rhs,
+                float  relative_tol,
+                AbsTol absolute_tol) noexcept;
 
    } // namespace cuda
 
@@ -39,22 +41,22 @@ Defined in ``<cuda/numeric>`` header.
 
 .. code:: cpp
 
-   abs(lhs - rhs) <= max(absolute_tolerance, relative_tolerance * max(abs(lhs), abs(rhs)))
+   abs(lhs - rhs) <= max(absolute_tol, relative_tol * max(abs(lhs), abs(rhs)))
 
-- The overloads without ``absolute_tolerance`` use ``absolute_tolerance == 0``.
-- The overloads without ``relative_tolerance`` use a default relative tolerance based on half of available digits of accuracy.
+- The overloads without ``absolute_tol`` use ``absolute_tol == 0``.
+- The overloads without ``relative_tol`` use a default relative tolerance based on half of available digits of accuracy.
 
 **Parameters**
 
 - ``lhs``: The first value to compare.
 - ``rhs``: The second value to compare.
-- ``relative_tolerance``: The relative tolerance. Passing ``0`` performs a purely absolute tolerance check when ``absolute_tolerance`` is non-zero.
-- ``absolute_tolerance``: The absolute tolerance. This is useful for comparisons near zero.
+- ``relative_tol``: The relative tolerance. Passing ``0`` performs a purely absolute tolerance check when ``absolute_tol`` is non-zero.
+- ``absolute_tol``: The absolute tolerance. This is useful for comparisons near zero.
 
 **Precision**
 
-- ``relative_tolerance``:Must be in the range [0.0, 1.0].
-- ``absolute_tolerance``: Must be finite and non-negative.
+- ``relative_tol``:Must be in the range [0.0, 1.0].
+- ``absolute_tol``: Must be finite and non-negative.
 
 **Return value**
 
@@ -62,7 +64,7 @@ Defined in ``<cuda/numeric>`` header.
 
 **Constraints**
 
-- Scalar overloads require ``lhs``, ``rhs``, ``absolute_tolerance`` to have the same arithmetic type (integer or floating point).
+- Scalar overloads require ``lhs``, ``rhs``, ``absolute_tol`` to have the same arithmetic type (integer or floating point).
 - Complex overloads accept ``cuda::std::complex<T>``, ``cuda::complex<T>``, ``std::complex<T>`` operands.
 - ``AbsTol`` must be the same type as the complex value type.
 
