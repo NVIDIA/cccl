@@ -17,6 +17,7 @@
 #include <thrust/logical.h>
 
 #include <cuda/iterator>
+#include <cuda/memory>
 #include <cuda/std/cstddef>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -55,7 +56,7 @@ __global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global
   static_assert(ref_t::capacity_v != ::cuda::std::dynamic_extent,
                 "capacity_v must be a compile-time constant for static extents");
 
-  __shared__ ref_t::value_type smem[ref_t::capacity_v];
+  __shared__ ::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v> smem;
 
   const auto idx    = static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x;
   smem[threadIdx.x] = (idx < n) ? pairs[idx] : ref_t::value_type{};
