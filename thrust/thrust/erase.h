@@ -118,4 +118,32 @@ erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& 
   return removed;
 }
 
+template <class Vector, class Predicate, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
+typename Vector::size_type erase_if(Vector& c, Predicate pred)
+{
+  auto first = thrust::remove_if(c.begin(), c.end(), pred);
+
+  auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
+
+  c.erase(first, c.end());
+
+  return removed;
+}
+
+template <typename DerivedPolicy,
+          class Vector,
+          class Predicate,
+          ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
+typename Vector::size_type
+erase_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, Predicate pred)
+{
+  auto first = thrust::remove_if(exec, c.begin(), c.end(), pred);
+
+  auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
+
+  c.erase(first, c.end());
+
+  return removed;
+}
+
 THRUST_NAMESPACE_END
