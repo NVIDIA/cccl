@@ -361,8 +361,16 @@ struct bit_values
 #  define _SIMD_TEST_BF16(_N)
 #endif
 
-// Each simd.math test file must define test_type<T, N>() and then define test() using this macro.
+// Each simd.math test file must define test_type<T, N>() and then define test() using one of these macros.
 #define DEFINE_SIMD_MATH_FLOATING_TEST()                           \
+  TEST_FUNC bool test()                                            \
+  {                                                                \
+    test_type<float, 4>();                                         \
+    test_type<double, 4>();                                        \
+    return true;                                                   \
+  }
+
+#define DEFINE_SIMD_MATH_FLOATING_CONSTEXPR_TEST()                 \
   TEST_FUNC constexpr bool test()                                  \
   {                                                                \
     test_type<float, 4>();                                         \
