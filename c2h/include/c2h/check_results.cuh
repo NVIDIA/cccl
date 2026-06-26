@@ -11,7 +11,7 @@
 
 #include <test_util.h>
 
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <c2h/isclose.h>
 
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
@@ -35,50 +35,64 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat16> || cuda::std::is_same_v<T, __half>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, __half> ? 0.08f : 0.2f;
+    constexpr T rel_err = cuda::std::is_same_v<T, __half> ? T{0.08f} : T{0.2f};
     REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, rel_err);
   }
   else if constexpr (cuda::std::is_same_v<T, float2>)
   {
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      REQUIRE_THAT(expected_data[i].x, Catch::Matchers::WithinRel(test_results[i].x, 0.01f));
-      REQUIRE_THAT(expected_data[i].y, Catch::Matchers::WithinRel(test_results[i].y, 0.01f));
+      bool close_x = isclose(expected_data[i].x, test_results[i].x, 0.01f);
+      bool close_y = isclose(expected_data[i].y, test_results[i].y, 0.01f);
+      if (!close_x || !close_y)
+      {
+        INFO("index " << i);
+      }
+      REQUIRE(close_x);
+      REQUIRE(close_y);
     }
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat162> || cuda::std::is_same_v<T, __half2>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, __half2> ? 0.08f : 0.2f;
+    using elem_t             = decltype(expected_data[0].x);
+    constexpr elem_t rel_err = cuda::std::is_same_v<T, __half2> ? elem_t{0.08f} : elem_t{0.2f};
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      REQUIRE_THAT(expected_data[i].x, Catch::Matchers::WithinRel(test_results[i].x, rel_err));
-      REQUIRE_THAT(expected_data[i].y, Catch::Matchers::WithinRel(test_results[i].y, rel_err));
+      bool close_x = isclose(expected_data[i].x, test_results[i].x, rel_err);
+      bool close_y = isclose(expected_data[i].y, test_results[i].y, rel_err);
+      if (!close_x || !close_y)
+      {
+        INFO("index " << i);
+      }
+      REQUIRE(close_x);
+      REQUIRE(close_y);
     }
   }
   else if constexpr (cuda::std::is_same_v<T, cuda::std::complex<__nv_bfloat16>>
                      || cuda::std::is_same_v<T, cuda::std::complex<__half>>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, cuda::std::complex<__half>> ? 0.08f : 0.2f;
+    using real_t             = typename T::value_type;
+    constexpr real_t rel_err = cuda::std::is_same_v<T, cuda::std::complex<__half>> ? real_t{0.08f} : real_t{0.2f};
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      auto expected_real = static_cast<float>(expected_data[i].real());
-      auto test_real     = test_results[i].real();
-      auto expected_imag = static_cast<float>(expected_data[i].imag());
-      auto test_imag     = test_results[i].imag();
-      REQUIRE_THAT(expected_real, Catch::Matchers::WithinRel(test_real, rel_err));
-      REQUIRE_THAT(expected_imag, Catch::Matchers::WithinRel(test_imag, rel_err));
+      bool close = isclose(expected_data[i], test_results[i], rel_err);
+      if (!close)
+      {
+        INFO("index " << i);
+      }
+      REQUIRE(close);
     }
   }
   else if constexpr (cuda::std::__is_cuda_std_complex_v<T>)
   {
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      auto expected_real = expected_data[i].real();
-      auto test_real     = test_results[i].real();
-      auto expected_imag = expected_data[i].imag();
-      auto test_imag     = test_results[i].imag();
-      REQUIRE_THAT(expected_real, Catch::Matchers::WithinRel(test_real));
-      REQUIRE_THAT(expected_imag, Catch::Matchers::WithinRel(test_imag));
+      bool close = isclose(expected_data[i], test_results[i]);
+      if (!close)
+      {
+        INFO("index " << i);
+      }
+      REQUIRE(close);
     }
   }
   else
