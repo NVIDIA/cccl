@@ -56,12 +56,14 @@ __device__ __forceinline__ static void sink(T (&values)[Size])
 {
   if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
   {
-    cuda::std::remove_cv_t<T> sum{};
+    // use float instead of T to ensure summation order matters (due to floating-point non-associativity), making
+    // `action` less likely to be optimized away
+    float sum(0.0f);
     for (int i = 0; i < Size; ++i)
     {
       sum += values[i];
     }
-    *reinterpret_cast<cuda::std::remove_cv_t<T>*>(device_var) += sum;
+    *reinterpret_cast<float*>(device_var) += sum;
   }
 }
 
