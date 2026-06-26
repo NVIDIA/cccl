@@ -51,7 +51,7 @@ _CCCL_SIMD_MATH_BINARY_FUNCTION(copysign, copysign, constexpr)
 
 #define _CCCL_SIMD_MATH_BINARY_REBIND_FUNCTION(_NAME, _Tp, _CONSTEXPR)                          \
   _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)                         \
-  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                                               \
+  _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                                          \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(                                 \
     const _Vp& __x, const rebind_t<_Tp, _Result>& __y) noexcept                                 \
   {                                                                                             \
@@ -85,7 +85,7 @@ struct __simd_frexp_generator
 };
 
 _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)
-_CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)
+_CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Result frexp(const _Vp& __x, rebind_t<int, _Result>* __exp) noexcept
 {
   using __exp_t = rebind_t<int, _Result>;

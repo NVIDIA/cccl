@@ -19,7 +19,7 @@
 #include "../simd_test_utils.h"
 
 template <typename T, int N>
-TEST_FUNC void test_type()
+TEST_FUNC constexpr void test_type()
 {
   using Vec    = simd::basic_vec<T, simd::fixed_size<N>>;
   using IntVec = simd::rebind_t<int, Vec>;
@@ -70,6 +70,7 @@ DEFINE_SIMD_MATH_FLOATING_TEST_RUNTIME()
 int main(int, char**)
 {
   assert(test());
+  static_assert(test());
   assert(test_runtime());
   return 0;
 }

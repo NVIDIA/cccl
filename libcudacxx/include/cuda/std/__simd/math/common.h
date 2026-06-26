@@ -67,7 +67,7 @@ _CCCL_CONCEPT __is_simd_floating_point_v = _CCCL_REQUIRES_EXPR(
 
 // concept math-floating-point, exposition only
 template <typename _Tp>
-_CCCL_CONCEPT __is_math_floating_point_v = _CCCL_REQUIRES_EXPR(
+_CCCL_CONCEPT __is_simd_math_floating_point_v = _CCCL_REQUIRES_EXPR(
   (_Tp))(typename(__deduced_vec_t<_Tp>), requires(__is_simd_floating_point_v<__deduced_vec_t<_Tp>>));
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ _CCCL_CONCEPT __is_math_floating_point_v = _CCCL_REQUIRES_EXPR(
   _CCCL_SIMD_MATH_UNARY_GENERATOR(_NAME);                                               \
                                                                                         \
   _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)                 \
-  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                                       \
+  _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                                  \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(const _Vp& __x) noexcept \
   {                                                                                     \
     return _Result{__simd_##_NAME##_generator<_Result, _Vp>{__x}};                      \
@@ -103,7 +103,7 @@ _CCCL_CONCEPT __is_math_floating_point_v = _CCCL_REQUIRES_EXPR(
 // common macro to implement (unary) rebind function
 #define _CCCL_SIMD_MATH_UNARY_REBIND_FUNCTION(_NAME, _Tp, _CONSTEXPR)                \
   _CCCL_TEMPLATE(typename _Vp)                                                       \
-  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                                    \
+  _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                               \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR auto _NAME(const _Vp& __x) noexcept \
   {                                                                                  \
     using __result_t = rebind_t<_Tp, __deduced_vec_t<_Vp>>;                          \
@@ -145,7 +145,7 @@ inline constexpr bool __is_simd_math_same_vec_arg_v = is_same_v<__deduced_vec_t<
 template <typename _Arg, typename _Result>
 inline constexpr bool __is_simd_math_arg_v =
   __is_simd_math_same_vec_arg_v<_Arg, _Result>
-  || (!__is_math_floating_point_v<_Arg> && is_convertible_v<const _Arg&, _Result>);
+  || (!__is_simd_math_floating_point_v<_Arg> && is_convertible_v<const _Arg&, _Result>);
 
 template <typename _Result, typename... _Args>
 inline constexpr bool __is_simd_math_v =

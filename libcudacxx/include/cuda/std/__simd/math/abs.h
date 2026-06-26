@@ -68,7 +68,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp> _CCCL_AND is_signed_v<_Tp>)
 
 // floating point
 _CCCL_TEMPLATE(typename _Vp)
-_CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)
+_CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto abs(const _Vp& __x) noexcept
 {
   using __result_t = __deduced_vec_t<_Vp>;
@@ -77,7 +77,7 @@ _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)
 
 // fabs
 _CCCL_TEMPLATE(typename _Vp)
-_CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)
+_CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto fabs(const _Vp& __x) noexcept
 {
   using __result_t = __deduced_vec_t<_Vp>;
