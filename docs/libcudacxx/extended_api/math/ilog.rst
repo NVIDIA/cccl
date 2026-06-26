@@ -10,19 +10,19 @@ Defined in the ``<cuda/cmath>`` header.
    namespace cuda {
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr
+   [[nodiscard]] __host__ __device__ __tile__ constexpr
    int ilog2(T value) noexcept;
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr
+   [[nodiscard]] __host__ __device__ __tile__ constexpr
    int ceil_ilog2(T value) noexcept;
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr
+   [[nodiscard]] __host__ __device__ __tile__ constexpr
    int ilog10(T value) noexcept;
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr
+   [[nodiscard]] __host__ __device__ __tile__ constexpr
    int ceil_ilog10(T value) noexcept;
 
    } // namespace cuda

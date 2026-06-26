@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
-_CCCL_API constexpr int ilog2(const _Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int ilog2(const _Tp __t) noexcept
 {
   using _Up = ::cuda::std::make_unsigned_t<_Tp>;
   _CCCL_ASSERT(__t > 0, "ilog2() argument must be strictly positive");
@@ -48,7 +48,7 @@ _CCCL_API constexpr int ilog2(const _Tp __t) noexcept
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
-_CCCL_API constexpr int ceil_ilog2(const _Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int ceil_ilog2(const _Tp __t) noexcept
 {
   using _Up = ::cuda::std::make_unsigned_t<_Tp>;
   return ::cuda::ilog2(__t) + !::cuda::std::has_single_bit(static_cast<_Up>(__t));
@@ -142,7 +142,7 @@ _CCCL_API constexpr int ceil_ilog2(const _Tp __t) noexcept
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
-_CCCL_API constexpr int ilog10(const _Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int ilog10(const _Tp __t) noexcept
 {
   using ::cuda::std::uint32_t;
   using ::cuda::std::uint64_t;
@@ -190,7 +190,7 @@ _CCCL_API constexpr int ilog10(const _Tp __t) noexcept
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
-_CCCL_API constexpr int ceil_ilog10(const _Tp __t) noexcept
+[[nodiscard]] _CCCL_API constexpr int ceil_ilog10(const _Tp __t) noexcept
 {
   _CCCL_ASSERT(__t > 0, "cuda::ceil_ilog10() argument must be strictly positive");
   return __t == 1 ? 0 : ::cuda::ilog10(static_cast<_Tp>(__t - 1)) + 1;
