@@ -957,8 +957,8 @@ cdef class CommonData:
 
 cdef extern from "cccl/c/reduce.h":
     cdef struct cccl_device_reduce_build_result_t 'cccl_device_reduce_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_reduce_build(
         cccl_device_reduce_build_result_t*,
@@ -1117,8 +1117,8 @@ cdef class DeviceReduceBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 # ------------
@@ -1130,8 +1130,8 @@ cdef extern from "cccl/c/scan.h":
     ctypedef bint _Bool
 
     cdef struct cccl_device_scan_build_result_t 'cccl_device_scan_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_scan_build(
         cccl_device_scan_build_result_t*,
@@ -1427,8 +1427,8 @@ cdef class DeviceScanBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 # -----------------------
@@ -1438,8 +1438,8 @@ cdef class DeviceScanBuildResult:
 
 cdef extern from "cccl/c/segmented_reduce.h":
     cdef struct cccl_device_segmented_reduce_build_result_t 'cccl_device_segmented_reduce_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_segmented_reduce_build(
         cccl_device_segmented_reduce_build_result_t*,
@@ -1556,8 +1556,8 @@ cdef class DeviceSegmentedReduceBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 # -----------------
@@ -1567,8 +1567,8 @@ cdef class DeviceSegmentedReduceBuildResult:
 
 cdef extern from "cccl/c/merge_sort.h":
     cdef struct cccl_device_merge_sort_build_result_t 'cccl_device_merge_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_merge_sort_build(
         cccl_device_merge_sort_build_result_t *bld_ptr,
@@ -1684,8 +1684,8 @@ cdef class DeviceMergeSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 
@@ -1695,8 +1695,8 @@ cdef class DeviceMergeSortBuildResult:
 
 cdef extern from "cccl/c/unique_by_key.h":
     cdef struct cccl_device_unique_by_key_build_result_t 'cccl_device_unique_by_key_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
 
     cdef CUresult cccl_device_unique_by_key_build(
@@ -1820,8 +1820,8 @@ cdef class DeviceUniqueByKeyBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 # -----------------
@@ -1830,8 +1830,8 @@ cdef class DeviceUniqueByKeyBuildResult:
 
 cdef extern from "cccl/c/radix_sort.h":
     cdef struct cccl_device_radix_sort_build_result_t 'cccl_device_radix_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_radix_sort_build(
         cccl_device_radix_sort_build_result_t *build_ptr,
@@ -1962,8 +1962,8 @@ cdef class DeviceRadixSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 # --------------------------------------------
@@ -1971,8 +1971,8 @@ cdef class DeviceRadixSortBuildResult:
 # --------------------------------------------
 cdef extern from "cccl/c/transform.h":
     cdef struct cccl_device_transform_build_result_t:
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_unary_transform_build(
         cccl_device_transform_build_result_t *build_ptr,
@@ -2081,8 +2081,8 @@ cdef class DeviceUnaryTransform:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 
@@ -2157,8 +2157,8 @@ cdef class DeviceBinaryTransform:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 
@@ -2167,8 +2167,8 @@ cdef class DeviceBinaryTransform:
 # -----------------
 cdef extern from "cccl/c/histogram.h":
     cdef struct cccl_device_histogram_build_result_t 'cccl_device_histogram_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_histogram_build(
         cccl_device_histogram_build_result_t *build_ptr,
@@ -2177,7 +2177,7 @@ cdef extern from "cccl/c/histogram.h":
         cccl_iterator_t d_samples,
         int num_output_levels_val,
         cccl_iterator_t d_output_histograms,
-        cccl_value_t h_levels,
+        cccl_type_info level_type,
         int64_t num_rows,
         int64_t row_stride_samples,
         bint is_evenly_segmented,
@@ -2222,7 +2222,7 @@ cdef class DeviceHistogramBuildResult:
         Iterator d_samples,
         int num_levels,
         Iterator d_histogram,
-        Value h_levels,
+        TypeInfo level_type,
         int num_rows,
         int row_stride_samples,
         bint is_evenly_segmented,
@@ -2245,7 +2245,7 @@ cdef class DeviceHistogramBuildResult:
                 d_samples.iter_data,
                 num_levels,
                 d_histogram.iter_data,
-                h_levels.value_data,
+                level_type.type_info,
                 num_rows,
                 row_stride_samples,
                 is_evenly_segmented,
@@ -2304,8 +2304,8 @@ cdef class DeviceHistogramBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 
@@ -2429,8 +2429,8 @@ cdef class DeviceBinarySearchBuildResult:
 # ----------------------------------
 cdef extern from "cccl/c/three_way_partition.h":
     cdef struct cccl_device_three_way_partition_build_result_t 'cccl_device_three_way_partition_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_three_way_partition_build(
         cccl_device_three_way_partition_build_result_t *build_ptr,
@@ -2559,8 +2559,8 @@ cdef class DeviceThreeWayPartitionBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
 
 
@@ -2570,8 +2570,8 @@ cdef class DeviceThreeWayPartitionBuildResult:
 
 cdef extern from "cccl/c/segmented_sort.h":
     cdef struct cccl_device_segmented_sort_build_result_t 'cccl_device_segmented_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_segmented_sort_build(
         cccl_device_segmented_sort_build_result_t *build_ptr,
@@ -2701,6 +2701,6 @@ cdef class DeviceSegmentedSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )

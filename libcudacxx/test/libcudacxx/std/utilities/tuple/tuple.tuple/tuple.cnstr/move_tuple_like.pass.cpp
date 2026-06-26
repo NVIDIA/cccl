@@ -22,6 +22,8 @@
 
 #if _CCCL_HAS_HOST_STD_LIB()
 #  include <array>
+#  include <complex>
+#  include <tuple>
 #  include <utility>
 #endif // _CCCL_HAS_HOST_STD_LIB()
 

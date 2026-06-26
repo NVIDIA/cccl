@@ -100,7 +100,7 @@ inline constexpr bool __is_sequence_v =
 // spelling carries that intent.
 
 //! @brief Wraps a compile-time constant argument value.
-template <auto _Value, class _Tp = decltype(_Value)>
+template <auto _Value, class _Tp = ::cuda::std::remove_cvref_t<decltype(_Value)>>
 class constant
 {
 public:
@@ -223,7 +223,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_lowest() noexcept
 {
   if constexpr (::cuda::std::is_same_v<_StaticBounds, no_bounds>)
   {
-    return ::cuda::std::numeric_limits<_ElementType>::lowest();
+    return __type_lowest<_ElementType>();
   }
   else
   {
@@ -236,7 +236,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_highest() noexcept
 {
   if constexpr (::cuda::std::is_same_v<_StaticBounds, no_bounds>)
   {
-    return (::cuda::std::numeric_limits<_ElementType>::max)();
+    return __type_highest<_ElementType>();
   }
   else
   {
@@ -826,8 +826,8 @@ struct __traits_impl
   static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = ::cuda::std::numeric_limits<element_type>::lowest();
-  static constexpr element_type highest = (::cuda::std::numeric_limits<element_type>::max)();
+  static constexpr element_type lowest  = __type_lowest<element_type>();
+  static constexpr element_type highest = __type_highest<element_type>();
 };
 
 template <auto _Value, class _Tp>
@@ -933,7 +933,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
 [[nodiscard]] _CCCL_API constexpr auto __lowest_(_Tp) noexcept
 {
-  return ::cuda::std::numeric_limits<__element_type_of_t<_Tp>>::lowest();
+  return __type_lowest<__element_type_of_t<_Tp>>();
 }
 
 template <auto _Value, class _Tp>
@@ -986,7 +986,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
 [[nodiscard]] _CCCL_API constexpr auto __highest_(_Tp) noexcept
 {
-  return (::cuda::std::numeric_limits<__element_type_of_t<_Tp>>::max)();
+  return __type_highest<__element_type_of_t<_Tp>>();
 }
 
 template <auto _Value, class _Tp>

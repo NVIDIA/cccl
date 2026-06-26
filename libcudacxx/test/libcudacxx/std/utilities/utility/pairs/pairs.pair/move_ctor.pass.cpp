@@ -12,10 +12,9 @@
 
 // pair(pair&&) = default;
 
-#include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
