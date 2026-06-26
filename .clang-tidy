@@ -34,7 +34,6 @@ Checks:
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-branch-clone'
-  - '-bugprone-integer-division'
   - '-bugprone-argument-comment'
   # This is just noise
   - '-bugprone-signed-char-misuse'

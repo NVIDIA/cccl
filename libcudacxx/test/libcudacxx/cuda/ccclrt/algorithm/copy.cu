@@ -20,17 +20,18 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
     std::vector<int> host_vector(buffer_size);
 
     {
-      test_buffer<int> buffer(test_buffer_type::device, buffer_size);
+      auto buffer = cuda::make_device_buffer<int>(_stream, cuda::device_ref{0}, buffer_size, cuda::no_init);
       cuda::fill_bytes(_stream, buffer, fill_byte);
 
       cuda::copy_bytes(_stream, buffer, host_vector);
       check_result_and_erase(_stream, host_vector);
 
-      cuda::copy_bytes(_stream, std::move(buffer), host_vector);
+      cuda::copy_bytes(_stream, buffer, host_vector);
       check_result_and_erase(_stream, host_vector);
     }
     {
-      test_buffer<int> not_yet_const_buffer(test_buffer_type::device, buffer_size);
+      auto not_yet_const_buffer =
+        cuda::make_device_buffer<int>(_stream, cuda::device_ref{0}, buffer_size, cuda::no_init);
       cuda::fill_bytes(_stream, not_yet_const_buffer, fill_byte);
 
       const auto& const_buffer = not_yet_const_buffer;
@@ -48,32 +49,31 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
 #else
       config.src_access_order = cuda::source_access_order::any;
 #endif
-      cuda::copy_bytes(_stream, cuda::std::span(const_buffer), host_vector, config);
+      cuda::copy_bytes(_stream, const_buffer, host_vector, config);
       check_result_and_erase(_stream, host_vector);
 
-      cuda::std::span<int> span(const_buffer.data(), 0);
-      cuda::copy_bytes(_stream, span, host_vector);
+      cuda::copy_bytes(_stream, const_buffer.first(0), host_vector);
     }
   }
 
   SECTION("Host and managed resource")
   {
     {
-      test_buffer<int> host_buffer(test_buffer_type::pinned, buffer_size);
-      test_buffer<int> device_buffer(test_buffer_type::managed, buffer_size);
+      auto host_buffer   = make_pinned_memory_buffer<int>(_stream, buffer_size);
+      auto device_buffer = make_managed_memory_buffer<int>(_stream, buffer_size);
 
       cuda::fill_bytes(_stream, host_buffer, fill_byte);
 
       cuda::copy_bytes(_stream, host_buffer, device_buffer);
       check_result_and_erase(_stream, device_buffer);
 
-      cuda::copy_bytes(_stream, cuda::std::span(host_buffer), device_buffer);
+      cuda::copy_bytes(_stream, host_buffer, device_buffer);
       check_result_and_erase(_stream, device_buffer);
     }
 
     {
-      test_buffer<int> not_yet_const_host_buffer(test_buffer_type::pinned, buffer_size);
-      test_buffer<int> device_buffer(test_buffer_type::managed, buffer_size);
+      auto not_yet_const_host_buffer = make_pinned_memory_buffer<int>(_stream, buffer_size);
+      auto device_buffer             = make_managed_memory_buffer<int>(_stream, buffer_size);
       cuda::fill_bytes(_stream, not_yet_const_host_buffer, fill_byte);
 
       const auto& const_host_buffer = not_yet_const_host_buffer;
@@ -81,14 +81,14 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
       cuda::copy_bytes(_stream, const_host_buffer, device_buffer);
       check_result_and_erase(_stream, device_buffer);
 
-      cuda::copy_bytes(_stream, cuda::std::span(const_host_buffer), device_buffer);
+      cuda::copy_bytes(_stream, const_host_buffer, device_buffer);
       check_result_and_erase(_stream, device_buffer);
     }
   }
 
   SECTION("Asymmetric size")
   {
-    test_buffer<int> host_buffer(test_buffer_type::pinned, 1);
+    auto host_buffer = make_pinned_memory_buffer<int>(_stream, 1);
     cuda::fill_bytes(_stream, host_buffer, fill_byte);
 
     ::std::vector<int> vec(buffer_size, 0xbeef);
@@ -108,9 +108,9 @@ template <typename SrcLayout = cuda::std::layout_right,
 void test_mdspan_copy_bytes(
   cuda::stream_ref stream, SrcExtents src_extents = SrcExtents(), DstExtents dst_extents = DstExtents())
 {
-  auto src_buffer = make_buffer_for_mdspan<SrcLayout>(src_extents, 1);
-  auto tmp_buffer = make_buffer_for_mdspan<SrcLayout>(src_extents, 0);
-  auto dst_buffer = make_buffer_for_mdspan<DstLayout>(dst_extents, 0);
+  auto src_buffer = make_buffer_for_mdspan<SrcLayout>(stream, src_extents, 1);
+  auto tmp_buffer = make_buffer_for_mdspan<SrcLayout>(stream, src_extents, 0);
+  auto dst_buffer = make_buffer_for_mdspan<DstLayout>(stream, dst_extents, 0);
 
   cuda::std::mdspan<int, SrcExtents, SrcLayout> src(src_buffer.data(), src_extents);
   cuda::std::mdspan<int, SrcExtents, SrcLayout> tmp(tmp_buffer.data(), src_extents);
