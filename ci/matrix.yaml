@@ -22,6 +22,7 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: 'rtx2080'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -79,7 +80,7 @@ workflows:
     # Eventually v2 will replace v1 as the default and run across the
     # entire matrix. Currently blocked on libnvfatbin availability on
     # Windows containers, and for CUDA <12.4.
-    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: 'rtx2080'}
     # Python against c.parallel v2 (HostJIT-based). Single point of coverage
     # for the v2 Python path; the main `python` matrix continues to test
     # against v1 until v2 replaces it.
