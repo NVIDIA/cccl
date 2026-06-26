@@ -5,6 +5,8 @@
 
 #include <cuda/std/limits>
 
+#include <string>
+
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
 

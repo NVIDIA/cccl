@@ -18,7 +18,6 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__warp/warp_shuffle.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
 
@@ -55,7 +54,7 @@ inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(__shfl_s
 //!    struct CustomLess
 //!    {
 //!      template <typename DataType>
-//!      __device__ bool operator()(const DataType &lhs, const DataType &rhs)
+//!      __device__ bool operator()(const DataType &lhs, const DataType &rhs) const
 //!      {
 //!        return lhs < rhs;
 //!      }
