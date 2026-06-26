@@ -19,7 +19,7 @@
 #include "../simd_test_utils.h"
 
 template <typename T, int N>
-TEST_FUNC void test_type()
+TEST_FUNC constexpr void test_type()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(math_values<T>{});
