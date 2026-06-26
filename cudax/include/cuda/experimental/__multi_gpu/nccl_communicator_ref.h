@@ -124,7 +124,8 @@ public:
   //!
   //! @throws std::invalid_argument If `__comm` is `NCCL_COMM_NULL`.
   _CCCL_HOST_API nccl_communicator_ref(native_handle_type __comm)
-      : nccl_communicator_ref{__comm, logical_device{::cuda::experimental::__nccl::__ncclCommCuDevice(__comm)}}
+      : nccl_communicator_ref{
+          __comm, ::cuda::experimental::logical_device{::cuda::experimental::__nccl::__ncclCommCuDevice(__comm)}}
   {}
 
   //! @brief Construct a communicator from an existing NCCL communicator handle.
@@ -197,7 +198,7 @@ public:
   //! @brief Retrieve the logical device this communicator is associated with.
   //!
   //! @return A reference to the logical device passed at construction.
-  [[nodiscard]] _CCCL_HOST_API constexpr const logical_device& logical_device() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr const ::cuda::experimental::logical_device& logical_device() const noexcept
   {
     return __device_;
   }
@@ -715,7 +716,7 @@ public:
 
 private:
   native_handle_type __comm_{};
-  logical_device __device_;
+  ::cuda::experimental::logical_device __device_;
   // Cache these so we can make the accessors noexcept
   ::cuda::std::int32_t __rank_{};
   ::cuda::std::int32_t __size_{};
