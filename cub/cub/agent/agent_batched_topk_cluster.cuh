@@ -2244,6 +2244,79 @@ private:
     cluster_or_block_sync(cluster, single_cta);
   }
 
+  // Copies an entire segment `input[i] -> output[i]` (keys, plus values for pairs) for the select-all fast path
+  // (`k == segment_size`); top-k output order is unspecified, so a straight copy is valid. The whole launched cluster
+  // grid-strides the segment with no chunk partition or cluster barriers -- each CTA copies its part and exits. Each
+  // thread issues all `copy_items` loads of a step before its stores to keep many requests in flight (ILP/MLP). Input
+  // and output bases are mutually unaligned in general, so we use per-element (not vectorized/TMA) coalesced accesses.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void copy_segment_select_all(
+    num_segments_val_t segment_id,
+    segment_size_val_t segment_size,
+    unsigned int cluster_rank,
+    unsigned int cluster_blocks)
+  {
+    constexpr int copy_items    = 8;
+    const offset_t n            = static_cast<offset_t>(segment_size);
+    const offset_t cluster_tid  = cluster_rank * static_cast<offset_t>(blockDim.x) + threadIdx.x;
+    const offset_t cluster_tids = cluster_blocks * static_cast<offset_t>(blockDim.x);
+    const offset_t step         = cluster_tids * static_cast<offset_t>(copy_items);
+    auto keys_in_it             = d_key_segments_it[segment_id];
+    auto keys_out_it            = d_key_segments_out_it[segment_id];
+    for (offset_t tile = 0; tile < n; tile += step)
+    {
+      // `idx[]` stays in `offset_t` (not the possibly-narrower `segment_size_val_t`) so the `idx[j] < n` bound check
+      // happens before any narrowing; the cast at each indexing site is then safe.
+      offset_t idx[copy_items];
+      key_t keys[copy_items];
+      [[maybe_unused]] value_t vals[copy_items];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < copy_items; ++j)
+      {
+        idx[j] = tile + static_cast<offset_t>(j) * cluster_tids + cluster_tid;
+      }
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < copy_items; ++j)
+      {
+        if (idx[j] < n)
+        {
+          keys[j] = keys_in_it[static_cast<segment_size_val_t>(idx[j])];
+        }
+      }
+      if constexpr (!is_keys_only)
+      {
+        auto vals_in_it = d_value_segments_it[segment_id];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 0; j < copy_items; ++j)
+        {
+          if (idx[j] < n)
+          {
+            vals[j] = vals_in_it[static_cast<segment_size_val_t>(idx[j])];
+          }
+        }
+      }
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < copy_items; ++j)
+      {
+        if (idx[j] < n)
+        {
+          keys_out_it[static_cast<segment_size_val_t>(idx[j])] = keys[j];
+        }
+      }
+      if constexpr (!is_keys_only)
+      {
+        auto vals_out_it = d_value_segments_out_it[segment_id];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 0; j < copy_items; ++j)
+        {
+          if (idx[j] < n)
+          {
+            vals_out_it[static_cast<segment_size_val_t>(idx[j])] = vals[j];
+          }
+        }
+      }
+    }
+  }
+
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_impl()
   {
     ::cooperative_groups::cluster_group cluster = ::cooperative_groups::this_cluster();
@@ -2279,6 +2352,15 @@ private:
     if (!segment_fits_offset)
     {
       _CCCL_ASSERT(false, "Segment exceeds the 32-bit offset range supported by cluster top-k");
+      return;
+    }
+
+    // Select-all fast path: when `k` reaches the full segment, every element wins, so we skip the radix passes,
+    // histogram, and output-ordering and just copy. Runs on the full launched cluster (before the effective-cluster
+    // collapse); the decision is per-segment uniform, so the branch is cluster-uniform.
+    if (static_cast<segment_size_val_t>(k) == segment_size)
+    {
+      copy_segment_select_all(segment_id, segment_size, cluster_rank, cluster_blocks);
       return;
     }
 

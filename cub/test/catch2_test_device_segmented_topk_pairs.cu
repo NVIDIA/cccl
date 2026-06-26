@@ -173,6 +173,25 @@ using uint_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, c
 using select_direction_list =
   c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
 
+// Determinism/tie-break combinations used as a single compile-time axis by the determinism-aware pairs tests. The
+// selected multiset is invariant to the tie-break preference, so every combo is verified the same way; tie-break
+// preferences only pair with a deterministic requirement.
+template <cuda::execution::determinism::__determinism_t Determinism, cuda::execution::tie_break::__tie_break_t TieBreak>
+struct det_tie_pair
+{
+  static constexpr auto determinism = Determinism;
+  static constexpr auto tie_break   = TieBreak;
+};
+using det_tie_pair_combos =
+  c2h::type_list<det_tie_pair<cuda::execution::determinism::__determinism_t::__not_guaranteed,
+                              cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                              cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                              cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
+                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                              cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
+
 // Consistency check: ensures values remain associated with their corresponding keys
 template <typename KeyT, typename ValueT>
 bool verify_pairs_consistency(const c2h::device_vector<KeyT>& keys_in,
@@ -339,6 +358,169 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
+
+#if TEST_TYPES == 0
+// A `k` larger than the segment is clamped to `segment_size` (every pair is selected), routing through the select-all
+// fast path. The output then holds exactly `segment_size` pairs per segment -- identical to a `k == segment_size`
+// request -- so we verify with a `segment_size`-wide output and a key/value-consistency check on the full segment.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs clamp k larger than the segment size",
+         "[pairs][segmented][topk][device]",
+         key_types,
+         select_direction_list)
+{
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+  using key_t           = c2h::get<0, TestType>;
+  using val_t           = cuda::std::int32_t;
+
+  constexpr auto direction = c2h::get<1, TestType>::value;
+
+  constexpr segment_size_t segment_size = 384;
+  // Deliberately request more than the segment holds; the algorithm must clamp to `segment_size`.
+  const segment_size_t k_requested =
+    GENERATE_COPY(values({segment_size + 1, segment_size + 100, 2 * segment_size, 10 * segment_size}));
+  const segment_size_t effective_k   = (cuda::std::min) (k_requested, segment_size); // == segment_size
+  const segment_index_t num_segments = GENERATE_COPY(
+    values({segment_index_t{1}, segment_index_t{37}}), take(2, random(segment_index_t{1}, segment_index_t{500})));
+
+  CAPTURE(c2h::type_name<key_t>(), segment_size, k_requested, effective_k, num_segments, direction);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * effective_k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), effective_k);
+
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  c2h::device_vector<val_t> values_out_buffer(num_segments * effective_k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), effective_k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  batched_topk_pairs<direction>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::constant<segment_size>{},
+    cuda::args::immediate{k_requested, cuda::args::bounds<segment_size_t{1}, 10 * segment_size>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_segments * segment_size});
+
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, effective_k) == true);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, effective_k); // clamped k == segment_size keeps everything
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, effective_k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Segment-size types narrower than the internal `offset_t`, both signed and unsigned: a signed type that narrows a
+// too-large index goes negative (indexing before the segment); an unsigned one wraps to a small in-range index
+// (duplicate racing stores).
+using narrow_seg_size_list = c2h::type_list<cuda::std::int8_t, cuda::std::uint8_t>;
+
+// Regression for a segment-size type narrower than the internal `offset_t`. The select-all copy must bound-check in
+// `offset_t` *before* narrowing: a block launches 512 threads -- far past an 8-bit type's range -- so any path that
+// narrows a thread/element index to `segment_size_val_t` before its bound check (or wraps an unsigned one) would
+// read/write out of bounds (a signed type indexes before the segment; an unsigned one wraps into duplicate racing
+// stores -- caught by racecheck even when the value is coincidentally right). We sweep `segment_size` and `k` with
+// each narrow size type to exercise every path under it: `k == segment_size` hits the select-all copy, while
+// `k < segment_size` drives the radix-select / cluster-histogram / output-ordering paths (and, for pairs, the value
+// gather). Running over `det_tie_pair_combos` additionally covers the deterministic output-ordering scan/atomics.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs handle a segment-size type narrower than the internal offset",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         narrow_seg_size_list,
+         det_tie_pair_combos)
+{
+  using seg_size_t      = c2h::get<0, TestType>;
+  using segment_index_t = cuda::std::int64_t;
+  using key_t           = cuda::std::uint8_t; // key type is immaterial to this index-arithmetic regression
+  using val_t           = cuda::std::int32_t;
+
+  using combo                = c2h::get<1, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+  constexpr auto direction   = cub::detail::topk::select::max;
+
+  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
+  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
+  if constexpr (selected_backend != topk_backend::cluster
+                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
+  {
+    SKIP("Determinism requirements are only provided by the cluster backend");
+  }
+
+  // Sizes fit both 8-bit types but sit far below the 512 threads a block launches; `127` probes the signed type's max.
+  const seg_size_t segment_size = static_cast<seg_size_t>(GENERATE(values({3, 100, 127})));
+  const seg_size_t k            = static_cast<seg_size_t>(
+    GENERATE_COPY(values({1, int{segment_size} / 2, int{segment_size}}), take(2, random(1, int{segment_size}))));
+  const segment_index_t num_segments = GENERATE_COPY(
+    values({segment_index_t{1}, segment_index_t{37}}), take(2, random(segment_index_t{1}, segment_index_t{500})));
+
+  CAPTURE(c2h::type_name<seg_size_t>(), int{segment_size}, int{k}, num_segments);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), int{segment_size});
+  auto values_in_it  = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in   = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), int{segment_size});
+
+  // Key/value output buffers with front/back canary padding: a signed-narrowing underrun lands in the front guard, an
+  // overrun in the back guard. The in-range checks below miss both (the underrun also stays inside the allocation,
+  // hiding it from memcheck), so we assert the guards stay untouched. `guard` covers the worst-case 8-bit offset
+  // (<= 256); the value canary `-1` is impossible for a real (non-negative) payload, so the value guard is exact.
+  constexpr segment_index_t guard = 256;
+  const key_t key_canary          = static_cast<key_t>(0x5A);
+  constexpr val_t val_canary      = -1;
+  c2h::device_vector<key_t> keys_out_storage(guard + num_segments * k + guard, key_canary);
+  c2h::device_vector<val_t> values_out_storage(guard + num_segments * k + guard, val_canary);
+  auto d_keys_out_ptr   = thrust::raw_pointer_cast(keys_out_storage.data()) + guard;
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_storage.data()) + guard;
+  auto d_keys_out       = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), int{k});
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), int{k});
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  batched_topk_pairs<direction, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<seg_size_t{1}, seg_size_t{127}>()},
+    cuda::args::immediate{k, cuda::args::bounds<seg_size_t{1}, seg_size_t{127}>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_segments * segment_size});
+
+  // Guards must be untouched by the algorithm.
+  const c2h::device_vector<key_t> expected_kguard(guard, key_canary);
+  const c2h::device_vector<val_t> expected_vguard(guard, val_canary);
+  CHECK(c2h::device_vector<key_t>(keys_out_storage.begin(), keys_out_storage.begin() + guard) == expected_kguard);
+  CHECK(c2h::device_vector<key_t>(keys_out_storage.end() - guard, keys_out_storage.end()) == expected_kguard);
+  CHECK(c2h::device_vector<val_t>(values_out_storage.begin(), values_out_storage.begin() + guard) == expected_vguard);
+  CHECK(c2h::device_vector<val_t>(values_out_storage.end() - guard, values_out_storage.end()) == expected_vguard);
+
+  // Extract the in-range outputs for the standard pair verification.
+  c2h::device_vector<key_t> keys_out_buffer(keys_out_storage.begin() + guard, keys_out_storage.end() - guard);
+  c2h::device_vector<val_t> values_out_buffer(values_out_storage.begin() + guard, values_out_storage.end() - guard);
+
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+#endif // TEST_TYPES == 0
 
 // Large-segment cluster pair tests, built only in the float build (`TEST_TYPES == 1`): they fix their own key/value
 // types, so repeating them per key-type axis would only waste time on the expensive 1 Mi-element runs. They run on
@@ -514,6 +696,80 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
   // Verify the selected keys are the correct top-k.
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Streaming counterpart of the narrow-segment-size regression (pairs). Streaming needs segments larger than the
+// resident cluster coverage (>128 Ki), which 8/16-bit types can't represent, so we use signed 32-bit -- same width as
+// the (unsigned) internal `offset_t` but signed -- to exercise the streaming path's index arithmetic (including the
+// value gather) across det/non-det.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments with a signed 32-bit segment-size type",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         det_tie_pair_combos)
+{
+  using key_t           = float;
+  using val_t           = cuda::std::int32_t;
+  using seg_size_t      = int; // signed 32-bit: same width as offset_t, but signed
+  using segment_index_t = cuda::std::int64_t;
+
+  using combo                = c2h::get<0, TestType>;
+  constexpr auto determinism = combo::determinism;
+  constexpr auto tie_break   = combo::tie_break;
+  constexpr auto direction   = cub::detail::topk::select::max;
+
+  if constexpr (selected_backend != topk_backend::cluster
+                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
+  {
+    SKIP("Determinism requirements are only provided by the cluster backend");
+  }
+
+  constexpr seg_size_t static_max_segment_size = 1024 * 1024;
+  constexpr seg_size_t static_max_k            = 4 * 1024;
+  constexpr segment_index_t num_segments       = 2;
+
+  const int pad                   = GENERATE(0, 7);
+  const seg_size_t segment_size   = static_max_segment_size - 31; // unaligned -> forces streaming + unaligned tail edge
+  const seg_size_t max_k          = (cuda::std::min) (static_max_k, segment_size);
+  const seg_size_t k              = GENERATE_COPY(values({seg_size_t{1}, max_k}));
+  const segment_index_t num_items = num_segments * segment_size;
+
+  CAPTURE(pad, static_max_segment_size, static_max_k, segment_size, k, num_segments);
+
+  c2h::device_vector<key_t> keys_in_buffer(pad + num_items, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data()) + pad;
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
+  thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
+
+  batched_topk_pairs<direction, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<seg_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<seg_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments},
+    cuda::args::immediate{num_items});
+
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
   fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
@@ -794,25 +1050,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   }
   REQUIRE(h_values_a == h_values_b);
 }
-
-// Determinism/tie-break combinations for the mixed-width pairs test below. The selected key/value multiset is invariant
-// to the tie-break preference, so every combo is verified the same way (pairs consistency + per-segment uniqueness +
-// sorted-key equality); tie-break preferences only pair with a deterministic requirement.
-template <cuda::execution::determinism::__determinism_t Determinism, cuda::execution::tie_break::__tie_break_t TieBreak>
-struct det_tie_pair
-{
-  static constexpr auto determinism = Determinism;
-  static constexpr auto tie_break   = TieBreak;
-};
-using det_tie_pair_combos =
-  c2h::type_list<det_tie_pair<cuda::execution::determinism::__determinism_t::__not_guaranteed,
-                              cuda::execution::tie_break::__tie_break_t::__unspecified>,
-                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
-                              cuda::execution::tie_break::__tie_break_t::__unspecified>,
-                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
-                              cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
-                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
-                              cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
 
 // Effective-cluster-width coverage for pairs: the large `deferred_sequence` bound sizes a wide (16-CTA) launch, but the
 // actual segments are small, so a single launch mixes a fully-resident multi-CTA segment (96 Ki + 17, every rank
