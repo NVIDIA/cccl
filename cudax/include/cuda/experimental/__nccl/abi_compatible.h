@@ -96,41 +96,47 @@ template <class _R1, class... _Args1, class _R2, class... _Args2>
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_HOST_API constexpr bool __abi_compatible() noexcept
 {
-  if constexpr (::cuda::std::is_same_v<_Tp, _Up>)
+  // Note, only remove_cv not remove_cvref. References are absolutely part of the type
+  using _UnqualTp = ::cuda::std::remove_cv_t<_Tp>;
+  using _UnqualUp = ::cuda::std::remove_cv_t<_Up>;
+
+  if constexpr (::cuda::std::is_same_v<_UnqualTp, _UnqualUp>)
   {
     // Equal types are obviously ABI compatible
     return true;
   }
-  else if constexpr (::cuda::std::is_function_v<_Tp> && ::cuda::std::is_function_v<_Up>)
+  else if constexpr (::cuda::std::is_function_v<_UnqualTp> && ::cuda::std::is_function_v<_UnqualUp>)
   {
     // Functions need all arguments checked
     return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible_func(
-      ::cuda::std::decay_t<_Tp>{}, ::cuda::std::decay_t<_Up>{});
+      ::cuda::std::decay_t<_UnqualTp>{}, ::cuda::std::decay_t<_UnqualUp>{});
   }
-  else if constexpr (::cuda::std::is_enum_v<_Tp> || ::cuda::std::is_enum_v<_Up>)
+  else if constexpr (::cuda::std::is_enum_v<_UnqualTp> || ::cuda::std::is_enum_v<_UnqualUp>)
   {
     // If either side is an enum, we need to unwrap to check whether the underlying types
     // match. These must match *exactly*, otherwise we perform the moral equivalent of a
     // bitcast when we reinterpret them
-    if constexpr (::cuda::std::is_enum_v<_Tp> && ::cuda::std::is_enum_v<_Up>)
+    if constexpr (::cuda::std::is_enum_v<_UnqualTp> && ::cuda::std::is_enum_v<_UnqualUp>)
     {
-      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::underlying_type_t<_Tp>,
-                                                                          ::cuda::std::underlying_type_t<_Up>>();
+      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::underlying_type_t<_UnqualTp>,
+                                                                          ::cuda::std::underlying_type_t<_UnqualUp>>();
     }
-    else if constexpr (::cuda::std::is_enum_v<_Tp>)
+    else if constexpr (::cuda::std::is_enum_v<_UnqualTp>)
     {
-      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::underlying_type_t<_Tp>, _Up>();
+      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::underlying_type_t<_UnqualTp>,
+                                                                          _UnqualUp>();
     }
     else
     {
-      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<_Tp, ::cuda::std::underlying_type_t<_Up>>();
+      return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<_UnqualTp,
+                                                                          ::cuda::std::underlying_type_t<_UnqualUp>>();
     }
   }
-  else if constexpr (::cuda::std::is_pointer_v<_Tp> && ::cuda::std::is_pointer_v<_Up>)
+  else if constexpr (::cuda::std::is_pointer_v<_UnqualTp> && ::cuda::std::is_pointer_v<_UnqualUp>)
   {
     // Note the &&. If one is a pointer but the other is not, that's an error
-    return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::remove_pointer_t<_Tp>,
-                                                                        ::cuda::std::remove_pointer_t<_Up>>();
+    return ::cuda::experimental::__nccl::__abi_detail::__abi_compatible<::cuda::std::remove_pointer_t<_UnqualTp>,
+                                                                        ::cuda::std::remove_pointer_t<_UnqualUp>>();
   }
   return false;
 }
