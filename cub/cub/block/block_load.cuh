@@ -251,27 +251,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto block_load_prefetch_base(RandomAccessIterato
   }
 }
 
-template <int ThreadsPerBlock, typename RandomAccessIterator>
+template <int ThreadsPerBlock, int PrefetchStride = 128, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 prefetch_block_load_tile(int linear_tid, RandomAccessIterator block_src_it, int items_to_prefetch)
 {
   if constexpr (can_prefetch_block_load<RandomAccessIterator>)
   {
-    if (items_to_prefetch <= 0)
-    {
-      return;
-    }
-
     using input_t                         = cub::detail::it_value_t<RandomAccessIterator>;
-    constexpr ::cuda::std::size_t stride  = 128;
     const ::cuda::std::size_t total_bytes = static_cast<::cuda::std::size_t>(items_to_prefetch) * sizeof(input_t);
     const auto* const base                = reinterpret_cast<const char*>(block_load_prefetch_base(block_src_it));
 
     _CCCL_PRAGMA_NOUNROLL()
-    for (::cuda::std::size_t offset = static_cast<::cuda::std::size_t>(linear_tid) * stride; offset < total_bytes;
-         offset += static_cast<::cuda::std::size_t>(ThreadsPerBlock) * stride)
+    for (::cuda::std::size_t offset = static_cast<::cuda::std::size_t>(linear_tid) * PrefetchStride;
+         offset < total_bytes;
+         offset += static_cast<::cuda::std::size_t>(ThreadsPerBlock) * PrefetchStride)
     {
-      ::cuda::apply_access_property(base + offset, stride, ::cuda::access_property::normal{});
+      ::cuda::apply_access_property(base + offset, PrefetchStride, ::cuda::access_property::normal{});
     }
   }
 }
@@ -834,7 +829,7 @@ enum class BlockLoadPrefetch
 {
   //! No prefetch hint emitted. Default behavior, identical to not specifying a prefetch level.
   none,
-  //! Emit an L2 prefetch hint (``prefetch.global.L2``) before loading each cache line.
+  //! Emit an L2 prefetch hint via ``cuda::apply_access_property`` before loading each cache line.
   l2,
   //! Emit an L1 prefetch hint before loading each cache line. Falls back to L2 on architectures
   //! that do not support real L1 prefetch.
