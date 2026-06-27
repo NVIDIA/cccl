@@ -18,6 +18,9 @@
 
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
@@ -34,10 +37,16 @@ struct allocator_delete final
   using allocator_type = typename std::remove_cv_t<std::remove_reference_t<Allocator>>::template rebind<T>::other;
   using pointer        = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
 
-  template <typename UAllocator>
+  _CCCL_HIDE_FROM_ABI allocator_delete(const allocator_delete&)     = default;
+  _CCCL_HIDE_FROM_ABI allocator_delete(allocator_delete&&) noexcept = default;
+
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  _CCCL_TEMPLATE(typename UAllocator)
+  _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<UAllocator>, allocator_delete>) )
   allocator_delete(UAllocator&& other) noexcept
       : alloc_(THRUST_FWD(other))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <typename U, typename UAllocator>
   allocator_delete(allocator_delete<U, UAllocator> const& other) noexcept

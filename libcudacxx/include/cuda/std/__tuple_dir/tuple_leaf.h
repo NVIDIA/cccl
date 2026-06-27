@@ -137,11 +137,13 @@ public:
       : __value_(__a)
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
   _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
@@ -205,6 +207,7 @@ public:
     static_assert(!is_reference_v<_Hp>, "Attempted to default construct a reference element in a tuple");
   }
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
   _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
@@ -214,6 +217,7 @@ public:
                   "Attempted construction of reference element "
                   "binds to a temporary whose lifetime has ended");
   }
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
@@ -306,11 +310,13 @@ public:
       : _Hp(__a)
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
   _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
@@ -390,6 +396,9 @@ template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_tuple_assign(_Dest& __dest, _Source&& __source, __tuple_indices<_Indices...>)
 {
   using ::cuda::std::get;
+  // clang-tidy incorrectly reports "'__source' used after it was forwarded".
+  // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
+  // NOLINTNEXTLINE(bugprone-use-after-move)
   ((void) (get<_Indices>(__dest) = get<_Indices>(::cuda::std::forward<_Source>(__source))), ...);
 }
 
@@ -418,6 +427,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   template <class... _Up, enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int> = 0>
   _CCCL_API explicit constexpr __tuple_impl(__tuple_variadic_constructor_tag __tag, _Up&&... __u) noexcept(
     noexcept(__tuple_impl(__tag, ::cuda::std::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})))
+      // clang-tidy treats the unevaluated noexcept operand as a forward.
+      // NOLINTNEXTLINE(bugprone-use-after-move)
       : __tuple_impl(__tag, ::cuda::std::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})
   {}
 
@@ -440,6 +451,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple>
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, _Tuple&& __t)
+      // clang-tidy incorrectly reports "'__t' used after it was forwarded".
+      // Each expansion forwards the tuple only to select __adl_get<I>'s cvref-qualified overload for a distinct
+      // element. NOLINTNEXTLINE(bugprone-use-after-move)
       : __tuple_leaf<_Indx, _Tp>(::cuda::std::__adl_get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
