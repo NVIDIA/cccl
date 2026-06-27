@@ -175,7 +175,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk(
   // The total-number-of-items guarantee is intentionally not part of the initial public API surface. The dispatch
   // only uses its element type to size internal large-segment offsets (the value itself is unused), so we pass a
   // conservative 64-bit upper bound here.
-  const auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
+  constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
 
   return batched_topk::dispatch(
     d_temp_storage,
@@ -496,20 +496,19 @@ struct DeviceBatchedTopK
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxKeys");
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_batched_topk<detail::topk::select::max>(
-          storage,
-          bytes,
-          d_keys_in,
-          d_keys_out,
-          static_cast<NullType**>(nullptr),
-          static_cast<NullType**>(nullptr),
-          segment_sizes,
-          k,
-          num_segments,
-          env);
-      });
+    return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
+      return detail::dispatch_batched_topk<detail::topk::select::max>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType**>(nullptr),
+        static_cast<NullType**>(nullptr),
+        segment_sizes,
+        k,
+        num_segments,
+        env);
+    });
   }
 
   //! @rst
@@ -685,20 +684,19 @@ struct DeviceBatchedTopK
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinKeys");
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_batched_topk<detail::topk::select::min>(
-          storage,
-          bytes,
-          d_keys_in,
-          d_keys_out,
-          static_cast<NullType**>(nullptr),
-          static_cast<NullType**>(nullptr),
-          segment_sizes,
-          k,
-          num_segments,
-          env);
-      });
+    return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
+      return detail::dispatch_batched_topk<detail::topk::select::min>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType**>(nullptr),
+        static_cast<NullType**>(nullptr),
+        segment_sizes,
+        k,
+        num_segments,
+        env);
+    });
   }
 
   //! @rst
@@ -908,11 +906,10 @@ struct DeviceBatchedTopK
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxPairs");
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_batched_topk<detail::topk::select::max>(
-          storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, env);
-      });
+    return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
+      return detail::dispatch_batched_topk<detail::topk::select::max>(
+        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, env);
+    });
   }
 
   //! @rst
@@ -1119,11 +1116,10 @@ struct DeviceBatchedTopK
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinPairs");
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_batched_topk<detail::topk::select::min>(
-          storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, env);
-      });
+    return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
+      return detail::dispatch_batched_topk<detail::topk::select::min>(
+        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, env);
+    });
   }
 };
 

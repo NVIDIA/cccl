@@ -20,8 +20,6 @@
 #include <cuda/std/functional>
 #include <cuda/stream>
 
-#include <iostream>
-
 #include <c2h/catch2_test_helper.h>
 
 C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][device][env]")
@@ -54,10 +52,6 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][de
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
     env);
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceBatchedTopK::MaxKeys failed with status: " << error << '\n';
-  }
   // example-end batched-topk-max-keys-env
 
   stream.sync();
@@ -96,10 +90,6 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][de
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
     env);
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceBatchedTopK::MinKeys failed with status: " << error << '\n';
-  }
   // example-end batched-topk-min-keys-env
 
   stream.sync();
@@ -144,10 +134,6 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
     env);
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceBatchedTopK::MaxPairs failed with status: " << error << '\n';
-  }
   // example-end batched-topk-max-pairs-env
 
   stream.sync();
@@ -211,10 +197,6 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][d
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
     env);
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceBatchedTopK::MinPairs failed with status: " << error << '\n';
-  }
   // example-end batched-topk-min-pairs-env
 
   stream.sync();

@@ -18,8 +18,6 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/functional>
 
-#include <iostream>
-
 #include <c2h/catch2_test_helper.h>
 
 C2H_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_topk][device]")
@@ -40,9 +38,9 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_t
 
   // Argument annotations: a small, compile-time segment size and k, plus the runtime segment count and item-count
   // bound.
-  auto segment_sizes = cuda::args::constant<segment_size>{};
-  auto k_arg         = cuda::args::constant<k>{};
-  auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  constexpr auto segment_sizes = cuda::args::constant<segment_size>{};
+  constexpr auto k_arg         = cuda::args::constant<k>{};
+  auto num_segs                = cuda::args::immediate{cuda::std::int64_t{num_segments}};
 
   // Top-k output is unordered and may be non-deterministic; this must be acknowledged via the environment.
   auto env = cuda::std::execution::env{cuda::execution::require(
@@ -57,22 +55,15 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_t
 
   // Allocate temporary storage and run
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
-  if (error == cudaSuccess)
-  {
-    error = cub::DeviceBatchedTopK::MaxKeys(
-      thrust::raw_pointer_cast(temp_storage.data()),
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      segment_sizes,
-      k_arg,
-      num_segs,
-      env);
-  }
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceBatchedTopK::MaxKeys failed with status: " << error << '\n';
-  }
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
   // example-end batched-topk-max-keys
 
   REQUIRE(error == cudaSuccess);
@@ -97,10 +88,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_t
   auto d_keys_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
 
-  auto segment_sizes = cuda::args::constant<segment_size>{};
-  auto k_arg         = cuda::args::constant<k>{};
-  auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
-  auto env           = cuda::std::execution::env{cuda::execution::require(
+  constexpr auto segment_sizes = cuda::args::constant<segment_size>{};
+  constexpr auto k_arg         = cuda::args::constant<k>{};
+  auto num_segs                = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env                     = cuda::std::execution::env{cuda::execution::require(
     cuda::execution::determinism::not_guaranteed,
     cuda::execution::tie_break::unspecified,
     cuda::execution::output_ordering::unsorted)};
@@ -109,22 +100,15 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_t
   auto error                = cub::DeviceBatchedTopK::MinKeys(
     nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
-  if (error == cudaSuccess)
-  {
-    error = cub::DeviceBatchedTopK::MinKeys(
-      thrust::raw_pointer_cast(temp_storage.data()),
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      segment_sizes,
-      k_arg,
-      num_segs,
-      env);
-  }
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceBatchedTopK::MinKeys failed with status: " << error << '\n';
-  }
+  error = cub::DeviceBatchedTopK::MinKeys(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
   // example-end batched-topk-min-keys
 
   REQUIRE(error == cudaSuccess);
@@ -153,10 +137,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
   auto d_values_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(values_out.data())), k);
 
-  auto segment_sizes = cuda::args::constant<segment_size>{};
-  auto k_arg         = cuda::args::constant<k>{};
-  auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
-  auto env           = cuda::std::execution::env{cuda::execution::require(
+  constexpr auto segment_sizes = cuda::args::constant<segment_size>{};
+  constexpr auto k_arg         = cuda::args::constant<k>{};
+  auto num_segs                = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env                     = cuda::std::execution::env{cuda::execution::require(
     cuda::execution::determinism::not_guaranteed,
     cuda::execution::tie_break::unspecified,
     cuda::execution::output_ordering::unsorted)};
@@ -165,24 +149,17 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
   auto error                = cub::DeviceBatchedTopK::MaxPairs(
     nullptr, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k_arg, num_segs, env);
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
-  if (error == cudaSuccess)
-  {
-    error = cub::DeviceBatchedTopK::MaxPairs(
-      thrust::raw_pointer_cast(temp_storage.data()),
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      segment_sizes,
-      k_arg,
-      num_segs,
-      env);
-  }
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceBatchedTopK::MaxPairs failed with status: " << error << '\n';
-  }
+  error = cub::DeviceBatchedTopK::MaxPairs(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
   // example-end batched-topk-max-pairs
 
   REQUIRE(error == cudaSuccess);
@@ -229,10 +206,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
   auto d_values_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(values_out.data())), k);
 
-  auto segment_sizes = cuda::args::constant<segment_size>{};
-  auto k_arg         = cuda::args::constant<k>{};
-  auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
-  auto env           = cuda::std::execution::env{cuda::execution::require(
+  constexpr auto segment_sizes = cuda::args::constant<segment_size>{};
+  constexpr auto k_arg         = cuda::args::constant<k>{};
+  auto num_segs                = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env                     = cuda::std::execution::env{cuda::execution::require(
     cuda::execution::determinism::not_guaranteed,
     cuda::execution::tie_break::unspecified,
     cuda::execution::output_ordering::unsorted)};
@@ -241,24 +218,17 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
   auto error                = cub::DeviceBatchedTopK::MinPairs(
     nullptr, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k_arg, num_segs, env);
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
-  if (error == cudaSuccess)
-  {
-    error = cub::DeviceBatchedTopK::MinPairs(
-      thrust::raw_pointer_cast(temp_storage.data()),
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      segment_sizes,
-      k_arg,
-      num_segs,
-      env);
-  }
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceBatchedTopK::MinPairs failed with status: " << error << '\n';
-  }
+  error = cub::DeviceBatchedTopK::MinPairs(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
   // example-end batched-topk-min-pairs
 
   REQUIRE(error == cudaSuccess);

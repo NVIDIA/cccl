@@ -510,7 +510,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
 }
 
 // Users may pass `k` and `num_segments` un-annotated. A plain integral value is taken as a uniform immediate with no
-// compile-time bound. 
+// compile-time bound.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys accept unwrapped (plain integral) k and num_segments",
          "[keys][segmented][topk][device]",
          key_types,
