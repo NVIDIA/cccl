@@ -46,6 +46,7 @@ Example
         assert(cuda::bit_ffs(uint32_t{0}) == 0);
         assert(cuda::bit_ffs(uint32_t{1}) == 1);
         assert(cuda::bit_ffs(uint32_t{0b10101000}) == 4);
+        assert(cuda::bit_ffs(~uint32_t{0}) == 1);
     }
 
     int main() {
