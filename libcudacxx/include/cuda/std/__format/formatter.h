@@ -20,8 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/string_view>
+#include <cuda/std/__fwd/format.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -48,7 +47,7 @@ struct __fmt_disabled_formatter
 //! - is_move_constructible_v<F>,
 //! - is_copy_assignable_v<F>, and
 //! - is_move_assignable_v<F>.
-template <class _Tp, class _CharT = char>
+template <class _Tp, class _CharT>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter : __fmt_disabled_formatter
 {};
 
