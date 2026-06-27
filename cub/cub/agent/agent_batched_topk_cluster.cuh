@@ -231,6 +231,12 @@ struct agent_batched_topk_cluster
     Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed;
   static constexpr bool tie_reversed = TieBreak == ::cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
 
+  // The deterministic final scan visits chunks in global-index order and bails early (`should_stop`), so keeping the
+  // *first-visited* chunks resident lets it skip re-reading the streamed overflow. Ascending visits low indices first
+  // (the default low-resident split); descending (prefer-larger) visits high indices first, so we flip the split to
+  // keep the high-index chunks resident (see `run`), restoring symmetry. Never set on the non-deterministic path.
+  static constexpr bool reverse_residency = deterministic && tie_reversed;
+
   // Segments at or below this size that also fit resident in one CTA take the single-CTA fast path (see
   // `process_impl`).
   static constexpr int single_cta_max_segment_size = SingleCtaMaxSegmentSize;
@@ -1301,9 +1307,18 @@ private:
     const offset_t overflow_count = (my_chunks > my_resident_chunks) ? (my_chunks - my_resident_chunks) : offset_t{0};
     if constexpr (use_block_load_to_shared)
     {
-      force_tail_resident = owns_suffix_tail && !peel_tail && overflow_count > 0 && (tail_local >= my_resident_chunks);
+      // Under `reverse_residency` the suffix tail (global-last chunk) is the top resident chunk by construction, so no
+      // forced-tail exception is needed (its suffix is appended to the resident span like any other resident tail).
+      force_tail_resident = !reverse_residency && owns_suffix_tail && !peel_tail && overflow_count > 0
+                         && (tail_local >= my_resident_chunks);
     }
-    const offset_t overflow_base = force_tail_resident ? (my_resident_chunks - offset_t{1}) : my_resident_chunks;
+    // Rank-local base of the resident and overflow (streamed) chunk windows. Default: resident `[0,
+    // my_resident_chunks)`, overflow the high-index rest. `reverse_residency` swaps them: resident `[overflow_count,
+    // my_chunks)`, overflow
+    // `[0, overflow_count)`.
+    const offset_t resident_base = reverse_residency ? overflow_count : offset_t{0};
+    const offset_t overflow_base =
+      reverse_residency ? offset_t{0} : (force_tail_resident ? (my_resident_chunks - offset_t{1}) : my_resident_chunks);
     _CCCL_ASSERT(!force_tail_resident || my_resident_chunks >= offset_t{1},
                  "a forced-resident tail needs at least one resident slot");
 
@@ -1384,9 +1399,12 @@ private:
           // rooted 32-bit shared address (see `bulk_span`) so a spilled cursor cannot demote the reads to `LD`.
           const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_resident_chunks));
 
-          // Resident slot -> rank-local chunk index. Identity, except the last slot holds the forced-resident tail.
+          // Resident slot -> rank-local chunk index. `resident_base + slot` (identity unless `reverse_residency` shifts
+          // the resident window to the high-index chunks), except the last slot holds a forced-resident tail.
           const auto resident_local = [&](offset_t slot) -> offset_t {
-            return (force_tail_resident && slot == my_resident_chunks - offset_t{1}) ? tail_local : slot;
+            return (force_tail_resident && slot == my_resident_chunks - offset_t{1})
+                   ? tail_local
+                   : (resident_base + slot);
           };
           // Aligned bulk of the resident chunk in `slot` (its `count` minus any tail suffix); empty when it has none.
           const auto bulk_src = [&](offset_t slot) -> ::cuda::std::span<const key_t> {
@@ -1464,7 +1482,7 @@ private:
       {
         for (offset_t p = 0; p < my_resident_chunks; ++p)
         {
-          const offset_t chunk_idx = part.global_index(p);
+          const offset_t chunk_idx = part.global_index(resident_base + p);
           const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
           key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
           const int iterations     = ::cuda::ceil_div(chunk.count, threads_per_block);
@@ -1554,7 +1572,7 @@ private:
           {
             for (offset_t p = 0; p < my_resident_chunks; ++p)
             {
-              const offset_t chunk_idx = part.global_index(p);
+              const offset_t chunk_idx = part.global_index(resident_base + p);
               const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
               key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
               for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, add_hist);
@@ -1811,8 +1829,9 @@ private:
         return __syncthreads_or(static_cast<int>(out_now >= num_selected)) != 0;
       };
 
-      // Resident-front extent (bulk path): the contiguous resident span minus the forced-resident tail chunk, which is
-      // visited separately after the overflow because it is the globally-last chunk.
+      // Resident-front extent (bulk path): the contiguous resident span minus the forced-resident tail chunk, visited
+      // separately after the overflow because it is the globally-last chunk. Only the ascending `force_tail_resident`
+      // case splits off a tail; under `reverse_residency` the tail stays folded into the span (`tail_count == 0`).
       int tail_count  = 0;
       int front_count = span_size(resident_keys);
       if constexpr (use_block_load_to_shared)
@@ -1824,9 +1843,10 @@ private:
         }
       }
 
-      // Segment-local base of the resident-front span. The deterministic path's blocked partition keeps the front
-      // chunks contiguous and densely packed, so element `pos` of the front maps to `front_seg_base + pos`.
-      const offset_t front_seg_base = get_chunk(part.first, segment_size_u32, head_items).offset;
+      // Segment-local base of the resident-front span (its lowest-index resident chunk; `resident_base` shifts it to
+      // the high-index window under `reverse_residency`). The blocked partition packs the front contiguously, so
+      // element `pos` maps to `front_seg_base + pos`.
+      const offset_t front_seg_base = get_chunk(part.global_index(resident_base), segment_size_u32, head_items).offset;
 
       auto process_resident = [&](bool reversed) {
         if constexpr (use_block_load_to_shared)
@@ -1862,7 +1882,7 @@ private:
           for (int s = 0; s < rc; ++s)
           {
             const int local_slot     = reversed ? (rc - 1 - s) : s;
-            const offset_t chunk_idx = part.global_index(static_cast<offset_t>(local_slot));
+            const offset_t chunk_idx = part.global_index(resident_base + static_cast<offset_t>(local_slot));
             const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
             const int cc             = chunk.count;
             const offset_t base_off  = chunk.offset;
@@ -2043,6 +2063,9 @@ private:
 
       if constexpr (tie_reversed)
       {
+        // Descending global-index order: peeled suffix tail, resident high-index chunks, streamed low-index overflow,
+        // peeled head prefix. With resident visited before overflow (`reverse_residency`), `should_stop` can skip the
+        // gmem-re-read overflow -- mirroring the ascending path.
         process_tail_edge(true);
         if (!should_stop())
         {
@@ -2050,11 +2073,11 @@ private:
         }
         if (!should_stop())
         {
-          process_overflow(true);
+          process_resident(true);
         }
         if (!should_stop())
         {
-          process_resident(true);
+          process_overflow(true);
         }
         if (!should_stop())
         {
