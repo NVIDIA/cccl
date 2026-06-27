@@ -51,7 +51,7 @@ static_assert(sizeof(blob_header) == 32, "blob_header layout must be stable");
 // allocated with new[] (matching cccl_aot_buffer_free, which does delete[]).
 class buffer_writer
 {
-  std::vector<char> data_;
+  std::vector<char> data;
 
 public:
   void write_bytes(const void* p, size_t n)
@@ -61,7 +61,7 @@ public:
       return;
     }
     const char* src = static_cast<const char*>(p);
-    data_.insert(data_.end(), src, src + n);
+    data.insert(data.end(), src, src + n);
   }
 
   template <class T>
@@ -94,19 +94,19 @@ public:
 
   size_t size() const noexcept
   {
-    return data_.size();
+    return data.size();
   }
 
   // Hands back ownership as a new[]'d buffer. After release() the writer is empty.
   void release(void** out_buf, size_t* out_size)
   {
-    const size_t n = data_.size();
+    const size_t n = data.size();
     auto p         = std::make_unique<char[]>(n);
     if (n > 0)
     {
-      std::memcpy(p.get(), data_.data(), n);
+      std::memcpy(p.get(), data.data(), n);
     }
-    data_.clear();
+    data.clear();
     *out_buf  = p.release();
     *out_size = n;
   }
@@ -117,24 +117,24 @@ public:
 // read_blob_new) are owned by the caller.
 class buffer_reader
 {
-  const char* p_;
-  size_t remaining_;
+  const char* pos;
+  size_t nrem;
 
 public:
   buffer_reader(const void* buf, size_t size)
-      : p_(static_cast<const char*>(buf))
-      , remaining_(size)
+      : pos(static_cast<const char*>(buf))
+      , nrem(size)
   {}
 
   void read_bytes(void* out, size_t n)
   {
-    if (n > remaining_)
+    if (n > nrem)
     {
       throw std::runtime_error("aot blob truncated");
     }
-    std::memcpy(out, p_, n);
-    p_ += n;
-    remaining_ -= n;
+    std::memcpy(out, pos, n);
+    pos += n;
+    nrem -= n;
   }
 
   template <class T>
@@ -155,15 +155,15 @@ public:
     {
       return nullptr;
     }
-    if (n > remaining_)
+    if (n > nrem)
     {
       throw std::runtime_error("aot blob truncated (cstring)");
     }
     auto out = std::make_unique<char[]>(n + 1);
-    std::memcpy(out.get(), p_, n);
+    std::memcpy(out.get(), pos, n);
     out[n] = '\0';
-    p_ += n;
-    remaining_ -= n;
+    pos += n;
+    nrem -= n;
     return out.release();
   }
 
@@ -172,7 +172,7 @@ public:
   void read_blob_new(void** out_buf, size_t* out_size)
   {
     const uint64_t n = read_pod<uint64_t>();
-    if (n > remaining_)
+    if (n > nrem)
     {
       throw std::runtime_error("aot blob truncated (blob)");
     }
@@ -183,9 +183,9 @@ public:
       return;
     }
     auto out = std::make_unique<char[]>(n);
-    std::memcpy(out.get(), p_, n);
-    p_ += n;
-    remaining_ -= n;
+    std::memcpy(out.get(), pos, n);
+    pos += n;
+    nrem -= n;
     *out_buf  = out.release();
     *out_size = n;
   }
@@ -208,7 +208,7 @@ public:
 
   size_t remaining() const noexcept
   {
-    return remaining_;
+    return nrem;
   }
 };
 

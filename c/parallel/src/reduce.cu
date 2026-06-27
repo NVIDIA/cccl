@@ -810,32 +810,36 @@ try
     throw std::runtime_error("aot blob: empty payload");
   }
 
-  std::unique_ptr<cub::detail::reduce::policy_selector, decltype(&std::free)> policy(
-    static_cast<cub::detail::reduce::policy_selector*>(std::malloc(sizeof(cub::detail::reduce::policy_selector))),
-    std::free);
+  const size_t policy_size =
+    (determinism == CCCL_NOT_GUARANTEED)
+      ? sizeof(cub::detail::reduce_nondeterministic::policy_selector)
+      : sizeof(cub::detail::reduce::policy_selector);
+  std::unique_ptr<void, decltype(&std::free)> policy(std::malloc(policy_size), std::free);
   if (!policy)
   {
     return CUDA_ERROR_OUT_OF_MEMORY;
   }
-  r.read_into(policy.get(), sizeof(cub::detail::reduce::policy_selector));
+  r.read_into(policy.get(), policy_size);
 
   std::unique_ptr<char[]> n_single_tile{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_single_tile_second{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_reduction{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_nondeterministic{r.read_cstring_dup()};
 
-  build_ptr->cc                                     = static_cast<int>(h.cc);
-  build_ptr->payload_kind                           = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->accumulator_size                       = accum_size;
-  build_ptr->determinism                            = determinism;
-  build_ptr->payload                                = payload_owner.release();
-  build_ptr->payload_size                           = payload_size;
-  build_ptr->runtime_policy                         = policy.release();
-  build_ptr->runtime_policy_size                    = sizeof(cub::detail::reduce::policy_selector);
-  build_ptr->single_tile_kernel_lowered_name        = n_single_tile.release();
-  build_ptr->single_tile_second_kernel_lowered_name = n_single_tile_second.release();
-  build_ptr->reduction_kernel_lowered_name          = n_reduction.release();
-  build_ptr->nondeterministic_kernel_lowered_name   = n_nondeterministic.release();
+  cccl_device_reduce_build_result_t result{};
+  result.cc                                     = static_cast<int>(h.cc);
+  result.payload_kind                           = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.accumulator_size                       = accum_size;
+  result.determinism                            = determinism;
+  result.payload                                = payload_owner.release();
+  result.payload_size                           = payload_size;
+  result.runtime_policy                         = policy.release();
+  result.runtime_policy_size                    = policy_size;
+  result.single_tile_kernel_lowered_name        = n_single_tile.release();
+  result.single_tile_second_kernel_lowered_name = n_single_tile_second.release();
+  result.reduction_kernel_lowered_name          = n_reduction.release();
+  result.nondeterministic_kernel_lowered_name   = n_nondeterministic.release();
+  *build_ptr                                    = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

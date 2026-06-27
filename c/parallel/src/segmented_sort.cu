@@ -1098,47 +1098,41 @@ inline cccl_op_t deserialize_selector_op(cccl::aot::buffer_reader& r, const char
   op.size      = static_cast<size_t>(r.read_pod<uint64_t>());
   op.alignment = static_cast<size_t>(r.read_pod<uint64_t>());
 
-  // code blob (malloc-allocated to match cleanup's std::free)
+  // code blob — hold in RAII until commit so a throw during read_bytes doesn't leak
   uint64_t code_n = r.read_pod<uint64_t>();
+  std::unique_ptr<void, decltype(&std::free)> code_owner(nullptr, std::free);
   if (code_n > 0)
   {
-    void* p = std::malloc(static_cast<size_t>(code_n));
-    if (!p)
+    code_owner.reset(std::malloc(static_cast<size_t>(code_n)));
+    if (!code_owner)
     {
       throw std::bad_alloc{};
     }
-    r.read_bytes(p, static_cast<size_t>(code_n));
-    op.code      = static_cast<const char*>(p);
-    op.code_size = static_cast<size_t>(code_n);
-  }
-  else
-  {
-    op.code      = nullptr;
-    op.code_size = 0;
+    r.read_bytes(code_owner.get(), static_cast<size_t>(code_n));
   }
 
-  // state blob (also malloc/free)
+  // state blob — same RAII pattern
   uint64_t state_n = r.read_pod<uint64_t>();
   if (state_n != static_cast<uint64_t>(op.size))
   {
     throw std::runtime_error(
       std::format("aot blob: selector op state size mismatch (blob={}, expected={})", state_n, op.size));
   }
+  std::unique_ptr<void, decltype(&std::free)> state_owner(nullptr, std::free);
   if (state_n > 0)
   {
-    void* p = std::malloc(static_cast<size_t>(state_n));
-    if (!p)
+    state_owner.reset(std::malloc(static_cast<size_t>(state_n)));
+    if (!state_owner)
     {
       throw std::bad_alloc{};
     }
-    r.read_bytes(p, static_cast<size_t>(state_n));
-    op.state = p;
-  }
-  else
-  {
-    op.state = nullptr;
+    r.read_bytes(state_owner.get(), static_cast<size_t>(state_n));
   }
 
+  // commit — no throws past this point
+  op.code      = static_cast<const char*>(code_owner.release());
+  op.code_size = static_cast<size_t>(code_n);
+  op.state     = state_owner.release();
   // op.name is not freed by cleanup; safe to point at a string literal.
   op.name = fixed_name;
   // Selector ops never carry extra ltoirs in this codepath.
@@ -1209,6 +1203,10 @@ try
   const auto key_t    = read_type_info(r);
   const auto offset_t = read_type_info(r);
   const auto order    = static_cast<cccl_sort_order_t>(r.read_pod<uint32_t>());
+  if (order != CCCL_ASCENDING && order != CCCL_DESCENDING)
+  {
+    throw std::runtime_error(std::format("aot blob: invalid sort order ({})", static_cast<uint32_t>(order)));
+  }
 
   // selector ops are partial-cleanup-friendly: code+state are malloc'd. If a
   // later step throws, segmented_sort_cleanup will std::free both; the unique
