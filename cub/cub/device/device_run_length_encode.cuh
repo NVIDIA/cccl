@@ -94,7 +94,6 @@ struct DeviceRunLengthEncode
         policy.items_per_thread,
         policy.load_algorithm,
         policy.load_modifier,
-        policy.load_prefetch,
         policy.scan_algorithm,
         policy.lookback_delay};
     }
