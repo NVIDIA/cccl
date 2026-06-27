@@ -175,27 +175,28 @@ inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred_sequence<_Arg, 
 }
 
 // -----------------------------------------------------------------------------
-// A/B/C benchmarking selector for the histogram sweep's small-segment unroll strategy. Only the histogram path is
-// affected; the final filter and copy fast path always use `split_ceil` (mode 1).
-//   1 (default): `ceil` clamp; the predicated remainder is split into a load wave and an apply wave, both unrolled.
-//   2          : `floor` clamp; the remainder is a single non-unrolled fused loop (the pre-optimization baseline).
-//   3          : `ceil` clamp; the remainder is a single fully-unrolled fused loop with the bound check inside each
-//   step.
+// A/B benchmarking selector for the histogram sweep's small-segment unroll strategy. Only the histogram path is
+// affected; the final filter and copy fast path always use `split_ceil`.
+//   1 (default): `fused_floor` -- `floor` clamp; a separate, non-unrolled fused remainder loop after the unpredicated
+//                main tiles.
+//   2          : `unified_ceil` -- `ceil` clamp; no separate remainder. A single outer tile loop whose unrolled, split
+//                load/apply waves are predicated and cover the tail too (pays a per-step bound check on every tile).
 #ifndef CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE
 #  define CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE 1
 #endif
-#if CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE < 1 || CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE > 3
-#  error "CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE must be 1, 2, or 3"
+#if CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE < 1 || CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE > 2
+#  error "CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE must be 1 or 2"
 #endif
 
-// How `for_each_chunk_key_impl` handles the sub-tile remainder (the main full-tile loop is always the unrolled
-// load-wave/apply-wave form). `split_ceil` is the default for every caller; the histogram path may override it via the
-// macro above.
+// How `for_each_chunk_key_impl` covers a chunk. `split_ceil` (the default for every caller, including the final filter)
+// and `fused_floor` keep the unpredicated main tile loop plus a separate remainder (split vs. single fused).
+// `unified_ceil` has no separate remainder: one outer tile loop whose predicated, unrolled load/apply waves also cover
+// the tail.
 enum class chunk_remainder_mode
 {
-  split_ceil, // load wave then apply wave, both unrolled (mode 1)
-  fused_floor, // single non-unrolled fused loop (mode 2)
-  fused_ceil, // single fully-unrolled fused loop, bound check per step (mode 3)
+  split_ceil, // unpredicated main tiles + a split (load wave/apply wave) unrolled, predicated remainder
+  fused_floor, // unpredicated main tiles + a single non-unrolled fused remainder loop
+  unified_ceil, // no separate remainder: every tile (incl. the partial last) uses predicated split unrolled waves
 };
 
 // Cluster top-k agent
@@ -301,20 +302,16 @@ struct agent_batched_topk_cluster
           ::cuda::ceil_div(static_max_segment_size, static_cast<::cuda::std::int64_t>(threads_per_block)))
       : 0;
 
-  // `ceil` (not `floor`) so the whole resident segment fits in a single tile. In `for_each_chunk_key_impl` (histogram
-  // and non-deterministic filter) the unpredicated main loop then runs zero times and the unrolled, predicated
-  // remainder covers every key -- giving small/non-tight segments the same ILP as the hot loop without adding
-  // conditionals to it. Each unroll is capped at its tuning value; non-clamped (large/unbounded) segments keep the full
-  // width.
+  // A `ceil` clamp keeps the whole resident segment inside a single tile (the predicated path in
+  // `for_each_chunk_key_impl` then covers every key in one unrolled pass with the same ILP as the hot loop); a `floor`
+  // clamp leaves a sub-tile remainder for the separate non-unrolled loop. Each unroll is capped at its tuning value;
+  // non-clamped (large/unbounded) segments keep the full width, and the guard keeps the rounds arithmetic in `int`.
   //
-  // The histogram path is the A/B/C subject (see `CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE`): mode 2 clamps to `floor` and
-  // uses a non-unrolled remainder; modes 1/3 clamp to `ceil` and differ only in the remainder shape (split vs. fused);
-  // the final filter and copy always use mode 1's `ceil` + split remainder.
+  // The histogram path is the A/B subject (see `CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE`): mode 1 (`fused_floor`) clamps
+  // to `floor` with a separate non-unrolled remainder; mode 2 (`unified_ceil`) clamps to `ceil` and drops the separate
+  // remainder. The final filter and copy keep `split_ceil` regardless.
   static constexpr chunk_remainder_mode histogram_rem_mode =
-    CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE == 2 ? chunk_remainder_mode::fused_floor
-    : CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE == 3
-      ? chunk_remainder_mode::fused_ceil
-      : chunk_remainder_mode::split_ceil;
+    CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE == 2 ? chunk_remainder_mode::unified_ceil : chunk_remainder_mode::fused_floor;
   static constexpr bool histogram_use_floor = histogram_rem_mode == chunk_remainder_mode::fused_floor;
   static constexpr int histogram_rounds_clamped =
     clamp_items_to_segment
@@ -613,46 +610,31 @@ struct agent_batched_topk_cluster
   }
 
   // Apply `apply(key, local)` to each key of a contiguous chunk (`local` is the key's strided lane index in
-  // `[0, chunk_count)`), processing tiles of `Unroll * threads_per_block` keys. Each full tile is loaded into registers
-  // by one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the histogram passes:
+  // `[0, chunk_count)`), processing tiles of `Unroll * threads_per_block` keys. Each tile is loaded into registers by
+  // one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the histogram passes:
   // `apply`'s SMEM atomics can't be proven disjoint from the SMEM key reads, so a fused loop would interleave each load
   // with its atomic instead of hoisting the whole load wave ahead. `Unroll` is the caller's clamped items-per-thread.
-  // `RemMode` selects the sub-tile remainder shape (the main full-tile loop is always the unrolled split form):
-  // `split_ceil` mirrors the main loop (load wave then apply wave, default), `fused_ceil` is one fully-unrolled fused
-  // loop with the bound check per step, `fused_floor` the same but non-unrolled. See `chunk_remainder_mode`.
+  // `RemMode` selects how the chunk is covered (see `chunk_remainder_mode`):
+  //   `split_ceil`  (default): unpredicated main tiles + a split (load wave/apply wave) unrolled, predicated remainder.
+  //   `fused_floor`          : unpredicated main tiles + a single non-unrolled fused remainder loop.
+  //   `unified_ceil`         : no separate remainder -- one outer tile loop whose split, unrolled load/apply waves are
+  //                            predicated and cover the partial last tile too (a per-step bound check on every tile).
   template <int Unroll, chunk_remainder_mode RemMode = chunk_remainder_mode::split_ceil, typename Apply>
   _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key_impl(const key_t* data, int chunk_count, Apply&& apply) const
   {
-    constexpr int tile   = Unroll * threads_per_block;
-    const int tid        = static_cast<int>(threadIdx.x);
-    const int full_tiles = ::cuda::round_down(chunk_count, tile);
+    constexpr int tile = Unroll * threads_per_block;
+    const int tid      = static_cast<int>(threadIdx.x);
 
-    _CCCL_PRAGMA_NOUNROLL()
-    for (int tile_base = 0; tile_base < full_tiles; tile_base += tile)
+    if constexpr (RemMode == chunk_remainder_mode::unified_ceil)
     {
-      key_t regs[Unroll];
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int t = 0; t < Unroll; ++t)
-      {
-        regs[t] = data[tile_base + t * threads_per_block + tid];
-      }
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int t = 0; t < Unroll; ++t)
-      {
-        const int local = tile_base + t * threads_per_block + tid;
-        apply(regs[t], local);
-      }
-    }
-
-    if (full_tiles < chunk_count)
-    {
-      if constexpr (RemMode == chunk_remainder_mode::split_ceil)
+      _CCCL_PRAGMA_NOUNROLL()
+      for (int tile_base = 0; tile_base < chunk_count; tile_base += tile)
       {
         key_t regs[Unroll];
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int t = 0; t < Unroll; ++t)
         {
-          const int local = full_tiles + t * threads_per_block + tid;
+          const int local = tile_base + t * threads_per_block + tid;
           if (local < chunk_count)
           {
             regs[t] = data[local];
@@ -661,29 +643,60 @@ struct agent_batched_topk_cluster
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int t = 0; t < Unroll; ++t)
         {
-          const int local = full_tiles + t * threads_per_block + tid;
+          const int local = tile_base + t * threads_per_block + tid;
           if (local < chunk_count)
           {
             apply(regs[t], local);
           }
         }
       }
-      else
+    }
+    else
+    {
+      const int full_tiles = ::cuda::round_down(chunk_count, tile);
+
+      _CCCL_PRAGMA_NOUNROLL()
+      for (int tile_base = 0; tile_base < full_tiles; tile_base += tile)
       {
-        // Single fused loop, bound check per step; `fused_ceil` unrolls it, `fused_floor` does not.
-        if constexpr (RemMode == chunk_remainder_mode::fused_ceil)
+        key_t regs[Unroll];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int t = 0; t < Unroll; ++t)
         {
+          regs[t] = data[tile_base + t * threads_per_block + tid];
+        }
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int t = 0; t < Unroll; ++t)
+        {
+          const int local = tile_base + t * threads_per_block + tid;
+          apply(regs[t], local);
+        }
+      }
+
+      if (full_tiles < chunk_count)
+      {
+        if constexpr (RemMode == chunk_remainder_mode::split_ceil)
+        {
+          key_t regs[Unroll];
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int t = 0; t < Unroll; ++t)
           {
             const int local = full_tiles + t * threads_per_block + tid;
             if (local < chunk_count)
             {
-              apply(data[local], local);
+              regs[t] = data[local];
+            }
+          }
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int t = 0; t < Unroll; ++t)
+          {
+            const int local = full_tiles + t * threads_per_block + tid;
+            if (local < chunk_count)
+            {
+              apply(regs[t], local);
             }
           }
         }
-        else
+        else // fused_floor: single non-unrolled fused loop, bound check per step
         {
           _CCCL_PRAGMA_NOUNROLL()
           for (int t = 0; t < Unroll; ++t)
@@ -1464,7 +1477,7 @@ private:
     // reading the keys already staged in `edge_keys`. Used by the histogram passes and the non-deterministic final
     // filter; the deterministic filter folds the edges as separate index-ordered regions instead (see below).
     // `unroll_ic` / `rem_mode_ic` are `integral_constant`s carrying the caller's clamped items-per-thread and its
-    // remainder mode (the histogram may pass a `floor`/fused mode in the A/B/C experiment).
+    // remainder mode (the histogram may pass a `floor`/fused mode in the A/B experiment).
     const auto fold_edges = [&](auto unroll_ic, auto rem_mode_ic, auto&& apply) {
       if constexpr (use_block_load_to_shared)
       {
