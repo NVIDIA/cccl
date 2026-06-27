@@ -9,7 +9,9 @@
 
 #include <cuda/bit>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
