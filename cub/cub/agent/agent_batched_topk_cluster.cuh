@@ -175,6 +175,29 @@ inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred_sequence<_Arg, 
 }
 
 // -----------------------------------------------------------------------------
+// A/B/C benchmarking selector for the histogram sweep's small-segment unroll strategy. Only the histogram path is
+// affected; the final filter and copy fast path always use `split_ceil` (mode 1).
+//   1 (default): `ceil` clamp; the predicated remainder is split into a load wave and an apply wave, both unrolled.
+//   2          : `floor` clamp; the remainder is a single non-unrolled fused loop (the pre-optimization baseline).
+//   3          : `ceil` clamp; the remainder is a single fully-unrolled fused loop with the bound check inside each
+//   step.
+#ifndef CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE
+#  define CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE 1
+#endif
+#if CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE < 1 || CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE > 3
+#  error "CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE must be 1, 2, or 3"
+#endif
+
+// How `for_each_chunk_key_impl` handles the sub-tile remainder (the main full-tile loop is always the unrolled
+// load-wave/apply-wave form). `split_ceil` is the default for every caller; the histogram path may override it via the
+// macro above.
+enum class chunk_remainder_mode
+{
+  split_ceil, // load wave then apply wave, both unrolled (mode 1)
+  fused_floor, // single non-unrolled fused loop (mode 2)
+  fused_ceil, // single fully-unrolled fused loop, bound check per step (mode 3)
+};
+
 // Cluster top-k agent
 // -----------------------------------------------------------------------------
 // Cluster blocks is a runtime value (see `process_impl` for the readback), so
@@ -257,49 +280,56 @@ struct agent_batched_topk_cluster
 
   static constexpr int threads_per_block          = ThreadsPerBlock;
   static constexpr int histogram_items_per_thread = HistogramItemsPerThread;
+  static constexpr int load_align_bytes           = LoadAlignBytes;
+  static constexpr int bits_per_pass              = BitsPerPass;
+  static constexpr int tie_break_items_per_thread = TieBreakItemsPerThread;
+  static constexpr int copy_items_per_thread      = CopyItemsPerThread; // select-all copy fast path
 
   // Static upper bound on segment size: exact for constant/immediate sizes, the type maximum for runtime sizes.
   static constexpr ::cuda::std::int64_t static_max_segment_size =
     ::cuda::args::__traits<SegmentSizeParameterT>::highest;
 
-  // Segments small enough to always be single-CTA resident (one contiguous SMEM span, see `run`) never need more than
-  // `ceil(static_max_segment_size / threads_per_block)` sweep rounds, so we clamp the per-thread unroll to that bound
-  // to trim predication/registers on sub-tile segments. Larger/unbounded types keep the full unroll, so their codegen
-  // is unchanged; the guard also keeps the rounds arithmetic in `int` range.
+  // Segments small enough to always be single-CTA resident (one contiguous SMEM span, see `run`) need at most
+  // `ceil(static_max_segment_size / threads_per_block)` sweep rounds. We clamp each per-thread unroll down to that
+  // bound to trim predication/registers on sub-tile segments. Larger/unbounded types keep the full unroll (codegen
+  // unchanged); the guard also keeps the rounds arithmetic in `int` range.
   static constexpr bool clamp_items_to_segment =
     static_max_segment_size > 0 && static_max_segment_size < single_cta_max_segment_size;
+  static constexpr int segment_rounds_ceil =
+    clamp_items_to_segment
+      ? static_cast<int>(
+          ::cuda::ceil_div(static_max_segment_size, static_cast<::cuda::std::int64_t>(threads_per_block)))
+      : 0;
 
-  // Histogram sweeps clamp to `floor`: the bulk runs unpredicated, leaving a sub-tile predicated tail.
-  static constexpr int histogram_rounds_floor =
-    clamp_items_to_segment ? static_cast<int>(static_max_segment_size / threads_per_block) : histogram_items_per_thread;
+  // `ceil` (not `floor`) so the whole resident segment fits in a single tile. In `for_each_chunk_key_impl` (histogram
+  // and non-deterministic filter) the unpredicated main loop then runs zero times and the unrolled, predicated
+  // remainder covers every key -- giving small/non-tight segments the same ILP as the hot loop without adding
+  // conditionals to it. Each unroll is capped at its tuning value; non-clamped (large/unbounded) segments keep the full
+  // width.
+  //
+  // The histogram path is the A/B/C subject (see `CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE`): mode 2 clamps to `floor` and
+  // uses a non-unrolled remainder; modes 1/3 clamp to `ceil` and differ only in the remainder shape (split vs. fused);
+  // the final filter and copy always use mode 1's `ceil` + split remainder.
+  static constexpr chunk_remainder_mode histogram_rem_mode =
+    CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE == 2 ? chunk_remainder_mode::fused_floor
+    : CUB_DETAIL_TOPK_HISTOGRAM_UNROLL_MODE == 3
+      ? chunk_remainder_mode::fused_ceil
+      : chunk_remainder_mode::split_ceil;
+  static constexpr bool histogram_use_floor = histogram_rem_mode == chunk_remainder_mode::fused_floor;
+  static constexpr int histogram_rounds_clamped =
+    clamp_items_to_segment
+      ? (histogram_use_floor ? static_cast<int>(static_max_segment_size / threads_per_block) : segment_rounds_ceil)
+      : histogram_items_per_thread;
   static constexpr int histogram_items_per_thread_clamped =
-    ::cuda::std::clamp(histogram_rounds_floor, 1, histogram_items_per_thread);
-  static_assert(histogram_items_per_thread_clamped >= 1, "histogram_items_per_thread_clamped must be positive");
-
-  static constexpr int load_align_bytes           = LoadAlignBytes;
-  static constexpr int bits_per_pass              = BitsPerPass;
-  static constexpr int tie_break_items_per_thread = TieBreakItemsPerThread;
-
-  // The final filter clamps to `ceil` so one predicated tile spans the whole resident segment (uniform `pos < count`
-  // guard, no full-vs-partial-tile split for the reversed-tie BlockScan or the atomic writes).
-  static constexpr int tie_break_rounds_ceil =
-    clamp_items_to_segment
-      ? static_cast<int>(
-          ::cuda::ceil_div(static_max_segment_size, static_cast<::cuda::std::int64_t>(threads_per_block)))
-      : tie_break_items_per_thread;
+    ::cuda::std::clamp(histogram_rounds_clamped, 1, histogram_items_per_thread);
   static constexpr int tie_break_items_per_thread_clamped =
-    ::cuda::std::clamp(tie_break_rounds_ceil, 1, tie_break_items_per_thread);
-  static_assert(tie_break_items_per_thread_clamped >= 1, "tie_break_items_per_thread_clamped must be positive");
-
-  // Per-thread unroll for the select-all copy fast path (`copy_segment_select_all`). Clamps to `ceil` like the final
-  // filter: the loops already guard each item with `idx[j] < n`, so a ceil-rounded count stays correct.
-  static constexpr int copy_items_per_thread = CopyItemsPerThread;
-  static constexpr int copy_rounds_ceil =
     clamp_items_to_segment
-      ? static_cast<int>(
-          ::cuda::ceil_div(static_max_segment_size, static_cast<::cuda::std::int64_t>(threads_per_block)))
-      : copy_items_per_thread;
-  static constexpr int copy_items_per_thread_clamped = ::cuda::std::clamp(copy_rounds_ceil, 1, copy_items_per_thread);
+      ? ::cuda::std::clamp(segment_rounds_ceil, 1, tie_break_items_per_thread)
+      : tie_break_items_per_thread;
+  static constexpr int copy_items_per_thread_clamped =
+    clamp_items_to_segment ? ::cuda::std::clamp(segment_rounds_ceil, 1, copy_items_per_thread) : copy_items_per_thread;
+  static_assert(histogram_items_per_thread_clamped >= 1, "histogram_items_per_thread_clamped must be positive");
+  static_assert(tie_break_items_per_thread_clamped >= 1, "tie_break_items_per_thread_clamped must be positive");
   static_assert(copy_items_per_thread_clamped >= 1, "copy_items_per_thread_clamped must be positive");
 
   static constexpr int num_buckets      = 1 << bits_per_pass;
@@ -583,11 +613,14 @@ struct agent_batched_topk_cluster
   }
 
   // Apply `apply(key, local)` to each key of a contiguous chunk (`local` is the key's strided lane index in
-  // `[0, chunk_count)`), processing tiles of `Unroll * threads_per_block` keys. Each tile is loaded into registers by
-  // one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the histogram passes:
+  // `[0, chunk_count)`), processing tiles of `Unroll * threads_per_block` keys. Each full tile is loaded into registers
+  // by one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the histogram passes:
   // `apply`'s SMEM atomics can't be proven disjoint from the SMEM key reads, so a fused loop would interleave each load
   // with its atomic instead of hoisting the whole load wave ahead. `Unroll` is the caller's clamped items-per-thread.
-  template <int Unroll, typename Apply>
+  // `RemMode` selects the sub-tile remainder shape (the main full-tile loop is always the unrolled split form):
+  // `split_ceil` mirrors the main loop (load wave then apply wave, default), `fused_ceil` is one fully-unrolled fused
+  // loop with the bound check per step, `fused_floor` the same but non-unrolled. See `chunk_remainder_mode`.
+  template <int Unroll, chunk_remainder_mode RemMode = chunk_remainder_mode::split_ceil, typename Apply>
   _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key_impl(const key_t* data, int chunk_count, Apply&& apply) const
   {
     constexpr int tile   = Unroll * threads_per_block;
@@ -613,44 +646,76 @@ struct agent_batched_topk_cluster
 
     if (full_tiles < chunk_count)
     {
-      key_t regs[Unroll];
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int t = 0; t < Unroll; ++t)
+      if constexpr (RemMode == chunk_remainder_mode::split_ceil)
       {
-        const int local = full_tiles + t * threads_per_block + tid;
-        if (local < chunk_count)
+        key_t regs[Unroll];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int t = 0; t < Unroll; ++t)
         {
-          regs[t] = data[local];
+          const int local = full_tiles + t * threads_per_block + tid;
+          if (local < chunk_count)
+          {
+            regs[t] = data[local];
+          }
+        }
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int t = 0; t < Unroll; ++t)
+        {
+          const int local = full_tiles + t * threads_per_block + tid;
+          if (local < chunk_count)
+          {
+            apply(regs[t], local);
+          }
         }
       }
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int t = 0; t < Unroll; ++t)
+      else
       {
-        const int local = full_tiles + t * threads_per_block + tid;
-        if (local < chunk_count)
+        // Single fused loop, bound check per step; `fused_ceil` unrolls it, `fused_floor` does not.
+        if constexpr (RemMode == chunk_remainder_mode::fused_ceil)
         {
-          apply(regs[t], local);
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int t = 0; t < Unroll; ++t)
+          {
+            const int local = full_tiles + t * threads_per_block + tid;
+            if (local < chunk_count)
+            {
+              apply(data[local], local);
+            }
+          }
+        }
+        else
+        {
+          _CCCL_PRAGMA_NOUNROLL()
+          for (int t = 0; t < Unroll; ++t)
+          {
+            const int local = full_tiles + t * threads_per_block + tid;
+            if (local < chunk_count)
+            {
+              apply(data[local], local);
+            }
+          }
         }
       }
     }
   }
 
-  template <int Unroll, typename F>
+  template <int Unroll, chunk_remainder_mode RemMode = chunk_remainder_mode::split_ceil, typename F>
   _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key(::cuda::std::span<key_t> chunk_keys, F&& f) const
   {
-    for_each_chunk_key_impl<Unroll>(::cuda::std::data(chunk_keys), span_size(chunk_keys), [&](const key_t& key, int) {
-      f(key);
-    });
+    for_each_chunk_key_impl<Unroll, RemMode>(
+      ::cuda::std::data(chunk_keys), span_size(chunk_keys), [&](const key_t& key, int) {
+        f(key);
+      });
   }
 
   // Like `for_each_chunk_key`, but also hands `f` each key's segment-local index `base_off + local`, where `base_off`
   // is the segment-local offset of the chunk's first element. The pair path uses that index to fetch the key's value
   // payload from gmem, so overflow keys can be reused from the streaming SMEM pipeline instead of re-read from gmem.
-  template <int Unroll, typename F>
+  template <int Unroll, chunk_remainder_mode RemMode = chunk_remainder_mode::split_ceil, typename F>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   for_each_chunk_key_indexed(::cuda::std::span<key_t> chunk_keys, offset_t base_off, F&& f) const
   {
-    for_each_chunk_key_impl<Unroll>(
+    for_each_chunk_key_impl<Unroll, RemMode>(
       ::cuda::std::data(chunk_keys), span_size(chunk_keys), [&](const key_t& key, int local) {
         f(key, base_off + static_cast<offset_t>(local));
       });
@@ -1124,12 +1189,12 @@ private:
     // Apply `f(key)` to every overflow key once, in the current ping-pong direction. See `run_pass` for the overlap
     // semantics of `mid`. `UnrollFactor` partially unrolls the generic (gmem fallback) fold loop; callers pass their
     // clamped items-per-thread.
-    template <int UnrollFactor, typename F, typename Mid>
+    template <int UnrollFactor, chunk_remainder_mode RemMode = chunk_remainder_mode::split_ceil, typename F, typename Mid>
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
     {
       run_pass(
         [&](int stage, offset_t o) {
-          agent.template for_each_chunk_key<UnrollFactor>(stage_span(stage, o), f);
+          agent.template for_each_chunk_key<UnrollFactor, RemMode>(stage_span(stage, o), f);
         },
         [&](const auto& chunk) {
           const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
@@ -1148,22 +1213,22 @@ private:
 
     // Overload with no interleaved work, for the fused first pass where the resident keys are still being streamed in
     // by the BlockLoadToShared pipeline (rather than already resident in SMEM).
-    template <int UnrollFactor, typename F>
+    template <int UnrollFactor, chunk_remainder_mode RemMode = chunk_remainder_mode::split_ceil, typename F>
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f)
     {
-      process_pass<UnrollFactor>(static_cast<F&&>(f), [] {});
+      process_pass<UnrollFactor, RemMode>(static_cast<F&&>(f), [] {});
     }
 
     // Like `process_pass`, but applies `f(key, seg_idx)` where `seg_idx` is the key's segment-local index. The pair
     // final filter needs that index to fetch each selected key's value payload from gmem, while still reusing the
     // overflow keys from the streaming SMEM pipeline (block-load path) instead of re-reading them from gmem.
-    template <int UnrollFactor, typename F, typename Mid>
+    template <int UnrollFactor, chunk_remainder_mode RemMode = chunk_remainder_mode::split_ceil, typename F, typename Mid>
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_indexed(F&& f, Mid&& mid)
     {
       run_pass(
         [&](int stage, offset_t o) {
           const offset_t base_off = agent.get_chunk(chunk_index_of(o), segment_size, head_items).offset;
-          agent.template for_each_chunk_key_indexed<UnrollFactor>(stage_span(stage, o), base_off, f);
+          agent.template for_each_chunk_key_indexed<UnrollFactor, RemMode>(stage_span(stage, o), base_off, f);
         },
         [&](const auto& chunk) {
           const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
@@ -1398,19 +1463,21 @@ private:
     // Fold the persistent boundary edges into `apply` (head prefix on rank 0; peeled tail suffix on the tail owner),
     // reading the keys already staged in `edge_keys`. Used by the histogram passes and the non-deterministic final
     // filter; the deterministic filter folds the edges as separate index-ordered regions instead (see below).
-    // `unroll_ic` is an `integral_constant` carrying the caller's clamped items-per-thread.
-    const auto fold_edges = [&](auto unroll_ic, auto&& apply) {
+    // `unroll_ic` / `rem_mode_ic` are `integral_constant`s carrying the caller's clamped items-per-thread and its
+    // remainder mode (the histogram may pass a `floor`/fused mode in the A/B/C experiment).
+    const auto fold_edges = [&](auto unroll_ic, auto rem_mode_ic, auto&& apply) {
       if constexpr (use_block_load_to_shared)
       {
-        constexpr int unroll = unroll_ic();
+        constexpr int unroll                  = unroll_ic();
+        constexpr chunk_remainder_mode remode = rem_mode_ic();
         if (head_edge_len > 0)
         {
-          this->template for_each_chunk_key<unroll>(
+          this->template for_each_chunk_key<unroll, remode>(
             {temp_storage.edge_keys, static_cast<::cuda::std::size_t>(head_edge_len)}, apply);
         }
         if (tail_edge_len > 0)
         {
-          this->template for_each_chunk_key<unroll>(
+          this->template for_each_chunk_key<unroll, remode>(
             {temp_storage.edge_keys + head_edge_cap, static_cast<::cuda::std::size_t>(tail_edge_len)}, apply);
         }
       }
@@ -1487,7 +1554,7 @@ private:
             const int stage = static_cast<int>(p % static_cast<offset_t>(prologue));
             wait_stage(stage);
             const int read_len = static_cast<int>(::cuda::std::size(bulk_src(p)));
-            for_each_chunk_key<histogram_items_per_thread_clamped>(
+            for_each_chunk_key<histogram_items_per_thread_clamped, histogram_rem_mode>(
               bulk_span({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + read_off)), read_len}),
               add_first_pass);
             read_off += read_len * int{sizeof(key_t)};
@@ -1573,7 +1640,7 @@ private:
       // Fold the overflow chunks into the first-pass histogram. Forward direction; primes the streaming slots. The
       // streamer reuses the resident load's stage barriers (no re-init); `wait_stage` provides the producer/consumer
       // sync.
-      streamer.process_pass<histogram_items_per_thread_clamped>(add_first_pass);
+      streamer.process_pass<histogram_items_per_thread_clamped, histogram_rem_mode>(add_first_pass);
 
       const int resident_count = span_size(resident_keys);
       _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= block_tile_capacity,
@@ -1614,7 +1681,7 @@ private:
             // Rebuild the resident pointer from its 32-bit shared address so the reads stay `LDS` even if the value
             // spilled across the pass loop (see `resident_smem32`).
             key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
-            for_each_chunk_key<histogram_items_per_thread_clamped>(
+            for_each_chunk_key<histogram_items_per_thread_clamped, histogram_rem_mode>(
               {rk, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, add_hist);
           }
           else
@@ -1624,7 +1691,7 @@ private:
               const offset_t chunk_idx = part.global_index(resident_base + p);
               const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
               key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
-              for_each_chunk_key<histogram_items_per_thread_clamped>(
+              for_each_chunk_key<histogram_items_per_thread_clamped, histogram_rem_mode>(
                 {chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, add_hist);
             }
           }
@@ -1633,12 +1700,14 @@ private:
         // Re-stream the overflow chunks into this pass's histogram, overlapping the resident-chunk histogram with the
         // first wave of reload bulk copies. Ping-pongs direction and reuses the turn-around chunks left resident by the
         // previous pass.
-        streamer.process_pass<histogram_items_per_thread_clamped>(add_hist, fold_resident_hist);
+        streamer.process_pass<histogram_items_per_thread_clamped, histogram_rem_mode>(add_hist, fold_resident_hist);
 
         // Fold the persistent boundary edges (loaded once in the first pass) into this pass's histogram, alongside the
         // resident and overflow keys. Keeps every owner's `hist[last_bucket]` (the deterministic cross-CTA prefix
         // input) inclusive of its edge candidates.
-        fold_edges(::cuda::std::integral_constant<int, histogram_items_per_thread_clamped>{}, add_hist);
+        fold_edges(::cuda::std::integral_constant<int, histogram_items_per_thread_clamped>{},
+                   ::cuda::std::integral_constant<chunk_remainder_mode, histogram_rem_mode>{},
+                   add_hist);
       }
 
       // Local barrier is enough: all Step 1 / Step 2 writes to `hist[]`
@@ -2197,7 +2266,9 @@ private:
             }
           }
           // Scan the persistent boundary edges alongside the resident keys (order-independent atomic writes).
-          fold_edges(::cuda::std::integral_constant<int, tie_break_items_per_thread_clamped>{}, write_selected);
+          fold_edges(::cuda::std::integral_constant<int, tie_break_items_per_thread_clamped>{},
+                     ::cuda::std::integral_constant<chunk_remainder_mode, chunk_remainder_mode::split_ceil>{},
+                     write_selected);
         };
         streamer.process_pass<tie_break_items_per_thread_clamped>(write_selected, fold_resident);
       }
