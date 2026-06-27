@@ -13,16 +13,18 @@
 /// printing/output helpers.  See detail.h for the interface.
 
 #include <cuda/algorithm>
+#include <cuda/cmath>
 #include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/algorithm>
 #include <cuda/std/span>
 #include <cuda/stream>
 
-#include <cstdio>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 
-#include "detail.h"
+#include <detail.h>
 
 // ── Image generation ─────────────────────────────────────────────────
 
@@ -130,7 +132,7 @@ struct generate_kernel
 
 void generate_image(cuda::stream_ref stream, tile_buffers& bufs, int num_tiles, cuda::std::span<pixel_t> host_preview)
 {
-  printf("=== Image generation (GPU) ===\n");
+  std::cout << "=== Image generation (GPU) ===\n";
   cuda::timed_event gen_start{stream};
 
   for (int t = 0; t < num_tiles; ++t)
@@ -145,7 +147,7 @@ void generate_image(cuda::stream_ref stream, tile_buffers& bufs, int num_tiles, 
     cuda::launch(stream, config, generate_kernel{}, bufs.dev_tile[0].first(count), image_width, row_offset);
 
     // Downscale the generated tile for the input preview while it's still on device.
-    downscale_tile(stream, bufs, bufs.dev_tile[0].first(count), row_offset, tile_rows, host_preview);
+    downscale_tile(stream, bufs, 0, bufs.dev_tile[0].first(count), row_offset, tile_rows, host_preview);
 
     // Copy generated tile to host for the histogram pass.
     cuda::copy_bytes(stream, bufs.dev_tile[0].first(count), bufs.host_image.subspan(offset, count));
@@ -154,11 +156,11 @@ void generate_image(cuda::stream_ref stream, tile_buffers& bufs, int num_tiles, 
   cuda::timed_event gen_end{stream};
   stream.sync();
   const double gen_ms = (gen_end - gen_start).count() / 1e6;
-  printf("  Generated %dx%d space observation (%.0f MB) in ~%.1f ms\n\n",
-         image_width,
-         image_height,
-         image_pixels * sizeof(pixel_t) / (1024.0 * 1024.0),
-         gen_ms);
+  std::cout
+    << "  Generated " << image_width << 'x' << image_height << " space observation (" << std::fixed
+    << std::setprecision(0) << image_pixels * sizeof(pixel_t) / (1024.0 * 1024.0) << " MB) in ~" << std::setprecision(1)
+    << gen_ms << " ms\n\n"
+    << std::defaultfloat << std::setprecision(6);
 }
 
 // ── Printing / output helpers ────────────────────────────────────────
@@ -167,41 +169,48 @@ void print_device_info(cuda::device_ref dev, cuda::arch_traits_t traits, size_t 
 {
   const auto name = dev.name();
   const auto cc   = dev.attribute(cuda::device_attributes::compute_capability);
-  printf("\nSelected device %d: %.*s\n", dev.get(), static_cast<int>(name.size()), name.data());
-  printf("  Compute capability: %d.%d\n", cc.major_cap(), cc.minor_cap());
-  printf("  Total memory      : %.0f MB\n", total_mem / (1024.0 * 1024.0));
-  printf("  Max threads/block : %d\n", traits.max_threads_per_block);
-  printf("  Max shared memory : %zu bytes\n", traits.max_shared_memory_per_block);
+  std::cout << "\nSelected device " << dev.get() << ": ";
+  std::cout.write(name.data(), static_cast<std::streamsize>(name.size()));
+  std::cout
+    << "\n  Compute capability: " << cc.major_cap() << '.' << cc.minor_cap() << "\n  Total memory      : " << std::fixed
+    << std::setprecision(0) << total_mem / (1024.0 * 1024.0) << " MB"
+    << "\n  Max threads/block : " << traits.max_threads_per_block
+    << "\n  Max shared memory : " << traits.max_shared_memory_per_block << " bytes\n"
+    << std::defaultfloat << std::setprecision(6);
 }
 
 void print_tile_plan(int tile_rows, int tile_alignment, int num_tiles, size_t budget, size_t total_mem)
 {
-  printf("\nTile plan:\n");
-  printf("  Image          : %d x %d (%.0f MB)\n",
-         image_width,
-         image_height,
-         image_pixels * sizeof(pixel_t) / (1024.0 * 1024.0));
-  printf("  GPU budget     : %.0f MB (60%% of %.0f MB)\n", budget / (1024.0 * 1024.0), total_mem / (1024.0 * 1024.0));
-  printf("  Tile rows      : %d (aligned to %d)\n", tile_rows, tile_alignment);
-  printf("  Number of tiles: %d\n\n", num_tiles);
+  std::cout
+    << "\nTile plan:\n"
+    << "  Image          : " << image_width << " x " << image_height << " (" << std::fixed << std::setprecision(0)
+    << image_pixels * sizeof(pixel_t) / (1024.0 * 1024.0) << " MB)\n"
+    << "  GPU budget     : " << budget / (1024.0 * 1024.0) << " MB (60% of " << total_mem / (1024.0 * 1024.0)
+    << " MB)\n"
+    << "  Tile rows      : " << tile_rows << " (aligned to " << tile_alignment << ")\n"
+    << "  Number of tiles: " << num_tiles << "\n\n"
+    << std::defaultfloat << std::setprecision(6);
 }
 
 void print_allocation_info(size_t device_total, size_t gpu_budget, size_t tile_pixels, int tile_rows)
 {
-  printf("  Device pool: %.1f MB (initial), %.1f MB (max)\n",
-         device_total / (1024.0 * 1024.0),
-         gpu_budget / (1024.0 * 1024.0));
-  printf("  Tile size: %zu pixels (%d rows x %d cols)\n", tile_pixels, tile_rows, image_width);
-  printf("  Pinned host: image=%.1f MB, histogram=%zu bytes\n\n",
-         image_pixels * sizeof(pixel_t) / (1024.0 * 1024.0),
-         num_bins * sizeof(int));
+  std::cout
+    << std::fixed << std::setprecision(1) << "  Device pool: " << device_total / (1024.0 * 1024.0) << " MB (initial), "
+    << gpu_budget / (1024.0 * 1024.0) << " MB (max)\n"
+    << "  Tile size: " << tile_pixels << " pixels (" << tile_rows << " rows x " << image_width << " cols)\n"
+    << "  Pinned host: image=" << image_pixels * sizeof(pixel_t) / (1024.0 * 1024.0)
+    << " MB, histogram=" << num_bins * sizeof(int) << " bytes\n\n"
+    << std::defaultfloat << std::setprecision(6);
 }
 
-void print_pool_stats(tile_buffers& bufs, cuda::device_ref device)
+void print_pool_stats(tile_buffers& bufs)
 {
   const auto reserved = bufs.device_pool.get().attribute(cuda::memory_pool_attributes::reserved_mem_current);
   const auto used     = bufs.device_pool.get().attribute(cuda::memory_pool_attributes::used_mem_current);
-  printf("  Device pool: reserved=%.1f MB, used=%.1f MB\n", reserved / (1024.0 * 1024.0), used / (1024.0 * 1024.0));
+  std::cout
+    << std::fixed << std::setprecision(1) << "  Device pool: reserved=" << reserved / (1024.0 * 1024.0)
+    << " MB, used=" << used / (1024.0 * 1024.0) << " MB\n"
+    << std::defaultfloat << std::setprecision(6);
 }
 
 iqr_result compute_iqr(cuda::std::span<const int> hist, size_t total)
@@ -225,40 +234,45 @@ iqr_result compute_iqr(cuda::std::span<const int> hist, size_t total)
 void print_pass_stats(double ms, long long total_selected, double mean_selected, float global_min, float global_max)
 {
   // Note: times measured via cuda::timed_event are approximate GPU-side measurements.
-  printf("  Pass time: ~%.1f ms\n", ms);
-  printf("  Pixels above threshold: %lld / %zu (%.1f%%)\n",
-         total_selected,
-         image_pixels,
-         100.0 * total_selected / image_pixels);
-  printf("  Selected range: [%.4f, %.4f], mean=%.4f\n", global_min, global_max, mean_selected);
+  std::cout
+    << std::fixed << std::setprecision(1) << "  Pass time: ~" << ms << " ms\n"
+    << "  Pixels above threshold: " << total_selected << " / " << image_pixels << " ("
+    << 100.0 * total_selected / image_pixels << "%)\n"
+    << std::setprecision(4) << "  Selected range: [" << global_min << ", " << global_max << "], mean=" << mean_selected
+    << '\n'
+    << std::defaultfloat << std::setprecision(6);
 }
 
 void print_sanity_check(iqr_result orig, iqr_result eq)
 {
   const bool ok = eq.width() > orig.width();
-  printf("=== Sanity check ===\n");
-  printf("  Original IQR (25th-75th):   [%d, %d] (span %d)\n", orig.p25, orig.p75, orig.width());
-  printf("  Equalized IQR (25th-75th):  [%d, %d] (span %d)\n", eq.p25, eq.p75, eq.width());
-  printf("  Equalization spread distribution: %s\n\n", ok ? "YES" : "NO");
+  std::cout
+    << "=== Sanity check ===\n"
+    << "  Original IQR (25th-75th):   [" << orig.p25 << ", " << orig.p75 << "] (span " << orig.width() << ")\n"
+    << "  Equalized IQR (25th-75th):  [" << eq.p25 << ", " << eq.p75 << "] (span " << eq.width() << ")\n"
+    << "  Equalization spread distribution: " << (ok ? "YES" : "NO") << "\n\n";
 }
 
 void print_summary(int num_tiles, int tile_rows, double pass1_ms, double pass2_ms, bool ok)
 {
-  printf("=== Summary ===\n");
-  printf("  Image:          %d x %d\n", image_width, image_height);
-  printf("  Tiles:          %d (%d rows each)\n", num_tiles, tile_rows);
-  printf("  Pass 1 (hist):  ~%.1f ms\n", pass1_ms);
-  printf("  Pass 2 (stats): ~%.1f ms\n", pass2_ms);
-  printf("  Total pipeline: ~%.1f ms\n", pass1_ms + pass2_ms);
-  printf("  Result:         %s\n", ok ? "PASSED" : "FAILED");
+  std::cout
+    << "=== Summary ===\n"
+    << "  Image:          " << image_width << " x " << image_height << '\n'
+    << "  Tiles:          " << num_tiles << " (" << tile_rows << " rows each)\n"
+    << std::fixed << std::setprecision(1) << "  Pass 1 (hist):  ~" << pass1_ms << " ms\n"
+    << "  Pass 2 (stats): ~" << pass2_ms << " ms\n"
+    << "  Total pipeline: ~" << pass1_ms + pass2_ms << " ms\n"
+    << "  Result:         " << (ok ? "PASSED" : "FAILED") << '\n'
+    << std::defaultfloat << std::setprecision(6);
 }
 
-void write_bmp(const char* filename, cuda::std::span<const pixel_t> data, int width, int height)
+bool write_bmp(const char* filename, cuda::std::span<const pixel_t> data, int width, int height)
 {
   std::ofstream file(filename, std::ios::binary);
   if (!file)
   {
-    return;
+    std::cerr << "Failed to open " << filename << " for writing\n";
+    return false;
   }
 
   // BMP rows must be padded to a 4-byte boundary.
@@ -320,5 +334,12 @@ void write_bmp(const char* filename, cuda::std::span<const pixel_t> data, int wi
     }
   }
 
-  printf("  Wrote %s (%d x %d)\n", filename, width, height);
+  if (!file)
+  {
+    std::cerr << "Failed to write " << filename << '\n';
+    return false;
+  }
+
+  std::cout << "  Wrote " << filename << " (" << width << " x " << height << ")\n";
+  return true;
 }

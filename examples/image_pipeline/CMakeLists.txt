@@ -10,6 +10,11 @@
 
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
+# Default to building for the GPU on the current system.
+if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES native)
+endif()
+
 project(IMAGE_PIPELINE_EXAMPLE CUDA CXX)
 
 # This example requires CUDA 13.1+ for the libcu++ runtime APIs.
@@ -44,16 +49,12 @@ CPMAddPackage(
   GIT_SHALLOW ON
 )
 
-# Default to building for the GPU on the current system
-if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES native)
-endif()
-
 # Image processing pipeline — a multi-file example showcasing the libcu++
 # runtime APIs: device selection, memory pools, buffers, copy_bytes,
 # fill_bytes, double-buffered streams, events, timed events, and CUB
-# device-wide operations (histogram, select, reduce, transform).
+# operations (histogram, transform, transform-reduce, block reduce).
 add_executable(image_pipeline main.cu detail.cu)
+target_include_directories(image_pipeline PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(image_pipeline PRIVATE CCCL::CCCL)
 # Device lambdas (used in CUB transform/reduce ops) require extended lambda support.
 target_compile_options(

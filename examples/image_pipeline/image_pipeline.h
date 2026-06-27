@@ -56,15 +56,15 @@ struct device_plan
 struct tile_buffers
 {
   cuda::device_buffer<pixel_t> dev_tile[2]; // double-buffered H2D
-  cuda::device_buffer<float> dev_float_tile; // normalized float tile
-  cuda::device_buffer<int> dev_histogram; // per-tile histogram
+  cuda::device_buffer<float> dev_float_tile[2]; // normalized float tile
+  cuda::device_buffer<int> dev_histogram[2]; // per-tile histogram
   cuda::device_buffer<float4> dev_tile_stats; // per-tile reduction: {count, min, max, sum}
   cuda::device_buffer<pixel_t> dev_lut; // equalization LUT
-  cuda::device_buffer<pixel_t> dev_equalized; // equalized tile
+  cuda::device_buffer<pixel_t> dev_equalized[2]; // equalized tile
   cuda::host_buffer<pixel_t> host_image; // full image in pinned memory
   cuda::host_buffer<int> host_tile_histograms; // per-tile histograms
   cuda::host_buffer<float4> host_tile_stats; // per-tile stats readback
-  cuda::device_buffer<pixel_t> dev_preview; // downscaled preview tile
+  cuda::device_buffer<pixel_t> dev_preview[2]; // downscaled preview tile
 
   cuda::mr::shared_resource<cuda::device_memory_pool> device_pool;
   size_t tile_pixels;
