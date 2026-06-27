@@ -63,6 +63,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -538,55 +539,47 @@ struct agent_batched_topk_cluster
   }
 
   // Apply `apply(key, local)` to each key of a contiguous chunk (`local` is the key's strided lane index in
-  // `[0, chunk_count)`), processing tiles of `histogram_items_per_thread * threads_per_block` keys. Each tile is loaded
-  // into registers by one unrolled loop, then handed to `apply` by a second. Splitting the loads out matters for the
-  // histogram passes: `apply`'s SMEM atomics can't be proven disjoint from the SMEM key reads, so a fused loop would
-  // interleave each load with its atomic instead of hoisting the whole load wave ahead.
+  // `[0, chunk_count)`). Keys are visited in `threads_per_block`-wide rounds via an unroll cascade: phase `p` drains
+  // blocks of `U = histogram_items_per_thread >> p` rounds while at least `U` remain, so the bulk runs at `U == IPT`
+  // and smaller `U` mop up the leftover (the last phase is always `U == 1`); this avoids the `IPT`-wide per-item
+  // predication a single drain loop would emit on sub-tile segments. The fully unrolled phase loop makes `U` a per-copy
+  // constant so the inner block loops unroll. Loads are hoisted ahead of the applies: `apply`'s SMEM atomics can't be
+  // proven disjoint from the SMEM key reads, so a fused loop would serialize each load with its atomic.
   template <typename Apply>
   _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key_impl(const key_t* data, int chunk_count, Apply&& apply) const
   {
-    constexpr int tile   = histogram_items_per_thread * threads_per_block;
-    const int tid        = static_cast<int>(threadIdx.x);
-    const int full_tiles = ::cuda::round_down(chunk_count, tile);
+    const int tid     = static_cast<int>(threadIdx.x);
+    int rounds        = chunk_count / threads_per_block; // full `threads_per_block`-wide rounds
+    const int partial = chunk_count - rounds * threads_per_block;
+    int base          = 0;
 
-    _CCCL_PRAGMA_NOUNROLL()
-    for (int tile_base = 0; tile_base < full_tiles; tile_base += tile)
+    constexpr int phases = ::cuda::std::bit_width(static_cast<unsigned>(histogram_items_per_thread));
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int phase = 0; phase < phases; ++phase)
     {
-      key_t regs[histogram_items_per_thread];
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int t = 0; t < histogram_items_per_thread; ++t)
+      const int unroll = histogram_items_per_thread >> phase;
+      _CCCL_PRAGMA_NOUNROLL()
+      while (rounds >= unroll)
       {
-        regs[t] = data[tile_base + t * threads_per_block + tid];
-      }
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int t = 0; t < histogram_items_per_thread; ++t)
-      {
-        const int local = tile_base + t * threads_per_block + tid;
-        apply(regs[t], local);
+        key_t regs[histogram_items_per_thread];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int t = 0; t < unroll; ++t)
+        {
+          regs[t] = data[base + t * threads_per_block + tid];
+        }
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int t = 0; t < unroll; ++t)
+        {
+          apply(regs[t], base + t * threads_per_block + tid);
+        }
+        base += unroll * threads_per_block;
+        rounds -= unroll;
       }
     }
 
-    if (full_tiles < chunk_count)
+    if (tid < partial)
     {
-      key_t regs[histogram_items_per_thread];
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int t = 0; t < histogram_items_per_thread; ++t)
-      {
-        const int local = full_tiles + t * threads_per_block + tid;
-        if (local < chunk_count)
-        {
-          regs[t] = data[local];
-        }
-      }
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int t = 0; t < histogram_items_per_thread; ++t)
-      {
-        const int local = full_tiles + t * threads_per_block + tid;
-        if (local < chunk_count)
-        {
-          apply(regs[t], local);
-        }
-      }
+      apply(data[base + tid], base + tid);
     }
   }
 
