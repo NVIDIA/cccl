@@ -55,6 +55,7 @@ CPMAddPackage(
 # operations (histogram, transform, transform-reduce, block reduce).
 add_executable(image_pipeline main.cu detail.cu)
 target_include_directories(image_pipeline PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_compile_features(image_pipeline PRIVATE cuda_std_17)
 target_link_libraries(image_pipeline PRIVATE CCCL::CCCL)
 # Device lambdas (used in CUB transform/reduce ops) require extended lambda support.
 target_compile_options(
@@ -62,7 +63,14 @@ target_compile_options(
   PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
 )
 
-# This is only relevant for internal testing and not needed by end users.
-include(CTest)
-enable_testing()
-add_test(NAME image_pipeline COMMAND image_pipeline)
+option(
+  IMAGE_PIPELINE_ENABLE_RUNTIME_TEST
+  "Enable the image_pipeline CTest runtime test. Requires a GPU and several GB of host/device memory."
+  OFF
+)
+
+if (IMAGE_PIPELINE_ENABLE_RUNTIME_TEST)
+  include(CTest)
+  enable_testing()
+  add_test(NAME image_pipeline COMMAND image_pipeline)
+endif()

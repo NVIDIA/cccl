@@ -37,13 +37,13 @@ void print_pool_stats(tile_buffers& bufs);
 struct iqr_result
 {
   int p25, p75;
-  [[nodiscard]] int width() const
+  [[nodiscard]] int width() const noexcept
   {
     return p75 - p25;
   }
 };
 
-[[nodiscard]] iqr_result compute_iqr(cuda::std::span<const int> hist, size_t total);
+[[nodiscard]] iqr_result compute_iqr(cuda::std::span<const histogram_count_t> hist, size_t total);
 void print_pass_stats(double ms, long long total_selected, double mean_selected, float global_min, float global_max);
 void print_sanity_check(iqr_result orig, iqr_result eq);
 void print_summary(int num_tiles, int tile_rows, double pass1_ms, double pass2_ms, bool ok);

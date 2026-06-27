@@ -25,6 +25,9 @@
 /// Pixel type: 8-bit grayscale.
 using pixel_t = uint8_t;
 
+/// Full-image histogram count type.
+using histogram_count_t = long long;
+
 /// Image dimensions.  65K x 65K (~4 GB raw).  Large enough that
 /// the working set won't fit in most GPUs, forcing real tiling.
 /// Note: the full image is held in pinned host memory (~4 GB).

@@ -89,13 +89,18 @@ static device_plan select_device_and_plan()
   const size_t budget          = static_cast<size_t>(best_mem * 0.60);
   const size_t overhead        = 128 * 1024 * 1024;
   const size_t bytes_per_pixel = 4 * sizeof(pixel_t) + 2 * sizeof(float);
-  const size_t max_tile_pixels = (budget - overhead) / bytes_per_pixel;
-  int tile_rows                = static_cast<int>(max_tile_pixels / image_width);
+  const size_t usable_budget   = (budget > overhead) ? (budget - overhead) : 0;
+  const size_t budget_rows     = usable_budget / bytes_per_pixel / image_width;
 
-  constexpr int tile_alignment = 32;
-  tile_rows                    = (tile_rows / tile_alignment) * tile_alignment;
-  tile_rows                    = cuda::std::clamp(tile_rows, tile_alignment, image_height);
-  const int num_tiles          = cuda::ceil_div(image_height, tile_rows);
+  constexpr int tile_alignment = preview_scale;
+  const size_t max_launch_rows =
+    (static_cast<size_t>(cuda::std::numeric_limits<int>::max()) / image_width / tile_alignment) * tile_alignment;
+  const size_t max_tile_rows     = cuda::std::min(static_cast<size_t>(image_height), max_launch_rows);
+  const size_t aligned_tile_rows = (budget_rows / tile_alignment) * tile_alignment;
+  const auto clamped_tile_rows =
+    cuda::std::clamp(aligned_tile_rows, static_cast<size_t>(tile_alignment), max_tile_rows);
+  const int tile_rows = static_cast<int>(clamped_tile_rows);
+  const int num_tiles = cuda::ceil_div(image_height, tile_rows);
 
   print_tile_plan(tile_rows, tile_alignment, num_tiles, budget, best_mem);
   return {best, tile_rows, num_tiles, budget};
@@ -188,7 +193,7 @@ static void download_tile_histogram(cuda::stream_ref stream, tile_buffers& bufs,
   cuda::copy_bytes(stream, bufs.dev_histogram[slot], bufs.host_tile_histograms.subspan(offset, num_bins));
 }
 
-static void accumulate_histograms(tile_buffers& bufs, int num_tiles, cuda::std::span<int> result)
+static void accumulate_histograms(tile_buffers& bufs, int num_tiles, cuda::std::span<histogram_count_t> result)
 {
   for (int i = 0; i < num_bins; ++i)
   {
@@ -317,7 +322,7 @@ static tile_stats accumulate_tile_stats(tile_buffers& bufs, int num_tiles)
 
 // ── Host-side algorithms ─────────────────────────────────────────────
 
-static float compute_otsu_threshold(cuda::std::span<const int> histogram, size_t total_pixels)
+static float compute_otsu_threshold(cuda::std::span<const histogram_count_t> histogram, size_t total_pixels)
 {
   double total_sum = 0;
   for (int i = 0; i < num_bins; ++i)
@@ -351,8 +356,8 @@ static float compute_otsu_threshold(cuda::std::span<const int> histogram, size_t
   return static_cast<float>(best_t) / cuda::std::numeric_limits<pixel_t>::max();
 }
 
-static void
-build_equalization_lut(cuda::std::span<const int> histogram, size_t total_pixels, cuda::std::span<pixel_t> lut_out)
+static void build_equalization_lut(
+  cuda::std::span<const histogram_count_t> histogram, size_t total_pixels, cuda::std::span<pixel_t> lut_out)
 {
   constexpr double max_val = cuda::std::numeric_limits<pixel_t>::max();
   const double scale       = max_val / static_cast<double>(total_pixels);
@@ -513,7 +518,7 @@ try
             << std::defaultfloat << std::setprecision(6);
 
   // ── 5. Otsu threshold + equalization LUT ───────────────────────────
-  cuda::std::array<int, num_bins> original_hist{};
+  cuda::std::array<histogram_count_t, num_bins> original_hist{};
   cuda::std::span global_hist_span{original_hist};
   accumulate_histograms(bufs, plan.num_tiles, global_hist_span);
 
@@ -584,7 +589,7 @@ try
   // ── 8. Sanity check ────────────────────────────────────────────────
   const auto orig_iqr = compute_iqr(cuda::std::span{original_hist}, image_pixels);
 
-  cuda::std::array<int, num_bins> equalized_hist{};
+  cuda::std::array<histogram_count_t, num_bins> equalized_hist{};
   accumulate_histograms(bufs, plan.num_tiles, cuda::std::span{equalized_hist});
   const auto eq_iqr = compute_iqr(cuda::std::span{equalized_hist}, image_pixels);
 

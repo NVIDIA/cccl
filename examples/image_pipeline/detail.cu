@@ -213,11 +213,11 @@ void print_pool_stats(tile_buffers& bufs)
     << std::defaultfloat << std::setprecision(6);
 }
 
-iqr_result compute_iqr(cuda::std::span<const int> hist, size_t total)
+iqr_result compute_iqr(cuda::std::span<const histogram_count_t> hist, size_t total)
 {
   auto find_percentile = [&](float pct) {
-    const size_t target = static_cast<size_t>(total * pct);
-    size_t cumulative   = 0;
+    const auto target = static_cast<histogram_count_t>(static_cast<double>(total) * pct);
+    histogram_count_t cumulative{};
     for (size_t i = 0; i < hist.size(); ++i)
     {
       cumulative += hist[i];
