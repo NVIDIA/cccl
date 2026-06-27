@@ -194,6 +194,7 @@ template <int ThreadsPerBlock,
           int TieBreakItemsPerThread,
           int SingleCtaMaxSegmentSize,
           int MinChunksPerCta,
+          int CopyItemsPerThread,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -289,6 +290,18 @@ struct agent_batched_topk_cluster
   static constexpr int tie_break_items_per_thread_clamped =
     ::cuda::std::clamp(tie_break_rounds_ceil, 1, tie_break_items_per_thread);
   static_assert(tie_break_items_per_thread_clamped >= 1, "tie_break_items_per_thread_clamped must be positive");
+
+  // Per-thread unroll for the select-all copy fast path (`copy_segment_select_all`). Clamps to `ceil` like the final
+  // filter: the loops already guard each item with `idx[j] < n`, so a ceil-rounded count stays correct.
+  static constexpr int copy_items_per_thread = CopyItemsPerThread;
+  static constexpr int copy_rounds_ceil =
+    clamp_items_to_segment
+      ? static_cast<int>(
+          ::cuda::ceil_div(static_max_segment_size, static_cast<::cuda::std::int64_t>(threads_per_block)))
+      : copy_items_per_thread;
+  static constexpr int copy_items_per_thread_clamped = ::cuda::std::clamp(copy_rounds_ceil, 1, copy_items_per_thread);
+  static_assert(copy_items_per_thread_clamped >= 1, "copy_items_per_thread_clamped must be positive");
+
   static constexpr int num_buckets      = 1 << bits_per_pass;
   using smem_layout_t                   = smem_block_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
   static constexpr int chunk_items      = smem_layout_t::chunk_items;
@@ -296,6 +309,7 @@ struct agent_batched_topk_cluster
   static constexpr int slot_alignment   = smem_layout_t::slot_alignment;
 
   static_assert(PipelineStages > 0);
+  static_assert(CopyItemsPerThread > 0, "copy_items_per_thread must be positive");
   static_assert(HistogramItemsPerThread > 0, "histogram_items_per_thread must be positive");
   static_assert(TieBreakItemsPerThread > 0, "tie_break_items_per_thread must be positive");
   static_assert(ChunkBytes > 0);
@@ -2316,7 +2330,7 @@ private:
     unsigned int cluster_rank,
     unsigned int cluster_blocks)
   {
-    constexpr int copy_items    = 8;
+    constexpr int copy_items    = copy_items_per_thread_clamped;
     const offset_t n            = static_cast<offset_t>(segment_size);
     const offset_t cluster_tid  = cluster_rank * static_cast<offset_t>(blockDim.x) + threadIdx.x;
     const offset_t cluster_tids = cluster_blocks * static_cast<offset_t>(blockDim.x);

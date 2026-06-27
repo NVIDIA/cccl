@@ -31,10 +31,8 @@ struct cluster_topk_policy
   int min_blocks_per_sm;
   int tie_break_items_per_thread;
   int single_cta_max_segment_size;
-  // Minimum chunks a CTA must own to belong to a segment's effective cluster. At 1 the effective cluster is just the
-  // CTAs that receive any chunk; a larger value trades parallelism for fewer, busier CTAs (and shrinks the
-  // host-launched cluster). Used by both the host cluster-blocks cap and the device per-segment effective cluster.
   int min_chunks_per_cta;
+  int copy_items_per_thread;
 };
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_policy() -> cluster_topk_policy
@@ -49,7 +47,8 @@ struct cluster_topk_policy
     /*min_blocks_per_sm=*/1,
     /*tie_break_items_per_thread=*/8,
     /*single_cta_max_segment_size=*/8 * 1024,
-    /*min_chunks_per_cta=*/1};
+    /*min_chunks_per_cta=*/1,
+    /*copy_items_per_thread=*/8};
 }
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto is_valid_policy(cluster_topk_policy policy) -> bool
