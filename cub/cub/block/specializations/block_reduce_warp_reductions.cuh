@@ -204,7 +204,8 @@ struct BlockReduceWarpReductions
       // Parallel reduction in warp 0.
       if (warp_id == 0)
       {
-        const int num_warps = FullTile ? warps : ::cuda::ceil_div(num_valid, logical_warp_size);
+        const int num_warps =
+          FullTile ? warps : ::cuda::std::min(::cuda::ceil_div(num_valid, logical_warp_size), warps);
 
         constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
         T val;
