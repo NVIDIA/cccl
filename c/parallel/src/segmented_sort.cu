@@ -1288,24 +1288,26 @@ try
     throw;
   }
 
-  build_ptr->cc                                           = static_cast<int>(h.cc);
-  build_ptr->payload_kind                                 = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->key_type                                     = key_t;
-  build_ptr->offset_type                                  = offset_t;
-  build_ptr->order                                        = order;
-  build_ptr->large_segments_selector_op                   = large_op;
-  build_ptr->small_segments_selector_op                   = small_op;
-  build_ptr->payload                                      = payload_owner.release();
-  build_ptr->payload_size                                 = payload_size;
-  build_ptr->runtime_policy                               = sort_policy.release();
-  build_ptr->runtime_policy_size                          = sizeof(cub::detail::segmented_sort::policy_selector);
-  build_ptr->partition_runtime_policy                     = partition_policy.release();
-  build_ptr->partition_runtime_policy_size                = sizeof(cub::detail::three_way_partition::policy_selector);
-  build_ptr->segmented_sort_fallback_kernel_lowered_name  = n_fb.release();
-  build_ptr->segmented_sort_kernel_small_lowered_name     = n_small.release();
-  build_ptr->segmented_sort_kernel_large_lowered_name     = n_large.release();
-  build_ptr->three_way_partition_init_kernel_lowered_name = n_init.release();
-  build_ptr->three_way_partition_kernel_lowered_name      = n_part.release();
+  cccl_device_segmented_sort_build_result_t result{};
+  result.cc                                           = static_cast<int>(h.cc);
+  result.payload_kind                                 = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.key_type                                     = key_t;
+  result.offset_type                                  = offset_t;
+  result.order                                        = order;
+  result.large_segments_selector_op                   = large_op;
+  result.small_segments_selector_op                   = small_op;
+  result.payload                                      = payload_owner.release();
+  result.payload_size                                 = payload_size;
+  result.runtime_policy                               = sort_policy.release();
+  result.runtime_policy_size                          = sizeof(cub::detail::segmented_sort::policy_selector);
+  result.partition_runtime_policy                     = partition_policy.release();
+  result.partition_runtime_policy_size                = sizeof(cub::detail::three_way_partition::policy_selector);
+  result.segmented_sort_fallback_kernel_lowered_name  = n_fb.release();
+  result.segmented_sort_kernel_small_lowered_name     = n_small.release();
+  result.segmented_sort_kernel_large_lowered_name     = n_large.release();
+  result.three_way_partition_init_kernel_lowered_name = n_init.release();
+  result.three_way_partition_kernel_lowered_name      = n_part.release();
+  *build_ptr                                          = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

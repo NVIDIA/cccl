@@ -832,19 +832,21 @@ try
   std::unique_ptr<char[]> n_init{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_sweep{r.read_cstring_dup()};
 
-  build_ptr->cc                        = static_cast<int>(h.cc);
-  build_ptr->payload_kind              = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->counter_type              = counter_t;
-  build_ptr->level_type                = level_t;
-  build_ptr->sample_type               = sample_t;
-  build_ptr->num_active_channels       = nac;
-  build_ptr->may_overflow              = overflow_b;
-  build_ptr->payload                   = payload_owner.release();
-  build_ptr->payload_size              = payload_size;
-  build_ptr->runtime_policy            = policy.release();
-  build_ptr->runtime_policy_size       = sizeof(cub::detail::histogram::policy_selector);
-  build_ptr->init_kernel_lowered_name  = n_init.release();
-  build_ptr->sweep_kernel_lowered_name = n_sweep.release();
+  cccl_device_histogram_build_result_t result{};
+  result.cc                        = static_cast<int>(h.cc);
+  result.payload_kind              = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.counter_type              = counter_t;
+  result.level_type                = level_t;
+  result.sample_type               = sample_t;
+  result.num_active_channels       = nac;
+  result.may_overflow              = overflow_b;
+  result.payload                   = payload_owner.release();
+  result.payload_size              = payload_size;
+  result.runtime_policy            = policy.release();
+  result.runtime_policy_size       = sizeof(cub::detail::histogram::policy_selector);
+  result.init_kernel_lowered_name  = n_init.release();
+  result.sweep_kernel_lowered_name = n_sweep.release();
+  *build_ptr                       = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

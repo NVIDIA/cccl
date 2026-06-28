@@ -739,17 +739,19 @@ try
   std::unique_ptr<char[]> n_partition{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_merge{r.read_cstring_dup()};
 
-  build_ptr->cc                             = static_cast<int>(h.cc);
-  build_ptr->payload_kind                   = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->key_type                       = key_t;
-  build_ptr->item_type                      = item_t;
-  build_ptr->payload                        = payload_owner.release();
-  build_ptr->payload_size                   = payload_size;
-  build_ptr->runtime_policy                 = policy.release();
-  build_ptr->runtime_policy_size            = sizeof(cub::detail::merge_sort::policy_selector);
-  build_ptr->block_sort_kernel_lowered_name = n_block.release();
-  build_ptr->partition_kernel_lowered_name  = n_partition.release();
-  build_ptr->merge_kernel_lowered_name      = n_merge.release();
+  cccl_device_merge_sort_build_result_t result{};
+  result.cc                             = static_cast<int>(h.cc);
+  result.payload_kind                   = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.key_type                       = key_t;
+  result.item_type                      = item_t;
+  result.payload                        = payload_owner.release();
+  result.payload_size                   = payload_size;
+  result.runtime_policy                 = policy.release();
+  result.runtime_policy_size            = sizeof(cub::detail::merge_sort::policy_selector);
+  result.block_sort_kernel_lowered_name = n_block.release();
+  result.partition_kernel_lowered_name  = n_partition.release();
+  result.merge_kernel_lowered_name      = n_merge.release();
+  *build_ptr                            = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

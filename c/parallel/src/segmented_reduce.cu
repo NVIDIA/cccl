@@ -634,14 +634,16 @@ try
 
   std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
 
-  build_ptr->cc                                   = static_cast<int>(h.cc);
-  build_ptr->payload_kind                         = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->accumulator_size                     = accum_size;
-  build_ptr->payload                              = payload_owner.release();
-  build_ptr->payload_size                         = payload_size;
-  build_ptr->runtime_policy                       = policy.release();
-  build_ptr->runtime_policy_size                  = sizeof(cub::detail::segmented_reduce::policy_selector);
-  build_ptr->segmented_reduce_kernel_lowered_name = n_kernel.release();
+  cccl_device_segmented_reduce_build_result_t result{};
+  result.cc                                   = static_cast<int>(h.cc);
+  result.payload_kind                         = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.accumulator_size                     = accum_size;
+  result.payload                              = payload_owner.release();
+  result.payload_size                         = payload_size;
+  result.runtime_policy                       = policy.release();
+  result.runtime_policy_size                  = sizeof(cub::detail::segmented_reduce::policy_selector);
+  result.segmented_reduce_kernel_lowered_name = n_kernel.release();
+  *build_ptr                                  = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

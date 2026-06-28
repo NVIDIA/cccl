@@ -982,17 +982,18 @@ try
 
   std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
 
-  build_ptr->cc                            = static_cast<int>(h.cc);
-  build_ptr->payload_kind                  = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->loaded_bytes_per_iteration    = loaded_bpi;
-  build_ptr->payload                       = payload_owner.release();
-  build_ptr->payload_size                  = payload_size;
-  build_ptr->runtime_policy                = policy.release();
-  build_ptr->runtime_policy_size           = static_cast<size_t>(policy_size);
-  build_ptr->transform_kernel_lowered_name = n_kernel.release();
-  // build_ptr->cache stays null; the kernel-source helpers null-check it and
-  // fall through to recomputing the configs each call. A future enhancement
-  // could lazily allocate one on first use.
+  cccl_device_transform_build_result_t result{};
+  result.cc                            = static_cast<int>(h.cc);
+  result.payload_kind                  = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.loaded_bytes_per_iteration    = loaded_bpi;
+  result.payload                       = payload_owner.release();
+  result.payload_size                  = payload_size;
+  result.runtime_policy                = policy.release();
+  result.runtime_policy_size           = static_cast<size_t>(policy_size);
+  result.transform_kernel_lowered_name = n_kernel.release();
+  // result.cache stays null (zeroed from result{}); kernel-source helpers
+  // null-check it and fall through to recomputing configs each call.
+  *build_ptr = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

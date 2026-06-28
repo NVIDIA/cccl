@@ -893,21 +893,23 @@ try
   std::unique_ptr<char[]> n_init{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_scan{r.read_cstring_dup()};
 
-  build_ptr->cc                         = static_cast<int>(h.cc);
-  build_ptr->payload_kind               = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->input_type                 = in_type;
-  build_ptr->output_type                = out_type;
-  build_ptr->accumulator_type           = accum_type;
-  build_ptr->force_inclusive            = force_inc;
-  build_ptr->init_kind                  = init_kind;
-  build_ptr->description_bytes_per_tile = desc_bytes;
-  build_ptr->payload_bytes_per_tile     = pay_bytes;
-  build_ptr->payload                    = payload_owner.release();
-  build_ptr->payload_size               = payload_size;
-  build_ptr->runtime_policy             = policy.release();
-  build_ptr->runtime_policy_size        = sizeof(cub::detail::scan::policy_selector);
-  build_ptr->init_kernel_lowered_name   = n_init.release();
-  build_ptr->scan_kernel_lowered_name   = n_scan.release();
+  cccl_device_scan_build_result_t result{};
+  result.cc                         = static_cast<int>(h.cc);
+  result.payload_kind               = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.input_type                 = in_type;
+  result.output_type                = out_type;
+  result.accumulator_type           = accum_type;
+  result.force_inclusive            = force_inc;
+  result.init_kind                  = init_kind;
+  result.description_bytes_per_tile = desc_bytes;
+  result.payload_bytes_per_tile     = pay_bytes;
+  result.payload                    = payload_owner.release();
+  result.payload_size               = payload_size;
+  result.runtime_policy             = policy.release();
+  result.runtime_policy_size        = sizeof(cub::detail::scan::policy_selector);
+  result.init_kernel_lowered_name   = n_init.release();
+  result.scan_kernel_lowered_name   = n_scan.release();
+  *build_ptr                        = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

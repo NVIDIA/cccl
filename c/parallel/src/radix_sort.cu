@@ -914,26 +914,28 @@ try
   std::unique_ptr<char[]> n_il{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_os{r.read_cstring_dup()};
 
-  build_ptr->cc                                         = static_cast<int>(h.cc);
-  build_ptr->payload_kind                               = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->key_type                                   = key_t;
-  build_ptr->value_type                                 = value_t;
-  build_ptr->order                                      = order;
-  build_ptr->payload                                    = payload_owner.release();
-  build_ptr->payload_size                               = payload_size;
-  build_ptr->runtime_policy                             = policy.release();
-  build_ptr->runtime_policy_size                        = sizeof(cub::detail::radix_sort::policy_selector);
-  build_ptr->single_tile_kernel_lowered_name            = n_st.release();
-  build_ptr->upsweep_kernel_lowered_name                = n_us.release();
-  build_ptr->alt_upsweep_kernel_lowered_name            = n_aus.release();
-  build_ptr->scan_bins_kernel_lowered_name              = n_sb.release();
-  build_ptr->downsweep_kernel_lowered_name              = n_ds.release();
-  build_ptr->alt_downsweep_kernel_lowered_name          = n_ads.release();
-  build_ptr->histogram_kernel_lowered_name              = n_hist.release();
-  build_ptr->exclusive_sum_kernel_lowered_name          = n_es.release();
-  build_ptr->init_bins_and_counters_kernel_lowered_name = n_ibc.release();
-  build_ptr->init_lookback_kernel_lowered_name          = n_il.release();
-  build_ptr->onesweep_kernel_lowered_name               = n_os.release();
+  cccl_device_radix_sort_build_result_t result{};
+  result.cc                                         = static_cast<int>(h.cc);
+  result.payload_kind                               = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.key_type                                   = key_t;
+  result.value_type                                 = value_t;
+  result.order                                      = order;
+  result.payload                                    = payload_owner.release();
+  result.payload_size                               = payload_size;
+  result.runtime_policy                             = policy.release();
+  result.runtime_policy_size                        = sizeof(cub::detail::radix_sort::policy_selector);
+  result.single_tile_kernel_lowered_name            = n_st.release();
+  result.upsweep_kernel_lowered_name                = n_us.release();
+  result.alt_upsweep_kernel_lowered_name            = n_aus.release();
+  result.scan_bins_kernel_lowered_name              = n_sb.release();
+  result.downsweep_kernel_lowered_name              = n_ds.release();
+  result.alt_downsweep_kernel_lowered_name          = n_ads.release();
+  result.histogram_kernel_lowered_name              = n_hist.release();
+  result.exclusive_sum_kernel_lowered_name          = n_es.release();
+  result.init_bins_and_counters_kernel_lowered_name = n_ibc.release();
+  result.init_lookback_kernel_lowered_name          = n_il.release();
+  result.onesweep_kernel_lowered_name               = n_os.release();
+  *build_ptr                                        = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

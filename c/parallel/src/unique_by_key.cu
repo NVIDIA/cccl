@@ -745,16 +745,18 @@ try
   std::unique_ptr<char[]> n_init{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_sweep{r.read_cstring_dup()};
 
-  build_ptr->cc                               = static_cast<int>(h.cc);
-  build_ptr->payload_kind                     = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->description_bytes_per_tile       = desc_bytes;
-  build_ptr->payload_bytes_per_tile           = pay_bytes;
-  build_ptr->payload                          = payload_owner.release();
-  build_ptr->payload_size                     = payload_size;
-  build_ptr->runtime_policy                   = policy.release();
-  build_ptr->runtime_policy_size              = sizeof(cub::detail::unique_by_key::policy_selector);
-  build_ptr->compact_init_kernel_lowered_name = n_init.release();
-  build_ptr->sweep_kernel_lowered_name        = n_sweep.release();
+  cccl_device_unique_by_key_build_result_t result{};
+  result.cc                               = static_cast<int>(h.cc);
+  result.payload_kind                     = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.description_bytes_per_tile       = desc_bytes;
+  result.payload_bytes_per_tile           = pay_bytes;
+  result.payload                          = payload_owner.release();
+  result.payload_size                     = payload_size;
+  result.runtime_policy                   = policy.release();
+  result.runtime_policy_size              = sizeof(cub::detail::unique_by_key::policy_selector);
+  result.compact_init_kernel_lowered_name = n_init.release();
+  result.sweep_kernel_lowered_name        = n_sweep.release();
+  *build_ptr                              = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
