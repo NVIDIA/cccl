@@ -237,4 +237,9 @@
 // # define __cccl_lib_string_resize_and_overwrite          202110L
 #endif // _CCCL_STD_VER >= 2023
 
+#if _CCCL_STD_VER >= 2026
+#  undef __cccl_lib_atomic_ref
+#  define __cccl_lib_atomic_ref 202603L
+#endif // _CCCL_STD_VER >= 2026
+
 #endif // _CUDA_STD_VERSION

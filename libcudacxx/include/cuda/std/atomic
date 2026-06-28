@@ -38,6 +38,7 @@
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__atomic/wait/notify_wait.h>
 #include <cuda/std/__atomic/api/owned.h>
+#include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__atomic/api/reference.h>
 
 #include <cuda/std/__type_traits/enable_if.h>
@@ -85,6 +86,17 @@ struct atomic : public __atomic_impl<_Tp>
     this->store(__d);
     return __d;
   }
+
+#if _CCCL_STD_VER >= 2026
+  _CCCL_HOST_DEVICE_API constexpr __copy_cv_t<_Tp, void>* address() noexcept
+  {
+    return this->__a.get();
+  }
+  _CCCL_HOST_DEVICE_API constexpr volatile __copy_cv_t<_Tp, void>* address() volatile noexcept
+  {
+    return this->__a.get();
+  }
+#endif // _CCCL_STD_VER >= 2026
 };
 
 // atomic_ref<T>
@@ -106,6 +118,13 @@ struct atomic_ref : public __atomic_ref_impl<_Tp>
     this->store(__v);
     return __v;
   }
+
+#if _CCCL_STD_VER >= 2026
+  _CCCL_HOST_DEVICE_API constexpr __copy_cv_t<_Tp, void>* address() const noexcept
+  {
+    return this->__a.get();
+  }
+#endif // _CCCL_STD_VER >= 2026
 
   _CCCL_HIDE_FROM_ABI atomic_ref(const atomic_ref&) noexcept = default;
   atomic_ref& operator=(const atomic_ref&)                   = delete;

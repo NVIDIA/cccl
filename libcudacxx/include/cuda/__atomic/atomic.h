@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/atomic>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -54,6 +55,17 @@ struct atomic : public ::cuda::std::__atomic_impl<_Tp, _Sco>
     this->store(__d);
     return __d;
   }
+
+#if _CCCL_STD_VER >= 2026
+  _CCCL_HOST_DEVICE_API constexpr ::cuda::std::__copy_cv_t<_Tp, void>* address() noexcept
+  {
+    return this->__a.get();
+  }
+  _CCCL_HOST_DEVICE_API constexpr volatile ::cuda::std::__copy_cv_t<_Tp, void>* address() volatile noexcept
+  {
+    return this->__a.get();
+  }
+#endif // _CCCL_STD_VER >= 2026
 
   _CCCL_HOST_DEVICE_API inline _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
@@ -94,6 +106,13 @@ struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
     this->store(__v);
     return __v;
   }
+
+#if _CCCL_STD_VER >= 2026
+  _CCCL_HOST_DEVICE_API constexpr ::cuda::std::__copy_cv_t<_Tp, void>* address() const noexcept
+  {
+    return this->__a.get();
+  }
+#endif // _CCCL_STD_VER >= 2026
 
   _CCCL_HIDE_FROM_ABI atomic_ref(const atomic_ref&) noexcept = default;
   atomic_ref& operator=(const atomic_ref&)                   = delete;
