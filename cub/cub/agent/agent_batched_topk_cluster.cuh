@@ -57,7 +57,6 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
-#include <cuda/__ptx/instructions/fence.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
@@ -315,9 +314,9 @@ struct agent_batched_topk_cluster
   static constexpr int slot_alignment   = smem_layout_t::slot_alignment;
 
   static_assert(PipelineStages > 0);
-  // `load_phase` and `load_mbar_inited` track one bit per stage in a 32-bit mask.
-  static_assert(PipelineStages <= 32, "PipelineStages must fit in the 32-bit per-stage phase/init masks");
-  // `__block_elect_one`'s `elect.sync` + full-mask `__shfl_sync` over warp 0 require whole warps.
+  // `load_phase` tracks one parity bit per stage in a 32-bit mask.
+  static_assert(PipelineStages <= 32, "PipelineStages must fit in the 32-bit per-stage phase mask");
+  // `__block_elect_one` elects via a full-warp `__shfl_sync` + `elect.sync`, so the block must be whole warps.
   static_assert(ThreadsPerBlock % detail::warp_threads == 0, "ThreadsPerBlock must be a multiple of the warp size");
   static_assert(CopyItemsPerThread > 0, "copy_items_per_thread must be positive");
   static_assert(HistogramItemsPerThread > 0, "histogram_items_per_thread must be positive");
@@ -372,7 +371,7 @@ struct agent_batched_topk_cluster
     offset_t cand_prefix;
     typename block_scan_t::TempStorage scan_storage;
     // One mbarrier handle per pipeline stage, shared by the resident load and the overflow streamer and reused
-    // (ping-ponged) across radix passes; each is initialized once on its first use (see `issue_bulk_copy`).
+    // (ping-ponged) across radix passes; all are initialized once up front by `init_load_barriers`.
     ::cuda::std::uint64_t load_mbar[PipelineStages];
     // Persistent unaligned boundary edges (block-load path only): the head prefix (`[0, head_edge_cap)`, on rank 0) and
     // the peeled tail suffix (`[head_edge_cap, 2 * head_edge_cap)`, on the tail owner when `full_slots == 1`), each
@@ -669,47 +668,29 @@ struct agent_batched_topk_cluster
   // Async bulk-copy pipeline helpers (raw mbarrier + cp.async.bulk via cuda::ptx)
   // ---------------------------------------------------------------------------
   // Inlines BlockLoadToShared's internals (one mbarrier per stage, a single elected thread issuing the TMA copy +
-  // transaction arrival) without its reference member or per-call CommitToken: the only per-stage wait state is one
-  // bit of the per-thread `load_phase` mask, so the pipeline loops spill nothing per stage. SM 9.0+ only (the agent is
-  // gated behind `NV_PROVIDES_SM_90` in `Process`).
+  // transaction arrival) without its reference member or per-call CommitToken: per-stage wait state is one bit of the
+  // per-thread `load_phase` mask, so the pipeline loops spill nothing. SM 9.0+ only (gated by `NV_PROVIDES_SM_90`).
 
-  // Initialize stage `s`'s mbarrier on first touch, so each init overlaps the previous stage's in-flight bulk copy
-  // instead of front-loading them. Idempotent per stage (resident load and streamer share the stages; double-init would
-  // reset the phase and deadlock). The leader fences the init (generic proxy) ahead of its own `cp.async.bulk` (async
-  // proxy); `maybe_publish_load_barriers` then publishes the inits to the other threads.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void init_load_barrier(int s)
+  // Front-load every stage mbarrier before any bulk copy uses it. Init needs no leader or uniform path, so all threads
+  // init distinct stages in parallel via a block-stride loop. The caller's block `__syncthreads()` orders these
+  // generic-proxy inits before the first `cp.async.bulk` issue, so no `fence.proxy.async` is needed (cf.
+  // `BlockLoadToShared`, which front-loads init + `__syncthreads()` likewise).
+  _CCCL_DEVICE _CCCL_FORCEINLINE void init_load_barriers()
   {
-    const ::cuda::std::uint32_t bit = ::cuda::std::uint32_t{1} << s;
-    if (!(load_mbar_inited & bit))
+    _CCCL_PRAGMA_NOUNROLL()
+    for (int s = static_cast<int>(threadIdx.x); s < PipelineStages; s += threads_per_block)
     {
-      if (load_leader)
-      {
-        ::cuda::ptx::mbarrier_init(&temp_storage.load_mbar[s], 1u);
-        ::cuda::ptx::fence_proxy_async(); // order the init ahead of this thread's async bulk copy on the same mbarrier
-      }
-      load_mbar_inited |= bit; // all threads flip the bit so the mask stays uniform across the block
+      ::cuda::ptx::mbarrier_init(&temp_storage.load_mbar[s], 1u);
     }
   }
 
-  // Publish stage mbarriers armed since the `inited_before` snapshot to all threads, before their first `wait_stage`.
-  // Skips the (uniform) barrier when the priming wave armed no fresh stage.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void maybe_publish_load_barriers(::cuda::std::uint32_t inited_before)
-  {
-    if (load_mbar_inited != inited_before)
-    {
-      __syncthreads();
-    }
-  }
-
-  // Issue one aligned global->shared (TMA) bulk copy into `dst` on stage `stage`'s mbarrier from the elected thread,
+  // Issue one aligned global->shared (TMA) bulk copy into `dst` on stage `stage`'s mbarrier from the block leader,
   // which also arrives with the transaction byte count (an empty copy arrives with zero so the phase still completes).
-  // First touch of a stage initializes its mbarrier (see `init_load_barrier`). Each call must be paired, in issue order
+  // The stage mbarrier must already be initialized (see `init_load_barriers`). Each call must be paired, in issue order
   // per stage, with a matching `wait_stage(stage)`.
   _CCCL_DEVICE _CCCL_FORCEINLINE void issue_bulk_copy(int stage, char* dst, ::cuda::std::span<const key_t> src)
   {
-    init_load_barrier(stage);
-    // Only the elected leader (see `load_leader`) drives the mbarrier, for a uniform branch and better mbarrier
-    // codegen.
+    // Only the block leader (see `load_leader`) drives the mbarrier, for a uniform branch and better mbarrier codegen.
     if (!load_leader)
     {
       return;
@@ -777,11 +758,8 @@ struct agent_batched_topk_cluster
   // Per-thread mbarrier phase parity, one bit per pipeline stage (see `wait_stage`); the resident load and the
   // overflow streamer keep their per-stage issue/wait calls balanced so each bit tracks its mbarrier's phase.
   ::cuda::std::uint32_t load_phase{};
-  // One bit per stage, set the first time that stage's mbarrier is initialized (see `issue_bulk_copy`). Kept uniform
-  // across the block (all threads flip the bit) so a priming wave can publish exactly the inits it added with one sync.
-  ::cuda::std::uint32_t load_mbar_inited{};
-  // The single thread elected (once at construction, see `cuda::device::__block_elect_one`) to drive the bulk-copy
-  // mbarriers, cached so the pipeline reuses it instead of re-electing per copy. The block constructs convergently.
+  // The single block leader (warp 0's elected lane) that drives the bulk copies. Elected once at construction (the
+  // block constructs convergently) and cached so the pipeline reuses it instead of re-electing per copy.
   const bool load_leader = ::cuda::device::__block_elect_one();
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_batched_topk_cluster(
@@ -1075,14 +1053,11 @@ private:
           // Wait for all threads to leave the resident load's final wait before re-arming its shared mbarriers; else
           // the phase advances twice and a lagging thread misses the flip and spins forever.
           __syncthreads();
-          // Stages not already armed by the resident load are armed on first touch here, then published before consume.
-          const ::cuda::std::uint32_t inited_before = agent.load_mbar_inited;
           for (int i = 0; i < p_eff; ++i)
           {
             const offset_t o = forward ? static_cast<offset_t>(i) : (m - 1 - static_cast<offset_t>(i));
             issue_load(static_cast<int>(o % pe), o);
           }
-          agent.maybe_publish_load_barriers(inited_before);
           primed = true;
         }
 
@@ -1437,13 +1412,13 @@ private:
       }
     };
 
-    // The stage mbarriers are now armed lazily on first use (see `issue_bulk_copy`). The histogram reset and `state`
-    // were already published by `process_impl`'s sync before `run`, so the block-load path needs no barrier here; the
-    // generic fallback keeps its pass-start barrier.
-    if constexpr (!use_block_load_to_shared)
+    // Front-load all stage mbarrier inits before any bulk copy issues; the barrier below orders them ahead of the first
+    // issue (see `init_load_barriers`). The generic fallback has no mbarriers but keeps the same pass-start barrier.
+    if constexpr (use_block_load_to_shared)
     {
-      __syncthreads();
+      init_load_barriers();
     }
+    __syncthreads();
 
     {
       extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
@@ -1493,16 +1468,13 @@ private:
           int next_off = 0;
 
           // Load every resident chunk's aligned bulk, densely packed in slot order, so the last slot's bulk (the tail
-          // bulk in the forced case) ends the packed region and its suffix can be appended right after it. First touch
-          // arms each stage's mbarrier; `maybe_publish_load_barriers` makes the inits visible before the read loop.
-          const ::cuda::std::uint32_t inited_before = load_mbar_inited;
+          // bulk in the forced case) ends the packed region and its suffix can be appended right after it.
           for (int stage = 0; stage < prologue; ++stage)
           {
             const auto src = bulk_src(static_cast<offset_t>(stage));
             issue_bulk_copy(stage, key_slots + next_off, src);
             next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
           }
-          maybe_publish_load_barriers(inited_before);
 
           // Read cursor trailing the write cursor: chunk `p`'s bulk was written at `read_off` (packed and consumed in
           // the same order), and `bulk_src(p)` recomputes its length, so the read span needs no stored per-stage state.
@@ -1596,8 +1568,8 @@ private:
       }
 
       // Fold the overflow chunks into the first-pass histogram. Forward direction; primes the streaming slots. The
-      // streamer shares the resident load's stage mbarriers: already-armed stages are reused, others are armed on first
-      // touch during priming.
+      // streamer reuses the resident load's stage mbarriers (all front-loaded at `run` entry); `wait_stage` provides
+      // the producer/consumer sync.
       streamer.process_pass<histogram_items_per_thread_clamped>(add_first_pass);
 
       const int resident_count = span_size(resident_keys);
