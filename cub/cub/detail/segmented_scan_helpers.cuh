@@ -13,10 +13,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
@@ -86,7 +91,7 @@ struct schwarz_scan_op
 template <typename V, typename F = bool>
 struct packer
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     return augmented_value_t<V, F>{v, f};
   }
@@ -98,7 +103,7 @@ struct packer_iv
   mutable ScanOp op;
   V init_v;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     V res = v;
     if (f)
@@ -112,7 +117,7 @@ struct packer_iv
 template <typename V, typename F = bool>
 struct projector
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F) const
   {
     return v;
   }
@@ -123,7 +128,7 @@ struct projector_iv
 {
   V init_v;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     return (f) ? init_v : v;
   }
@@ -490,10 +495,10 @@ struct worker_prefix_callback_t
   PrefixT& m_exclusive_prefix;
   BinaryOpT m_scan_op;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE worker_prefix_callback_t(PrefixT& prefix, BinaryOpT& op)
-      : m_exclusive_prefix(prefix)
-      , m_scan_op(op)
-  {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE PrefixT current_prefix() const
+  {
+    return m_exclusive_prefix;
+  }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE PrefixT operator()(PrefixT block_aggregate)
   {
@@ -502,6 +507,282 @@ struct worker_prefix_callback_t
     return previous_prefix;
   }
 };
+
+template <typename PrefixT, typename OpT>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES worker_prefix_callback_t(PrefixT&, OpT) -> worker_prefix_callback_t<PrefixT, OpT>;
+
+// ScopeT should implement uniform thread participation,
+// valid worker_id, collective scan/reduce, and synchronization behavior
+template <::cuda::std::size_t MaxNumSegments,
+          typename OffsetT,
+          typename ScopeT,
+          typename InputBeginOffsetIteratorT,
+          typename InputEndOffsetIteratorT>
+_CCCL_DEVICE _CCCL_FORCEINLINE int preprocess_segment_sizes(
+  ScopeT scope, InputBeginOffsetIteratorT input_begin_idx_it, InputEndOffsetIteratorT input_end_idx_it, int n_segments)
+{
+  scope.init_fixed_size_mask();
+
+  static_assert(MaxNumSegments < ::cuda::std::numeric_limits<int>::max(), "MaxNumSegments is too large to cast to int");
+
+  n_segments        = ::cuda::std::min(n_segments, static_cast<int>(MaxNumSegments));
+  unsigned n_chunks = ::cuda::ceil_div(n_segments, ScopeT::worker_thread_count);
+
+  OffsetT exclusive_prefix = 0;
+  using plus_t             = ::cuda::std::plus<>;
+  const plus_t offsets_scan_op{};
+  worker_prefix_callback_t prefix_callback_op{exclusive_prefix, offsets_scan_op};
+
+  for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
+  {
+    const unsigned work_id = chunk_id * ScopeT::worker_thread_count + scope.worker_id();
+
+    const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;
+    const OffsetT input_segment_end   = (work_id < n_segments) ? input_end_idx_it[work_id] : 0;
+
+    // Treat end_offset < begin_offset as an empty segment
+    const OffsetT segment_size = (::cuda::std::max) (input_segment_end, input_segment_begin) - input_segment_begin;
+
+    const OffsetT prefix = scope.inclusive_scan_segment_size(segment_size, prefix_callback_op);
+
+    if (work_id < n_segments)
+    {
+      scope.store_logical_segment_offset(work_id, prefix);
+    }
+    scope.sync();
+
+    ::cuda::minimum<unsigned int> min_op;
+
+    const unsigned int fixed_size_check =
+      ((work_id >= n_segments) || (prefix == (work_id + 1) * scope.first_logical_segment_offset())) ? 1u : 0u;
+    const unsigned int worker_fixed_size_check = scope.reduce_fixed_size_check(fixed_size_check, min_op);
+    scope.update_fixed_size_mask(worker_fixed_size_check, min_op);
+    scope.sync();
+  }
+
+  return n_segments;
+}
+
+template <int ItemsPerThread,
+          int TileItems,
+          typename OffsetT,
+          typename AccumT,
+          typename ScopeT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void single_segment_scan_chunked(
+  ScopeT scope,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT input_begin_idx,
+  OffsetT input_end_idx,
+  OffsetT output_begin_idx,
+  ScanOpT scan_op,
+  InitValueT initial_value)
+{
+  const OffsetT segment_items = (::cuda::std::max) (input_end_idx, input_begin_idx) - input_begin_idx;
+  const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, TileItems);
+
+  AccumT exclusive_prefix{};
+  worker_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
+
+  AccumT thread_values[ItemsPerThread];
+  for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
+  {
+    const OffsetT chunk_begin = input_begin_idx + chunk_id * TileItems;
+    const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + TileItems, input_end_idx);
+
+    // chunk_size <= TileItems, casting to int is safe
+    const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
+
+    scope.load_single(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+    scope.sync();
+
+    if (chunk_id == 0)
+    {
+      // Initialize exclusive_prefix, referenced from prefix_op
+      scope.scan_first_single(thread_values, initial_value, scan_op, exclusive_prefix);
+    }
+    else
+    {
+      scope.scan_later_single(thread_values, scan_op, prefix_op);
+    }
+    scope.sync();
+
+    scope.store_single(d_out + output_begin_idx + chunk_id * TileItems, thread_values, chunk_size);
+
+    // Avoiding synchronization at the end of last chunk could save up to 10% of performance for very short segments
+    if (++chunk_id < n_chunks)
+    {
+      scope.sync();
+    }
+  }
+}
+
+template <::cuda::std::size_t MaxNumSegments,
+          typename OffsetT,
+          bool UseBranchlessBinarySearch = true,
+          typename ScopeT,
+          typename CumSizesT,
+          typename InputBeginOffsetIteratorT,
+          typename OutputBeginOffsetIteratorT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void select_segment_scan_searcher(
+  ScopeT scope,
+  CumSizesT cum_sizes,
+  int n_segments,
+  bool has_fixed_size_segments,
+  InputBeginOffsetIteratorT input_begin_idx_it,
+  OutputBeginOffsetIteratorT output_begin_idx_it)
+{
+  const OffsetT items_per_worker = cum_sizes[n_segments - 1];
+
+  if (has_fixed_size_segments && (items_per_worker > 0))
+  {
+    const auto segment_size = cum_sizes[0];
+    _CCCL_ASSERT((segment_size > 0) && ((items_per_worker % segment_size) == 0),
+                 "Fixed-size segment invariant violated: segment_size must be positive and divide items_per_worker "
+                 "evenly");
+
+    // fast path: all segments have identical size (checked via fixed_size_mask)
+    // fixed-size searcher can cheaply identify which segment an element belongs to
+    // using segment_id = elem_id / segment_size;
+    const bag_of_fixed_size_segments searcher{segment_size};
+    scope.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_worker);
+  }
+  else
+  {
+    if constexpr (UseBranchlessBinarySearch)
+    {
+      // searcher locates segment_id using branchless (unrolled) linear/binary search in cum_sizes
+      const auto searcher = make_statically_bound_bag_of_segments<MaxNumSegments>(cum_sizes);
+      scope.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_worker);
+    }
+    else
+    {
+      // searcher locates segment_id using linear/binary search in cum_sizes
+      // binary search is using while-loop based cuda::std::upper_bound
+      bag_of_segments searcher{cum_sizes};
+      scope.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_worker);
+    }
+  }
+}
+
+template <bool HasInit,
+          bool IsInclusive,
+          int ItemsPerThread,
+          int TileItems,
+          typename OffsetT,
+          typename AccumT,
+          typename ScopeT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename SearcherT,
+          typename InputBeginOffsetIteratorT,
+          typename OutputBeginOffsetIteratorT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void multi_segment_scan_chunked(
+  ScopeT scope,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ScanOpT scan_op,
+  InitValueT initial_value,
+  const SearcherT& searcher,
+  InputBeginOffsetIteratorT input_begin_idx_it,
+  OutputBeginOffsetIteratorT output_begin_idx_it,
+  OffsetT items_per_worker)
+{
+  using augmented_accum_t   = augmented_value_t<AccumT>;
+  using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
+
+  const OffsetT n_chunks = ::cuda::ceil_div(items_per_worker, TileItems);
+
+  augmented_scan_op_t augmented_scan_op{scan_op};
+
+  augmented_accum_t exclusive_prefix{};
+  worker_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
+
+  augmented_accum_t thread_flag_values[ItemsPerThread];
+  for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
+  {
+    const OffsetT chunk_begin = chunk_id * TileItems;
+    const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + TileItems, items_per_worker);
+
+    // chunk_size <= TileItems, casting to int is safe
+    const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
+
+    // load values, and pack them into head_flag-value pairs
+    {
+      constexpr auto oob_default = augmented_accum_t{AccumT{}, false};
+
+      if constexpr (HasInit)
+      {
+        const packer_iv<ScanOpT, AccumT> packer_op{scan_op, initial_value};
+        multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
+
+        scope.load_multi(it_in, thread_flag_values, chunk_size, oob_default);
+      }
+      else
+      {
+        constexpr packer<AccumT> packer_op{};
+        multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
+
+        scope.load_multi(it_in, thread_flag_values, chunk_size, oob_default);
+      }
+    }
+    scope.sync();
+
+    {
+      if (chunk_id == 0)
+      {
+        augmented_accum_t augmented_init_value{};
+        if constexpr (HasInit)
+        {
+          augmented_init_value = augmented_accum_t{initial_value, false};
+        }
+        else
+        {
+          augmented_init_value = augmented_accum_t{AccumT{}, false};
+        }
+        // Initialize exclusive_prefix, referenced from prefix_op
+        scope.scan_first_multi(thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
+      }
+      else
+      {
+        scope.scan_later_multi(thread_flag_values, augmented_scan_op, prefix_op);
+      }
+    }
+    scope.sync();
+
+    // store prefix-scan values, discarding head flags
+    {
+      const OffsetT output_offset = chunk_id * TileItems;
+
+      if constexpr (IsInclusive)
+      {
+        constexpr projector<AccumT> projector_op{};
+        multi_segmented_output_iterator it_out{d_out, output_offset, searcher, output_begin_idx_it, projector_op};
+
+        scope.store_multi(it_out, thread_flag_values, chunk_size);
+      }
+      else
+      {
+        const projector_iv<AccumT> projector_op{initial_value};
+        multi_segmented_output_iterator it_out{d_out, output_offset, searcher, output_begin_idx_it, projector_op};
+
+        scope.store_multi(it_out, thread_flag_values, chunk_size);
+      }
+    }
+
+    // Avoiding synchronization at the end of last chunk could save up to 10% of performance for very short segments
+    if (++chunk_id < n_chunks)
+    {
+      scope.sync();
+    }
+  }
+}
 } // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END

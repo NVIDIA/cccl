@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! Implement kernel for DeviceSegmentedScan with block-wide workers processing
+//! Implement kernel for DeviceSegmentedScan with warp-wide workers processing
 //! individual segments.
 
 #pragma once
@@ -17,16 +17,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/block/block_load.cuh>
-#include <cub/block/block_reduce.cuh>
-#include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_reduce.cuh> // ThreadReduce
+#include <cub/thread/thread_scan.cuh> // detail::ThreadInclusiveScan
 #include <cub/util_macro.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_reduce.cuh>
+#include <cub/warp/warp_scan.cuh>
+#include <cub/warp/warp_store.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/iterator>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -36,30 +40,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-//! @brief agent_segmented_scan implements CTAs independently processing one or more segments
-//!        of a device-wide segmented prefix scan.
-//!
-//! @tparam SegmentedScanPolicyGetterT
-//!   Nullary callable type for getting SegmentedScanPolicy
-//!
-//! @tparam InputIteratorT
-//!   Random-access input iterator type
-//!
-//! @tparam OutputIteratorT
-//!   Random-access output iterator type
-//!
-//! @tparam OffsetT
-//!   Integer type for global offsets
-//!
-//! @tparam ScanOpT
-//!   Scan functor type
-//!
-//! @tparam InitValueT
-//!   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
-//!
-//! @tparam AccumT
-//!   The type of intermediate accumulator (according to P2322R6)
-//!
 template <typename SegmentedScanPolicyGetterT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -68,7 +48,7 @@ template <typename SegmentedScanPolicyGetterT,
           typename InitValueT,
           typename AccumT,
           bool ForceInclusive = false>
-struct agent_segmented_scan
+struct agent_warp_segmented_scan
 {
 private:
   //---------------------------------------------------------------------
@@ -77,7 +57,7 @@ private:
 
   using input_t = cub::detail::it_value_t<InputIteratorT>;
 
-  static constexpr auto agent_policy = SegmentedScanPolicyGetterT{}().block;
+  static constexpr auto agent_policy = SegmentedScanPolicyGetterT{}().warp;
 
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
@@ -95,24 +75,29 @@ private:
   static constexpr bool is_inclusive     = ForceInclusive || !has_init;
   static constexpr int threads_per_block = agent_policy.threads_per_block;
   static constexpr int items_per_thread  = agent_policy.items_per_thread;
-  static constexpr int tile_items        = threads_per_block * items_per_thread;
+  static constexpr int tile_items        = warp_threads * items_per_thread;
   static constexpr int max_segments      = agent_policy.max_segments;
+
+  static_assert(0 == threads_per_block % warp_threads, "Block size must be a multiple of native warp size");
+
+  static constexpr auto warps_in_block = threads_per_block / warp_threads;
+
+  static_assert(warps_in_block > 0, "Number of warps must be positive");
 
   static constexpr bool multi_segment_enabled = (max_segments > 1);
 
   static constexpr auto load_algorithm  = agent_policy.load_algorithm;
   static constexpr auto store_algorithm = agent_policy.store_algorithm;
-  static constexpr auto scan_algorithm  = agent_policy.scan_algorithm;
 
-  using block_load_t  = BlockLoad<AccumT, threads_per_block, items_per_thread, load_algorithm>;
-  using block_store_t = BlockStore<AccumT, threads_per_block, items_per_thread, store_algorithm>;
-  using block_scan_t  = BlockScan<AccumT, threads_per_block, scan_algorithm>;
+  using warp_load_t  = WarpLoad<AccumT, items_per_thread, load_algorithm>;
+  using warp_store_t = WarpStore<AccumT, items_per_thread, store_algorithm>;
+  using warp_scan_t  = WarpScan<AccumT>;
 
   union _single_segment_algorithms_storage_t
   {
-    typename block_load_t::TempStorage load;
-    typename block_store_t::TempStorage store;
-    typename block_scan_t::TempStorage scan;
+    typename warp_load_t::TempStorage load[warps_in_block];
+    typename warp_store_t::TempStorage store[warps_in_block];
+    typename warp_scan_t::TempStorage scan[warps_in_block];
   };
 
   struct _single_segment_temp_storage_t
@@ -122,56 +107,65 @@ private:
 
   using augmented_accum_t = agent_segmented_scan_compute_t<AccumT, max_segments>;
 
-  using block_load_aug_t    = BlockLoad<augmented_accum_t, threads_per_block, items_per_thread, load_algorithm>;
-  using block_store_aug_t   = BlockStore<augmented_accum_t, threads_per_block, items_per_thread, store_algorithm>;
-  using block_scan_aug_t    = BlockScan<augmented_accum_t, threads_per_block, scan_algorithm>;
-  using block_offset_scan_t = BlockScan<OffsetT, threads_per_block, scan_algorithm>;
-  using block_reduce_t      = BlockReduce<unsigned int, threads_per_block>;
+  using warp_load_aug_t  = WarpLoad<augmented_accum_t, items_per_thread, load_algorithm>;
+  using warp_store_aug_t = WarpStore<augmented_accum_t, items_per_thread, store_algorithm>;
+  using warp_scan_aug_t  = WarpScan<augmented_accum_t>;
+
+  using warp_scan_offsets_t = WarpScan<OffsetT>;
+  using warp_reduce_t       = WarpReduce<unsigned int>;
 
   union _multiple_segment_algorithms_storage_t
   {
-    typename block_load_t::TempStorage load;
-    typename block_store_t::TempStorage store;
-    typename block_scan_t::TempStorage scan;
-    typename block_load_aug_t::TempStorage load_aug;
-    typename block_store_aug_t::TempStorage store_aug;
-    typename block_scan_aug_t::TempStorage scan_aug;
-    typename block_offset_scan_t::TempStorage offset_scan;
-    typename block_reduce_t::TempStorage min_reduce;
+    // storage for single segment per warp method scan_one_segment
+    typename warp_load_t::TempStorage load[warps_in_block];
+    typename warp_store_t::TempStorage store[warps_in_block];
+    typename warp_scan_t::TempStorage scan[warps_in_block];
+    // storage for multiple segments per warp method scan_segments
+    typename warp_load_aug_t::TempStorage load_aug[warps_in_block];
+    typename warp_store_aug_t::TempStorage store_aug[warps_in_block];
+    typename warp_scan_aug_t::TempStorage scan_aug[warps_in_block];
+    typename warp_scan_offsets_t::TempStorage offsets_scan[warps_in_block];
+    typename warp_reduce_t::TempStorage min_reduce[warps_in_block];
   };
 
   struct _multi_segment_temp_storage_t
   {
-    OffsetT logical_segment_offsets[max_segments];
-    unsigned int fixed_size_mask;
+    OffsetT logical_segment_offsets[warps_in_block][max_segments];
+    unsigned int fixed_size_mask[warps_in_block];
     _multiple_segment_algorithms_storage_t reused;
   };
 
   using _TempStorage =
     ::cuda::std::conditional_t<multi_segment_enabled, _multi_segment_temp_storage_t, _single_segment_temp_storage_t>;
 
+  static_assert(sizeof(_TempStorage) <= cub::detail::max_smem_per_block);
+
   _TempStorage& temp_storage; ///< Reference to temp_storage
   wrapped_input_iterator_t d_in; ///< Input data
   OutputIteratorT d_out; ///< Output data
   ScanOpT scan_op; ///< Binary associative scan operator
   InitValueT initial_value; ///< The initial value element for ScanOpT
+  unsigned int warp_id; ///< Warp identifier within CTA
+  unsigned int lane_id; ///< Thread identified within warp
 
+  // Each warp owns a dedicated shared-storage slot. Scope methods must not access
+  // another warp's slot; this invariant is what makes warp-only synchronization sufficient.
   struct scope_t
   {
-    static constexpr unsigned worker_thread_count = threads_per_block;
+    static constexpr unsigned worker_thread_count = warp_threads;
 
-    agent_segmented_scan& agent;
+    agent_warp_segmented_scan& agent;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned worker_id() const
     {
-      return threadIdx.x;
+      return agent.lane_id;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void init_fixed_size_mask()
     {
-      if (worker_id() == 0)
+      if (agent.lane_id == 0)
       {
-        agent.temp_storage.fixed_size_mask = 1u;
+        agent.temp_storage.fixed_size_mask[agent.warp_id] = 1u;
       }
     }
 
@@ -179,36 +173,42 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
     inclusive_scan_segment_size(OffsetT segment_size, PrefixCallbackT& prefix_callback_op)
     {
-      block_offset_scan_t offset_scanner(agent.temp_storage.reused.offset_scan);
+      warp_scan_offsets_t offset_scanner(agent.temp_storage.reused.offsets_scan[agent.warp_id]);
 
       OffsetT prefix;
-      offset_scanner.InclusiveSum(segment_size, prefix, prefix_callback_op);
-      return prefix;
+      OffsetT warp_aggregate;
+      offset_scanner.InclusiveSum(segment_size, prefix, warp_aggregate);
+      const OffsetT warp_prefix = prefix_callback_op(warp_aggregate);
+
+      return warp_prefix + prefix;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void store_logical_segment_offset(unsigned work_id, OffsetT prefix)
     {
-      agent.temp_storage.logical_segment_offsets[work_id] = prefix;
+      _CCCL_ASSERT(work_id < max_segments, "Access violation in work_id index");
+      _CCCL_ASSERT(agent.warp_id < warps_in_block, "Access violation in warp_id index");
+      agent.temp_storage.logical_segment_offsets[agent.warp_id][work_id] = prefix;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT first_logical_segment_offset() const
     {
-      return agent.temp_storage.logical_segment_offsets[0];
+      return agent.temp_storage.logical_segment_offsets[agent.warp_id][0];
     }
 
     template <typename OpT>
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int reduce_fixed_size_check(unsigned int fixed_size_check, OpT min_op)
     {
-      block_reduce_t min_reducer(agent.temp_storage.reused.min_reduce);
+      warp_reduce_t min_reducer(agent.temp_storage.reused.min_reduce[agent.warp_id]);
       return min_reducer.Reduce(fixed_size_check, min_op);
     }
 
     template <typename OpT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void update_fixed_size_mask(unsigned int worker_fixed_size_check, OpT min_op)
     {
-      if (worker_id() == 0)
+      if (agent.lane_id == 0)
       {
-        agent.temp_storage.fixed_size_mask = min_op(agent.temp_storage.fixed_size_mask, worker_fixed_size_check);
+        agent.temp_storage.fixed_size_mask[agent.warp_id] =
+          min_op(agent.temp_storage.fixed_size_mask[agent.warp_id], worker_fixed_size_check);
       }
     }
 
@@ -216,7 +216,7 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     load_single(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size, ItemT oob_default)
     {
-      block_load_t loader(agent.temp_storage.reused.load);
+      warp_load_t loader(agent.temp_storage.reused.load[agent.warp_id]);
       if (chunk_size == tile_items)
       {
         loader.Load(it, thread_values);
@@ -229,17 +229,17 @@ private:
 
     template <typename ItemT, typename InitValueTy, typename OpT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
-    scan_first_single(ItemT (&items)[items_per_thread], InitValueTy init_value, OpT scan_op, ItemT& block_aggregate)
+    scan_first_single(ItemT (&items)[items_per_thread], InitValueTy init_value, OpT scan_op, ItemT& warp_aggregate)
     {
-      block_scan_t scanner(agent.temp_storage.reused.scan);
-      agent.scan_first_tile(scanner, items, init_value, scan_op, block_aggregate);
+      warp_scan_t scanner(agent.temp_storage.reused.scan[agent.warp_id]);
+      agent.scan_first_tile(scanner, items, init_value, scan_op, warp_aggregate);
     }
 
     template <typename ItemT, typename OpT, typename PrefixCallbackT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     scan_later_single(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
     {
-      block_scan_t scanner(agent.temp_storage.reused.scan);
+      warp_scan_t scanner(agent.temp_storage.reused.scan[agent.warp_id]);
       agent.scan_later_tile(scanner, items, scan_op, prefix_op);
     }
 
@@ -247,7 +247,7 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     store_single(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size)
     {
-      block_store_t storer(agent.temp_storage.reused.store);
+      warp_store_t storer(agent.temp_storage.reused.store[agent.warp_id]);
       if (chunk_size == tile_items)
       {
         storer.Store(it, thread_values);
@@ -263,16 +263,16 @@ private:
       const SearcherT& searcher,
       InputBeginOffsetIteratorT input_begin_idx_it,
       OutputBeginOffsetIteratorT output_begin_idx_it,
-      OffsetT items_per_block)
+      OffsetT items_per_warp)
     {
-      agent.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
+      agent.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_warp);
     }
 
     template <typename IteratorT, typename ItemT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     load_multi(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size, ItemT oob_default)
     {
-      block_load_aug_t loader(agent.temp_storage.reused.load_aug);
+      warp_load_aug_t loader(agent.temp_storage.reused.load_aug[agent.warp_id]);
       if (chunk_size == tile_items)
       {
         loader.Load(it, thread_values);
@@ -285,17 +285,17 @@ private:
 
     template <typename ItemT, typename OpT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
-    scan_first_multi(ItemT (&items)[items_per_thread], ItemT init_value, OpT scan_op, ItemT& block_aggregate)
+    scan_first_multi(ItemT (&items)[items_per_thread], ItemT init_value, OpT scan_op, ItemT& warp_aggregate)
     {
-      block_scan_aug_t scanner(agent.temp_storage.reused.scan_aug);
-      agent.scan_first_tile(scanner, items, init_value, scan_op, block_aggregate);
+      warp_scan_aug_t scanner(agent.temp_storage.reused.scan_aug[agent.warp_id]);
+      agent.scan_first_tile(scanner, items, init_value, scan_op, warp_aggregate);
     }
 
     template <typename ItemT, typename OpT, typename PrefixCallbackT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     scan_later_multi(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
     {
-      block_scan_aug_t scanner(agent.temp_storage.reused.scan_aug);
+      warp_scan_aug_t scanner(agent.temp_storage.reused.scan_aug[agent.warp_id]);
       agent.scan_later_tile(scanner, items, scan_op, prefix_op);
     }
 
@@ -303,7 +303,7 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     store_multi(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size)
     {
-      block_store_aug_t storer(agent.temp_storage.reused.store_aug);
+      warp_store_aug_t storer(agent.temp_storage.reused.store_aug[agent.warp_id]);
       if (chunk_size == tile_items)
       {
         storer.Store(it, thread_values);
@@ -316,7 +316,7 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void sync()
     {
-      __syncthreads();
+      __syncwarp();
     }
   };
 
@@ -324,30 +324,17 @@ public:
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
 
-  //---------------------------------------------------------------------
-  // Constructor
-  //---------------------------------------------------------------------
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE agent_segmented_scan(
+  _CCCL_DEVICE _CCCL_FORCEINLINE agent_warp_segmented_scan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT initial_value)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_out(d_out)
       , scan_op(scan_op)
       , initial_value(initial_value)
+      , warp_id(threadIdx.x >> log2_warp_threads)
+      , lane_id(threadIdx.x & (warp_threads - 1))
   {}
 
-  //! @brief Scan one segment of values
-  //!
-  //! @param input_begin_idx
-  //!   Index of start of the segment in input array
-  //!
-  //! @param input_end_idx
-  //!  Index of end of the segment in input array
-  //!
-  //! @param output_begin_idx
-  //!  Index of start of the segment's prefix scan result in the output array
-  //!
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
@@ -355,12 +342,13 @@ public:
       scope_t{*this}, d_in, d_out, input_begin_idx, input_end_idx, output_begin_idx, scan_op, initial_value);
   };
 
-  //! @brief Scan dynamically specified number of segments of values
+  //! @brief Scan dynamically given number of segments of values
+  //! All arguments are warp-uniform
   template <typename InputBeginOffsetIteratorT,
             typename InputEndOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
-            ::cuda::std::size_t NumSegments                  = max_segments,
-            ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
+            ::cuda::std::size_t MaxNumSegments                  = max_segments,
+            ::cuda::std::enable_if_t<(MaxNumSegments > 1), int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments(
     InputBeginOffsetIteratorT input_begin_idx_it,
     InputEndOffsetIteratorT input_end_idx_it,
@@ -374,21 +362,28 @@ public:
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<OutputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
 
-    static_assert(NumSegments <= max_segments,
-                  "Template value NumSegments of scan_segments method must not exceed class template value "
-                  "controlling size of shared memory array");
+    static_assert(MaxNumSegments <= max_segments,
+                  "Template parameter MaxNumSegments must not exceed size of shared array");
 
-    _CCCL_ASSERT(n_segments > 0, "Number of segments per worker should be positive");
-    _CCCL_ASSERT(n_segments <= NumSegments, "Number of segments per worker exceeds statically provisioned storage");
+    _CCCL_ASSERT(n_segments > 0, "Number of segments should be greater than zero");
+    _CCCL_ASSERT(n_segments <= max_segments, "Number of segments should not exceed statically provisioned storage");
 
-    n_segments =
-      preprocess_segment_sizes<NumSegments, OffsetT>(scope_t{*this}, input_begin_idx_it, input_end_idx_it, n_segments);
+    n_segments = preprocess_segment_sizes<MaxNumSegments, OffsetT>(
+      scope_t{*this}, input_begin_idx_it, input_end_idx_it, n_segments);
 
-    const ::cuda::std::span<OffsetT> cum_sizes{
-      temp_storage.logical_segment_offsets, static_cast<::cuda::std::size_t>(n_segments)};
+    // All accesses of logical_segment_offsets from now on are read-only. Elements of
+    // logical_segment_offsets[warp_id] are only accessed by threads with the same warp_id.
 
-    select_segment_scan_searcher<NumSegments, OffsetT>(
-      scope_t{*this}, cum_sizes, n_segments, temp_storage.fixed_size_mask, input_begin_idx_it, output_begin_idx_it);
+    const auto cum_sizes_count = static_cast<::cuda::std::size_t>(n_segments);
+    const ::cuda::std::span<OffsetT> cum_sizes{temp_storage.logical_segment_offsets[warp_id], cum_sizes_count};
+
+    select_segment_scan_searcher<MaxNumSegments, OffsetT>(
+      scope_t{*this},
+      cum_sizes,
+      n_segments,
+      temp_storage.fixed_size_mask[warp_id],
+      input_begin_idx_it,
+      output_begin_idx_it);
   }
 
 private:
@@ -397,7 +392,7 @@ private:
     const SearcherT& searcher,
     InputBeginOffsetIteratorT input_begin_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
-    OffsetT items_per_block)
+    OffsetT items_per_warp)
   {
     multi_segment_scan_chunked<has_init, is_inclusive, items_per_thread, tile_items, OffsetT, AccumT>(
       scope_t{*this},
@@ -408,7 +403,7 @@ private:
       searcher,
       input_begin_idx_it,
       output_begin_idx_it,
-      items_per_block);
+      items_per_warp);
   }
 
   template <typename ScannerT,
@@ -422,40 +417,51 @@ private:
     ItemTy (&items)[items_per_thread],
     InitValueTy init_value,
     ScanOpTy scan_op,
-    ItemTy& block_aggregate)
+    ItemTy& warp_aggregate)
   {
+    // TODO: specialize for items_per_thread == 1
+    ItemTy thread_aggregate = cub::ThreadReduce(items, scan_op);
     if constexpr (HasInit)
     {
       const ItemTy converted_init_value = convert_initial_value<ItemTy>(init_value);
-      if constexpr (IsInclusive)
-      {
-        scanner.InclusiveScan(items, items, converted_init_value, scan_op, block_aggregate);
-      }
-      else
-      {
-        scanner.ExclusiveScan(items, items, converted_init_value, scan_op, block_aggregate);
-      }
-      block_aggregate = scan_op(converted_init_value, block_aggregate);
+      scanner.ExclusiveScan(thread_aggregate, thread_aggregate, converted_init_value, scan_op, warp_aggregate);
+      warp_aggregate = scan_op(converted_init_value, warp_aggregate);
     }
     else
     {
       static_assert(IsInclusive, "Unexpected ExclusiveScan without initial value call");
-      scanner.InclusiveScan(items, items, scan_op, block_aggregate);
+      scanner.ExclusiveScan(thread_aggregate, thread_aggregate, scan_op, warp_aggregate);
     }
-  }
-
-  template <typename ScannerT, typename ItemTy, typename ScanOpTy, typename PrefixCallback, bool IsInclusive = is_inclusive>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  scan_later_tile(ScannerT& scanner, ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallback& prefix_op)
-  {
     if constexpr (IsInclusive)
     {
-      scanner.InclusiveScan(items, items, scan_op, prefix_op);
+      ThreadScanInclusive(items, items, scan_op, thread_aggregate, has_init || (lane_id != 0));
     }
     else
     {
-      scanner.ExclusiveScan(items, items, scan_op, prefix_op);
+      ThreadScanExclusive(items, items, scan_op, thread_aggregate, has_init || (lane_id != 0));
     }
+  }
+
+  template <typename ScannerT, typename ItemTy, typename ScanOpTy, typename PrefixCallbackT, bool IsInclusive = is_inclusive>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  scan_later_tile(ScannerT& scanner, ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallbackT& prefix_op)
+  {
+    // TODO: specialize for items_per_thread == 1
+    const ItemTy init_value = prefix_op.current_prefix();
+    ItemTy thread_aggregate = cub::ThreadReduce(items, scan_op);
+    ItemTy warp_aggregate;
+
+    scanner.ExclusiveScan(thread_aggregate, thread_aggregate, init_value, scan_op, warp_aggregate);
+
+    if constexpr (IsInclusive)
+    {
+      detail::ThreadScanInclusive(items, items, scan_op, thread_aggregate);
+    }
+    else
+    {
+      detail::ThreadScanExclusive(items, items, scan_op, thread_aggregate);
+    }
+    prefix_op(warp_aggregate);
   }
 };
 
@@ -474,8 +480,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
-  _CCCL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
+__launch_bounds__(current_policy<PolicySelector>().warp.threads_per_block)
+  _CCCL_KERNEL_ATTRIBUTES void device_warp_segmented_scan_kernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
     _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,
@@ -487,7 +493,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
   static constexpr auto policy = current_policy<PolicySelector>();
-  static_assert(policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
+  static_assert(policy.warp.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
   struct policy_getter
@@ -498,33 +504,38 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     }
   };
 
-  using agent_t =
-    agent_segmented_scan<policy_getter,
-                         InputIteratorT,
-                         OutputIteratorT,
-                         OffsetT,
-                         ScanOpT,
-                         ActualInitValueT,
-                         AccumT,
-                         ForceInclusive>;
+  using agent_t = agent_warp_segmented_scan<
+    policy_getter,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ScanOpT,
+    ActualInitValueT,
+    AccumT,
+    ForceInclusive>;
 
   __shared__ typename agent_t::TempStorage temp_storage;
 
   const ActualInitValueT _init_value = init_value;
 
-  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by block must be positive");
-  _CCCL_ASSERT(num_segments_per_worker <= policy.block.max_segments,
-               "Requested number of segments to be processed by block exceeds compile-time maximum");
+  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by warp must be positive");
+  _CCCL_ASSERT(num_segments_per_worker <= policy.warp.max_segments,
+               "Requested number of segments to be processed by warp exceeds compile-time maximum");
 
-  const auto work_id = num_segments_per_worker * blockIdx.x;
+  static constexpr unsigned int warps_in_block = int(policy.warp.threads_per_block) >> log2_warp_threads;
+  const unsigned int warp_id                   = threadIdx.x >> log2_warp_threads;
+
+  const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id;
+
+  if (work_id >= n_segments)
+  {
+    return;
+  }
 
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
-  if constexpr (policy.block.max_segments == 1)
+  if constexpr (policy.warp.max_segments == 1)
   {
-    _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_segmented_scan_kernel");
-    _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");
-
     const OffsetT input_begin_idx  = begin_offset_d_in[work_id];
     const OffsetT input_end_idx    = end_offset_d_in[work_id];
     const OffsetT output_begin_idx = begin_offset_d_out[work_id];
@@ -533,29 +544,41 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
   }
   else
   {
-    if (work_id >= n_segments)
+    // Agent consumes interleaved segments to improve CTA memory access locality
+
+    // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
+    // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
+    //
+    //  total_offset = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id +
+    //      warps_in_block * thread_work_id;
+    //
+    using IdT                = decltype(work_id);
+    const auto segment_count = static_cast<IdT>(n_segments);
+
+    const int n_segments_per_warp =
+      (work_id + (num_segments_per_worker - 1) * warps_in_block < segment_count)
+        ? num_segments_per_worker
+        : ::cuda::ceil_div(segment_count - work_id, warps_in_block);
+
+    if (num_segments_per_worker == 1)
     {
-      return;
-    }
+      // This branch is grid-uniform because num_segments_per_worker is a kernel argument. That matters because
+      // scan_one_segment and scan_segments reuse the shared-memory union through different members; mixing those
+      // paths within the same CTA would race.
 
-    const auto start_offset         = work_id;
-    const auto suggested_end_offset = start_offset + num_segments_per_worker;
-
-    using IdT             = decltype(work_id);
-    const auto end_offset = ::cuda::std::min<IdT>(suggested_end_offset, n_segments);
-    int size              = end_offset - start_offset;
-
-    auto worker_input_begin_idx_it  = begin_offset_d_in + start_offset;
-    auto worker_input_end_idx_it    = end_offset_d_in + start_offset;
-    auto worker_output_begin_idx_it = begin_offset_d_out + start_offset;
-
-    if (size == 1)
-    {
-      agent.scan_one_segment(worker_input_begin_idx_it[0], worker_input_end_idx_it[0], worker_output_begin_idx_it[0]);
+      if (n_segments_per_warp == 1)
+      {
+        // only those warps that do not read past end of segment iterators do the work
+        agent.scan_one_segment(begin_offset_d_in[work_id], end_offset_d_in[work_id], begin_offset_d_out[work_id]);
+      }
     }
     else
     {
-      agent.scan_segments(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
+      const ::cuda::strided_iterator raked_input_begin_idx_it{begin_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator raked_input_end_idx_it{end_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator raked_output_begin_idx_it{begin_offset_d_out + work_id, warps_in_block};
+      agent.scan_segments(
+        raked_input_begin_idx_it, raked_input_end_idx_it, raked_output_begin_idx_it, n_segments_per_warp);
     }
   }
 }
