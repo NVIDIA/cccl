@@ -86,17 +86,6 @@ struct atomic : public __atomic_impl<_Tp>
     this->store(__d);
     return __d;
   }
-
-#if _CCCL_STD_VER >= 2026
-  _CCCL_HOST_DEVICE_API constexpr __copy_cv_t<_Tp, void>* address() noexcept
-  {
-    return this->__a.get();
-  }
-  _CCCL_HOST_DEVICE_API constexpr volatile __copy_cv_t<_Tp, void>* address() volatile noexcept
-  {
-    return this->__a.get();
-  }
-#endif // _CCCL_STD_VER >= 2026
 };
 
 // atomic_ref<T>
