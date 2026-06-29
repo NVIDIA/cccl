@@ -100,20 +100,36 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{9, 0})
     {
-      const bool use_bl2sh_keys = can_bulk_keys && key_size != 8;
-      const bool use_bl2sh_pairs =
-        can_bulk_values && !(key_size == 8 && value_size == 8)
+      const bool should_bl2sh_keys = key_size != 8;
+      const bool should_bl2sh_pairs =
+        !(key_size == 8 && value_size == 8)
         && (key_size != 16 || (key_size == 16 && value_size == 1 && offset_size == 4)
             || (key_size == 16 && value_size == 8));
-      return merge_policy{512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, use_bl2sh_keys, use_bl2sh_pairs};
+      // TODO(bgruber): consider not using a combined should_bl2sh flag. Kept to avoid SASS diffs
+      const bool should_bl2sh = value_size == 0 ? should_bl2sh_keys : should_bl2sh_pairs;
+      return merge_policy{
+        512,
+        ipt_800_plus,
+        LOAD_DEFAULT,
+        BLOCK_STORE_WARP_TRANSPOSE,
+        can_bulk_keys && should_bl2sh,
+        can_bulk_values && should_bl2sh};
     }
 
     if (cc >= ::cuda::compute_capability{8, 0})
     {
-      const bool use_bl2sh_keys = can_bulk_keys && key_size < 4;
-      const bool use_bl2sh_pairs =
-        can_bulk_values && (key_size == 1 || (key_size == 2 && value_size < 4) || (key_size == 4 && value_size == 1));
-      return merge_policy{512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, use_bl2sh_keys, use_bl2sh_pairs};
+      const bool should_bl2sh_keys = key_size < 4;
+      const bool should_bl2sh_pairs =
+        key_size == 1 || (key_size == 2 && value_size < 4) || (key_size == 4 && value_size == 1);
+      // TODO(bgruber): consider not using a combined should_bl2sh flag. Kept to avoid SASS diffs
+      const bool should_bl2sh = value_size == 0 ? should_bl2sh_keys : should_bl2sh_pairs;
+      return merge_policy{
+        512,
+        ipt_800_plus,
+        LOAD_DEFAULT,
+        BLOCK_STORE_WARP_TRANSPOSE,
+        can_bulk_keys && should_bl2sh,
+        can_bulk_values && should_bl2sh};
     }
 
     if (cc >= ::cuda::compute_capability{6, 0})
