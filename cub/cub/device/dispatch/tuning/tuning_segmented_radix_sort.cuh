@@ -22,12 +22,11 @@ CUB_NAMESPACE_BEGIN
 namespace detail::segmented_radix_sort
 {
 using radix_sort::make_reg_scaled_radix_sort_downsweep_policy;
-using radix_sort::radix_sort_downsweep_policy;
 
 struct segmented_radix_sort_policy
 {
-  radix_sort_downsweep_policy segmented;
-  radix_sort_downsweep_policy alt_segmented;
+  RadixSortDownsweepPolicy segmented;
+  RadixSortDownsweepPolicy alt_segmented;
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const segmented_radix_sort_policy& lhs, const segmented_radix_sort_policy& rhs)
