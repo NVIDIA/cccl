@@ -22,8 +22,13 @@
 #include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
-#include <cccl/c/aot.h>
 #include <cccl/c/reduce.h>
+
+// AoT serialize/deserialize is a v1-only feature; the header does not exist in
+// the v2 (HostJIT) include tree, and the tests using it are guarded the same way.
+#ifndef CCCL_C_PARALLEL_V2
+#  include <cccl/c/aot.h>
+#endif
 
 using BuildResultT = cccl_device_reduce_build_result_t;
 
