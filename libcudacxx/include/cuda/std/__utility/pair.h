@@ -59,6 +59,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
@@ -91,6 +92,15 @@ template <class _UPair, class _T1, class _T2>
   { // [pairs#pair]-15.3: is_constructible<T2, decltype(get<1>(std​::​forward<UTuple>(u)))>... is true
     return __select_constructor::__invalid;
   }
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  else if constexpr (reference_constructs_from_temporary_v<_T1, decltype(get<0>(::cuda::std::declval<_UPair>()))>
+                     || reference_constructs_from_temporary_v<_T2, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
+  { // [pairs#pair]-17: This constructor is defined as deleted if
+    // reference_constructs_from_temporary_v<T1, decltype(get<0>(FWD(u)))> or
+    // reference_constructs_from_temporary_v<T2, decltype(get<1>(FWD(u)))> is true
+    return __select_constructor::__deleted;
+  }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   else if constexpr (is_convertible_v<decltype(get<0>(::cuda::std::declval<_UPair>())), _T1>
                      && is_convertible_v<decltype(get<1>(::cuda::std::declval<_UPair>())), _T2>)
   { // [pairs#pair]-17 !is_convertible_v<decltype(get<0>(FWD(u))), T1> &&
@@ -341,6 +351,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
   {}
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _U1 = _T1,
+            class _U2 = _T2,
+            __select_constructor _Trait =
+              __tuple_select_variadic_constructible_v<__tuple_types<_T1, _T2>, __tuple_types<_U1, _U2>>,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr pair(_U1&&, _U2&&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   // converting constructors
   template <class _U1,
             class _U2,
@@ -360,6 +379,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(__p.first, __p.second)
   {}
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait            = __pair_select_pair_like_constructible_v<pair<_U1, _U2>&, _T1, _T2>,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr pair(pair<_U1, _U2>&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   template <class _U1,
             class _U2,
             __select_constructor _Trait = __pair_select_pair_like_constructible_v<const pair<_U1, _U2>&, _T1, _T2>,
@@ -377,6 +404,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     is_nothrow_constructible_v<_T1, const _U1&> && is_nothrow_constructible_v<_T2, const _U2&>)
       : __base(__p.first, __p.second)
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<const pair<_U1, _U2>&, _T1, _T2>,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr pair(const pair<_U1, _U2>&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   template <class _U1,
             class _U2,
@@ -396,6 +431,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
   {}
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<pair<_U1, _U2>&&, _T1, _T2>,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr pair(pair<_U1, _U2>&&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
   template <class _U1,
             class _U2,
             __select_constructor _Trait = __pair_select_pair_like_constructible_v<const pair<_U1, _U2>&&, _T1, _T2>,
@@ -413,6 +456,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
       : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _U1,
+            class _U2,
+            __select_constructor _Trait = __pair_select_pair_like_constructible_v<const pair<_U1, _U2>&&, _T1, _T2>,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  constexpr pair(const pair<_U1, _U2>&&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
@@ -432,9 +483,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
           // NOLINTEND(bugprone-use-after-move)
         )
   {}
-  // NOLINTEND(bugprone-forwarding-reference-overload)
 
-  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
             enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
@@ -446,6 +495,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
       : __base(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
                ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _UPair,
+            enable_if_t<!is_same_v<remove_cvref_t<_UPair>, pair>, int> = 0,
+            __select_constructor _Trait            = __pair_select_pair_like_constructible_v<_UPair, _T1, _T2>,
+            enable_if_t<__is_deleted<_Trait>, int> = 0>
+  _CCCL_API constexpr pair(_UPair&&) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class... _Args1, class... _Args2>

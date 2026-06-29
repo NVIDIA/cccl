@@ -150,12 +150,6 @@ TEST_FUNC constexpr bool test()
 
     test_pair_non_const<ConvertingType&, int, false>();
     test_pair_non_const<ExplicitTypes::ConvertingType&, int, false>();
-    // Unfortunately the below conversions are allowed and create dangling
-    // references.
-    test_pair_non_const<ConvertingType&&, int>();
-    test_pair_non_const<ConvertingType const&, int>();
-    test_pair_non_const<ConvertingType const&&, int>();
-    // But these are not because the converting constructor is explicit.
     test_pair_non_const<ExplicitTypes::ConvertingType&&, int, false>();
     test_pair_non_const<ExplicitTypes::ConvertingType const&, int, false>();
     test_pair_non_const<ExplicitTypes::ConvertingType const&&, int, false>();
