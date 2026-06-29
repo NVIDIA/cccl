@@ -112,7 +112,7 @@ struct policy_selector
     {
       const bool use_bl2sh_keys = can_bulk_keys && key_size < 4;
       const bool use_bl2sh_pairs =
-        can_bulk_values && key_size == 1 || (key_size == 2 && value_size < 4) || (key_size == 4 && value_size == 1);
+        can_bulk_values && (key_size == 1 || (key_size == 2 && value_size < 4) || (key_size == 4 && value_size == 1));
       return merge_policy{512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, use_bl2sh_keys, use_bl2sh_pairs};
     }
 
