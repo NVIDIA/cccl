@@ -152,7 +152,7 @@
 #  define __cccl_lib_atomic_flag_test              201907L
 #  define __cccl_lib_atomic_float                  201711L
 #  define __cccl_lib_atomic_lock_free_type_aliases 201907L
-#  define __cccl_lib_atomic_ref                    201806L
+#  define __cccl_lib_atomic_ref                    202603L
 // # define __cccl_lib_atomic_shared_ptr                    201711L
 #  define __cccl_lib_atomic_value_initialization 201911L
 #  define __cccl_lib_atomic_wait                 201907L
@@ -236,10 +236,5 @@
 // # define __cccl_lib_string_contains                      202011L
 // # define __cccl_lib_string_resize_and_overwrite          202110L
 #endif // _CCCL_STD_VER >= 2023
-
-#if _CCCL_STD_VER >= 2026
-#  undef __cccl_lib_atomic_ref
-#  define __cccl_lib_atomic_ref 202603L
-#endif // _CCCL_STD_VER >= 2026
 
 #endif // _CUDA_STD_VERSION
