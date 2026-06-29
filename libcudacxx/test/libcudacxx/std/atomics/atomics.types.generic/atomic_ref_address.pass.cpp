@@ -100,7 +100,6 @@ struct TestAddressCV
 
 int main(int, char**)
 {
-#if _CCCL_STD_VER >= 2026
   TestAddress<int>()();
   TestAddress<float>()();
   TestAddress<int*>()();
@@ -114,9 +113,6 @@ int main(int, char**)
 
   TestAddressCV<int>()();
   TestAddressCV<float>()();
-#else
-  // atomic_ref::address() is only available in C++26
-#endif // _CCCL_STD_VER >= 2026
 
   return 0;
 }
