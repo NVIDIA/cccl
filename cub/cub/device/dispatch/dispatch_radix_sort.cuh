@@ -653,12 +653,10 @@ private:
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
-              init_startup_blocks,
-              init_startup_threads,
-              reinterpret_cast<long long>(stream));
-#endif
+      detail::log("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
+                  init_startup_blocks,
+                  init_startup_threads,
+                  reinterpret_cast<long long>(stream));
 
       if (const auto error = CubDebug(
             launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)

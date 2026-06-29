@@ -976,9 +976,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   constexpr int init_kernel_threads = 128;
   const int init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+  detail::log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 
   // Invoke init_kernel to initialize tile descriptors
   if (const auto error = CubDebug(
@@ -1019,17 +1017,16 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
   for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
   {
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            start_tile,
-            scan_grid_size,
-            active_policy.threads_per_block,
-            (long long) stream,
-            active_policy.items_per_thread,
-            scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    // Log scan_kernel configuration
+    detail::log(
+      "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
+      "per thread, %d SM occupancy\n",
+      start_tile,
+      scan_grid_size,
+      active_policy.threads_per_block,
+      (long long) stream,
+      active_policy.items_per_thread,
+      scan_sm_occupancy);
 
     // Invoke scan_kernel
     if (const auto error = CubDebug(
@@ -1195,12 +1192,8 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     constexpr auto init_kernel_threads = 128;
     const auto init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_kernel_threads,
-            (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    detail::log(
+      "Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, dependent_launch)
@@ -1227,10 +1220,9 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   // Invoke scan kernel
   {
     const int block_dim = detail::scan::num_total_threads(lookahead_policy);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog(
+    detail::log(
+
       "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
-#  endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
           launcher_factory(scan_grid_dim, block_dim, smem_size, stream, dependent_launch)
