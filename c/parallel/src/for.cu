@@ -405,11 +405,16 @@ try
     throw std::runtime_error("aot blob: empty or missing static kernel name");
   }
 
-  build_ptr->cc                         = static_cast<int>(h.cc);
-  build_ptr->payload_kind               = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  build_ptr->payload                    = payload_owner.release();
-  build_ptr->payload_size               = payload_size;
-  build_ptr->static_kernel_lowered_name = n_kernel.release();
+  // Commit-on-success: populate a zero-initialized local result and assign it only
+  // after all reads succeed. This guarantees the load-only fields (library,
+  // static_kernel) are null and leaves *build_ptr untouched on any earlier throw.
+  cccl_device_for_build_result_t result{};
+  result.cc                         = static_cast<int>(h.cc);
+  result.payload_kind               = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.payload                    = payload_owner.release();
+  result.payload_size               = payload_size;
+  result.static_kernel_lowered_name = n_kernel.release();
+  *build_ptr                        = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

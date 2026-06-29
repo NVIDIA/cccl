@@ -27,19 +27,19 @@ namespace cccl::aot
 {
 // 8-byte magic identifying a CCCL AoT blob. Bumping the trailing digit
 // signals a hard format break (older blobs become unloadable).
-inline constexpr char kBlobMagic[8] = {'C', 'C', 'C', 'L', 'A', 'O', 'T', '1'};
+inline constexpr char k_blob_magic[8] = {'C', 'C', 'C', 'L', 'A', 'O', 'T', '1'};
 
 // Per-algorithm format version. Bump when the layout *for that algorithm*
 // changes (e.g. a new field added to its build_result_t).
-inline constexpr uint32_t kFormatVersion = 1;
+inline constexpr uint32_t k_format_version = 1;
 
 // Fixed-layout header at the start of every blob. Packed POD; layout is
 // part of the on-disk format, do not reorder.
 struct blob_header
 {
-  char magic[8]; // kBlobMagic
+  char magic[8]; // k_blob_magic
   uint32_t algo_tag; // cccl_aot_algo_t
-  uint32_t format_version; // kFormatVersion at write time
+  uint32_t format_version; // k_format_version at write time
   uint64_t cccl_version; // CCCL_C_PARALLEL_VERSION at serialize time; mismatched → reject
   uint32_t payload_kind; // cccl_payload_kind_t
   uint32_t cc; // cc_major*10 + cc_minor
@@ -216,9 +216,9 @@ public:
 inline void write_header(buffer_writer& w, cccl_aot_algo_t algo_tag, cccl_payload_kind_t kind, int cc)
 {
   blob_header h{};
-  std::memcpy(h.magic, kBlobMagic, sizeof(kBlobMagic));
+  std::memcpy(h.magic, k_blob_magic, sizeof(k_blob_magic));
   h.algo_tag       = static_cast<uint32_t>(algo_tag);
-  h.format_version = kFormatVersion;
+  h.format_version = k_format_version;
   h.cccl_version   = static_cast<uint64_t>(CCCL_C_PARALLEL_VERSION);
   h.payload_kind   = static_cast<uint32_t>(kind);
   h.cc             = static_cast<uint32_t>(cc);
@@ -231,7 +231,7 @@ inline void write_header(buffer_writer& w, cccl_aot_algo_t algo_tag, cccl_payloa
 inline blob_header read_and_validate_header(buffer_reader& r, cccl_aot_algo_t expected_algo)
 {
   const auto h = r.read_pod<blob_header>();
-  if (std::memcmp(h.magic, kBlobMagic, sizeof(kBlobMagic)) != 0)
+  if (std::memcmp(h.magic, k_blob_magic, sizeof(k_blob_magic)) != 0)
   {
     throw std::runtime_error("aot blob: bad magic");
   }
@@ -239,7 +239,7 @@ inline blob_header read_and_validate_header(buffer_reader& r, cccl_aot_algo_t ex
   {
     throw std::runtime_error("aot blob: wrong algorithm");
   }
-  if (h.format_version != kFormatVersion)
+  if (h.format_version != k_format_version)
   {
     throw std::runtime_error("aot blob: unsupported format version");
   }
@@ -266,9 +266,14 @@ inline void write_type_info(buffer_writer& w, const cccl_type_info& t)
 inline cccl_type_info read_type_info(buffer_reader& r)
 {
   cccl_type_info t{};
-  t.size      = static_cast<size_t>(r.read_pod<uint64_t>());
-  t.alignment = static_cast<size_t>(r.read_pod<uint64_t>());
-  t.type      = static_cast<cccl_type_enum>(r.read_pod<uint32_t>());
+  t.size            = static_cast<size_t>(r.read_pod<uint64_t>());
+  t.alignment       = static_cast<size_t>(r.read_pod<uint64_t>());
+  const auto type_v = r.read_pod<uint32_t>();
+  if (type_v > static_cast<uint32_t>(CCCL_BOOLEAN))
+  {
+    throw std::runtime_error(std::format("aot blob: invalid type enum ({})", type_v));
+  }
+  t.type = static_cast<cccl_type_enum>(type_v);
   return t;
 }
 } // namespace cccl::aot

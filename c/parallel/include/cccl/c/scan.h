@@ -157,6 +157,10 @@ CCCL_C_API CUresult cccl_device_scan_link_ltoir(
 CCCL_C_API CUresult
 cccl_device_scan_serialize(const cccl_device_scan_build_result_t* build, void** out_buf, size_t* out_size);
 
+// Reconstructs a build_result from a buffer produced by cccl_device_scan_serialize.
+// On success build is populated as if by compile(); CUlibrary/CUkernel handles
+// remain null until cccl_device_scan_load is called. On failure build is left
+// unchanged and a non-success CUresult is returned.
 CCCL_C_API CUresult cccl_device_scan_deserialize(cccl_device_scan_build_result_t* build, const void* buf, size_t size);
 
 CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr);

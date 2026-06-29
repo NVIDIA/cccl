@@ -1084,19 +1084,27 @@ inline void serialize_selector_op(cccl::aot::buffer_writer& w, const cccl_op_t& 
 {
   w.write_pod<uint32_t>(static_cast<uint32_t>(op.type));
   w.write_pod<uint32_t>(static_cast<uint32_t>(op.code_type));
-  w.write_pod<uint64_t>(static_cast<uint64_t>(op.size));
-  w.write_pod<uint64_t>(static_cast<uint64_t>(op.alignment));
   w.write_blob(op.code, op.code_size);
-  w.write_blob(op.state, op.size);
+  // op.size/op.alignment/op.state are intentionally not serialized: the selector
+  // state is runtime-specific and fully reconstructed by deserialize_selector_op.
 }
 
 inline cccl_op_t deserialize_selector_op(cccl::aot::buffer_reader& r, const char* fixed_name)
 {
   cccl_op_t op{};
-  op.type      = static_cast<cccl_op_kind_t>(r.read_pod<uint32_t>());
-  op.code_type = static_cast<cccl_op_code_type>(r.read_pod<uint32_t>());
-  op.size      = static_cast<size_t>(r.read_pod<uint64_t>());
-  op.alignment = static_cast<size_t>(r.read_pod<uint64_t>());
+  const auto type_v = r.read_pod<uint32_t>();
+  if (type_v > static_cast<uint32_t>(CCCL_MAXIMUM))
+  {
+    throw std::runtime_error(std::format("aot blob: invalid selector op kind ({})", type_v));
+  }
+  op.type = static_cast<cccl_op_kind_t>(type_v);
+
+  const auto code_type_v = r.read_pod<uint32_t>();
+  if (code_type_v > static_cast<uint32_t>(CCCL_OP_CPP_SOURCE))
+  {
+    throw std::runtime_error(std::format("aot blob: invalid selector op code type ({})", code_type_v));
+  }
+  op.code_type = static_cast<cccl_op_code_type>(code_type_v);
 
   // code blob — hold in RAII until commit so a throw during read_bytes doesn't leak
   uint64_t code_n = r.read_pod<uint64_t>();
@@ -1111,25 +1119,20 @@ inline cccl_op_t deserialize_selector_op(cccl::aot::buffer_reader& r, const char
     r.read_bytes(code_owner.get(), static_cast<size_t>(code_n));
   }
 
-  // state blob — same RAII pattern
-  uint64_t state_n = r.read_pod<uint64_t>();
-  if (state_n != static_cast<uint64_t>(op.size))
+  // The selector state is runtime-specific (device pointers, segment offsets) and is
+  // fully overwritten by selector_state_t::initialize() before each launch, so it is
+  // not part of the blob. Reconstruct a fresh, zero-initialized state of the correct
+  // size/alignment here; a malformed blob can no longer dictate the state size.
+  using segmented_sort::selector_state_t;
+  std::unique_ptr<void, decltype(&std::free)> state_owner(std::calloc(1, sizeof(selector_state_t)), std::free);
+  if (!state_owner)
   {
-    throw std::runtime_error(
-      std::format("aot blob: selector op state size mismatch (blob={}, expected={})", state_n, op.size));
-  }
-  std::unique_ptr<void, decltype(&std::free)> state_owner(nullptr, std::free);
-  if (state_n > 0)
-  {
-    state_owner.reset(std::malloc(static_cast<size_t>(state_n)));
-    if (!state_owner)
-    {
-      throw std::bad_alloc{};
-    }
-    r.read_bytes(state_owner.get(), static_cast<size_t>(state_n));
+    throw std::bad_alloc{};
   }
 
   // commit — no throws past this point
+  op.size      = sizeof(selector_state_t);
+  op.alignment = alignof(selector_state_t);
   op.code      = static_cast<const char*>(code_owner.release());
   op.code_size = static_cast<size_t>(code_n);
   op.state     = state_owner.release();

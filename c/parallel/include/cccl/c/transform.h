@@ -150,7 +150,7 @@ cccl_device_transform_serialize(const cccl_device_transform_build_result_t* buil
 // Reconstructs a build_result from a buffer produced by cccl_device_transform_serialize.
 // On success build is populated as if by compile(); CUlibrary/CUkernel handles
 // remain null until cccl_device_transform_load is called. On failure build is
-// left zeroed and a non-success CUresult is returned.
+// left unchanged and a non-success CUresult is returned.
 CCCL_C_API CUresult
 cccl_device_transform_deserialize(cccl_device_transform_build_result_t* build, const void* buf, size_t size);
 

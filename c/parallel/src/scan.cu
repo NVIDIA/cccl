@@ -864,8 +864,13 @@ try
   const auto in_type    = read_type_info(r);
   const auto out_type   = read_type_info(r);
   const auto accum_type = read_type_info(r);
-  const bool force_inc  = r.read_pod<uint8_t>() != 0;
-  const auto init_kind  = static_cast<cccl_init_kind_t>(r.read_pod<uint32_t>());
+  const bool force_inc    = r.read_pod<uint8_t>() != 0;
+  const auto init_kind_v  = r.read_pod<uint32_t>();
+  if (init_kind_v > static_cast<uint32_t>(CCCL_NO_INIT))
+  {
+    throw std::runtime_error(std::format("aot blob: invalid init kind ({})", init_kind_v));
+  }
+  const auto init_kind  = static_cast<cccl_init_kind_t>(init_kind_v);
   const auto desc_bytes = r.read_pod<uint64_t>();
   const auto pay_bytes  = r.read_pod<uint64_t>();
 
