@@ -17,6 +17,10 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_math.cuh>
+#include <cub/util_type.cuh>
+
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
