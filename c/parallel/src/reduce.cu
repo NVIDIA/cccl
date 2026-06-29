@@ -510,7 +510,7 @@ CUresult cccl_device_reduce_nondeterministic(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::detail::reduce::dispatch<void, false>(
+    auto exec_status = cub::detail::reduce::dispatch<void, /* StableReductionOrder */ false>(
       d_temp_storage,
       *temp_storage_bytes,
       indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
