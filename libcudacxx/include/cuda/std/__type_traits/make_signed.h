@@ -34,6 +34,12 @@
 #  define _CCCL_BUILTIN_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(make_signed)
 
+// __make_signed in clang doesn't work with sccache-dist
+// see: https://github.com/llvm/llvm-project/issues/206201
+#if defined(__clang__) && defined(__PREPROCESS_ONLY__)
+#  undef _CCCL_BUILTIN_MAKE_SIGNED
+#endif
+
 // __make_signed doesn't work with clang < 20 or clang + nvcc
 #if _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC))
 #  undef _CCCL_BUILTIN_MAKE_SIGNED
