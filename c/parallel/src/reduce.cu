@@ -301,6 +301,8 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
       ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
       ->get_name({reduction_kernel_name, reduction_kernel_lowered_name});
 
+  auto policy_ptr = std::make_unique<cub::detail::reduce::policy_selector>(policy_sel);
+
   auto single_tile_name        = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
   auto single_tile_second_name = std::unique_ptr<char[]>(duplicate_c_string(single_tile_second_kernel_lowered_name));
   auto reduction_name          = std::unique_ptr<char[]>(duplicate_c_string(reduction_kernel_lowered_name));
@@ -331,7 +333,7 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
     build->payload_kind      = CCCL_PAYLOAD_CUBIN;
   }
 
-  build->runtime_policy                         = new cub::detail::reduce::policy_selector{policy_sel};
+  build->runtime_policy                         = policy_ptr.release();
   build->single_tile_kernel_lowered_name        = single_tile_name.release();
   build->single_tile_second_kernel_lowered_name = single_tile_second_name.release();
   build->reduction_kernel_lowered_name          = reduction_name.release();
