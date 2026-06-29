@@ -143,6 +143,9 @@ struct DeviceHistogram
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -169,11 +172,15 @@ struct DeviceHistogram
   //! @param[in] num_samples
   //!   The number of input samples (i.e., the length of `d_samples`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -183,7 +190,7 @@ struct DeviceHistogram
     LevelT lower_level,
     LevelT upper_level,
     OffsetT num_samples,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -198,7 +205,7 @@ struct DeviceHistogram
       num_samples,
       static_cast<OffsetT>(1),
       sizeof(SampleT) * num_samples,
-      stream);
+      env);
   }
 
   //! @rst
@@ -288,6 +295,9 @@ struct DeviceHistogram
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -321,11 +331,15 @@ struct DeviceHistogram
   //!   The number of bytes between starts of consecutive rows in
   //!   the region of interest
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -337,7 +351,7 @@ struct DeviceHistogram
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
@@ -350,7 +364,7 @@ struct DeviceHistogram
       num_row_samples,
       num_rows,
       row_stride_bytes,
-      stream);
+      env);
   }
 
   //! @rst
@@ -1622,7 +1636,7 @@ public:
     LevelT lower_level,
     LevelT upper_level,
     OffsetT num_samples,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramEven<1, 1>(
@@ -1740,7 +1754,7 @@ public:
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     return MultiHistogramEven<1, 1>(
       d_samples,

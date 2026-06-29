@@ -64,6 +64,112 @@ TEST_CASE("DeviceHistogram::HistogramEven works with default environment", "[his
   REQUIRE(d_histogram == expected);
 }
 
+TEST_CASE("DeviceHistogram::HistogramEven works with user provided memory and environment", "[histogram][device]")
+{
+  auto d_samples   = c2h::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
+  int num_samples  = static_cast<int>(d_samples.size());
+  int num_levels   = 6;
+  int lower_level  = 0;
+  int upper_level  = 5;
+  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+
+  c2h::device_vector<int> expected{2, 2, 2, 1, 1};
+
+  size_t expected_bytes_allocated{};
+  auto error = cub::DeviceHistogram::HistogramEven(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    lower_level,
+    upper_level,
+    num_samples);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_histogram_even = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceHistogram::HistogramEven(
+      nullptr,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      num_samples,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_bytes_allocated == num_bytes);
+
+    error = cub::DeviceHistogram::HistogramEven(
+      temp_storage,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      num_samples,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(d_histogram == expected);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceHistogram::HistogramEven works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_histogram_even(stream.get());
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_histogram_even(stream);
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_histogram_even(stream_ref);
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_histogram_even(env);
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_histogram_even(policy);
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_histogram_even(policy);
+  }
+}
+
 TEST_CASE("DeviceHistogram::HistogramRange works with default environment", "[histogram][device]")
 {
   auto d_samples   = c2h::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
