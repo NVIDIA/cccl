@@ -89,9 +89,11 @@ repos:
     rev: 'v1.16.1'
     hooks:
       - id: mypy
-        # numpy>=2.3 drops Python 3.10 support and ships PEP 695 `type`
-        # statements in its stubs, which mypy rejects under python_version=3.10.
-        additional_dependencies: [types-cachetools, "numpy<2.3"]
+        # numpy is intentionally not installed here: numpy>=2.3 ships PEP 695
+        # `type` statements in its stubs that mypy rejects under
+        # python_version=3.10, and numpy<2.3 has no wheels for the Python that
+        # pre-commit.ci runs. numpy is instead ignored in the mypy config.
+        additional_dependencies: [types-cachetools]
         args: ["--config-file=python/cuda_cccl/pyproject.toml",
                "python/cuda_cccl/cuda/compute/"]
         pass_filenames: false
