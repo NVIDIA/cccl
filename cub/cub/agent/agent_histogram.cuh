@@ -33,6 +33,13 @@
 
 CUB_NAMESPACE_BEGIN
 
+// STUDY HOOK: when 1, the static <=256-bin RANGE tier uses the lean flat-UpperBound
+// classify (BinSelectStaticLean) for ALL sample widths, including 8-byte (F64).
+// Default 0: F64 uses the full 3-arg BinSelect (matches upstream main's classify).
+#ifndef CUB_HISTO_STATIC_RANGE_LEAN_ALL
+#  define CUB_HISTO_STATIC_RANGE_LEAN_ALL 0
+#endif
+
 enum BlockHistogramMemoryPreference
 {
   GMEM,
@@ -504,20 +511,33 @@ struct AgentHistogram
               samples[pixel][ch], bins[pixel], is_valid[pixel], mru);
           }
         }
-        else if constexpr (PrivatizedDecodeOpT::is_range_transform && sizeof(SampleT) <= 4)
+        else if constexpr (PrivatizedDecodeOpT::is_range_transform
+                           && (sizeof(SampleT) <= 4 || NumActiveChannels >= 2 || CUB_HISTO_STATIC_RANGE_LEAN_ALL))
         {
-          // Static <=256-bin RANGE tier, NARROW samples (<=4 B, e.g. I32): lean classify
-          // (a flat UpperBound, byte-identical to upstream main) -- NOT the 3-arg
-          // BinSelect, whose interpolation machinery (the kInterpolationMinBins branch +
-          // precompute-field codegen) is dead weight here yet measurably slows this
-          // latency/occupancy-bound kernel. No MRU register state either.
+          // Static <=256-bin RANGE tier: lean classify (a flat UpperBound, byte-identical
+          // to upstream main's classify) -- NOT the 3-arg BinSelect, whose interpolation
+          // machinery (the kInterpolationMinBins branch + precompute-field codegen) is dead
+          // weight at <=256 bins (it always early-returns to UpperBound there). Used for:
           //
-          // GATED ON sizeof(SampleT) <= 4: the lean flat-UpperBound path is faster than
-          // main's classify for 4-byte samples, but ~7-10% SLOWER for 8-byte samples
-          // (F64) -- the wide-sample classify benefits from the structure the lean path
-          // drops. So WIDE samples (F64) fall through to the full 3-arg BinSelect below
-          // (which matches main's behavior there). The dynamic tier keeps the full path
-          // for all widths.
+          //   * NARROW samples (sizeof <= 4, e.g. I32), single- or multi-channel: the lean
+          //     path's smaller codegen wins 1.06-1.28x vs main across (bin, N).
+          //
+          //   * ALL MULTI-channel RANGE (NumActiveChannels >= 2), any width incl. F64: the
+          //     full BinSelect's dead interpolation code is replicated PER CHANNEL in the
+          //     decode-op state and the unrolled classify, pushing the 3-channel static
+          //     kernel's register pressure over budget -> it SPILLS (measured REG:40
+          //     STACK:24, +11.7% instructions, vs main REG:39 STACK:0). The lean path
+          //     removes that dead code so the kernel no longer spills (REG:39 STACK:0,
+          //     matching main), recovering multi_range F64 from ~0.93x to ~0.99x at low
+          //     bins (1M and saturated), and keeping multi I32 at parity.
+          //
+          // EXCLUDED (falls through to full BinSelect below): SINGLE-channel WIDE (F64)
+          // RANGE. There the kernel does NOT spill (one channel fits), and the full
+          // BinSelect's extra (never-executed) interpolation instructions actually provide
+          // ILP that hides global-load latency on this single-channel latency-bound
+          // kernel -- the lean path there raises long-scoreboard stalls (0.34 vs 0.27) and
+          // is ~5% SLOWER at saturated low bins. So single-channel F64 keeps full BinSelect.
+          // The dynamic tier (bins >= 512) keeps the full interpolation path for all cases.
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
           {

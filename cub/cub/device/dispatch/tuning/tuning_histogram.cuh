@@ -51,12 +51,20 @@ struct HistogramPolicy
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_threads() const
   {
+#ifdef CUB_HISTO_STATIC_SMEM_THREADS
+    return CUB_HISTO_STATIC_SMEM_THREADS;
+#else
     return static_smem_threads_per_block != 0 ? static_smem_threads_per_block : threads_per_block;
+#endif
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int static_smem_items() const
   {
+#ifdef CUB_HISTO_STATIC_SMEM_ITEMS
+    return CUB_HISTO_STATIC_SMEM_ITEMS;
+#else
     return static_smem_items_per_block != 0 ? static_smem_items_per_block : pixels_per_thread;
+#endif
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -557,8 +565,28 @@ public:
           // (768 / t_scale(12)) and the direct-atomic path (512) are unchanged; EVEN
           // (both overrides 0) is untouched. Consumed at compile time in the static
           // kernel (see histogram_policy::static_smem_{threads,items}).
+          // static_smem_threads_per_block / static_smem_items_per_block (STATIC <=256-bin
+          // launch shape) chosen PER SAMPLE WIDTH from a locked-clock A/B vs upstream main
+          // (1800 MHz; small-N ratios are otherwise corrupted ~10-17% by boost ramp):
+          //   I32 (4 B) -> 768 threads, inherit sweep items: parity-or-better at EVERY
+          //               (bin, N) -- 1M 1.05-1.28x, saturated 1.05-1.09x.
+          //   F64 (8 B) -> 384 threads + t_scale(16)=8 items, i.e. main's SM50-fallback
+          //               launch EXACTLY: 1M all parity+ (1.00-1.02x) and saturated b64/b256
+          //               parity+ (1.00x). A clean (threads x items) sweep showed every
+          //               other shape worse: 512/448 regress saturated low bins (b16/b32
+          //               ~0.88-0.95x); 640 fixes saturated low bins but regresses ALL of
+          //               1M (~0.97x via SM underfill); items != 8 collapse. A small
+          //               residual remains at F64 saturated b16/b32 (~0.96x/0.985x) -- it is
+          //               the restructured static kernel's higher register footprint (53 vs
+          //               main's 40 -> 3 vs 4 resident blocks/SM) biting at the two most
+          //               atomic-contention-bound cells, and is irreducible at this launch:
+          //               cutting registers (lean classify, or a min-blocks launch_bounds)
+          //               either raises load-latency stalls or spills, both net-slower here.
+          // The dynamic-SMEM sweep keeps 768; the direct-atomic path keeps 512.
+          const int static_threads = (sample_size_bytes >= 8) ? 384 : 768;
+          const int static_items   = (sample_size_bytes >= 8) ? t_scale(16) : 0;
           return histogram_policy{
-            768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048, 512, 384, t_scale(16)};
+            768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048, 512, static_threads, static_items};
         }
       }
 
@@ -598,7 +626,11 @@ public:
           // count plus a narrow launch together starve the cache -- so the
           // multi-channel direct-atomic kernels keep the 1024-thread shape and the
           // count-replica de-serialization instead.
-          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 0};
+          // static_smem_threads_per_block=384: the 1024-thread launch wins at large N
+          // but UNDERFILLS the SMs at small inputs (1M elements) -> ~0.90x vs main there.
+          // Narrow JUST the static <=256 tier to 384 (main's width); the dynamic sweep and
+          // direct-atomic kernels keep 1024. (Single-channel RANGE does the same.)
+          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 0, 384};
         }
         else
         {
