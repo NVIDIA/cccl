@@ -535,9 +535,16 @@ namespace detail
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStream_t stream)
 {
 #  ifdef CUB_DEBUG_SYNC
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
-                    (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    ({
+      detail::log("Synchronizing...\n");
+      return SyncStream(stream);
+    }),
+    ({
+      _CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code");
+      return cudaSuccess;
+    }));
 #  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
 #  endif // ^^^ !CUB_DEBUG_SYNC ^^^

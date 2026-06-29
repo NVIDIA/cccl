@@ -47,7 +47,7 @@ struct blocking_kernel
 
   void block()
   {
-    _CubLog("Blocking Stream %lld\n", (long long) m_stream);
+    cub::detail::log("Blocking Stream %lld\n", (long long) m_stream);
     m_host_flag = 0;
     block_stream<<<1, 1, 0, m_stream>>>(m_device_flag);
   }
@@ -56,7 +56,7 @@ struct blocking_kernel
   {
     volatile cuda::std::int32_t& flag = m_host_flag;
     flag                              = 1;
-    _CubLog("Unblocking Stream %lld\n", (long long) m_stream);
+    cub::detail::log("Unblocking Stream %lld\n", (long long) m_stream);
   }
 
 private:
