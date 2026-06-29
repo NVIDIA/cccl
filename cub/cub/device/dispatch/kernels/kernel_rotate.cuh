@@ -595,16 +595,11 @@ __global__ void rotate_short_kernel(
       {
         __nanosleep(0);
       }
-      if constexpr (hasTMA())
-      {
-        cooperative_groups::invoke_one(warp, [&] {
-          overcopy_memcpy_async<T, WS>(cache[slot], src, bytes / sizeof(T), overcopy_extra_head_elems, warp, bars[slot]);
-        });
-      }
-      else
-      {
-        overcopy_memcpy_async<T, WS>(cache[slot], src, bytes / sizeof(T), overcopy_extra_head_elems, warp, bars[slot]);
-      }
+      // cuda::memcpy_async(warp, ...) is a warp-collective op: every lane of the producer warp must
+      // call it together (the library elects a single thread internally to issue the TMA bulk-copy
+      // instruction). Wrapping it in cooperative_groups::invoke_one ran it on one lane only, leaving
+      // the collective's internal warp sync waiting on the 31 lanes that skipped it -> warp deadlock.
+      overcopy_memcpy_async<T, WS>(cache[slot], src, bytes / sizeof(T), overcopy_extra_head_elems, warp, bars[slot]);
       if (tid == 0)
       {
         num_loaded++;
