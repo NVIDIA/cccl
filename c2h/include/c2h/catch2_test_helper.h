@@ -427,6 +427,12 @@ auto compare_vectors(const cuda::buffer<T, LhsProps...>& actual, const cuda::buf
                             host_vector<T>(expected.begin(), expected.end()));
 }
 
+template <typename LhsVec, typename RhsVec, typename T = typename LhsVec::value_type>
+auto compare_vectors(const LhsVec& actual, const RhsVec& expected) -> vector_compare_result_t<T>
+{
+  return compare_vectors<T>(host_vector<T>(actual), host_vector<T>(expected));
+}
+
 template <typename T>
 void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
 {
