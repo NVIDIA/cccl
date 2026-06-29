@@ -570,7 +570,7 @@ class __fmt_retarget_buffer
 
   _CCCL_API void __grow_buffer()
   {
-    __grow_buffer(__capacity_ * 1.6);
+    __grow_buffer(static_cast<size_t>(__capacity_ * 1.6));
   }
 
   _CCCL_API void __grow_buffer(size_t __capacity)
