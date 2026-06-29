@@ -56,6 +56,7 @@
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/sfinae_traits.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -88,25 +89,6 @@ inline constexpr bool __tuple_like_with_size = false;
 template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
   _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
-
-//! @brief Determines whether a constructor is valid and whether it is implicit or explicit
-enum class __select_constructor
-{
-  __invalid, //!< The constructor is not valid
-  __implicit, //!< The constructor is valid and implicit
-  __explicit, //!< The constructor is valid and explicit
-  __deleted, //!< The constructor is marked as deleted
-};
-
-template <__select_constructor _Trait>
-inline constexpr bool __can_construct_implicitly = _Trait == __select_constructor::__implicit;
-template <__select_constructor _Trait>
-inline constexpr bool __can_construct_explicitly = _Trait == __select_constructor::__explicit;
-template <__select_constructor _Trait>
-inline constexpr bool __can_construct =
-  (_Trait == __select_constructor::__implicit) || (_Trait == __select_constructor::__explicit);
-template <__select_constructor _Trait>
-inline constexpr bool __is_deleted = _Trait == __select_constructor::__deleted;
 
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
@@ -491,26 +473,13 @@ _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(__tuple_types<_Types...>, _
 template <class>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(...) noexcept -> _InvalidTupleComparison;
 
-//! @brief Determines whether an assignment is valid and also whether it does not throw
-enum class __select_assignment
-{
-  __none, //!< No assignment possible
-  __is_nothrow, //!< Assignment possible, is nothrow
-  __may_throw, //!< Assignment possible, may throw
-};
-
-template <__select_assignment _Trait>
-inline constexpr bool __can_assign = _Trait != __select_assignment::__none;
-template <__select_assignment _Trait>
-inline constexpr bool __can_nothrow_assign = _Trait == __select_assignment::__is_nothrow;
-
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment
 __tuple_select_const_copy_assignable(__tuple_types<_Types...>) noexcept
 {
   if constexpr (!(is_copy_assignable_v<const _Types> && ...))
   { // [tuple.assign]-5: is_copy_assignable_v<const Types> is true for all i.
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
   else if constexpr ((is_nothrow_copy_assignable_v<const _Types> && ...))
   {
@@ -532,7 +501,7 @@ __tuple_select_const_move_assignable(__tuple_types<_Types...>) noexcept
 {
   if constexpr (!(is_assignable_v<const _Types&, _Types> && ...))
   { // [tuple.assign]-12: is_assignable_v<const Types&, Types> is true for all i.
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
   else if constexpr ((is_nothrow_assignable_v<const _Types&, _Types> && ...))
   {
@@ -554,11 +523,11 @@ __tuple_select_converting_assignable(__tuple_types<_Types...>, __tuple_types<_UT
 {
   if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
   { // [tuple.assign]-15.1: sizeof...(Types) equals sizeof...(UTypes) and
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
   else if constexpr (is_same_v<tuple<_Types...>, tuple<_UTypes...>>)
   { // Disambiguate the non-converting assignments
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
   else if constexpr (_IsConst)
   {
@@ -571,7 +540,7 @@ __tuple_select_converting_assignable(__tuple_types<_Types...>, __tuple_types<_UT
     }
     else
     {
-      return __select_assignment::__none;
+      return __select_assignment::__invalid;
     }
   }
   else if constexpr ((is_assignable_v<_Types&, _UTypes> && ...))
@@ -583,7 +552,7 @@ __tuple_select_converting_assignable(__tuple_types<_Types...>, __tuple_types<_UT
   }
   else
   {
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
 }
 
@@ -599,15 +568,15 @@ __tuple_select_tuple_like_assignable(__tuple_types<_Types...>, __tuple_indices<_
   using ::cuda::std::get;
   if constexpr (is_same_v<remove_cvref_t<_UTuple>, tuple<_Types...>>)
   { // [tuple.assign]-39.1: different-from<UTuple, tuple>
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
   else if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
   { // [tuple.assign]-39.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
   else if constexpr (!__tuple_like_with_size<_UTuple, sizeof...(_Types)>)
   { // [tuple.assign]-39.3: sizeof...(Types) equals tuple_size_v<remove_cvref_t<UTuple>>, and
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
   else if constexpr (_IsConst)
   {
@@ -620,7 +589,7 @@ __tuple_select_tuple_like_assignable(__tuple_types<_Types...>, __tuple_indices<_
     }
     else
     {
-      return __select_assignment::__none;
+      return __select_assignment::__invalid;
     }
   }
   else if constexpr ((is_assignable_v<_Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...))
@@ -631,7 +600,7 @@ __tuple_select_tuple_like_assignable(__tuple_types<_Types...>, __tuple_indices<_
   }
   else
   {
-    return __select_assignment::__none;
+    return __select_assignment::__invalid;
   }
 }
 
