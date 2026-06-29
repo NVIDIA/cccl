@@ -580,9 +580,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     num_tiles                                = ::cuda::std::max(1, num_tiles);
     const int init_grid_size                 = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    detail::log(
+      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -616,7 +615,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
     scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
 
-#ifdef CUB_DEBUG_LOG
+    if (detail::logging_enabled())
     {
       // Get SM occupancy for unique_by_key_kernel
       int sweep_sm_occupancy;
@@ -625,17 +624,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       {
         return error;
       }
-      _CubLog("Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
-              "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              scan_grid_size.x,
-              scan_grid_size.y,
-              scan_grid_size.z,
-              threads_per_block,
-              (long long) stream,
-              items_per_thread,
-              sweep_sm_occupancy);
+      detail::log_always(
+        "Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
+        "%lld>>>(), %d items per thread, %d SM occupancy\n",
+        scan_grid_size.x,
+        scan_grid_size.y,
+        scan_grid_size.z,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread,
+        sweep_sm_occupancy);
     }
-#endif // CUB_DEBUG_LOG
 
     // Invoke select_if_kernel
     if (const auto error = CubDebug(

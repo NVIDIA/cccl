@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_find_bound_sorted_values.cuh>
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -30,9 +31,9 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/limits>
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED()
 #  include <sstream>
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -127,12 +128,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const auto active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (::std::stringstream ss; ss << active_policy; _CubLog(
-       "Dispatching find_bound_sorted_values (merge-path) to arch %d with tuning: %s\n", cc.get(), ss.str().c_str());))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format policy
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 if (detail::logging_enabled())
+                 {
+                   ::std::stringstream ss;
+                   ss << active_policy;
+                   detail::log_always("Dispatching find_bound_sorted_values (merge-path) to arch %d with tuning: %s\n",
+                                      cc.get(),
+                                      ss.str().c_str());
+                 }
+               }))
+#endif // _CCCL_HOSTED()
 
   const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block * active_policy.items_per_thread);
   if (range_count > cuda::std::numeric_limits<Offset>::max() - values_count)
