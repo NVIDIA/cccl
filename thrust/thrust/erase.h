@@ -71,18 +71,7 @@ THRUST_NAMESPACE_BEGIN
 template <class Vector,
           class U                                                   = typename Vector::value_type,
           ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
-typename Vector::size_type erase(Vector& c, const U& value)
-{
-  using value_type = typename Vector::value_type;
-
-  auto first = thrust::remove(c.begin(), c.end(), static_cast<value_type>(value));
-
-  auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
-
-  c.erase(first, c.end());
-
-  return removed;
-}
+typename Vector::size_type erase(Vector& c, const U& value);
 
 /*! \p erase removes all elements equal to \p value from the vector \p c.
  *  It performs the operation of erasing matching elements and shifting the remaining
@@ -130,18 +119,7 @@ template <typename DerivedPolicy,
           class U                                                   = typename Vector::value_type,
           ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
 typename Vector::size_type
-erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, const U& value)
-{
-  using value_type = typename Vector::value_type;
-
-  auto first = thrust::remove(exec, c.begin(), c.end(), static_cast<value_type>(value));
-
-  auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
-
-  c.erase(first, c.end());
-
-  return removed;
-}
+erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, const U& value);
 
 /*! \p erase_if removes all elements from the vector \p c that satisfy the predicate \p pred.
  *  It performs the operation of erasing matching elements and shifting the remaining
@@ -186,16 +164,7 @@ erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& 
  *  \endverbatim
  */
 template <class Vector, class Predicate, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
-typename Vector::size_type erase_if(Vector& c, Predicate pred)
-{
-  auto first = thrust::remove_if(c.begin(), c.end(), pred);
-
-  auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
-
-  c.erase(first, c.end());
-
-  return removed;
-}
+typename Vector::size_type erase_if(Vector& c, Predicate pred);
 
 /*! \p erase_if removes all elements from the vector \p c that satisfy the predicate \p pred.
  *  It performs the operation of erasing matching elements and shifting the remaining
@@ -249,15 +218,8 @@ template <typename DerivedPolicy,
           class Predicate,
           ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
 typename Vector::size_type
-erase_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, Predicate pred)
-{
-  auto first = thrust::remove_if(exec, c.begin(), c.end(), pred);
-
-  auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
-
-  c.erase(first, c.end());
-
-  return removed;
-}
+erase_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, Predicate pred);
 
 THRUST_NAMESPACE_END
+
+#include <thrust/detail/erase.inl>
