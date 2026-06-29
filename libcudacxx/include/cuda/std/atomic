@@ -119,12 +119,10 @@ struct atomic_ref : public __atomic_ref_impl<_Tp>
     return __v;
   }
 
-#if _CCCL_STD_VER >= 2026
-  _CCCL_HOST_DEVICE_API constexpr __copy_cv_t<_Tp, void>* address() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __copy_cv_t<_Tp, void>* address() const noexcept
   {
     return this->__a.get();
   }
-#endif // _CCCL_STD_VER >= 2026
 
   _CCCL_HIDE_FROM_ABI atomic_ref(const atomic_ref&) noexcept = default;
   atomic_ref& operator=(const atomic_ref&)                   = delete;
