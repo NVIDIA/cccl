@@ -163,13 +163,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
   if constexpr (!StableReductionOrder)
   {
-    // todo: This static_assert fails with nvc++ CUDA compilation.
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_60,
-      (),
-      (static_assert(!::cuda::std::is_same_v<AccumT, double>,
-                     "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on CC < 6.0");))
-
     static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                   "Only plus is currently supported in nondeterministic reduce");
 
