@@ -511,33 +511,22 @@ struct AgentHistogram
               samples[pixel][ch], bins[pixel], is_valid[pixel], mru);
           }
         }
-        else if constexpr (PrivatizedDecodeOpT::is_range_transform
-                           && (sizeof(SampleT) <= 4 || NumActiveChannels >= 2 || CUB_HISTO_STATIC_RANGE_LEAN_ALL))
+        else if constexpr (PrivatizedDecodeOpT::is_range_transform)
         {
-          // Static <=256-bin RANGE tier: lean classify (a flat UpperBound, byte-identical
-          // to upstream main's classify) -- NOT the 3-arg BinSelect, whose interpolation
-          // machinery (the kInterpolationMinBins branch + precompute-field codegen) is dead
-          // weight at <=256 bins (it always early-returns to UpperBound there). Used for:
-          //
-          //   * NARROW samples (sizeof <= 4, e.g. I32), single- or multi-channel: the lean
-          //     path's smaller codegen wins 1.06-1.28x vs main across (bin, N).
-          //
-          //   * ALL MULTI-channel RANGE (NumActiveChannels >= 2), any width incl. F64: the
-          //     full BinSelect's dead interpolation code is replicated PER CHANNEL in the
-          //     decode-op state and the unrolled classify, pushing the 3-channel static
-          //     kernel's register pressure over budget -> it SPILLS (measured REG:40
-          //     STACK:24, +11.7% instructions, vs main REG:39 STACK:0). The lean path
-          //     removes that dead code so the kernel no longer spills (REG:39 STACK:0,
-          //     matching main), recovering multi_range F64 from ~0.93x to ~0.99x at low
-          //     bins (1M and saturated), and keeping multi I32 at parity.
-          //
-          // EXCLUDED (falls through to full BinSelect below): SINGLE-channel WIDE (F64)
-          // RANGE. There the kernel does NOT spill (one channel fits), and the full
-          // BinSelect's extra (never-executed) interpolation instructions actually provide
-          // ILP that hides global-load latency on this single-channel latency-bound
-          // kernel -- the lean path there raises long-scoreboard stalls (0.34 vs 0.27) and
-          // is ~5% SLOWER at saturated low bins. So single-channel F64 keeps full BinSelect.
-          // The dynamic tier (bins >= 512) keeps the full interpolation path for all cases.
+          // Static <=256-bin RANGE tier (all channel counts and sample widths): lean classify
+          // -- a flat UpperBound, byte-identical to upstream main's classify -- NOT the 3-arg
+          // BinSelect, whose interpolation machinery (the kInterpolationMinBins branch +
+          // precompute-field codegen) is pure dead weight at <=256 bins (it always
+          // early-returns to UpperBound there). The full path's dead interpolation code
+          // inflates this latency/occupancy-bound kernel's register footprint: for F64 it
+          // pushes the static kernel to 53 registers (3 blocks/SM, 51.6% occupancy) and for
+          // 3-channel F64 it spills (REG:40 STACK:24, +11.7% instructions). The lean path
+          // removes that dead code -- 1.05-1.28x vs main for I32, and (paired with the
+          // static range kernel's min-3-blocks __launch_bounds__, which gives the F64 lean
+          // path enough register headroom to avoid a hot-loop spill on the F64 level values
+          // while keeping 3 blocks/SM) closes the F64 saturated low-bin gap to parity-or-
+          // better. The dynamic tier (bins >= 512) keeps the full interpolation path, where
+          // it pays off.
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
           {

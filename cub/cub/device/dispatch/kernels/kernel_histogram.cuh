@@ -1579,11 +1579,29 @@ template <typename PolicySelector,
 // PrivatizedSmemBins==0 (GMEM fallback) keeps the full threads_per_block.
 __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_threads()
                                              : current_policy<PolicySelector>().threads_per_block),
-                  ((PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_threads()
-                                           : current_policy<PolicySelector>().threads_per_block)
-                   >= 512)
-                    ? 2
-                    : 0)
+#ifdef CUB_HISTO_STATIC_MIN_BLOCKS
+                  CUB_HISTO_STATIC_MIN_BLOCKS)
+#else
+                  // Min resident blocks/SM. The static <=256-bin RANGE tier classifies via the
+                  // lean UpperBound (see agent_histogram.cuh); for 8-byte (F64) levels that
+                  // search holds several level values live, and at the default (unconstrained)
+                  // register budget the compiler either picks a high reg count (-> only 3
+                  // blocks/SM, ~51% occupancy) or, on the lean path, a 40-reg fit that SPILLS
+                  // those levels in the hot loop. Pinning min 3 blocks/SM for the <512-thread
+                  // static RANGE tier gives the lean path a ~56-reg budget: it lands at ~48
+                  // regs with NO spill AND keeps 3 blocks/SM, recovering F64 saturated low-bin
+                  // to parity-or-better vs upstream main. EVEN (cheap ScaleTransform, not
+                  // register-bound) and the >=512-thread paths keep their prior bounds, so
+                  // their codegen is unchanged.
+                  (PrivatizedSmemBins > 0 && PrivatizedDecodeOpT::is_range_transform
+                   && current_policy<PolicySelector>().static_smem_threads() < 512)
+                    ? 3
+                    : (((PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().static_smem_threads()
+                                                : current_policy<PolicySelector>().threads_per_block)
+                        >= 512)
+                         ? 2
+                         : 0))
+#endif
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivatizedKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
