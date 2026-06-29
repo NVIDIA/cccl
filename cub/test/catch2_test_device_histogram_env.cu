@@ -11,7 +11,9 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
 #include <cuda/std/array>
+#include <cuda/std/execution>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -1003,6 +1005,140 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven 2D uses custom stream", "[histogr
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+#if TEST_LAUNCH == 0
+TEST_CASE("DeviceHistogram::MultiHistogramEven works with user provided memory and environment", "[histogram][device]")
+{
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
+
+  auto d_samples =
+    c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
+
+  int num_row_pixels      = 2;
+  int num_rows            = 2;
+  size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
+
+  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+
+  auto d_histogram_r = c2h::device_vector<int>(4, 0);
+  auto d_histogram_g = c2h::device_vector<int>(4, 0);
+  auto d_histogram_b = c2h::device_vector<int>(4, 0);
+
+  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  c2h::device_vector<int> expected_r{1, 1, 1, 1};
+  c2h::device_vector<int> expected_g{0, 1, 1, 1};
+  c2h::device_vector<int> expected_b{1, 1, 1, 1};
+
+  size_t expected_bytes_allocated{};
+  auto error = cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(d_samples.data()),
+    d_histogram,
+    num_levels,
+    lower_level,
+    upper_level,
+    num_row_pixels,
+    num_rows,
+    row_stride_bytes);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_multi_histogram_even = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      nullptr,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histogram,
+      num_levels,
+      lower_level,
+      upper_level,
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_bytes_allocated == num_bytes);
+
+    error = cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      temp_storage,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histogram,
+      num_levels,
+      lower_level,
+      upper_level,
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(d_histogram_r == expected_r);
+    REQUIRE(d_histogram_g == expected_g);
+    REQUIRE(d_histogram_b == expected_b);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceHistogram::HistogramEven works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_multi_histogram_even(stream.get());
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_multi_histogram_even(stream);
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_multi_histogram_even(stream_ref);
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_multi_histogram_even(env);
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_multi_histogram_even(policy);
+  }
+
+  SECTION("DeviceHistogram::HistogramEven works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_multi_histogram_even(policy);
+  }
+}
+#endif // TEST_LAUNCH == 0
 
 C2H_TEST("DeviceHistogram::MultiHistogramRange 2D uses environment", "[histogram][device]")
 {
