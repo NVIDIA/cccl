@@ -64,6 +64,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -312,6 +313,13 @@ struct agent_batched_topk_cluster
   static constexpr int chunk_items      = smem_layout_t::chunk_items;
   static constexpr int load_align_items = smem_layout_t::load_align_items;
   static constexpr int slot_alignment   = smem_layout_t::slot_alignment;
+
+  // Tie-break unroll for the deterministic filter's streamed overflow, which feeds `process_tiles` one chunk slot at a
+  // time: clamp items so the tile (`threads_per_block * items`) stays within a chunk, bounding the per-tile early-exit
+  // to <= chunk granularity. Resident/edge regions keep the full `tie_break_items_per_thread_clamped`. Floors at 1.
+  static constexpr int tie_break_items_streamed =
+    ::cuda::std::clamp(chunk_items / threads_per_block, 1, tie_break_items_per_thread_clamped);
+  static_assert(tie_break_items_streamed >= 1, "tie_break_items_streamed must be positive");
 
   static_assert(PipelineStages > 0);
   // `load_phase` tracks one parity bit per stage in a 32-bit mask.
@@ -952,8 +960,8 @@ private:
     // Stage mbarriers are shared with the resident load (`agent.temp_storage.load_mbar`); stage `stage` targets slot
     // `stream_slot_base + stage`. `inflight_mask` bit `stage` is set only while a copy is in flight (issued, not yet
     // waited). The slot/stage mapping is fixed, so the read span is recomputed on demand by `stage_span` rather than
-    // held in a spillable per-stage array; the only per-stage state is one bit each of `inflight_mask` and
-    // `load_phase`.
+    // held in a spillable per-stage array; the only per-stage state is one bit each of `inflight_mask` (here) and the
+    // agent's `load_phase` parity.
     ::cuda::std::uint32_t inflight_mask = 0;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE overflow_streamer(
@@ -1023,15 +1031,20 @@ private:
         {static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(dst)), static_cast<int>(split.bulk)});
     }
 
-    // Shared driver for one overflow pass. `block_apply(stage, o)` folds the chunk for visit `o` currently resident in
-    // the streaming slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from
-    // gmem (generic fallback). `mid()` is invoked exactly once, after the prefetch loads for this pass's first reload
-    // wave (the first `p_eff` visits) have been issued but before they are waited on, so the caller's resident-chunk
-    // work overlaps those in-flight bulk copies. The two public entry points (`process_pass` / `process_pass_indexed`)
-    // only differ in whether the applied callable receives the key alone or the key plus its segment-local index, so
-    // they share this loop verbatim. `mid` must be uniform across the block and contain no unmatched block barrier.
-    template <typename BlockApply, typename GenericApply, typename Mid>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void run_pass(BlockApply&& block_apply, GenericApply&& generic_apply, Mid&& mid)
+    // Shared driver for one overflow pass. `block_apply(stage, o)` folds the chunk for visit `o` resident in streaming
+    // slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from gmem
+    // (fallback). The two entry points (`process_pass` / `process_pass_indexed`) differ only in whether the callable
+    // also gets the segment-local index, so share this loop. `mid()` runs once on a full pass -- after the first reload
+    // wave (`p_eff` visits) is issued but before it is waited on, overlapping the caller's resident-chunk work with
+    // those in-flight copies (skipped if phase 1 stops early); it must be block-uniform with no unmatched barrier.
+    // `should_continue()` is polled after each consumed chunk; returning false breaks the stream so the final filter
+    // bails once the top-k is placed. It must be block-uniform and barrier-free (evaluated after `block_apply`'s
+    // syncs). The histogram and non-deterministic filter pass an always-true predicate (folding back to the
+    // unconditional loop). An early break can leave prefetches in flight, so the pass drains the remaining stages
+    // before returning (a full pass ends with an empty `inflight_mask`, so the drain is a no-op).
+    template <typename BlockApply, typename GenericApply, typename Mid, typename Continue>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    run_pass(BlockApply&& block_apply, GenericApply&& generic_apply, Mid&& mid, Continue&& should_continue)
     {
       if (overflow_chunks == 0)
       {
@@ -1063,8 +1076,10 @@ private:
 
         // Consume overflow visit `i`: wait for its slot, fold its keys via `block_apply`, then prefetch the chunk
         // `p_eff` visits ahead into the slot just freed (a barrier guards the slot before the async copy can overwrite
-        // the data the block was just reading).
-        const auto consume = [&](offset_t i) {
+        // the data the block was just reading). Returns false once `block_apply` has set `stop_now` -- polled before
+        // the prefetch so we never launch a copy we would only drain again; the up-to-`p_eff - 1` prefetches already in
+        // flight (from earlier visits or priming) are drained after the loop.
+        const auto consume = [&](offset_t i) -> bool {
           const offset_t o = forward ? i : (m - 1 - i);
           const int stage  = static_cast<int>(o % pe);
           if (inflight_mask & (::cuda::std::uint32_t{1} << stage))
@@ -1074,6 +1089,11 @@ private:
           }
           block_apply(stage, o);
 
+          if (!should_continue())
+          {
+            return false;
+          }
+
           const offset_t ni = i + pe;
           if (ni < m)
           {
@@ -1081,23 +1101,46 @@ private:
             __syncthreads();
             issue_load(stage, no);
           }
+          return true;
         };
 
         // Phase 1: consume the first `p_eff` visits (the chunks reused from the previous pass, already resident in the
         // streaming slots), which issues the prefetch loads for this pass's reload wave into the freed slots.
+        bool stop            = false;
         const offset_t split = (::cuda::std::min) (pe, m);
         for (offset_t i = 0; i < split; ++i)
         {
-          consume(i);
+          if (!consume(i))
+          {
+            stop = true;
+            break;
+          }
         }
 
-        // The reload wave is now in flight; run the caller's resident-chunk work to hide its latency before waiting.
-        mid();
-
-        // Phase 2: consume the remaining visits (their loads were issued in phase 1 and overlapped `mid`).
-        for (offset_t i = split; i < m; ++i)
+        if (!stop)
         {
-          consume(i);
+          // The reload wave is now in flight; run the caller's resident-chunk work to hide its latency before waiting.
+          mid();
+
+          // Phase 2: consume the remaining visits (their loads were issued in phase 1 and overlapped `mid`).
+          for (offset_t i = split; i < m; ++i)
+          {
+            if (!consume(i))
+            {
+              break;
+            }
+          }
+        }
+
+        // Drain prefetches still in flight before returning: an early break leaves outstanding bulk copies whose
+        // mbarriers were never waited, and they must complete before the block can exit (their slots are never read).
+        // `inflight_mask` is block-uniform (set/cleared under uniform control flow), so the trip count and each
+        // collective `wait_stage` are uniform across the block.
+        while (inflight_mask != ::cuda::std::uint32_t{0})
+        {
+          const int drain_stage = __ffs(static_cast<int>(inflight_mask)) - 1;
+          agent.wait_stage(drain_stage);
+          inflight_mask &= ~(::cuda::std::uint32_t{1} << drain_stage);
         }
         forward = !forward;
       }
@@ -1113,6 +1156,10 @@ private:
           const offset_t chunk_idx = chunk_index_of(o);
           const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
           generic_apply(chunk);
+          if (!should_continue())
+          {
+            break;
+          }
         }
         forward = !forward;
       }
@@ -1140,7 +1187,10 @@ private:
             }
           }
         },
-        static_cast<Mid&&>(mid));
+        static_cast<Mid&&>(mid),
+        [] {
+          return true;
+        });
     }
 
     // Overload with no interleaved work, for the fused first pass where the resident keys are still being streamed in
@@ -1175,7 +1225,10 @@ private:
             }
           }
         },
-        static_cast<Mid&&>(mid));
+        static_cast<Mid&&>(mid),
+        [] {
+          return true;
+        });
     }
   };
 
@@ -1787,13 +1840,33 @@ private:
         tie_active = running < static_cast<offset_t>(num_back);
       }
 
-      // Process a flat span of `count` keys already in scan order, tiled by `threads_per_block * items`. Front keys go
-      // via `out_cnt`; surplus ties get a BlockScan-exclusive rank (seeded by `running`) and, if `rank < num_back`, are
-      // written reversed at `block_keys_out[k - 1 - rank]`. `running` carries across tiles and regions. `get_idx(pos)`
-      // gives the segment-local index, used only to load the value payload (compiled out in keys-only builds).
-      auto process_flat = [&](auto get_key, auto get_idx, int count) {
-        constexpr int items = tie_break_items_per_thread_clamped;
+      // Uniform early-exit predicate: true once this CTA's ties are placed and all selected are placed cluster-wide
+      // (the segment's whole top-k is done). Used between regions (skip the overflow stream) and per tile in
+      // `process_tiles` (bail the instant a committed stream has placed everything).
+      auto should_stop = [&]() -> bool {
+        if (tie_active)
+        {
+          return false;
+        }
+        const out_offset_t out_now = *static_cast<volatile out_offset_t*>(&leader_state->out_cnt);
+        return __syncthreads_or(static_cast<int>(out_now >= num_selected)) != 0;
+      };
+      // Sticky, block-uniform flag set by `process_tiles` when `should_stop()` first holds. It short-circuits the
+      // remaining tiles, the overflow stream (via `run_pass`'s `should_continue`), and every later region.
+      bool stop_now = false;
+
+      // Process a flat span of `count` keys already in scan order, tiled by `threads_per_block * Items` (`Items` passed
+      // as an `integral_constant`). Front keys go via `out_cnt`; surplus ties get a BlockScan-exclusive rank (seeded by
+      // `running`) and, if `rank < num_back`, are written reversed at `block_keys_out[k - 1 - rank]`. `running` carries
+      // across tiles and regions. `get_idx(pos)` gives the segment-local index, used only to load the value payload
+      // (compiled out in keys-only builds). After each tile we poll `should_stop()` and bail once the top-k is placed.
+      auto process_tiles = [&](auto items_ic, auto get_key, auto get_idx, int count) {
+        constexpr int items = items_ic();
         constexpr int tile  = threads_per_block * items;
+        if (stop_now)
+        {
+          return;
+        }
         for (int tile_base = 0; tile_base < count; tile_base += tile)
         {
           key_t keys[items];
@@ -1862,18 +1935,21 @@ private:
             // The next tile reuses `scan_storage`; order this tile's reads against the next ExclusiveSum's writes.
             __syncthreads();
           }
+
+          // Bail the instant the whole top-k is placed (this CTA's ties and all cluster-wide selected). Uniform.
+          if (should_stop())
+          {
+            stop_now = true;
+            break;
+          }
         }
       };
 
-      // Uniform early-exit between regions: stop once this CTA's ties are placed and all selected are placed
-      // cluster-wide. Lets the common prefer-smallest case skip the (expensive) overflow re-stream entirely.
-      auto should_stop = [&]() -> bool {
-        if (tie_active)
-        {
-          return false;
-        }
-        const out_offset_t out_now = *static_cast<volatile out_offset_t*>(&leader_state->out_cnt);
-        return __syncthreads_or(static_cast<int>(out_now >= num_selected)) != 0;
+      // Full-unroll flat scan for the resident and boundary-edge regions (one contiguous span; tile may exceed a
+      // chunk).
+      auto process_flat = [&](auto get_key, auto get_idx, int count) {
+        process_tiles(
+          ::cuda::std::integral_constant<int, tie_break_items_per_thread_clamped>{}, get_key, get_idx, count);
       };
 
       // Resident-front extent (bulk path): the contiguous resident span minus the forced-resident tail chunk, visited
@@ -1960,47 +2036,98 @@ private:
         }
       };
 
+      // Overflow chunks, in strict segment-index order (the tie-break scan demands it). The histogram leaves the
+      // streamer ping-ponging for L2 locality, but the final filter is a single ordered pass, so we drive the bulk-copy
+      // pipeline here in one fixed direction (`forward == !tie_reversed`). On the block-load path this folds each
+      // landed slot through `process_tiles` (reusing the TMA pipeline) instead of re-reading gmem; the generic fallback
+      // reads gmem chunk by chunk. The streamed unroll (`tie_break_items_streamed`) keeps a tile within a chunk, and
+      // `run_pass`'s `should_continue` breaks the stream once `process_tiles` reports the top-k fully placed.
+      //
+      // Slot reuse: the histogram leaves its last pass's `p_eff` turn-around chunks resident in the streaming slots,
+      // which (ping-pong) are exactly the first `p_eff` chunks of the *next* direction. Absent an early stop, exactly
+      // `num_passes` passes ran, so that direction is `num_passes % 2 == 0` (compile time); when it matches our scan
+      // direction we keep those chunks (`primed`) and only stream the rest, otherwise we re-prime (overwrite) the slots
+      // in our direction. An early stop makes the pass count -- hence the resident direction -- a runtime value, but
+      // then `num_back == 0` and this walk does only the order-independent front writes, so re-priming is always safe.
       auto process_overflow = [&](bool reversed) {
-        for (offset_t oo = 0; oo < overflow_count; ++oo)
-        {
-          const offset_t o         = reversed ? (overflow_count - 1 - oo) : oo;
-          const offset_t chunk_idx = part.global_index(overflow_base + o);
-          const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
-          // Visit only the aligned bulk: a peeled tail suffix is handled by `process_tail_edge`; every other overflow
-          // chunk has `bulk == count`. (The generic fallback never peels, so it uses the full count.)
-          int cc;
-          if constexpr (use_block_load_to_shared)
-          {
-            cc = static_cast<int>(split_chunk(block_keys_base, chunk).bulk);
-          }
-          else
-          {
-            cc = chunk.count;
-          }
-          const offset_t base_off = chunk.offset;
-          if (reversed)
-          {
-            process_flat(
-              [&](int pos) {
-                return block_keys_in[static_cast<segment_size_val_t>(base_off + static_cast<offset_t>(cc - 1 - pos))];
-              },
-              [&](int pos) {
-                return base_off + static_cast<offset_t>(cc - 1 - pos);
-              },
-              cc);
-          }
-          else
-          {
-            process_flat(
-              [&](int pos) {
-                return block_keys_in[static_cast<segment_size_val_t>(base_off + static_cast<offset_t>(pos))];
-              },
-              [&](int pos) {
-                return base_off + static_cast<offset_t>(pos);
-              },
-              cc);
-          }
-        }
+        _CCCL_ASSERT(reversed == tie_reversed, "deterministic overflow walk must run in the tie-break scan direction");
+        streamer.forward                    = !tie_reversed;
+        constexpr bool resident_dir_forward = (num_passes % 2) == 0; // streamer `forward` at filter entry (no early
+                                                                     // stop)
+        constexpr bool reuse_resident = (!tie_reversed) == resident_dir_forward;
+        streamer.primed               = reuse_resident && (leader_state->early_stop == ::cuda::std::uint32_t{0});
+
+        streamer.run_pass(
+          // Block-load: fold the chunk for overflow visit `o`, resident in streaming slot `stage`, straight from SMEM.
+          // `stage_span` rebuilds the slot pointer from its 32-bit shared address (spill-proof `LDS`) and returns only
+          // the aligned bulk (a peeled tail suffix is handled by `process_tail_edge`).
+          [&](int stage, offset_t o) {
+            const auto span         = streamer.stage_span(stage, o);
+            const key_t* const sm   = span.data();
+            const int cc            = static_cast<int>(span.size());
+            const offset_t base_off = get_chunk(streamer.chunk_index_of(o), segment_size_u32, head_items).offset;
+            constexpr auto items    = ::cuda::std::integral_constant<int, tie_break_items_streamed>{};
+            if (reversed)
+            {
+              process_tiles(
+                items,
+                [&](int pos) {
+                  return sm[cc - 1 - pos];
+                },
+                [&](int pos) {
+                  return base_off + static_cast<offset_t>(cc - 1 - pos);
+                },
+                cc);
+            }
+            else
+            {
+              process_tiles(
+                items,
+                [&](int pos) {
+                  return sm[pos];
+                },
+                [&](int pos) {
+                  return base_off + static_cast<offset_t>(pos);
+                },
+                cc);
+            }
+          },
+          // Generic fallback: read the overflow chunk straight from gmem (full count; the fallback never peels a tail).
+          [&](const auto& chunk) {
+            const offset_t base_off = chunk.offset;
+            const int cc            = chunk.count;
+            constexpr auto items    = ::cuda::std::integral_constant<int, tie_break_items_streamed>{};
+            if (reversed)
+            {
+              process_tiles(
+                items,
+                [&](int pos) {
+                  return block_keys_in[static_cast<segment_size_val_t>(base_off + static_cast<offset_t>(cc - 1 - pos))];
+                },
+                [&](int pos) {
+                  return base_off + static_cast<offset_t>(cc - 1 - pos);
+                },
+                cc);
+            }
+            else
+            {
+              process_tiles(
+                items,
+                [&](int pos) {
+                  return block_keys_in[static_cast<segment_size_val_t>(base_off + static_cast<offset_t>(pos))];
+                },
+                [&](int pos) {
+                  return base_off + static_cast<offset_t>(pos);
+                },
+                cc);
+            }
+          },
+          // No interleaved resident work: the deterministic filter folds its resident span separately.
+          [] {},
+          // Break the stream the moment the whole top-k is placed (set by `process_tiles` via `should_stop`).
+          [&] {
+            return !stop_now;
+          });
       };
 
       auto process_tail = [&](bool reversed) {
@@ -2112,21 +2239,21 @@ private:
       {
         // Descending global-index order: peeled suffix tail, resident high-index chunks, streamed low-index overflow,
         // peeled head prefix. With resident visited before overflow (`reverse_residency`), `should_stop` can skip the
-        // gmem-re-read overflow -- mirroring the ascending path.
+        // overflow re-stream -- mirroring the ascending path.
         process_tail_edge(true);
-        if (!should_stop())
+        if (!stop_now && !should_stop())
         {
           process_tail(true);
         }
-        if (!should_stop())
+        if (!stop_now && !should_stop())
         {
           process_resident(true);
         }
-        if (!should_stop())
+        if (!stop_now && !should_stop())
         {
           process_overflow(true);
         }
-        if (!should_stop())
+        if (!stop_now && !should_stop())
         {
           process_head_edge(true);
         }
@@ -2134,19 +2261,19 @@ private:
       else
       {
         process_head_edge(false);
-        if (!should_stop())
+        if (!stop_now && !should_stop())
         {
           process_resident(false);
         }
-        if (!should_stop())
+        if (!stop_now && !should_stop())
         {
           process_overflow(false);
         }
-        if (!should_stop())
+        if (!stop_now && !should_stop())
         {
           process_tail(false);
         }
-        if (!should_stop())
+        if (!stop_now && !should_stop())
         {
           process_tail_edge(false);
         }
