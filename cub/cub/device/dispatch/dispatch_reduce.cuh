@@ -648,7 +648,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   GridEvenShare<OffsetT> even_share;
   even_share.DispatchInit(num_items, max_blocks, tile_size);
 
-  AccumT* d_block_reductions = nullptr; // buffer for per-block aggregates for the two-phase code path
+  [[maybe_unused]] AccumT* d_block_reductions = nullptr; // buffer for per-block aggregates for the two-phase code path
   if constexpr (!StableReductionOrder)
   {
     if (const auto error =
