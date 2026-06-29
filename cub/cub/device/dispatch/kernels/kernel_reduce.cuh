@@ -167,7 +167,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_60,
       (),
-      (static_assert(!cuda::std::is_same_v<AccumT, double>,
+      (static_assert(!::cuda::std::is_same_v<AccumT, double>,
                      "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on CC < 6.0");))
 
     static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,

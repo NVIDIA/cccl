@@ -98,7 +98,7 @@ std::string get_device_reduce_kernel_name(
   std::string_view output_iterator_t,
   std::string_view accum_t,
   std::string_view init_t,
-  bool not_deterministic)
+  bool stable_reduction_order)
 {
   std::string policy_selector_t;
   check(cccl_type_name_from_nvrtc<device_reduce_policy>(&policy_selector_t));
@@ -112,9 +112,9 @@ std::string get_device_reduce_kernel_name(
   return std::format(
     "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
     policy_selector_t,
-    not_deterministic ? "true" : "false",
+    stable_reduction_order ? "true" : "false",
     input_iterator_t,
-    not_deterministic ? output_iterator_t : std::string(accum_t) + "*",
+    stable_reduction_order ? std::string(accum_t) + "*" : output_iterator_t,
     offset_t,
     reduction_op_t,
     accum_t,
@@ -207,7 +207,7 @@ try
     const auto operation_t = cccl_op_kind_to_cub_op(op.type);
     const int offset_size  = int{sizeof(OffsetT)};
     return cub::detail::reduce::policy_selector{
-      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size), determinism == CCCL_NOT_GUARANTEED};
+      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size), determinism != CCCL_NOT_GUARANTEED};
   }();
 
   // TODO(bgruber): drop this if tuning policies become formattable
@@ -240,7 +240,7 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
     accum_cpp, // 6
     offset_t, // 7
     op_name, // 8
-    determinism == CCCL_NOT_GUARANTEED, // 9
+    determinism != CCCL_NOT_GUARANTEED, // 9
     policy_sel_str.view()); // 10
 
 #if false // CCCL_DEBUGGING_SWITCH
@@ -254,7 +254,7 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
   std::string single_tile_second_kernel_name = reduce::get_single_tile_kernel_name(
     cccl_type_enum_to_name(accum_t.type, true), output_iterator_name, op_name, init_t, accum_cpp, true);
   std::string reduction_kernel_name = reduce::get_device_reduce_kernel_name(
-    op_name, input_iterator_name, output_iterator_name, accum_cpp, init_t, determinism == CCCL_NOT_GUARANTEED);
+    op_name, input_iterator_name, output_iterator_name, accum_cpp, init_t, determinism != CCCL_NOT_GUARANTEED);
   std::string single_tile_kernel_lowered_name;
   std::string single_tile_second_kernel_lowered_name;
   std::string reduction_kernel_lowered_name;
@@ -429,9 +429,7 @@ CUresult cccl_device_reduce_build_ex(
 }
 
 // c.parallel provides two separate reduce functions, one for each determinism
-// level, rather than a single function with a runtime switch. This mirrors CUB's
-// design, which uses distinct dispatch functions because the host-side logic
-// differs between determinism levels. Keeping the functions separate avoids
+// level, rather than a single function with a runtime switch. Keeping the functions separate avoids
 // branching at runtime to select the appropriate one; cuda.compute selects the
 // appropriate function to call at build time.
 
@@ -512,7 +510,7 @@ CUresult cccl_device_reduce_nondeterministic(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::detail::reduce::dispatch<void, true>(
+    auto exec_status = cub::detail::reduce::dispatch<void, false>(
       d_temp_storage,
       *temp_storage_bytes,
       indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
