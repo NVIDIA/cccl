@@ -795,8 +795,8 @@ try
   buffer_reader r{buf, size};
   const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_REDUCE);
 
-  const uint64_t accum_size  = r.read_pod<uint64_t>();
-  const auto determinism_v   = r.read_pod<uint32_t>();
+  const uint64_t accum_size = r.read_pod<uint64_t>();
+  const auto determinism_v  = r.read_pod<uint32_t>();
   if (determinism_v > static_cast<uint32_t>(CCCL_GPU_TO_GPU))
   {
     throw std::runtime_error(std::format("aot blob: invalid determinism ({})", determinism_v));

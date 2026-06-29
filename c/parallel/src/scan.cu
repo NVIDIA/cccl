@@ -861,11 +861,11 @@ try
   buffer_reader r{buf, size};
   const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SCAN);
 
-  const auto in_type    = read_type_info(r);
-  const auto out_type   = read_type_info(r);
-  const auto accum_type = read_type_info(r);
-  const bool force_inc    = r.read_pod<uint8_t>() != 0;
-  const auto init_kind_v  = r.read_pod<uint32_t>();
+  const auto in_type     = read_type_info(r);
+  const auto out_type    = read_type_info(r);
+  const auto accum_type  = read_type_info(r);
+  const bool force_inc   = r.read_pod<uint8_t>() != 0;
+  const auto init_kind_v = r.read_pod<uint32_t>();
   if (init_kind_v > static_cast<uint32_t>(CCCL_NO_INIT))
   {
     throw std::runtime_error(std::format("aot blob: invalid init kind ({})", init_kind_v));
