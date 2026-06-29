@@ -504,13 +504,20 @@ struct AgentHistogram
               samples[pixel][ch], bins[pixel], is_valid[pixel], mru);
           }
         }
-        else if constexpr (PrivatizedDecodeOpT::is_range_transform)
+        else if constexpr (PrivatizedDecodeOpT::is_range_transform && sizeof(SampleT) <= 4)
         {
-          // Static <=256-bin RANGE tier: lean classify (a flat UpperBound, byte-
-          // identical to upstream main) -- NOT the 3-arg BinSelect, whose interpolation
-          // machinery (the kInterpolationMinBins branch + precompute-field codegen) is
-          // dead weight here yet measurably slows this latency/occupancy-bound kernel
-          // (~1-3%). No MRU register state either. The dynamic tier keeps the full path.
+          // Static <=256-bin RANGE tier, NARROW samples (<=4 B, e.g. I32): lean classify
+          // (a flat UpperBound, byte-identical to upstream main) -- NOT the 3-arg
+          // BinSelect, whose interpolation machinery (the kInterpolationMinBins branch +
+          // precompute-field codegen) is dead weight here yet measurably slows this
+          // latency/occupancy-bound kernel. No MRU register state either.
+          //
+          // GATED ON sizeof(SampleT) <= 4: the lean flat-UpperBound path is faster than
+          // main's classify for 4-byte samples, but ~7-10% SLOWER for 8-byte samples
+          // (F64) -- the wide-sample classify benefits from the structure the lean path
+          // drops. So WIDE samples (F64) fall through to the full 3-arg BinSelect below
+          // (which matches main's behavior there). The dynamic tier keeps the full path
+          // for all widths.
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
           {
@@ -521,8 +528,9 @@ struct AgentHistogram
         }
         else
         {
-          // Static <=256-bin EVEN tier: plain 3-arg BinSelect (its ScaleTransform
-          // classify is already cheap; no MRU register state).
+          // Static <=256-bin tier for: EVEN (any width; its ScaleTransform classify is
+          // already cheap), and WIDE-sample RANGE (F64, where the lean path regresses).
+          // Plain 3-arg BinSelect; no MRU register state.
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
           {
