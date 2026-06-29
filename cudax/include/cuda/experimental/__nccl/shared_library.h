@@ -62,7 +62,7 @@ protected:
     ::cuda::std::unique_ptr<::cuda::std::remove_pointer_t<HMODULE>, __platform_deleter>;
 
   _CCCL_HOST_API __shared_library_base(const char* const __lib_path, const ::cuda::std::int32_t __flags)
-      : __handle_{::LoadLibraryExA(__lib_name, /*hFile=*/nullptr, static_cast<DWORD>(__flags))}
+      : __handle_{::LoadLibraryExA(__lib_path, /*hFile=*/nullptr, static_cast<DWORD>(__flags))}
   {}
 
   [[nodiscard]] _CCCL_HOST_API void* __load_symbol_platform(const char* const __sym_name, const bool __can_fail) const
