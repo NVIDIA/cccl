@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/add_overflow.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -155,12 +156,12 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
   while (!detail::__is_prime(__n))
   {
-    // explicit `uint64_t{0}`: `~0` would be a 32-bit `int`, not the 64-bit max
-    if (__n > ~::cuda::std::uint64_t{0} - 2)
+    const auto __next = ::cuda::add_overflow(__n, ::cuda::std::uint64_t{2});
+    if (__next.overflow)
     {
       return __n;
     }
-    __n += 2;
+    __n = __next.value;
   }
 
   return __n;
