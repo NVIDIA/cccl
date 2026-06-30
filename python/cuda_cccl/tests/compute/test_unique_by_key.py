@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import (
@@ -15,6 +14,7 @@ from cuda.compute import (
     OpKind,
     gpu_struct,
 )
+from cuda.core import Device
 
 DTYPE_LIST = [
     np.uint8,
@@ -125,7 +125,7 @@ unique_by_key_params = [
 
 @pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
 def test_unique_by_key(dtype, num_items, op, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -143,11 +143,13 @@ def test_unique_by_key(dtype, num_items, op, monkeypatch):
     h_out_items = np.empty(num_items, dtype=np.float32)
     h_out_num_selected = np.empty(1, np.int32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_items = numba.cuda.to_device(h_out_items)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_items = DeviceArray.from_numpy(h_in_items)
+    d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
+    d_out_items = DeviceArray.empty(h_out_items.shape, h_out_items.dtype)
+    d_out_num_selected = DeviceArray.empty(
+        h_out_num_selected.shape, h_out_num_selected.dtype
+    )
 
     unique_by_key_device(
         d_in_keys,
@@ -172,7 +174,7 @@ def test_unique_by_key(dtype, num_items, op, monkeypatch):
 
 @pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
 def test_unique_by_key_iterators(dtype, num_items, op, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -190,11 +192,13 @@ def test_unique_by_key_iterators(dtype, num_items, op, monkeypatch):
     h_out_items = np.empty(num_items, dtype=np.float32)
     h_out_num_selected = np.empty(1, np.int64)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_items = numba.cuda.to_device(h_out_items)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_items = DeviceArray.from_numpy(h_in_items)
+    d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
+    d_out_items = DeviceArray.empty(h_out_items.shape, h_out_items.dtype)
+    d_out_num_selected = DeviceArray.empty(
+        h_out_num_selected.shape, h_out_num_selected.dtype
+    )
 
     i_in_keys = CacheModifiedInputIterator(d_in_keys, modifier="stream")
     i_in_items = CacheModifiedInputIterator(d_in_items, modifier="stream")
@@ -226,9 +230,11 @@ def test_unique_by_key_keys_only():
     h_out_keys = np.empty(num_items, dtype=np.int32)
     h_out_num_selected = np.empty(1, np.int32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
+    d_out_num_selected = DeviceArray.empty(
+        h_out_num_selected.shape, h_out_num_selected.dtype
+    )
 
     unique_by_key_device(
         d_in_keys,
@@ -267,11 +273,13 @@ def test_unique_by_key_complex():
     h_out_items = np.empty(num_items, dtype=np.float32)
     h_out_num_selected = np.empty(1, np.int32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_out_keys = numba.cuda.to_device(h_out_keys)
-    d_out_items = numba.cuda.to_device(h_out_items)
-    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_items = DeviceArray.from_numpy(h_in_items)
+    d_out_keys = DeviceArray.empty(h_out_keys.shape, h_out_keys.dtype)
+    d_out_items = DeviceArray.empty(h_out_items.shape, h_out_items.dtype)
+    d_out_num_selected = DeviceArray.empty(
+        h_out_num_selected.shape, h_out_num_selected.dtype
+    )
 
     unique_by_key_device(
         d_in_keys,
@@ -328,14 +336,13 @@ def test_unique_by_key_struct_types():
     h_in_items["a"] = a_items
     h_in_items["b"] = b_items
 
-    d_in_keys = cp.empty_like(h_in_keys)
-    d_in_items = cp.empty_like(h_in_items)
-    d_in_keys.set(h_in_keys)
-    d_in_items.set(h_in_items)
-
-    d_out_keys = cp.empty_like(d_in_keys)
-    d_out_items = cp.empty_like(d_in_items)
-    d_out_num_selected = cp.empty_like(h_out_num_selected)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_items = DeviceArray.from_numpy(h_in_items)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_items = DeviceArray.empty(h_in_items.shape, h_in_items.dtype)
+    d_out_num_selected = DeviceArray.empty(
+        h_out_num_selected.shape, h_out_num_selected.dtype
+    )
 
     unique_by_key_device(
         d_in_keys,
@@ -347,10 +354,10 @@ def test_unique_by_key_struct_types():
         num_items,
     )
 
-    h_out_num_selected = d_out_num_selected.get()
+    h_out_num_selected = d_out_num_selected.copy_to_host()
     num_selected = h_out_num_selected[0]
-    h_out_keys = d_out_keys.get()[:num_selected]
-    h_out_items = d_out_items.get()[:num_selected]
+    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
+    h_out_items = d_out_items.copy_to_host()[:num_selected]
 
     expected_keys, expected_items = unique_by_key_host(
         h_in_keys,
@@ -363,7 +370,7 @@ def test_unique_by_key_struct_types():
 
 
 def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -375,7 +382,6 @@ def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
             False,
         )
 
-    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
     num_items = 10000
 
     h_in_keys = random_array(num_items, np.int32, max_value=20)
@@ -384,13 +390,20 @@ def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
     h_out_items = np.empty(num_items, dtype=np.float32)
     h_out_num_selected = np.empty(1, np.int32)
 
-    with cp_stream:
-        h_in_keys = random_array(num_items, np.int32)
-        d_in_keys = cp.asarray(h_in_keys)
-        d_in_items = cp.asarray(h_in_items)
-        d_out_keys = cp.empty_like(h_out_keys)
-        d_out_items = cp.empty_like(h_out_items)
-        d_out_num_selected = cp.empty_like(h_out_num_selected)
+    h_in_keys = random_array(num_items, np.int32)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys, stream=cuda_stream)
+    d_in_items = DeviceArray.from_numpy(h_in_items, stream=cuda_stream)
+    d_out_keys = DeviceArray.empty(
+        h_out_keys.shape, h_out_keys.dtype, stream=cuda_stream
+    )
+    d_out_items = DeviceArray.empty(
+        h_out_items.shape, h_out_items.dtype, stream=cuda_stream
+    )
+    d_out_num_selected = DeviceArray.empty(
+        h_out_num_selected.shape,
+        h_out_num_selected.dtype,
+        stream=cuda_stream,
+    )
 
     unique_by_key_device(
         d_in_keys,
@@ -403,9 +416,9 @@ def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
         stream=cuda_stream,
     )
 
-    h_out_keys = d_out_keys.get()
-    h_out_items = d_out_items.get()
-    h_out_num_selected = d_out_num_selected.get()
+    h_out_keys = d_out_keys.copy_to_host(stream=cuda_stream)
+    h_out_items = d_out_items.copy_to_host(stream=cuda_stream)
+    h_out_num_selected = d_out_num_selected.copy_to_host(stream=cuda_stream)
 
     num_selected = h_out_num_selected[0]
     h_out_keys = h_out_keys[:num_selected]
@@ -418,7 +431,7 @@ def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
 
 
 def test_unique_by_key_well_known_equal_to(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = Device().compute_capability
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -433,11 +446,13 @@ def test_unique_by_key_well_known_equal_to(monkeypatch):
     dtype = np.int32
 
     # Create input keys and values: keys=[1,1,1,2,2,3] values=[10,20,30,40,50,60]
-    d_in_keys = cp.array([1, 1, 1, 2, 2, 3], dtype=dtype)
-    d_in_values = cp.array([10, 20, 30, 40, 50, 60], dtype=dtype)
-    d_out_keys = cp.empty_like(d_in_keys)
-    d_out_values = cp.empty_like(d_in_values)
-    d_num_selected = cp.empty(1, dtype=dtype)
+    h_in_keys = np.array([1, 1, 1, 2, 2, 3], dtype=dtype)
+    h_in_values = np.array([10, 20, 30, 40, 50, 60], dtype=dtype)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_values = DeviceArray.from_numpy(h_in_values)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_values = DeviceArray.empty(h_in_values.shape, h_in_values.dtype)
+    d_num_selected = DeviceArray.empty(1, dtype)
 
     # Run unique by key with well-known EQUAL_TO operation
     cuda.compute.unique_by_key(
@@ -447,13 +462,13 @@ def test_unique_by_key_well_known_equal_to(monkeypatch):
         d_out_items=d_out_values,
         d_out_num_selected=d_num_selected,
         op=OpKind.EQUAL_TO,
-        num_items=len(d_in_keys),
+        num_items=h_in_keys.size,
     )
 
     # Check the result is correct
-    assert d_num_selected.get()[0] == 3  # three unique keys
+    assert d_num_selected.copy_to_host()[0] == 3  # three unique keys
     expected_keys = [1, 2, 3]
     expected_values = [10, 40, 60]  # first occurrence of each key
 
-    np.testing.assert_equal(d_out_keys.get()[:3], expected_keys)
-    np.testing.assert_equal(d_out_values.get()[:3], expected_values)
+    np.testing.assert_equal(d_out_keys.copy_to_host()[:3], expected_keys)
+    np.testing.assert_equal(d_out_values.copy_to_host()[:3], expected_values)
