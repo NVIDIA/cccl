@@ -57,7 +57,7 @@ try
   const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
 #if CCCL_OS(WINDOWS)
-  auto first_call_state = std::make_unique<cccl::detail::FirstCallGate>();
+  auto first_call_state = std::make_unique<cccl::detail::first_call_gate>();
 #endif
 
   auto result =
@@ -111,7 +111,7 @@ try
   const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
 #if CCCL_OS(WINDOWS)
-  auto first_call_state = std::make_unique<cccl::detail::FirstCallGate>();
+  auto first_call_state = std::make_unique<cccl::detail::first_call_gate>();
 #endif
 
   // Use the output type as the accumulator type (same as the previous raw JIT
@@ -206,7 +206,7 @@ try
   // Empty calls return before CUB initializes its static launch configuration,
   // so they must not complete the first-call gate.
   const int status =
-    num_items == 0 ? invoke() : static_cast<cccl::detail::FirstCallGate*>(build.first_call_state)->invoke(invoke);
+    num_items == 0 ? invoke() : static_cast<cccl::detail::first_call_gate*>(build.first_call_state)->invoke(invoke);
 #else
   const int status = fn(d_in.state, d_out.state, num_items, op.state, reinterpret_cast<void*>(stream));
 #endif
@@ -244,7 +244,7 @@ try
   // Empty calls return before CUB initializes its static launch configuration,
   // so they must not complete the first-call gate.
   const int status =
-    num_items == 0 ? invoke() : static_cast<cccl::detail::FirstCallGate*>(build.first_call_state)->invoke(invoke);
+    num_items == 0 ? invoke() : static_cast<cccl::detail::first_call_gate*>(build.first_call_state)->invoke(invoke);
 #else
   const int status = fn(d_in1.state, d_in2.state, d_out.state, num_items, op.state, reinterpret_cast<void*>(stream));
 #endif
@@ -268,7 +268,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 #if CCCL_OS(WINDOWS)
-  delete static_cast<cccl::detail::FirstCallGate*>(build_ptr->first_call_state);
+  delete static_cast<cccl::detail::first_call_gate*>(build_ptr->first_call_state);
   build_ptr->first_call_state = nullptr;
 #endif
   cccl::detail::release_jit_artifacts(build_ptr);

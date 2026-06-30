@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import concurrent.futures
-import os
 import sys
 import sysconfig
 import threading
@@ -23,14 +22,9 @@ pytestmark = [
     ),
 ]
 
-STRESS_ITERATIONS = int(os.environ.get("CCCL_FREE_THREADING_STRESS_ITERATIONS", "10"))
-STRESS_THREADS = int(os.environ.get("CCCL_FREE_THREADING_STRESS_THREADS", "2"))
-TRANSFORM_NATIVE_CACHE_THREADS = int(
-    os.environ.get(
-        "CCCL_FREE_THREADING_TRANSFORM_NATIVE_CACHE_THREADS",
-        str(max(STRESS_THREADS, 4)),
-    )
-)
+STRESS_ITERATIONS = 10
+STRESS_THREADS = 2
+TRANSFORM_NATIVE_CACHE_THREADS = 4
 
 
 def _is_free_threaded_build() -> bool:
@@ -256,6 +250,16 @@ def _run_unary(cp, cc, transformer, worker):
     )
 
 
+def _run_unary_empty(cp, cc, transformer, worker):
+    transformer(
+        d_in=worker["d_in"],
+        d_out=worker["d_out"],
+        op=cc.OpKind.NEGATE,
+        num_items=0,
+        stream=worker["cuda_stream"],
+    )
+
+
 def _check_unary(cp, cc, worker):
     worker["stream"].synchronize()
     np.testing.assert_array_equal(worker["d_out"].get(), -worker["h_in"])
@@ -306,6 +310,17 @@ def _run_binary(cp, cc, transformer, worker):
         d_out=worker["d_out"],
         op=cc.OpKind.PLUS,
         num_items=worker["h_in1"].size,
+        stream=worker["cuda_stream"],
+    )
+
+
+def _run_binary_empty(cp, cc, transformer, worker):
+    transformer(
+        d_in1=worker["d_in1"],
+        d_in2=worker["d_in2"],
+        d_out=worker["d_out"],
+        op=cc.OpKind.PLUS,
+        num_items=0,
         stream=worker["cuda_stream"],
     )
 
@@ -557,12 +572,42 @@ def _make_upper_bound_shared(cp, cc):
     )
 
 
+def _make_lower_bound_for_worker(cp, cc, worker):
+    return cc.make_lower_bound(
+        d_data=worker["d_data"],
+        d_values=worker["d_values"],
+        d_out=worker["d_out"],
+        comp=cc.OpKind.GREATER,
+    )
+
+
+def _make_upper_bound_for_worker(cp, cc, worker):
+    return cc.make_upper_bound(
+        d_data=worker["d_data"],
+        d_values=worker["d_values"],
+        d_out=worker["d_out"],
+        comp=cc.OpKind.GREATER,
+    )
+
+
 def _run_binary_search(cp, cc, searcher, worker):
     searcher(
         d_data=worker["d_data"],
         num_items=worker["h_data"].size,
         d_values=worker["d_values"],
         num_values=worker["h_values"].size,
+        d_out=worker["d_out"],
+        comp=cc.OpKind.GREATER,
+        stream=worker["cuda_stream"],
+    )
+
+
+def _run_binary_search_empty(cp, cc, searcher, worker):
+    searcher(
+        d_data=worker["d_data"],
+        num_items=worker["h_data"].size,
+        d_values=worker["d_values"],
+        num_values=0,
         d_out=worker["d_out"],
         comp=cc.OpKind.GREATER,
         stream=worker["cuda_stream"],
@@ -1268,6 +1313,166 @@ def test_cold_transform_native_cache_initialization_stress(compute_modules, case
     cp, cc = compute_modules
 
     _run_cold_transform_native_cache_case(cp, cc, case)
+
+
+@dataclass(frozen=True)
+class _V2FirstCallCase:
+    name: str
+    make_worker: Callable
+    make_algorithm: Callable
+    run_empty: Callable
+    run: Callable
+    check: Callable
+
+    def __str__(self):
+        return self.name
+
+
+def _run_v2_first_call_gate_case(cp, cc, case: _V2FirstCallCase) -> None:
+    for iteration in range(STRESS_ITERATIONS):
+        cc.clear_all_caches()
+        workers = [
+            case.make_worker(cp, cc, worker_id=worker_id, iteration=iteration)
+            for worker_id in range(TRANSFORM_NATIVE_CACHE_THREADS)
+        ]
+        returned_algorithms = [None] * TRANSFORM_NATIVE_CACHE_THREADS
+        algorithms_built_barrier = threading.Barrier(TRANSFORM_NATIVE_CACHE_THREADS)
+        nonempty_call_barrier = threading.Barrier(TRANSFORM_NATIVE_CACHE_THREADS)
+
+        def make_thread(worker_id, worker):
+            def thread(barrier):
+                barrier.wait()
+                try:
+                    algorithm = case.make_algorithm(cp, cc, worker)
+                    returned_algorithms[worker_id] = algorithm
+                    algorithms_built_barrier.wait(timeout=60)
+
+                    # Empty calls return before CUB initializes its static launch
+                    # configuration and therefore must not complete the gate.
+                    if worker_id == 0:
+                        case.run_empty(cp, cc, algorithm, worker)
+
+                    nonempty_call_barrier.wait(timeout=60)
+                    case.run(cp, cc, algorithm, worker)
+                    case.check(cp, cc, worker)
+                except BaseException:
+                    algorithms_built_barrier.abort()
+                    nonempty_call_barrier.abort()
+                    raise
+
+            return thread
+
+        _run_threaded(
+            [make_thread(worker_id, worker) for worker_id, worker in enumerate(workers)]
+        )
+
+        assert len({id(algorithm) for algorithm in returned_algorithms}) == len(
+            returned_algorithms
+        )
+        assert (
+            len({id(_get_build_result(algorithm)) for algorithm in returned_algorithms})
+            == 1
+        )
+
+
+_V2_FIRST_CALL_CASES = [
+    _V2FirstCallCase(
+        "unary_transform",
+        _make_unary_worker,
+        _make_unary_for_worker,
+        _run_unary_empty,
+        _run_unary,
+        _check_unary,
+    ),
+    _V2FirstCallCase(
+        "binary_transform",
+        _make_binary_worker,
+        _make_binary_for_worker,
+        _run_binary_empty,
+        _run_binary,
+        _check_binary,
+    ),
+    _V2FirstCallCase(
+        "lower_bound",
+        _make_binary_search_worker,
+        _make_lower_bound_for_worker,
+        _run_binary_search_empty,
+        _run_binary_search,
+        _check_lower_bound,
+    ),
+    _V2FirstCallCase(
+        "upper_bound",
+        _make_binary_search_worker,
+        _make_upper_bound_for_worker,
+        _run_binary_search_empty,
+        _run_binary_search,
+        _check_upper_bound,
+    ),
+]
+
+
+def test_v2_concurrent_cold_llvm_initialization():
+    from cuda.compute._build_info import USING_V2
+
+    if not USING_V2:
+        pytest.skip("requires the C Parallel v2 backend")
+
+    import cupy as cp
+
+    import cuda.compute as cc
+
+    cc.clear_all_caches()
+    workers = [
+        case.make_worker(cp, cc, worker_id=worker_id, iteration=0)
+        for worker_id, case in enumerate(_V2_FIRST_CALL_CASES)
+    ]
+    returned_algorithms = [None] * len(_V2_FIRST_CALL_CASES)
+    build_barrier = threading.Barrier(len(_V2_FIRST_CALL_CASES))
+
+    def make_thread(worker_id, case, worker):
+        def thread():
+            build_barrier.wait(timeout=60)
+            algorithm = case.make_algorithm(cp, cc, worker)
+            returned_algorithms[worker_id] = algorithm
+            case.run(cp, cc, algorithm, worker)
+            case.check(cp, cc, worker)
+
+        return thread
+
+    try:
+        # LLVM target registration is process-wide and only cold once. CI runs
+        # this test alone in a fresh pytest process before any other v2 test;
+        # distinct algorithm keys prevent the Python build cache from
+        # coalescing these concurrent HostJIT compiler initializations.
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(_V2_FIRST_CALL_CASES)
+        ) as executor:
+            futures = [
+                executor.submit(make_thread(worker_id, case, worker))
+                for worker_id, (case, worker) in enumerate(
+                    zip(_V2_FIRST_CALL_CASES, workers)
+                )
+            ]
+            for future in futures:
+                future.result()
+    finally:
+        cc.clear_all_caches()
+
+    assert len(
+        {id(_get_build_result(algorithm)) for algorithm in returned_algorithms}
+    ) == len(returned_algorithms)
+
+
+@pytest.mark.parametrize("case", _V2_FIRST_CALL_CASES, ids=str)
+def test_v2_first_call_gate_stress(compute_modules, case):
+    cp, cc = compute_modules
+
+    from cuda.compute._build_info import USING_V2
+
+    if not USING_V2:
+        pytest.skip("requires the C Parallel v2 backend")
+
+    _run_v2_first_call_gate_case(cp, cc, case)
 
 
 def _iterator_counting(cp, cc):

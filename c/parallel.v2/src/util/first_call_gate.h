@@ -15,7 +15,12 @@
 
 namespace cccl::detail
 {
-class FirstCallGate
+// Serializes the first successful invocation of generated CUB code that
+// lazily initializes a function-local static. Windows HostJIT translation
+// units use -fno-threadsafe-statics because the required CRT support is not
+// available. Callers bypass the gate for empty work; after initialization,
+// the atomic fast path invokes the generated function without locking.
+class first_call_gate
 {
 public:
   template <typename Invocation>
