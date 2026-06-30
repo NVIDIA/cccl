@@ -66,7 +66,7 @@ struct fixed_policy_selector
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::detail::merge::merge_policy
   {
-    return {128, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false};
+    return {128, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false, false};
   }
 };
 
