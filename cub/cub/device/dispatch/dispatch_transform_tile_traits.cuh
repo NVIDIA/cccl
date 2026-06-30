@@ -55,6 +55,8 @@ namespace transform
 {
 // Opt a (functor type, element type, input arity) combo into the tile dispatch path: specialize this to
 // true for the combo. Eligibility only -- the __tile__ functor to actually run is named by tile_operator<Op>.
+// The kernel default-constructs tile_operator_t<Op> and never sees the Op instance, so the substitute must be
+// stateless (the dispatch static_assert enforces this). Op may carry state; it is only used on the fallback path.
 template <typename Op, typename T, ::cuda::std::size_t NIn>
 inline constexpr bool tile_eligible_v = false;
 
