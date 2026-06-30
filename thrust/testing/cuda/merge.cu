@@ -32,8 +32,8 @@ void TestMergeDevice(ExecutionPolicy exec)
   const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
 
   const auto max_size = static_cast<size_t>(*thrust::max_element(sizes, sizes + num_sizes));
-  auto h_a            = test_runtime::random_integers_buffer<int, unittest::int8_t>(stream, device, n);
-  auto h_b            = test_runtime::random_integers_buffer<int, unittest::int8_t>(stream, device, max_size, n);
+  auto h_a            = test_runtime::random_integers_buffer<int, unittest::int8_t>(stream, n);
+  auto h_b            = test_runtime::random_integers_buffer<int, unittest::int8_t>(stream, max_size, n);
 
   thrust::stable_sort(h_a.begin(), h_a.end());
   thrust::stable_sort(h_b.begin(), h_b.end());
@@ -45,7 +45,7 @@ void TestMergeDevice(ExecutionPolicy exec)
   {
     const size_t size = sizes[i];
 
-    auto h_result = test_runtime::make_host_buffer<int>(stream, device, n + size);
+    auto h_result = test_runtime::make_host_buffer<int>(stream, n + size);
     stream.sync();
 
     const auto h_end = thrust::merge(h_a.begin(), h_a.end(), h_b.begin(), h_b.begin() + size, h_result.begin());
