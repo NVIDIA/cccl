@@ -911,6 +911,18 @@ private:
     return old;
   }
 
+  // Relaxed atomic load of `back_local_cnt`. Used by the `all_below_cta` bail to snapshot how many of this block's
+  // candidates have been placed, concurrently with the `back_local_inc` atomics of faster lanes: an atomic-vs-atomic
+  // pair, so it carries no read/write hazard (unlike a plain SMEM read) and needs no extra barrier.
+  _CCCL_DEVICE _CCCL_FORCEINLINE offset_t back_local_load()
+  {
+    const ::cuda::std::uint32_t addr =
+      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.back_local_cnt));
+    offset_t v;
+    asm volatile("ld.relaxed.cta.shared::cta.u32 %0, [%1];" : "=r"(v) : "r"(addr) : "memory");
+    return v;
+  }
+
   _CCCL_DEVICE _CCCL_FORCEINLINE void add_local_selected(offset_t v)
   {
     const ::cuda::std::uint32_t addr =
@@ -1905,18 +1917,17 @@ private:
 
     if constexpr (deterministic)
     {
-      // Deterministic tie-break: strictly-selected keys fill the front `[0, num_selected)`; the `num_kth` tied
-      // candidates fill the back by global index rank. The combined scan below gives this block its front base
-      // (`sel_prefix`) and candidate base (`cand_prefix`); front uses a SMEM atomic offset by `sel_prefix`, back keeps
-      // its index-ordered BlockScan seeded by `cand_prefix`. Early stop means the splitter bucket holds *exactly* the
-      // remaining `k`, so all are winners (`num_back == 0`, candidates fold into the front, no back scan).
+      // Deterministic tie-break: strictly-selected keys fill the front via a SMEM atomic (offset by `sel_prefix`);
+      // candidates fill the back -- arrival-order atomics away from the K-boundary, an index-ordered BlockScan only on
+      // the boundary-crossing tile (see `all_below_cta` and the per-tile back logic). Early stop is not special-cased:
+      // `total_candidates == num_kth` then makes every CTA `all_below_cta`.
       //
-      // Cache `early_stop` now, while every block is still tightly coupled to the pass loop's final `cluster.sync` (no
-      // block has reached `process_tiles`, so the leader's DSMEM is present). The overflow walk reuses this local -- a
-      // post-scan re-read of `leader_state` could touch an already-returned leader now that the final barrier is gone.
+      // Cache `early_stop`/`total_candidates` now, while every block is still tightly coupled to the pass loop's final
+      // `cluster.sync` -- a post-scan re-read of `leader_state` could touch an already-returned leader (barrier gone).
       const bool early_stopped        = (leader_state->early_stop != ::cuda::std::uint32_t{0});
-      const out_offset_t num_back     = early_stopped ? out_offset_t{0} : num_kth;
-      const out_offset_t num_selected = k - num_back; // front region; == k on early stop
+      const offset_t total_candidates = leader_state->len;
+      const out_offset_t num_back     = num_kth; // all candidates go to the back; the front holds only selected keys
+      const out_offset_t num_selected = k - num_back; // front region
 
       // Publish the last pass's `num_strictly_selected`/`my_candidates` (written by the owning lane after the final
       // `cluster.sync`) block-wide before they feed the scan and `front_count`.
@@ -1924,16 +1935,24 @@ private:
       const bool participates = !is_idle_rank && (cluster_rank != leader_rank);
       const offset_t my_sel   = participates ? temp_storage.num_strictly_selected : offset_t{0};
       const offset_t my_cand  = participates ? temp_storage.my_candidates : offset_t{0};
-      // Front count pushed by this block: its strictly-selected count, plus (on early stop) its folded splitter
-      // candidates. The leader and idle ranks push 0 -- the leader because its merged histogram cannot self-count (it
-      // derives its own front from the total below), idle ranks because they own nothing.
-      const offset_t push_front = (num_back == out_offset_t{0}) ? static_cast<offset_t>(my_sel + my_cand) : my_sel;
+      // Front count pushed by this block: its strictly-selected count. Candidates always route through the back, so
+      // nothing folds into the front here. The leader and idle ranks push 0 -- the leader because its merged histogram
+      // cannot self-count (it derives its own front from the total below), idle ranks because they own nothing.
+      const offset_t push_front = my_sel;
       const ::cuda::std::uint64_t packed =
         (static_cast<::cuda::std::uint64_t>(push_front) << 32) | static_cast<::cuda::std::uint64_t>(my_cand);
       const ::cuda::std::uint64_t pp =
         combined_prefix_scan(cluster, single_cta, cluster_rank, eff_cluster_blocks, packed);
       const offset_t sel_prefix  = static_cast<offset_t>(pp >> 32);
       const offset_t cand_prefix = static_cast<offset_t>(pp & 0xffffffffu);
+      // This block's own candidate count: non-leaders hold it in `my_cand`; the leader is last in scan order, so
+      // `cand_prefix` already sums every other block's candidates and `total_candidates - cand_prefix` is its own. A
+      // CTA is `all_below_cta` when all of its candidates sit at or below the K-boundary (`cand_prefix + my_cand_count
+      // <= num_back`): every one wins, so the back places them with arrival-order SMEM atomics and skips the
+      // index-ordered scan. While `tie_active`, a non-`all_below_cta` CTA is the single boundary-crossing (straddling)
+      // CTA cluster-wide.
+      const offset_t my_cand_count = (cluster_rank == leader_rank) ? (total_candidates - cand_prefix) : my_cand;
+      const bool all_below_cta     = (cand_prefix + my_cand_count) <= static_cast<offset_t>(num_back);
       // This block's own front size: non-leaders know it directly (`push_front`); the leader is last in scan order, so
       // `sel_prefix` already sums every other block's front and `num_selected - sel_prefix` is the remainder it owns.
       const out_offset_t my_front =
@@ -1963,13 +1982,13 @@ private:
       // remaining tiles, the overflow stream (via `run_pass`'s `should_continue`), and every later region.
       bool stop_now = false;
 
-      // Process a flat span of `count` keys already in scan order, tiled by `threads_per_block * Items` (`Items` as an
-      // `integral_constant`). Front keys go via a block-local SMEM atomic offset by `sel_prefix`; surplus ties get a
-      // BlockScan-exclusive rank (seeded by `running`) and, if `rank < num_back`, are written reversed at
-      // `block_keys_out[k - 1 - rank]`. `running` carries across tiles and regions. `get_idx(pos)` gives the
-      // segment-local index for the value payload (compiled out in keys-only builds). Each tile ends with a single
-      // barrier that both orders `scan_storage` reuse and reduces the done flag, bailing once the top-k is placed.
-      auto process_tiles = [&](auto items_ic, auto get_key, auto get_idx, int count) {
+      // Process a flat span of `count` keys in scan order, tiled by `threads_per_block * Items`. Strictly-selected keys
+      // go to the front via a SMEM atomic (offset by `sel_prefix`); candidates go to the back (see the per-tile logic
+      // below). `region_is_terminal` marks this region as the CTA's last, so its last tile -- if ties are unresolved --
+      // holds the boundary and scans directly. `running` carries across tiles/regions; `get_idx(pos)` is the
+      // segment-local index for the value payload. Each tile ends with one barrier that reduces the done flag and
+      // bails.
+      auto process_tiles = [&](auto items_ic, auto get_key, auto get_idx, int count, bool region_is_terminal) {
         constexpr int items = items_ic();
         constexpr int tile  = threads_per_block * items;
         if (stop_now)
@@ -1996,16 +2015,13 @@ private:
             }
           }
 
-          // Strictly-selected keys go to this block's front slice via a block-local SMEM atomic offset by `sel_prefix`;
-          // on early stop (`num_back == 0`) the splitter bucket's candidates are winners too and fold in here. The
-          // per-block slices (disjoint by `sel_prefix`) together fill `[0, num_selected)`.
+          // Strictly-selected keys go to this block's front slice via a block-local SMEM atomic offset by `sel_prefix`.
+          // The per-block slices (disjoint by `sel_prefix`) together fill `[0, num_selected)`. Candidates never fold in
+          // here -- they always route through the back below, even on early stop.
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int i = 0; i < items; ++i)
           {
-            const bool to_front =
-              valid[i]
-              && (cls[i] == detail::topk::candidate_class::selected
-                  || (num_back == out_offset_t{0} && cls[i] == detail::topk::candidate_class::candidate));
+            const bool to_front = valid[i] && (cls[i] == detail::topk::candidate_class::selected);
             if (to_front)
             {
               const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
@@ -2017,40 +2033,119 @@ private:
             }
           }
 
-          // Surplus ties (`num_back > 0`): each candidate gets a BlockScan rank (seeded by `running`), written reversed
-          // at `block_keys_out[k - 1 - rank]` when `rank < num_back`. Skipped on early stop (`tie_active == false`).
+          // Snapshot for the `all_below_cta` bail (relaxed atomic load -> no hazard vs the back atomics, no barrier).
+          // Monotonic and capped at `my_cand_count`, so observing prior/partial increments can only delay the bail,
+          // never trip it early. Unused by straddling/above CTAs (they bail on `!tie_active`).
+          const offset_t back_seen = all_below_cta ? back_local_load() : offset_t{0};
+
+          // Back/tie placement (only while this CTA still has unresolved ties). Three block-uniform sub-paths:
+          //   * all_below_cta -- every candidate wins: arrival-order SMEM atomics, no scan, no barrier.
+          //   * terminal tile -- the straddling CTA's last tile necessarily holds the boundary: scan it directly.
+          //   * other tiles   -- straddling CTA, boundary not yet known: place in arrival order, then `B1` to read the
+          //                      counter and, on the crossing tile only, overwrite the arrival slots in index order.
           if (tie_active)
           {
-            offset_t excl[items];
-            offset_t tile_total = 0;
-            block_scan_t(temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int i = 0; i < items; ++i)
+            const bool terminal_tile = region_is_terminal && (tile_base + tile >= count);
+            if (all_below_cta)
             {
-              if (valid[i] && flags[i] != offset_t{0})
+              _CCCL_PRAGMA_UNROLL_FULL()
+              for (int i = 0; i < items; ++i)
               {
-                const offset_t global_rank = running + excl[i];
-                if (global_rank < static_cast<offset_t>(num_back))
+                if (valid[i] && flags[i] != offset_t{0})
                 {
-                  const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
-                  const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-                  block_keys_out[out]    = keys[i];
-                  write_value(out, get_idx(pos));
+                  const offset_t global_rank = cand_prefix + back_local_inc();
+                  if (global_rank < static_cast<offset_t>(num_back))
+                  {
+                    const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
+                    const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+                    block_keys_out[out]    = keys[i];
+                    write_value(out, get_idx(pos));
+                  }
                 }
               }
             }
-            running += tile_total;
-            if (running >= static_cast<offset_t>(num_back))
+            else if (terminal_tile)
             {
+              offset_t excl[items];
+              offset_t tile_total = 0;
+              block_scan_t(temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
+              _CCCL_PRAGMA_UNROLL_FULL()
+              for (int i = 0; i < items; ++i)
+              {
+                if (valid[i] && flags[i] != offset_t{0})
+                {
+                  const offset_t global_rank = running + excl[i];
+                  if (global_rank < static_cast<offset_t>(num_back))
+                  {
+                    const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
+                    const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+                    block_keys_out[out]    = keys[i];
+                    write_value(out, get_idx(pos));
+                  }
+                }
+              }
+              running += tile_total;
               tie_active = false;
+            }
+            else
+            {
+              _CCCL_PRAGMA_UNROLL_FULL()
+              for (int i = 0; i < items; ++i)
+              {
+                if (valid[i] && flags[i] != offset_t{0})
+                {
+                  const offset_t global_rank = cand_prefix + back_local_inc();
+                  if (global_rank < static_cast<offset_t>(num_back))
+                  {
+                    const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
+                    const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+                    block_keys_out[out]    = keys[i];
+                    write_value(out, get_idx(pos));
+                  }
+                }
+              }
+              // B1: order the arrival global writes ahead of the index-order overwrite (same boundary slots) and make
+              // the counter read race-free and block-uniform.
+              __syncthreads();
+              const offset_t placed = temp_storage.back_local_cnt;
+              if ((cand_prefix + placed) > static_cast<offset_t>(num_back))
+              {
+                // Boundary tile: overwrite this tile's arrival slots `{k-1-running, ...}` with the index-ordered
+                // winners (identical slot set, different candidate->slot mapping).
+                offset_t excl[items];
+                offset_t tile_total = 0;
+                block_scan_t(temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
+                _CCCL_PRAGMA_UNROLL_FULL()
+                for (int i = 0; i < items; ++i)
+                {
+                  if (valid[i] && flags[i] != offset_t{0})
+                  {
+                    const offset_t global_rank = running + excl[i];
+                    if (global_rank < static_cast<offset_t>(num_back))
+                    {
+                      const int pos = tile_base + static_cast<int>(threadIdx.x) * items + i;
+                      const out_offset_t out =
+                        static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+                      block_keys_out[out] = keys[i];
+                      write_value(out, get_idx(pos));
+                    }
+                  }
+                }
+              }
+              running = cand_prefix + placed;
+              if (running >= static_cast<offset_t>(num_back))
+              {
+                tie_active = false;
+              }
             }
           }
 
-          // One barrier per tile doing double duty: it orders this tile's `scan_storage` reads against the next tile's
-          // ExclusiveSum writes (needed whenever `tie_active`), and it reduces the block-local done flag so the bail is
-          // uniform. Bail the instant the whole top-k is placed: this CTA's ties (`!tie_active`) plus a front-complete
-          // sighting from some lane's atomic (`front_done_seen`). The OR is over registers -- no remote read.
-          if (__syncthreads_or((!tie_active && front_done_seen) ? 1 : 0) != 0)
+          // One barrier per tile: reduce the done flag (and order `scan_storage` reuse against the next tile's scan).
+          // Back-complete is `!tie_active` (straddling/above) or `back_seen >= my_cand_count` (an `all_below_cta` that
+          // never clears `tie_active`), AND a front-complete sighting. The OR only fires once the whole output is
+          // placed (no false positive), so all lanes break together.
+          const bool back_complete = all_below_cta ? (back_seen >= my_cand_count) : !tie_active;
+          if (__syncthreads_or((back_complete && front_done_seen) ? 1 : 0) != 0)
           {
             stop_now = true;
             break;
@@ -2060,9 +2155,12 @@ private:
 
       // Full-unroll flat scan for the resident and boundary-edge regions (one contiguous span; tile may exceed a
       // chunk).
-      auto process_flat = [&](auto get_key, auto get_idx, int count) {
-        process_tiles(
-          ::cuda::std::integral_constant<int, tie_break_items_per_thread_clamped>{}, get_key, get_idx, count);
+      auto process_flat = [&](auto get_key, auto get_idx, int count, bool region_is_terminal) {
+        process_tiles(::cuda::std::integral_constant<int, tie_break_items_per_thread_clamped>{},
+                      get_key,
+                      get_idx,
+                      count,
+                      region_is_terminal);
       };
 
       // Resident-front extent (bulk path): the contiguous resident span minus the forced-resident tail chunk, visited
@@ -2078,6 +2176,25 @@ private:
           front_count = front_count - tail_count;
         }
       }
+
+      // Terminal-region flags for the last-tile direct-scan gate (block-load regions only; the generic resident loop
+      // and overflow stream pass `false` and stay on lazy per-tile detection). A region is terminal when no later
+      // region in the sweep (head/resident/overflow/tail/tail-edge ascending, reversed descending) carries work. A
+      // forced tail/edge after the last overflow chunk is not special-cased -- a stray direct scan there is still
+      // correct, just rare.
+      const bool has_head      = head_edge_len > 0;
+      const bool has_resident  = front_count > 0;
+      const bool has_overflow  = overflow_count > offset_t{0};
+      const bool has_tail      = tail_count > 0;
+      const bool has_tail_edge = tail_edge_len > 0;
+      [[maybe_unused]] const bool resident_terminal =
+        tie_reversed ? (!has_overflow && !has_head) : (!has_overflow && !has_tail && !has_tail_edge);
+      [[maybe_unused]] const bool tail_terminal =
+        tie_reversed ? (!has_resident && !has_overflow && !has_head) : (!has_tail_edge);
+      [[maybe_unused]] const bool head_edge_terminal =
+        tie_reversed ? true : (!has_resident && !has_overflow && !has_tail && !has_tail_edge);
+      [[maybe_unused]] const bool tail_edge_terminal =
+        tie_reversed ? (!has_tail && !has_resident && !has_overflow && !has_head) : true;
 
       // Segment-local base of the resident-front span (its lowest-index resident chunk; `resident_base` shifts it to
       // the high-index window under `reverse_residency`). The blocked partition packs the front contiguously, so
@@ -2098,7 +2215,8 @@ private:
               [&](int pos) {
                 return front_seg_base + static_cast<offset_t>(fc - 1 - pos);
               },
-              fc);
+              fc,
+              resident_terminal);
           }
           else
           {
@@ -2109,7 +2227,8 @@ private:
               [&](int pos) {
                 return front_seg_base + static_cast<offset_t>(pos);
               },
-              fc);
+              fc,
+              resident_terminal);
           }
         }
         else
@@ -2123,6 +2242,8 @@ private:
             const int cc             = chunk.count;
             const offset_t base_off  = chunk.offset;
             key_t* const ck          = slot_keys_unpadded(local_slot);
+            // Generic multi-chunk resident loop: never the terminal-tile fast path (the lazy per-tile boundary
+            // detection handles any boundary), so pass `false`.
             if (reversed)
             {
               process_flat(
@@ -2132,7 +2253,8 @@ private:
                 [&](int pos) {
                   return base_off + static_cast<offset_t>(cc - 1 - pos);
                 },
-                cc);
+                cc,
+                false);
             }
             else
             {
@@ -2143,7 +2265,8 @@ private:
                 [&](int pos) {
                   return base_off + static_cast<offset_t>(pos);
                 },
-                cc);
+                cc,
+                false);
             }
           }
         }
@@ -2160,8 +2283,9 @@ private:
       // which (ping-pong) are exactly the first `p_eff` chunks of the *next* direction. Absent an early stop, exactly
       // `num_passes` passes ran, so that direction is `num_passes % 2 == 0` (compile time); when it matches our scan
       // direction we keep those chunks (`primed`) and only stream the rest, otherwise we re-prime (overwrite) the slots
-      // in our direction. An early stop makes the pass count -- hence the resident direction -- a runtime value, but
-      // then `num_back == 0` and this walk does only the order-independent front writes, so re-priming is always safe.
+      // in our direction. An early stop makes the pass count -- hence the resident direction -- a runtime value, so we
+      // always re-prime then: it is still safe because on early stop every candidate wins (all CTAs are
+      // `all_below_cta`), so both the front and back writes here are order-independent.
       auto process_overflow = [&](bool reversed) {
         _CCCL_ASSERT(reversed == tie_reversed, "deterministic overflow walk must run in the tie-break scan direction");
         streamer.forward                    = !tie_reversed;
@@ -2180,6 +2304,9 @@ private:
             const int cc            = static_cast<int>(span.size());
             const offset_t base_off = get_chunk(streamer.chunk_index_of(o), segment_size_u32, head_items).offset;
             constexpr auto items    = ::cuda::std::integral_constant<int, tie_break_items_streamed>{};
+            // The multi-chunk overflow stream stays on the lazy per-tile boundary detection (`region_is_terminal ==
+            // false`): a stray terminal direct scan here would need the streamer to flag its last chunk, and the saving
+            // is one barrier on one tile.
             if (reversed)
             {
               process_tiles(
@@ -2190,7 +2317,8 @@ private:
                 [&](int pos) {
                   return base_off + static_cast<offset_t>(cc - 1 - pos);
                 },
-                cc);
+                cc,
+                false);
             }
             else
             {
@@ -2202,7 +2330,8 @@ private:
                 [&](int pos) {
                   return base_off + static_cast<offset_t>(pos);
                 },
-                cc);
+                cc,
+                false);
             }
           },
           // Generic fallback: read the overflow chunk straight from gmem (full count; the fallback never peels a tail).
@@ -2220,7 +2349,8 @@ private:
                 [&](int pos) {
                   return base_off + static_cast<offset_t>(cc - 1 - pos);
                 },
-                cc);
+                cc,
+                false);
             }
             else
             {
@@ -2232,7 +2362,8 @@ private:
                 [&](int pos) {
                   return base_off + static_cast<offset_t>(pos);
                 },
-                cc);
+                cc,
+                false);
             }
           },
           // No interleaved resident work: the deterministic filter folds its resident span separately.
@@ -2265,7 +2396,8 @@ private:
               [&](int pos) {
                 return tail_seg_base + static_cast<offset_t>(tc - 1 - pos);
               },
-              tc);
+              tc,
+              tail_terminal);
           }
           else
           {
@@ -2276,7 +2408,8 @@ private:
               [&](int pos) {
                 return tail_seg_base + static_cast<offset_t>(pos);
               },
-              tc);
+              tc,
+              tail_terminal);
           }
         }
       };
@@ -2298,7 +2431,8 @@ private:
               [&](int pos) {
                 return static_cast<offset_t>(hc - 1 - pos);
               },
-              hc);
+              hc,
+              head_edge_terminal);
           }
           else
           {
@@ -2309,7 +2443,8 @@ private:
               [&](int pos) {
                 return static_cast<offset_t>(pos);
               },
-              hc);
+              hc,
+              head_edge_terminal);
           }
         }
       };
@@ -2332,7 +2467,8 @@ private:
               [&](int pos) {
                 return tail_base + static_cast<offset_t>(tc - 1 - pos);
               },
-              tc);
+              tc,
+              tail_edge_terminal);
           }
           else
           {
@@ -2343,7 +2479,8 @@ private:
               [&](int pos) {
                 return tail_base + static_cast<offset_t>(pos);
               },
-              tc);
+              tc,
+              tail_edge_terminal);
           }
         }
       };
