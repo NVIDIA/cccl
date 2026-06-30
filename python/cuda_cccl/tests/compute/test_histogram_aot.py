@@ -77,14 +77,7 @@ def test_serialize_deserialize_histogram_even_round_trip():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = _Histogram.deserialize(
-        blob,
-        d_samples=d_samples,
-        d_histogram=d_histogram,
-        h_num_output_levels=h_num_output_levels,
-        h_lower_level=h_lower_level,
-        h_upper_level=h_upper_level,
-    )
+    loaded = _Histogram.deserialize(blob)
     _run(
         loaded,
         d_samples=d_samples,

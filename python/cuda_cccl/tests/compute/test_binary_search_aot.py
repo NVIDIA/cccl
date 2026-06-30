@@ -33,9 +33,7 @@ def test_serialize_deserialize_lower_bound_round_trip():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = load_lower_bound(
-        blob, d_data=d_data, d_values=d_values, d_out=d_out
-    )
+    loaded = load_lower_bound(blob)
     loaded(
         d_data=d_data,
         num_items=len(d_data),
@@ -60,9 +58,7 @@ def test_serialize_deserialize_upper_bound_round_trip():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = load_upper_bound(
-        blob, d_data=d_data, d_values=d_values, d_out=d_out
-    )
+    loaded = load_upper_bound(blob)
     loaded(
         d_data=d_data,
         num_items=len(d_data),

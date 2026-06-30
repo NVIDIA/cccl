@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from ... import _bindings, types
+from ... import _aot_serde, _bindings, types
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
@@ -17,6 +17,9 @@ from ..._utils.protocols import (
 from ..._utils.temp_storage_buffer import TempStorageBuffer
 from ...op import OpAdapter, make_op_adapter
 from ...typing import DeviceArrayLike, IteratorT, Operator
+
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
+_ALGO_MERGE_SORT = 6
 
 
 class _MergeSort:
@@ -62,39 +65,36 @@ class _MergeSort:
         )
 
     @classmethod
-    def deserialize(
-        cls,
-        blob: bytes,
-        d_in_keys: DeviceArrayLike | IteratorT,
-        d_in_values: DeviceArrayLike | IteratorT | None,
-        d_out_keys: DeviceArrayLike,
-        d_out_values: DeviceArrayLike | None,
-        op: Operator,
-    ) -> "_MergeSort":
-        """Reconstruct a merge_sort from a blob produced by :meth:`serialize`."""
-        present_in_values = d_in_values is not None
-        present_out_values = d_out_values is not None
-        assert present_in_values == present_out_values
+    def deserialize(cls, blob: bytes) -> "_MergeSort":
+        """Reconstruct a merge_sort from a blob produced by :meth:`serialize`.
 
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. No objects required.
+        """
+        r = _aot_serde.open(blob, _ALGO_MERGE_SORT)
         obj = cls.__new__(cls)
-        obj.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
-        obj.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values)
-        obj.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
-        obj.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values)
-        obj.op_adapter = make_op_adapter(op)
-
-        # Reconstruct the op without triggering JIT (the device code is in the blob).
-        value_type = cccl.get_value_type(d_in_keys)
-        obj.op_cccl = obj.op_adapter.compile_for_load(
-            (value_type, value_type), types.int8
+        obj.d_in_keys_cccl = _aot_serde.read_iterator(r)
+        obj.d_in_values_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_keys_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_values_cccl = _aot_serde.read_iterator(r)
+        obj.op_cccl = _aot_serde.read_op(r)
+        # op_adapter is only used during build; __call__ rebuilds it from the
+        # op passed at call time, so it is not needed on the deserialize path.
+        obj.op_adapter = None  # type: ignore[assignment]
+        obj.build_result = _bindings.DeviceMergeSortBuildResult.deserialize(
+            r.remaining()
         )
-
-        obj.build_result = _bindings.DeviceMergeSortBuildResult.deserialize(blob)
         return obj
 
     def serialize(self) -> bytes:
-        """Return a bytes blob representing this built merge_sort."""
-        return self.build_result.serialize()
+        """Return a self-contained bytes blob for this built merge_sort."""
+        w = _aot_serde.begin(_ALGO_MERGE_SORT)
+        _aot_serde.write_iterator(w, self.d_in_keys_cccl)
+        _aot_serde.write_iterator(w, self.d_in_values_cccl)
+        _aot_serde.write_iterator(w, self.d_out_keys_cccl)
+        _aot_serde.write_iterator(w, self.d_out_values_cccl)
+        _aot_serde.write_op(w, self.op_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

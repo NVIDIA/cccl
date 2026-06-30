@@ -59,14 +59,7 @@ def test_serialize_deserialize_exclusive_scan_round_trip():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = _Scan.deserialize(
-        blob,
-        d_in=d_in,
-        d_out=d_out,
-        op=OpKind.PLUS,
-        init_value=init_value,
-        force_inclusive=False,
-    )
+    loaded = _Scan.deserialize(blob)
     _run(
         loaded,
         d_in=d_in,
@@ -91,14 +84,7 @@ def test_serialize_deserialize_inclusive_scan_round_trip():
     )
     blob = builder.serialize()
 
-    loaded = _Scan.deserialize(
-        blob,
-        d_in=d_in,
-        d_out=d_out,
-        op=OpKind.PLUS,
-        init_value=init_value,
-        force_inclusive=True,
-    )
+    loaded = _Scan.deserialize(blob)
     _run(
         loaded,
         d_in=d_in,
@@ -133,14 +119,7 @@ def test_deserialize_after_jit_matches_jit_result():
         d_in=d_in, d_out=d_out_aot, op=max_op, init_value=init_value
     )
     blob = builder.serialize()
-    loaded = _Scan.deserialize(
-        blob,
-        d_in=d_in,
-        d_out=d_out_aot,
-        op=max_op,
-        init_value=init_value,
-        force_inclusive=False,
-    )
+    loaded = _Scan.deserialize(blob)
     _run(
         loaded,
         d_in=d_in,

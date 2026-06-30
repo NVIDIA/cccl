@@ -63,13 +63,7 @@ def test_serialize_deserialize_radix_sort_keys_values():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = _RadixSort.deserialize(
-        blob,
-        d_in_keys=d_in_keys,
-        d_out_keys=d_out_keys,
-        d_in_values=d_in_values,
-        d_out_values=d_out_values,
-    )
+    loaded = _RadixSort.deserialize(blob)
     _run(
         loaded,
         d_in_keys=d_in_keys,

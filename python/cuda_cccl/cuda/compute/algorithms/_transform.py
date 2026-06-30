@@ -7,13 +7,17 @@ from __future__ import annotations
 
 from typing import Callable
 
-from .. import _bindings
+from .. import _aot_serde, _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
 from .._utils import protocols
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
+
+# Algorithm tags stored in the descriptor sidecar (see _aot_serde).
+_ALGO_UNARY_TRANSFORM = 4
+_ALGO_BINARY_TRANSFORM = 13
 
 
 class _UnaryTransform:
@@ -41,26 +45,27 @@ class _UnaryTransform:
         )
 
     @classmethod
-    def deserialize(
-        cls,
-        blob: bytes,
-        d_in: DeviceArrayLike | IteratorT,
-        d_out: DeviceArrayLike | IteratorT,
-        op: Operator,
-    ) -> "_UnaryTransform":
-        """Reconstruct a unary_transform from a blob produced by :meth:`serialize`."""
+    def deserialize(cls, blob: bytes) -> "_UnaryTransform":
+        """Reconstruct a unary_transform from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. No objects required.
+        """
+        r = _aot_serde.open(blob, _ALGO_UNARY_TRANSFORM)
         obj = cls.__new__(cls)
-        obj.d_in_cccl = cccl.to_cccl_input_iter(d_in)
-        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        in_type = cccl.get_value_type(d_in)
-        out_type = cccl.get_value_type(d_out)
-        obj.op_cccl = make_op_adapter(op).compile_for_load((in_type,), out_type)
-        obj.build_result = _bindings.DeviceUnaryTransform.deserialize(blob)
+        obj.d_in_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_cccl = _aot_serde.read_iterator(r)
+        obj.op_cccl = _aot_serde.read_op(r)
+        obj.build_result = _bindings.DeviceUnaryTransform.deserialize(r.remaining())
         return obj
 
     def serialize(self) -> bytes:
-        """Return a bytes blob representing this built unary_transform."""
-        return self.build_result.serialize()
+        """Return a self-contained bytes blob for this built unary_transform."""
+        w = _aot_serde.begin(_ALGO_UNARY_TRANSFORM)
+        _aot_serde.write_iterator(w, self.d_in_cccl)
+        _aot_serde.write_iterator(w, self.d_out_cccl)
+        _aot_serde.write_op(w, self.op_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,
@@ -123,31 +128,29 @@ class _BinaryTransform:
         )
 
     @classmethod
-    def deserialize(
-        cls,
-        blob: bytes,
-        d_in1: DeviceArrayLike | IteratorT,
-        d_in2: DeviceArrayLike | IteratorT,
-        d_out: DeviceArrayLike | IteratorT,
-        op: Operator,
-    ) -> "_BinaryTransform":
-        """Reconstruct a binary_transform from a blob produced by :meth:`serialize`."""
+    def deserialize(cls, blob: bytes) -> "_BinaryTransform":
+        """Reconstruct a binary_transform from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. No objects required.
+        """
+        r = _aot_serde.open(blob, _ALGO_BINARY_TRANSFORM)
         obj = cls.__new__(cls)
-        obj.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
-        obj.d_in2_cccl = cccl.to_cccl_input_iter(d_in2)
-        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        in1_type = cccl.get_value_type(d_in1)
-        in2_type = cccl.get_value_type(d_in2)
-        out_type = cccl.get_value_type(d_out)
-        obj.op_cccl = make_op_adapter(op).compile_for_load(
-            (in1_type, in2_type), out_type
-        )
-        obj.build_result = _bindings.DeviceBinaryTransform.deserialize(blob)
+        obj.d_in1_cccl = _aot_serde.read_iterator(r)
+        obj.d_in2_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_cccl = _aot_serde.read_iterator(r)
+        obj.op_cccl = _aot_serde.read_op(r)
+        obj.build_result = _bindings.DeviceBinaryTransform.deserialize(r.remaining())
         return obj
 
     def serialize(self) -> bytes:
-        """Return a bytes blob representing this built binary_transform."""
-        return self.build_result.serialize()
+        """Return a self-contained bytes blob for this built binary_transform."""
+        w = _aot_serde.begin(_ALGO_BINARY_TRANSFORM)
+        _aot_serde.write_iterator(w, self.d_in1_cccl)
+        _aot_serde.write_iterator(w, self.d_in2_cccl)
+        _aot_serde.write_iterator(w, self.d_out_cccl)
+        _aot_serde.write_op(w, self.op_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

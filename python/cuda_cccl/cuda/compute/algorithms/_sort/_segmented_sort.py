@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ... import _bindings
+from ... import _aot_serde, _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
@@ -18,6 +18,9 @@ from ..._utils.protocols import (
 from ..._utils.temp_storage_buffer import TempStorageBuffer
 from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
+
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
+_ALGO_SEGMENTED_SORT = 8
 
 
 class _SegmentedSort:
@@ -64,33 +67,35 @@ class _SegmentedSort:
         )
 
     @classmethod
-    def deserialize(
-        cls,
-        blob: bytes,
-        d_in_keys: DeviceArrayLike | DoubleBuffer,
-        d_out_keys: DeviceArrayLike | None,
-        d_in_values: DeviceArrayLike | DoubleBuffer | None,
-        d_out_values: DeviceArrayLike | None,
-        start_offsets_in: DeviceArrayLike,
-        end_offsets_in: DeviceArrayLike,
-    ) -> "_SegmentedSort":
-        """Reconstruct a segmented_sort from a blob produced by :meth:`serialize`."""
-        d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
-            _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
-        )
+    def deserialize(cls, blob: bytes) -> "_SegmentedSort":
+        """Reconstruct a segmented_sort from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. No objects required.
+        """
+        r = _aot_serde.open(blob, _ALGO_SEGMENTED_SORT)
         obj = cls.__new__(cls)
-        obj.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys_array)
-        obj.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys_array)
-        obj.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values_array)
-        obj.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values_array)
-        obj.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
-        obj.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
-        obj.build_result = _bindings.DeviceSegmentedSortBuildResult.deserialize(blob)
+        obj.d_in_keys_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_keys_cccl = _aot_serde.read_iterator(r)
+        obj.d_in_values_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_values_cccl = _aot_serde.read_iterator(r)
+        obj.start_offsets_in_cccl = _aot_serde.read_iterator(r)
+        obj.end_offsets_in_cccl = _aot_serde.read_iterator(r)
+        obj.build_result = _bindings.DeviceSegmentedSortBuildResult.deserialize(
+            r.remaining()
+        )
         return obj
 
     def serialize(self) -> bytes:
-        """Return a bytes blob representing this built segmented_sort."""
-        return self.build_result.serialize()
+        """Return a self-contained bytes blob for this built segmented_sort."""
+        w = _aot_serde.begin(_ALGO_SEGMENTED_SORT)
+        _aot_serde.write_iterator(w, self.d_in_keys_cccl)
+        _aot_serde.write_iterator(w, self.d_out_keys_cccl)
+        _aot_serde.write_iterator(w, self.d_in_values_cccl)
+        _aot_serde.write_iterator(w, self.d_out_values_cccl)
+        _aot_serde.write_iterator(w, self.start_offsets_in_cccl)
+        _aot_serde.write_iterator(w, self.end_offsets_in_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

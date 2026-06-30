@@ -624,15 +624,6 @@ class _StatelessOp(OpAdapter):
     def compile(self, input_types, output_type=None) -> Op:
         return compile_op(self._func, input_types, output_type)
 
-    def compile_for_load(self, input_types, output_type=None) -> Op:
-        return Op(
-            operator_type=OpKind.STATELESS,
-            name="",
-            ltoir=b"",
-            state_alignment=1,
-            state=b"",
-        )
-
     @property
     def func(self) -> Callable:
         """Access the wrapped callable."""
@@ -979,15 +970,6 @@ class _StatefulOp(OpAdapter):
         transformed_func = _transform_function_ast(self._func, self._state.names)
         return _compile_stateful_op(
             transformed_func, input_types, self._state.arrays, output_type
-        )
-
-    def compile_for_load(self, input_types, output_type=None) -> Op:
-        return Op(
-            operator_type=OpKind.STATEFUL,
-            name="",
-            ltoir=b"",
-            state_alignment=np.dtype(np.intp).alignment,
-            state=self.get_state(),
         )
 
     def get_cache_key(self):

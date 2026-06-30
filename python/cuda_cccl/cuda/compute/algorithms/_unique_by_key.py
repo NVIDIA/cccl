@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from .. import _bindings, types
+from .. import _aot_serde, _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
@@ -17,6 +17,9 @@ from .._utils.protocols import (
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
+
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
+_ALGO_UNIQUE_BY_KEY = 10
 
 
 class _UniqueByKey:
@@ -60,33 +63,35 @@ class _UniqueByKey:
         )
 
     @classmethod
-    def deserialize(
-        cls,
-        blob: bytes,
-        d_in_keys: DeviceArrayLike | IteratorT,
-        d_in_items: DeviceArrayLike | IteratorT,
-        d_out_keys: DeviceArrayLike | IteratorT,
-        d_out_items: DeviceArrayLike | IteratorT,
-        d_out_num_selected: DeviceArrayLike,
-        op: Operator,
-    ) -> "_UniqueByKey":
-        """Reconstruct a unique_by_key from a blob produced by :meth:`serialize`."""
+    def deserialize(cls, blob: bytes) -> "_UniqueByKey":
+        """Reconstruct a unique_by_key from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. No objects required.
+        """
+        r = _aot_serde.open(blob, _ALGO_UNIQUE_BY_KEY)
         obj = cls.__new__(cls)
-        obj.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
-        obj.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
-        obj.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
-        obj.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
-        obj.d_out_num_selected_cccl = cccl.to_cccl_output_iter(d_out_num_selected)
-        value_type = cccl.get_value_type(d_in_keys)
-        obj.op_cccl = make_op_adapter(op).compile_for_load(
-            (value_type, value_type), types.uint8
+        obj.d_in_keys_cccl = _aot_serde.read_iterator(r)
+        obj.d_in_items_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_keys_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_items_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_num_selected_cccl = _aot_serde.read_iterator(r)
+        obj.op_cccl = _aot_serde.read_op(r)
+        obj.build_result = _bindings.DeviceUniqueByKeyBuildResult.deserialize(
+            r.remaining()
         )
-        obj.build_result = _bindings.DeviceUniqueByKeyBuildResult.deserialize(blob)
         return obj
 
     def serialize(self) -> bytes:
-        """Return a bytes blob representing this built unique_by_key."""
-        return self.build_result.serialize()
+        """Return a self-contained bytes blob for this built unique_by_key."""
+        w = _aot_serde.begin(_ALGO_UNIQUE_BY_KEY)
+        _aot_serde.write_iterator(w, self.d_in_keys_cccl)
+        _aot_serde.write_iterator(w, self.d_in_items_cccl)
+        _aot_serde.write_iterator(w, self.d_out_keys_cccl)
+        _aot_serde.write_iterator(w, self.d_out_items_cccl)
+        _aot_serde.write_iterator(w, self.d_out_num_selected_cccl)
+        _aot_serde.write_op(w, self.op_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

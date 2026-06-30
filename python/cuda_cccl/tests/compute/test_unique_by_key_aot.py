@@ -78,15 +78,7 @@ def test_serialize_deserialize_unique_by_key_round_trip():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = _UniqueByKey.deserialize(
-        blob,
-        d_in_keys=d_in_keys,
-        d_in_items=d_in_values,
-        d_out_keys=d_out_keys,
-        d_out_items=d_out_values,
-        d_out_num_selected=d_out_num_selected,
-        op=OpKind.EQUAL_TO,
-    )
+    loaded = _UniqueByKey.deserialize(blob)
     _run(
         loaded,
         d_in_keys=d_in_keys,
