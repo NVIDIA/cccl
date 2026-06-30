@@ -387,10 +387,15 @@ C2H_TEST("Device ReduceByKey can be tuned", "[reduce][device]", reduce_by_key_bl
 
 #endif // TEST_LAUNCH != 1
 
-using requirements =
-  c2h::type_list<cuda::execution::determinism::gpu_to_gpu_t,
-                 cuda::execution::determinism::run_to_run_t,
-                 cuda::execution::determinism::not_guaranteed_t>;
+// On MSVC + CTK >= 13.3 the deterministic (RFA) reduce launches a kernel whose pointer does not match the
+// test's statically-computed expectation, so gpu_to_gpu determinism is excluded there.
+// See https://github.com/NVIDIA/cccl/issues/9643
+using requirements = c2h::type_list<
+#if !(_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, >=, 13, 3))
+  cuda::execution::determinism::gpu_to_gpu_t,
+#endif
+  cuda::execution::determinism::run_to_run_t,
+  cuda::execution::determinism::not_guaranteed_t>;
 
 C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 {
