@@ -265,7 +265,8 @@ private:
       // clang-tidy incorrectly reports "'__t' used after it was forwarded".
       // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
       // NOLINTNEXTLINE(bugprone-use-after-move)
-      : tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_TupleOfIteratorReferences>(__t))...)
+      : __base_(__tuple_variadic_constructor_tag{},
+                ::cuda::std::get<_Indices>(::cuda::std::forward<_TupleOfIteratorReferences>(__t))...)
   {}
 
 public:
