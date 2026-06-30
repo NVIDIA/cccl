@@ -3,18 +3,10 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/functional.h>
 #include <thrust/transform_reduce.h>
 
 #include "nvbench_helper.cuh"
-
-template <class T>
-struct square_t
-{
-  __host__ __device__ T operator()(const T& x) const
-  {
-    return x * x;
-  }
-};
 
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
@@ -31,7 +23,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
                do_not_optimize(thrust::transform_reduce(
-                 policy(alloc, launch), in.begin(), in.end(), square_t<T>{}, T{}, ::cuda::std::plus<T>{}));
+                 policy(alloc, launch), in.begin(), in.end(), thrust::square<T>{}, T{}, ::cuda::std::plus<T>{}));
              });
 }
 
