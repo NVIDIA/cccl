@@ -52,13 +52,17 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys env-alloc example", "[batched_topk][de
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
     env);
+  // Each segment's k largest keys are written to keys_out in unspecified order. The result set is fixed,
+  // shown here sorted per segment:
+  auto expected_result_set = thrust::device_vector<int>{8, 7, 6, /* segment 0 */ 9, 8, 7 /* segment 1 */};
   // example-end batched-topk-max-keys-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
+  // keys_out is unordered, so sort each segment (descending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
-  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
+  REQUIRE(keys_out == expected_result_set);
 }
 
 C2H_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][device][env]")
@@ -90,13 +94,17 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys env-alloc example", "[batched_topk][de
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
     env);
+  // Each segment's k smallest keys are written to keys_out in unspecified order. The result set is fixed,
+  // shown here sorted per segment:
+  auto expected_result_set = thrust::device_vector<int>{-3, 1, 2, /* segment 0 */ 0, 1, 2 /* segment 1 */};
   // example-end batched-topk-min-keys-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
+  // keys_out is unordered, so sort each segment (ascending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k);
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k);
-  REQUIRE(keys_out == thrust::device_vector<int>{-3, 1, 2, 0, 1, 2});
+  REQUIRE(keys_out == expected_result_set);
 }
 
 C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][device][env]")
@@ -134,13 +142,16 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
     env);
+  // keys_out holds each segment's k largest keys. The key set is fixed (shown here sorted per segment). For
+  // keys that tie, which equal element's value is returned is unspecified.
+  auto expected_result_set = thrust::device_vector<int>{8, 7, 6, /* segment 0 */ 9, 8, 7 /* segment 1 */};
   // example-end batched-topk-max-pairs-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
 
-  // Each input value is the global item index. Bounds-checked: every returned value indexes back to the input
-  // element (within its own segment) whose key was selected.
+  // Each returned value is the source index of its key within the segment. Check that every value indexes
+  // back to the input element whose key was selected.
   thrust::host_vector<int> h_keys_in(keys_in);
   thrust::host_vector<int> h_keys_out(keys_out);
   thrust::host_vector<int> h_values_out(values_out);
@@ -156,10 +167,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs env-alloc example", "[batched_topk][d
     }
   }
 
-  // The selected keys must be the per-segment top-k (output is unordered; sort each segment descending).
+  // keys_out is unordered, so sort each segment (descending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
-  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
+  REQUIRE(keys_out == expected_result_set);
 }
 
 C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][device][env]")
@@ -197,13 +208,16 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][d
     cuda::args::constant<k>{},
     cuda::args::immediate{cuda::std::int64_t{num_segments}},
     env);
+  // keys_out holds each segment's k smallest keys. The key set is fixed (shown here sorted per segment). For
+  // keys that tie, which equal element's value is returned is unspecified.
+  auto expected_result_set = thrust::device_vector<int>{-3, 1, 2, /* segment 0 */ 0, 1, 2 /* segment 1 */};
   // example-end batched-topk-min-pairs-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
 
-  // Each input value is the global item index. Bounds-checked: every returned value indexes back to the input
-  // element (within its own segment) whose key was selected.
+  // Each returned value is the source index of its key within the segment. Check that every value indexes
+  // back to the input element whose key was selected.
   thrust::host_vector<int> h_keys_in(keys_in);
   thrust::host_vector<int> h_keys_out(keys_out);
   thrust::host_vector<int> h_values_out(values_out);
@@ -219,8 +233,8 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs env-alloc example", "[batched_topk][d
     }
   }
 
-  // The selected keys must be the per-segment top-k (output is unordered; sort each segment ascending).
+  // keys_out is unordered, so sort each segment (ascending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k);
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k);
-  REQUIRE(keys_out == thrust::device_vector<int>{-3, 1, 2, 0, 1, 2});
+  REQUIRE(keys_out == expected_result_set);
 }

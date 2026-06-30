@@ -64,13 +64,16 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_t
     k_arg,
     num_segs,
     env);
+  // Each segment's k largest keys are written to keys_out in unspecified order. The result set is fixed,
+  // shown here sorted per segment:
+  auto expected_result_set = thrust::device_vector<int>{8, 7, 6, /* segment 0 */ 9, 8, 7 /* segment 1 */};
   // example-end batched-topk-max-keys
 
   REQUIRE(error == cudaSuccess);
-  // The per-segment output is unordered; sort each segment (descending) before comparing.
+  // keys_out is unordered, so sort each segment (descending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
-  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
+  REQUIRE(keys_out == expected_result_set);
 }
 
 C2H_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_topk][device]")
@@ -109,12 +112,16 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_t
     k_arg,
     num_segs,
     env);
+  // Each segment's k smallest keys are written to keys_out in unspecified order. The result set is fixed,
+  // shown here sorted per segment:
+  auto expected_result_set = thrust::device_vector<int>{-3, 1, 2, /* segment 0 */ 0, 1, 2 /* segment 1 */};
   // example-end batched-topk-min-keys
 
   REQUIRE(error == cudaSuccess);
+  // keys_out is unordered, so sort each segment (ascending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k);
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k);
-  REQUIRE(keys_out == thrust::device_vector<int>{-3, 1, 2, 0, 1, 2});
+  REQUIRE(keys_out == expected_result_set);
 }
 
 C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_topk][device]")
@@ -160,12 +167,15 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
     k_arg,
     num_segs,
     env);
+  // keys_out holds each segment's k largest keys. The key set is fixed (shown here sorted per segment). For
+  // keys that tie, which equal element's value is returned is unspecified.
+  auto expected_result_set = thrust::device_vector<int>{8, 7, 6, /* segment 0 */ 9, 8, 7 /* segment 1 */};
   // example-end batched-topk-max-pairs
 
   REQUIRE(error == cudaSuccess);
 
-  // Each input value is the global item index. Bounds-checked: every returned value indexes back to the input
-  // element (within its own segment) whose key was selected.
+  // Each returned value is the source index of its key within the segment. Check that every value indexes
+  // back to the input element whose key was selected.
   thrust::host_vector<int> h_keys_in(keys_in);
   thrust::host_vector<int> h_keys_out(keys_out);
   thrust::host_vector<int> h_values_out(values_out);
@@ -181,10 +191,10 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
     }
   }
 
-  // The selected keys must be the per-segment top-k (output is unordered; sort each segment descending).
+  // keys_out is unordered, so sort each segment (descending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
-  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
+  REQUIRE(keys_out == expected_result_set);
 }
 
 C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_topk][device]")
@@ -229,12 +239,15 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
     k_arg,
     num_segs,
     env);
+  // keys_out holds each segment's k smallest keys. The key set is fixed (shown here sorted per segment). For
+  // keys that tie, which equal element's value is returned is unspecified.
+  auto expected_result_set = thrust::device_vector<int>{-3, 1, 2, /* segment 0 */ 0, 1, 2 /* segment 1 */};
   // example-end batched-topk-min-pairs
 
   REQUIRE(error == cudaSuccess);
 
-  // Each input value is the global item index. Bounds-checked: every returned value indexes back to the input
-  // element (within its own segment) whose key was selected.
+  // Each returned value is the source index of its key within the segment. Check that every value indexes
+  // back to the input element whose key was selected.
   thrust::host_vector<int> h_keys_in(keys_in);
   thrust::host_vector<int> h_keys_out(keys_out);
   thrust::host_vector<int> h_values_out(values_out);
@@ -250,8 +263,55 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
     }
   }
 
-  // The selected keys must be the per-segment top-k (output is unordered; sort each segment ascending).
+  // keys_out is unordered, so sort each segment (ascending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k);
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k);
-  REQUIRE(keys_out == thrust::device_vector<int>{-3, 1, 2, 0, 1, 2});
+  REQUIRE(keys_out == expected_result_set);
+}
+
+// The temporary storage size requirement must not assume a particular base-pointer alignment (the public contract
+// states that no special alignment is required). Over-allocate by one byte and offset the base pointer.
+C2H_TEST("cub::DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage pointer", "[batched_topk][device]")
+{
+  constexpr int num_segments = 2;
+  constexpr int segment_size = 8;
+  constexpr int k            = 3;
+
+  auto keys_in  = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
+  auto keys_out = thrust::device_vector<int>(num_segments * k, thrust::no_init);
+
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), segment_size);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  constexpr auto segment_sizes = cuda::args::constant<segment_size>{};
+  constexpr auto k_arg         = cuda::args::constant<k>{};
+  auto num_segs                = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env                     = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
+
+  size_t temp_storage_bytes = 0;
+  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
+  REQUIRE(error == cudaSuccess);
+
+  // Allocate one extra byte and offset the base pointer by one to misalign it.
+  thrust::device_vector<char> temp_storage(temp_storage_bytes + 1, thrust::no_init);
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()) + 1,
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
 }
