@@ -241,12 +241,22 @@ const char* get_well_known_op_symbol(cccl_op_kind_t kind)
       return ">=";
     case CCCL_LESS_EQUAL:
       return "<=";
+    case CCCL_LOGICAL_AND:
+      return "&&";
+    case CCCL_LOGICAL_OR:
+      return "||";
+    case CCCL_LOGICAL_NOT:
+      return "!";
     case CCCL_BIT_AND:
       return "&";
     case CCCL_BIT_OR:
       return "|";
     case CCCL_BIT_XOR:
       return "^";
+    case CCCL_BIT_NOT:
+      return "~";
+    case CCCL_NEGATE:
+      return "-";
     default:
       return nullptr;
   }
@@ -299,6 +309,52 @@ generate_well_known_preamble(cccl_op_t op, const std::string& accum_type, bool h
       return_type,
       symbol,
       accum_type,
+      op_name);
+  }
+
+  return src;
+}
+
+// Generate preamble for a well-known unary op with user-provided code.
+// The operator overload lets the cuda::std functor invoke that code for a
+// custom type. Primitive types without user code need no preamble.
+std::string generate_well_known_unary_preamble(
+  cccl_op_t op, const std::string& in_type, const std::string& out_type, bool has_bitcode)
+{
+  const std::string op_name = (op.name && op.name[0]) ? op.name : "user_op";
+  const char* symbol        = get_well_known_op_symbol(op.type);
+  bool has_user_code        = has_bitcode || (op.code_type == CCCL_OP_CPP_SOURCE && op.code && op.code_size > 0);
+
+  if (!has_user_code)
+  {
+    return "";
+  }
+
+  std::string src;
+
+  if (op.code_type == CCCL_OP_CPP_SOURCE && op.code && op.code_size > 0)
+  {
+    src += std::string(op.code, op.code_size) + "\n\n";
+  }
+
+  if (has_bitcode)
+  {
+    src += std::format("extern \"C\" __device__ void {}(void* a_ptr, void* out_ptr);\n\n", op_name);
+  }
+
+  if (symbol)
+  {
+    src += std::format(
+      R"cpp(__device__ {0} operator{1}(const {2}& value) {{
+    {0} ret;
+    {3}((void*)&value, (void*)&ret);
+    return ret;
+}}
+
+)cpp",
+      out_type,
+      symbol,
+      in_type,
       op_name);
   }
 
@@ -366,6 +422,7 @@ OperatorCode make_unary_op(
   {
     OperatorCode result;
     result.local_var  = var_name;
+    result.preamble   = generate_well_known_unary_preamble(op, in_type, out_type, has_bitcode);
     result.setup_code = std::format("{} {}{{}};", well_known_type, var_name);
     return result;
   }
