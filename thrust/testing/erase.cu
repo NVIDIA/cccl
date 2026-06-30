@@ -4,22 +4,23 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
+void verify_erase(Vector input, typename Vector::value_type value, Vector expected)
+{
+  const auto old_size = input.size();
+
+  const auto erased = thrust::erase(input, value);
+
+  ASSERT_EQUAL(erased, old_size - expected.size());
+  ASSERT_EQUAL(input.size(), expected.size());
+  ASSERT_EQUAL(input, expected);
+}
+
+template <class Vector>
 struct TestVectorRangeEraseSingleElement
 {
   void operator()(size_t)
   {
-    Vector v{5};
-
-    typename Vector::size_type erased{1};
-
-    auto prev_size{v.size()};
-    auto new_size{v.size() - erased};
-
-    auto del = thrust::erase(v, 5);
-
-    ASSERT_EQUAL(v, Vector{});
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{5}, typename Vector::value_type{5}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseSingleElement, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -32,19 +33,7 @@ struct TestVectorRangeEraseMultipleElements
 {
   void operator()(size_t)
   {
-    Vector v{1, 2, 3, 5, 5, 4, 5};
-
-    typename Vector::size_type erased{3};
-
-    auto prev_size{v.size()};
-    auto new_size{v.size() - erased};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{1, 2, 3, 4};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{1, 2, 3, 5, 5, 4, 5}, typename Vector::value_type{5}, Vector{1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseMultipleElements, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -57,19 +46,7 @@ struct TestVectorRangeEraseFirstElement
 {
   void operator()(size_t)
   {
-    Vector v{0, 1, 2, 3};
-
-    typename Vector::size_type erased{1};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase(v, 0);
-
-    Vector v_comp{1, 2, 3};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{0, 1, 2, 3}, typename Vector::value_type{0}, Vector{1, 2, 3});
   }
 };
 VectorUnitTest<TestVectorRangeEraseFirstElement, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -82,17 +59,7 @@ struct TestVectorRangeEraseEmptyVector
 {
   void operator()(size_t)
   {
-    Vector v{};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size};
-
-    auto del = thrust::erase(v, 0);
-
-    Vector v_comp{};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{}, typename Vector::value_type{0}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseEmptyVector, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -105,17 +72,7 @@ struct TestVectorRangeEraseElementMissing
 {
   void operator()(size_t)
   {
-    Vector v{1, 2, 3, 4};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size};
-
-    auto del = thrust::erase(v, 0);
-
-    Vector v_comp{1, 2, 3, 4};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{1, 2, 3, 4}, typename Vector::value_type{0}, Vector{1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseElementMissing, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -128,19 +85,7 @@ struct TestVectorRangeEraseAllElements
 {
   void operator()(size_t)
   {
-    Vector v{5, 5, 5, 5};
-
-    typename Vector::size_type erased{4};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{5, 5, 5, 5}, typename Vector::value_type{5}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseAllElements, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -153,19 +98,7 @@ struct TestVectorRangeEraseLastElement
 {
   void operator()(size_t)
   {
-    Vector v{1, 2, 3, 5};
-
-    typename Vector::size_type erased{1};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{1, 2, 3};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{1, 2, 3, 5}, typename Vector::value_type{5}, Vector{1, 2, 3});
   }
 };
 VectorUnitTest<TestVectorRangeEraseLastElement, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -178,19 +111,7 @@ struct TestVectorRangeEraseConsecutiveElementsAtStart
 {
   void operator()(size_t)
   {
-    Vector v{5, 5, 5, 1, 2, 3};
-
-    typename Vector::size_type erased{3};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{1, 2, 3};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{5, 5, 5, 1, 2, 3}, typename Vector::value_type{5}, Vector{1, 2, 3});
   }
 };
 VectorUnitTest<TestVectorRangeEraseConsecutiveElementsAtStart,
@@ -206,19 +127,7 @@ struct TestVectorRangeEraseConsecutiveElementsAtEnd
 {
   void operator()(size_t)
   {
-    Vector v{1, 2, 3, 5, 5, 5};
-
-    typename Vector::size_type erased{3};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{1, 2, 3};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{1, 2, 3, 5, 5, 5}, typename Vector::value_type{5}, Vector{1, 2, 3});
   }
 };
 VectorUnitTest<TestVectorRangeEraseConsecutiveElementsAtEnd,
@@ -234,19 +143,7 @@ struct TestVectorRangeEraseConsecutiveElementsAtMid
 {
   void operator()(size_t)
   {
-    Vector v{1, 2, 5, 5, 5, 3, 4};
-
-    typename Vector::size_type erased{3};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{1, 2, 3, 4};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{1, 2, 5, 5, 5, 3, 4}, typename Vector::value_type{5}, Vector{1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseConsecutiveElementsAtMid,
@@ -262,19 +159,7 @@ struct TestVectorRangeEraseAlternatingElements
 {
   void operator()(size_t)
   {
-    Vector v{5, 1, 5, 2, 5, 3, 5, 4};
-
-    typename Vector::size_type erased{4};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{1, 2, 3, 4};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{5, 1, 5, 2, 5, 3, 5, 4}, typename Vector::value_type{5}, Vector{1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseAlternatingElements,
@@ -290,17 +175,7 @@ struct TestVectorRangeEraseNoneFromSingleElementVector
 {
   void operator()(size_t)
   {
-    Vector v{1};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{1};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector{1}, typename Vector::value_type{5}, Vector{1});
   }
 };
 VectorUnitTest<TestVectorRangeEraseNoneFromSingleElementVector,
@@ -317,17 +192,8 @@ struct TestVectorRangeEraseBigVector
   void operator()(size_t)
   {
     const typename Vector::size_type n{10000};
-    Vector v(n, 5);
 
-    auto prev_size{v.size()};
-    auto new_size{prev_size - n};
-
-    auto del = thrust::erase(v, 5);
-
-    Vector v_comp{};
-    ASSERT_EQUAL(v, v_comp);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    verify_erase(Vector(n, typename Vector::value_type{5}), typename Vector::value_type{5}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseBigVector, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
