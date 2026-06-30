@@ -899,16 +899,18 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   using output_t         = it_value_t<RandomAccessIteratorOut>;
   constexpr int out_size = int{size_of<output_t>};
-  constexpr int vec_size = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
+  // cap the vectorized store at 16 bytes (STG.128): STG.256 is sm_100+ only, so capping here keeps the
+  // max vector width arch-independent, and B200 benchmarks showed no gain from 256-bit stores
+  constexpr int possible_vec_size = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
   static_assert(StoreVecSize == 0 || ::cuda::is_power_of_two(StoreVecSize),
                 "store_vec_size must be 0 (auto) or a power of two");
-  constexpr int store_vec_size = (StoreVecSize > 0) ? (::cuda::std::min) (StoreVecSize, vec_size) : vec_size;
+  constexpr int store_vec_size =
+    (StoreVecSize > 0) ? (::cuda::std::min) (StoreVecSize, possible_vec_size) : possible_vec_size;
   // compile time eligibility for the vectorized store (STG.128):
   // 1. there are no predicates
   // 2. memory layout is contiguous
   // 3. semantically we can raw copy
   // 4. size is power-of-2 and <= 16 bytes
-  // #TODO(nan): STG.256 (128 should have enough BIF already, but should check perf on blackwell)
   constexpr bool vectorize_eligible =
     store_vec_size > 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
     && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
@@ -921,18 +923,31 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     {
       // store_vec_size: element count for vectorized store. default = 16 / sizeof(output). must be pow2
       // Shrinking store_vec_size narrows the store but also reduces register pressure
-      using store_t        = decltype(load_store_type<store_vec_size * out_size>());
-      auto* out_vec        = reinterpret_cast<store_t*>(out);
-      const int num_groups = valid_items / store_vec_size;
-      for (int g = threadIdx.x; g < num_groups; g += threads_per_block)
+      using store_t      = decltype(load_store_type<store_vec_size * out_size>());
+      auto* out_vec      = reinterpret_cast<store_t*>(out);
+      const int num_vecs = valid_items / store_vec_size;
+      for (int v = threadIdx.x; v < num_vecs; v += threads_per_block)
       {
         char* smem      = smem_base;
         auto load_chunk = [&](auto aligned_ptr) {
           using T = typename decltype(aligned_ptr)::value_type;
-          // on blackwell, head_padding should always be zero
-          // on hopper, bulk_copy_alignment is 128 bytes, head_padding could be 112 bytes for example
-          // alignof(T) will always be powers of 2 per C++ standard
-          const T* base = reinterpret_cast<const T*>(smem + aligned_ptr.head_padding);
+          // head_padding = in_ptr % bulk_copy_alignment, and in_ptr is a valid T*, so it's aligned to
+          // alignof(T), i.e. in_ptr % alignof(T) == 0. Both alignof(T) and bulk_copy_alignment are powers of two.
+          //
+          // Two cases:
+          //
+          // 1. alignof(T) >= bulk_copy_alignment. Then bulk_copy_alignment divides alignof(T).
+          // Since in_ptr is a multiple of alignof(T), it's automatically a multiple of bulk_copy_alignment too.
+          // In this case, head_padding is provably 0. Compiler can constant fold this.
+          // 2. alignof(T) < bulk_copy_alignment. The type's own alignment is weaker than the bulk-copy boundary,
+          // so in_ptr can sit anywhere, i.e. head_padding can be nonzero. Must use the real runtime
+          // aligned_ptr.head_padding.
+          //
+          // NOTE: we only require the size of the output type to be < 16B; there are no bounds on the size of the input
+          // type; case 1 can definitely happen!
+          _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
+          const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
+          const T* base          = reinterpret_cast<const T*>(smem + head_padding);
           smem += tile_padding + int{sizeof(T)} * tile_size;
           // Gather this input's store_vec_size elements for output-vector v into a register array.
           // we take the maximal alignment out of alignof(T) and 16 bytes. This is because compiler assume
@@ -946,7 +961,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           if constexpr (chunk_bytes % int{sizeof(int4)} == 0)
           {
             constexpr int n = chunk_bytes / int{sizeof(int4)};
-            const int4* s   = reinterpret_cast<const int4*>(base) + g * n;
+            const int4* s   = reinterpret_cast<const int4*>(base) + v * n;
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int i = 0; i < n; ++i)
             {
@@ -958,7 +973,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           else
           {
             using sub_t                             = decltype(load_store_type<chunk_bytes>());
-            *reinterpret_cast<sub_t*>(elems.data()) = reinterpret_cast<const sub_t*>(base)[g];
+            *reinterpret_cast<sub_t*>(elems.data()) = reinterpret_cast<const sub_t*>(base)[v];
           }
           return elems;
         };
@@ -976,12 +991,12 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
             },
             chunks);
         }
-        out_vec[g] = *reinterpret_cast<const store_t*>(res.data());
+        out_vec[v] = *reinterpret_cast<const store_t*>(res.data());
       }
 
       // we can scalar store tail when element count is not a multiple of store_vec_size
       // implies an always_true predicate, so we store unconditionally.
-      for (int idx = num_groups * store_vec_size + threadIdx.x; idx < valid_items; idx += threads_per_block)
+      for (int idx = num_vecs * store_vec_size + threadIdx.x; idx < valid_items; idx += threads_per_block)
       {
         char* smem         = smem_base;
         auto fetch_operand = [&](auto aligned_ptr) {

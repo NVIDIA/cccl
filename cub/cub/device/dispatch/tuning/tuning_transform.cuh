@@ -148,6 +148,7 @@ struct TransformAsyncCopyPolicy
   // Vectorized store width for the ublkcp kernel. 0 means "auto": store_vec_size = 16 / sizeof(output) (a 16-byte
   // STG.128). Setting it smaller narrows the store but also reduces the number of fully-unrolled lambda calls per
   // store, which bounds register pressure for heavy functors (their stores aren't the bottleneck anyway).
+  // A value of 1 disables vectorization (scalar stores) and compiles the vectorized branch out of the kernel.
   int store_vec_size = 0; //!< Output elements per vectorized store (S). 0 = auto (16 / sizeof(output)).
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
