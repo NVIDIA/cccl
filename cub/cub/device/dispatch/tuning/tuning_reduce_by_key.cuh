@@ -1112,7 +1112,8 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_CA,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 2044, 240}};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 2044, 240},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 1 && accum_size == 2)
       {
@@ -1122,7 +1123,8 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff_jitter_window, 224, 390}};
+                {LookbackDelayAlgorithm::exponential_backoff_jitter_window, 224, 390},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 1 && accum_size == 4)
       {
@@ -1132,7 +1134,8 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 248, 285}};
+                {LookbackDelayAlgorithm::exponential_backoff, 248, 285},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 1 && accum_size == 8)
       {
@@ -1142,7 +1145,8 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::fixed_delay, 132, 540}};
+                {LookbackDelayAlgorithm::fixed_delay, 132, 540},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 2 && accum_size == 1)
       {
@@ -1152,7 +1156,8 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 164, 290}};
+                {LookbackDelayAlgorithm::exponential_backoff, 164, 290},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 2 && accum_size == 2)
       {
@@ -1162,7 +1167,8 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 180, 975}};
+                {LookbackDelayAlgorithm::exponential_backoff, 180, 975},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 2 && accum_size == 4 && accum_t != type_t::float32) // I16, F32, I32 regressed, fall back to SM90
       {
@@ -1172,7 +1178,8 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 224, 550}};
+                {LookbackDelayAlgorithm::exponential_backoff, 224, 550},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 2 && accum_size == 8)
       {
@@ -1182,87 +1189,162 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::fixed_delay, 156, 725}};
+                {LookbackDelayAlgorithm::fixed_delay, 156, 725},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 4 && accum_size == 1)
       {
-        // ipt_10.tpb_224.trp_0.ld_0.ns_324.dcid_2.l2w_285 1.157217  1.073724  1.166510  1.356940
+        // ipt_15.tpb_224.trp_0.ld_0.ns_220.dcid_5.l2w_650.prf_1 1.060842
         return {224,
-                10,
+                15,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 324, 285}};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 220, 650},
+                BlockLoadPrefetch::l2};
       }
       if (key_size == 4 && accum_size == 2)
       {
-        // ipt_11.tpb_256.trp_0.ld_0.ns_1984.dcid_5.l2w_115 1.214155  1.128842  1.214093  1.364476
-        return {256,
-                11,
-                BLOCK_LOAD_DIRECT,
+        // ipt_15.tpb_224.trp_1.ld_0.ns_112.dcid_7.l2w_790.prf_1 1.159591
+        return {224,
+                15,
+                BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 1984, 115}};
+                {LookbackDelayAlgorithm::exponential_backon, 112, 790},
+                BlockLoadPrefetch::l2};
+      }
+      if (key_size == 4 && accum_size == 4 && accum_t == type_t::float32) // I32 key, F32 value
+      {
+        // ipt_12.tpb_256.trp_1.ld_0.ns_328.dcid_7.l2w_630.prf_1 1.110952
+        return {256,
+                12,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backon, 328, 630},
+                BlockLoadPrefetch::l2};
       }
       if (key_size == 4 && accum_size == 4)
       {
-        // ipt_14.tpb_224.trp_1.ld_0.ns_476.dcid_5.l2w_1005 1.187378  1.119705  1.185397  1.258420
-        return {224,
-                14,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_DEFAULT,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 476, 1005}};
-      }
-      if (key_size == 4 && accum_size == 8)
-      {
-        // ipt_10.tpb_256.trp_1.ld_0.ns_1868.dcid_7.l2w_145 1.142915  1.020581  1.137459  1.237913
-        return {256,
-                10,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_DEFAULT,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon, 1868, 145}};
-      }
-      if (key_size == 8 && accum_size == 1)
-      {
-        // ipt_9.tpb_224.trp_1.ld_0.ns_1940.dcid_5.l2w_460 1.157294  1.075650  1.153566  1.250729
-        return {224,
-                9,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_DEFAULT,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 1940, 460}};
-      }
-      if (key_size == 8 && accum_size == 2)
-      {
-        // ipt_11.tpb_224.trp_1.ld_1.ns_392.dcid_2.l2w_550 1.104034  1.007212  1.099543  1.220401
-        return {224,
-                11,
+        // ipt_22.tpb_128.trp_1.ld_1.ns_712.dcid_7.l2w_325.prf_1 1.147089
+        return {128,
+                22,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_CA,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 392, 550}};
+                {LookbackDelayAlgorithm::exponential_backon, 712, 325},
+                BlockLoadPrefetch::l2};
+      }
+      if (key_size == 4 && accum_size == 8 && accum_t == type_t::float64) // I32 key, F64 value
+      {
+        // ipt_14.tpb_128.trp_1.ld_1.ns_116.dcid_1.l2w_675.prf_1 1.088496
+        return {128,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::fixed_delay, 116, 675},
+                BlockLoadPrefetch::l2};
+      }
+      if (key_size == 4 && accum_size == 8)
+      {
+        // ipt_18.tpb_160.trp_1.ld_0.ns_368.dcid_7.l2w_960.prf_1 1.107240 (second best; first best has mins=0.886)
+        return {160,
+                18,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backon, 368, 960},
+                BlockLoadPrefetch::l2};
+      }
+      if (key_size == 4 && accum_size == 16)
+      {
+        // ipt_11.tpb_128.trp_1.ld_0.ns_172.dcid_2.l2w_1110.prf_0 1.023318
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backoff, 172, 1110},
+                BlockLoadPrefetch::none};
+      }
+      if (key_size == 8 && accum_size == 1)
+      {
+        // ipt_13.tpb_160.trp_1.ld_0.ns_164.dcid_1.l2w_685.prf_1 1.075069
+        return {160,
+                13,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::fixed_delay, 164, 685},
+                BlockLoadPrefetch::l2};
+      }
+      if (key_size == 8 && accum_size == 2)
+      {
+        // ipt_10.tpb_256.trp_0.ld_1.ns_204.dcid_2.l2w_840.prf_0 1.060259
+        return {256,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backoff, 204, 840},
+                BlockLoadPrefetch::none};
+      }
+      if (key_size == 8 && accum_size == 4 && accum_t == type_t::float32) // I64 key, F32 value
+      {
+        // ipt_9.tpb_192.trp_1.ld_1.ns_136.dcid_2.l2w_535.prf_0 1.066794
+        return {192,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backoff, 136, 535},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 8 && accum_size == 4)
       {
-        // ipt_9.tpb_224.trp_1.ld_0.ns_244.dcid_2.l2w_475 1.130098  1.000000  1.130661  1.215722
-        return {224,
-                9,
+        // ipt_15.tpb_160.trp_1.ld_0.ns_144.dcid_2.l2w_460.prf_0 1.056840
+        return {160,
+                15,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 244, 475}};
+                {LookbackDelayAlgorithm::exponential_backoff, 144, 460},
+                BlockLoadPrefetch::none};
+      }
+      if (key_size == 8 && accum_size == 8 && accum_t == type_t::float64) // I64 key, F64 value
+      {
+        // ipt_19.tpb_160.trp_1.ld_0.ns_764.dcid_7.l2w_155.prf_0 1.141686
+        return {160,
+                19,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backon, 764, 155},
+                BlockLoadPrefetch::none};
       }
       if (key_size == 8 && accum_size == 8)
       {
-        // ipt_9.tpb_224.trp_1.ld_0.ns_196.dcid_2.l2w_340 1.272056  1.142857  1.262499  1.352941
-        return {224,
+        // ipt_11.tpb_256.trp_1.ld_0.ns_540.dcid_7.l2w_145.prf_0 1.015146
+        return {256,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backon, 540, 145},
+                BlockLoadPrefetch::none};
+      }
+      if (key_size == 8 && accum_size == 16)
+      {
+        // ipt_9.tpb_160.trp_1.ld_0.ns_292.dcid_2.l2w_855.prf_0 1.004895
+        return {160,
                 9,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 196, 340}};
+                {LookbackDelayAlgorithm::exponential_backoff, 292, 855},
+                BlockLoadPrefetch::none};
       }
     }
 
