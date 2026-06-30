@@ -24,6 +24,7 @@
 #include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__memory/unique_ptr.h>
@@ -128,7 +129,8 @@ public:
   //! @param __probing_scheme Probing scheme
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
-  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C != ::cuda::std::dynamic_extent, int> = 0>
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C != ::cuda::std::dynamic_extent))
   _CCCL_HOST fixed_capacity_map(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
@@ -155,7 +157,8 @@ public:
   //! @param __probing_scheme Probing scheme
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
-  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
   _CCCL_HOST fixed_capacity_map(
     size_type __capacity,
     empty_key<_Key> __empty_key_sentinel,
@@ -184,7 +187,8 @@ public:
   //! @param __probing_scheme Probing scheme
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
-  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
   _CCCL_HOST fixed_capacity_map(
     size_type __n,
     double __desired_load_factor,
@@ -214,7 +218,8 @@ public:
   //! @param __probing_scheme Probing scheme
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
-  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C != ::cuda::std::dynamic_extent, int> = 0>
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C != ::cuda::std::dynamic_extent))
   _CCCL_HOST fixed_capacity_map(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
@@ -244,7 +249,8 @@ public:
   //! @param __probing_scheme Probing scheme
   //! @param __mr Memory resource for device storage
   //! @param __stream Stream used for allocation and initialization
-  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
   _CCCL_HOST fixed_capacity_map(
     size_type __capacity,
     empty_key<_Key> __empty_key_sentinel,

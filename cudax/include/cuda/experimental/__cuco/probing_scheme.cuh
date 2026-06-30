@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 
@@ -177,7 +177,8 @@ public:
   //! @param __hash Hasher
   //!
   //! @return Copy of the current probing scheme
-  template <class _NewHash, class _Enable = ::cuda::std::enable_if_t<::cuda::std::__tuple_like<_NewHash>>>
+  _CCCL_TEMPLATE(class _NewHash)
+  _CCCL_REQUIRES(::cuda::std::__tuple_like<_NewHash>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
   {
     static_assert(::cuda::std::__tuple_like<_NewHash> && ::cuda::std::tuple_size<_NewHash>::value == 2,

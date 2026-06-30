@@ -25,10 +25,10 @@
 
 #include <cuda/__atomic/atomic.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/pair.h>
@@ -185,7 +185,8 @@ public:
   //! @brief Gets the sentinel value used to represent an empty payload slot.
   //!
   //! @return The sentinel value used to represent an empty payload slot
-  template <bool _Dummy = true, class _Enable = ::cuda::std::enable_if_t<__has_payload && _Dummy>>
+  _CCCL_TEMPLATE(bool _Dummy = true)
+  _CCCL_REQUIRES(__has_payload _CCCL_AND _Dummy)
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto empty_value_sentinel() const noexcept
   {
     return __extract_payload(empty_slot_sentinel());
@@ -608,7 +609,8 @@ public:
   //! @param __value The input value
   //!
   //! @return The payload
-  template <class _Value, class _Enable = ::cuda::std::enable_if_t<__has_payload && sizeof(_Value)>>
+  _CCCL_TEMPLATE(class _Value)
+  _CCCL_REQUIRES(__has_payload _CCCL_AND(sizeof(_Value) > 0))
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __extract_payload(_Value __value) const noexcept
   {
     return ::thrust::raw_reference_cast(__value).second;
