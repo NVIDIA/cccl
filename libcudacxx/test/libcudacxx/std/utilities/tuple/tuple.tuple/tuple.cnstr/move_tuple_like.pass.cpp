@@ -143,7 +143,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t) == 1.0f);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
   NV_IF_TARGET(NV_IS_HOST, ({
                  using T = cuda::std::tuple<float, float>;
                  std::complex<float> t0{0.0f, 1.0f};
@@ -151,7 +151,7 @@ int main(int, char**)
                  assert(cuda::std::get<0>(t) == 0.0f);
                  assert(cuda::std::get<1>(t) == 1.0f);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
 
   {
     using T = cuda::std::tuple<MoveOnly, MoveOnly, MoveOnly>;
