@@ -21,6 +21,7 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
+#include <cuda_runtime_api.h>
 #include <test_resources.h>
 
 #include "test_macros.h"
@@ -69,7 +70,7 @@ bool equal_range(const Buffer& buf)
     {
       return false;
     }
-    cuda::__ensure_current_context guard{cuda::device_ref{0}};
+    cuda::__ensure_current_context guard{buf.stream()};
     check_equal_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin());
     CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
@@ -155,7 +156,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffe
     {
       return false;
     }
-    cuda::__ensure_current_context guard{cuda::device_ref{0}};
+    cuda::__ensure_current_context guard{buf.stream()};
     check_equal_value_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), size, value);
     CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
@@ -174,10 +175,18 @@ bool equal_range(const Range1& range1, const Range2& range2)
   }
   else
   {
-    cuda::__ensure_current_context guard{cuda::device_ref{0}};
+    cuda::__ensure_current_context guard{range1.stream()};
     return range1.size() == range2.size()
         && thrust::equal(thrust::cuda::par.on(range1.stream().get()), range1.begin(), range1.end(), range2.begin());
   }
+}
+
+template <class Buffer>
+void check_allocation_device(const Buffer& buf, cuda::device_ref device)
+{
+  ::cudaPointerAttributes attributes{};
+  CCCLRT_REQUIRE(::cudaPointerGetAttributes(&attributes, buf.data()) == ::cudaSuccess);
+  CCCLRT_CHECK(attributes.device == device.get());
 }
 
 // helper class as we need to pass the properties in a tuple to the catch tests

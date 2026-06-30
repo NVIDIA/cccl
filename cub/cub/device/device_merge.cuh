@@ -194,7 +194,7 @@ struct DeviceMerge
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergeKeys");
 
     using default_policy_selector =
-      detail::merge::policy_selector_from_types<detail::it_value_t<KeyIteratorIn1>, NullType, int64_t>;
+      detail::merge::policy_selector_from_types<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, int64_t>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::merge::dispatch(
@@ -419,7 +419,7 @@ struct DeviceMerge
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergePairs");
     using default_policy_selector = detail::merge::
-      policy_selector_from_types<detail::it_value_t<KeyIteratorIn1>, detail::it_value_t<ValueIteratorIn1>, int64_t>;
+      policy_selector_from_types<KeyIteratorIn1, ValueIteratorIn1, KeyIteratorIn2, ValueIteratorIn2, int64_t>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::merge::dispatch(

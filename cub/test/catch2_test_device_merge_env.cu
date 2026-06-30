@@ -31,7 +31,7 @@ struct merge_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::merge::merge_policy
   {
-    return {ThreadsPerBlock, 1, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false};
+    return {ThreadsPerBlock, 1, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false, false};
   }
 };
 
