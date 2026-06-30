@@ -249,7 +249,7 @@ workflows:
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 'all', sm: '75;80;90;100;120'}
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 23, sm: '75;80;90;100;120'}
-    # clang-tidys
+    # clang-tidy
     - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '100' }
     # arch-specific and family-specific arch builds
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
