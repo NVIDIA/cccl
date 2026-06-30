@@ -36,7 +36,9 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
+#include "util/aot_serialize.h"
 #include "util/nvjitlink.h"
+#include <cccl/c/aot.h>
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
@@ -873,5 +875,131 @@ try
 catch (const std::exception& exc)
 {
   printf("\nEXCEPTION in cccl_device_transform_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult
+cccl_device_transform_serialize(const cccl_device_transform_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0 || build_ptr->runtime_policy == nullptr
+      || build_ptr->runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  {
+    static constexpr size_t kPolicy1Size = sizeof(cub::detail::transform::policy_selector<1>);
+    static constexpr size_t kPolicy2Size = sizeof(cub::detail::transform::policy_selector<2>);
+    if (build_ptr->runtime_policy_size != kPolicy1Size && build_ptr->runtime_policy_size != kPolicy2Size)
+    {
+      *out_buf  = nullptr;
+      *out_size = 0;
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+  }
+
+  *out_buf  = nullptr;
+  *out_size = 0;
+
+  using namespace cccl::aot;
+  buffer_writer w;
+  write_header(w, CCCL_AOT_ALGO_TRANSFORM, build_ptr->payload_kind, build_ptr->cc);
+  w.write_pod<int32_t>(build_ptr->loaded_bytes_per_iteration);
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_cstring(build_ptr->transform_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_transform_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_transform_deserialize(cccl_device_transform_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_TRANSFORM);
+
+  const int32_t loaded_bpi = r.read_pod<int32_t>();
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  if (payload_size == 0)
+  {
+    throw std::runtime_error("aot blob: empty payload");
+  }
+
+  // transform's runtime_policy is heap-allocated with malloc/free (not new/delete)
+  // because cleanup uses std::free. Match that allocator here.
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  const uint64_t policy_size = r.read_pod<uint64_t>();
+  if (policy_size == 0 || policy_size > r.remaining())
+  {
+    throw std::runtime_error("aot blob: invalid transform policy size");
+  }
+  {
+    static constexpr uint64_t kPolicy1Size = sizeof(cub::detail::transform::policy_selector<1>);
+    static constexpr uint64_t kPolicy2Size = sizeof(cub::detail::transform::policy_selector<2>);
+    if (policy_size != kPolicy1Size && policy_size != kPolicy2Size)
+    {
+      throw std::runtime_error(std::format("aot blob: unrecognized transform policy size ({})", policy_size));
+    }
+  }
+  std::unique_ptr<void, free_deleter> policy(std::malloc(static_cast<size_t>(policy_size)));
+  if (!policy)
+  {
+    throw std::bad_alloc{};
+  }
+  r.read_bytes(policy.get(), static_cast<size_t>(policy_size));
+
+  std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
+
+  cccl_device_transform_build_result_t result{};
+  result.cc                            = static_cast<int>(h.cc);
+  result.payload_kind                  = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.loaded_bytes_per_iteration    = loaded_bpi;
+  result.payload                       = payload_owner.release();
+  result.payload_size                  = payload_size;
+  result.runtime_policy                = policy.release();
+  result.runtime_policy_size           = static_cast<size_t>(policy_size);
+  result.transform_kernel_lowered_name = n_kernel.release();
+  // result.cache stays null (zeroed from result{}); kernel-source helpers
+  // null-check it and fall through to recomputing configs each call.
+  *build_ptr = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_transform_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }

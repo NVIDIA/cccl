@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/devices>
+
 #include "common.cuh"
 #include "cuda/__algorithm/copy.h"
 
@@ -99,6 +101,59 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
     CCCLRT_REQUIRE(vec[0] == get_expected_value(fill_byte));
     CCCLRT_REQUIRE(vec[1] == 0xbeef);
   }
+}
+
+C2H_CCCLRT_TEST("copy_bytes uses the stream device when current device differs", "[algorithm][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+  if (!explicit_device.attribute(cuda::device_attributes::memory_pools_supported))
+  {
+    return;
+  }
+
+  cuda::stream stream{explicit_device};
+
+  int expected = get_expected_value(fill_byte);
+  int result{};
+
+  {
+    auto host_src = make_pinned_memory_buffer<int>(stream, 1, explicit_device);
+    auto host_dst = make_pinned_memory_buffer<int>(stream, 1, explicit_device);
+    auto src      = cuda::make_device_buffer<int>(stream, explicit_device, 1, cuda::no_init);
+    auto dst      = cuda::make_device_buffer<int>(stream, explicit_device, 1, cuda::no_init);
+
+    host_src.data()[0] = expected;
+    host_dst.data()[0] = 0;
+
+    {
+      cuda::__ensure_current_context guard(explicit_device);
+      cuda::copy_bytes(stream, host_src, src);
+    }
+
+    {
+      cuda::__ensure_current_context guard(current_device);
+      cuda::copy_bytes(stream, src, dst);
+    }
+
+    {
+      cuda::__ensure_current_context guard(explicit_device);
+      cuda::copy_bytes(stream, dst, host_dst);
+    }
+
+    stream.sync();
+    result = host_dst.data()[0];
+  }
+  stream.sync();
+
+  CCCLRT_REQUIRE(result == expected);
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 
 template <typename SrcLayout = cuda::std::layout_right,

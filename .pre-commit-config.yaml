@@ -6,7 +6,7 @@ ci:
     autoupdate_branch: ''
     autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
     autoupdate_schedule: quarterly
-    skip: []
+    skip: [mypy] # mypy fails on pre-commit.ci due to numpy stub incompatibility with Python 3.14
     submodules: false
 
 repos:
@@ -89,7 +89,11 @@ repos:
     rev: 'v1.16.1'
     hooks:
       - id: mypy
-        additional_dependencies: [types-cachetools, numpy]
+        # numpy is intentionally not installed here: numpy>=2.3 ships PEP 695
+        # `type` statements in its stubs that mypy rejects under
+        # python_version=3.10, and numpy<2.3 has no wheels for the Python that
+        # pre-commit.ci runs. numpy is instead ignored in the mypy config.
+        additional_dependencies: [types-cachetools]
         args: ["--config-file=python/cuda_cccl/pyproject.toml",
                "python/cuda_cccl/cuda/compute/"]
         pass_filenames: false
