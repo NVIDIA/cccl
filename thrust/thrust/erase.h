@@ -39,6 +39,8 @@ THRUST_NAMESPACE_BEGIN
  *
  *  The return value is the number of elements that were erased.
  *
+ *  Note: unlike \p remove, erase performs container resizing and is host-only.
+ *
  *  \param c The vector from which to erase elements.
  *  \param value The value to erase from the vector.
  *  \return The number of elements erased.
@@ -71,7 +73,7 @@ THRUST_NAMESPACE_BEGIN
 template <class Vector,
           class U                                                   = typename Vector::value_type,
           ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
-typename Vector::size_type erase(Vector& c, const U& value);
+_CCCL_HOST typename Vector::size_type erase(Vector& c, const U& value);
 
 /*! \p erase removes all elements equal to \p value from the vector \p c.
  *  It performs the operation of erasing matching elements and shifting the remaining
@@ -79,6 +81,8 @@ typename Vector::size_type erase(Vector& c, const U& value);
  *  by the number of erased elements.
  *
  *  The return value is the number of elements that were erased.
+ *
+ *  Note: unlike \p remove, erase performs container resizing and is host-only.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
  *
@@ -118,7 +122,7 @@ template <typename DerivedPolicy,
           class Vector,
           class U                                                   = typename Vector::value_type,
           ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
-typename Vector::size_type
+_CCCL_HOST typename Vector::size_type
 erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, const U& value);
 
 /*! \p erase_if removes all elements from the vector \p c that satisfy the predicate \p pred.
@@ -127,6 +131,8 @@ erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& 
  *  by the number of erased elements.
  *
  *  The return value is the number of elements that were erased.
+ *
+ *  Note: unlike \p remove_if, erase_if performs container resizing and is host-only.
  *
  *  \param c The vector from which to erase elements.
  *  \param pred The predicate used to determine which elements to erase.
@@ -164,7 +170,7 @@ erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& 
  *  \endverbatim
  */
 template <class Vector, class Predicate, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
-typename Vector::size_type erase_if(Vector& c, Predicate pred);
+_CCCL_HOST typename Vector::size_type erase_if(Vector& c, Predicate pred);
 
 /*! \p erase_if removes all elements from the vector \p c that satisfy the predicate \p pred.
  *  It performs the operation of erasing matching elements and shifting the remaining
@@ -172,6 +178,8 @@ typename Vector::size_type erase_if(Vector& c, Predicate pred);
  *  by the number of erased elements.
  *
  *  The return value is the number of elements that were erased.
+ *
+ *  Note: unlike \p remove_if, erase_if performs container resizing and is host-only.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
  *
@@ -217,7 +225,7 @@ template <typename DerivedPolicy,
           class Vector,
           class Predicate,
           ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
-typename Vector::size_type
+_CCCL_HOST typename Vector::size_type
 erase_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, Predicate pred);
 
 THRUST_NAMESPACE_END

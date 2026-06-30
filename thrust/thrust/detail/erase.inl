@@ -17,7 +17,7 @@
 THRUST_NAMESPACE_BEGIN
 
 template <class Vector, class U, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int>>
-typename Vector::size_type erase(Vector& c, const U& value)
+_CCCL_HOST typename Vector::size_type erase(Vector& c, const U& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::erase");
   using value_type = typename Vector::value_type;
@@ -31,9 +31,8 @@ typename Vector::size_type erase(Vector& c, const U& value)
   return removed;
 }
 
-_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, class Vector, class U, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int>>
-_CCCL_HOST_DEVICE typename Vector::size_type
+_CCCL_HOST typename Vector::size_type
 erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, const U& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::erase");
@@ -42,14 +41,13 @@ erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& 
   auto first = thrust::remove(exec, c.begin(), c.end(), static_cast<value_type>(value));
 
   auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
-
   c.erase(first, c.end());
 
   return removed;
 }
 
 template <class Vector, class Predicate, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int>>
-typename Vector::size_type erase_if(Vector& c, Predicate pred)
+_CCCL_HOST typename Vector::size_type erase_if(Vector& c, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::erase_if");
 
@@ -62,9 +60,8 @@ typename Vector::size_type erase_if(Vector& c, Predicate pred)
   return removed;
 }
 
-_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, class Vector, class Predicate, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int>>
-_CCCL_HOST_DEVICE typename Vector::size_type
+_CCCL_HOST typename Vector::size_type
 erase_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::erase_if");
