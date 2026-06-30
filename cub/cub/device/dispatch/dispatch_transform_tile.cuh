@@ -121,6 +121,11 @@ template <typename TransformOp, typename OutIter, typename... InIters, typename 
 [[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
 dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_items, ::cudaStream_t stream)
 {
+  if (num_items <= 0)
+  {
+    return ::cudaSuccess;
+  }
+
   const auto out_ptr = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
   const auto in_ptrs = ::cuda::std::apply(
     [](auto... iters) {
