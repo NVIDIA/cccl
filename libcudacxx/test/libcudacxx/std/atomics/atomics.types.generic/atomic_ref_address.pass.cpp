@@ -23,7 +23,7 @@
 template <typename T>
 struct TestAddress
 {
-  void operator()() const
+  TEST_FUNC void operator()() const
   {
     alignas(cuda::std::atomic_ref<T>::required_alignment) T x(T(1));
     const cuda::std::atomic_ref<T> a(x);
@@ -41,7 +41,7 @@ struct TestAddress
 template <typename T>
 struct TestAddressConst
 {
-  void operator()() const
+  TEST_FUNC void operator()() const
   {
     alignas(cuda::std::atomic_ref<const T>::required_alignment) T x(T(1));
     const cuda::std::atomic_ref<const T> a(x);
@@ -59,7 +59,7 @@ struct TestAddressConst
 template <typename T>
 struct TestAddressVolatile
 {
-  void operator()() const
+  TEST_FUNC void operator()() const
   {
     if constexpr (cuda::std::atomic_ref<T>::is_always_lock_free)
     {
@@ -80,7 +80,7 @@ struct TestAddressVolatile
 template <typename T>
 struct TestAddressCV
 {
-  void operator()() const
+  TEST_FUNC void operator()() const
   {
     if constexpr (cuda::std::atomic_ref<T>::is_always_lock_free)
     {
