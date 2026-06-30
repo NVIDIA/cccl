@@ -40,6 +40,8 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+namespace detail
+{
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
  *
@@ -64,7 +66,7 @@ template <int NominalThreadsPerBlock4B,
           CacheLoadModifier LoadModifier,
           int RadixBits,
           typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentRadixSortUpsweepPolicy : ScalingType
+struct agent_radix_sort_upsweep_policy : ScalingType
 {
   /// The number of radix bits, i.e., log2(bins)
   static constexpr int RADIX_BITS = RadixBits;
@@ -72,6 +74,22 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
   /// Cache load modifier for reading keys
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+} // namespace detail
+
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          CacheLoadModifier LoadModifier,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentRadixSortUpsweepPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") = detail::agent_radix_sort_upsweep_policy<
+    NominalThreadsPerBlock4B,
+    NominalItemsPerThread4B,
+    ComputeT,
+    LoadModifier,
+    RadixBits,
+    ScalingType>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -401,7 +419,7 @@ struct AgentRadixSortUpsweep
     for (int BIN_BASE = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
          BIN_BASE += BLOCK_THREADS)
     {
-      int bin_idx       = BIN_BASE + threadIdx.x;
+      int bin_idx       = static_cast<int>(BIN_BASE + threadIdx.x);
       OffsetT bin_count = 0;
 
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -421,7 +439,7 @@ struct AgentRadixSortUpsweep
     // Remainder
     if ((RADIX_DIGITS % BLOCK_THREADS != 0) && (threadIdx.x < RADIX_DIGITS))
     {
-      int bin_idx       = threadIdx.x;
+      int bin_idx       = static_cast<int>(threadIdx.x);
       OffsetT bin_count = 0;
 
       _CCCL_PRAGMA_UNROLL_FULL()

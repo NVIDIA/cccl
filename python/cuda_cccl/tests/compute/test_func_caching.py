@@ -61,6 +61,25 @@ def test_func_caching_with_closure():
     assert f1 != f3
 
 
+def test_func_caching_with_numpy_numeric_scalar_closure():
+    def factory(indexlength, regularsize):
+        index_dtype = np.int64
+        idx_len = index_dtype(indexlength)
+        reg_size = index_dtype(regularsize)
+
+        def func(counter):
+            return counter % idx_len + reg_size
+
+        return func
+
+    f1 = CachableFunction(factory(100_000, 16))
+    f2 = CachableFunction(factory(100_000, 16))
+    assert f1 == f2
+
+    f3 = CachableFunction(factory(100_000, 32))
+    assert f1 != f3
+
+
 def test_func_caching_with_global_variable():
     global global_x
 

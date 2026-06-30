@@ -7,6 +7,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/stream>
@@ -316,3 +317,53 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_out == expected);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin segmented-scan-policy-selector
+struct SegmentedScanPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedScanPolicy
+  {
+    return {.block = {.threads_per_block = 128,
+                      .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 11 : 9,
+                      .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                      .load_modifier     = cub::LOAD_DEFAULT,
+                      .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+                      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                      .max_segments      = 512}};
+  }
+};
+// example-end segmented-scan-policy-selector
+
+C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan env-based API with tuning", "[segmented_scan][env]")
+{
+  // example-begin segmented-scan-tuning
+  ::cuda::std::int64_t num_segments    = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    d_in.begin(),
+    d_out.begin(),
+    d_offsets_it,
+    d_offsets_it + 1,
+    num_segments,
+    ::cuda::std::plus<>{},
+    0,
+    cuda::execution::tune(SegmentedScanPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
+  // example-end segmented-scan-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

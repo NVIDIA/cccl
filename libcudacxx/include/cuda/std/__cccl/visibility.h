@@ -30,6 +30,7 @@
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__cccl/os.h>
 
 // For unknown reasons, nvc++ need to selectively disable this warning
 // We do not want to use our usual macro because that would have push / pop semantics
@@ -38,27 +39,29 @@
 #endif // _CCCL_COMPILER(NVHPC)
 
 // Enable us to hide kernels
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#if _CCCL_OS(WINDOWS) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_VISIBILITY_HIDDEN
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
 #  define _CCCL_VISIBILITY_HIDDEN __attribute__((__visibility__("hidden")))
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_COMPILER(MSVC)
-#  define _CCCL_VISIBILITY_DEFAULT __declspec(dllimport)
-#elif _CCCL_COMPILER(NVRTC) // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#if _CCCL_COMPILER(NVRTC)
 #  define _CCCL_VISIBILITY_DEFAULT
+#elif _CCCL_OS(WINDOWS)
+#  define _CCCL_VISIBILITY_DEFAULT __declspec(dllimport)
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 #  define _CCCL_VISIBILITY_DEFAULT __attribute__((__visibility__("default")))
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_COMPILER(MSVC)
+#if _CCCL_COMPILER(NVRTC)
+#  define _CCCL_VISIBILITY_EXPORT
+#elif _CCCL_OS(WINDOWS)
 #  define _CCCL_VISIBILITY_EXPORT __declspec(dllexport)
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_VISIBILITY_EXPORT _CCCL_VISIBILITY_DEFAULT
 #endif // !_CCCL_COMPILER(MSVC)
 
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#if _CCCL_OS(WINDOWS) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT
 #  define _CCCL_TYPE_VISIBILITY_HIDDEN
 #elif _CCCL_HAS_ATTRIBUTE(__type_visibility__)
@@ -72,10 +75,25 @@
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_FORCEINLINE __forceinline
 #  define _CCCL_FORCEINLINE_LAMBDA
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_FORCEINLINE        __inline__ __attribute__((__always_inline__))
 #  define _CCCL_FORCEINLINE_LAMBDA __attribute__((__always_inline__))
-#endif // !_CCCL_COMPILER(MSVC)
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
+#if _CCCL_COMPILER(NVRTC)
+#  define _CCCL_NOINLINE __attribute__((noinline))
+#elif _CCCL_OS(WINDOWS)
+#  define _CCCL_NOINLINE __declspec(noinline)
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
+// We can't use __noinline__ here because of CTK defining this macro.
+#  define _CCCL_NOINLINE __attribute__((noinline))
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
+#if _CCCL_DEVICE_COMPILATION()
+#  define _CCCL_NOINLINE_DEVICE _CCCL_NOINLINE
+#else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
+#  define _CCCL_NOINLINE_DEVICE
+#endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 
 #if _CCCL_HAS_ATTRIBUTE(__exclude_from_explicit_instantiation__)
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((__exclude_from_explicit_instantiation__))
@@ -147,15 +165,15 @@
 // of a member of a class that is declared `__attribute__((visibility("default")))`, GCC
 // complains bitterly. So we avoid declaring those functions `hidden`. Instead of the
 // typical `_CCCL_API` macro, we use `_CCCL_PUBLIC_API` for those functions.
-#if _CCCL_COMPILER(MSVC)
+#if _CCCL_OS(WINDOWS)
 #  define _CCCL_PUBLIC_API        _CCCL_HOST_DEVICE
 #  define _CCCL_PUBLIC_HOST_API   _CCCL_HOST
 #  define _CCCL_PUBLIC_DEVICE_API _CCCL_DEVICE
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
 #  define _CCCL_PUBLIC_API        _CCCL_HOST_DEVICE _CCCL_VISIBILITY_DEFAULT
 #  define _CCCL_PUBLIC_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_DEFAULT
 #  define _CCCL_PUBLIC_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_DEFAULT
-#endif // !_CCCL_COMPILER(MSVC)
+#endif // !_CCCL_OS(WINDOWS)
 
 #ifdef _CCCL_DOXYGEN_INVOKED // Only for documentation
 //! If defined, usage of CUDA Dynamic Parallelism is disabled and APIs launching kernels can only be called from the

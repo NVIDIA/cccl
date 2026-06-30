@@ -95,15 +95,16 @@ struct Tuning;
 template <class Key, class Value>
 struct Tuning<core::detail::sm52, Key, Value>
 {
-  static constexpr int MAX_INPUT_BYTES             = ::cuda::std::max(int{sizeof(Key)}, int{sizeof(Value)});
+  static constexpr int MAX_INPUT_BYTES             = (::cuda::std::max) (int{sizeof(Key)}, int{sizeof(Value)});
   static constexpr int COMBINED_INPUT_BYTES        = int{sizeof(Key)} + int{sizeof(Value)};
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
   static constexpr int ITEMS_PER_THREAD =
     (MAX_INPUT_BYTES <= 8)
       ? 9
-      : ::cuda::std::min(
-          NOMINAL_4B_ITEMS_PER_THREAD,
-          ::cuda::std::max(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
+      : (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+                            (::cuda::std::max) (1,
+                                                ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1)
+                                                  / COMBINED_INPUT_BYTES));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -327,7 +328,7 @@ struct ReduceByKeyAgent
 
       __syncthreads();
 
-      for (int item = threadIdx.x; item < num_tile_segments; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
       {
         size_type idx         = num_tile_segments_prefix + item;
         key_value_pair_t pair = storage.raw_exchange[item];
@@ -593,7 +594,7 @@ struct ReduceByKeyAgent
       // Blocks are launched in increasing order,
       // so just assign one tile per block
       //
-      int tile_idx       = blockIdx.x;
+      int tile_idx       = static_cast<int>(blockIdx.x);
       Size tile_offset   = static_cast<Size>(tile_idx) * ITEMS_PER_TILE;
       Size num_remaining = num_items - tile_offset;
 

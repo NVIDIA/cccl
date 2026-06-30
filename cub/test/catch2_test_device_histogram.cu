@@ -9,6 +9,8 @@
 
 #include <cub/device/device_histogram.cuh>
 
+#include <thrust/gather.h>
+
 #include <cuda/iterator>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
@@ -17,7 +19,10 @@
 #include <cuda/type_traits>
 
 #include <algorithm>
+#include <exception>
 #include <limits>
+#include <new>
+#include <string>
 #include <tuple>
 
 #include "catch2_test_launch_helper.h"
@@ -651,8 +656,45 @@ C2H_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
   }
 }
 
-// We cannot use launch wrappers for this test, since it checks error codes explicitly.
+// Limit this large-memory reproducer to the host launch path.
 #if TEST_LAUNCH == 0
+C2H_TEST("DeviceHistogram::MultiHistogramEven large privatized offsets", "[histogram_even][device]")
+try
+{
+  using sample_t  = int64_t;
+  using counter_t = int;
+
+  constexpr int num_bins    = 14234160;
+  constexpr int num_samples = 822702;
+  constexpr int num_levels  = num_bins + 1;
+
+  auto sample_iterator = cuda::counting_iterator<sample_t>{0};
+  array<counter_t*, 1> d_histogram_array{};
+  array<int, 1> num_levels_array  = {num_levels};
+  array<int, 1> lower_level_array = {0};
+  array<int, 1> upper_level_array = {num_bins};
+
+  c2h::device_vector<counter_t> d_histogram(num_bins);
+  d_histogram_array[0] = thrust::raw_pointer_cast(d_histogram.data());
+
+  multi_histogram_even<1, 1>(
+    sample_iterator, d_histogram_array, num_levels_array, lower_level_array, upper_level_array, num_samples);
+
+  c2h::device_vector<int> d_bin_indices{num_samples - 1, num_samples};
+  c2h::device_vector<counter_t> d_selected_bins(2);
+  thrust::gather(
+    c2h::device_policy, d_bin_indices.begin(), d_bin_indices.end(), d_histogram.begin(), d_selected_bins.begin());
+  CHECK(d_selected_bins == c2h::host_vector<counter_t>{1, 0});
+}
+catch (const std::bad_alloc&)
+{
+  SUCCEED("allocation failure is not a test failure");
+}
+catch (const std::exception& e)
+{
+  FAIL("Unexpected exception: " + std::string(e.what()));
+}
+
 // Our bin computation for HistogramEven is guaranteed only for when (max_level - min_level) * num_bins does not
 // overflow using uint64_t arithmetic. In case of overflow, we expect cudaErrorInvalidValue to be returned.
 C2H_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow",

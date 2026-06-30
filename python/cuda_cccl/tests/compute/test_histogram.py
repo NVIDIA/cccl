@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import math
+
 import cupy as cp
 import numpy as np
 import pytest
@@ -400,3 +402,149 @@ def test_histogram_cache_bug_crosses_256_bin_threshold():
     )
     cp.cuda.Device().synchronize()
     assert int(d_histogram[:num_bins_2].sum()) == num_samples
+
+
+def test_histogram_cache_reuses_artifact_when_bounds_change():
+    cuda.compute.clear_all_caches()
+
+    num_samples = 8
+    num_levels = 5
+    d_samples = cp.asarray(np.arange(num_samples, dtype=np.float32))
+    d_histogram = cp.empty(num_levels - 1, dtype=np.int32)
+    h_num_output_levels = np.array([num_levels], dtype=np.int32)
+
+    h_lower_level_1 = np.array([0], dtype=np.float32)
+    h_upper_level_1 = np.array([8], dtype=np.float32)
+    h_lower_level_2 = np.array([10], dtype=np.float32)
+    h_upper_level_2 = np.array([18], dtype=np.float32)
+
+    hist1 = cuda.compute.make_histogram_even(
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level_1,
+        h_upper_level=h_upper_level_1,
+        num_samples=num_samples,
+    )
+    hist2 = cuda.compute.make_histogram_even(
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level_2,
+        h_upper_level=h_upper_level_2,
+        num_samples=num_samples,
+    )
+    assert hist1 is hist2
+
+    d_samples = cp.asarray(np.arange(10, 18, dtype=np.float32))
+    d_histogram.fill(0)
+    temp_bytes = hist2(
+        temp_storage=None,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level_2,
+        h_upper_level=h_upper_level_2,
+        num_samples=num_samples,
+    )
+    temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
+    hist2(
+        temp_storage=temp_storage,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level_2,
+        h_upper_level=h_upper_level_2,
+        num_samples=num_samples,
+    )
+    cp.cuda.Device().synchronize()
+
+    np.testing.assert_array_equal(
+        cp.asnumpy(d_histogram), np.array([2, 2, 2, 2], dtype=np.int32)
+    )
+
+
+def test_histogram_cache_reuses_artifact_for_same_offset_width():
+    cuda.compute.clear_all_caches()
+
+    num_levels = 5
+    d_histogram = cp.empty(num_levels - 1, dtype=np.int32)
+    h_num_output_levels = np.array([num_levels], dtype=np.int32)
+    h_lower_level = np.array([0], dtype=np.float32)
+    h_upper_level = np.array([12], dtype=np.float32)
+
+    hist1 = cuda.compute.make_histogram_even(
+        d_samples=cp.asarray(np.arange(8, dtype=np.float32)),
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=8,
+    )
+    hist2 = cuda.compute.make_histogram_even(
+        d_samples=cp.asarray(np.arange(12, dtype=np.float32)),
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=12,
+    )
+    assert hist1 is hist2
+
+    # Build-only call that crosses v1's offset-width threshold without
+    # allocating or executing that many samples.
+    large_num_samples = math.ceil(
+        np.iinfo(np.int32).max / np.dtype(np.float32).itemsize
+    )
+    hist3 = cuda.compute.make_histogram_even(
+        d_samples=cp.asarray(np.arange(12, dtype=np.float32)),
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=large_num_samples,
+    )
+    assert hist3 is not hist1
+
+    d_samples = cp.asarray(np.arange(12, dtype=np.float32))
+    d_histogram.fill(0)
+    temp_bytes = hist2(
+        temp_storage=None,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=12,
+    )
+    temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
+    hist2(
+        temp_storage=temp_storage,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=12,
+    )
+    cp.cuda.Device().synchronize()
+
+    np.testing.assert_array_equal(
+        cp.asnumpy(d_histogram), np.array([3, 3, 3, 3], dtype=np.int32)
+    )
+
+
+def test_make_histogram_even_rejects_mismatched_bound_dtypes():
+    num_samples = 8
+    d_samples = cp.asarray(np.arange(num_samples, dtype=np.int32))
+    d_histogram = cp.empty(4, dtype=np.int32)
+
+    with pytest.raises(TypeError, match="must have the same dtype"):
+        cuda.compute.make_histogram_even(
+            d_samples=d_samples,
+            d_histogram=d_histogram,
+            h_num_output_levels=np.array([5], dtype=np.int32),
+            h_lower_level=np.array([0], dtype=np.int32),
+            h_upper_level=np.array([8], dtype=np.float32),
+            num_samples=num_samples,
+        )

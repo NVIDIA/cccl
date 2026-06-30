@@ -205,12 +205,12 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_100, ({
-        auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-          d_in, d_out, tile_state.lookahead, num_items, num_stages};
-        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
-      }));
+    NV_IF_TARGET(NV_PROVIDES_SM_100, ({
+                   auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
+                     d_in, d_out, tile_state.lookahead, num_items, num_stages};
+                   device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
+                     scan_params, scan_op, init_value);
+                 }));
 #else
     static_assert(sizeof(d_in) == 0,
                   "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");

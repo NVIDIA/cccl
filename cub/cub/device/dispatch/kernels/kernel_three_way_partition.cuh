@@ -132,15 +132,15 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block)
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
   static constexpr auto active_policy = current_policy<PolicySelector>();
-  using AgentThreeWayPartitionPolicyT = AgentThreeWayPartitionPolicy<
+  using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
     active_policy.threads_per_block,
     active_policy.items_per_thread,
     active_policy.load_algorithm,
     active_policy.load_modifier,
     active_policy.scan_algorithm,
-    delay_constructor_t<active_policy.delay_constructor.kind,
-                        active_policy.delay_constructor.delay,
-                        active_policy.delay_constructor.l2_write_latency>>;
+    delay_constructor_t<active_policy.lookback_delay.kind,
+                        active_policy.lookback_delay.delay,
+                        active_policy.lookback_delay.l2_write_latency>>;
 
   // Thread block type for selecting data from input tiles
   using AgentThreeWayPartitionT = AgentThreeWayPartition<

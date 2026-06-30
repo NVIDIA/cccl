@@ -16,7 +16,7 @@
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
 #include <cub/thread/thread_store.cuh>
-#include <cub/warp/specializations/warp_reduce_shfl.cuh>
+#include <cub/warp/specializations/warp_redux.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
@@ -24,7 +24,9 @@
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
@@ -182,8 +184,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   const int idxTileNext,
   ScanOpT& scan_op)
 {
-  const int laneIdx                      = specialRegisters.laneIdx;
-  const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
+  const int laneIdx                                       = static_cast<int>(specialRegisters.laneIdx);
+  [[maybe_unused]] const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
 
   int idxTileCur             = idxTilePrev;
   AccumT aggrExclusiveCtaCur = aggrExclusiveCtaPrev;
@@ -193,11 +195,6 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
                 "WarpReduce for a full warp must not require temporary storage");
   [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
 
-  using warp_reduce_or_t = WarpReduce<::cuda::std::uint32_t>;
-  typename warp_reduce_or_t::TempStorage temp_storage_or;
-  warp_reduce_or_t warp_reduce_or{temp_storage_or};
-  constexpr ::cuda::std::bit_or<::cuda::std::uint32_t> or_op{};
-
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
@@ -205,12 +202,9 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {
-      // Bitmask with a 1 bit in the position of the current lane if current lane has a tile aggregate
-      const ::cuda::std::uint32_t lane_has_aggregate =
-        lanemaskEq * (regTmpStates[idx].state == scan_state::tile_aggregate);
-
       // Bitmask with 1 bits indicating which lane has a tile aggregate
-      const ::cuda::std::uint32_t warp_has_aggregate_mask = warp_reduce_or.Reduce(lane_has_aggregate, or_op);
+      const ::cuda::std::uint32_t warp_has_aggregate_mask =
+        __ballot_sync(0xffffffffu, regTmpStates[idx].state == scan_state::tile_aggregate);
 
       // Bitmask with 1 bits for all rightmost lanes having a tile aggregate
       const ::cuda::std::uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
@@ -228,13 +222,11 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_80,
         ({ // NOTE: Inlined from warp_reduce_shfl
-          if constexpr (::cuda::std::is_integral_v<AccumT> && sizeof(AccumT) <= sizeof(unsigned)
-                        && (is_cuda_std_plus_v<ScanOpT, AccumT> || is_cuda_minimum_maximum_v<ScanOpT, AccumT>
-                            || is_cuda_std_bitwise_v<ScanOpT, AccumT>) )
+          if constexpr (is_warp_redux_op_supported_sm80<ScanOpT, AccumT>)
           {
             const bool use_value = lanemaskEq & warp_right_aggregates_mask;
             const AccumT value   = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
-            local_aggr           = reduce_op_sync(value, ~0, scan_op);
+            local_aggr           = cub::detail::warp_redux_sm80(value, ~0, scan_op);
           }
           else
           {
@@ -258,6 +250,82 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
     }
   }
 
+  return aggrExclusiveCtaCur; // must only be valid in lane_0
+}
+
+// Deterministic version of warpIncrementalLookahead that returns the same aggrExclusiveCta. The difference is that it
+// always starts the lookahead from a tile index that is a multiple of 32. The left pointer (idxTilePrev) is itself
+// always a multiple of 32, as it starts at 0 and is only ever advanced by whole batches of 32, so the lookahead resumes
+// from there directly. Because every reduction begins at the same fixed tiles, no matter which tiles happened to finish
+// first, the order in which values are summed is always the same and the result is identical on every run.
+// idxTilePrev/aggrExclusiveCtaPrev are updated by reference to the last multiple of 32.
+template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookaheadStable(
+  SpecialRegisters specialRegisters,
+  tile_state_t<AccumT>* ptrTileStates,
+  int& idxTilePrev,
+  AccumT& aggrExclusiveCtaPrev,
+  const int idxTileNext,
+  ScanOpT& scan_op)
+{
+  const int laneIdx                      = static_cast<int>(specialRegisters.laneIdx);
+  const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
+
+  int idxTileCur             = idxTilePrev;
+  AccumT aggrExclusiveCtaCur = aggrExclusiveCtaPrev;
+
+  using warp_reduce_t = WarpReduce<AccumT>;
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+                "WarpReduce for a full warp must not require temporary storage");
+  [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
+
+  while (idxTileCur < idxTileNext)
+  {
+    tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
+    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
+
+    for (int idx = 0; idx < numTileStatesPerThread; ++idx)
+    {
+      // Bitmask with 1 bits indicating which lane has a tile aggregate
+      const ::cuda::std::uint32_t warp_has_aggregate_mask =
+        __ballot_sync(0xffffffffu, regTmpStates[idx].state == scan_state::tile_aggregate);
+
+      // Bitmask with 1 bits for the contiguous run of lanes having a tile aggregate starting from LSB
+      const ::cuda::std::uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
+
+      const ::cuda::std::uint32_t warp_right_aggregates_count = ::cuda::std::popcount(warp_right_aggregates_mask);
+
+      // Only reduce once 32 contiguous tile aggregates are available, so the reduction order is fixed.
+      const ::cuda::std::uint32_t expected_count =
+        static_cast<::cuda::std::uint32_t>(::cuda::std::min(32, idxTileNext - idxTileCur));
+      if (warp_right_aggregates_count < expected_count)
+      {
+        break;
+      }
+
+      const bool use_value    = lanemaskEq & warp_right_aggregates_mask;
+      const AccumT value      = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
+      const AccumT local_aggr = warp_reduce_t{temp_storage}.Reduce(value, scan_op);
+
+      if (expected_count == 32)
+      {
+        aggrExclusiveCtaCur = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+        idxTileCur += 32;
+      }
+      else
+      {
+        const AccumT full_aggr = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+        idxTilePrev            = idxTileCur;
+        aggrExclusiveCtaPrev   = aggrExclusiveCtaCur;
+        return full_aggr;
+      }
+    }
+  }
+
+  // Only reached when idxTileNext is a multiple of 32; otherwise the final partial batch full aggregate returns inside
+  // the loop above.
+  idxTilePrev          = idxTileNext;
+  aggrExclusiveCtaPrev = aggrExclusiveCtaCur;
   return aggrExclusiveCtaCur; // must only be valid in lane_0
 }
 

@@ -434,9 +434,9 @@ _CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
   int32_t ix, iy;
 
   get_float_word(hx, x);
-  ix = hx & 0x7f800000;
+  ix = static_cast<int32_t>(hx & 0x7f800000);
   get_float_word(hy, y);
-  iy = hy & 0x7f800000;
+  iy = static_cast<int32_t>(hy & 0x7f800000);
   // #define	BIAS	(FLT_MAX_EXP - 1)
   const int BIAS = FLT_MAX_EXP - 1;
   // #define	CUTOFF	(FLT_MANT_DIG / 2 + 1)

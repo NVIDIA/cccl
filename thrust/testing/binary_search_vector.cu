@@ -348,7 +348,7 @@ struct TestVectorLowerBoundDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::lower_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -373,7 +373,7 @@ struct TestVectorUpperBoundDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::upper_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -398,7 +398,7 @@ struct TestVectorBinarySearchDiscardIterator
     thrust::discard_iterator<> d_result = thrust::binary_search(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
