@@ -871,26 +871,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    const bool single_tile_problem =
-      num_items
-      <= static_cast<OffsetT>(active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
-
-    // If we use the atomic code path or have a problem size that fits into a single tile, we don't need temp storage
-    if (!StableReductionOrder || single_tile_problem)
-    {
-      // Return if the caller is simply requesting the size of the storage allocation
-      if (d_temp_storage == nullptr)
-      {
-        temp_storage_bytes = 1;
-        return cudaSuccess;
-      }
-    }
-
     if constexpr (StableReductionOrder)
     {
+      const bool single_tile_problem =
+        num_items <= static_cast<OffsetT>(
+          active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
+
       // if the problem is small enough to fit into a single tile, just handle it and return early
       if (single_tile_problem)
       {
+        // Return if the caller is simply requesting the size of the storage allocation
+        if (d_temp_storage == nullptr)
+        {
+          temp_storage_bytes = 1;
+          return cudaSuccess;
+        }
+
 #ifdef CUB_DEBUG_LOG
         _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
                 "%d items per thread\n",
@@ -919,6 +915,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
           return error;
         }
 
+        return cudaSuccess;
+      }
+    }
+    else
+    {
+      // Return if the caller is simply requesting the size of the storage allocation
+      if (d_temp_storage == nullptr)
+      {
+        temp_storage_bytes = 1;
         return cudaSuccess;
       }
     }
