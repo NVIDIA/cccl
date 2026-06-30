@@ -5,8 +5,10 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/algorithm>
+#include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/launch>
+#include <cuda/memory_resource>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/span>
@@ -40,6 +42,29 @@ _CCCL_DEVICE_API inline void assert_device(bool condition, const char* expressio
     printf("Device assertion failed: %s (%s:%d)\n", expression, file, line);
     __trap();
   }
+}
+
+template <typename T>
+[[nodiscard]] _CCCL_HOST_API inline auto make_host_buffer(cuda::stream_ref stream, cuda::std::size_t size)
+{
+  using resource_t = cuda::mr::synchronous_resource_adapter<cuda::mr::legacy_pinned_memory_resource>;
+  resource_t resource{cuda::mr::legacy_pinned_memory_resource{cuda::device_ref{0}}};
+  return cuda::make_buffer<T>(stream, resource, size, cuda::no_init);
+}
+
+template <typename T, typename RandomT = T>
+[[nodiscard]] _CCCL_HOST_API inline auto
+random_samples_buffer(cuda::stream_ref stream, cuda::std::size_t size, cuda::std::size_t first = 0)
+{
+  auto result = make_host_buffer<T>(stream, size);
+  stream.sync();
+
+  for (cuda::std::size_t i = 0; i < size; ++i)
+  {
+    result[i] = static_cast<T>(unittest::generate_random_sample<RandomT>{}(static_cast<unsigned int>(first + i)));
+  }
+
+  return result;
 }
 
 template <typename Buffer>
