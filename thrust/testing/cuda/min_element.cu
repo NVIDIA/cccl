@@ -1,53 +1,62 @@
 #include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
 
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
+#include <cuda/stream>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator, typename Iterator2>
-__global__ void min_element_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Iterator2 result)
+struct min_element_kernel
 {
-  *result = thrust::min_element(exec, first, last);
-}
+  template <typename ExecutionPolicy, typename Input>
+  __device__ void operator()(ExecutionPolicy exec, Input data, cuda::std::ptrdiff_t expected) const
+  {
+    const auto result = thrust::min_element(exec, data.begin(), data.end());
+    TEST_ASSERT_DEVICE(result - data.begin() == expected);
+  }
+};
 
-template <typename ExecutionPolicy, typename Iterator, typename BinaryPredicate, typename Iterator2>
-__global__ void
-min_element_kernel(ExecutionPolicy exec, Iterator first, Iterator last, BinaryPredicate pred, Iterator2 result)
+struct min_element_pred_kernel
 {
-  *result = thrust::min_element(exec, first, last, pred);
-}
+  template <typename ExecutionPolicy, typename Input, typename BinaryPredicate>
+  __device__ void operator()(ExecutionPolicy exec, Input data, BinaryPredicate pred, cuda::std::ptrdiff_t expected) const
+  {
+    const auto result = thrust::min_element(exec, data.begin(), data.end(), pred);
+    TEST_ASSERT_DEVICE(result - data.begin() == expected);
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestMinElementDevice(ExecutionPolicy exec)
 {
-  size_t n                          = 1000;
-  thrust::host_vector<int> h_data   = unittest::random_samples<int>(n);
-  thrust::device_vector<int> d_data = h_data;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  using iter_type = typename thrust::device_vector<int>::iterator;
+  constexpr cuda::std::size_t n = 1000;
+  auto h_data                   = test_runtime::random_samples_buffer<int>(stream, n);
+  auto d_data                   = cuda::make_device_buffer<int>(stream, device, h_data);
 
-  thrust::device_vector<iter_type> d_result(1);
+  const auto h_min = thrust::min_element(h_data.begin(), h_data.end());
 
-  typename thrust::host_vector<int>::iterator h_min = thrust::min_element(h_data.begin(), h_data.end());
+  cuda::launch(stream, test_runtime::single_thread_config(), min_element_kernel{}, exec, d_data, h_min - h_data.begin());
+  stream.sync();
 
-  min_element_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  const auto h_max = thrust::min_element(h_data.begin(), h_data.end(), ::cuda::std::greater<int>{});
 
-  ASSERT_EQUAL(h_min - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
-
-  typename thrust::host_vector<int>::iterator h_max =
-    thrust::min_element(h_data.begin(), h_data.end(), ::cuda::std::greater<int>());
-
-  min_element_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), ::cuda::std::greater<int>(), d_result.begin());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
-
-  ASSERT_EQUAL(h_max - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  cuda::launch(
+    stream,
+    test_runtime::single_thread_config(),
+    min_element_pred_kernel{},
+    exec,
+    d_data,
+    ::cuda::std::greater<int>{},
+    h_max - h_data.begin());
+  stream.sync();
 }
 
 void TestMinElementDeviceSeq()
@@ -65,48 +74,34 @@ DECLARE_UNITTEST(TestMinElementDeviceDevice);
 
 void TestMinElementCudaStreams()
 {
-  using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  auto data = cuda::make_device_buffer<int>(stream, device, {3, 5, 1, 2, 5, 1});
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
-
-  ASSERT_EQUAL(*thrust::min_element(thrust::cuda::par.on(s), data.begin(), data.end()), 1);
-  ASSERT_EQUAL(thrust::min_element(thrust::cuda::par.on(s), data.begin(), data.end()) - data.begin(), 2);
-
-  ASSERT_EQUAL(*thrust::min_element(thrust::cuda::par.on(s), data.begin(), data.end(), ::cuda::std::greater<T>()), 5);
+  ASSERT_EQUAL(thrust::min_element(thrust::cuda::par.on(stream.get()), data.begin(), data.end()) - data.begin(), 2);
   ASSERT_EQUAL(
-    thrust::min_element(thrust::cuda::par.on(s), data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin(),
+    thrust::min_element(thrust::cuda::par.on(stream.get()), data.begin(), data.end(), ::cuda::std::greater<int>{})
+      - data.begin(),
     1);
 
-  cudaStreamDestroy(s);
+  stream.sync();
 }
 DECLARE_UNITTEST(TestMinElementCudaStreams);
 
 void TestMinElementDevicePointer()
 {
-  using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  auto data = cuda::make_device_buffer<int>(stream, device, {3, 5, 1, 2, 5, 1});
 
-  T* raw_ptr = thrust::raw_pointer_cast(data.data());
-  size_t n   = data.size();
-  ASSERT_EQUAL(thrust::min_element(thrust::device, raw_ptr, raw_ptr + n) - raw_ptr, 2);
-  ASSERT_EQUAL(thrust::min_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr, 1);
+  auto policy   = thrust::cuda::par.on(stream.get());
+  auto* raw_ptr = data.data();
+  const auto n  = data.size();
+  ASSERT_EQUAL(thrust::min_element(policy, raw_ptr, raw_ptr + n) - raw_ptr, 2);
+  ASSERT_EQUAL(thrust::min_element(policy, raw_ptr, raw_ptr + n, ::cuda::std::greater<int>{}) - raw_ptr, 1);
+
+  stream.sync();
 }
 DECLARE_UNITTEST(TestMinElementDevicePointer);
