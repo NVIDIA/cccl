@@ -150,8 +150,8 @@ std::string generate_comparison_functor(cccl_op_t op, const std::string& key_typ
   }
 }
 
-// Returns the cuda::std (or cuda::) functor type string for a well-known op, or nullptr if not well-known.
-const char* get_well_known_functor_type(cccl_op_kind_t kind)
+// Returns the cuda::std (or cuda::) functor type string for a well-known binary op, or nullptr if not well-known.
+const char* get_well_known_binary_functor_type(cccl_op_kind_t kind)
 {
   switch (kind)
   {
@@ -177,6 +177,10 @@ const char* get_well_known_functor_type(cccl_op_kind_t kind)
       return "::cuda::std::greater_equal<>";
     case CCCL_LESS_EQUAL:
       return "::cuda::std::less_equal<>";
+    case CCCL_LOGICAL_AND:
+      return "::cuda::std::logical_and<>";
+    case CCCL_LOGICAL_OR:
+      return "::cuda::std::logical_or<>";
     case CCCL_BIT_AND:
       return "::cuda::std::bit_and<>";
     case CCCL_BIT_OR:
@@ -187,6 +191,24 @@ const char* get_well_known_functor_type(cccl_op_kind_t kind)
       return "::cuda::minimum<>";
     case CCCL_MAXIMUM:
       return "::cuda::maximum<>";
+    default:
+      return nullptr;
+  }
+}
+
+// Returns the cuda::std functor type string for a well-known unary op, or nullptr if not well-known.
+const char* get_well_known_unary_functor_type(cccl_op_kind_t kind)
+{
+  switch (kind)
+  {
+    case CCCL_LOGICAL_NOT:
+      return "::cuda::std::logical_not<>";
+    case CCCL_BIT_NOT:
+      return "::cuda::std::bit_not<>";
+    case CCCL_IDENTITY:
+      return "::cuda::std::identity";
+    case CCCL_NEGATE:
+      return "::cuda::std::negate<>";
     default:
       return nullptr;
   }
@@ -296,7 +318,7 @@ OperatorCode make_binary_op(
   // For custom types, generate an operator overload that wraps the user-provided function.
   // If the caller provided bitcode, prefer it: the well-known functor (e.g.
   // cuda::std::plus<void>) may not be invocable on the custom value type.
-  const char* well_known_type = get_well_known_functor_type(op.type);
+  const char* well_known_type = get_well_known_binary_functor_type(op.type);
   if (well_known_type && !has_bitcode)
   {
     OperatorCode result;
@@ -336,21 +358,15 @@ OperatorCode make_unary_op(
   const std::string& state_param,
   bool has_bitcode)
 {
-  // NEGATE and IDENTITY map directly to cuda::std unary functors. If the
-  // caller provided bitcode, prefer it — cuda::std::negate<> may not be
+  // Well-known operations map directly to cuda::std unary functors. If the
+  // caller provided bitcode, prefer it because the functor may not be
   // invocable on the user's custom value type.
-  if (op.type == CCCL_NEGATE && !has_bitcode)
+  const char* well_known_type = get_well_known_unary_functor_type(op.type);
+  if (well_known_type && !has_bitcode)
   {
     OperatorCode result;
     result.local_var  = var_name;
-    result.setup_code = std::format("::cuda::std::negate<> {}{{}};", var_name);
-    return result;
-  }
-  if (op.type == CCCL_IDENTITY && !has_bitcode)
-  {
-    OperatorCode result;
-    result.local_var  = var_name;
-    result.setup_code = std::format("::cuda::std::identity {}{{}};", var_name);
+    result.setup_code = std::format("{} {}{{}};", well_known_type, var_name);
     return result;
   }
 
@@ -439,7 +455,7 @@ OperatorCode make_comparison_op(
   const std::string& state_param,
   bool has_bitcode)
 {
-  const char* well_known_type = get_well_known_functor_type(op.type);
+  const char* well_known_type = get_well_known_binary_functor_type(op.type);
   if (well_known_type && !has_bitcode)
   {
     OperatorCode result;
