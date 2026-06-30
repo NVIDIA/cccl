@@ -66,6 +66,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm al
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
+namespace detail
+{
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
@@ -79,7 +81,7 @@ template <int NominalThreadsPerBlock4B,
           RadixSortStoreAlgorithm StoreAlgorithm,
           int RadixBits,
           typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentRadixSortOnesweepPolicy : ScalingType
+struct agent_radix_sort_onesweep_policy : ScalingType
 {
   static constexpr int RANK_NUM_PARTS                      = RankNumParts;
   static constexpr int RADIX_BITS                          = RadixBits;
@@ -87,6 +89,28 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = ScanAlgorithm;
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
+} // namespace detail
+
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int RankNumParts,
+          RadixRankAlgorithm RankAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          RadixSortStoreAlgorithm StoreAlgorithm,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentRadixSortOnesweepPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") = detail::agent_radix_sort_onesweep_policy<
+    NominalThreadsPerBlock4B,
+    NominalItemsPerThread4B,
+    ComputeT,
+    RankNumParts,
+    RankAlgorithm,
+    ScanAlgorithm,
+    StoreAlgorithm,
+    RadixBits,
+    ScalingType>;
 
 namespace detail::radix_sort
 {
@@ -671,8 +695,8 @@ struct AgentRadixSortOnesweep
       , num_items(num_items)
       , current_bit(current_bit)
       , num_bits(num_bits)
-      , warp(threadIdx.x / WARP_THREADS)
-      , lane(::cuda::ptx::get_sreg_laneid())
+      , warp(static_cast<int>(threadIdx.x / WARP_THREADS))
+      , lane(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , decomposer(decomposer)
   {
     // initialization

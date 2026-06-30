@@ -30,32 +30,14 @@ Checks:
   - '-modernize-use-auto'
   - 'clang-diagnostic-*'
   - 'bugprone-*'
-  - '-bugprone-forward-declaration-namespace'
-  - '-bugprone-narrowing-conversions'
   - '-bugprone-misplaced-widening-cast'
-  - '-bugprone-signed-char-misuse'
-  - '-bugprone-suspicious-include'
-  - '-bugprone-multi-level-implicit-pointer-conversion'
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
-  - '-bugprone-forwarding-reference-overload'
   - '-bugprone-branch-clone'
-  - '-bugprone-empty-catch'
-  - '-bugprone-return-const-ref-from-parameter'
-  - '-bugprone-use-after-move'
-  - '-bugprone-sizeof-expression'
-  - '-bugprone-undefined-memory-manipulation'
-  - '-bugprone-assignment-in-if-condition'
-  - '-bugprone-unchecked-optional-access'
-  - '-bugprone-unintended-char-ostream-output'
-  - '-bugprone-unhandled-self-assignment'
-  - '-bugprone-casting-through-void'
-  - '-bugprone-integer-division'
-  - '-bugprone-suspicious-stringview-data-usage'
-  - '-bugprone-move-forwarding-reference'
-  - '-bugprone-inc-dec-in-conditions'
-  - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'
+  # This is just noise
+  - '-bugprone-signed-char-misuse'
+  - '-bugprone-multi-level-implicit-pointer-conversion'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -209,7 +191,6 @@ Checks:
   - '-cppcoreguidelines-noexcept-move-operations'
   # REVIEW ME: This warns about any usage of operator[], suggesting usage of .at() instead. Could
   - '-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
-  # Covered by bugprone-narrowing-conversions
   - '-cppcoreguidelines-narrowing-conversions'
   # Covered by misc-unconventional-assign-operator
   - '-cppcoreguidelines-c-copy-assignment-signature'

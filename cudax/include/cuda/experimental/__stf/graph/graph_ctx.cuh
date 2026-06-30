@@ -558,17 +558,30 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      host_launch(ldata.read()).set_symbol("wait")->*[]() {};
 
-    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
-      out = owning_container_of<T>::get_value(data);
-    };
+      /* This forces the completion of the host callback, so that the host
+       * thread can use it as a synchronization point for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    /* This forces the completion of the host callback, so that the host
-     * thread can use the content for dynamic control flow */
-    cuda_safe_call(cudaStreamSynchronize(fence()));
+      host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      /* This forces the completion of the host callback, so that the host
+       * thread can use the content for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+
+      return out;
+    }
   }
 
 private:

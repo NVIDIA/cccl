@@ -108,7 +108,7 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<1>(t1) == 42.0f);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
   NV_IF_TARGET(
     NV_IS_HOST,
     (
@@ -127,7 +127,7 @@ TEST_FUNC constexpr bool test()
         assert(cuda::std::get<0>(t1) == 3.0f);
         assert(cuda::std::get<1>(t1) == 42.0f);
       }))
-#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
 
 #if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   NV_IF_TARGET(

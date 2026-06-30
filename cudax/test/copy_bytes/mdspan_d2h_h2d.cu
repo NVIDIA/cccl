@@ -197,7 +197,7 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i + j * M] = i * N + j;
+      expected[i + static_cast<std::size_t>(j) * M] = static_cast<int>(static_cast<std::size_t>(i) * N + j);
     }
   }
   // tensorA:      (4,8):(8,1)
@@ -211,7 +211,7 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i * N + j] = i + j * M;
+      expected[static_cast<std::size_t>(i) * N + j] = static_cast<int>(i + static_cast<std::size_t>(j) * M);
     }
   }
   // tensorA:      (4,8):(1,4)
@@ -366,7 +366,7 @@ TEST_CASE("copy_bytes 2D strided, padded layout", "[copy_bytes][2d][stride][row]
   {
     for (int j = 0; j < N; ++j)
     {
-      host_data[i * N * 2 + j] = i * N + j;
+      host_data[static_cast<std::size_t>(i) * N * 2 + j] = static_cast<int>(static_cast<std::size_t>(i) * N + j);
     }
   }
   using src_extents                = cuda::std::extents<int, M, N>;

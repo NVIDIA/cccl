@@ -79,6 +79,7 @@ inline constexpr bool is_non_deterministic_v =
 //! ====================================
 //!
 //! @cdp_class{DeviceReduce}
+//! @determinism{run_to_run}
 //!
 //! Performance
 //! ====================================
@@ -103,6 +104,38 @@ inline constexpr bool is_non_deterministic_v =
 //!      :dedent:
 //!      :start-after: example-begin reduce-by-key-tuning
 //!      :end-before: example-end reduce-by-key-tuning
+//!
+//! Determinism
+//! ====================================
+//!
+//! ``cub::DeviceReduce`` supports all three :ref:`determinism guarantees <cccl-determinism>`; the
+//! default is ``run_to_run``.
+//!
+//! - ``run_to_run`` (the default) is reproducible because, for a given GPU, every launch with the same input,
+//!   build, and launch configuration selects the *same* tuning policy and therefore performs the *same* fixed
+//!   reduction tree: the input is partitioned into the same tiles, mapped onto the same thread blocks, and the
+//!   partial results are combined in the same fixed order on every run — no atomics or other run-dependent
+//!   ordering are involved. Because floating-point addition is only pseudo-associative, that fixed combining order
+//!   is what makes the result bitwise-identical from one run to the next. The combining order is tied to the
+//!   tuning and the partition, so it can change on a *different* GPU architecture (or under a different
+//!   user-provided tuning); that is exactly the cross-architecture reproducibility that ``gpu_to_gpu`` adds on top.
+//! - ``gpu_to_gpu`` reproducibility depends on the type and operator:
+//!
+//!   - ``float`` and ``double`` with ``cuda::std::plus`` use a dedicated, hardware-independent implementation
+//!     based on a `Reproducible Floating-point Accumulator (RFA)
+//!     <https://people.eecs.berkeley.edu/~demmel/ma221_Fall23/J115_Efficient_Reproducible_Summation_TOMS_2020.pdf>`__:
+//!     input values are grouped into a fixed number of exponent-range bins and accumulated in that fixed,
+//!     hardware-independent order, so the same inputs yield the same bits on any GPU architecture.
+//!   - Exactly-associative cases — integral types with a known CUDA binary operator, and ``float``/``double``
+//!     with ``min``/``max`` — are already identical across GPUs, so the request is satisfied by the (faster)
+//!     ``run_to_run`` path.
+//!   - All other type/operator combinations are rejected at compile time.
+//!
+//! - ``not_guaranteed`` uses an atomic accumulation kernel when the conditions for it are met: a contiguous output
+//!   iterator, ``cuda::std::plus``, an accumulator of at least 4 bytes, and an output type equal to the
+//!   accumulator type. Atomics combine partial results in whatever order the hardware schedules them, which can
+//!   differ between runs — hence no run-to-run guarantee, but typically the fastest option. When those conditions
+//!   are not met, the call falls back to ``run_to_run`` rather than failing.
 //!
 //! @endrst
 struct DeviceReduce

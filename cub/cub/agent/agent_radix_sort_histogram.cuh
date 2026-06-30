@@ -35,9 +35,11 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 //! @param ComputeT If void, use NOMINAL_4B_NUM_PARTS directly for NUM_PARTS. Otherwise, perform scaling.
 template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
-struct AgentRadixSortHistogramPolicy
+struct agent_radix_sort_histogram_policy
 {
   static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
@@ -67,11 +69,20 @@ struct AgentRadixSortHistogramPolicy
 };
 
 template <int ThreadsPerBlock, int RadixBits>
-struct AgentRadixSortExclusiveSumPolicy
+struct agent_radix_sort_exclusive_sum_policy
 {
   static constexpr int BLOCK_THREADS = ThreadsPerBlock;
   static constexpr int RADIX_BITS    = RadixBits;
 };
+} // namespace detail
+
+template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
+using AgentRadixSortHistogramPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
+  detail::agent_radix_sort_histogram_policy<ThreadsPerBlock, ItemsPerThread, NOMINAL_4B_NUM_PARTS, ComputeT, RadixBits>;
+
+template <int ThreadsPerBlock, int RadixBits>
+using AgentRadixSortExclusiveSumPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
+  detail::agent_radix_sort_exclusive_sum_policy<ThreadsPerBlock, RadixBits>;
 
 namespace detail::radix_sort
 {
@@ -153,7 +164,7 @@ struct AgentRadixSortHistogram
   {
     // Initialize bins to 0.
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -213,7 +224,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
