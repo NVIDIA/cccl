@@ -746,8 +746,10 @@ struct AgentReduceByKey
     if constexpr (AgentReduceByKeyPolicyT::LOAD_PREFETCH != detail::BlockLoadPrefetch::none)
     {
       const int items_to_prefetch = static_cast<int>(::cuda::std::min(num_remaining, static_cast<OffsetT>(TILE_ITEMS)));
-      detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, items_to_prefetch);
-      detail::prefetch_block_load_tile<BLOCK_THREADS>(threadIdx.x, d_values_in + tile_offset, items_to_prefetch);
+      detail::prefetch_block_load_tile<BLOCK_THREADS, 128, AgentReduceByKeyPolicyT::LOAD_PREFETCH>(
+        threadIdx.x, d_keys_in + tile_offset, items_to_prefetch);
+      detail::prefetch_block_load_tile<BLOCK_THREADS, 128, AgentReduceByKeyPolicyT::LOAD_PREFETCH>(
+        threadIdx.x, d_values_in + tile_offset, items_to_prefetch);
     }
 
     if (num_remaining > TILE_ITEMS)

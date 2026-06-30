@@ -234,8 +234,57 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 
 namespace detail
 {
-// forward declaration
-enum class BlockLoadPrefetch : int;
+//! @rst
+//! Enumerates the cache levels that :cpp:class:`cub::BlockLoad` can prefetch into when using
+//! :cpp:enumerator:`cub::BLOCK_LOAD_DIRECT`.
+//!
+//! Pass as the ``Prefetch`` template argument of :cpp:class:`cub::BlockLoad`. The default is
+//! ``detail::BlockLoadPrefetch::none`` (no prefetch).
+//!
+//! .. note::
+//!    Prefetch hints are silently suppressed for :cpp:class:`cub::CacheModifiedInputIterator`.
+//!    Those iterators apply a load modifier (e.g. ``LOAD_NC``) that routes loads through a
+//!    specific cache path. Emitting a prefetch hint for the same addresses would touch caches
+//!    the user explicitly chose to bypass, defeating the purpose of the modifier.
+//!    Prefetch hints are also suppressed for any iterator type that is not a contiguous
+//!    memory iterator (i.e., one for which ``std::to_address`` is not applicable).
+//!
+//! @endrst
+enum class BlockLoadPrefetch : int
+{
+  //! No prefetch hint emitted. Default behavior, identical to not specifying a prefetch level.
+  none,
+  //! Emit an L2 prefetch hint (``prefetch.global.L2``) before loading each cache line.
+  //! All threads collectively cover the tile, each issuing one instruction per cache line.
+  l2,
+  //! Emit an L1 prefetch hint before loading each cache line. Falls back to L2 on architectures
+  //! that do not support real L1 prefetch.
+  l1,
+  //! Emit a TMA bulk prefetch into L2 (``cp.async.bulk.prefetch``) before loading the tile.
+  //! One elected thread issues a single instruction for the whole tile via the TMA engine,
+  //! leaving the SM load/store units free. Requires SM_90 or later (Hopper/Blackwell).
+  //! Falls back to a no-op on older architectures.
+  bulk_l2,
+};
+
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadPrefetch prefetch)
+{
+  switch (prefetch)
+  {
+    case BlockLoadPrefetch::none:
+      return os << "detail::BlockLoadPrefetch::none";
+    case BlockLoadPrefetch::l2:
+      return os << "detail::BlockLoadPrefetch::l2";
+    case BlockLoadPrefetch::l1:
+      return os << "detail::BlockLoadPrefetch::l1";
+    case BlockLoadPrefetch::bulk_l2:
+      return os << "detail::BlockLoadPrefetch::bulk_l2";
+    default:
+      return os << "<unknown detail::BlockLoadPrefetch: " << static_cast<int>(prefetch) << ">";
+  }
+}
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 template <typename RandomAccessIterator>
 inline constexpr bool can_prefetch_block_load =
@@ -265,7 +314,7 @@ prefetch_block_load_tile(int linear_tid, RandomAccessIterator block_src_it, int 
         if (aligned_size > 0)
         {
 #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-          asm volatile("cp.async.bulk.prefetch.L2::evict_normal.bulk_group [%0], %1;"
+          asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
                        :
                        : "l"(::cuda::ptx::__as_ptr_gmem(base)), "r"(aligned_size)
                        : "memory");
@@ -893,6 +942,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadPrefetch prefetch
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 } // namespace detail
+
 
 //! @rst
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear
