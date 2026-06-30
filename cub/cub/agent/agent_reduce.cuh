@@ -42,7 +42,8 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-// TODO(bgruber): deprecate once we publish the tuning API
+namespace detail
+{
 /**
  * Parameterizable tuning policy type for AgentReduce
  * @tparam NominalThreadsPerBlock4B Threads per thread block
@@ -58,8 +59,8 @@ template <int NominalThreadsPerBlock4B,
           int VectorLoadLength,
           BlockReduceAlgorithm BlockAlgorithm,
           CacheLoadModifier LoadModifier,
-          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentReducePolicy : ScalingType
+          typename ScalingType = MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+struct agent_reduce_policy : ScalingType
 {
   /// Number of items per vectorized load
   static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
@@ -70,6 +71,23 @@ struct AgentReducePolicy : ScalingType
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+} // namespace detail
+
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          BlockReduceAlgorithm BlockAlgorithm,
+          CacheLoadModifier LoadModifier,
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentReducePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") = detail::agent_reduce_policy<
+  NominalThreadsPerBlock4B,
+  NominalItemsPerThread4B,
+  ComputeT,
+  VectorLoadLength,
+  BlockAlgorithm,
+  LoadModifier,
+  ScalingType>;
 
 /**
  * Parameterizable tuning policy type for AgentWarpReduce

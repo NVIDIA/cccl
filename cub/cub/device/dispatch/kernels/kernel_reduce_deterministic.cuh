@@ -57,7 +57,7 @@ namespace detail::reduce
  */
 template <typename PolicySelector, typename InputIteratorT, typename ReductionOpT, typename AccumT, typename TransformOpT>
 _CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)) void DeterministicDeviceReduceKernel(
+__launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_block)) void DeterministicDeviceReduceKernel(
   InputIteratorT d_in,
   AccumT* d_out,
   int num_items,
@@ -65,9 +65,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   TransformOpT transform_op,
   const int reduce_grid_size)
 {
-  constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
-  constexpr int items_per_thread       = policy.items_per_thread;
-  constexpr int threads_per_block      = policy.threads_per_block;
+  constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
+  constexpr int items_per_thread    = policy.items_per_thread;
+  constexpr int threads_per_block   = policy.threads_per_block;
 
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.block_algorithm>;
 
@@ -197,8 +197,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                     InitValueT init,
                                                     TransformOpT transform_op)
 {
-  constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
-  constexpr int threads_per_block      = policy.threads_per_block;
+  constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
+  constexpr int threads_per_block   = policy.threads_per_block;
 
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.block_algorithm>;
 
