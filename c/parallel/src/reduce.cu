@@ -301,8 +301,8 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
       ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
       ->get_name({reduction_kernel_name, reduction_kernel_lowered_name});
 
-  const size_t policy_size = sizeof(policy_sel);
-  auto policy_ptr          = std::make_unique<cub::detail::reduce::policy_selector>(policy_sel);
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::reduce::policy_selector>);
+  auto policy_ptr = std::make_unique<cub::detail::reduce::policy_selector>(policy_sel);
 
   auto single_tile_name        = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
   auto single_tile_second_name = std::unique_ptr<char[]>(duplicate_c_string(single_tile_second_kernel_lowered_name));
@@ -335,7 +335,7 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
   }
 
   build->runtime_policy                         = policy_ptr.release();
-  build->runtime_policy_size                    = policy_size;
+  build->runtime_policy_size                    = sizeof(*policy_ptr);
   build->single_tile_kernel_lowered_name        = single_tile_name.release();
   build->single_tile_second_kernel_lowered_name = single_tile_second_name.release();
   build->reduction_kernel_lowered_name          = reduction_name.release();
