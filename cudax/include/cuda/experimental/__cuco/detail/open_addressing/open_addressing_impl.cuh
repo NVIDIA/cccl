@@ -27,6 +27,7 @@
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/identity.h>
@@ -103,19 +104,19 @@ private:
   ::cuda::device_buffer<__value_type> __slots;
 
   //! @brief Computes the number of buckets for a requested capacity.
-  [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __requested_capacity)
+  [[nodiscard]] _CCCL_HOST_API static __size_type __compute_num_buckets(__size_type __requested_capacity)
   {
     return make_valid_capacity<_ProbingScheme, _BucketSize>(__requested_capacity) / _BucketSize;
   }
 
   //! @brief Computes the number of buckets for a given number of keys and load factor.
-  [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __n, double __load_factor)
+  [[nodiscard]] _CCCL_HOST_API static __size_type __compute_num_buckets(__size_type __n, double __load_factor)
   {
     return make_valid_capacity<_ProbingScheme, _BucketSize>(__n, __load_factor) / _BucketSize;
   }
 
   //! @brief Extracts the key from a slot.
-  [[nodiscard]] _CCCL_HOST constexpr const __key_type& __extract_key(const __value_type& __slot) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr const __key_type& __extract_key(const __value_type& __slot) const noexcept
   {
     if constexpr (__has_payload)
     {
@@ -128,13 +129,13 @@ private:
   }
 
   //! @brief Allocates and zero-initializes an RAII device counter.
-  [[nodiscard]] _CCCL_HOST ::cuda::device_buffer<__size_type> __make_counter(::cuda::stream_ref __stream) const
+  [[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<__size_type> __make_counter(::cuda::stream_ref __stream) const
   {
     return ::cuda::device_buffer<__size_type>{__stream, __memory_resource, {__size_type{0}}};
   }
 
   //! @brief Reads a device counter to host.
-  [[nodiscard]] _CCCL_HOST __size_type
+  [[nodiscard]] _CCCL_HOST_API __size_type
   __read_counter(const ::cuda::device_buffer<__size_type>& __counter, ::cuda::stream_ref __stream) const
   {
     __size_type __result;
@@ -145,7 +146,7 @@ private:
 
 public:
   //! @brief Constructs an open addressing implementation with the given capacity.
-  _CCCL_HOST __open_addressing_impl(
+  _CCCL_HOST_API __open_addressing_impl(
     __size_type __capacity,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
@@ -164,7 +165,7 @@ public:
 
   //! @brief Constructs an open addressing implementation with capacity derived from desired load
   //! factor.
-  _CCCL_HOST __open_addressing_impl(
+  _CCCL_HOST_API __open_addressing_impl(
     __size_type __n,
     double __desired_load_factor,
     __value_type __empty_slot_sentinel,
@@ -183,7 +184,7 @@ public:
   }
 
   //! @brief Constructs an open addressing implementation with erasure support.
-  _CCCL_HOST __open_addressing_impl(
+  _CCCL_HOST_API __open_addressing_impl(
     __size_type __capacity,
     __value_type __empty_slot_sentinel,
     __key_type __erased_key_sentinel,
@@ -206,28 +207,34 @@ public:
   }
 
   //! @brief Fills all slots with the empty sentinel.
-  _CCCL_HOST void clear(::cuda::stream_ref __stream)
+  _CCCL_HOST_API void clear(::cuda::stream_ref __stream)
   {
     clear_async(__stream);
     __stream.sync();
   }
 
   //! @brief Asynchronously fills all slots with the empty sentinel.
-  _CCCL_HOST void clear_async(::cuda::stream_ref __stream) noexcept
+  //!
+  //! @throws cuda_error if the clear operation fails to launch
+  _CCCL_HOST_API void clear_async(::cuda::stream_ref __stream)
   {
     const auto __n = capacity();
     if (__n == 0)
     {
       return;
     }
-    [[maybe_unused]] const auto __status = CUB_NS_QUALIFIER::DeviceTransform::Fill(
-      __slots.data(), static_cast<detail::__index_type>(__n), __empty_slot_sentinel, __stream);
-    _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to clear slot storage");
+    _CCCL_TRY_CUDA_API(
+      CUB_NS_QUALIFIER::DeviceTransform::Fill,
+      "cuco: failed to clear slot storage",
+      __slots.data(),
+      static_cast<detail::__index_type>(__n),
+      __empty_slot_sentinel,
+      __stream);
   }
 
   //! @brief Inserts keys in `[first, last)` and returns the number of successful insertions.
   template <class _InputIt, class _Ref>
-  _CCCL_HOST __size_type insert(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
+  _CCCL_HOST_API __size_type insert(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -252,9 +259,10 @@ public:
   }
 
   //! @brief Asynchronously inserts keys in `[first, last)`.
+  //!
+  //! @throws cuda_error if the insert operation fails to launch
   template <class _InputIt, class _Ref>
-  _CCCL_HOST void
-  insert_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) noexcept
+  _CCCL_HOST_API void insert_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -266,8 +274,7 @@ public:
     {
       __open_addressing::__insert_if_fn __op{
         __first, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref};
-      [[maybe_unused]] const auto __status = CUB_NS_QUALIFIER::DeviceFor::Bulk(__num_keys, __op, __stream);
-      _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to insert keys");
+      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to insert keys", __num_keys, __op, __stream);
     }
     else
     {
@@ -280,10 +287,11 @@ public:
   }
 
   //! @brief Asynchronously checks if keys in `[first, last)` exist in the container.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
   template <class _InputIt, class _OutputIt, class _Ref>
-  _CCCL_HOST void contains_async(
-    _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
-    const noexcept
+  _CCCL_HOST_API void contains_async(
+    _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream) const
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -295,8 +303,7 @@ public:
     {
       __open_addressing::__contains_if_fn __op{
         __first, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __output_begin, __container_ref};
-      [[maybe_unused]] const auto __status = CUB_NS_QUALIFIER::DeviceFor::Bulk(__num_keys, __op, __stream);
-      _CCCL_ASSERT(__status == cudaSuccess, "cuco: failed to query keys");
+      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
     }
     else
     {
@@ -314,49 +321,49 @@ public:
   }
 
   //! @brief Returns the total number of slots.
-  [[nodiscard]] _CCCL_HOST constexpr __size_type capacity() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __size_type capacity() const noexcept
   {
     return static_cast<__size_type>(__slots.size());
   }
 
   //! @brief Returns a pointer to the underlying slot array.
-  [[nodiscard]] _CCCL_HOST __value_type* data() const noexcept
+  [[nodiscard]] _CCCL_HOST_API __value_type* data() const noexcept
   {
     return const_cast<__value_type*>(__slots.data());
   }
 
   //! @brief Returns the empty key sentinel.
-  [[nodiscard]] _CCCL_HOST constexpr __key_type empty_key_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __key_type empty_key_sentinel() const noexcept
   {
     return __extract_key(__empty_slot_sentinel);
   }
 
   //! @brief Returns the erased key sentinel.
-  [[nodiscard]] _CCCL_HOST constexpr __key_type erased_key_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __key_type erased_key_sentinel() const noexcept
   {
     return __erased_key_sentinel;
   }
 
   //! @brief Returns the key comparison function.
-  [[nodiscard]] _CCCL_HOST constexpr __key_equal key_eq() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __key_equal key_eq() const noexcept
   {
     return __predicate;
   }
 
   //! @brief Returns the probing scheme.
-  [[nodiscard]] _CCCL_HOST constexpr __probing_scheme_type probing_scheme() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __probing_scheme_type probing_scheme() const noexcept
   {
     return __probing_scheme;
   }
 
   //! @brief Returns the hash function.
-  [[nodiscard]] _CCCL_HOST constexpr __hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __hasher hash_function() const noexcept
   {
     return probing_scheme().hash_function();
   }
 
   //! @brief Returns a non-owning reference to the stored slots.
-  [[nodiscard]] _CCCL_HOST __storage_ref_type storage_ref() const noexcept
+  [[nodiscard]] _CCCL_HOST_API __storage_ref_type storage_ref() const noexcept
   {
     return __storage_ref_type{const_cast<__value_type*>(__slots.data()), capacity()};
   }
