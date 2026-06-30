@@ -740,7 +740,6 @@ try
   std::unique_ptr<char[]> n_single_tile{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_single_tile_second{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_reduction{r.read_cstring_dup()};
-  std::unique_ptr<char[]> n_nondeterministic{r.read_cstring_dup()};
 
   cccl_device_reduce_build_result_t result{};
   result.cc                                     = static_cast<int>(h.cc);
