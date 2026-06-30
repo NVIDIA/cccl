@@ -19,8 +19,9 @@
 //!      a dual role: its own block-private histogram in step 1, then the
 //!      cluster-merged histogram after the second cluster sync.
 //!   3. The leader's thread 0 prefix-scans `hist`, identifies the bucket of
-//!      the k-th key, and updates the cluster-shared `state`. Every block
-//!      reads `state.kth_bucket` from the leader via DSMEM at the end of each
+//!      the k-th key, and updates the cluster-shared `state`. The leader then
+//!      broadcasts the packed `state` result into every block's SMEM via DSMEM
+//!      stores; each block reads its splitter bucket locally at the end of the
 //!      pass and folds it into its own local splitter key.
 //!
 //! The final filter places each block's output through per-CTA shared-memory
@@ -92,16 +93,24 @@ struct alignas(16) cluster_topk_state
 
   OffsetT len;
   OutOffsetT k;
-  // Splitter bucket identified by the leader for the current pass. Replaces broadcasting the full multi-word
-  // `kth_key_bits`: every block reads this single digit through DSMEM at the end of each pass and folds it into its own
-  // `kth_key_bits_local` via `set_kth_key_bits`, so the full splitter key is reconstructed locally and never broadcast.
-  ::cuda::std::uint32_t kth_bucket;
-  // Set by the leader after `leader_identify_kth_bucket` whenever the
-  // identified bucket holds exactly `k` items (every candidate is part of
-  // the top-k). Read by every block of the cluster at the end of each radix
-  // pass through DSMEM. Carried in the cluster-shared state so the value
-  // survives the cluster sync that ends the current pass.
-  ::cuda::std::uint32_t early_stop;
+  // Per-pass leader result, packed so the leader broadcasts it cluster-wide in one naturally-aligned DSMEM store (see
+  // `broadcast_state_remote`). Low 32 bits: the splitter `kth_bucket`, which every block folds into its own
+  // `kth_key_bits_local` (so the full splitter key is never broadcast). High 32 bits: the `early_stop` flag, set when
+  // the splitter bucket holds exactly the remaining `k` (every candidate wins, so further passes cannot change it).
+  ::cuda::std::uint64_t result_pair;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t kth_bucket() const
+  {
+    return static_cast<::cuda::std::uint32_t>(result_pair);
+  }
+  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool early_stop() const
+  {
+    return (result_pair >> 32) != ::cuda::std::uint64_t{0};
+  }
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void set_result(::cuda::std::uint32_t bucket, bool stop)
+  {
+    result_pair = static_cast<::cuda::std::uint64_t>(bucket) | (static_cast<::cuda::std::uint64_t>(stop) << 32);
+  }
 };
 
 // Dynamic-SMEM layout shared by dispatch and the agent. `block_tile_capacity` is the physical per-CTA resident
@@ -877,6 +886,18 @@ private:
     asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;" : : "r"(remote), "r"(v) : "memory");
   }
 
+  // Stores the packed `state.result_pair` into the same field of the CTA at rank `target_rank` through DSMEM (mirrors
+  // `hist_fold_remote`'s addressing), broadcasting the leader's per-pass result. Single writer per target, so a plain
+  // store -- ordered against the reads by the next `cluster_or_block_sync` -- suffices (no atomic).
+  _CCCL_DEVICE _CCCL_FORCEINLINE void broadcast_state_remote(unsigned int target_rank, ::cuda::std::uint64_t packed)
+  {
+    const ::cuda::std::uint32_t own =
+      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.state.result_pair));
+    ::cuda::std::uint32_t remote;
+    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote) : "r"(own), "r"(target_rank));
+    asm volatile("st.relaxed.cluster.shared::cluster.u64 [%0], %1;" : : "r"(remote), "l"(packed) : "memory");
+  }
+
   // Adds the packed 64-bit `v` to the `prefix_pair` of the CTA at cluster rank `target_rank` through DSMEM (mirrors
   // `hist_fold_remote`: `mapa` to `target_rank`, then a cluster-scope `red.add`). Exact because the two 32-bit lanes
   // never carry into each other. Drives the combined cross-CTA selected/candidate prefix scan.
@@ -969,15 +990,10 @@ private:
         const offset_t new_len   = hist_vals[j];
         temp_storage.state.len   = new_len;
         temp_storage.state.k     = new_k;
-        // Early-stop opportunity: the bucket holding the k-th key contains
-        // exactly the remaining `k` items. Every candidate is therefore part
-        // of the top-k, so subsequent radix passes only redistribute the same
-        // items across finer buckets without changing the final result.
-        temp_storage.state.early_stop =
-          (static_cast<out_offset_t>(new_len) == new_k) ? ::cuda::std::uint32_t{1} : ::cuda::std::uint32_t{0};
-        // Publish only the splitter bucket; every block folds it into its own `kth_key_bits_local` at the end of the
-        // pass (see the pass loop), so the full splitter key is never broadcast.
-        temp_storage.state.kth_bucket = static_cast<::cuda::std::uint32_t>(bucket);
+        // Publish the splitter bucket and the early-stop flag (set when the bucket holds exactly the remaining `k`);
+        // see `result_pair`. The owning lane writes; the leader then broadcasts it to every rank in the pass loop.
+        temp_storage.state.set_result(
+          static_cast<::cuda::std::uint32_t>(bucket), static_cast<out_offset_t>(new_len) == new_k);
       }
     }
   }
@@ -1847,6 +1863,26 @@ private:
         block_scan_t(temp_storage.scan_storage).ExclusiveSum(local_hist_vals, local_prefixes);
       }
 
+      // Broadcast the leader's result into every other co-resident rank's local `state` (lane `r` -> rank `r`), so the
+      // consumers below read their own SMEM instead of pulling the leader's word across DSMEM (no remote-read
+      // round-trip on the critical path, no read hotspot). Push to all `cluster_blocks`, not just working ranks: idle
+      // ranks skip the fold but still read `early_stop()` for the uniform break. Sync first so the owning lane's
+      // `set_result` is visible to the pushing threads; `cluster_or_block_sync` below orders the stores against the
+      // reads. `single_cta` has no peers and skips the push.
+      if (!single_cta && cluster_rank == leader_rank)
+      {
+        __syncthreads();
+        const ::cuda::std::uint64_t packed = temp_storage.state.result_pair;
+        _CCCL_PRAGMA_NOUNROLL()
+        for (unsigned int r = threadIdx.x; r < cluster_blocks; r += threads_per_block)
+        {
+          if (r != leader_rank)
+          {
+            broadcast_state_remote(r, packed);
+          }
+        }
+      }
+
       if (pass + 1 < num_passes)
       {
         // Unconditional barrier: every working rank just read `hist` (the leader via its BlockScan, non-leaders via the
@@ -1857,13 +1893,13 @@ private:
       // TODO(cccl): see the barrier above -- idle ranks arrive here only to keep the cluster barrier reachable.
       cluster_or_block_sync(cluster, single_cta);
 
-      // End-of-pass splitter fold. Every working thread reads the leader's just-published `kth_bucket` through DSMEM (a
-      // single `u32`, ordered by the `cluster.sync()` above) and folds it into its own `kth_key_bits_local`, so the
-      // full splitter key is reconstructed locally without a broadcast. Idle ranks produce no output, so they skip the
-      // read (trimming the leader's fan-out); the early-stop check below stays uniform so every block breaks together.
+      // End-of-pass splitter fold. Every working thread reads its own (leader-broadcast) `kth_bucket` from local SMEM,
+      // ordered by the `cluster_or_block_sync()` above, and folds it into its own `kth_key_bits_local`, so the full
+      // splitter key is reconstructed locally without a broadcast. Idle ranks produce no output, so they skip the fold
+      // (they were still pushed to above, so the early-stop check below stays uniform and every block breaks together).
       if (!is_idle_rank)
       {
-        const int bucket = static_cast<int>(leader_state->kth_bucket);
+        const int bucket = static_cast<int>(temp_storage.state.kth_bucket());
         detail::topk::set_kth_key_bits<key_t, bits_per_pass>(kth_key_bits_local, pass, bucket);
         last_pass = pass + 1;
 
@@ -1883,10 +1919,9 @@ private:
         }
       }
 #  ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
-      // Early stop: the leader sets `early_stop` when the splitter bucket holds exactly the remaining `k` candidates,
-      // so no further radix refinement can change the result. Every block reads the same flag from the leader and
+      // Early stop (see `result_pair`): every block reads the same leader-broadcast flag from its local `state` and
       // breaks together; `last_pass`/`kth_key_bits_local` then match what the original top-of-next-pass break produced.
-      if (leader_state->early_stop != ::cuda::std::uint32_t{0})
+      if (temp_storage.state.early_stop())
       {
         break;
       }
@@ -1930,7 +1965,7 @@ private:
       //
       // Cache `early_stop`/`total_candidates` now, while every block is still tightly coupled to the pass loop's final
       // `cluster.sync` -- a post-scan re-read of `leader_state` could touch an already-returned leader (barrier gone).
-      const bool early_stopped        = (leader_state->early_stop != ::cuda::std::uint32_t{0});
+      const bool early_stopped        = leader_state->early_stop();
       const offset_t total_candidates = leader_state->len;
       const out_offset_t num_back     = num_kth; // all candidates go to the back; the front holds only selected keys
       const out_offset_t num_selected = k - num_back; // front region
@@ -2875,17 +2910,14 @@ private:
     }
     const bool single_cta = (eff_cluster_blocks == 1u);
 
-    // Every block's thread 0 initializes its local `state`. Only the
-    // leader's copy is semantically read (non-leaders reach the cluster
-    // state through `leader_state`), but mirroring the writes everywhere
-    // keeps every block's unconditional `state.k` load safe under
-    // compute-sanitizer.
+    // Every block's thread 0 initializes its local `state`. The leader's copy is canonical (`len`/`k`, reached through
+    // `leader_state`); each block's own `result_pair` doubles as the mailbox the leader broadcasts into each pass.
+    // Mirroring the writes everywhere also keeps every block's unconditional `state.k` load sanitizer-safe.
     if (threadIdx.x == 0)
     {
-      temp_storage.state.len        = static_cast<offset_t>(segment_size);
-      temp_storage.state.k          = k;
-      temp_storage.state.kth_bucket = 0;
-      temp_storage.state.early_stop = 0;
+      temp_storage.state.len         = static_cast<offset_t>(segment_size);
+      temp_storage.state.k           = k;
+      temp_storage.state.result_pair = 0;
       // Front-load every counter the final filter relies on so the first cluster barrier below publishes the zeros to
       // all ranks (the combined scan's DSMEM pushes then add into an already-zeroed `prefix_pair`, needing only a
       // post-push barrier). `my_candidates` is zeroed too so idle/leader ranks (which never write it) read 0.
