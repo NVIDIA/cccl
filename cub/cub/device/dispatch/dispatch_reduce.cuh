@@ -63,7 +63,7 @@ struct DeviceReduceKernelSource
     DeviceReduceSingleTileKernel<PolicySelector,
                                  InputIteratorT,
                                  OutputIteratorT,
-                                 OffsetT,
+                                 OffsetT, // TODO(bgruber): problem size fits a single tile, should we just use int?
                                  ReductionOpT,
                                  InitValueT,
                                  AccumT,
