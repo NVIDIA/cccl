@@ -41,7 +41,7 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
     estimator.clear(block);
     block.sync();
 
-    for (int i = block.thread_rank(); i < n; i += block.num_threads())
+    for (int i = static_cast<int>(block.thread_rank()); i < n; i += static_cast<int>(block.num_threads()))
     {
       estimator.add(*(in + i));
     }
@@ -187,8 +187,8 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
 
   const auto estimate = estimator.estimate();
 
-  const double relative_error =
-    std::abs((static_cast<double>(estimate) / static_cast<double>(num_items / repeats)) - 1.0);
+  const double expected_count = static_cast<double>(num_items) / static_cast<double>(repeats);
+  const double relative_error = std::abs((static_cast<double>(estimate) / expected_count) - 1.0);
   // RSD for a given precision is given by the following formula
   const double expected_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << expected_hll_precision));
 

@@ -47,12 +47,12 @@ struct Squad : SquadDesc
 
   [[nodiscard]] _CCCL_DEVICE_API int warpRank() const
   {
-    return mSpecialRegisters.warpIdx % this->warpCount();
+    return static_cast<int>(mSpecialRegisters.warpIdx % this->warpCount());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API int threadRank() const
   {
-    return mSpecialRegisters.threadIdxX % this->threadCount();
+    return static_cast<int>(mSpecialRegisters.threadIdxX % this->threadCount());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API bool isLeaderThread() const

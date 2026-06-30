@@ -43,14 +43,16 @@ class choose_merge_agent
             active_policy.items_per_thread,
             active_policy.load_modifier,
             active_policy.store_algorithm,
-            active_policy.use_block_load_to_shared,
+            active_policy.use_bulk_copy_for_keys,
+            active_policy.use_bulk_copy_for_values,
             Args...>;
   using default_noload2sh_agent_t =
     agent_t<active_policy.threads_per_block,
             active_policy.items_per_thread,
             active_policy.load_modifier,
             active_policy.store_algorithm,
-            /* UseBlockLoadToShared */ false,
+            /* UseBl2ShForKeys */ false,
+            /* UseBl2ShForItems */ false,
             Args...>;
 
   using fallback_agent_t =
@@ -58,7 +60,8 @@ class choose_merge_agent
             fallback_ITEMS_PER_THREAD,
             active_policy.load_modifier,
             active_policy.store_algorithm,
-            /* UseBlockLoadToShared */ false,
+            /* UseBl2ShForKeys */ false,
+            /* UseBl2ShForItems */ false,
             Args...>;
 
   static constexpr bool use_default_load2sh =
@@ -189,7 +192,7 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyIt1>, it_value_t<ValueIt1>, Offset>,
+          typename PolicySelector        = policy_selector_from_types<KeyIt1, ValueIt1, KeyIt2, ValueIt2, Offset>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires merge_policy_selector<PolicySelector>

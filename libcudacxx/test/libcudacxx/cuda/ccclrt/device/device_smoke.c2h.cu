@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/devices>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstddef>
@@ -354,6 +355,28 @@ C2H_CCCLRT_TEST("global devices vector", "[device]")
     CCCLRT_REQUIRE(true); // expected
   }
 #endif // _CCCL_HAS_EXCEPTIONS()
+}
+
+C2H_CCCLRT_TEST("Device attributes use the explicit device when current device differs", "[device][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  const auto expected_bus_id = cuda::__driver::__deviceGetAttribute(
+    static_cast<::CUdevice_attribute>(cudaDevAttrPciBusId), cuda::__driver::__deviceGet(explicit_device.get()));
+  const auto expected_device_id = cuda::__driver::__deviceGetAttribute(
+    static_cast<::CUdevice_attribute>(cudaDevAttrPciDeviceId), cuda::__driver::__deviceGet(explicit_device.get()));
+
+  {
+    cuda::__ensure_current_context guard(current_device);
+    CCCLRT_REQUIRE(explicit_device.attribute(cuda::device_attributes::pci_bus_id) == expected_bus_id);
+    CCCLRT_REQUIRE(explicit_device.attribute(cuda::device_attributes::pci_device_id) == expected_device_id);
+  }
 }
 
 C2H_CCCLRT_TEST("memory location", "[device]")
