@@ -22,7 +22,6 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
-    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: 'rtx2080'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
