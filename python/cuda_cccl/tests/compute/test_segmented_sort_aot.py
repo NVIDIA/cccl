@@ -85,15 +85,7 @@ def test_serialize_deserialize_segmented_sort_round_trip():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = _SegmentedSort.deserialize(
-        blob,
-        d_in_keys=d_in_keys,
-        d_out_keys=d_out_keys,
-        d_in_values=d_in_vals,
-        d_out_values=d_out_vals,
-        start_offsets_in=start,
-        end_offsets_in=end,
-    )
+    loaded = _SegmentedSort.deserialize(blob)
     _run(
         loaded,
         d_in_keys=d_in_keys,

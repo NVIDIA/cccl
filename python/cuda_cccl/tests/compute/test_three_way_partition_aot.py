@@ -89,16 +89,7 @@ def test_serialize_deserialize_three_way_partition_round_trip():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = _ThreeWayPartition.deserialize(
-        blob,
-        d_in=d_input,
-        d_first_part_out=d_first,
-        d_second_part_out=d_second,
-        d_unselected_out=d_unselected,
-        d_num_selected_out=d_num_selected,
-        select_first_part_op=_less_than_8,
-        select_second_part_op=_greater_eq_8,
-    )
+    loaded = _ThreeWayPartition.deserialize(blob)
     _run(
         loaded,
         d_in=d_input,

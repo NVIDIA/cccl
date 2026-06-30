@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from .. import _bindings, types
+from .. import _aot_serde, _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
@@ -15,6 +15,9 @@ from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
+
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
+_ALGO_THREE_WAY_PARTITION = 9
 
 
 class _ThreeWayPartition:
@@ -66,39 +69,37 @@ class _ThreeWayPartition:
         )
 
     @classmethod
-    def deserialize(
-        cls,
-        blob: bytes,
-        d_in: DeviceArrayLike | IteratorT,
-        d_first_part_out: DeviceArrayLike | IteratorT,
-        d_second_part_out: DeviceArrayLike | IteratorT,
-        d_unselected_out: DeviceArrayLike | IteratorT,
-        d_num_selected_out: DeviceArrayLike | IteratorT,
-        select_first_part_op: Operator,
-        select_second_part_op: Operator,
-    ) -> "_ThreeWayPartition":
-        """Reconstruct a three_way_partition from a blob produced by :meth:`serialize`."""
+    def deserialize(cls, blob: bytes) -> "_ThreeWayPartition":
+        """Reconstruct a three_way_partition from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. No objects required.
+        """
+        r = _aot_serde.open(blob, _ALGO_THREE_WAY_PARTITION)
         obj = cls.__new__(cls)
-        obj.d_in_cccl = cccl.to_cccl_input_iter(d_in)
-        obj.d_first_part_out_cccl = cccl.to_cccl_output_iter(d_first_part_out)
-        obj.d_second_part_out_cccl = cccl.to_cccl_output_iter(d_second_part_out)
-        obj.d_unselected_out_cccl = cccl.to_cccl_output_iter(d_unselected_out)
-        obj.d_num_selected_out_cccl = cccl.to_cccl_output_iter(d_num_selected_out)
-        value_type = cccl.get_value_type(d_in)
-        obj.select_first_part_op_cccl = make_op_adapter(
-            select_first_part_op
-        ).compile_for_load((value_type,), types.uint8)
-        obj.select_second_part_op_cccl = make_op_adapter(
-            select_second_part_op
-        ).compile_for_load((value_type,), types.uint8)
+        obj.d_in_cccl = _aot_serde.read_iterator(r)
+        obj.d_first_part_out_cccl = _aot_serde.read_iterator(r)
+        obj.d_second_part_out_cccl = _aot_serde.read_iterator(r)
+        obj.d_unselected_out_cccl = _aot_serde.read_iterator(r)
+        obj.d_num_selected_out_cccl = _aot_serde.read_iterator(r)
+        obj.select_first_part_op_cccl = _aot_serde.read_op(r)
+        obj.select_second_part_op_cccl = _aot_serde.read_op(r)
         obj.build_result = _bindings.DeviceThreeWayPartitionBuildResult.deserialize(
-            blob
+            r.remaining()
         )
         return obj
 
     def serialize(self) -> bytes:
-        """Return a bytes blob representing this built three_way_partition."""
-        return self.build_result.serialize()
+        """Return a self-contained bytes blob for this built three_way_partition."""
+        w = _aot_serde.begin(_ALGO_THREE_WAY_PARTITION)
+        _aot_serde.write_iterator(w, self.d_in_cccl)
+        _aot_serde.write_iterator(w, self.d_first_part_out_cccl)
+        _aot_serde.write_iterator(w, self.d_second_part_out_cccl)
+        _aot_serde.write_iterator(w, self.d_unselected_out_cccl)
+        _aot_serde.write_iterator(w, self.d_num_selected_out_cccl)
+        _aot_serde.write_op(w, self.select_first_part_op_cccl)
+        _aot_serde.write_op(w, self.select_second_part_op_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

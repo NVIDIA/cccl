@@ -68,15 +68,7 @@ def test_serialize_deserialize_segmented_reduce_round_trip():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = _SegmentedReduce.deserialize(
-        blob,
-        d_in=d_in,
-        d_out=d_out,
-        start_offsets_in=start,
-        end_offsets_in=end,
-        op=OpKind.PLUS,
-        h_init=h_init,
-    )
+    loaded = _SegmentedReduce.deserialize(blob)
     _run(
         loaded,
         d_in=d_in,

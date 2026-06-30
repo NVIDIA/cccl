@@ -9,7 +9,7 @@ from typing import Callable
 
 import numpy as np
 
-from .. import _bindings
+from .. import _aot_serde, _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
@@ -30,6 +30,9 @@ from ..typing import (
     Operator,
     _Struct,
 )
+
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
+_ALGO_REDUCE = 1
 
 
 class _Reduce:
@@ -80,34 +83,38 @@ class _Reduce:
                 raise ValueError(f"Invalid determinism: {determinism}")
 
     @classmethod
-    def deserialize(
-        cls,
-        blob: bytes,
-        d_in: DeviceArrayLike | IteratorT,
-        d_out: DeviceArrayLike | IteratorT,
-        op: Operator,
-        h_init: np.ndarray | GpuStruct,
-    ) -> "_Reduce":
-        """Reconstruct a reducer from a blob produced by :meth:`serialize`."""
+    def deserialize(cls, blob: bytes) -> "_Reduce":
+        """Reconstruct a reducer from a blob produced by :meth:`serialize`.
+
+        Takes only the blob — the input/output iterators, operator, and init
+        value are rebuilt from the descriptor sidecar embedded in it, so no
+        objects need to be supplied here. Live device pointers and operator /
+        init state are still bound per call in :meth:`__call__`.
+        """
+        r = _aot_serde.open(blob, _ALGO_REDUCE)
         obj = cls.__new__(cls)
-        obj.d_in_cccl = cccl.to_cccl_input_iter(d_in)
-        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        obj.h_init_cccl = cccl.to_cccl_value(h_init)
-        value_type = get_value_type(h_init)
-        op_adapter = make_op_adapter(op)
-        obj.op_cccl = op_adapter.compile_for_load((value_type, value_type), value_type)
-        obj.build_result = _bindings.DeviceReduceBuildResult.deserialize(blob)
+        obj.d_in_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_cccl = _aot_serde.read_iterator(r)
+        obj.op_cccl = _aot_serde.read_op(r)
+        obj.h_init_cccl = _aot_serde.read_value(r)
+        obj.build_result = _bindings.DeviceReduceBuildResult.deserialize(r.remaining())
         obj._select_device_reduce_fn(Determinism(obj.build_result.determinism))
         return obj
 
     def serialize(self) -> bytes:
         """Return a bytes blob representing this built reducer.
 
-        The blob is specific to the compute capability it was built for.
-        Reconstruct with :meth:`deserialize`, supplying matching
-        ``d_in``/``d_out``/``op``/``h_init`` to bind runtime state.
+        The blob is self-contained: it embeds the iterator/op/value descriptors
+        (no device code is re-JITed on load) followed by the compiled
+        build_result. It is specific to the compute capability it was built for.
+        Reconstruct with :meth:`deserialize` — no objects required.
         """
-        return self.build_result.serialize()
+        w = _aot_serde.begin(_ALGO_REDUCE)
+        _aot_serde.write_iterator(w, self.d_in_cccl)
+        _aot_serde.write_iterator(w, self.d_out_cccl)
+        _aot_serde.write_op(w, self.op_cccl)
+        _aot_serde.write_value(w, self.h_init_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

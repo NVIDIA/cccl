@@ -370,6 +370,11 @@ cdef class Op:
         return self.op_data.alignment
 
     @property
+    def operator_type(self):
+        """Return the op kind (stateless/stateful) for AoT serialization."""
+        return OpKind(<int>self.op_data.type)
+
+    @property
     def code(self):
         """Return a DeviceCode wrapping this op's main code blob + its kind."""
         from cuda.compute._device_code import DeviceCode
@@ -864,6 +869,11 @@ cdef class Iterator:
     def value_type(self):
         cdef cccl_type_info type_info = self.iter_data.value_type
         return TypeInfo(type_info.size, type_info.alignment, type_info.type)
+
+    @property
+    def alignment(self):
+        """Return the iterator state alignment for AoT serialization."""
+        return self.iter_data.alignment
 
     def is_kind_pointer(self):
         cdef cccl_iterator_kind_t it_kind = self.iter_data.type

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .. import _bindings, types
+from .. import _aot_serde, _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
@@ -15,15 +15,10 @@ from .._utils import protocols
 from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
-# 4-byte mode tags prepended by serialize() so load_lower_bound / load_upper_bound
-# can reject a blob that was saved for the opposite mode.
-_LOWER_BOUND_TAG = b"LBND"
-_UPPER_BOUND_TAG = b"UBND"
-_MODE_TAGS = {
-    _bindings.BinarySearchMode.LOWER_BOUND: _LOWER_BOUND_TAG,
-    _bindings.BinarySearchMode.UPPER_BOUND: _UPPER_BOUND_TAG,
-}
-_TAG_MODES = {v: k for k, v in _MODE_TAGS.items()}
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde). The search
+# mode (lower/upper bound) is embedded in the sidecar so load_lower_bound /
+# load_upper_bound can reject a blob that was saved for the opposite mode.
+_ALGO_BINARY_SEARCH = 5
 
 
 class _BinarySearch:
@@ -83,22 +78,15 @@ class _BinarySearch:
     def _deserialize(
         cls,
         blob: bytes,
-        d_data: DeviceArrayLike,
-        d_values: DeviceArrayLike | IteratorT,
-        d_out: DeviceArrayLike,
-        comp: Operator | None = None,
         expected_mode: "_bindings.BinarySearchMode | None" = None,
     ) -> "_BinarySearch":
-        """Reconstruct a binary_search from a blob produced by :meth:`serialize`."""
-        if len(blob) < 4:
-            raise ValueError("AoT blob is too short to contain a mode tag.")
-        tag = blob[:4]
-        mode = _TAG_MODES.get(tag)
-        if mode is None:
-            raise ValueError(
-                f"AoT blob has unrecognized mode tag {tag!r}; "
-                "was it produced by binary_search.serialize()?"
-            )
+        """Reconstruct a binary_search from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. ``expected_mode`` rejects a blob saved for the opposite mode.
+        """
+        r = _aot_serde.open(blob, _ALGO_BINARY_SEARCH)
+        mode = _bindings.BinarySearchMode(r.u8())
         if expected_mode is not None and mode != expected_mode:
             actual = (
                 "lower_bound"
@@ -114,39 +102,34 @@ class _BinarySearch:
                 f"AoT blob mode mismatch: blob was saved as {actual!r}, "
                 f"but loaded through {wanted!r}."
             )
-        if not protocols.is_device_array(d_data):
-            raise ValueError("d_data must be a device array for index outputs.")
-        if not protocols.is_device_array(d_out):
-            raise ValueError("d_out must be a device array for index outputs.")
-        out_dtype = protocols.get_dtype(d_out)
-        if out_dtype.kind != "u":
-            raise TypeError("d_out must use an unsigned integer dtype for indices.")
-        if out_dtype.itemsize != np.dtype(np.uintp).itemsize:
-            raise ValueError(
-                "d_out must use a pointer-sized unsigned integer dtype (np.uintp)."
-            )
         obj = cls.__new__(cls)
-        obj.data_ptr = protocols.get_data_pointer(d_data)
-        obj.out_ptr = protocols.get_data_pointer(d_out)
         obj.mode = mode
-        obj.d_data_cccl = cccl.to_cccl_input_iter(d_data)
-        obj.d_values_cccl = cccl.to_cccl_input_iter(d_values)
-        data_value_type = cccl.get_value_type(d_data)
-        obj.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        comp_adapter = make_op_adapter(OpKind.LESS if comp is None else comp)
-        obj.op_cccl = comp_adapter.compile_for_load(
-            (data_value_type, data_value_type), types.uint8
+        obj.d_data_cccl = _aot_serde.read_iterator(r)
+        obj.d_values_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_cccl = _aot_serde.read_iterator(r)
+        obj.op_cccl = _aot_serde.read_op(r)
+        # data_ptr/out_ptr are only used as cache keys at build time; a
+        # deserialized object is not cached, so leave them as sentinels.
+        obj.data_ptr = 0
+        obj.out_ptr = 0
+        obj.build_result = _bindings.DeviceBinarySearchBuildResult.deserialize(
+            r.remaining()
         )
-        obj.build_result = _bindings.DeviceBinarySearchBuildResult.deserialize(blob[4:])
         return obj
 
     def serialize(self) -> bytes:
-        """Return a bytes blob representing this built binary_search.
+        """Return a self-contained bytes blob for this built binary_search.
 
         The blob encodes the search mode (lower_bound or upper_bound).
         Use :func:`load_lower_bound` or :func:`load_upper_bound` to reconstruct.
         """
-        return _MODE_TAGS[self.mode] + self.build_result.serialize()
+        w = _aot_serde.begin(_ALGO_BINARY_SEARCH)
+        w.u8(int(self.mode))
+        _aot_serde.write_iterator(w, self.d_data_cccl)
+        _aot_serde.write_iterator(w, self.d_values_cccl)
+        _aot_serde.write_iterator(w, self.d_out_cccl)
+        _aot_serde.write_op(w, self.op_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,
@@ -355,65 +338,35 @@ def upper_bound(
     )
 
 
-def load_lower_bound(
-    blob: bytes,
-    *,
-    d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorT,
-    d_out: DeviceArrayLike,
-    comp: Operator | None = None,
-):
+def load_lower_bound(blob: bytes):
     """Reconstruct a lower_bound searcher from a blob produced by ``searcher.serialize()``.
 
-    Raises ``ValueError`` if the blob was produced by an upper_bound searcher.
+    Takes only the blob — no objects required. Raises ``ValueError`` if the blob
+    was produced by an upper_bound searcher.
 
     Args:
         blob: Bytes blob produced by a lower_bound searcher's ``serialize()`` method.
-        d_data: Device array containing the sorted input range.
-        d_values: Device array or iterator containing the search values.
-        d_out: Device array to store the index results.
-        comp: Optional comparison operator (default: ``OpKind.LESS``).
 
     Returns:
         A callable lower_bound searcher.
     """
     return _BinarySearch._deserialize(
-        blob,
-        d_data,
-        d_values,
-        d_out,
-        comp,
-        expected_mode=_bindings.BinarySearchMode.LOWER_BOUND,
+        blob, expected_mode=_bindings.BinarySearchMode.LOWER_BOUND
     )
 
 
-def load_upper_bound(
-    blob: bytes,
-    *,
-    d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorT,
-    d_out: DeviceArrayLike,
-    comp: Operator | None = None,
-):
+def load_upper_bound(blob: bytes):
     """Reconstruct an upper_bound searcher from a blob produced by ``searcher.serialize()``.
 
-    Raises ``ValueError`` if the blob was produced by a lower_bound searcher.
+    Takes only the blob — no objects required. Raises ``ValueError`` if the blob
+    was produced by a lower_bound searcher.
 
     Args:
         blob: Bytes blob produced by an upper_bound searcher's ``serialize()`` method.
-        d_data: Device array containing the sorted input range.
-        d_values: Device array or iterator containing the search values.
-        d_out: Device array to store the index results.
-        comp: Optional comparison operator (default: ``OpKind.LESS``).
 
     Returns:
         A callable upper_bound searcher.
     """
     return _BinarySearch._deserialize(
-        blob,
-        d_data,
-        d_values,
-        d_out,
-        comp,
-        expected_mode=_bindings.BinarySearchMode.UPPER_BOUND,
+        blob, expected_mode=_bindings.BinarySearchMode.UPPER_BOUND
     )

@@ -65,14 +65,7 @@ def test_serialize_deserialize_merge_sort_keys_values():
     blob = builder.serialize()
     assert len(blob) > 0
 
-    loaded = _MergeSort.deserialize(
-        blob,
-        d_in_keys=d_in_keys,
-        d_in_values=d_in_values,
-        d_out_keys=d_out_keys,
-        d_out_values=d_out_values,
-        op=OpKind.LESS,
-    )
+    loaded = _MergeSort.deserialize(blob)
     _run(
         loaded,
         d_in_keys=d_in_keys,
