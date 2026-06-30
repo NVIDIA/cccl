@@ -221,7 +221,11 @@ template <class _Type, class _UType>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
 __tuple_select_variadic_constructible(__tuple_types<_Type>, __tuple_types<_UType>) noexcept
 {
-  if constexpr (is_same_v<remove_cvref_t<_UType>, tuple<_Type>>)
+  if constexpr (__is_tuple_of_iterator_references_v<remove_cvref_t<_UType>>)
+  {
+    return __select_constructor::__invalid;
+  }
+  else if constexpr (is_same_v<remove_cvref_t<_UType>, tuple<_Type>>)
   { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
     return __select_constructor::__invalid;
   }
