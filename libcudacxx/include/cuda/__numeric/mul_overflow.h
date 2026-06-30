@@ -67,36 +67,112 @@ template <class _Result, class _Lhs, class _Rhs>
   using ::cuda::std::__cccl_uintmax_t;
   using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
+  using ::cuda::std::make_unsigned_t;
 
-  // If there is a wider type available, upcast the operands and check for overflow
-  if constexpr (sizeof(_Lhs) < sizeof(__cccl_uintmax_t) && sizeof(_Rhs) < sizeof(__cccl_uintmax_t))
+  using _UResult = make_unsigned_t<_Result>;
+  using _ULhs    = make_unsigned_t<_Lhs>;
+  using _URhs    = make_unsigned_t<_Rhs>;
+
+  const auto __negative_result = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
+  const auto __ulhs            = static_cast<_ULhs>(::cuda::uabs(__lhs));
+  const auto __urhs            = static_cast<_URhs>(::cuda::uabs(__rhs));
+
+  auto __overflow_mul = false;
+
+  if (__negative_result && !is_signed_v<_Result>)
   {
-    constexpr auto __max_nbits = ::cuda::std::max(__num_bits_v<_Lhs>, __num_bits_v<_Rhs>);
-    using _Up           = ::cuda::std::__make_nbit_int_t<2 * __max_nbits, is_signed_v<_Lhs> || is_signed_v<_Rhs>>;
-    const auto __result = static_cast<_Up>(__lhs) * static_cast<_Up>(__rhs);
-    return ::cuda::overflow_cast<_Result>(__result);
-  }
-  else if constexpr (is_signed_v<_Lhs> || is_signed_v<_Rhs>)
-  {
-    constexpr auto __min = ::cuda::std::numeric_limits<_Result>::min();
-    constexpr auto __max = ::cuda::std::numeric_limits<_Result>::max();
-
-    const auto __negative_result =
-      (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
-    const auto __ulhs        = __cccl_uintmax_t{::cuda::uabs(__lhs)};
-    const auto __urhs        = __cccl_uintmax_t{::cuda::uabs(__rhs)};
-    const auto __uresult_lo  = __ulhs * __urhs;
-    const auto __uresult_hi  = ::cuda::mul_hi(__ulhs, __urhs);
-    const auto __uresult_max = __cccl_uintmax_t{::cuda::uabs((__negative_result) ? __min : __max)};
-
-    const auto __result = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
-    return {__result, __uresult_hi != 0 || __uresult_lo > __uresult_max};
+    __overflow_mul = true;
   }
   else
   {
-    const auto [__result, __overflow] = ::cuda::overflow_cast<_Result>(__lhs * __rhs);
-    return {__result, __overflow || ::cuda::mul_hi(__cccl_uintmax_t{__lhs}, __cccl_uintmax_t{__rhs}) != 0};
+    constexpr auto __nbits = __num_bits_v<_Result>;
+    const auto c           = is_signed_v<_Result>
+                             ? (static_cast<_UResult>(1) << (__nbits - 1)) - static_cast<_UResult>(__negative_result ? 0 : 1)
+                             : static_cast<_UResult>(-1);
+
+    if (__urhs != 0)
+    {
+      __overflow_mul = __ulhs > c / __urhs;
+    }
+    else if (__ulhs != 0)
+    {
+      __overflow_mul = __urhs > c / __ulhs;
+    }
   }
+
+  // if (__overflow_mul)
+  // {
+  constexpr auto __max_nbits = ::cuda::std::max(__num_bits_v<_Lhs>, __num_bits_v<_Rhs>);
+
+  if constexpr ((sizeof(_Lhs) <= sizeof(int16_t) && sizeof(_Rhs) <= sizeof(int16_t))
+                && (is_signed_v<_Lhs> || is_signed_v<_Rhs>) )
+  {
+    using _Up       = ::cuda::std::__make_nbit_int_t<16, is_signed_v<_Lhs> || is_signed_v<_Rhs>>;
+    _Up __result_lo = 0;
+    _Up __lhs2      = static_cast<_Up>(__lhs);
+    _Up __rhs2      = static_cast<_Up>(__rhs);
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.s16 %0, %1, %2;" : "=r"(__result_lo) : "r"(__lhs2), "r"(__rhs2)); }))
+    }
+    return {__result_lo, __overflow_mul};
+  }
+  // else if constexpr (sizeof(_Lhs) < sizeof(int64_t) && sizeof(_Rhs) < sizeof(int64_t))
+  // {
+  //   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  //   {
+  //     NV_IF_TARGET(NV_IS_DEVICE, ({
+  //                    _Up __result_lo = 0;
+  //                    asm("mul.lo.u32 %0, %1, %2;"
+  //                        : "=r"(__result_lo)
+  //                        : "r"(static_cast<_Up>(__lhs)), "r"(static_cast<_Up>(__rhs)));
+  //                    return {__result_lo, __overflow_mul};
+  //                  }))
+  //   }
+  // }
+  // else if constexpr (sizeof(_Lhs) < sizeof(__cccl_uintmax_t) && sizeof(_Rhs) < sizeof(__cccl_uintmax_t))
+  // {
+  //   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  //   {
+  //     NV_IF_TARGET(NV_IS_DEVICE, ({
+  //                    _Up __result_lo = 0;
+  //                    asm("mul.lo.u64 %0, %1, %2;"
+  //                        : "=r"(__result_lo)
+  //                        : "r"(static_cast<_Up>(__lhs)), "r"(static_cast<_Up>(__rhs)));
+  //                    return {__result_lo, __overflow_mul};
+  //                  }))
+  //   }
+  // }
+  // const auto __uresult_lo = __ulhs * __urhs;
+  // const auto __result_lo  = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
+  // return {__result_lo, __overflow_mul};
+
+  const auto __uresult_lo = __cccl_uintmax_t{__ulhs} * __cccl_uintmax_t{__urhs};
+  const auto __result_lo  = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
+  return {__result_lo, __overflow_mul};
+  // }
+  // else
+  // {
+  //   const auto __casted_lhs = static_cast<_Result>(__lhs);
+  //   const auto __casted_rhs = static_cast<_Result>(__rhs);
+  //   const auto __result_lo  = __casted_lhs * __casted_rhs;
+  //   return {__result_lo, __overflow_mul};
+  // }
+
+  // Multiply with overflow results in UB, which isn't allowed during constant
+  // evaluation. Instead, multiply the absolute values of lhs and rhs and
+  // apply negative sign if needed to get expected low-word result
+
+  // constexpr auto __max_nbits = ::cuda::std::max(__num_bits_v<_Lhs>, __num_bits_v<_Rhs>);
+  // using _Up                  = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
+  // _Up __uresult_lo           = 0;
+  // _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  // {
+  //   NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.s32 %0, %1, %2;" : "=r"(__uresult_lo) : "r"(__urhs), "r"(__urhs));
+  //   }))
+  // }
+  // const auto __result_lo = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
+  // return {__result_lo, __overflow_mul};
 }
 
 #if !_CCCL_COMPILER(NVRTC)
