@@ -70,9 +70,7 @@ THRUST_NAMESPACE_BEGIN
  *     .. versionadded:: ?.?.?
  *  \endverbatim
  */
-template <class Vector,
-          class U                                                   = typename Vector::value_type,
-          ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
+template <class Vector, class U, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
 _CCCL_HOST typename Vector::size_type erase(Vector& c, const U& value);
 
 /*! \p erase removes all elements equal to \p value from the vector \p c.
@@ -118,10 +116,7 @@ _CCCL_HOST typename Vector::size_type erase(Vector& c, const U& value);
  *     .. versionadded:: ?.?.?
  *  \endverbatim
  */
-template <typename DerivedPolicy,
-          class Vector,
-          class U                                                   = typename Vector::value_type,
-          ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
+template <typename DerivedPolicy, class Vector, class U, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int> = 0>
 _CCCL_HOST typename Vector::size_type
 erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, const U& value);
 
