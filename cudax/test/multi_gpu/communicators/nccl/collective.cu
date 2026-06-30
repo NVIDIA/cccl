@@ -12,6 +12,7 @@
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/memory_pool>
+#include <cuda/memory_resource>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -60,7 +61,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce sum")
 
   for (auto& buf : recv)
   {
-    auto pool           = cuda::pinned_default_memory_pool();
+    auto pool           = cuda::mr::legacy_pinned_memory_resource{};
     const auto expected = cuda::make_buffer(buf.stream(), pool, buf.size(), sum);
     const auto actual   = cuda::make_buffer(buf.stream(), pool, buf);
 
@@ -102,7 +103,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce maximum")
 
   for (auto& buf : recv)
   {
-    auto pool                  = cuda::pinned_default_memory_pool();
+    auto pool                  = cuda::mr::legacy_pinned_memory_resource{};
     const auto expected_values = {n - 1, cuda::std::int32_t{100}, 2 * (n - 1)};
     const auto expected        = cuda::make_buffer(buf.stream(), pool, expected_values);
     const auto actual          = cuda::make_buffer(buf.stream(), pool, buf);
@@ -142,7 +143,7 @@ NCCL_COMM_TEST("nccl_communicator_ref reduce sum to root 0")
   }
 
   const auto sum      = static_cast<cuda::std::int32_t>(cuda::devices.size() * (cuda::devices.size() + 1) / 2);
-  auto pool           = cuda::pinned_default_memory_pool();
+  auto pool           = cuda::mr::legacy_pinned_memory_resource{};
   const auto actual   = cuda::make_buffer(recv[ROOT_RANK].stream(), pool, recv[ROOT_RANK]);
   const auto expected = cuda::make_buffer(actual.stream(), pool, actual.size(), sum);
 
@@ -181,7 +182,7 @@ NCCL_COMM_TEST("nccl_communicator_ref broadcast from root 0")
 
   for (auto& buf : recv)
   {
-    auto pool                  = cuda::pinned_default_memory_pool();
+    auto pool                  = cuda::mr::legacy_pinned_memory_resource{};
     const auto expected_values = {
       cuda::std::int32_t{10}, cuda::std::int32_t{20}, cuda::std::int32_t{30}, cuda::std::int32_t{40}};
     const auto expected = cuda::make_buffer(buf.stream(), pool, expected_values);
@@ -232,7 +233,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_gather")
 
   for (auto& buf : recv)
   {
-    auto pool           = cuda::pinned_default_memory_pool();
+    auto pool           = cuda::mr::legacy_pinned_memory_resource{};
     const auto expected = cuda::make_buffer<cuda::std::int32_t>(buf.stream(), pool, expected_values);
     const auto actual   = cuda::make_buffer(buf.stream(), pool, buf);
 
@@ -296,11 +297,11 @@ NCCL_COMM_TEST("nccl_communicator_ref gather_v to root 0")
   {
     for (cuda::std::size_t k = 0; k < recv_counts[r]; ++k)
     {
-      expected_values[displs[r] + k] = static_cast<cuda::std::int32_t>(10 * r + k);
+      expected_values[displs[r] + k] = static_cast<cuda::std::int32_t>((10 * r) + k);
     }
   }
 
-  auto pool           = cuda::pinned_default_memory_pool();
+  auto pool           = cuda::mr::legacy_pinned_memory_resource{};
   const auto expected = cuda::make_buffer<cuda::std::int32_t>(recv.stream(), pool, expected_values);
   const auto actual   = cuda::make_buffer(recv.stream(), pool, recv);
 
@@ -334,8 +335,8 @@ NCCL_COMM_TEST("nccl_communicator_ref all_to_all_v")
 
     for (cuda::std::size_t j = 0; j < cuda::devices.size(); ++j)
     {
-      h[block * j]     = static_cast<cuda::std::int32_t>(100 * i + 10 * j);
-      h[block * j + 1] = static_cast<cuda::std::int32_t>(100 * i + 10 * j + 1);
+      h[block * j]       = static_cast<cuda::std::int32_t>((100 * i) + (10 * j));
+      h[(block * j) + 1] = static_cast<cuda::std::int32_t>((100 * i) + (10 * j) + 1);
     }
 
     auto& s = send.emplace_back(streams[i], pool, h);
@@ -364,11 +365,11 @@ NCCL_COMM_TEST("nccl_communicator_ref all_to_all_v")
 
     for (cuda::std::size_t i = 0; i < cuda::devices.size(); ++i)
     {
-      expected_values[block * i]     = static_cast<cuda::std::int32_t>(100 * i + 10 * r);
-      expected_values[block * i + 1] = static_cast<cuda::std::int32_t>(100 * i + 10 * r + 1);
+      expected_values[block * i]       = static_cast<cuda::std::int32_t>((100 * i) + (10 * r));
+      expected_values[(block * i) + 1] = static_cast<cuda::std::int32_t>((100 * i) + (10 * r) + 1);
     }
 
-    auto pool           = cuda::pinned_default_memory_pool();
+    auto pool           = cuda::mr::legacy_pinned_memory_resource{};
     const auto expected = cuda::make_buffer<cuda::std::int32_t>(recv[r].stream(), pool, expected_values);
     const auto actual   = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
@@ -416,7 +417,7 @@ NCCL_COMM_TEST("nccl_communicator_ref gather to root 0")
     expected_values[r * per_rank + 1] = static_cast<cuda::std::int32_t>(10 * r + 1);
   }
 
-  auto pool           = cuda::pinned_default_memory_pool();
+  auto pool           = cuda::mr::legacy_pinned_memory_resource{};
   const auto expected = cuda::make_buffer<cuda::std::int32_t>(recv[ROOT_RANK].stream(), pool, expected_values);
   const auto actual   = cuda::make_buffer(recv[ROOT_RANK].stream(), pool, recv[ROOT_RANK]);
 
@@ -475,7 +476,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_to_all")
       expected_values[block * i + 1] = static_cast<cuda::std::int32_t>(100 * i + 10 * r + 1);
     }
 
-    auto pool           = cuda::pinned_default_memory_pool();
+    auto pool           = cuda::mr::legacy_pinned_memory_resource{};
     const auto expected = cuda::make_buffer<cuda::std::int32_t>(recv[r].stream(), pool, expected_values);
     const auto actual   = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
