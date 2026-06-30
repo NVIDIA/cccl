@@ -132,7 +132,6 @@ struct DeviceRadixSortKernelSource
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
 template <SortOrder Order,
           typename KeyT,
           typename ValueT,
@@ -147,7 +146,8 @@ template <SortOrder Order,
             OffsetT,
             DecomposerT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchRadixSort
+// FIXME(bgruber): enable deprecation
+struct /*CCCL_DEPRECATED_BECAUSE("Please use DeviceRadixSort"*/ DispatchRadixSort
 {
   //------------------------------------------------------------------------------
   // Constants
@@ -261,7 +261,7 @@ struct DispatchRadixSort
 private:
   template <typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-  __invoke_single_tile(SingleTileKernelT single_tile_kernel, detail::radix_sort::radix_sort_downsweep_policy policy)
+  __invoke_single_tile(SingleTileKernelT single_tile_kernel, RadixSortDownsweepPolicy policy)
   {
     // Return if the caller is simply requesting the size of the storage allocation
     if (d_temp_storage == nullptr)
@@ -499,9 +499,9 @@ public:
       int sm_count,
       OffsetT num_items,
       int pass_radix_bits,
-      detail::radix_sort::radix_sort_upsweep_policy upsweep_policy,
+      RadixSortUpsweepPolicy upsweep_policy,
       ScanPolicy scan_policy,
-      detail::radix_sort::radix_sort_downsweep_policy downsweep_policy,
+      RadixSortDownsweepPolicy downsweep_policy,
       KernelLauncherFactory launcher_factory)
     {
       this->upsweep_kernel   = upsweep_kern;
@@ -542,7 +542,7 @@ public:
   }
 
 private:
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke_onesweep(detail::radix_sort::radix_sort_policy policy)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke_onesweep(RadixSortPolicy policy)
   {
     // PortionOffsetT is used for offsets within a portion, and must be signed.
     using PortionOffsetT = int;
@@ -853,7 +853,7 @@ private:
     ScanKernelT scan_kernel,
     DownsweepKernelT downsweep_kernel,
     DownsweepKernelT alt_downsweep_kernel,
-    const detail::radix_sort::radix_sort_policy& policy)
+    const RadixSortPolicy& policy)
   {
     // Get device ordinal
     int device_ordinal;
@@ -1105,9 +1105,9 @@ public:
 
 #if _CCCL_COMPILER(GCC, <, 10)
     // gcc 7-9 fail to use `policy` in a constant expression, so we just compute it again inplace
-    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().algorithm == detail::radix_sort::RadixSortAlgorithm::onesweep)
+    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().algorithm == RadixSortAlgorithm::onesweep)
 #else // _CCCL_COMPILER(GCC, <, 8)
-    if CUB_DETAIL_CONSTEXPR_ISH (policy.algorithm == detail::radix_sort::RadixSortAlgorithm::onesweep)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy.algorithm == RadixSortAlgorithm::onesweep)
 #endif // _CCCL_COMPILER(GCC, <, 8)
     {
       return __invoke_onesweep(policy);
