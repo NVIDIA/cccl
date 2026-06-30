@@ -170,6 +170,7 @@ private:
     static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to
     // specify stream ordered access
+    ::cuda::__ensure_current_context __guard(__buf_.stream());
     ::cuda::__driver::__memcpyAsync(
       __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
   }
@@ -804,6 +805,7 @@ using __buffer_type_for_props = typename ::cuda::std::remove_reference_t<_PropsL
 template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
 {
+  ::cuda::__ensure_current_context __guard(__stream);
   __stream.wait(__from.stream());
   ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
