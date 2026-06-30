@@ -22,10 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/attributes.h>
-#include <cuda/__device/device_ref.h>
 #include <cuda/__hierarchy/hierarchy_levels.h>
-#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/cstdint>
@@ -76,29 +73,6 @@ constexpr _CCCL_HOST_DEVICE __index_type __grid_size(
 {
   return ::cuda::ceil_div(__cg_size * __num, __stride * __block_size);
 }
-
-#if !_CCCL_COMPILER(NVRTC)
-template <class _Kernel>
-_CCCL_HOST_API constexpr auto
-__max_occupancy_grid_size(int __block_size, _Kernel __kernel, ::cuda::std::size_t __dynamic_shm_size = 0)
-{
-  int __device = 0;
-  _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to get current device", &__device);
-
-  const int __num_multiprocessors = ::cuda::device_attributes::multiprocessor_count(::cuda::device_ref{__device});
-
-  int __max_active_blocks_per_multiprocessor{};
-  _CCCL_TRY_CUDA_API(
-    ::cudaOccupancyMaxActiveBlocksPerMultiprocessor,
-    "Failed to get max active blocks per multiprocessor",
-    &__max_active_blocks_per_multiprocessor,
-    __kernel,
-    __block_size,
-    __dynamic_shm_size);
-
-  return __max_active_blocks_per_multiprocessor * __num_multiprocessors;
-}
-#endif // !_CCCL_COMPILER(NVRTC)
 
 //! @brief Distance helper requiring random access iterators.
 template <class _Iterator>
