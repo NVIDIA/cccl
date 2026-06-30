@@ -24,6 +24,12 @@
 #include "test_util.h"
 #include <cccl/c/reduce.h>
 
+// AoT serialize/deserialize is a v1-only feature; the header does not exist in
+// the v2 (HostJIT) include tree, and the tests using it are guarded the same way.
+#ifndef CCCL_C_PARALLEL_V2
+#  include <cccl/c/aot.h>
+#endif
+
 using BuildResultT = cccl_device_reduce_build_result_t;
 
 struct reduce_cleanup
@@ -802,5 +808,173 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][aot]")
   REQUIRE(result == expected);
 
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
+}
+
+C2H_TEST("Reduce serialize/deserialize round-trip (cubin)", "[reduce][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_binary_operation(); // plus
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  value_t<T> init{T{0}};
+
+  // Compile (full op → cubin payload)
+  BuildResultT build_a{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce_compile(
+      &build_a,
+      dummy_in,
+      dummy_out,
+      op,
+      init,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+  REQUIRE((build_a.payload != nullptr && build_a.payload_kind == CCCL_PAYLOAD_CUBIN));
+
+  // Serialize
+  void* blob       = nullptr;
+  size_t blob_size = 0;
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_serialize(&build_a, &blob, &blob_size));
+  REQUIRE(blob != nullptr);
+  REQUIRE(blob_size > 0);
+
+  // Cleanup the original — proves the serialized blob is self-contained.
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build_a));
+
+  // Deserialize into a fresh build and load.
+  BuildResultT build_b{};
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_deserialize(&build_b, blob, blob_size));
+  REQUIRE(build_b.payload != nullptr);
+  REQUIRE(build_b.payload_kind == CCCL_PAYLOAD_CUBIN);
+  REQUIRE(build_b.runtime_policy != nullptr);
+  REQUIRE(build_b.single_tile_kernel_lowered_name != nullptr);
+  CHECK(build_b.library == nullptr);
+  CHECK(build_b.single_tile_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_load(&build_b));
+  REQUIRE(build_b.library != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce(build_b, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_reduce(
+            build_b, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
+
+  const T result   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), T{0});
+  REQUIRE(result == expected);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build_b));
+  cccl_aot_buffer_free(blob);
+}
+
+C2H_TEST("Reduce serialize/deserialize round-trip (ltoir + link_ltoir)", "[reduce][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  // Kernel-only compile produces an LTOIR payload.
+  cccl_op_t op_ko{};
+  op_ko.type      = CCCL_STATELESS;
+  op_ko.name      = "op";
+  op_ko.code      = nullptr;
+  op_ko.code_size = 0;
+  op_ko.code_type = CCCL_OP_LTOIR;
+
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  value_t<T> init{T{0}};
+
+  BuildResultT build_a{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce_compile(
+      &build_a,
+      dummy_in,
+      dummy_out,
+      op_ko,
+      init,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+  REQUIRE((build_a.payload != nullptr && build_a.payload_kind == CCCL_PAYLOAD_LTOIR));
+
+  void* blob       = nullptr;
+  size_t blob_size = 0;
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_serialize(&build_a, &blob, &blob_size));
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build_a));
+
+  BuildResultT build_b{};
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_deserialize(&build_b, blob, blob_size));
+  REQUIRE(build_b.payload_kind == CCCL_PAYLOAD_LTOIR);
+
+  // Link in the operator LTOIR (as user-supplied) and load.
+  operation_t op_full = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const void* op_blob = op_full.code.data();
+  size_t op_size      = op_full.code.size();
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_link_ltoir(&build_b, &op_blob, &op_size, 1));
+  REQUIRE(build_b.payload_kind == CCCL_PAYLOAD_CUBIN);
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_load(&build_b));
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  cccl_op_t op_run = op_full;
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce(build_b, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init, null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_reduce(
+            build_b, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init, null_stream));
+
+  REQUIRE(output_ptr[0] == std::accumulate(input.begin(), input.end(), T{0}));
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build_b));
+  cccl_aot_buffer_free(blob);
+}
+
+C2H_TEST("Reduce deserialize rejects bad blobs", "[reduce][aot]")
+{
+  BuildResultT build{};
+
+  // Empty input.
+  REQUIRE(CUDA_ERROR_INVALID_VALUE == cccl_device_reduce_deserialize(&build, nullptr, 0));
+
+  // Garbage bytes that are large enough to read a header from.
+  const char garbage[64] = {0};
+  REQUIRE(CUDA_SUCCESS != cccl_device_reduce_deserialize(&build, garbage, sizeof(garbage)));
+  // On failure build is zeroed.
+  CHECK(build.payload == nullptr);
 }
 #endif // CCCL_C_PARALLEL_V2
