@@ -35,7 +35,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 using __cccl_mutex_t = void*;
 #  define _LIBCUDACXX_MUTEX_INITIALIZER 0
 
-#  if _CCCL_ARCH(ARM64) || _CCCL_ARCH(X86_64)
+#  if _CCCL_HOST_ARCH(ARM64) || _CCCL_HOST_ARCH(X86_64)
 using __cccl_recursive_mutex_t = void* [5];
 #  else
 #    error Unsupported architecture

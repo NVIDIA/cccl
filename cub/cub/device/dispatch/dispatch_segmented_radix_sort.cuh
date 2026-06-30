@@ -415,13 +415,17 @@ struct DispatchSegmentedRadixSort
     {
       // Init regular and alternate kernel configurations
       PassConfig<SegmentedKernelT> pass_config, alt_pass_config;
-      if ((error = pass_config.InitPassConfig(
-             segmented_kernel, policy.RadixBits(policy.Segmented()), policy.Segmented(), launcher_factory)))
+
+      error = pass_config.InitPassConfig(
+        segmented_kernel, policy.RadixBits(policy.Segmented()), policy.Segmented(), launcher_factory);
+      if (error)
       {
         break;
       }
-      if ((error = alt_pass_config.InitPassConfig(
-             alt_segmented_kernel, policy.RadixBits(policy.AltSegmented()), policy.AltSegmented(), launcher_factory)))
+
+      error = alt_pass_config.InitPassConfig(
+        alt_segmented_kernel, policy.RadixBits(policy.AltSegmented()), policy.AltSegmented(), launcher_factory);
+      if (error)
       {
         break;
       }

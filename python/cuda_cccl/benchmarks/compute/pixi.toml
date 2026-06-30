@@ -19,6 +19,7 @@ cuda-version = "13.1.*"
 python = "3.13.*"
 numpy = "*"
 cupy = "*"
+pytest-benchmark = "*"
 pyyaml = "*"
 pre-commit = "*"
 

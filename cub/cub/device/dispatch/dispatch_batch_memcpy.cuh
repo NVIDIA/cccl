@@ -90,9 +90,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
     TileT buffer_offset_tile,
     _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
 {
-  static constexpr large_buffer_policy policy = current_policy<PolicySelector>().large_buffer;
-  using StatusWord                            = typename TileT::StatusWord;
-  using BufferSizeT                           = it_value_t<BufferSizeIteratorT>;
+  static constexpr BatchMemcpyLargeBufferPolicy policy = current_policy<PolicySelector>().large_buffer;
+  using StatusWord                                     = typename TileT::StatusWord;
+  using BufferSizeT                                    = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
   using AliasT = typename ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy,
                                                      ::cuda::std::type_identity<char>,
@@ -224,25 +224,25 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
     _CCCL_GRID_CONSTANT const BLevBufferOffsetTileState blev_buffer_scan_state,
     _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
 {
-  static constexpr small_buffer_policy policy = current_policy<PolicySelector>().small_buffer;
+  static constexpr BatchMemcpySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
   // Internal type used for storing a buffer's size
   using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 
   // TODO(bgruber): refactor this in C++20, when we can pass policy as NTTP
-  using AgentBatchMemcpyPolicyT = AgentBatchMemcpyPolicy<
+  using AgentBatchMemcpyPolicyT = agent_batch_memcpy_policy<
     policy.threads_per_block,
     policy.buffers_per_thread,
-    policy.tlev_bytes_per_thread,
+    policy.bytes_per_thread,
     policy.prefer_pow2_bits,
     policy.block_level_tile_size,
     policy.warp_level_threshold,
     policy.block_level_threshold,
-    delay_constructor_t<policy.buff_delay_constructor.kind,
-                        policy.buff_delay_constructor.delay,
-                        policy.buff_delay_constructor.l2_write_latency>,
-    delay_constructor_t<policy.block_delay_constructor.kind,
-                        policy.block_delay_constructor.delay,
-                        policy.block_delay_constructor.l2_write_latency>>;
+    delay_constructor_t<policy.buffer_lookback_delay.kind,
+                        policy.buffer_lookback_delay.delay,
+                        policy.buffer_lookback_delay.l2_write_latency>,
+    delay_constructor_t<policy.block_lookback_delay.kind,
+                        policy.block_lookback_delay.delay,
+                        policy.block_lookback_delay.l2_write_latency>>;
 
   // Block-level specialization
   using AgentBatchMemcpyT = AgentBatchMemcpy<
@@ -315,7 +315,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     return error;
   }
-  const batch_memcpy_policy active_policy = policy_selector(cc);
+  const BatchedMemcpyPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({

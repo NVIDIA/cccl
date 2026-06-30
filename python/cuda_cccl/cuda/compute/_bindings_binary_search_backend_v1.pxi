@@ -13,5 +13,5 @@ cdef inline bytes _binary_search_cubin_bytes(
     cccl_device_binary_search_build_result_t* b,
 ):
     return PyBytes_FromStringAndSize(
-        <const char*>b.transform.cubin, b.transform.cubin_size
+        <const char*>b.transform.payload, b.transform.payload_size
     )

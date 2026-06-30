@@ -22,12 +22,11 @@ CUB_NAMESPACE_BEGIN
 namespace detail::segmented_radix_sort
 {
 using radix_sort::make_reg_scaled_radix_sort_downsweep_policy;
-using radix_sort::radix_sort_downsweep_policy;
 
 struct segmented_radix_sort_policy
 {
-  radix_sort_downsweep_policy segmented;
-  radix_sort_downsweep_policy alt_segmented;
+  RadixSortDownsweepPolicy segmented;
+  RadixSortDownsweepPolicy alt_segmented;
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const segmented_radix_sort_policy& lhs, const segmented_radix_sort_policy& rhs)
@@ -77,21 +76,21 @@ struct policy_selector
         192,
         39,
         __dominant_size(),
-        segmented_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
 
       const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
-        segmented_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
 
       return segmented_radix_sort_policy{segmented, alt_segmented};
     }
@@ -104,21 +103,21 @@ struct policy_selector
         192,
         39,
         __dominant_size(),
-        segmented_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
 
       const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
-        segmented_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
 
       return segmented_radix_sort_policy{segmented, alt_segmented};
     }
@@ -131,21 +130,21 @@ struct policy_selector
         192,
         39,
         __dominant_size(),
-        segmented_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
 
       const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
-        segmented_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
 
       return segmented_radix_sort_policy{segmented, alt_segmented};
     }
@@ -158,21 +157,21 @@ struct policy_selector
         192,
         39,
         __dominant_size(),
-        segmented_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
 
       const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
-        segmented_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
 
       return segmented_radix_sort_policy{segmented, alt_segmented};
     }
@@ -187,21 +186,21 @@ struct policy_selector
         256,
         16,
         __dominant_size(),
-        primary_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        primary_radix_bits);
 
       const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         16,
         __dominant_size(),
-        alt_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_RAKING_MEMOIZE);
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        alt_radix_bits);
 
       return segmented_radix_sort_policy{segmented, alt_segmented};
     }
@@ -214,21 +213,21 @@ struct policy_selector
         192,
         39,
         __dominant_size(),
-        segmented_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
 
       const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
-        segmented_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
 
       return segmented_radix_sort_policy{segmented, alt_segmented};
     }
@@ -241,21 +240,21 @@ struct policy_selector
         192,
         39,
         __dominant_size(),
-        segmented_radix_bits,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
 
       const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
-        segmented_radix_bits - 1,
         BLOCK_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         RADIX_RANK_MEMOIZE,
-        BLOCK_SCAN_WARP_SCANS);
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
 
       return segmented_radix_sort_policy{segmented, alt_segmented};
     }
@@ -267,21 +266,21 @@ struct policy_selector
       192,
       31,
       __dominant_size(),
-      segmented_radix_bits,
       BLOCK_LOAD_WARP_TRANSPOSE,
       LOAD_DEFAULT,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      segmented_radix_bits);
 
     const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
       256,
       11,
       __dominant_size(),
-      segmented_radix_bits - 1,
       BLOCK_LOAD_WARP_TRANSPOSE,
       LOAD_DEFAULT,
       RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS);
+      BLOCK_SCAN_WARP_SCANS,
+      segmented_radix_bits - 1);
 
     return segmented_radix_sort_policy{segmented, alt_segmented};
   }

@@ -359,6 +359,7 @@ C2H_TEST("DeviceFind::LowerBound really large input",
   catch (const std::bad_alloc&)
   {
     // allocation failure is not a test failure, so we can run tests on smaller GPUs
+    SUCCEED("allocation failure is not a test failure");
   }
 }
 
@@ -375,5 +376,6 @@ C2H_TEST("DeviceFind::UpperBound really large input",
   catch (const std::bad_alloc&)
   {
     // allocation failure is not a test failure, so we can run tests on smaller GPUs
+    SUCCEED("allocation failure is not a test failure");
   }
 }
