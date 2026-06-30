@@ -8,6 +8,7 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/launch>
+#include <cuda/memory_resource>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/span>
@@ -43,11 +44,20 @@ _CCCL_DEVICE_API inline void assert_device(bool condition, const char* expressio
   }
 }
 
-template <typename T, typename RandomT = T>
+template <typename T>
 [[nodiscard]] _CCCL_HOST_API inline auto
-random_integers_buffer(cuda::stream_ref stream, cuda::std::size_t size, cuda::std::size_t first = 0)
+make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, cuda::std::size_t size)
 {
-  auto result = cuda::make_pinned_buffer<T>(stream, size, cuda::no_init);
+  using resource_t = cuda::mr::synchronous_resource_adapter<cuda::mr::legacy_pinned_memory_resource>;
+  resource_t resource{cuda::mr::legacy_pinned_memory_resource{device}};
+  return cuda::make_buffer<T>(stream, resource, size, cuda::no_init);
+}
+
+template <typename T, typename RandomT = T>
+[[nodiscard]] _CCCL_HOST_API inline auto random_integers_buffer(
+  cuda::stream_ref stream, cuda::device_ref device, cuda::std::size_t size, cuda::std::size_t first = 0)
+{
+  auto result = make_host_buffer<T>(stream, device, size);
   stream.sync();
 
   for (cuda::std::size_t i = 0; i < size; ++i)
@@ -59,10 +69,10 @@ random_integers_buffer(cuda::stream_ref stream, cuda::std::size_t size, cuda::st
 }
 
 template <typename T, typename RandomT = T>
-[[nodiscard]] _CCCL_HOST_API inline auto
-random_samples_buffer(cuda::stream_ref stream, cuda::std::size_t size, cuda::std::size_t first = 0)
+[[nodiscard]] _CCCL_HOST_API inline auto random_samples_buffer(
+  cuda::stream_ref stream, cuda::device_ref device, cuda::std::size_t size, cuda::std::size_t first = 0)
 {
-  auto result = cuda::make_pinned_buffer<T>(stream, size, cuda::no_init);
+  auto result = make_host_buffer<T>(stream, device, size);
   stream.sync();
 
   for (cuda::std::size_t i = 0; i < size; ++i)
