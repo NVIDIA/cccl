@@ -218,6 +218,7 @@ template <int ThreadsPerBlock,
           int SingleCtaMaxSegmentSize,
           int MinChunksPerCta,
           int CopyItemsPerThread,
+          int FirstResidentSlotSubdivision,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -342,6 +343,18 @@ struct agent_batched_topk_cluster
   static constexpr int chunk_items      = smem_layout_t::chunk_items;
   static constexpr int load_align_items = smem_layout_t::load_align_items;
   static constexpr int slot_alignment   = smem_layout_t::slot_alignment;
+
+  // Subdivides only the first resident chunk's initial load into `<= first_resident_slot_subdivision` sub-chunks to
+  // shave the exposed pipeline ramp on small (resident-only) segments; `1` is the un-split load. The split is only
+  // taken when the chunk divides into whole, `slot_alignment`-aligned sub-chunks for this key type; otherwise it falls
+  // back to the un-split load (effective `1`). This guards against e.g. a key whose size/alignment exceeds
+  // `load_align_bytes`, where the requested sub-chunk size would not be a multiple of `slot_alignment`.
+  static_assert(FirstResidentSlotSubdivision >= 1, "FirstResidentSlotSubdivision must be positive");
+  static constexpr bool first_slot_subdivisible =
+    chunk_items % FirstResidentSlotSubdivision == 0
+    && (chunk_items / FirstResidentSlotSubdivision) * int{sizeof(key_t)} % slot_alignment == 0;
+  static constexpr int first_resident_slot_subdivision = first_slot_subdivisible ? FirstResidentSlotSubdivision : 1;
+  static constexpr int first_resident_slot_sub_items   = chunk_items / first_resident_slot_subdivision;
 
   // Tie-break unroll for the deterministic filter's streamed overflow, which feeds `process_tiles` one chunk slot at a
   // time: clamp items so the tile (`threads_per_block * items`) stays within a chunk, bounding the per-tile early-exit
@@ -1610,13 +1623,12 @@ private:
         if (my_resident_chunks > 0)
         {
           // Stage mbarriers and the `load_phase` parity are shared with the streamer (no per-chunk token array needed).
-          // Chunks are written densely in slot order from offset 0 and read back in the same order, so the read cursor
+          // Load units are written densely from offset 0 and read back in the same order, so the read cursor
           // (`read_off`) mirrors the write cursor (`next_off`) as a running prefix sum, avoiding a dynamically-indexed
           // `pending_spans` array that would anchor surrounding state to local memory. Every chunk begins on a
           // `load_align` boundary (zero prefix), so its whole `count` is the aligned bulk - except a resident suffix
           // tail, whose bulk is loaded here and whose suffix is appended afterwards. The read span is rebuilt from a
           // rooted 32-bit shared address (see `bulk_span`) so a spilled cursor cannot demote the reads to `LD`.
-          const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_resident_chunks));
 
           // Resident slot -> rank-local chunk index. `resident_base + slot` (identity unless `reverse_residency` shifts
           // the resident window to the high-index chunks), except the last slot holds a forced-resident tail.
@@ -1637,42 +1649,80 @@ private:
             return {block_keys_base + chunk.offset + split.prefix, static_cast<::cuda::std::size_t>(split.bulk)};
           };
 
-          // Bulks are densely packed from the start of the block_tile. The head prefix is no longer kept here (it lives
-          // in `edge_keys`), so there is no reserved front gap: the write cursor starts at offset 0.
+          // Bulks are densely packed from the start of the block_tile (no reserved front gap: the head prefix lives in
+          // `edge_keys`), so the write cursor starts at offset 0 and the last unit's bulk ends the packed region with
+          // its suffix appended right after.
           int next_off = 0;
 
-          // Load every resident chunk's aligned bulk, densely packed in slot order, so the last slot's bulk (the tail
-          // bulk in the forced case) ends the packed region and its suffix can be appended right after it.
-          for (int stage = 0; stage < prologue; ++stage)
-          {
-            const auto src = bulk_src(static_cast<offset_t>(stage));
-            issue_bulk_copy(stage, key_slots + next_off, src);
-            next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
-          }
-
-          // Read cursor trailing the write cursor: chunk `p`'s bulk was written at `read_off` (packed and consumed in
-          // the same order), and `bulk_src(p)` recomputes its length, so the read span needs no stored per-stage state.
-          int read_off = 0;
-          for (offset_t p = 0; p < my_resident_chunks; ++p)
-          {
-            const int stage = static_cast<int>(p % static_cast<offset_t>(prologue));
-            wait_stage(stage);
-            const int read_len = static_cast<int>(::cuda::std::size(bulk_src(p)));
-            for_each_chunk_key<histogram_items_per_thread_clamped>(
-              bulk_span({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + read_off)), read_len}),
-              add_first_pass);
-            read_off += read_len * int{sizeof(key_t)};
-
-            const offset_t next_p = p + static_cast<offset_t>(prologue);
-            if (next_p < my_resident_chunks)
+          // Pipeline `n_units` densely-packed load units through the shared `prologue` mbarriers: issue the prologue,
+          // then consume each unit (folding its keys into the first-pass histogram) and prefetch the unit `prologue`
+          // ahead into the slot just freed. `unit_span(u)` returns unit `u`'s gmem span, written/consumed in index
+          // order.
+          const auto run_load = [&](int n_units, auto&& unit_span) {
+            const int prologue = (::cuda::std::min) (PipelineStages, n_units);
+            for (int stage = 0; stage < prologue; ++stage)
             {
-              const auto src = bulk_src(next_p);
-              // Phase safety, not data safety (the target offset is fresh): re-arming this stage before all threads
-              // leave the wait above would advance the phase twice, stranding a lagging waiter forever.
-              __syncthreads();
+              const auto src = unit_span(stage);
               issue_bulk_copy(stage, key_slots + next_off, src);
               next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
             }
+            int read_off = 0;
+            for (int u = 0; u < n_units; ++u)
+            {
+              const int stage = u % prologue;
+              wait_stage(stage);
+              const int read_len = static_cast<int>(::cuda::std::size(unit_span(u)));
+              for_each_chunk_key<histogram_items_per_thread_clamped>(
+                bulk_span(
+                  {static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + read_off)), read_len}),
+                add_first_pass);
+              read_off += read_len * int{sizeof(key_t)};
+
+              const int next_u = u + prologue;
+              if (next_u < n_units)
+              {
+                const auto src = unit_span(next_u);
+                // Phase safety, not data safety (the target offset is fresh): re-arming this stage before all threads
+                // leave the wait above would advance the phase twice, stranding a lagging waiter forever.
+                __syncthreads();
+                issue_bulk_copy(stage, key_slots + next_off, src);
+                next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
+              }
+            }
+          };
+
+          const int resident_units = static_cast<int>(my_resident_chunks);
+          if constexpr (first_resident_slot_subdivision == 1)
+          {
+            // One load unit per resident chunk (the un-split load).
+            run_load(resident_units, [&](int u) {
+              return bulk_src(static_cast<offset_t>(u));
+            });
+          }
+          else
+          {
+            // Split only the first chunk into `<= first_resident_slot_subdivision` sub-chunks; chunks 1+ stay whole. A
+            // short first bulk (also the global tail) needs fewer sub-chunks, its final one carrying the aligned
+            // remainder, so the count is clamped to what the bulk covers.
+            const int sub_items = first_resident_slot_sub_items; // local copy: avoids ODR-using the static member by
+                                                                 // ref
+            const auto first_bulk = bulk_src(offset_t{0});
+            const int first_len   = static_cast<int>(::cuda::std::size(first_bulk));
+            const int first_subs  = (::cuda::std::max) (1, ::cuda::ceil_div(first_len, sub_items));
+            const int n_units     = (first_subs - 1) + resident_units;
+            run_load(n_units, [&](int u) -> ::cuda::std::span<const key_t> {
+              if (u < first_subs)
+              {
+                const int off = u * sub_items;
+                const int len = (::cuda::std::min) (sub_items, first_len - off);
+                if (len == 0)
+                {
+                  return {}; // empty first bulk (sole resident chunk is a short global tail): avoid `nullptr + 0` UB
+                }
+                return {first_bulk.data() + off, static_cast<::cuda::std::size_t>(len)};
+              }
+              return bulk_src(static_cast<offset_t>(u - first_subs + 1));
+            });
           }
 
           // Tail suffix of a resident (non-peeled) suffix tail: append right after the last (tail) bulk. Nothing

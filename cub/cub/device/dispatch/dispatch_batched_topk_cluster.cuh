@@ -88,6 +88,7 @@ template <int ThreadsPerBlock,
           int SingleCtaMaxSegmentSize,
           int MinChunksPerCta,
           int CopyItemsPerThread,
+          int FirstResidentSlotSubdivision,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -120,6 +121,7 @@ __launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void 
     SingleCtaMaxSegmentSize,
     MinChunksPerCta,
     CopyItemsPerThread,
+    FirstResidentSlotSubdivision,
     Determinism,
     TieBreak,
     KeyInputItItT,
@@ -172,6 +174,7 @@ template <int ThreadsPerBlock,
           int SingleCtaMaxSegmentSize,
           int MinChunksPerCta,
           int CopyItemsPerThread,
+          int FirstResidentSlotSubdivision,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
           typename KeyInputItItT,
@@ -205,6 +208,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
     SingleCtaMaxSegmentSize,
     MinChunksPerCta,
     CopyItemsPerThread,
+    FirstResidentSlotSubdivision,
     Determinism,
     TieBreak,
     KeyInputItItT,
@@ -269,6 +273,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
       SingleCtaMaxSegmentSize,                                                          \
       MinChunksPerCta,                                                                  \
       CopyItemsPerThread,                                                               \
+      FirstResidentSlotSubdivision,                                                     \
       Determinism,                                                                      \
       TieBreak,                                                                         \
       KeyInputItItT,                                                                    \
@@ -334,18 +339,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using SelectDirectionParameterT = decltype(select_directions);
   // Clusters are SM 9.0+ only and the tuning is currently identical across
   // CCs, so pin the selector query to the minimum supported CC.
-  constexpr cluster_topk_policy policy  = PolicySelector{}(::cuda::compute_capability{9, 0});
-  constexpr int ThreadsPerBlock         = policy.threads_per_block;
-  constexpr int MinBlocksPerSm          = policy.min_blocks_per_sm;
-  constexpr int HistogramItemsPerThread = policy.histogram_items_per_thread;
-  constexpr int PipelineStages          = policy.pipeline_stages;
-  constexpr int ChunkBytes              = policy.chunk_bytes;
-  constexpr int LoadAlignBytes          = policy.load_align_bytes;
-  constexpr int BitsPerPass             = policy.bits_per_pass;
-  constexpr int TieBreakItemsPerThread  = policy.tie_break_items_per_thread;
-  constexpr int SingleCtaMaxSegmentSize = policy.single_cta_max_segment_size;
-  constexpr int MinChunksPerCta         = policy.min_chunks_per_cta;
-  constexpr int CopyItemsPerThread      = policy.copy_items_per_thread;
+  constexpr cluster_topk_policy policy       = PolicySelector{}(::cuda::compute_capability{9, 0});
+  constexpr int ThreadsPerBlock              = policy.threads_per_block;
+  constexpr int MinBlocksPerSm               = policy.min_blocks_per_sm;
+  constexpr int HistogramItemsPerThread      = policy.histogram_items_per_thread;
+  constexpr int PipelineStages               = policy.pipeline_stages;
+  constexpr int ChunkBytes                   = policy.chunk_bytes;
+  constexpr int LoadAlignBytes               = policy.load_align_bytes;
+  constexpr int BitsPerPass                  = policy.bits_per_pass;
+  constexpr int TieBreakItemsPerThread       = policy.tie_break_items_per_thread;
+  constexpr int SingleCtaMaxSegmentSize      = policy.single_cta_max_segment_size;
+  constexpr int MinChunksPerCta              = policy.min_chunks_per_cta;
+  constexpr int CopyItemsPerThread           = policy.copy_items_per_thread;
+  constexpr int FirstResidentSlotSubdivision = policy.first_resident_slot_subdivision;
 
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
@@ -361,6 +367,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
      SingleCtaMaxSegmentSize,
      MinChunksPerCta,
      CopyItemsPerThread,
+     FirstResidentSlotSubdivision,
      Determinism,
      TieBreak,
      KeyInputItItT,
@@ -439,6 +446,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     SingleCtaMaxSegmentSize,
     MinChunksPerCta,
     CopyItemsPerThread,
+    FirstResidentSlotSubdivision,
     Determinism,
     TieBreak,
     KeyInputItItT,

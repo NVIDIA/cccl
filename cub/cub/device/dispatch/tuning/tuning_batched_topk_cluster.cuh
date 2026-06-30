@@ -33,6 +33,7 @@ struct cluster_topk_policy
   int single_cta_max_segment_size;
   int min_chunks_per_cta;
   int copy_items_per_thread;
+  int first_resident_slot_subdivision;
 };
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_policy() -> cluster_topk_policy
@@ -41,19 +42,23 @@ struct cluster_topk_policy
     /*threads_per_block=*/512,
     /*histogram_items_per_thread=*/8,
     /*pipeline_stages=*/8,
-    /*chunk_bytes=*/16 * 1024,
+    /*chunk_bytes=*/32 * 1024,
     /*load_align_bytes=*/128,
     /*bits_per_pass=*/11,
     /*min_blocks_per_sm=*/1,
     /*tie_break_items_per_thread=*/8,
     /*single_cta_max_segment_size=*/8 * 1024,
     /*min_chunks_per_cta=*/1,
-    /*copy_items_per_thread=*/8};
+    /*copy_items_per_thread=*/8,
+    /*first_resident_slot_subdivision=*/2};
 }
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto is_valid_policy(cluster_topk_policy policy) -> bool
 {
-  return policy.chunk_bytes % policy.load_align_bytes == 0;
+  // Whether `first_resident_slot_subdivision` actually splits the chunk depends on the runtime key type (sub-chunks
+  // must be whole and `slot_alignment`-aligned), so the agent decides per instantiation and falls back to the un-split
+  // load when it cannot. Here only its positivity is a policy-level invariant.
+  return policy.chunk_bytes % policy.load_align_bytes == 0 && policy.first_resident_slot_subdivision >= 1;
 }
 
 static_assert(is_valid_policy(make_policy()));
