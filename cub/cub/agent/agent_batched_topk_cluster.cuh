@@ -1318,6 +1318,10 @@ private:
   // pushes to nobody, so it ends up holding the full predecessor sum. `prefix_pair` is pre-zeroed in `process_impl`
   // and untouched until here, so a single post-push barrier suffices. Idle ranks and the leader pass `packed == 0`.
   // Returns this CTA's exclusive prefix packed the same way; `single_cta` returns 0.
+  //
+  // The successor pushes are lane-parallel: the `red.add` reductions are commutative and target distinct remote ranks,
+  // so each thread owns a strided slice of the successor range (one push per thread for the usual small cluster). All
+  // threads see the same CTA-uniform `packed`, so the guard and the post-push barrier stay uniform.
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint64_t combined_prefix_scan(
     ::cooperative_groups::cluster_group& cluster,
     bool single_cta,
@@ -1329,11 +1333,12 @@ private:
     {
       return ::cuda::std::uint64_t{0};
     }
-    if (threadIdx.x == 0 && packed != ::cuda::std::uint64_t{0})
+    if (packed != ::cuda::std::uint64_t{0})
     {
       if constexpr (scan_descending)
       {
-        for (unsigned int r = 0; r < cluster_rank; ++r) // lower ranks follow; the leader at rank 0 is last
+        _CCCL_PRAGMA_NOUNROLL()
+        for (unsigned int r = threadIdx.x; r < cluster_rank; r += threads_per_block) // lower ranks follow; leader last
         {
           add_remote_prefix(r, packed);
         }
@@ -1342,7 +1347,8 @@ private:
       {
         // Higher ranks follow. Stops at `eff_cluster_blocks` since idle ranks own nothing; the leader at the last
         // effective rank is last.
-        for (unsigned int r = cluster_rank + 1u; r < eff_cluster_blocks; ++r)
+        _CCCL_PRAGMA_NOUNROLL()
+        for (unsigned int r = cluster_rank + 1u + threadIdx.x; r < eff_cluster_blocks; r += threads_per_block)
         {
           add_remote_prefix(r, packed);
         }
