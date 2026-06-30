@@ -36,6 +36,7 @@ typedef struct cccl_device_reduce_build_result_t
   CUkernel reduction_kernel;
   cccl_determinism_t determinism;
   void* runtime_policy;
+  size_t runtime_policy_size;
   char* single_tile_kernel_lowered_name;
   char* single_tile_second_kernel_lowered_name;
   char* reduction_kernel_lowered_name;

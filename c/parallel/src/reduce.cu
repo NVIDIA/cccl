@@ -301,7 +301,8 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
       ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
       ->get_name({reduction_kernel_name, reduction_kernel_lowered_name});
 
-  auto policy_ptr = std::make_unique<cub::detail::reduce::policy_selector>(policy_sel);
+  const size_t policy_size = sizeof(policy_sel);
+  auto policy_ptr          = std::make_unique<cub::detail::reduce::policy_selector>(policy_sel);
 
   auto single_tile_name        = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
   auto single_tile_second_name = std::unique_ptr<char[]>(duplicate_c_string(single_tile_second_kernel_lowered_name));
@@ -334,6 +335,7 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
   }
 
   build->runtime_policy                         = policy_ptr.release();
+  build->runtime_policy_size                    = policy_size;
   build->single_tile_kernel_lowered_name        = single_tile_name.release();
   build->single_tile_second_kernel_lowered_name = single_tile_second_name.release();
   build->reduction_kernel_lowered_name          = reduction_name.release();
@@ -685,7 +687,6 @@ try
   w.write_cstring(build_ptr->single_tile_kernel_lowered_name);
   w.write_cstring(build_ptr->single_tile_second_kernel_lowered_name);
   w.write_cstring(build_ptr->reduction_kernel_lowered_name);
-  w.write_cstring(build_ptr->nondeterministic_kernel_lowered_name);
   w.release(out_buf, out_size);
   return CUDA_SUCCESS;
 }
@@ -729,10 +730,7 @@ try
     throw std::runtime_error("aot blob: empty payload");
   }
 
-  const size_t policy_size =
-    (determinism == CCCL_NOT_GUARANTEED)
-      ? sizeof(cub::detail::reduce_nondeterministic::policy_selector)
-      : sizeof(cub::detail::reduce::policy_selector);
+  constexpr size_t policy_size = sizeof(cub::detail::reduce::policy_selector);
   std::unique_ptr<void, decltype(&std::free)> policy(std::malloc(policy_size), std::free);
   if (!policy)
   {
@@ -757,7 +755,6 @@ try
   result.single_tile_kernel_lowered_name        = n_single_tile.release();
   result.single_tile_second_kernel_lowered_name = n_single_tile_second.release();
   result.reduction_kernel_lowered_name          = n_reduction.release();
-  result.nondeterministic_kernel_lowered_name   = n_nondeterministic.release();
   *build_ptr                                    = result;
   return CUDA_SUCCESS;
 }
