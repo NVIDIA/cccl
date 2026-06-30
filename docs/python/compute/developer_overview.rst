@@ -498,6 +498,14 @@ The free-threading design is constrained by the following requirements:
 * Same-key concurrent cold builds should build once; waiters should receive the
   same result or observe the same exception.
 
+The current free-threading support boundary is Linux with the
+``minimal-cu12`` and ``minimal-cu13`` extras. These extras omit Numba and Numba
+CUDA. Consequently, free-threaded support currently covers built-in ``OpKind``
+operations and externally compiled ``RawOp`` operations, but not Python-callable
+operators or ``cuda.coop._experimental``. The full ``cu12`` and ``cu13`` extras
+remain outside the support claim until the Numba CUDA dependency is replaced by
+a free-threading-compatible implementation.
+
 Build and validation requirements
 +++++++++++++++++++++++++++++++++
 

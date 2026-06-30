@@ -25,10 +25,5 @@ Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
     & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading"
     & $python -m pytest -n 0 -v compute/ -m "large and not free_threading"
-    if ($PyVersion -eq "3.14t") {
-        # The free-threading stress tests create their own worker threads; keep
-        # pytest itself serial so the signal is not diluted by xdist process noise.
-        & $python -m pytest -n 0 -v compute/ -m "free_threading"
-    }
 }
 finally { Pop-Location }
