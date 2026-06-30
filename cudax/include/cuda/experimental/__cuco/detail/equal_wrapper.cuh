@@ -30,14 +30,12 @@
 namespace cuda::experimental::cuco::detail
 {
 //! @brief Enum of equality comparison results.
-//!
-//! NOTE: Enum values are order-sensitive.
 enum class __equal_result : ::cuda::std::int8_t
 {
-  __unequal   = 0,
-  __equal     = 1,
-  __empty     = 2,
-  __available = 3
+  __unequal,
+  __equal,
+  __empty,
+  __available,
 };
 
 //! @brief Enum indicating whether the operation is an insert.
