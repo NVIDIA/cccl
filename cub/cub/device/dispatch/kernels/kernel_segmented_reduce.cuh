@@ -124,17 +124,17 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
   static constexpr segmented_reduce_policy full_policy = current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
-  static constexpr reduce::agent_reduce_policy large_pol = full_policy.large_reduce;
+  static constexpr ReducePassPolicy large_pol = full_policy.large_reduce;
 
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using large_agent_policy_t =
-    AgentReducePolicy<0,
-                      0,
-                      void,
-                      large_pol.vec_size,
-                      large_pol.block_algorithm,
-                      large_pol.load_modifier,
-                      NoScaling<large_pol.threads_per_block, large_pol.items_per_thread>>;
+    agent_reduce_policy<0,
+                        0,
+                        void,
+                        large_pol.vec_size,
+                        large_pol.block_algorithm,
+                        large_pol.load_modifier,
+                        NoScaling<large_pol.threads_per_block, large_pol.items_per_thread>>;
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Medium segment agent (one warp per segment)
@@ -330,17 +330,17 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   static constexpr segmented_reduce_policy full_policy = current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
-  static constexpr reduce::agent_reduce_policy large_pol = full_policy.large_reduce;
+  static constexpr ReducePassPolicy large_pol = full_policy.large_reduce;
 
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using large_agent_policy_t =
-    AgentReducePolicy<0,
-                      0,
-                      void,
-                      large_pol.vec_size,
-                      large_pol.block_algorithm,
-                      large_pol.load_modifier,
-                      NoScaling<large_pol.threads_per_block, large_pol.items_per_thread>>;
+    agent_reduce_policy<0,
+                        0,
+                        void,
+                        large_pol.vec_size,
+                        large_pol.block_algorithm,
+                        large_pol.load_modifier,
+                        NoScaling<large_pol.threads_per_block, large_pol.items_per_thread>>;
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
 
   // Medium segment agent (one warp per segment)
