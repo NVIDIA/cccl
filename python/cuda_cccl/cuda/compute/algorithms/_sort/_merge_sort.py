@@ -61,6 +61,41 @@ class _MergeSort:
             self.op_cccl,
         )
 
+    @classmethod
+    def deserialize(
+        cls,
+        blob: bytes,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_values: DeviceArrayLike | IteratorT | None,
+        d_out_keys: DeviceArrayLike,
+        d_out_values: DeviceArrayLike | None,
+        op: Operator,
+    ) -> "_MergeSort":
+        """Reconstruct a merge_sort from a blob produced by :meth:`serialize`."""
+        present_in_values = d_in_values is not None
+        present_out_values = d_out_values is not None
+        assert present_in_values == present_out_values
+
+        obj = cls.__new__(cls)
+        obj.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
+        obj.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values)
+        obj.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
+        obj.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values)
+        obj.op_adapter = make_op_adapter(op)
+
+        # Reconstruct the op without triggering JIT (the device code is in the blob).
+        value_type = cccl.get_value_type(d_in_keys)
+        obj.op_cccl = obj.op_adapter.compile_for_load(
+            (value_type, value_type), types.int8
+        )
+
+        obj.build_result = _bindings.DeviceMergeSortBuildResult.deserialize(blob)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a bytes blob representing this built merge_sort."""
+        return self.build_result.serialize()
+
     def __call__(
         self,
         *,
