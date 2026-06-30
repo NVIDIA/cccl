@@ -56,7 +56,7 @@ At a CUDA Runtime-style boundary, catch ``cuda::cuda_error`` and return its stor
 
    #include <cuda/stream>
 
-   cudaError_t use_stream(cuda::stream_ref stream) {
+   cudaError_t use_stream(cuda::stream_ref stream) noexcept {
      try {
        // stream usage
        stream.sync();
