@@ -254,18 +254,40 @@ prefetch_block_load_tile(int linear_tid, RandomAccessIterator block_src_it, int 
     const unsigned int total_bytes = static_cast<unsigned int>(items_to_prefetch) * sizeof(input_t);
     const auto* const base         = reinterpret_cast<const char*>(::cuda::std::to_address(block_src_it));
 
-    _CCCL_PRAGMA_NOUNROLL()
-    for (unsigned int offset = static_cast<unsigned int>(linear_tid) * PrefetchStride; offset < total_bytes;
-         offset += static_cast<unsigned int>(ThreadsPerBlock) * PrefetchStride)
+    if constexpr (Prefetch == BlockLoadPrefetch::bulk_l2)
     {
-      // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
-      if constexpr (Prefetch == BlockLoadPrefetch::l1)
+      // One thread issues a single TMA bulk prefetch for the whole tile.
+      // cp.async.bulk.prefetch is fire-and-forget: no commit_group/wait_group needed.
+      // Requires SM_90+; falls back to per-thread L2 prefetch on older archs.
+      if (linear_tid == 0)
       {
-        asm volatile("prefetch.global.L1 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(base + offset)) : "memory");
+        const unsigned int aligned_size = total_bytes & ~15u; // size must be a multiple of 16
+        if (aligned_size > 0)
+        {
+#if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+          asm volatile("cp.async.bulk.prefetch.L2::evict_normal.bulk_group [%0], %1;"
+                       :
+                       : "l"(::cuda::ptx::__as_ptr_gmem(base)), "r"(aligned_size)
+                       : "memory");
+#endif
+        }
       }
-      else
+    }
+    else
+    {
+      _CCCL_PRAGMA_NOUNROLL()
+      for (unsigned int offset = static_cast<unsigned int>(linear_tid) * PrefetchStride; offset < total_bytes;
+           offset += static_cast<unsigned int>(ThreadsPerBlock) * PrefetchStride)
       {
-        asm volatile("prefetch.global.L2 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(base + offset)) : "memory");
+        // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
+        if constexpr (Prefetch == BlockLoadPrefetch::l1)
+        {
+          asm volatile("prefetch.global.L1 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(base + offset)) : "memory");
+        }
+        else
+        {
+          asm volatile("prefetch.global.L2 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(base + offset)) : "memory");
+        }
       }
     }
   }
@@ -840,10 +862,16 @@ enum class BlockLoadPrefetch : int
   //! No prefetch hint emitted. Default behavior, identical to not specifying a prefetch level.
   none,
   //! Emit an L2 prefetch hint (``prefetch.global.L2``) before loading each cache line.
+  //! All threads collectively cover the tile, each issuing one instruction per cache line.
   l2,
   //! Emit an L1 prefetch hint before loading each cache line. Falls back to L2 on architectures
   //! that do not support real L1 prefetch.
   l1,
+  //! Emit a TMA bulk prefetch into L2 (``cp.async.bulk.prefetch``) before loading the tile.
+  //! One elected thread issues a single instruction for the whole tile via the TMA engine,
+  //! leaving the SM load/store units free. Requires SM_90 or later (Hopper/Blackwell).
+  //! Falls back to ``l2`` on older architectures.
+  bulk_l2,
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -857,6 +885,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadPrefetch prefetch
       return os << "detail::BlockLoadPrefetch::l2";
     case BlockLoadPrefetch::l1:
       return os << "detail::BlockLoadPrefetch::l1";
+    case BlockLoadPrefetch::bulk_l2:
+      return os << "detail::BlockLoadPrefetch::bulk_l2";
     default:
       return os << "<unknown detail::BlockLoadPrefetch: " << static_cast<int>(prefetch) << ">";
   }
