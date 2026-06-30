@@ -38,7 +38,7 @@
 
 // __make_unsigned in clang doesn't work with sccache-dist
 // see: https://github.com/llvm/llvm-project/issues/206201
-#if defined(__clang__) && defined(__PREPROCESS_ONLY__)
+#if _CCCL_COMPILER(CLANG) && defined(__PREPROCESS_ONLY__)
 #  undef _CCCL_BUILTIN_MAKE_UNSIGNED
 #endif
 
