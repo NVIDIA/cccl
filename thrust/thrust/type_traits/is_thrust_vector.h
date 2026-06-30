@@ -17,8 +17,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/execution_policy.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
