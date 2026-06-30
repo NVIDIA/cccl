@@ -31,11 +31,13 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
+#include "util/aot_serialize.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/nvjitlink.h"
 #include "util/types.h"
+#include <cccl/c/aot.h>
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -732,5 +734,123 @@ try
 catch (const std::exception& exc)
 {
   printf("\nEXCEPTION in cccl_device_reduce_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult
+cccl_device_reduce_serialize(const cccl_device_reduce_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->runtime_policy == nullptr || build_ptr->runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  *out_buf  = nullptr;
+  *out_size = 0;
+
+  using namespace cccl::aot;
+  buffer_writer w;
+  write_header(w, CCCL_AOT_ALGO_REDUCE, build_ptr->payload_kind, build_ptr->cc);
+  w.write_pod<uint64_t>(build_ptr->accumulator_size);
+  w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->determinism));
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_cstring(build_ptr->single_tile_kernel_lowered_name);
+  w.write_cstring(build_ptr->single_tile_second_kernel_lowered_name);
+  w.write_cstring(build_ptr->reduction_kernel_lowered_name);
+  w.write_cstring(build_ptr->nondeterministic_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_reduce_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_reduce_deserialize(cccl_device_reduce_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_REDUCE);
+
+  const uint64_t accum_size = r.read_pod<uint64_t>();
+  const auto determinism_v  = r.read_pod<uint32_t>();
+  if (determinism_v > static_cast<uint32_t>(CCCL_GPU_TO_GPU))
+  {
+    throw std::runtime_error(std::format("aot blob: invalid determinism ({})", determinism_v));
+  }
+  const auto determinism = static_cast<cccl_determinism_t>(determinism_v);
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  if (payload_size == 0)
+  {
+    throw std::runtime_error("aot blob: empty payload");
+  }
+
+  const size_t policy_size =
+    (determinism == CCCL_NOT_GUARANTEED)
+      ? sizeof(cub::detail::reduce_nondeterministic::policy_selector)
+      : sizeof(cub::detail::reduce::policy_selector);
+  std::unique_ptr<void, decltype(&std::free)> policy(std::malloc(policy_size), std::free);
+  if (!policy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  r.read_into(policy.get(), policy_size);
+
+  std::unique_ptr<char[]> n_single_tile{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_single_tile_second{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_reduction{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_nondeterministic{r.read_cstring_dup()};
+
+  cccl_device_reduce_build_result_t result{};
+  result.cc                                     = static_cast<int>(h.cc);
+  result.payload_kind                           = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.accumulator_size                       = accum_size;
+  result.determinism                            = determinism;
+  result.payload                                = payload_owner.release();
+  result.payload_size                           = payload_size;
+  result.runtime_policy                         = policy.release();
+  result.runtime_policy_size                    = policy_size;
+  result.single_tile_kernel_lowered_name        = n_single_tile.release();
+  result.single_tile_second_kernel_lowered_name = n_single_tile_second.release();
+  result.reduction_kernel_lowered_name          = n_reduction.release();
+  result.nondeterministic_kernel_lowered_name   = n_nondeterministic.release();
+  *build_ptr                                    = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_reduce_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }
