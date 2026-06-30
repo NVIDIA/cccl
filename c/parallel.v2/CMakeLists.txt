@@ -90,7 +90,10 @@ if (WIN32)
     cccl.c.parallel.v2
     PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4459>
   )
-  target_compile_definitions(cccl.c.parallel.v2 PRIVATE CATCH_CONFIG_NO_WINDOWS_SEH)
+  target_compile_definitions(
+    cccl.c.parallel.v2
+    PRIVATE CATCH_CONFIG_NO_WINDOWS_SEH
+  )
 endif()
 
 target_compile_definitions(

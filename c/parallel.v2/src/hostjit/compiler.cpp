@@ -24,8 +24,8 @@
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Support/thread.h>
+#include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
 
@@ -99,7 +99,9 @@ template <class Fn>
 static bool runWithLargeStack(Fn&& fn)
 {
   bool result = false;
-  llvm::thread worker(std::optional<unsigned>(kFrontendStackSize), [&] { result = fn(); });
+  llvm::thread worker(std::optional<unsigned>(kFrontendStackSize), [&] {
+    result = fn();
+  });
   worker.join();
   return result;
 }
@@ -259,7 +261,9 @@ public:
     compiler.getFrontendOpts().OutputFile = pch_output_path;
 
     clang::GeneratePCHAction pch_action;
-    bool success = runWithLargeStack([&] { return compiler.ExecuteAction(pch_action); });
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(pch_action);
+    });
 
     diag_stream.flush();
     diagnostics += diag_output;
@@ -499,7 +503,9 @@ public:
     llvm::LLVMContext llvm_context;
 
     clang::EmitLLVMOnlyAction emit_llvm_action(&llvm_context);
-    bool success = runWithLargeStack([&] { return compiler.ExecuteAction(emit_llvm_action); });
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_llvm_action);
+    });
 
     if (config.trace_includes && compiler.hasSourceManager())
     {
@@ -877,7 +883,9 @@ public:
 
     llvm::LLVMContext llvm_context;
     clang::EmitLLVMOnlyAction emit_llvm_action(&llvm_context);
-    bool success = runWithLargeStack([&] { return compiler.ExecuteAction(emit_llvm_action); });
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_llvm_action);
+    });
 
     if (success)
     {
@@ -1104,7 +1112,9 @@ public:
     }
 
     clang::EmitObjAction emit_action;
-    bool success = runWithLargeStack([&] { return compiler.ExecuteAction(emit_action); });
+    bool success = runWithLargeStack([&] {
+      return compiler.ExecuteAction(emit_action);
+    });
 
     if (config.trace_includes && compiler.hasSourceManager())
     {
