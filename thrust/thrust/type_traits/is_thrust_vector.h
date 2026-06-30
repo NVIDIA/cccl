@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/type_traits/is_thrust_vector.h
