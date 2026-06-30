@@ -29,6 +29,9 @@ typedef struct cccl_device_transform_build_result_t
   void* payload;
   size_t payload_size;
   void* jit_compiler;
+#if defined(_WIN32)
+  void* first_call_state;
+#endif // _WIN32
   void* transform_fn;
 } cccl_device_transform_build_result_t;
 
