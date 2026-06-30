@@ -326,7 +326,8 @@ struct DeviceBatchedTopK
   //!
   //! .. note::
   //!
-  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!    The behavior is undefined if an output range overlaps another output range or any input range.
+  //!    Input ranges may overlap one another.
   //!
   //! - @devicestorage
   //!
@@ -403,7 +404,7 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MaxKeys");
     return detail::dispatch_batched_topk<detail::topk::select::max>(
@@ -427,7 +428,8 @@ struct DeviceBatchedTopK
   //!
   //! .. note::
   //!
-  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!    The behavior is undefined if an output range overlaps another output range or any input range.
+  //!    Input ranges may overlap one another.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -493,7 +495,7 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxKeys");
     return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
@@ -516,7 +518,8 @@ struct DeviceBatchedTopK
   //!
   //! .. note::
   //!
-  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!    The behavior is undefined if an output range overlaps another output range or any input range.
+  //!    Input ranges may overlap one another.
   //!
   //! - @devicestorage
   //!
@@ -593,7 +596,7 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MinKeys");
     return detail::dispatch_batched_topk<detail::topk::select::min>(
@@ -615,7 +618,8 @@ struct DeviceBatchedTopK
   //!
   //! .. note::
   //!
-  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!    The behavior is undefined if an output range overlaps another output range or any input range.
+  //!    Input ranges may overlap one another.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -681,7 +685,7 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinKeys");
     return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
@@ -708,7 +712,8 @@ struct DeviceBatchedTopK
   //!
   //! .. note::
   //!
-  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!    The behavior is undefined if an output range overlaps another output range or any input range.
+  //!    Input ranges may overlap one another.
   //!
   //! - @devicestorage
   //!
@@ -802,7 +807,7 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MaxPairs");
     return detail::dispatch_batched_topk<detail::topk::select::max>(
@@ -903,7 +908,7 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxPairs");
     return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
@@ -918,7 +923,8 @@ struct DeviceBatchedTopK
   //!
   //! .. note::
   //!
-  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!    The behavior is undefined if an output range overlaps another output range or any input range.
+  //!    Input ranges may overlap one another.
   //!
   //! - @devicestorage
   //!
@@ -1012,7 +1018,7 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MinPairs");
     return detail::dispatch_batched_topk<detail::topk::select::min>(
@@ -1113,7 +1119,7 @@ struct DeviceBatchedTopK
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     NumSegmentsParameterT num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinPairs");
     return detail::dispatch_with_env(env, [&](auto /* tuning */, void* storage, size_t& bytes, auto /* stream */) {
