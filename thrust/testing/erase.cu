@@ -10,8 +10,10 @@ struct TestVectorRangeEraseSingleElement
   {
     Vector v{5};
 
-    auto prev_size = v.size();
-    auto new_size  = v.size() - 1ul;
+    typename Vector::size_type erased{1};
+
+    auto prev_size{v.size()};
+    auto new_size{v.size() - erased};
 
     auto del = thrust::erase(v, 5);
 
@@ -32,8 +34,10 @@ struct TestVectorRangeEraseMultipleElements
   {
     Vector v{1, 2, 3, 5, 5, 4, 5};
 
-    auto prev_size = v.size();
-    auto new_size  = v.size() - 3ul;
+    typename Vector::size_type erased{3};
+
+    auto prev_size{v.size()};
+    auto new_size{v.size() - erased};
 
     auto del = thrust::erase(v, 5);
 
@@ -55,8 +59,10 @@ struct TestVectorRangeEraseFirstElement
   {
     Vector v{0, 1, 2, 3};
 
-    auto prev_size = v.size();
-    auto new_size  = v.size() - 1ul;
+    typename Vector::size_type erased{1};
+
+    auto prev_size{v.size()};
+    auto new_size{prev_size - erased};
 
     auto del = thrust::erase(v, 0);
 
@@ -78,8 +84,8 @@ struct TestVectorRangeEraseEmptyVector
   {
     Vector v{};
 
-    auto prev_size = v.size();
-    auto new_size  = prev_size;
+    auto prev_size{v.size()};
+    auto new_size{prev_size};
 
     auto del = thrust::erase(v, 0);
 
@@ -101,8 +107,8 @@ struct TestVectorRangeEraseElementMissing
   {
     Vector v{1, 2, 3, 4};
 
-    auto prev_size = v.size();
-    auto new_size  = prev_size;
+    auto prev_size{v.size()};
+    auto new_size{prev_size};
 
     auto del = thrust::erase(v, 0);
 
@@ -124,8 +130,10 @@ struct TestVectorRangeEraseAllElements
   {
     Vector v{5, 5, 5, 5};
 
-    auto prev_size = v.size();
-    auto new_size  = 0ul;
+    typename Vector::size_type erased{4};
+
+    auto prev_size{v.size()};
+    auto new_size{prev_size - erased};
 
     auto del = thrust::erase(v, 5);
 
@@ -147,8 +155,10 @@ struct TestVectorRangeEraseLastElement
   {
     Vector v{1, 2, 3, 5};
 
-    auto prev_size = v.size();
-    auto new_size  = prev_size - 1ul;
+    typename Vector::size_type erased{1};
+
+    auto prev_size{v.size()};
+    auto new_size{prev_size - erased};
 
     auto del = thrust::erase(v, 5);
 
@@ -170,8 +180,10 @@ struct TestVectorRangeEraseConsecutiveElementsAtStart
   {
     Vector v{5, 5, 5, 1, 2, 3};
 
-    auto prev_size = v.size();
-    auto new_size  = prev_size - 3ul;
+    typename Vector::size_type erased{3};
+
+    auto prev_size{v.size()};
+    auto new_size{prev_size - erased};
 
     auto del = thrust::erase(v, 5);
 
@@ -196,8 +208,10 @@ struct TestVectorRangeEraseConsecutiveElementsAtEnd
   {
     Vector v{1, 2, 3, 5, 5, 5};
 
-    auto prev_size = v.size();
-    auto new_size  = prev_size - 3ul;
+    typename Vector::size_type erased{3};
+
+    auto prev_size{v.size()};
+    auto new_size{prev_size - erased};
 
     auto del = thrust::erase(v, 5);
 
@@ -222,8 +236,10 @@ struct TestVectorRangeEraseConsecutiveElementsAtMid
   {
     Vector v{1, 2, 5, 5, 5, 3, 4};
 
-    auto prev_size = v.size();
-    auto new_size  = prev_size - 3ul;
+    typename Vector::size_type erased{3};
+
+    auto prev_size{v.size()};
+    auto new_size{prev_size - erased};
 
     auto del = thrust::erase(v, 5);
 
@@ -248,8 +264,10 @@ struct TestVectorRangeEraseAlternatingElements
   {
     Vector v{5, 1, 5, 2, 5, 3, 5, 4};
 
-    auto prev_size = v.size();
-    auto new_size  = prev_size - 4ul;
+    typename Vector::size_type erased{4};
+
+    auto prev_size{v.size()};
+    auto new_size{prev_size - erased};
 
     auto del = thrust::erase(v, 5);
 
@@ -274,8 +292,8 @@ struct TestVectorRangeEraseNoneFromSingleElementVector
   {
     Vector v{1};
 
-    auto prev_size = v.size();
-    auto new_size  = prev_size;
+    auto prev_size{v.size()};
+    auto new_size{prev_size};
 
     auto del = thrust::erase(v, 5);
 
@@ -298,10 +316,11 @@ struct TestVectorRangeEraseBigVector
 {
   void operator()(size_t)
   {
-    Vector v(10000, 5);
+    const typename Vector::size_type n{10000};
+    Vector v(n, 5);
 
-    auto prev_size = v.size();
-    auto new_size  = 0ul;
+    auto prev_size{v.size()};
+    auto new_size{prev_size - n};
 
     auto del = thrust::erase(v, 5);
 
