@@ -556,8 +556,7 @@ try
   }
 
   std::unique_ptr<char[]> payload(static_cast<char*>(build_ptr->payload));
-  std::unique_ptr<cub::detail::reduce::policy_selector> policy(
-    static_cast<cub::detail::reduce::policy_selector*>(build_ptr->runtime_policy));
+  delete static_cast<cub::detail::reduce::policy_selector*>(build_ptr->runtime_policy);
   if (build_ptr->library != nullptr)
   {
     check(cuLibraryUnload(build_ptr->library));
