@@ -11,6 +11,7 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_pool>
+#include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 
 #include <vector>
@@ -74,7 +75,7 @@ NCCL_COMM_TEST("nccl_communicator_ref send/recv ring")
   {
     const cuda::std::int32_t prev = (r + n - 1) % n;
 
-    auto pool = cuda::pinned_default_memory_pool();
+    auto pool = cuda::mr::legacy_pinned_memory_resource{};
     const cuda::host_buffer<cuda::std::int32_t> expected =
       cuda::make_buffer(recv[r].stream(), pool, recv[r].size(), prev);
     const cuda::host_buffer<cuda::std::int32_t> actual = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
@@ -136,7 +137,7 @@ NCCL_COMM_TEST("nccl_communicator_ref send/recv transports trivially copyable pa
   {
     const int prev = (r + n - 1) % n;
 
-    auto pool                               = cuda::pinned_default_memory_pool();
+    auto pool                               = cuda::mr::legacy_pinned_memory_resource{};
     const cuda::host_buffer<payload> actual = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
     for (cuda::std::size_t k = 0; k < actual.size(); ++k)
