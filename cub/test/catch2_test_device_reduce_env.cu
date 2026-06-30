@@ -1110,9 +1110,9 @@ C2H_TEST("ReduceByKeyPolicy", "[reduce][device]")
     7,
     cub::BLOCK_LOAD_DIRECT,
     cub::LOAD_DEFAULT,
-    cub::detail::BlockLoadPrefetch::none,
     cub::BLOCK_SCAN_WARP_SCANS,
-    {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
+    {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165},
+    cub::detail::BlockLoadPrefetch::none};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init

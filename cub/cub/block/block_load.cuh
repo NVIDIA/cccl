@@ -250,14 +250,13 @@ prefetch_block_load_tile(int linear_tid, RandomAccessIterator block_src_it, int 
 {
   if constexpr (can_prefetch_block_load<RandomAccessIterator>)
   {
-    using input_t                         = cub::detail::it_value_t<RandomAccessIterator>;
-    const ::cuda::std::size_t total_bytes = static_cast<::cuda::std::size_t>(items_to_prefetch) * sizeof(input_t);
-    const auto* const base                = reinterpret_cast<const char*>(::cuda::std::to_address(block_src_it));
+    using input_t                  = cub::detail::it_value_t<RandomAccessIterator>;
+    const unsigned int total_bytes = static_cast<unsigned int>(items_to_prefetch) * sizeof(input_t);
+    const auto* const base         = reinterpret_cast<const char*>(::cuda::std::to_address(block_src_it));
 
     _CCCL_PRAGMA_NOUNROLL()
-    for (::cuda::std::size_t offset = static_cast<::cuda::std::size_t>(linear_tid) * PrefetchStride;
-         offset < total_bytes;
-         offset += static_cast<::cuda::std::size_t>(ThreadsPerBlock) * PrefetchStride)
+    for (unsigned int offset = static_cast<unsigned int>(linear_tid) * PrefetchStride; offset < total_bytes;
+         offset += static_cast<unsigned int>(ThreadsPerBlock) * PrefetchStride)
     {
       // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
       if constexpr (Prefetch == BlockLoadPrefetch::l1)
@@ -964,7 +963,7 @@ template <typename T,
           detail::BlockLoadPrefetch Prefetch = detail::BlockLoadPrefetch::none> // Only effective with
                                                                                 // ``BLOCK_LOAD_DIRECT`` silently
                                                                                 // ignored for all other algorithms
-                                                                                class BlockLoad
+class BlockLoad
 {
   static constexpr int ThreadsPerBlock = BlockDimX * BlockDimY * BlockDimZ; // total threads in the block
 
