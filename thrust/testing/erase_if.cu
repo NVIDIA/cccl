@@ -12,8 +12,19 @@ struct IsFive
   }
 };
 
+template <class Vector>
+Vector make_vector(std::initializer_list<int> values)
+{
+  Vector v;
+  for (int x : values)
+  {
+    v.push_back(static_cast<typename Vector::value_type>(x));
+  }
+  return v;
+}
+
 template <class Vector, class Predicate>
-void check_erase_if(Vector input, Predicate pred, Vector expected)
+void verify_erase_if(Vector input, Predicate pred, const Vector& expected)
 {
   const auto old_size = input.size();
 
@@ -24,12 +35,18 @@ void check_erase_if(Vector input, Predicate pred, Vector expected)
   ASSERT_EQUAL(input.size(), expected.size());
 }
 
+template <class Vector, class Predicate>
+void verify_erase_if(std::initializer_list<int> input, Predicate pred, std::initializer_list<int> expected)
+{
+  verify_erase_if<Vector>(make_vector<Vector>(input), pred, make_vector<Vector>(expected));
+}
+
 template <class Vector>
 struct TestVectorRangeEraseIfSingleElement
 {
   void operator()(size_t)
   {
-    check_erase_if(Vector{5}, IsFive{}, Vector{});
+    verify_erase_if<Vector>({5}, IsFive{}, {});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfSingleElement, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -42,7 +59,7 @@ struct TestVectorRangeEraseIfMultipleElements
 {
   void operator()(size_t)
   {
-    check_erase_if(Vector{1, 2, 3, 5, 5, 4, 5}, IsFive{}, Vector{1, 2, 3, 4});
+    verify_erase_if<Vector>({1, 2, 3, 5, 5, 4, 5}, IsFive{}, {1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfMultipleElements, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -55,7 +72,7 @@ struct TestVectorRangeEraseIfEmptyVector
 {
   void operator()(size_t)
   {
-    check_erase_if(Vector{}, IsFive{}, Vector{});
+    verify_erase_if<Vector>({}, IsFive{}, {});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfEmptyVector, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -68,7 +85,7 @@ struct TestVectorRangeEraseIfNoMatch
 {
   void operator()(size_t)
   {
-    check_erase_if(Vector{1, 2, 3, 4}, IsFive{}, Vector{1, 2, 3, 4});
+    verify_erase_if<Vector>({1, 2, 3, 4}, IsFive{}, {1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfNoMatch, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -81,7 +98,7 @@ struct TestVectorRangeEraseIfAllMatch
 {
   void operator()(size_t)
   {
-    check_erase_if(Vector{5, 5, 5, 5}, IsFive{}, Vector{});
+    verify_erase_if<Vector>({5, 5, 5, 5}, IsFive{}, {});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfAllMatch, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -94,7 +111,7 @@ struct TestVectorRangeEraseIfAlternatingMatches
 {
   void operator()(size_t)
   {
-    check_erase_if(Vector{5, 1, 5, 2, 5, 3, 5, 4}, IsFive{}, Vector{1, 2, 3, 4});
+    verify_erase_if<Vector>({5, 1, 5, 2, 5, 3, 5, 4}, IsFive{}, {1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfAlternatingMatches,
@@ -112,7 +129,7 @@ struct TestVectorRangeEraseIfBigVector
   {
     const typename Vector::size_type n{10000};
 
-    check_erase_if(Vector(n, typename Vector::value_type{5}), IsFive{}, Vector{});
+    verify_erase_if<Vector>(Vector(n, typename Vector::value_type{5}), IsFive{}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfBigVector, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
