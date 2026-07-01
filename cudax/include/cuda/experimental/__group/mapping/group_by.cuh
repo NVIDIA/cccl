@@ -51,11 +51,11 @@ _CCCL_DEVICE constexpr non_exhaustive_t non_exhaustive;
 //   `__group_mapping_result` concept
 
 // todo(dabayer): do we want to add stride parameter?
-template <::cuda::std::size_t _Count, bool _IsExhaustive>
+template <::cuda::std::size_t _UnitCount, bool _IsExhaustive>
 class group_by
 {
-  static_assert(_Count != 0, "_Count must not be zero");
-  static_assert(::cuda::std::in_range<unsigned>(_Count), "_Count must be within uint32_t range");
+  static_assert(_UnitCount != 0, "_UnitCount must not be zero");
+  static_assert(::cuda::std::in_range<unsigned>(_UnitCount), "_UnitCount must be within uint32_t range");
 
 public:
   _CCCL_HIDE_FROM_ABI explicit group_by() = default;
@@ -64,9 +64,9 @@ public:
   _CCCL_REQUIRES((!_IsExhaustive))
   _CCCL_DEVICE_API constexpr group_by(const non_exhaustive_t&) noexcept {}
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
   {
-    return _Count;
+    return _UnitCount;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
@@ -74,9 +74,9 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr unsigned count() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr unsigned unit_count() const noexcept
   {
-    return static_cast<unsigned>(_Count);
+    return static_cast<unsigned>(_UnitCount);
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
@@ -84,10 +84,10 @@ public:
   map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
-    constexpr auto __static_prev_nunits  = _PrevMappingResult::static_count();
+    constexpr auto __static_prev_nunits  = _PrevMappingResult::static_unit_count();
     constexpr auto __static_curr_ngroups =
       (__static_prev_nunits != ::cuda::std::dynamic_extent)
-        ? __static_prev_nunits / _Count
+        ? __static_prev_nunits / _UnitCount
         : ::cuda::std::dynamic_extent;
     constexpr auto __static_ngroups =
       (__static_prev_ngroups != ::cuda::std::dynamic_extent && __static_curr_ngroups != ::cuda::std::dynamic_extent)
@@ -96,7 +96,7 @@ public:
 
     using _MappingResult =
       __mapping_result<__static_ngroups,
-                       _Count,
+                       _UnitCount,
                        _PrevMappingResult::is_always_exhaustive() && _IsExhaustive,
                        _PrevMappingResult::is_always_contiguous()>;
 
@@ -105,10 +105,10 @@ public:
       return _MappingResult::invalid();
     }
 
-    const auto __prev_nunits     = __prev_mapping_result.count();
-    const auto __prev_unit_rank  = __prev_mapping_result.rank();
-    const auto __curr_ngroups    = __prev_nunits / count();
-    const auto __curr_group_rank = __prev_unit_rank / count();
+    const auto __prev_nunits     = __prev_mapping_result.unit_count();
+    const auto __prev_unit_rank  = __prev_mapping_result.unit_rank();
+    const auto __curr_ngroups    = __prev_nunits / unit_count();
+    const auto __curr_group_rank = __prev_unit_rank / unit_count();
     const auto __ngroups         = __prev_mapping_result.group_count() * __curr_ngroups;
 
     // If the mapping is exhaustive, check the preconditions, otherwise return invalid mapping for the remainder.
@@ -116,14 +116,14 @@ public:
     {
       if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
       {
-        static_assert(__static_prev_nunits % _Count == 0, "group_by mapping _IsExhaustive precondition violation");
+        static_assert(__static_prev_nunits % _UnitCount == 0, "group_by mapping _IsExhaustive precondition violation");
       }
       else
       {
-        _CCCL_ASSERT(__prev_nunits % count() == 0, "group_by mapping _IsExhaustive precondition violation");
+        _CCCL_ASSERT(__prev_nunits % unit_count() == 0, "group_by mapping _IsExhaustive precondition violation");
       }
     }
-    else if (__prev_nunits % count() != 0)
+    else if (__prev_nunits % unit_count() != 0)
     {
       if (__curr_group_rank >= __curr_ngroups)
       {
@@ -132,7 +132,7 @@ public:
     }
 
     const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __curr_group_rank;
-    const auto __n          = count();
+    const auto __n          = unit_count();
     const auto __rank       = __prev_unit_rank % __n;
     const auto __lane_mask =
       (::cuda::std::is_same_v<_Unit, thread_level>)
@@ -163,7 +163,7 @@ public:
     _CCCL_ASSERT(__count > 0, "__count cannot be 0");
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
   {
     return ::cuda::std::dynamic_extent;
   }
@@ -173,7 +173,7 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned unit_count() const noexcept
   {
     return __count_;
   }
@@ -193,8 +193,8 @@ public:
       return _MappingResult::invalid();
     }
 
-    const auto __prev_nunits     = __prev_mapping_result.count();
-    const auto __prev_unit_rank  = __prev_mapping_result.rank();
+    const auto __prev_nunits     = __prev_mapping_result.unit_count();
+    const auto __prev_unit_rank  = __prev_mapping_result.unit_rank();
     const auto __curr_ngroups    = __prev_nunits / __count_;
     const auto __curr_group_rank = __prev_unit_rank / __count_;
     const auto __ngroups         = __prev_mapping_result.group_count() * __curr_ngroups;

@@ -208,7 +208,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
     c2h::device_vector<std::size_t> indices(num_empty_segments);
     c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_segments - 1);
     auto begin = cuda::constant_iterator(key_t{0});
-    auto end   = begin + num_empty_segments;
+    auto end   = begin + static_cast<std::ptrdiff_t>(num_empty_segments);
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), begin_offsets.begin());
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), end_offsets.begin());
   }

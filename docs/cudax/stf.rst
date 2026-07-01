@@ -732,6 +732,8 @@ Lower-level task API
 A lower-level API that does not rely on lambda functions is also
 available, and is described `here <stf/lower_level_api.rst>`__.
 
+.. _stf-synchronization:
+
 Synchronization
 ---------------
 
@@ -788,12 +790,17 @@ context object. It is typically used in combination with the ``reduce()``
 access mode for dynamic control flow. ``auto val = ctx.wait(ld)`` is a
 blocking call that returns the content of the ``ld`` logical data. The type of
 the returned value is defined by the ``owning_container_of<interface>`` trait
-class where ``interface`` is the data interface of the logical data. The
-``wait`` method therefore cannot be called on a logical data with an
-interface that does not overload this trait class.
+class where ``interface`` is the data interface of the logical data. For a
+logical data with a regular data interface, the ``wait`` method therefore
+cannot be called unless that interface overloads this trait class.
 
 This mechanism is illustrated in the dot product example of the
 :ref:`reduce_access_mode` section.
+
+``ctx.wait`` can also be called on a :ref:`token <stf-tokens>`. Since a token
+carries no content, ``ctx.wait(token)`` returns ``void`` and simply blocks the
+host until the work the token depends on has completed (see the token section
+for an example).
 
 Places
 ------
@@ -1793,6 +1800,8 @@ depend on the completion of the work in the streams used for any preceding
 It is possible to retrieve the access mode used to freeze a logical data with
 the ``get_access_mode()`` method of the ``frozen_logical_data`` object.
 
+.. _stf-tokens:
+
 Tokens
 ^^^^^^
 
@@ -1842,6 +1851,27 @@ or an ``rw()`` access. There is no need to set any content in the token
 A token corresponds to a ``logical_data<void_interface>`` object, so that the
 ``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
 returns an object with a ``token`` type.
+
+The blocking ``ctx.wait`` method (see :ref:`the synchronization section
+<stf-synchronization>`) can also be called on a token. Because a token has no
+content to materialize, ``ctx.wait(token)`` returns ``void`` and simply blocks
+the calling host thread until the work the token depends on has completed. This
+is convenient to synchronize the host with a phase of computation expressed with
+tokens before performing host-side operations on externally managed state (for
+example, operations that are not suitable for a ``host_launch`` callback):
+
+.. code:: cpp
+
+    auto token = ctx.token();
+
+    ctx.task(token.rw())->*[&](cudaStream_t stream) {
+        // launch some asynchronous work on user-provided buffers
+    };
+
+    // Block until the work above has completed.
+    ctx.wait(token);
+
+    // The host can now safely operate on the externally managed state.
 
 Debugging
 ---------

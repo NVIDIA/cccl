@@ -362,7 +362,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
     tile_queue.ResetDrain();
   }
 
-  const int output_bin = (blockIdx.x * blockDim.x) + threadIdx.x;
+  const int output_bin = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)

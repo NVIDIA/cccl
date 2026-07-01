@@ -23,8 +23,8 @@
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
-#include <cuda/std/cstring>
 
 #include <cuda/std/__cccl/prologue.h>
 

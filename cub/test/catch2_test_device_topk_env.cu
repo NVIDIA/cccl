@@ -45,7 +45,7 @@ struct topk_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::detail::topk::topk_policy
   {
-    return {ThreadsPerBlock, 1, 8, cub::BLOCK_LOAD_DIRECT, cub::BLOCK_SCAN_WARP_SCANS};
+    return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::BLOCK_SCAN_WARP_SCANS, 8};
   }
 };
 

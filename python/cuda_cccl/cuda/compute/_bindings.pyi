@@ -459,7 +459,7 @@ class DeviceHistogramBuildResult:
         d_samples: Iterator,
         num_levels: int,
         d_histogram: Iterator,
-        h_levels: Value,
+        level_type: TypeInfo,
         num_rows: int,
         row_stride_samples: int,
         is_evenly_segmented: bool,
