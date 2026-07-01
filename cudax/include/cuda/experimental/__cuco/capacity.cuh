@@ -11,7 +11,7 @@
 #ifndef _CUDAX___CUCO_CAPACITY_CUH
 #define _CUDAX___CUCO_CAPACITY_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
