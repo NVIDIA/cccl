@@ -84,7 +84,7 @@ __contains_if_fn(_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref)
 //! @brief Inserts all elements in the range `[first, first + n)` and returns the number of
 //! successful insertions if `pred` of the corresponding stencil returns true.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
-_CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_if_n(
   _InputIt __first,
   detail::__index_type __n,
   _StencilIt __stencil,
@@ -136,7 +136,7 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
 //! @brief Inserts all elements in the range `[first, first + n)` if `pred` of the corresponding
 //! stencil returns true.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
-_CCCL_KERNEL_ATTRIBUTES void
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
 __insert_if_n(_InputIt __first, detail::__index_type __n, _StencilIt __stencil, _Predicate __pred, _Ref __ref)
 {
   const auto __loop_stride = detail::__grid_stride() / _CgSize;
@@ -158,7 +158,7 @@ __insert_if_n(_InputIt __first, detail::__index_type __n, _StencilIt __stencil, 
 
 //! @brief Contains test with predicate.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
-_CCCL_KERNEL_ATTRIBUTES void __contains_if_n(
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __contains_if_n(
   _InputIt __first,
   detail::__index_type __n,
   _StencilIt __stencil,
