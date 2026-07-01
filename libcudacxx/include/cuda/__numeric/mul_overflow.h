@@ -73,9 +73,9 @@ template <class _Result, class _Lhs, class _Rhs>
   using _ULhs    = make_unsigned_t<_Lhs>;
   using _URhs    = make_unsigned_t<_Rhs>;
 
+  const auto __uabs_lhs        = static_cast<_ULhs>(::cuda::uabs(__lhs));
+  const auto __uabs_rhs        = static_cast<_URhs>(::cuda::uabs(__rhs));
   const auto __negative_result = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
-  const auto __ulhs            = static_cast<_ULhs>(::cuda::uabs(__lhs));
-  const auto __urhs            = static_cast<_URhs>(::cuda::uabs(__rhs));
 
   auto __overflow_mul = false;
 
@@ -90,89 +90,55 @@ template <class _Result, class _Lhs, class _Rhs>
                              ? (static_cast<_UResult>(1) << (__nbits - 1)) - static_cast<_UResult>(__negative_result ? 0 : 1)
                              : static_cast<_UResult>(-1);
 
-    if (__urhs != 0)
+    if (__uabs_rhs != 0)
     {
-      __overflow_mul = __ulhs > c / __urhs;
+      __overflow_mul = __uabs_lhs > c / __uabs_rhs;
     }
-    else if (__ulhs != 0)
+    else if (__uabs_lhs != 0)
     {
-      __overflow_mul = __urhs > c / __ulhs;
+      __overflow_mul = __uabs_rhs > c / __uabs_lhs;
     }
   }
 
-  // if (__overflow_mul)
-  // {
-  constexpr auto __max_nbits = ::cuda::std::max(__num_bits_v<_Lhs>, __num_bits_v<_Rhs>);
-
-  if constexpr ((sizeof(_Lhs) <= sizeof(int16_t) && sizeof(_Rhs) <= sizeof(int16_t))
-                && (is_signed_v<_Lhs> || is_signed_v<_Rhs>) )
+  // Floor to 16; smallest register size is 16-bits
+  constexpr auto __max_nbits = ::cuda::std::max({__num_bits_v<_Lhs>, __num_bits_v<_Rhs>, 16});
+  using _Up                  = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
+  _Up __result_lo            = 0;
+  _Up __ulhs                 = static_cast<_Up>(__lhs);
+  _Up __urhs                 = static_cast<_Up>(__rhs);
+  if constexpr ((__max_nbits <= sizeof(int16_t)))
   {
-    using _Up       = ::cuda::std::__make_nbit_int_t<16, is_signed_v<_Lhs> || is_signed_v<_Rhs>>;
-    _Up __result_lo = 0;
-    _Up __lhs2      = static_cast<_Up>(__lhs);
-    _Up __rhs2      = static_cast<_Up>(__rhs);
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-    {
-      NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.s16 %0, %1, %2;" : "=r"(__result_lo) : "r"(__lhs2), "r"(__rhs2)); }))
-    }
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
+      NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u16 %0, %1, %2;"
+                                        : "=h"(__result_lo)
+                                        : "h"(__ulhs), "h"(__urhs)); }))};
+    return {static_cast<_Result>(__result_lo), __overflow_mul};
+  }
+  else if constexpr ((__max_nbits <= sizeof(int32_t)))
+  {
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
+      NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u32 %0, %1, %2;"
+                                        : "=r"(__result_lo)
+                                        : "r"(__ulhs), "r"(__urhs)); }))};
+    return {static_cast<_Result>(__result_lo), __overflow_mul};
+  }
+  else if constexpr ((__max_nbits <= sizeof(int64_t)))
+  {
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
+      NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u64 %0, %1, %2;"
+                                        : "=l"(__result_lo)
+                                        : "l"(__ulhs), "l"(__urhs)); }))};
+    return {static_cast<_Result>(__result_lo), __overflow_mul};
+  }
+  else
+  {
+    // Multiply with overflow results in UB, which isn't allowed during constant
+    // evaluation. Instead, multiply the absolute values of lhs and rhs and
+    // apply negative sign if needed to get expected low-word result
+    const auto __uresult_lo = __cccl_uintmax_t{__uabs_lhs} * __cccl_uintmax_t{__uabs_rhs};
+    const auto __result_lo  = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
     return {__result_lo, __overflow_mul};
   }
-  // else if constexpr (sizeof(_Lhs) < sizeof(int64_t) && sizeof(_Rhs) < sizeof(int64_t))
-  // {
-  //   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-  //   {
-  //     NV_IF_TARGET(NV_IS_DEVICE, ({
-  //                    _Up __result_lo = 0;
-  //                    asm("mul.lo.u32 %0, %1, %2;"
-  //                        : "=r"(__result_lo)
-  //                        : "r"(static_cast<_Up>(__lhs)), "r"(static_cast<_Up>(__rhs)));
-  //                    return {__result_lo, __overflow_mul};
-  //                  }))
-  //   }
-  // }
-  // else if constexpr (sizeof(_Lhs) < sizeof(__cccl_uintmax_t) && sizeof(_Rhs) < sizeof(__cccl_uintmax_t))
-  // {
-  //   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-  //   {
-  //     NV_IF_TARGET(NV_IS_DEVICE, ({
-  //                    _Up __result_lo = 0;
-  //                    asm("mul.lo.u64 %0, %1, %2;"
-  //                        : "=r"(__result_lo)
-  //                        : "r"(static_cast<_Up>(__lhs)), "r"(static_cast<_Up>(__rhs)));
-  //                    return {__result_lo, __overflow_mul};
-  //                  }))
-  //   }
-  // }
-  // const auto __uresult_lo = __ulhs * __urhs;
-  // const auto __result_lo  = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
-  // return {__result_lo, __overflow_mul};
-
-  const auto __uresult_lo = __cccl_uintmax_t{__ulhs} * __cccl_uintmax_t{__urhs};
-  const auto __result_lo  = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
-  return {__result_lo, __overflow_mul};
-  // }
-  // else
-  // {
-  //   const auto __casted_lhs = static_cast<_Result>(__lhs);
-  //   const auto __casted_rhs = static_cast<_Result>(__rhs);
-  //   const auto __result_lo  = __casted_lhs * __casted_rhs;
-  //   return {__result_lo, __overflow_mul};
-  // }
-
-  // Multiply with overflow results in UB, which isn't allowed during constant
-  // evaluation. Instead, multiply the absolute values of lhs and rhs and
-  // apply negative sign if needed to get expected low-word result
-
-  // constexpr auto __max_nbits = ::cuda::std::max(__num_bits_v<_Lhs>, __num_bits_v<_Rhs>);
-  // using _Up                  = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
-  // _Up __uresult_lo           = 0;
-  // _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-  // {
-  //   NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.s32 %0, %1, %2;" : "=r"(__uresult_lo) : "r"(__urhs), "r"(__urhs));
-  //   }))
-  // }
-  // const auto __result_lo = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
-  // return {__result_lo, __overflow_mul};
 }
 
 #if !_CCCL_COMPILER(NVRTC)
