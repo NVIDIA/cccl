@@ -26,10 +26,11 @@ void verify_erase(Vector input, typename Vector::value_type value, Vector expect
   ASSERT_EQUAL(input, expected);
 }
 
-template <class Vector, class Predicate>
-void verify_erase(std::initializer_list<int> input, Predicate pred, std::initializer_list<int> expected)
+template <class Vector, class T>
+void verify_erase(
+  std::initializer_list<int> input, typename Vector::value_type value, std::initializer_list<int> expected)
 {
-  verify_erase<Vector>(make_vector<Vector>(input), pred, make_vector<Vector>(expected));
+  verify_erase<Vector>(make_vector<Vector>(input), value, make_vector<Vector>(expected));
 }
 
 template <class Vector>
