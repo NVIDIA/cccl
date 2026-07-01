@@ -117,7 +117,7 @@ private:
   //! @param __slots Span over the slot storage
   //!
   //! @return The total slot count
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr size_type __checked_capacity(storage_span_type __slots) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr size_type __checked_capacity(storage_span_type __slots) noexcept
   {
     if constexpr (_Capacity == ::cuda::std::dynamic_extent)
     {
@@ -140,7 +140,7 @@ public:
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
   //! @param __slots Span over the slot storage; must contain `capacity()` slots
-  _CCCL_HOST_DEVICE explicit constexpr fixed_capacity_map_ref(
+  _CCCL_HOST_DEVICE_API explicit constexpr fixed_capacity_map_ref(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __predicate,
@@ -160,7 +160,7 @@ public:
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
   //! @param __slots Span over the slot storage; must contain `capacity()` slots
-  _CCCL_HOST_DEVICE explicit constexpr fixed_capacity_map_ref(
+  _CCCL_HOST_DEVICE_API explicit constexpr fixed_capacity_map_ref(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     erased_key<_Key> __erased_key_sentinel,
@@ -179,7 +179,7 @@ public:
   //! @brief Returns the total number of slots.
   //!
   //! @return Total slot count (equal to the owning map's `capacity()`)
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr size_type capacity() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_type capacity() const noexcept
   {
     return __impl.capacity();
   }
@@ -187,7 +187,7 @@ public:
   //! @brief Returns the sentinel value used to represent an empty key slot.
   //!
   //! @return The sentinel value used to represent an empty key slot
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr key_type empty_key_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr key_type empty_key_sentinel() const noexcept
   {
     return __impl.empty_key_sentinel();
   }
@@ -195,7 +195,7 @@ public:
   //! @brief Returns the sentinel value used to represent an empty payload slot.
   //!
   //! @return The sentinel value used to represent an empty payload slot
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr mapped_type empty_value_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr mapped_type empty_value_sentinel() const noexcept
   {
     return __impl.empty_value_sentinel();
   }
@@ -203,7 +203,7 @@ public:
   //! @brief Returns the sentinel value used to represent an erased key slot.
   //!
   //! @return The sentinel value used to represent an erased key slot
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr key_type erased_key_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr key_type erased_key_sentinel() const noexcept
   {
     return __impl.erased_key_sentinel();
   }
@@ -211,7 +211,7 @@ public:
   //! @brief Returns the function used to compare keys for equality.
   //!
   //! @return The key equality comparator
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr key_equal key_eq() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr key_equal key_eq() const noexcept
   {
     return __impl.key_eq();
   }
@@ -219,7 +219,7 @@ public:
   //! @brief Returns the function(s) used to hash keys.
   //!
   //! @return The hasher used by this ref's probing scheme
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
   {
     return __impl.hash_function();
   }
@@ -227,7 +227,7 @@ public:
   //! @brief Returns the probing scheme used to resolve hash collisions.
   //!
   //! @return The probing scheme object
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr probing_scheme_type probing_scheme() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr probing_scheme_type probing_scheme() const noexcept
   {
     return __impl.probing_scheme();
   }
@@ -235,7 +235,7 @@ public:
   //! @brief Returns a const iterator to one past the last slot (the end sentinel).
   //!
   //! @return Past-the-end const iterator
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr const_iterator end() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator end() const noexcept
   {
     return __impl.end();
   }
@@ -243,7 +243,7 @@ public:
   //! @brief Returns an iterator to one past the last slot (the end sentinel).
   //!
   //! @return Past-the-end iterator
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr iterator end() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr iterator end() noexcept
   {
     return __impl.end();
   }
@@ -251,7 +251,7 @@ public:
   //! @brief Returns a span over the slot storage backing this ref.
   //!
   //! @return Span of `capacity()` slots
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr storage_span_type storage_span() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr storage_span_type storage_span() const noexcept
   {
     return storage_span_type{__impl.storage_ref().data(), __impl.capacity()};
   }
@@ -264,7 +264,7 @@ public:
   //! @param __value The key-value pair to insert
   //!
   //! @return `true` if the pair was inserted, `false` if the key already exists
-  _CCCL_DEVICE bool insert(value_type __value) noexcept
+  _CCCL_DEVICE_API bool insert(value_type __value) noexcept
   {
     return __impl.insert(__value);
   }
@@ -278,8 +278,8 @@ public:
   //!
   //! @return `true` if the pair was inserted, `false` if the key already exists
   template <class _ParentCG>
-  _CCCL_DEVICE bool insert(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
-                           value_type __value) noexcept
+  _CCCL_DEVICE_API bool
+  insert(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, value_type __value) noexcept
   {
     return __impl.insert(__group, __value);
   }
@@ -292,7 +292,7 @@ public:
   //!
   //! @return `true` if the key is found
   template <class _ProbeKey = key_type>
-  [[nodiscard]] _CCCL_DEVICE bool contains(_ProbeKey __key) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool contains(_ProbeKey __key) const noexcept
   {
     return __impl.contains(__key);
   }
@@ -307,7 +307,7 @@ public:
   //!
   //! @return `true` if the key is found
   template <class _ParentCG, class _ProbeKey = key_type>
-  [[nodiscard]] _CCCL_DEVICE bool
+  [[nodiscard]] _CCCL_DEVICE_API bool
   contains(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     return __impl.contains(__group, __key);

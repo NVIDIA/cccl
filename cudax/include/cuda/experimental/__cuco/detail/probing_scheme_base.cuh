@@ -58,18 +58,18 @@ public:
   {}
 
 #if _CCCL_CUDA_COMPILATION()
-  _CCCL_DEVICE constexpr auto operator*() const noexcept
+  _CCCL_DEVICE_API constexpr auto operator*() const noexcept
   {
     return __curr_index;
   }
 
-  _CCCL_DEVICE constexpr auto operator++() noexcept
+  _CCCL_DEVICE_API constexpr auto operator++() noexcept
   {
     __curr_index = (__curr_index + __step_.extent(0)) % __capacity_.extent(0);
     return *this;
   }
 
-  _CCCL_DEVICE constexpr auto operator++(int) noexcept
+  _CCCL_DEVICE_API constexpr auto operator++(int) noexcept
   {
     auto __temp = *this;
     ++(*this);

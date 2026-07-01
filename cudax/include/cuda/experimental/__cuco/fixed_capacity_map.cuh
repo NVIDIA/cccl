@@ -115,7 +115,7 @@ private:
   }
 
   //! @brief Returns the default memory pool of the current device.
-  [[nodiscard]] _CCCL_HOST static ::cuda::device_memory_pool_ref __default_memory_resource()
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::device_memory_pool_ref __default_memory_resource()
   {
     return ::cuda::device_default_memory_pool(::cuda::device_ref{::cuda::__driver::__ctxGetDevice()});
   }
@@ -131,7 +131,7 @@ public:
   //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C != ::cuda::std::dynamic_extent))
-  _CCCL_HOST fixed_capacity_map(
+  _CCCL_HOST_API fixed_capacity_map(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
@@ -159,7 +159,7 @@ public:
   //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
-  _CCCL_HOST fixed_capacity_map(
+  _CCCL_HOST_API fixed_capacity_map(
     size_type __capacity,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
@@ -189,7 +189,7 @@ public:
   //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
-  _CCCL_HOST fixed_capacity_map(
+  _CCCL_HOST_API fixed_capacity_map(
     size_type __n,
     double __desired_load_factor,
     empty_key<_Key> __empty_key_sentinel,
@@ -220,7 +220,7 @@ public:
   //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C != ::cuda::std::dynamic_extent))
-  _CCCL_HOST fixed_capacity_map(
+  _CCCL_HOST_API fixed_capacity_map(
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     erased_key<_Key> __erased_key_sentinel,
@@ -251,7 +251,7 @@ public:
   //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
-  _CCCL_HOST fixed_capacity_map(
+  _CCCL_HOST_API fixed_capacity_map(
     size_type __capacity,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
@@ -381,7 +381,7 @@ public:
   //! @brief Gets a device pointer to the underlying slot storage.
   //!
   //! @return Pointer to the underlying slot storage
-  [[nodiscard]] _CCCL_HOST value_type* data() const
+  [[nodiscard]] _CCCL_HOST_API value_type* data() const
   {
     return __impl->data();
   }

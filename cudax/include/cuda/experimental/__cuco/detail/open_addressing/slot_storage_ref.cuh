@@ -63,25 +63,25 @@ struct __slot_storage_ref
   //!
   //! @param __data Pointer to the first slot
   //! @param __capacity Total slot count (must equal the static `_Capacity` when it is static)
-  _CCCL_HOST_DEVICE constexpr __slot_storage_ref(_Value* __data, __size_type __capacity) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __slot_storage_ref(_Value* __data, __size_type __capacity) noexcept
       : __data_{__data}
       , __capacity_{__capacity}
   {}
 
   //! @brief Returns the bucket at position `__i`.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __bucket_type operator[](__size_type __i) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __bucket_type operator[](__size_type __i) const noexcept
   {
     return __bucket_type{__data_ + __i, typename __bucket_type::size_type{_BucketSize}};
   }
 
   //! @brief Returns the total number of slots.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __size_type capacity() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __size_type capacity() const noexcept
   {
     return __capacity_.extent(0);
   }
 
   //! @brief Returns the number of buckets.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __size_type num_buckets() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __size_type num_buckets() const noexcept
   {
     return capacity() / __size_type{_BucketSize};
   }
@@ -90,25 +90,25 @@ struct __slot_storage_ref
   //!
   //! Returning the extent rather than a plain size keeps the static slot count in the type, so the
   //! probing iterator's modular reduction folds to a constant for static `_Capacity`.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __capacity_extent_type capacity_extent() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __capacity_extent_type capacity_extent() const noexcept
   {
     return __capacity_;
   }
 
   //! @brief Returns a pointer to the underlying slot array.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr _Value* data() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Value* data() const noexcept
   {
     return __data_;
   }
 
   //! @brief Returns an iterator to the first slot.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __iterator begin() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __iterator begin() const noexcept
   {
     return __data_;
   }
 
   //! @brief Returns an iterator to one past the last slot.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __iterator end() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __iterator end() const noexcept
   {
     return __data_ + capacity();
   }

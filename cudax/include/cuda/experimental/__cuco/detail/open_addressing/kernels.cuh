@@ -49,7 +49,7 @@ struct __insert_if_fn
   _Predicate __pred;
   _Ref __ref;
 
-  _CCCL_DEVICE void operator()(detail::__index_type __idx)
+  _CCCL_DEVICE_API void operator()(detail::__index_type __idx)
   {
     if (__pred(*(__stencil + __idx)))
     {
@@ -71,7 +71,7 @@ struct __contains_if_fn
   _OutputIt __output_begin;
   _Ref __ref;
 
-  _CCCL_DEVICE void operator()(detail::__index_type __idx) const
+  _CCCL_DEVICE_API void operator()(detail::__index_type __idx) const
   {
     *(__output_begin + __idx) = __pred(*(__stencil + __idx)) ? __ref.contains(*(__first + __idx)) : false;
   }

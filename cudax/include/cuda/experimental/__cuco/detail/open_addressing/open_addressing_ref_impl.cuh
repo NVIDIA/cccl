@@ -67,7 +67,7 @@ struct __bucket_probing_results
   //!
   //! @param __state The three way equality __result
   //! @param __index Intra-bucket index
-  _CCCL_DEVICE explicit constexpr __bucket_probing_results(
+  _CCCL_DEVICE_API explicit constexpr __bucket_probing_results(
     detail::__equal_result __state, ::cuda::std::int32_t __index) noexcept
       : __state{__state}
       , __intra_bucket_index{__index}
@@ -144,7 +144,7 @@ public:
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
   //! @param __storage_ref Non-owning ref of slot storage
-  _CCCL_HOST_DEVICE explicit constexpr __open_addressing_ref_impl(
+  _CCCL_HOST_DEVICE_API explicit constexpr __open_addressing_ref_impl(
     __value_type __empty_slot_sentinel,
     const __key_equal& __predicate,
     const __probing_scheme_type& __probing_scheme,
@@ -162,7 +162,7 @@ public:
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
   //! @param __storage_ref Non-owning ref of slot storage
-  _CCCL_HOST_DEVICE explicit constexpr __open_addressing_ref_impl(
+  _CCCL_HOST_DEVICE_API explicit constexpr __open_addressing_ref_impl(
     __value_type __empty_slot_sentinel,
     __key_type __erased_key_sentinel,
     const __key_equal& __predicate,
@@ -177,7 +177,7 @@ public:
   //! @brief Gets the sentinel value used to represent an empty __key slot.
   //!
   //! @return The sentinel value used to represent an empty __key slot
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __key_type empty_key_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __key_type empty_key_sentinel() const noexcept
   {
     return __predicate.__empty_sentinel;
   }
@@ -187,7 +187,7 @@ public:
   //! @return The sentinel value used to represent an empty payload slot
   _CCCL_TEMPLATE(bool _Dummy = true)
   _CCCL_REQUIRES(__has_payload _CCCL_AND _Dummy)
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto empty_value_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto empty_value_sentinel() const noexcept
   {
     return __extract_payload(empty_slot_sentinel());
   }
@@ -195,7 +195,7 @@ public:
   //! @brief Gets the sentinel value used to represent an erased __key slot.
   //!
   //! @return The sentinel value used to represent an erased __key slot
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __key_type erased_key_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __key_type erased_key_sentinel() const noexcept
   {
     return __predicate.__erased_sentinel;
   }
@@ -203,7 +203,7 @@ public:
   //! @brief Gets the sentinel used to represent an empty slot.
   //!
   //! @return The sentinel value used to represent an empty slot
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __value_type empty_slot_sentinel() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type empty_slot_sentinel() const noexcept
   {
     return __empty_slot_sentinel;
   }
@@ -211,7 +211,7 @@ public:
   //! @brief Returns the function that compares keys for equality.
   //!
   //! @return The key equality predicate
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr detail::__equal_wrapper<__key_type, __key_equal, __allows_duplicates>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr detail::__equal_wrapper<__key_type, __key_equal, __allows_duplicates>
   predicate() const noexcept
   {
     return __predicate;
@@ -220,7 +220,7 @@ public:
   //! @brief Gets the key comparator.
   //!
   //! @return The comparator used to compare keys
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __key_equal key_eq() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __key_equal key_eq() const noexcept
   {
     return predicate().__equal;
   }
@@ -228,7 +228,7 @@ public:
   //! @brief Gets the probing scheme.
   //!
   //! @return The probing scheme used for the container
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __probing_scheme_type probing_scheme() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __probing_scheme_type probing_scheme() const noexcept
   {
     return __probing_scheme;
   }
@@ -236,7 +236,7 @@ public:
   //! @brief Gets the function(s) used to hash keys
   //!
   //! @return The function(s) used to hash keys
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __hasher hash_function() const noexcept
   {
     return probing_scheme().hash_function();
   }
@@ -244,7 +244,7 @@ public:
   //! @brief Gets the non-owning storage ref.
   //!
   //! @return The non-owning storage ref of the container
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __storage_ref_type storage_ref() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __storage_ref_type storage_ref() const noexcept
   {
     return __storage_ref;
   }
@@ -253,7 +253,7 @@ public:
   //! @brief Gets the maximum number of elements the container can hold.
   //!
   //! @return The maximum number of elements the container can hold
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto capacity() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto capacity() const noexcept
   {
     return __storage_ref.capacity();
   }
@@ -262,7 +262,7 @@ public:
   //! @brief Returns an iterator to one past the last slot.
   //!
   //! @return An iterator to one past the last slot
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __iterator end() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __iterator end() const noexcept
   {
     return __storage_ref.end();
   }
@@ -271,7 +271,7 @@ public:
   //! @brief Returns an iterator to one past the last slot.
   //!
   //! @return An iterator to one past the last slot
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __iterator end() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __iterator end() noexcept
   {
     return __storage_ref.end();
   }
@@ -286,7 +286,7 @@ public:
   //!
   //! @return True if the given element is successfully inserted
   template <class _Value>
-  _CCCL_DEVICE bool insert(_Value __value) noexcept
+  _CCCL_DEVICE_API bool insert(_Value __value) noexcept
   {
     static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
 
@@ -352,8 +352,8 @@ public:
   //!
   //! @return True if the given element is successfully inserted
   template <class _Value, class _ParentCG>
-  _CCCL_DEVICE bool insert(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group,
-                           _Value __value) noexcept
+  _CCCL_DEVICE_API bool
+  insert(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _Value __value) noexcept
   {
     const auto __val = __heterogeneous_value(__value);
     const auto __key = __extract_key(__val);
@@ -428,7 +428,7 @@ public:
   //!
   //! @return A boolean indicating whether the probe __key is present
   template <class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE bool contains(_ProbeKey __key) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool contains(_ProbeKey __key) const noexcept
   {
     static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
     auto __probing_iter =
@@ -474,7 +474,7 @@ public:
   //!
   //! @return A boolean indicating whether the probe __key is present
   template <class _ProbeKey, class _ParentCG>
-  [[nodiscard]] _CCCL_DEVICE bool
+  [[nodiscard]] _CCCL_DEVICE_API bool
   contains(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     auto __probing_iter =
@@ -517,7 +517,7 @@ public:
   //!
   //! @return The probing result for @p __bucket_slots
   template <class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE __bucket_probing_results
+  [[nodiscard]] _CCCL_DEVICE_API __bucket_probing_results
   __find_insert_slot(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
   {
     for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
@@ -550,7 +550,7 @@ public:
   //! @return The first non-`__unequal` result in the bucket, or `__unequal` if every slot differs
   //!
   template <class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE detail::__equal_result
+  [[nodiscard]] _CCCL_DEVICE_API detail::__equal_result
   __probe_bucket(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
   {
     auto __res = detail::__equal_result::__unequal;
@@ -571,7 +571,7 @@ public:
   //! @param __probing_idx The current probing index
   //! @param __intra_bucket_idx The index within the bucket (0 for flat storage)
   //! @return Pointer to the slot
-  [[nodiscard]] _CCCL_DEVICE __value_type*
+  [[nodiscard]] _CCCL_DEVICE_API __value_type*
   __get_slot_ptr(__size_type __probing_idx, ::cuda::std::int32_t __intra_bucket_idx) const noexcept
   {
     return __storage_ref.data() + __probing_idx + __intra_bucket_idx;
@@ -587,7 +587,7 @@ public:
   //!
   //! @return The __key
   template <class _Value>
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __extract_key(_Value __value) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __extract_key(_Value __value) const noexcept
   {
     if constexpr (__has_payload)
     {
@@ -611,7 +611,7 @@ public:
   //! @return The payload
   _CCCL_TEMPLATE(class _Value)
   _CCCL_REQUIRES(__has_payload _CCCL_AND(sizeof(_Value) > 0))
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __extract_payload(_Value __value) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __extract_payload(_Value __value) const noexcept
   {
     return ::thrust::raw_reference_cast(__value).second;
   }
@@ -626,7 +626,7 @@ public:
   //!
   //! @return The converted object
   template <class _Value>
-  [[nodiscard]] _CCCL_DEVICE constexpr __value_type __native_value(_Value __value) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __value_type __native_value(_Value __value) const noexcept
   {
     if constexpr (__has_payload)
     {
@@ -648,7 +648,7 @@ public:
   //!
   //! @return The converted object
   template <class _Value>
-  [[nodiscard]] _CCCL_DEVICE constexpr auto __heterogeneous_value(_Value __value) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto __heterogeneous_value(_Value __value) const noexcept
   {
     if constexpr (__has_payload && !::cuda::std::is_same_v<_Value, __value_type>)
     {
@@ -673,7 +673,7 @@ public:
   //! @brief Gets the sentinel used to represent an erased slot.
   //!
   //! @return The sentinel value used to represent an erased slot
-  [[nodiscard]] _CCCL_DEVICE constexpr __value_type __erased_slot_sentinel() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __value_type __erased_slot_sentinel() const noexcept
   {
     if constexpr (__has_payload)
     {
@@ -696,7 +696,7 @@ public:
   //!
   //! @return Result of this operation, i.e., success/continue/duplicate
   template <class _Value>
-  [[nodiscard]] _CCCL_DEVICE constexpr __insert_result
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __insert_result
   packed_cas(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
     using packed_type =
@@ -737,7 +737,7 @@ public:
   //!
   //! @return Result of this operation, i.e., success/continue/duplicate
   template <class _Value>
-  [[nodiscard]] _CCCL_DEVICE constexpr __insert_result
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __insert_result
   back_to_back_cas(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
     using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
@@ -790,7 +790,7 @@ public:
   //!
   //! @return Result of this operation, i.e., success/continue/duplicate
   template <class _Value>
-  [[nodiscard]] _CCCL_DEVICE constexpr __insert_result
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __insert_result
   cas_dependent_write(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
     using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
@@ -832,7 +832,7 @@ public:
   //!
   //! @return Result of this operation, i.e., success/continue/duplicate
   template <class _Value>
-  [[nodiscard]] _CCCL_DEVICE __insert_result
+  [[nodiscard]] _CCCL_DEVICE_API __insert_result
   __attempt_insert(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
     if constexpr (sizeof(__value_type) <= 8)
@@ -866,7 +866,7 @@ public:
   //!
   //! @return Result of this operation, i.e., success/continue/duplicate
   template <class _Value>
-  [[nodiscard]] _CCCL_DEVICE __insert_result
+  [[nodiscard]] _CCCL_DEVICE_API __insert_result
   __attempt_insert_stable(__value_type* __address, __value_type __expected, _Value __desired) noexcept
   {
     if constexpr (sizeof(__value_type) <= 8)
@@ -890,7 +890,7 @@ public:
   //! @param __slot The target slot to check payload with
   //! @param __sentinel The slot sentinel value
   template <class _Value>
-  _CCCL_DEVICE void __wait_for_payload(_Value& __slot, _Value __sentinel) const noexcept
+  _CCCL_DEVICE_API void __wait_for_payload(_Value& __slot, _Value __sentinel) const noexcept
   {
     auto __ref = ::cuda::atomic_ref<_Value, _Scope>{__slot};
     _Value __current;
