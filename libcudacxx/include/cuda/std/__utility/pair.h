@@ -125,6 +125,7 @@ template <bool _IsConst, class _UPair, class _T1, class _T2>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment __pair_select_pair_like_assignable() noexcept
 {
   using ::cuda::std::get;
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_same_v<remove_cvref_t<_UPair>, pair<_T1, _T2>>)
   { // [pairs.pair]-42.1: different-from<UPair, pair>
     // [pairs.pair]-45.1: different-from<UPair, pair>
@@ -177,6 +178,7 @@ template <bool _IsConst, class _UPair, class _T1, class _T2>
   {
     return __select_assignment::__may_throw;
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 template <bool _IsConst, class _UPair, class _T1, class _T2>
