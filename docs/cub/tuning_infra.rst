@@ -560,7 +560,7 @@ as :ref:`sketched above <cub-tuning-infra-authoring-benchmarks>`:
 
 The default tunings defined inside CUB’s source use the same infrastructure
 but should only be changed and extended by the CCCL maintainers.
-All default tunings are found in the :code:`cub/device/detail/tuning/tuning_*.cuh` headers, organized by algorithm.
+All default tunings are found in the :code:`cub/device/dispatch/tuning/tuning_*.cuh` headers, organized by algorithm.
 CUB's policy selectors are highly parameterized on type information and traits of the input arguments to CUB algorithms
 (like accumulator type, offset size, and operation kind),
 which they turn into a policy for a given compute capability.
