@@ -22,6 +22,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__ptx/ptx_helper_functions.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
@@ -305,10 +306,10 @@ prefetch_block_load_tile(int linear_tid, RandomAccessIterator block_src_it, int 
 
     if constexpr (Prefetch == BlockLoadPrefetch::bulk_l2)
     {
-      // One thread issues a single TMA bulk prefetch for the whole tile.
+      // One elected thread issues a single TMA bulk prefetch for the whole tile.
       // cp.async.bulk.prefetch is fire-and-forget: no commit_group/wait_group needed.
-      // Requires SM_90+; falls back to per-thread L2 prefetch on older archs.
-      if (linear_tid == 0)
+      // Requires SM_90+; on older archs __block_elect_one() falls back to threadIdx.x == 0.
+      if (::cuda::device::__block_elect_one())
       {
         const unsigned int aligned_size = total_bytes & ~15u; // size must be a multiple of 16
         if (aligned_size > 0)
