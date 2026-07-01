@@ -184,7 +184,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
     0,
     AccumT,
     policy.vec_size,
-    policy.block_algorithm,
+    policy.reduce_algorithm,
     policy.load_modifier,
     NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
 
@@ -292,7 +292,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
     0,
     AccumT,
     policy.vec_size,
-    policy.block_algorithm,
+    policy.reduce_algorithm,
     policy.load_modifier,
     NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
 

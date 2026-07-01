@@ -669,7 +669,7 @@ struct ReducePolicySelector
       .threads_per_block = 256,
       .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 20 : 16,
       .vec_size          = 4,
-      .block_algorithm   = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
       .load_modifier     = cub::LOAD_LDG};
     return {.multi_tile = pass, .single_tile = pass};
   }

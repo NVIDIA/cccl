@@ -69,7 +69,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   constexpr int items_per_thread    = policy.items_per_thread;
   constexpr int threads_per_block   = policy.threads_per_block;
 
-  using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.block_algorithm>;
+  using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.reduce_algorithm>;
 
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;
@@ -200,7 +200,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
   constexpr int threads_per_block   = policy.threads_per_block;
 
-  using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.block_algorithm>;
+  using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.reduce_algorithm>;
 
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;

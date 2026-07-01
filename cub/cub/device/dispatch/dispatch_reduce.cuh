@@ -856,11 +856,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                   && (!::cuda::std::is_integral_v<AccumT> || !is_cuda_binary_operator<ReductionOpT>) )
     {
       CUB_DETAIL_STATIC_ISH_ASSERT(
-        active_policy.multi_tile.block_algorithm != BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-        "A run-to-run deterministic reduction must not use a non-deterministic block_algorithm");
+        active_policy.multi_tile.reduce_algorithm != BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+        "A run-to-run deterministic reduction must not use a non-deterministic reduce_algorithm");
       CUB_DETAIL_STATIC_ISH_ASSERT(
-        active_policy.single_tile.block_algorithm != BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-        "A run-to-run deterministic reduction must not use a non-deterministic block_algorithm");
+        active_policy.single_tile.reduce_algorithm != BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+        "A run-to-run deterministic reduction must not use a non-deterministic reduce_algorithm");
     }
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
