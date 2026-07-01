@@ -19,6 +19,9 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/for_each.h>
+#include <cuda/std/__algorithm/for_each_n.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
@@ -29,13 +32,8 @@ for_each(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Inpu
 {
   // wrap f
   thrust::detail::wrapped_function<UnaryFunction, void> wrapped_f{f};
-
-  for (; first != last; ++first)
-  {
-    wrapped_f(*first);
-  }
-
-  return first;
+  ::cuda::std::for_each(first, last, wrapped_f);
+  return last;
 } // end for_each()
 
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
@@ -44,16 +42,7 @@ for_each_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Si
 {
   // wrap f
   thrust::detail::wrapped_function<UnaryFunction, void> wrapped_f{f};
-
-  for (Size i = 0; i != n; i++)
-  {
-    // we can dereference an OutputIterator if f does not
-    // try to use the reference for anything besides assignment
-    wrapped_f(*first);
-    ++first;
-  }
-
-  return first;
+  return ::cuda::std::for_each_n(first, n, wrapped_f);
 } // end for_each_n()
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

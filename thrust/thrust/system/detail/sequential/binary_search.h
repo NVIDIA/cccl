@@ -21,8 +21,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
-#include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__algorithm/lower_bound.h>
+#include <cuda/std/__algorithm/upper_bound.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -38,31 +38,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
 {
   // wrap comp
   thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
-
-  difference_type len = ::cuda::std::distance(first, last);
-
-  while (len > 0)
-  {
-    difference_type half   = len >> 1;
-    ForwardIterator middle = first;
-
-    ::cuda::std::advance(middle, half);
-
-    if (wrapped_comp(*middle, val))
-    {
-      first = middle;
-      ++first;
-      len = len - half - 1;
-    }
-    else
-    {
-      len = half;
-    }
-  }
-
-  return first;
+  return ::cuda::std::lower_bound(first, last, val, wrapped_comp);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -76,31 +52,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
 {
   // wrap comp
   thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
-
-  difference_type len = ::cuda::std::distance(first, last);
-
-  while (len > 0)
-  {
-    difference_type half   = len >> 1;
-    ForwardIterator middle = first;
-
-    ::cuda::std::advance(middle, half);
-
-    if (wrapped_comp(val, *middle))
-    {
-      len = half;
-    }
-    else
-    {
-      first = middle;
-      ++first;
-      len = len - half - 1;
-    }
-  }
-
-  return first;
+  return ::cuda::std::upper_bound(first, last, val, wrapped_comp);
 }
 
 _CCCL_EXEC_CHECK_DISABLE

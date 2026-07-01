@@ -16,9 +16,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/copy.h>
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__algorithm/set_difference.h>
+#include <cuda/std/__algorithm/set_intersection.h>
+#include <cuda/std/__algorithm/set_symmetric_difference.h>
+#include <cuda/std/__algorithm/set_union.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -30,7 +34,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE OutputIterator set_difference(
-  sequential::execution_policy<DerivedPolicy>& exec,
+  sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -40,27 +44,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
 {
   // wrap comp
   thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first1, *first2))
-    {
-      *result = *first1;
-      ++first1;
-      ++result;
-    } // end if
-    else if (wrapped_comp(*first2, *first1))
-    {
-      ++first2;
-    } // end else if
-    else
-    {
-      ++first1;
-      ++first2;
-    } // end else
-  } // end while
-
-  return thrust::copy(exec, first1, last1, result);
+  return ::cuda::std::set_difference(first1, last1, first2, last2, result, wrapped_comp);
 } // end set_difference()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -80,27 +64,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
 {
   // wrap comp
   thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first1, *first2))
-    {
-      ++first1;
-    } // end if
-    else if (wrapped_comp(*first2, *first1))
-    {
-      ++first2;
-    } // end else if
-    else
-    {
-      *result = *first1;
-      ++first1;
-      ++first2;
-      ++result;
-    } // end else
-  } // end while
-
-  return result;
+  return ::cuda::std::set_intersection(first1, last1, first2, last2, result, wrapped_comp);
 } // end set_intersection()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -110,7 +74,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
-  sequential::execution_policy<DerivedPolicy>& exec,
+  sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -120,29 +84,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
 {
   // wrap comp
   thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first1, *first2))
-    {
-      *result = *first1;
-      ++first1;
-      ++result;
-    } // end if
-    else if (wrapped_comp(*first2, *first1))
-    {
-      *result = *first2;
-      ++first2;
-      ++result;
-    } // end else if
-    else
-    {
-      ++first1;
-      ++first2;
-    } // end else
-  } // end while
-
-  return thrust::copy(exec, first2, last2, thrust::copy(exec, first1, last1, result));
+  return ::cuda::std::set_symmetric_difference(first1, last1, first2, last2, result, wrapped_comp);
 } // end set_symmetric_difference()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -152,7 +94,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE OutputIterator set_union(
-  sequential::execution_policy<DerivedPolicy>& exec,
+  sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -162,30 +104,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
 {
   // wrap comp
   thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first1, *first2))
-    {
-      *result = *first1;
-      ++first1;
-    } // end if
-    else if (wrapped_comp(*first2, *first1))
-    {
-      *result = *first2;
-      ++first2;
-    } // end else if
-    else
-    {
-      *result = *first1;
-      ++first1;
-      ++first2;
-    } // end else
-
-    ++result;
-  } // end while
-
-  return thrust::copy(exec, first2, last2, thrust::copy(exec, first1, last1, result));
+  return ::cuda::std::set_union(first1, last1, first2, last2, result, wrapped_comp);
 } // end set_union()
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

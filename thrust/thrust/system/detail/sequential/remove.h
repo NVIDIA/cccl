@@ -19,6 +19,9 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/remove_copy_if.h>
+#include <cuda/std/__algorithm/remove_if.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
@@ -29,34 +32,7 @@ remove_if(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, F
 {
   // wrap pred
   thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
-
-  // advance iterators until wrapped_pred(*first) is true or we reach the end of input
-  while (first != last && !wrapped_pred(*first))
-  {
-    ++first;
-  }
-
-  if (first == last)
-  {
-    return first;
-  }
-
-  // result always trails first
-  ForwardIterator result = first;
-
-  ++first;
-
-  while (first != last)
-  {
-    if (!wrapped_pred(*first))
-    {
-      *result = *first;
-      ++result;
-    }
-    ++first;
-  }
-
-  return result;
+  return ::cuda::std::remove_if(first, last, wrapped_pred);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -114,19 +90,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
 {
   // wrap pred
   thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
-
-  while (first != last)
-  {
-    if (!wrapped_pred(*first))
-    {
-      *result = *first;
-      ++result;
-    }
-
-    ++first;
-  }
-
-  return result;
+  return ::cuda::std::remove_copy_if(first, last, result, wrapped_pred);
 }
 
 _CCCL_EXEC_CHECK_DISABLE

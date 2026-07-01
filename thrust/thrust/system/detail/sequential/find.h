@@ -19,6 +19,8 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/find_if.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
@@ -29,19 +31,7 @@ find_if(execution_policy<DerivedPolicy>&, InputIterator first, InputIterator las
 {
   // wrap pred
   thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
-
-  while (first != last)
-  {
-    if (wrapped_pred(*first))
-    {
-      return first;
-    }
-
-    ++first;
-  }
-
-  // return first so zip_iterator works correctly
-  return first;
+  return ::cuda::std::find_if(first, last, wrapped_pred);
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
