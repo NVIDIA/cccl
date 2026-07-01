@@ -11,7 +11,7 @@
 #ifndef _CUDAX___CUCO_DETAIL_HYPERLOGLOG_KERNELS_CUH
 #define _CUDAX___CUCO_DETAIL_HYPERLOGLOG_KERNELS_CUH
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -38,7 +38,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //! @brief Returns the global thread ID in a 1D grid
 //!
 //! @return The global thread ID
-[[nodiscard]] _CCCL_DEVICE inline ::cuda::std::int64_t __global_thread_id() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int64_t __global_thread_id() noexcept
 {
   return static_cast<::cuda::std::int64_t>(blockDim.x) * blockIdx.x + threadIdx.x;
 }
@@ -46,7 +46,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //! @brief Returns the grid stride of a 1D grid
 //!
 //! @return The grid stride
-[[nodiscard]] _CCCL_DEVICE inline ::cuda::std::int64_t __grid_stride() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int64_t __grid_stride() noexcept
 {
   return static_cast<::cuda::std::int64_t>(gridDim.x) * blockDim.x;
 }
