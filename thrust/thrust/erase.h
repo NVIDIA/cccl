@@ -24,11 +24,8 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup algorithms
- */
-
-/*! \addtogroup copying
- *  \ingroup algorithms
+/*! \addtogroup stream_compaction Stream Compaction
+ *  \ingroup reordering
  *  \{
  */
 
