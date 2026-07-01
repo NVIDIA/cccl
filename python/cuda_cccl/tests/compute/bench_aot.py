@@ -8,7 +8,7 @@ Mirrors c/parallel/test/test_bench_aot.cpp at the Python user level.
 
 For each algorithm, measures wall-clock time for the complete first execution:
     JIT = make_<algo>(...) + execute() + sync()
-    AoT = AlgoClass.deserialize(blob, ...) + execute() + sync()
+    AoT = deserialize(blob) + execute() + sync()
 
 The AoT blob is built once up front (untimed, simulating build-server work).
 The in-memory algorithm cache is cleared between the two timed paths so each
@@ -28,14 +28,13 @@ import numpy as np
 from cuda.compute import (
     OpKind,
     clear_all_caches,
+    deserialize,
     make_exclusive_scan,
     make_merge_sort,
     make_reduce_into,
+    serialize,
 )
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._reduce import _Reduce
-from cuda.compute.algorithms._scan import _Scan
-from cuda.compute.algorithms._sort._merge_sort import _MergeSort
 
 N = 1 << 20
 
@@ -68,9 +67,9 @@ def bench_reduce() -> tuple[float, float]:
     h_init = np.array([0], dtype=np.int32)
 
     # Pre-build the AoT blob (untimed).
-    blob = make_reduce_into(
-        d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init
-    ).serialize()
+    blob = serialize(
+        make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init)
+    )
 
     def jit():
         reducer = make_reduce_into(
@@ -95,9 +94,7 @@ def bench_reduce() -> tuple[float, float]:
         )
 
     def aot():
-        reducer = _Reduce.deserialize(
-            blob, d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init
-        )
+        reducer = deserialize(blob)
         nbytes = reducer(
             temp_storage=None,
             d_in=d_in,
@@ -124,9 +121,11 @@ def bench_exclusive_scan() -> tuple[float, float]:
     d_out = cp.empty_like(d_in)
     init_value = np.array([0], dtype=np.int32)
 
-    blob = make_exclusive_scan(
-        d_in=d_in, d_out=d_out, op=OpKind.PLUS, init_value=init_value
-    ).serialize()
+    blob = serialize(
+        make_exclusive_scan(
+            d_in=d_in, d_out=d_out, op=OpKind.PLUS, init_value=init_value
+        )
+    )
 
     def _execute(scanner):
         nbytes = scanner(
@@ -155,16 +154,7 @@ def bench_exclusive_scan() -> tuple[float, float]:
         )
 
     def aot():
-        _execute(
-            _Scan.deserialize(
-                blob,
-                d_in=d_in,
-                d_out=d_out,
-                op=OpKind.PLUS,
-                init_value=init_value,
-                force_inclusive=False,
-            )
-        )
+        _execute(deserialize(blob))
 
     return _bench(jit, aot)
 
@@ -174,13 +164,15 @@ def bench_merge_sort() -> tuple[float, float]:
     d_in_keys = cp.asarray(h)
     d_out_keys = cp.empty_like(d_in_keys)
 
-    blob = make_merge_sort(
-        d_in_keys=d_in_keys,
-        d_in_values=None,
-        d_out_keys=d_out_keys,
-        d_out_values=None,
-        op=OpKind.LESS,
-    ).serialize()
+    blob = serialize(
+        make_merge_sort(
+            d_in_keys=d_in_keys,
+            d_in_values=None,
+            d_out_keys=d_out_keys,
+            d_out_values=None,
+            op=OpKind.LESS,
+        )
+    )
 
     def _execute(sorter):
         nbytes = sorter(
@@ -215,16 +207,7 @@ def bench_merge_sort() -> tuple[float, float]:
         )
 
     def aot():
-        _execute(
-            _MergeSort.deserialize(
-                blob,
-                d_in_keys=d_in_keys,
-                d_in_values=None,
-                d_out_keys=d_out_keys,
-                d_out_values=None,
-                op=OpKind.LESS,
-            )
-        )
+        _execute(deserialize(blob))
 
     return _bench(jit, aot)
 

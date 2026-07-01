@@ -187,6 +187,9 @@ def _aot_reduce_serialize(DeviceReduceBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_reduce_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceReduceBuildResult self = DeviceReduceBuildResult.__new__(
         DeviceReduceBuildResult)
     cdef CUresult status = -1
@@ -226,6 +229,9 @@ def _aot_scan_serialize(DeviceScanBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_scan_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceScanBuildResult self = DeviceScanBuildResult.__new__(
         DeviceScanBuildResult)
     cdef CUresult status = -1
@@ -261,6 +267,9 @@ def _aot_segmented_reduce_serialize(DeviceSegmentedReduceBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_segmented_reduce_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceSegmentedReduceBuildResult self = DeviceSegmentedReduceBuildResult.__new__(
         DeviceSegmentedReduceBuildResult)
     cdef CUresult status = -1
@@ -296,6 +305,9 @@ def _aot_merge_sort_serialize(DeviceMergeSortBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_merge_sort_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceMergeSortBuildResult self = DeviceMergeSortBuildResult.__new__(
         DeviceMergeSortBuildResult)
     cdef CUresult status = -1
@@ -331,6 +343,9 @@ def _aot_unique_by_key_serialize(DeviceUniqueByKeyBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_unique_by_key_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceUniqueByKeyBuildResult self = DeviceUniqueByKeyBuildResult.__new__(
         DeviceUniqueByKeyBuildResult)
     cdef CUresult status = -1
@@ -366,6 +381,9 @@ def _aot_radix_sort_serialize(DeviceRadixSortBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_radix_sort_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceRadixSortBuildResult self = DeviceRadixSortBuildResult.__new__(
         DeviceRadixSortBuildResult)
     cdef CUresult status = -1
@@ -401,6 +419,9 @@ def _aot_unary_transform_serialize(DeviceUnaryTransform self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_unary_transform_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceUnaryTransform self = DeviceUnaryTransform.__new__(DeviceUnaryTransform)
     cdef CUresult status = -1
     cdef const unsigned char[::1] view = blob
@@ -435,6 +456,9 @@ def _aot_binary_transform_serialize(DeviceBinaryTransform self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_binary_transform_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceBinaryTransform self = DeviceBinaryTransform.__new__(DeviceBinaryTransform)
     cdef CUresult status = -1
     cdef const unsigned char[::1] view = blob
@@ -469,6 +493,9 @@ def _aot_histogram_serialize(DeviceHistogramBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_histogram_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceHistogramBuildResult self = DeviceHistogramBuildResult.__new__(
         DeviceHistogramBuildResult)
     cdef CUresult status = -1
@@ -504,6 +531,9 @@ def _aot_binary_search_serialize(DeviceBinarySearchBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_binary_search_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceBinarySearchBuildResult self = DeviceBinarySearchBuildResult.__new__(
         DeviceBinarySearchBuildResult)
     cdef CUresult status = -1
@@ -539,6 +569,9 @@ def _aot_three_way_partition_serialize(DeviceThreeWayPartitionBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_three_way_partition_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceThreeWayPartitionBuildResult self = DeviceThreeWayPartitionBuildResult.__new__(
         DeviceThreeWayPartitionBuildResult)
     cdef CUresult status = -1
@@ -574,6 +607,9 @@ def _aot_segmented_sort_serialize(DeviceSegmentedSortBuildResult self):
         cccl_aot_buffer_free(buf_ptr)
 
 def _aot_segmented_sort_deserialize(blob):
+    # Copy to immutable bytes: the C deserialize reads the buffer under
+    # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
+    blob = bytes(blob)
     cdef DeviceSegmentedSortBuildResult self = DeviceSegmentedSortBuildResult.__new__(
         DeviceSegmentedSortBuildResult)
     cdef CUresult status = -1
