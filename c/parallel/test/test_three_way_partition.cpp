@@ -326,6 +326,51 @@ C2H_TEST("ThreeWayPartition works with primitive types", "[three_way_partition]"
   REQUIRE(c_parallel_result == std_result);
 }
 
+C2H_TEST("ThreeWayPartition works with Boolean well-known operations", "[three_way_partition][well_known]")
+{
+  const std::vector<uint8_t> input{1, 0, 0, 1, 1, 0};
+  const std::size_t num_items = input.size();
+
+  pointer_t<uint8_t> input_ptr(input);
+  pointer_t<uint8_t> first_part_output_ptr(num_items);
+  pointer_t<uint8_t> second_part_output_ptr(num_items);
+  pointer_t<uint8_t> unselected_output_ptr(num_items);
+  pointer_t<int64_t> num_selected_ptr(2);
+
+  cccl_op_t identity_op    = make_well_known_unary_operation();
+  identity_op.type         = cccl_op_kind_t::CCCL_IDENTITY;
+  cccl_op_t logical_not_op = make_well_known_unary_operation();
+  logical_not_op.type      = cccl_op_kind_t::CCCL_LOGICAL_NOT;
+
+  std::optional<three_way_partition_build_cache_t> no_cache = std::nullopt;
+  const std::optional<std::string> no_key                   = std::nullopt;
+  three_way_partition(
+    make_boolean_iterator(input_ptr),
+    make_boolean_iterator(first_part_output_ptr),
+    make_boolean_iterator(second_part_output_ptr),
+    make_boolean_iterator(unselected_output_ptr),
+    num_selected_ptr,
+    identity_op,
+    logical_not_op,
+    static_cast<int64_t>(num_items),
+    no_cache,
+    no_key);
+
+  const std::vector<int64_t> num_selected(num_selected_ptr);
+  REQUIRE(num_selected == std::vector<int64_t>{3, 3});
+
+  const std::vector<uint8_t> first_part_output(first_part_output_ptr);
+  const std::vector<uint8_t> second_part_output(second_part_output_ptr);
+  const std::vector<uint8_t> unselected_output(unselected_output_ptr);
+  const std::size_t num_unselected = num_items - static_cast<std::size_t>(num_selected[0] + num_selected[1]);
+  CHECK(std::vector<uint8_t>(first_part_output.begin(), first_part_output.begin() + 3)
+        == std::vector<uint8_t>{1, 1, 1});
+  CHECK(std::vector<uint8_t>(second_part_output.begin(), second_part_output.begin() + 3)
+        == std::vector<uint8_t>{0, 0, 0});
+  CHECK(std::vector<uint8_t>(unselected_output.begin(), unselected_output.begin() + num_unselected).empty());
+  CHECK(num_unselected == 0);
+}
+
 struct selector_state_t
 {
   int comparison_value;

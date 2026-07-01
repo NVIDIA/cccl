@@ -382,7 +382,7 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform]", variable_list)
     thrust::discard_iterator<> d_result =
       thrust::transform(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK((reference == h_result));
     CHECK((reference == d_result));
@@ -425,7 +425,7 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIteratorZipped", "[transform]", variable_
 
     ZipIterator2 d_result = thrust::transform(d_input.begin(), d_input.end(), z2, repeat2());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK(h_output == d_output);
 
@@ -511,7 +511,7 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform_if]", variable_lis
       ::cuda::std::negate<T>(),
       is_positive());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK((reference == h_result));
     CHECK((reference == d_result));
@@ -560,7 +560,7 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform]", variable_list)
     thrust::discard_iterator<> d_result = thrust::transform(
       d_input1.begin(), d_input1.end(), d_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK((reference == h_result));
     CHECK((reference == d_result));
@@ -658,7 +658,7 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform_if]", variable_li
       ::cuda::std::minus<T>(),
       is_positive());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK((reference == h_result));
     CHECK((reference == d_result));

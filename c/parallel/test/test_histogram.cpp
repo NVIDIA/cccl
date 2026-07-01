@@ -37,7 +37,7 @@ void build_histogram(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t d_levels,
+  cccl_type_info level_type,
   uint64_t num_rows,
   uint64_t row_stride_samples,
   bool is_evenly_segmented)
@@ -62,7 +62,7 @@ void build_histogram(
       d_samples,
       num_output_levels_val,
       d_output_histograms,
-      d_levels,
+      level_type,
       num_rows,
       row_stride_samples,
       is_evenly_segmented,
@@ -87,7 +87,7 @@ void histogram_even(
 {
   cccl_device_histogram_build_result_t build{};
   build_histogram(
-    &build, d_samples, num_output_levels_val, d_output_histograms, lower_level, num_rows, row_stride_samples, true);
+    &build, d_samples, num_output_levels_val, d_output_histograms, lower_level.type, num_rows, row_stride_samples, true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -228,7 +228,7 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
   value_t<level_t> lower_level_val{lower_level};
   value_t<level_t> upper_level_val{upper_level};
 
-  size_t row_stride_samples = num_samples;
+  int64_t row_stride_samples = static_cast<int64_t>(num_samples);
 
   histogram_even(
     d_samples_ptr,
@@ -410,8 +410,6 @@ C2H_TEST("Histogram build result has AoT metadata populated", "[histogram][devic
 
   pointer_t<T> samples(1);
   pointer_t<T> histograms(1);
-  value_t<T> lower_level{T{0}};
-
   cccl_device_histogram_build_result_t build{};
   REQUIRE(
     CUDA_SUCCESS
@@ -422,7 +420,7 @@ C2H_TEST("Histogram build result has AoT metadata populated", "[histogram][devic
       samples,
       /*num_output_levels_val=*/3,
       histograms,
-      lower_level,
+      get_type_info<T>(),
       /*num_rows=*/1,
       /*row_stride_samples=*/1,
       /*is_evenly_segmented=*/true,
@@ -467,7 +465,7 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][aot]")
       dummy_samples,
       /*num_output_levels_val=*/3,
       dummy_histograms,
-      lower_level_val,
+      get_type_info<T>(),
       /*num_rows=*/1,
       /*row_stride_samples=*/1,
       /*is_evenly_segmented=*/true,

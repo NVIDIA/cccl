@@ -5,9 +5,11 @@
 Top-K: Determinism, Tie-Breaking, and Output Ordering
 ======================================================
 
-This page describes how to control the result of the CUB top-k family of algorithms (currently
-:cpp:struct:`cub::DeviceTopK`) through the execution environment. The same requirement model
-applies to every ``MaxKeys`` / ``MinKeys`` / ``MaxPairs`` / ``MinPairs`` entry point.
+This page describes how to control the result of the CUB top-k family of algorithms
+(:cpp:struct:`cub::DeviceTopK` and :cpp:struct:`cub::DeviceBatchedTopK`) through the execution
+environment. For :cpp:struct:`cub::DeviceBatchedTopK`, these requirements apply independently within
+each segment. The same requirement model applies to every ``MaxKeys`` / ``MinKeys`` / ``MaxPairs`` /
+``MinPairs`` entry point.
 
 Two orthogonal concerns
 -----------------------
@@ -43,27 +45,34 @@ Default behavior
 When you do **not** specify any of these requirements, the top-k algorithms provide their strongest
 reproducibility guarantees. The committed default contract is:
 
-* ``cuda::execution::determinism::run_to_run`` for a deterministic result set,
+* ``cuda::execution::determinism::gpu_to_gpu`` for a deterministic result set,
 * ``cuda::execution::tie_break::prefer_smaller_index`` to resolve ties at the selection boundary
   toward the smaller (lower) source index,
 * ``cuda::execution::output_ordering::stable_sorted`` to write output sorted by key, with equal
   keys ordered by source index.
 
-In other words, by default you get the same items, in the same positions, run after run. You opt
-**out** of these guarantees (by requiring weaker properties such as
-``cuda::execution::determinism::not_guaranteed`` and ``cuda::execution::output_ordering::unsorted``)
-to obtain faster implementations.
+In other words, by default you get the same items, in the same positions, run after run and across
+GPUs of the same architecture. You opt **out** of these guarantees (by requiring weaker properties
+such as ``cuda::execution::determinism::not_guaranteed`` and
+``cuda::execution::output_ordering::unsorted``) to obtain faster implementations.
+
+``determinism`` and ``tie_break`` are coupled. You specify **both** of them (inside a single
+``cuda::execution::require(...)``) or **neither** (to take the default). A specified ``tie_break`` of
+``prefer_smaller_index`` or ``prefer_larger_index`` pins the result set across GPUs and therefore
+requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the full table.
 
 .. note::
 
-   **Current support.** This initial API surface only implements the fully opted-out configuration:
+   **Current support.** This initial API surface only implements the fully opted-out configuration.
+   For :cpp:struct:`cub::DeviceBatchedTopK` it must be requested **explicitly** as
    ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-   cuda::execution::output_ordering::unsorted)``. That configuration must be requested
-   **explicitly**. The algorithms ``static_assert`` for any other combination (including an empty,
-   no-requirement environment), so the deterministic default described above cannot yet be exercised
-   in code. The deterministic, tie-broken, and (stable-)sorted modes documented here define the
-   committed long-term contract and will become available (including as the no-requirement default)
-   as those code paths land.
+   cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted)``
+   (:cpp:struct:`cub::DeviceTopK` has no tie-break dimension yet and omits the ``tie_break`` token).
+   The algorithms ``static_assert`` for any other combination (including an empty, no-requirement
+   environment), so the deterministic default described above cannot yet be exercised in code. The
+   deterministic, tie-broken, and (stable-)sorted modes documented here define the committed long-term
+   contract and will become available (including as the no-requirement default) as those code paths
+   land.
 
 Requirements reference
 ----------------------
@@ -82,18 +91,21 @@ Determinism (``cuda::execution::determinism``)
        may be returned. Enables the fastest implementations.
    * - ``run_to_run``
      - The result set is identical across repeated invocations on the same GPU with the same input.
-       The tie-breaking policy is implementation-defined unless ``tie_break`` is also specified.
+       The tie-breaking policy is implementation-defined. Pinning a specific tie-break is not
+       available at this level and requires ``gpu_to_gpu``.
    * - ``gpu_to_gpu``
-     - The result set is identical across different GPUs of the same architecture. When ``tie_break``
-       is explicitly set, the result set is fully pinned: ``run_to_run`` and ``gpu_to_gpu`` yield the
-       same set for a given input.
+     - The result set is identical across different GPUs of the same architecture. This is the only
+       level that may be combined with an explicit ``tie_break`` (``prefer_smaller_index`` or
+       ``prefer_larger_index``), which then fully pins the result set for a given input.
 
 Tie-break (``cuda::execution::tie_break``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Only meaningful together with ``determinism::run_to_run`` or ``determinism::gpu_to_gpu``. It has no
-effect with ``not_guaranteed`` (and pairing ``tie_break`` with ``not_guaranteed`` is rejected at
-compile time).
+A specified ``tie_break`` of ``prefer_smaller_index`` or ``prefer_larger_index`` pins the result set
+across GPUs, so it requires ``determinism::gpu_to_gpu``. Pairing it with ``run_to_run`` or
+``not_guaranteed`` is rejected at compile time. ``determinism`` and ``tie_break`` must always be
+specified together (or both omitted to take the default). Use ``tie_break::unspecified`` to leave the
+boundary policy to the implementation, for example alongside ``not_guaranteed`` or ``run_to_run``.
 
 .. list-table::
    :header-rows: 1
@@ -101,14 +113,15 @@ compile time).
 
    * - Value
      - Meaning
-   * - ``unspecified`` *(API default)*
-     - Any deterministic tie-break is acceptable, and the implementation chooses.
-   * - ``prefer_smaller_index``
+   * - ``unspecified``
+     - Any deterministic tie-break is acceptable, and the implementation chooses. Valid with any
+       determinism level (including ``not_guaranteed`` and ``run_to_run``).
+   * - ``prefer_smaller_index`` *(default)*
      - Among elements that compare equal at the boundary, prefer those with the **smaller** source
-       index.
+       index. Requires ``determinism::gpu_to_gpu``.
    * - ``prefer_larger_index``
      - Among elements that compare equal at the boundary, prefer those with the **larger** source
-       index.
+       index. Requires ``determinism::gpu_to_gpu``.
 
 Output ordering (``cuda::execution::output_ordering``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -141,34 +154,60 @@ execution environment alongside other properties such as a stream:
 
    auto env = cuda::std::execution::env{
      cuda::execution::require(
-       cuda::execution::determinism::run_to_run,
+       cuda::execution::determinism::gpu_to_gpu,
        cuda::execution::tie_break::prefer_smaller_index,
        cuda::execution::output_ordering::sorted),
      stream_ref};
 
+.. _cub-topk-set-membership:
+
 Which items are selected?
 -------------------------
 
-Determinism and tie-break together control **set membership**:
+Determinism and tie-break together control **set membership**. They are always specified as a pair
+(or both omitted to take the default). Rows below are the ``determinism`` requirement and columns are
+the paired ``tie_break`` requirement. Cells marked *(compile error)* are rejected by a ``static_assert``.
 
 .. list-table::
    :header-rows: 1
-   :widths: 55 45
+   :stub-columns: 1
+   :widths: 22 26 26 26
 
-   * - ``require(...)``
-     - Which items are selected
-   * - ``determinism::not_guaranteed``
-     - Non-deterministic among tied elements (fast path)
-   * - ``determinism::run_to_run``
+   * - ``determinism``
+     - ``tie_break::unspecified``
+     - ``tie_break::prefer_smaller_index``
+     - ``tie_break::prefer_larger_index``
+   * - ``not_guaranteed``
+     - Non-deterministic (fast path)
+     - *(compile error)*
+     - *(compile error)*
+   * - ``run_to_run``
      - Deterministic, implementation-defined tie-break
-   * - ``determinism::run_to_run, tie_break::prefer_smaller_index``
-     - Deterministic, ties resolved toward the smaller source index
-   * - ``determinism::run_to_run, tie_break::prefer_larger_index``
-     - Deterministic, ties resolved toward the larger source index
+     - *(compile error)*
+     - *(compile error)*
+   * - ``gpu_to_gpu``
+     - Deterministic, implementation-defined tie-break
+     - Deterministic, ties toward the **smaller** source index
+     - Deterministic, ties toward the **larger** source index
 
-The same table applies when using ``determinism::gpu_to_gpu`` instead of ``run_to_run``. When an
-explicit ``tie_break`` is set, both determinism levels pin the result set to the same items for a
-given input.
+Reading the table:
+
+* A specified ``tie_break`` of ``prefer_smaller_index`` or ``prefer_larger_index`` pins the result set
+  across GPUs, which is a ``gpu_to_gpu`` guarantee. Requesting it alongside ``not_guaranteed`` or
+  ``run_to_run`` is a compile error, because you must acknowledge the ``gpu_to_gpu`` determinism you
+  receive.
+* With ``tie_break::unspecified`` the implementation chooses the boundary policy. ``run_to_run`` and
+  ``gpu_to_gpu`` then differ only in *scope*: identical results on the same GPU versus across GPUs of
+  the same architecture.
+* Omitting **both** requirements selects the default (``gpu_to_gpu`` with ``prefer_smaller_index``),
+  which is the bottom-middle cell.
+
+.. note::
+
+   This determinism and tie_break pairing rule is currently enforced only by
+   :cpp:struct:`cub::DeviceBatchedTopK`. :cpp:struct:`cub::DeviceTopK` does not yet inspect
+   ``tie_break``, so it still accepts requirement combinations that ``cub::DeviceBatchedTopK`` rejects.
+   The same enforcement will be added to ``cub::DeviceTopK`` in the next major release of CCCL (4.0).
 
 Worked example: set membership x output ordering
 -------------------------------------------------
@@ -197,7 +236,8 @@ membership varies.
      - ``output_ordering::unsorted``
      - ``output_ordering::sorted``
      - ``output_ordering::stable_sorted``
-   * - ``determinism::not_guaranteed``
+   * - ``determinism::not_guaranteed,``
+       ``tie_break::unspecified``
      - | Run 1: ``[8@2, 10@0, 8@1]``
        | Run 2: ``[8@3, 10@0, 8@1]``
        | Different sets *and* orders
@@ -207,8 +247,8 @@ membership varies.
      - | Run 1: ``[10@0, 8@1, 8@2]``
        | Run 2: ``[10@0, 8@1, 8@3]``
        | Different sets, equal keys in input order
-   * - ``determinism::run_to_run``
-       (impl-defined tie-break)
+   * - ``determinism::run_to_run,``
+       ``tie_break::unspecified``
      - | Run 1: ``[8@3, 10@0, 8@1]``
        | Run 2: ``[10@0, 8@1, 8@3]``
        | Same set ``{10@0, 8@1, 8@3}``, order may vary
@@ -218,7 +258,7 @@ membership varies.
      - | Run 1: ``[10@0, 8@1, 8@3]``
        | Run 2: ``[10@0, 8@1, 8@3]``
        | Same set, equal keys always in input order
-   * - ``determinism::run_to_run,``
+   * - ``determinism::gpu_to_gpu,``
        ``tie_break::prefer_smaller_index``
      - | Run 1: ``[8@2, 10@0, 8@1]``
        | Run 2: ``[10@0, 8@1, 8@2]``
@@ -229,7 +269,7 @@ membership varies.
      - | Run 1: ``[10@0, 8@1, 8@2]``
        | Run 2: ``[10@0, 8@1, 8@2]``
        | Same set, equal keys always in input order
-   * - ``determinism::run_to_run,``
+   * - ``determinism::gpu_to_gpu,``
        ``tie_break::prefer_larger_index``
      - | Run 1: ``[8@3, 10@0, 8@2]``
        | Run 2: ``[10@0, 8@2, 8@3]``
@@ -256,7 +296,7 @@ Reading the matrix:
    * - Set membership fixed, sorted but unstable among equal keys
      - ``run_to_run`` + ``sorted``: both runs start with ``10@0``, but ``8@1`` and ``8@3`` may swap
    * - Fully pinned: same set and same order
-     - ``run_to_run`` + ``tie_break::prefer_smaller_index`` + ``stable_sorted``: both runs yield
+     - ``gpu_to_gpu`` + ``tie_break::prefer_smaller_index`` + ``stable_sorted``: both runs yield
        ``[10@0, 8@1, 8@2]``
    * - Tie-break changes the set, not just the order
      - Compare ``prefer_smaller_index`` vs ``prefer_larger_index``: ``8@2`` vs ``8@3``
@@ -271,11 +311,11 @@ Choosing requirements
    * - Goal
      - Suggested ``require(...)``
    * - Maximum performance, exact result unimportant
-     - ``determinism::not_guaranteed, output_ordering::unsorted``
+     - ``determinism::not_guaranteed, tie_break::unspecified, output_ordering::unsorted``
    * - Reproducible result set, order does not matter
-     - ``determinism::run_to_run, output_ordering::unsorted``
+     - ``determinism::run_to_run, tie_break::unspecified, output_ordering::unsorted``
    * - Reproducible result set with an explicit boundary policy
-     - ``determinism::run_to_run, tie_break::prefer_{smaller,larger}_index, output_ordering::unsorted``
+     - ``determinism::gpu_to_gpu, tie_break::prefer_{smaller,larger}_index, output_ordering::unsorted``
    * - Reproducible, key-sorted output
      - the above + ``output_ordering::sorted``
    * - Reproducible, key-sorted output with input-order stability among ties

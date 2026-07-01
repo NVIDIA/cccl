@@ -47,7 +47,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   {
     block_load2sh.CommitAndWait();
 
-    for (int idx = threadIdx.x; idx < num_items_first_copy; idx += ThreadsInBlock)
+    for (int idx = static_cast<int>(threadIdx.x); idx < num_items_first_copy; idx += ThreadsInBlock)
     {
       output[idx] = dst[idx];
     }
@@ -59,7 +59,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
 
     block_load2sh.CommitAndWait();
 
-    for (int idx = threadIdx.x; idx < num_items; idx += ThreadsInBlock)
+    for (int idx = static_cast<int>(threadIdx.x); idx < num_items; idx += ThreadsInBlock)
     {
       output[idx] = idx < num_items_first_copy ? dst[idx] : dst2[idx - num_items_first_copy];
     }
