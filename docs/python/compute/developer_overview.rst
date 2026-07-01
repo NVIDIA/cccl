@@ -476,10 +476,10 @@ Internally, ``cuda.compute`` separates two kinds of cached state:
   Python threads.
 
 The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
-thread-local and does not take the shared build-cache lock. The shared
-build-cache lock is used when constructing a wrapper that needs to look up,
-coordinate, or create a native build result, not during ordinary execution of an
-already-returned wrapper object.
+thread-local and does not consult the process-wide build-result cache. When a
+wrapper is constructed, a completed build-result hit requires one process-wide
+dictionary lookup and does not take an explicit cache lock. Neither cache layer
+is consulted during ordinary execution of an already-returned wrapper object.
 
 Design requirements
 +++++++++++++++++++
@@ -566,11 +566,15 @@ Concurrent build coordination
 +++++++++++++++++++++++++++++
 
 ``cache_build_result`` is responsible for coordinating concurrent cache misses.
-The first thread to miss a build-result key runs the builder, while other
-threads wait for that in-flight build to complete. If the build succeeds, all
-waiting threads receive the same cached build result. If it fails, the exception
-is propagated to the waiting threads and the failed build is not stored in the
-cache.
+The process-wide dictionary stores either a completed build result or a
+temporary ``_InFlightBuild`` entry. On a miss, each caller creates a candidate
+in-flight entry, and ``dict.setdefault`` elects one caller to run the builder.
+Other callers receive the winning entry and wait on its ``threading.Event``. If
+the build succeeds, the in-flight entry is replaced by the completed result and
+all waiting threads receive that same object. If it fails, the exception is
+propagated to the waiting threads and the failed entry is removed so that a
+later call can retry. Completed-result hits do not allocate an in-flight entry
+or take an explicit cache lock.
 
 When adding a new algorithm, the factory that returns the reusable wrapper object
 should use ``cache_with_registered_key_functions``. The wrapper constructor

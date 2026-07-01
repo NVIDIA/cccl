@@ -117,13 +117,12 @@ class _InFlightBuild:
     Coordination state for one shared build-result currently being built.
 
     The first thread for a cache key runs the builder. Other threads wait on
-    ``condition`` and receive either the completed build result or the builder's
+    ``event`` and receive either the completed build result or the builder's
     exception.
     """
 
     def __init__(self) -> None:
-        self.condition = threading.Condition()
-        self.done = False
+        self.event = threading.Event()
         self.result: Any = None
         self.exception: BaseException | None = None
 
@@ -136,9 +135,9 @@ _process_wide_thread_cache_registry: weakref.WeakSet[_ThreadLocalCaches] = (
 )
 _process_wide_thread_cache_registry_lock = threading.Lock()
 
+# Values are either completed build results or temporary _InFlightBuild entries.
 _process_wide_shared_build_cache: dict[Hashable, Any] = {}
-_process_wide_in_flight_builds: dict[Hashable, _InFlightBuild] = {}
-_process_wide_shared_build_cache_lock = threading.Lock()
+_CACHE_MISS = object()
 
 
 def _get_current_device_info() -> tuple[int, tuple[int, int]]:
@@ -197,45 +196,31 @@ def cache_build_result(
     user_cache_key = _make_cache_key_from_args(*key_args)
     cache_key = (build_result_type, device_id, cc_key, user_cache_key)
 
-    with _process_wide_shared_build_cache_lock:
-        if cache_key in _process_wide_shared_build_cache:
-            return _process_wide_shared_build_cache[cache_key]
-
-        in_flight = _process_wide_in_flight_builds.get(cache_key)
-        if in_flight is None:
-            in_flight = _InFlightBuild()
-            _process_wide_in_flight_builds[cache_key] = in_flight
-            is_builder = True
-        else:
-            is_builder = False
-
-    if is_builder:
-        try:
-            result = builder()
-        except BaseException as exc:
-            with _process_wide_shared_build_cache_lock:
-                _process_wide_in_flight_builds.pop(cache_key, None)
-            with in_flight.condition:
+    cache_entry = _process_wide_shared_build_cache.get(cache_key, _CACHE_MISS)
+    if cache_entry is _CACHE_MISS:
+        in_flight = _InFlightBuild()
+        # setdefault elects one builder without an explicit lock on cache hits.
+        cache_entry = _process_wide_shared_build_cache.setdefault(cache_key, in_flight)
+        if cache_entry is in_flight:
+            try:
+                result = builder()
+                in_flight.result = result
+                _process_wide_shared_build_cache[cache_key] = result
+            except BaseException as exc:
                 in_flight.exception = exc
-                in_flight.done = True
-                in_flight.condition.notify_all()
-            raise
+                _process_wide_shared_build_cache.pop(cache_key, None)
+                raise
+            finally:
+                in_flight.event.set()
+            return result
 
-        with _process_wide_shared_build_cache_lock:
-            _process_wide_shared_build_cache[cache_key] = result
-            _process_wide_in_flight_builds.pop(cache_key, None)
-        with in_flight.condition:
-            in_flight.result = result
-            in_flight.done = True
-            in_flight.condition.notify_all()
-        return result
+    if isinstance(cache_entry, _InFlightBuild):
+        cache_entry.event.wait()
+        if cache_entry.exception is not None:
+            raise cache_entry.exception
+        return cache_entry.result
 
-    with in_flight.condition:
-        while not in_flight.done:
-            in_flight.condition.wait()
-        if in_flight.exception is not None:
-            raise in_flight.exception
-        return in_flight.result
+    return cache_entry
 
 
 class _CacheWithRegisteredKeyFunctions:
@@ -338,8 +323,7 @@ def clear_all_caches():
     >>> cuda.compute.clear_all_caches()
     """
     _clear_wrapper_caches()
-    with _process_wide_shared_build_cache_lock:
-        _process_wide_shared_build_cache.clear()
+    _process_wide_shared_build_cache.clear()
 
 
 class CachableFunction:
