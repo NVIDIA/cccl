@@ -202,74 +202,76 @@ public:
     // static_assert(dimensions <= 2, "unsupported yet.");
     //_CCCL_ASSERT(dimensions <= 2, "unsupported yet.");
 
-    const bool use_src_stream = src_memory_node.is_composite() && dst_memory_node.is_host();
-    const data_place& stream_memory_node = use_src_stream ? src_memory_node : dst_memory_node;
+    // Host places borrow stream pools from the current device. For host-destination copies,
+    // prefer the source place stream so stream/context affinity follows the data origin.
+    const bool dst_is_host_like = dst_memory_node.is_host() || dst_memory_node.is_managed();
+    const bool src_is_host_like = src_memory_node.is_host() || src_memory_node.is_managed();
+    const data_place& stream_memory_node =
+      (dst_is_host_like && !src_is_host_like) ? src_memory_node : dst_memory_node;
     const auto augmented_s = stream_memory_node.getDataStream(bctx.async_resources().get_place_resources());
+    const auto active_stream_place = stream_memory_node.affine_exec_place().activate();
+    static_cast<void>(active_stream_place);
+    auto op = stream_async_op(bctx, augmented_s, prereqs);
+
+    if (bctx.generate_event_symbols())
     {
-      const auto active_stream_place = stream_memory_node.affine_exec_place().activate();
-      static_cast<void>(active_stream_place);
-      auto op = stream_async_op(bctx, augmented_s, prereqs);
+      // TODO + d->get_symbol();
+      op.set_symbol("slice copy " + src_memory_node.to_string() + "->" + dst_memory_node.to_string());
+    }
 
-      if (bctx.generate_event_symbols())
+    cudaStream_t s = augmented_s.stream;
+
+    // Let CUDA figure out from pointers
+    cudaMemcpyKind kind = cudaMemcpyDefault;
+
+    /* Get size */
+    auto& b                  = this->shape;
+    const auto& src_instance = this->instance(src_instance_id);
+    const auto& dst_instance = this->instance(dst_instance_id);
+
+    /* We are copying so the destination will be changed, but from this
+     * might be a constant variable (when using a read-only access). Having a T
+     * type with a const qualifier is therefore possible, even if these API do not
+     * want const pointers. */
+    auto dst_ptr = const_cast<mutable_value_type*>(dst_instance.data_handle());
+    auto src_ptr = src_instance.data_handle();
+    assert(src_ptr);
+    assert(dst_ptr);
+
+    if constexpr (dimensions == 0)
+    {
+      cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, sizeof(T), kind, s));
+    }
+    else if constexpr (dimensions == 1)
+    {
+      cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s));
+    }
+    else if constexpr (dimensions == 2)
+    {
+      cuda_safe_call(cudaMemcpy2DAsync(
+        dst_ptr,
+        dst_instance.stride(1) * sizeof(T),
+        src_ptr,
+        src_instance.stride(1) * sizeof(T),
+        b.extent(0) * sizeof(T),
+        b.extent(1),
+        kind,
+        s));
+    }
+    else
+    {
+      // We only support higher dimensions if they are contiguous !
+      if ((contiguous_dims(src_instance) == dimensions) && (contiguous_dims(dst_instance) == dimensions))
       {
-        // TODO + d->get_symbol();
-        op.set_symbol("slice copy " + src_memory_node.to_string() + "->" + dst_memory_node.to_string());
-      }
-
-      cudaStream_t s = augmented_s.stream;
-
-      // Let CUDA figure out from pointers
-      cudaMemcpyKind kind = cudaMemcpyDefault;
-
-      /* Get size */
-      auto& b                  = this->shape;
-      const auto& src_instance = this->instance(src_instance_id);
-      const auto& dst_instance = this->instance(dst_instance_id);
-
-      /* We are copying so the destination will be changed, but from this
-       * might be a constant variable (when using a read-only access). Having a T
-       * type with a const qualifier is therefore possible, even if these API do not
-       * want const pointers. */
-      auto dst_ptr = const_cast<mutable_value_type*>(dst_instance.data_handle());
-      auto src_ptr = src_instance.data_handle();
-      assert(src_ptr);
-      assert(dst_ptr);
-
-      if constexpr (dimensions == 0)
-      {
-        cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, sizeof(T), kind, s));
-      }
-      else if constexpr (dimensions == 1)
-      {
-        cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s));
-      }
-      else if constexpr (dimensions == 2)
-      {
-        cuda_safe_call(cudaMemcpy2DAsync(
-          dst_ptr,
-          dst_instance.stride(1) * sizeof(T),
-          src_ptr,
-          src_instance.stride(1) * sizeof(T),
-          b.extent(0) * sizeof(T),
-          b.extent(1),
-          kind,
-          s));
+        cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s));
       }
       else
       {
-        // We only support higher dimensions if they are contiguous !
-        if ((contiguous_dims(src_instance) == dimensions) && (contiguous_dims(dst_instance) == dimensions))
-        {
-          cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s));
-        }
-        else
-        {
-          _CCCL_ASSERT(dimensions == 2, "Higher dimensions not supported.");
-        }
+        _CCCL_ASSERT(dimensions == 2, "Higher dimensions not supported.");
       }
-
-      prereqs = op.end(bctx);
     }
+
+    prereqs = op.end(bctx);
   }
 
   bool pin_host_memory(instance_id_t instance_id) override
