@@ -18,6 +18,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
@@ -107,14 +108,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     return cudaSuccess;
   }
 
-// Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          active_policy.single_tile.threads_per_block,
-          (long long) stream,
-          active_policy.single_tile.items_per_thread);
-#endif // CUB_DEBUG_LOG
+  // Log single_reduce_sweep_kernel configuration
+  log("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+      "%d items per thread\n",
+      active_policy.single_tile.threads_per_block,
+      (long long) stream,
+      active_policy.single_tile.items_per_thread);
 
   // Invoke single_reduce_sweep_kernel
   if (const auto error = CubDebug(
@@ -233,16 +232,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const auto current_grid_size =
       static_cast<int>(num_current_items == num_items_per_chunk ? chunk_grid_size : last_chunk_grid_size);
 
-// Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            current_grid_size,
-            active_policy.reduce.threads_per_block,
-            (long long) stream,
-            active_policy.reduce.items_per_thread,
-            reduce_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    // Log device_reduce_sweep_kernel configuration
+    log("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
+        "per thread, %d SM occupancy\n",
+        current_grid_size,
+        active_policy.reduce.threads_per_block,
+        (long long) stream,
+        active_policy.reduce.items_per_thread,
+        reduce_config.sm_occupancy);
 
     if (const auto error = CubDebug(
           launcher_factory(current_grid_size, active_policy.reduce.threads_per_block, 0, stream)
@@ -280,14 +277,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     }
   }
 
-// Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          active_policy.single_tile.threads_per_block,
-          (long long) stream,
-          active_policy.single_tile.items_per_thread);
-#endif // CUB_DEBUG_LOG
+  // Log single_reduce_sweep_kernel configuration
+  log("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+      "%d items per thread\n",
+      active_policy.single_tile.threads_per_block,
+      (long long) stream,
+      active_policy.single_tile.items_per_thread);
 
   // Invoke DeterministicDeviceReduceSingleTileKernel
   if (const auto error = CubDebug(
@@ -348,16 +343,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const rfa_policy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceReduceDeterministic to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
+                 if (logging_enabled())
+                 {
+                   std::stringstream ss;
+                   ss << active_policy;
+                   log_always("Dispatching DeviceReduceDeterministic to compute capability %d.%d with tuning: %s\n",
+                              cc.major_cap(),
+                              cc.minor_cap(),
+                              ss.str().c_str());
+                 }
                }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
   const auto tile_items =
     static_cast<OffsetT>(active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
