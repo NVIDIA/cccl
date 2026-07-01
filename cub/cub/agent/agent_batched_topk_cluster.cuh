@@ -933,18 +933,6 @@ private:
     return old;
   }
 
-  // Relaxed atomic load of `back_local_cnt`. Used by the `all_below_cta` bail to snapshot how many of this block's
-  // candidates have been placed, concurrently with the `back_local_inc` atomics of faster lanes: an atomic-vs-atomic
-  // pair, so it carries no read/write hazard (unlike a plain SMEM read) and needs no extra barrier.
-  _CCCL_DEVICE _CCCL_FORCEINLINE offset_t back_local_load()
-  {
-    const ::cuda::std::uint32_t addr =
-      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.back_local_cnt));
-    offset_t v;
-    asm volatile("ld.relaxed.cta.shared::cta.u32 %0, [%1];" : "=r"(v) : "r"(addr) : "memory");
-    return v;
-  }
-
   _CCCL_DEVICE _CCCL_FORCEINLINE void add_local_selected(offset_t v)
   {
     const ::cuda::std::uint32_t addr =
@@ -1115,10 +1103,11 @@ private:
     // also gets the segment-local index, so share this loop. `mid()` runs once on a full pass -- after the first reload
     // wave (`p_eff` visits) is issued but before it is waited on, overlapping the caller's resident-chunk work with
     // those in-flight copies (skipped if phase 1 stops early); it must be block-uniform with no unmatched barrier.
-    // `should_continue()` is polled after each consumed chunk; returning false breaks the stream so the final filter
-    // bails once the top-k is placed. It must be block-uniform and barrier-free (evaluated after `block_apply`'s
-    // syncs). The histogram and non-deterministic filter pass an always-true predicate (folding back to the
-    // unconditional loop). An early break can leave prefetches in flight, so the pass drains the remaining stages
+    // `should_continue()` is polled once after each consumed chunk (before its refill copy is issued); returning false
+    // breaks the stream so the final filter bails once the top-k is placed. It must be block-uniform and is evaluated
+    // uniformly by every lane, so it may contain a barrier (the deterministic filter's does, to read its placement
+    // counters block-wide). The histogram and non-deterministic filter pass an always-true predicate (folding back to
+    // the unconditional loop). An early break can leave prefetches in flight, so the pass drains the remaining stages
     // before returning (a full pass ends with an empty `inflight_mask`, so the drain is a no-op).
     template <typename BlockApply, typename GenericApply, typename Mid, typename Continue>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -1154,9 +1143,9 @@ private:
 
         // Consume overflow visit `i`: wait for its slot, fold its keys via `block_apply`, then prefetch the chunk
         // `p_eff` visits ahead into the slot just freed (a barrier guards the slot before the async copy can overwrite
-        // the data the block was just reading). Returns false once `block_apply` has set `stop_now` -- polled before
-        // the prefetch so we never launch a copy we would only drain again; the up-to-`p_eff - 1` prefetches already in
-        // flight (from earlier visits or priming) are drained after the loop.
+        // the data the block was just reading). Returns false once `should_continue()` reports the top-k fully placed
+        // -- polled before the prefetch so we never launch a copy we would only drain again; the up-to-`p_eff - 1`
+        // prefetches already in flight (from earlier visits or priming) are drained after the loop.
         const auto consume = [&](offset_t i) -> bool {
           const offset_t o = forward ? i : (m - 1 - i);
           const int stage  = static_cast<int>(o % pe);
@@ -1951,9 +1940,9 @@ private:
       // the boundary-crossing tile (see `all_below_cta` and the per-tile back logic). Early stop is not special-cased:
       // `total_candidates == num_kth` then makes every CTA `all_below_cta`.
       //
-      // Cache `early_stop`/`total_candidates` now, while every block is still tightly coupled to the pass loop's final
-      // `cluster.sync` -- a post-scan re-read of `leader_state` could touch an already-returned leader (barrier gone).
-      const bool early_stopped        = leader_state->early_stop();
+      // Cache `total_candidates` now, while every block is still tightly coupled to the pass loop's final
+      // `cluster.sync`
+      // -- a post-scan re-read of `leader_state` could touch an already-returned leader (barrier gone).
       const offset_t total_candidates = leader_state->len;
       const out_offset_t num_back     = num_kth; // all candidates go to the back; the front holds only selected keys
       const out_offset_t num_selected = k - num_back; // front region
@@ -1992,38 +1981,31 @@ private:
       offset_t running = cand_prefix; // candidates owned by preceding CTAs (this CTA's exclusive back prefix)
       bool tie_active  = (num_back != out_offset_t{0}) && (cand_prefix < static_cast<offset_t>(num_back));
 
-      // Exact, block-local front-complete flag: `front_local_inc` counts only this block's front placements, so a lane
-      // seeing `local + 1 >= my_front` means all `my_front` keys are emitted. Seeded true when this block owns no
-      // front. No remote read, no cross-CTA dependency.
-      bool front_done_seen = (my_front == out_offset_t{0});
-
-      // Uniform early-exit predicate: true once this block's ties are placed and all of its strictly-selected keys are
-      // emitted (it has no further output to contribute). Used between regions (skip the overflow stream);
-      // `process_tiles` folds the equivalent OR into its per-tile scan-reuse barrier instead of calling this.
+      // Uniform "all placed" predicate: true once this block has emitted all `my_front` strictly-selected keys and
+      // resolved its ties, so it has no further output to contribute. `front_local_cnt`/`back_local_cnt` are this
+      // block's own SMEM placement counters; the leading barrier makes the read block-wide (and resynchronizes lanes
+      // that raced ahead through the barrier-free tiles). Polled only at critical points -- between regions and before
+      // each streaming bulk copy -- never per tile.
       auto should_stop = [&]() -> bool {
-        if (tie_active)
-        {
-          return false;
-        }
-        return __syncthreads_or(static_cast<int>(front_done_seen)) != 0;
+        __syncthreads();
+        const bool front_done = temp_storage.front_local_cnt >= static_cast<offset_t>(my_front);
+        // Straddling/above CTAs finish the back when `tie_active` clears; an `all_below_cta` (which never clears it)
+        // finishes once all `my_cand_count` of its candidates are placed.
+        const bool back_done = !tie_active || (temp_storage.back_local_cnt >= my_cand_count);
+        return front_done && back_done;
       };
-      // Sticky, block-uniform flag set by `process_tiles` when `should_stop()` first holds. It short-circuits the
-      // remaining tiles, the overflow stream (via `run_pass`'s `should_continue`), and every later region.
-      bool stop_now = false;
 
       // Process a flat span of `count` keys in scan order, tiled by `threads_per_block * Items`. Strictly-selected keys
       // go to the front via a SMEM atomic (offset by `sel_prefix`); candidates go to the back (see the per-tile logic
       // below). `region_is_terminal` marks this region as the CTA's last, so its last tile -- if ties are unresolved --
       // holds the boundary and scans directly. `running` carries across tiles/regions; `get_idx(pos)` is the
-      // segment-local index for the value payload. Each tile ends with one barrier that reduces the done flag and
-      // bails.
+      // segment-local index for the value payload. No per-tile early-exit or barrier here: the atomic front/back sub-
+      // paths write disjoint slots and may let lanes drift across tiles; only the lazy-scan `else` branch keeps its
+      // barriers. Early exit is decided at critical points (between regions, before each streaming bulk copy) via
+      // `should_stop`, which resynchronizes the drift.
       auto process_tiles = [&](auto items_ic, auto get_key, auto get_idx, int count, bool region_is_terminal) {
         constexpr int items = items_ic();
         constexpr int tile  = threads_per_block * items;
-        if (stop_now)
-        {
-          return;
-        }
         for (int tile_base = 0; tile_base < count; tile_base += tile)
         {
           key_t keys[items];
@@ -2058,14 +2040,8 @@ private:
               const out_offset_t out = static_cast<out_offset_t>(sel_prefix + local);
               block_keys_out[out]    = keys[i];
               write_value(out, get_idx(pos));
-              front_done_seen = front_done_seen || (local + offset_t{1} >= static_cast<offset_t>(my_front));
             }
           }
-
-          // Snapshot for the `all_below_cta` bail (relaxed atomic load -> no hazard vs the back atomics, no barrier).
-          // Monotonic and capped at `my_cand_count`, so observing prior/partial increments can only delay the bail,
-          // never trip it early. Unused by straddling/above CTAs (they bail on `!tie_active`).
-          const offset_t back_seen = all_below_cta ? back_local_load() : offset_t{0};
 
           // Back/tie placement (only while this CTA still has unresolved ties). Three block-uniform sub-paths:
           //   * all_below_cta -- every candidate wins: arrival-order SMEM atomics, no scan, no barrier.
@@ -2166,18 +2142,10 @@ private:
               {
                 tie_active = false;
               }
+              // Trailing barrier for the lazy-scan path only: separate this tile's `placed` read (B1 above) from the
+              // next tile's `back_local_inc`. The other sub-paths write disjoint slots and need no per-tile barrier.
+              __syncthreads();
             }
-          }
-
-          // One barrier per tile: reduce the done flag (and order `scan_storage` reuse against the next tile's scan).
-          // Back-complete is `!tie_active` (straddling/above) or `back_seen >= my_cand_count` (an `all_below_cta` that
-          // never clears `tie_active`), AND a front-complete sighting. The OR only fires once the whole output is
-          // placed (no false positive), so all lanes break together.
-          const bool back_complete = all_below_cta ? (back_seen >= my_cand_count) : !tie_active;
-          if (__syncthreads_or((back_complete && front_done_seen) ? 1 : 0) != 0)
-          {
-            stop_now = true;
-            break;
           }
         }
       };
@@ -2301,27 +2269,28 @@ private:
         }
       };
 
-      // Overflow chunks, in strict segment-index order (the tie-break scan demands it). The histogram leaves the
-      // streamer ping-ponging for L2 locality, but the final filter is a single ordered pass, so we drive the bulk-copy
-      // pipeline here in one fixed direction (`forward == !tie_reversed`). On the block-load path this folds each
-      // landed slot through `process_tiles` (reusing the TMA pipeline) instead of re-reading gmem; the generic fallback
-      // reads gmem chunk by chunk. The streamed unroll (`tie_break_items_streamed`) keeps a tile within a chunk, and
-      // `run_pass`'s `should_continue` breaks the stream once `process_tiles` reports the top-k fully placed.
+      // Overflow chunks. On the block-load path each landed slot folds through `process_tiles` (reusing the TMA
+      // pipeline); the generic fallback reads gmem chunk by chunk. `run_pass`'s `should_continue` breaks the stream
+      // once the top-k is fully placed.
       //
-      // Slot reuse: the histogram leaves its last pass's `p_eff` turn-around chunks resident in the streaming slots,
-      // which (ping-pong) are exactly the first `p_eff` chunks of the *next* direction. Absent an early stop, exactly
-      // `num_passes` passes ran, so that direction is `num_passes % 2 == 0` (compile time); when it matches our scan
-      // direction we keep those chunks (`primed`) and only stream the rest, otherwise we re-prime (overwrite) the slots
-      // in our direction. An early stop makes the pass count -- hence the resident direction -- a runtime value, so we
-      // always re-prime then: it is still safe because on early stop every candidate wins (all CTAs are
-      // `all_below_cta`), so both the front and back writes here are order-independent.
+      // Direction/reuse: the histogram leaves its last pass's `p_eff` turn-around chunks resident, which (ping-pong)
+      // are the first `p_eff` chunks of the streamer's next direction -- `streamer.forward` still tracks that runtime
+      // continuation. Only the straddling CTA (still crossing the K-boundary) needs scan order for its index-ordered
+      // tie-break, so it forces `forward == !tie_reversed` and reuses the resident chunks only when the natural
+      // direction already matches (else re-primes). Every other CTA is order-independent (all_below wins every
+      // candidate, above places none, resolved CTAs have no back left), so it keeps the natural direction and always
+      // reuses the slots -- skipping the re-prime copies, early stop included.
       auto process_overflow = [&](bool reversed) {
         _CCCL_ASSERT(reversed == tie_reversed, "deterministic overflow walk must run in the tie-break scan direction");
-        streamer.forward                    = !tie_reversed;
-        constexpr bool resident_dir_forward = (num_passes % 2) == 0; // streamer `forward` at filter entry (no early
-                                                                     // stop)
-        constexpr bool reuse_resident = (!tie_reversed) == resident_dir_forward;
-        streamer.primed               = reuse_resident && !early_stopped;
+        if (tie_active && !all_below_cta)
+        {
+          streamer.primed  = (streamer.forward == (!tie_reversed));
+          streamer.forward = !tie_reversed;
+        }
+        else
+        {
+          streamer.primed = true;
+        }
 
         streamer.run_pass(
           // Block-load: fold the chunk for overflow visit `o`, resident in streaming slot `stage`, straight from SMEM.
@@ -2397,9 +2366,10 @@ private:
           },
           // No interleaved resident work: the deterministic filter folds its resident span separately.
           [] {},
-          // Break the stream the moment the whole top-k is placed (set by `process_tiles` via `should_stop`).
+          // Checked before each refill bulk copy: break the stream once the whole top-k is placed. `should_stop`'s
+          // barrier also resynchronizes the lanes that drifted through the just-folded chunk's barrier-free tiles.
           [&] {
-            return !stop_now;
+            return !should_stop();
           });
       };
 
@@ -2520,19 +2490,19 @@ private:
         // peeled head prefix. With resident visited before overflow (`reverse_residency`), `should_stop` can skip the
         // overflow re-stream -- mirroring the ascending path.
         process_tail_edge(true);
-        if (!stop_now && !should_stop())
+        if (!should_stop())
         {
           process_tail(true);
         }
-        if (!stop_now && !should_stop())
+        if (!should_stop())
         {
           process_resident(true);
         }
-        if (!stop_now && !should_stop())
+        if (!should_stop())
         {
           process_overflow(true);
         }
-        if (!stop_now && !should_stop())
+        if (!should_stop())
         {
           process_head_edge(true);
         }
@@ -2540,19 +2510,19 @@ private:
       else
       {
         process_head_edge(false);
-        if (!stop_now && !should_stop())
+        if (!should_stop())
         {
           process_resident(false);
         }
-        if (!stop_now && !should_stop())
+        if (!should_stop())
         {
           process_overflow(false);
         }
-        if (!stop_now && !should_stop())
+        if (!should_stop())
         {
           process_tail(false);
         }
-        if (!stop_now && !should_stop())
+        if (!should_stop())
         {
           process_tail_edge(false);
         }
