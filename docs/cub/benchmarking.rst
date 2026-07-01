@@ -201,7 +201,7 @@ You can archive those files for later comparison or analysis.
 Running all benchmarks via tuning scripts (alternative)
 --------------------------------------------------------------------------------
 
-The benchmark suite can also be run using the :ref:`tuning <cub-tuning>` infrastructure.
+The benchmark suite can also be run using the :ref:`tuning infrastructure <cub-tuning-infra>`.
 The tuning infrastructure handles building benchmarks itself, because it records the build times.
 Therefore, it's critical that you run it in a clean build directory without any build artifacts.
 Running cmake is enough. Alternatively, you can also clean your build directory.
@@ -373,4 +373,4 @@ Authoring benchmarks
 
 CUB's benchmarks serve a dual purpose.
 They are used to measure and compare the performance of CUB and to tune CUB's algorithms.
-More information on how to create new benchmarks is provided in the :ref:`CUB tuning guide <cub-tuning>`.
+More information on how to create new benchmarks is provided in the :ref:`CUB tuning infrastructure guide <cub-tuning-infra>`.
