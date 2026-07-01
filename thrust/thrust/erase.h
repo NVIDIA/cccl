@@ -36,7 +36,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  The return value is the number of elements that were erased.
  *
- *  Note: unlike \p remove, erase performs container resizing and is host-only.
+ *  Note: unlike \p remove, \p erase performs container resizing and is host-only.
  *
  *  \param c The vector from which to erase elements.
  *  \param value The value to erase from the vector.
@@ -77,10 +77,10 @@ _CCCL_HOST typename Vector::size_type erase(Vector& c, const U& value);
  *
  *  The return value is the number of elements that were erased.
  *
- *  Note: unlike remove, erase performs container resizing and is host-only.
+ *  Note: unlike \p remove, \p erase performs container resizing and is host-only.
  *
  *  The supplied execution policy \p exec is applied to the stream compaction phase
- *  (the underlying call to remove/remove_if). After compaction, the vector
+ *  (the underlying call to \p remove). After compaction, the vector
  *  is resized through Vector::erase on the host to remove the trailing
  *  elements.
  *
@@ -127,7 +127,7 @@ erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& 
  *
  *  The return value is the number of elements that were erased.
  *
- *  Note: unlike \p remove_if, erase_if performs container resizing and is host-only.
+ *  Note: unlike \p remove_if, \p erase_if performs container resizing and is host-only.
  *
  *  \param c The vector from which to erase elements.
  *  \param pred The predicate used to determine which elements to erase.
@@ -174,10 +174,10 @@ _CCCL_HOST typename Vector::size_type erase_if(Vector& c, Predicate pred);
  *
  *  The return value is the number of elements that were erased.
  *
- *  Note: unlike remove_if, erase_if performs container resizing and is host-only.
+ *  Note: unlike \p remove_if, \p erase_if performs container resizing and is host-only.
  *
  *  The supplied execution policy \p exec is applied to the stream compaction phase
- *  (the underlying call to remove/remove_if). After compaction, the vector
+ *  (the underlying call to \p remove_if). After compaction, the vector
  *  is resized through Vector::erase on the host to remove the trailing
  *  elements.
  *
