@@ -175,6 +175,21 @@ private:
 /**
  * @brief A graph context, which is a CUDA graph that we can automatically built using tasks.
  *
+ * @par Caller-stream finalize semantics
+ *
+ * Default-constructed `graph_ctx` instances launch their CUDA graph on an
+ * internal stream and block in `finalize()` until that stream drains.
+ * Instances constructed with `graph_ctx(user_stream, handle)` (or the
+ * matching explicit-graph constructor) instead launch every graph on the
+ * caller-provided `user_stream`, set `blocking_finalize = false`, and make
+ * `finalize()` non-blocking: the graph launch and the context's
+ * resource-release callback are enqueued on `user_stream` and `finalize()`
+ * returns without synchronizing it. The caller must therefore drive
+ * `user_stream` to completion (e.g. via `cudaStreamSynchronize(user_stream)`)
+ * before observing results on the host or destroying any shared
+ * `async_resources_handle` that was passed to the context (which is
+ * particularly relevant for graph contexts because the handle also owns the
+ * executable-graph cache).
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
@@ -543,17 +558,30 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      host_launch(ldata.read()).set_symbol("wait")->*[]() {};
 
-    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
-      out = owning_container_of<T>::get_value(data);
-    };
+      /* This forces the completion of the host callback, so that the host
+       * thread can use it as a synchronization point for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    /* This forces the completion of the host callback, so that the host
-     * thread can use the content for dynamic control flow */
-    cuda_safe_call(cudaStreamSynchronize(fence()));
+      host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      /* This forces the completion of the host callback, so that the host
+       * thread can use the content for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+
+      return out;
+    }
   }
 
 private:
@@ -595,7 +623,7 @@ private:
 
     ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
 
-    cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
+    cuda_try<cudaGraphInstantiateWithFlags>(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
     return res;
   }

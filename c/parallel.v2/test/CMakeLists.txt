@@ -15,7 +15,7 @@ function(cccl_c_parallel_v2_add_test target_name_var source)
     target_name
     "${target_name}"
   )
-  set(target_name_var ${target_name} PARENT_SCOPE)
+  set(${target_name_var} ${target_name} PARENT_SCOPE)
 
   add_executable(${target_name} "${source}")
   cccl_configure_target(${target_name} DIALECT 20)

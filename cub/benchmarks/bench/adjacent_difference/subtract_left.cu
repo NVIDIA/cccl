@@ -12,7 +12,7 @@
 struct policy_selector_t
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::adjacent_difference::adjacent_difference_policy
+    -> cub::AdjacentDifferencePolicy
   {
     return {TUNE_THREADS_PER_BLOCK,
             TUNE_ITEMS_PER_THREAD,

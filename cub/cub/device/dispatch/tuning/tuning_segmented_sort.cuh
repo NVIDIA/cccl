@@ -68,7 +68,7 @@ struct segmented_radix_sort_policy
 struct sub_warp_merge_sort_policy
 {
   int threads_per_block;
-  int warp_threads;
+  int threads_per_warp;
   int items_per_thread;
   WarpLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
@@ -76,18 +76,18 @@ struct sub_warp_merge_sort_policy
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int segments_per_block() const
   {
-    return threads_per_block / warp_threads;
+    return threads_per_block / threads_per_warp;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
   {
-    return warp_threads * items_per_thread;
+    return threads_per_warp * items_per_thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const sub_warp_merge_sort_policy& lhs, const sub_warp_merge_sort_policy& rhs)
   {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.warp_threads == rhs.warp_threads
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.threads_per_warp == rhs.threads_per_warp
         && lhs.items_per_thread == rhs.items_per_thread && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm;
   }
@@ -103,7 +103,7 @@ struct sub_warp_merge_sort_policy
   {
     return os
         << "sub_warp_merge_sort_policy { .threads_per_block = " << p.threads_per_block
-        << ", .warp_threads = " << p.warp_threads << ", .items_per_thread = " << p.items_per_thread
+        << ", .threads_per_warp = " << p.threads_per_warp << ", .items_per_thread = " << p.items_per_thread
         << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .store_algorithm = " << p.store_algorithm << " }";
   }
@@ -403,7 +403,7 @@ struct policy_hub
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
     static constexpr int PARTITIONING_THRESHOLD = 300;
 
-    using LargeSegmentPolicy = AgentRadixSortDownsweepPolicy<
+    using LargeSegmentPolicy = detail::agent_radix_sort_downsweep_policy<
       BLOCK_THREADS,
       16,
       DominantT,
@@ -436,7 +436,7 @@ struct policy_hub
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
     static constexpr int PARTITIONING_THRESHOLD = 500;
 
-    using LargeSegmentPolicy = AgentRadixSortDownsweepPolicy<
+    using LargeSegmentPolicy = detail::agent_radix_sort_downsweep_policy<
       BLOCK_THREADS,
       19,
       DominantT,
@@ -469,7 +469,7 @@ struct policy_hub
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
     static constexpr int PARTITIONING_THRESHOLD = 500;
 
-    using LargeSegmentPolicy = AgentRadixSortDownsweepPolicy<
+    using LargeSegmentPolicy = detail::agent_radix_sort_downsweep_policy<
       BLOCK_THREADS,
       19,
       DominantT,
@@ -502,7 +502,7 @@ struct policy_hub
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 5 : 4;
     static constexpr int PARTITIONING_THRESHOLD = 500;
 
-    using LargeSegmentPolicy = AgentRadixSortDownsweepPolicy<
+    using LargeSegmentPolicy = detail::agent_radix_sort_downsweep_policy<
       BLOCK_THREADS,
       16,
       DominantT,
@@ -535,7 +535,7 @@ struct policy_hub
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
     static constexpr int PARTITIONING_THRESHOLD = 500;
 
-    using LargeSegmentPolicy = AgentRadixSortDownsweepPolicy<
+    using LargeSegmentPolicy = detail::agent_radix_sort_downsweep_policy<
       BLOCK_THREADS,
       19,
       DominantT,
@@ -566,7 +566,7 @@ struct policy_hub
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int PARTITIONING_THRESHOLD = 500;
-    using LargeSegmentPolicy                    = AgentRadixSortDownsweepPolicy<
+    using LargeSegmentPolicy                    = detail::agent_radix_sort_downsweep_policy<
                          BLOCK_THREADS,
                          23,
                          DominantT,
@@ -597,7 +597,7 @@ struct policy_hub
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int PARTITIONING_THRESHOLD = 500;
-    using LargeSegmentPolicy                    = AgentRadixSortDownsweepPolicy<
+    using LargeSegmentPolicy                    = detail::agent_radix_sort_downsweep_policy<
                          BLOCK_THREADS,
                          23,
                          DominantT,

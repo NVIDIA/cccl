@@ -7,6 +7,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -205,3 +206,43 @@ C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API with greater comparator"
   REQUIRE(d_keys == expected_keys);
   REQUIRE(d_values == expected_values);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin sort-pairs-policy-selector
+struct MergeSortPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::MergeSortPolicy
+  {
+    return {.threads_per_block = 256,
+            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 17 : 14,
+            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+            .load_modifier     = cub::LOAD_DEFAULT,
+            .store_algorithm   = cub::BLOCK_STORE_DIRECT};
+  }
+};
+// example-end sort-pairs-policy-selector
+
+C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API with tuning", "[merge_sort][env]")
+{
+  // example-begin sort-pairs-tuning
+  auto d_keys   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto d_values = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+
+  const auto error = cub::DeviceMergeSort::SortPairs(
+    d_keys.data(), d_values.data(), d_keys.size(), cuda::std::less{}, cuda::execution::tune(MergeSortPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMergeSort::SortPairs failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  thrust::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  // example-end sort-pairs-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_keys == expected_keys);
+  REQUIRE(d_values == expected_values);
+}
+
+#endif // _CCCL_STD_VER >= 2020

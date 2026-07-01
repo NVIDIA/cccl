@@ -15,7 +15,6 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce_nondeterministic.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_arch.cuh>
 
@@ -26,12 +25,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-/**
- * All cub::DeviceReduce::* algorithms are using the same implementation. Some of them, however,
- * should use initial value only for empty problems. If this struct is used as initial value with
- * one of the `DeviceReduce` algorithms, the `init` value wrapped by this struct will only be used
- * for empty problems; it will not be incorporated into the aggregate of non-empty problems.
- */
+//! All cub::DeviceReduce::* algorithms are using the same implementation. Some of them, however,
+//! should use the initial value only for empty problems. If this struct is used as initial value with
+//! one of the `DeviceReduce` algorithms, the `init` value wrapped by this struct will only be used
+//! for empty problems; it will not be incorporated into the aggregate of non-empty problems.
 template <class T>
 struct empty_problem_init_t
 {
@@ -43,17 +40,29 @@ struct empty_problem_init_t
   }
 };
 
-template <class InitT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitT unwrap_empty_problem_init(InitT init)
+struct no_init_t
+{};
+
+//! If this value is passed as initial value to a `DeviceReduce` algorithm, no initial value will be incorporated into
+//! the total aggregate.
+inline constexpr auto no_init = no_init_t{};
+
+template <class OutputIteratorT, class InitValueT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&& d_out, InitValueT init)
 {
-  return init;
+  *d_out = init;
 }
 
-template <class InitT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitT unwrap_empty_problem_init(empty_problem_init_t<InitT> empty_problem_init)
+template <class OutputIteratorT, class InitValueT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+handle_empty_problem(OutputIteratorT&& d_out, empty_problem_init_t<InitValueT> empty_problem_init)
 {
-  return empty_problem_init.init;
+  *d_out = empty_problem_init.init;
 }
+
+template <class OutputIteratorT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&&, no_init_t)
+{}
 
 /**
  * @brief Applies initial value to the block aggregate and stores the result to the output iterator.
@@ -63,9 +72,9 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitT unwrap_empty_problem_init(empty_proble
  * @param init Initial value
  * @param block_aggregate Aggregate value computed by the block
  */
-template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
+template <class OutputIteratorT, class ReductionOpT, class InitValueT, class AccumT>
 _CCCL_HOST_DEVICE void
-finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, InitT init, AccumT block_aggregate)
+finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, InitValueT init, AccumT block_aggregate)
 {
   *d_out = reduction_op(init, block_aggregate);
 }
@@ -76,9 +85,16 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, I
  * @param d_out Iterator to the output aggregate
  * @param block_aggregate Aggregate value computed by the block
  */
-template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
+template <class OutputIteratorT, class ReductionOpT, class InitValueT, class AccumT>
+_CCCL_HOST_DEVICE void finalize_and_store_aggregate(
+  OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitValueT>, AccumT block_aggregate)
+{
+  *d_out = block_aggregate;
+}
+
+template <class OutputIteratorT, class ReductionOpT, class AccumT>
 _CCCL_HOST_DEVICE void
-finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitT>, AccumT block_aggregate)
+finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, no_init_t, AccumT block_aggregate)
 {
   *d_out = block_aggregate;
 }
@@ -100,7 +116,7 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
  *   Binary reduction functor type having member
  *   `auto operator()(const T &a, const U &b)`
  *
- * @tparam InitT
+ * @tparam InitValueT
  *   Initial value type
  *
  * @tparam AccumT
@@ -123,10 +139,13 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
  *   Binary reduction functor
  */
 template <typename PolicySelector,
+          bool StableReductionOrder,
           typename InputIteratorT,
+          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
           typename AccumT,
+          typename InitValueT,
           typename TransformOpT>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
@@ -134,17 +153,35 @@ template <typename PolicySelector,
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)) void DeviceReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  _CCCL_GRID_CONSTANT AccumT* const d_out,
+  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   GridEvenShare<OffsetT> even_share,
   ReductionOpT reduction_op,
+  [[maybe_unused]] _CCCL_GRID_CONSTANT const InitValueT init,
   TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
+  if constexpr (!StableReductionOrder)
+  {
+    static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
+                  "Only plus is currently supported in nondeterministic reduce");
+
+    // The atomic code path already finishes in this kernel, so check if we have an empty problem and handle it
+    if (num_items == 0)
+    {
+      if (threadIdx.x == 0)
+      {
+        reduce::handle_empty_problem(d_out, init);
+      }
+
+      return;
+    }
+  }
+
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
-    AgentReducePolicy<policy.threads_per_block,
-                      policy.items_per_thread,
+    AgentReducePolicy<0,
+                      0,
                       AccumT,
                       policy.vec_size,
                       policy.block_algorithm,
@@ -164,10 +201,25 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   // Consume input tiles
   AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeTiles(even_share);
 
-  // Output result
+  // Output result, only thread 0 has valid value in block aggregate
   if (threadIdx.x == 0)
   {
-    detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
+    if constexpr (StableReductionOrder)
+    {
+      detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
+    }
+    else
+    {
+      // TODO: replace this with other atomic operations when specified
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_60,
+        ({
+          ::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]);
+          atomic_target.fetch_add(blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate,
+                                  ::cuda::memory_order_relaxed);
+        }),
+        (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
+    }
   }
 }
 
@@ -192,7 +244,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`
  *
- * @tparam InitT
+ * @tparam InitValueT
  *   Initial value type
  *
  * @tparam AccumT
@@ -218,7 +270,7 @@ template <typename PolicySelector,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
 #if _CCCL_HAS_CONCEPTS()
@@ -230,14 +282,14 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        OutputIteratorT d_out,
                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
                                        ReductionOpT reduction_op,
-                                       _CCCL_GRID_CONSTANT const InitT init,
+                                       _CCCL_GRID_CONSTANT const InitValueT init,
                                        TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
-    AgentReducePolicy<policy.threads_per_block,
-                      policy.items_per_thread,
+    AgentReducePolicy<0,
+                      0,
                       AccumT,
                       policy.vec_size,
                       policy.block_algorithm,
@@ -259,7 +311,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   {
     if (threadIdx.x == 0)
     {
-      *d_out = detail::reduce::unwrap_empty_problem_init(init);
+      detail::reduce::handle_empty_problem(d_out, init);
     }
 
     return;
@@ -273,83 +325,6 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   if (threadIdx.x == 0)
   {
     detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
-  }
-}
-
-template <typename PolicySelector,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename AccumT,
-          typename InitT,
-          typename TransformOpT>
-#if _CCCL_HAS_CONCEPTS()
-  requires reduce_nondeterministic::reduce_nondeterministic_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  current_policy<PolicySelector>()
-    .reduce
-    .threads_per_block)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                                                       _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-                                                                       _CCCL_GRID_CONSTANT const OffsetT num_items,
-                                                                       GridEvenShare<OffsetT> even_share,
-                                                                       ReductionOpT reduction_op,
-                                                                       _CCCL_GRID_CONSTANT const InitT init,
-                                                                       TransformOpT transform_op)
-{
-  // todo: This static_assert fails with nvc++ CUDA compilation.
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_60,
-    (),
-    (static_assert(!cuda::std::is_same_v<AccumT, double>,
-                   "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");))
-
-  static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
-                "Only plus is currently supported in nondeterministic reduce");
-
-  // Check if empty problem
-  if (num_items == 0)
-  {
-    if (threadIdx.x == 0)
-    {
-      *d_out = detail::reduce::unwrap_empty_problem_init(init);
-    }
-
-    return;
-  }
-
-  // Thread block type for reducing input tiles
-  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
-  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
-  using agent_policy_t =
-    AgentReducePolicy<policy.threads_per_block,
-                      policy.items_per_thread,
-                      AccumT,
-                      policy.vec_size,
-                      policy.block_algorithm,
-                      policy.load_modifier,
-                      NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
-  using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
-
-  // Shared memory storage
-  __shared__ typename AgentReduceT::TempStorage temp_storage;
-
-  // Consume input tiles
-  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeTiles(even_share);
-
-  // Output result
-  // only thread 0 has valid value in block aggregate
-  if (threadIdx.x == 0)
-  {
-    // TODO: replace this with other atomic operations when specified
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                      ({
-                        ::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]);
-                        atomic_target.fetch_add(blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate,
-                                                ::cuda::memory_order_relaxed);
-                      }),
-                      (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
   }
 }
 } // namespace detail::reduce

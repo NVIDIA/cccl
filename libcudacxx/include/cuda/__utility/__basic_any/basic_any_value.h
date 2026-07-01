@@ -77,6 +77,7 @@ public:
   //! @post `has_value() == false`
   __basic_any() = default;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   //! @brief Constructs a `__basic_any` object that contains a copy of `__value`.
   //! @pre `__value` must be move constructible. `_Tp` must satisfy the
   //! requirements of `_Interface`.
@@ -91,6 +92,7 @@ public:
   {
     __emplace<_Up>(static_cast<_Tp&&>(__value));
   }
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   //! @brief Constructs a `__basic_any` object that contains a new object of type `_Tp`
   //! constructed as `_Tp(__args...)`, or as `_Tp{__args...}` if `_Tp(__args...)` is

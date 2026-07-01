@@ -43,16 +43,16 @@
 
 namespace cuda::experimental
 {
-template <::cuda::std::size_t... _Counts>
+template <::cuda::std::size_t... _UnitCounts>
 struct __group_as_static_tag;
 
-template <::cuda::std::size_t... _Counts, bool _IsExhaustive>
-class group_as<__group_as_static_tag<_Counts...>, _IsExhaustive>
+template <::cuda::std::size_t... _UnitCounts, bool _IsExhaustive>
+class group_as<__group_as_static_tag<_UnitCounts...>, _IsExhaustive>
 {
-  static_assert(((_Counts != 0) && ...), "all _Counts must not be zero");
-  static_assert((::cuda::std::in_range<unsigned>(_Counts) && ...), "all _Counts must be within uint32_t range");
+  static_assert(((_UnitCounts != 0) && ...), "all _UnitCounts must not be zero");
+  static_assert((::cuda::std::in_range<unsigned>(_UnitCounts) && ...), "all _UnitCounts must be within uint32_t range");
 
-  static constexpr auto __counts_sum = (0 + ... + _Counts);
+  static constexpr auto __counts_sum = (0 + ... + _UnitCounts);
 
 public:
   _CCCL_HIDE_FROM_ABI explicit group_as() = default;
@@ -60,27 +60,27 @@ public:
   _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
   _CCCL_REQUIRES(_IsExhaustive2)
   _CCCL_DEVICE_API explicit constexpr group_as(
-    const ::cuda::std::integer_sequence<::cuda::std::size_t, _Counts...>&) noexcept
+    const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&) noexcept
   {}
 
   _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
   _CCCL_REQUIRES((!_IsExhaustive2))
-  _CCCL_DEVICE_API explicit constexpr group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _Counts...>&,
-                                               const non_exhaustive_t&) noexcept
+  _CCCL_DEVICE_API explicit constexpr group_as(
+    const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&, const non_exhaustive_t&) noexcept
   {}
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
   {
-    return sizeof...(_Counts);
+    return sizeof...(_UnitCounts);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(::cuda::std::size_t __i) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i) noexcept
   {
-    if (__i >= sizeof...(_Counts))
+    if (__i >= sizeof...(_UnitCounts))
     {
       _CCCL_THROW(::std::out_of_range, "__i is out of range");
     }
-    constexpr ::cuda::std::size_t __counts[]{_Counts...};
+    constexpr ::cuda::std::size_t __counts[]{_UnitCounts...};
     return __counts[__i];
   }
 
@@ -89,18 +89,18 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned count(::cuda::std::size_t __i) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned unit_count(::cuda::std::size_t __i) const noexcept
   {
-    return static_cast<unsigned>(static_count(__i));
+    return static_cast<unsigned>(static_unit_count(__i));
   }
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
-    constexpr auto __static_prev_nunits  = _PrevMappingResult::static_count();
-    constexpr auto __static_curr_ngroups = sizeof...(_Counts);
+    constexpr auto __static_prev_nunits  = _PrevMappingResult::static_unit_count();
+    constexpr auto __static_curr_ngroups = sizeof...(_UnitCounts);
     constexpr auto __static_ngroups =
       (__static_prev_ngroups != ::cuda::std::dynamic_extent)
         ? (__static_prev_ngroups * __static_curr_ngroups)
@@ -117,9 +117,9 @@ public:
       return _MappingResult::invalid();
     }
 
-    const auto __prev_nunits      = __prev_mapping_result.count();
-    const auto __prev_unit_rank   = __prev_mapping_result.rank();
-    constexpr auto __curr_ngroups = static_cast<unsigned>(sizeof...(_Counts));
+    const auto __prev_nunits      = __prev_mapping_result.unit_count();
+    const auto __prev_unit_rank   = __prev_mapping_result.unit_rank();
+    constexpr auto __curr_ngroups = static_cast<unsigned>(sizeof...(_UnitCounts));
     const auto __ngroups          = __prev_mapping_result.group_count() * __curr_ngroups;
 
     if constexpr (_IsExhaustive)
@@ -156,15 +156,17 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (unsigned __i = 0; __i < __curr_ngroups; ++__i)
     {
-      const auto __i_count = count(__i);
+      const auto __i_count = unit_count(__i);
       if (__prev_unit_rank < __sum + __i_count)
       {
         const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
         const auto __n          = __i_count;
         const auto __rank       = __prev_unit_rank - __sum;
         const auto __lane_mask =
-          ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
-            __prev_mapping_result.lane_mask(), __n, __rank);
+          (::cuda::std::is_same_v<_Unit, thread_level>)
+            ? ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
+                __prev_mapping_result.lane_mask(), __n, __rank)
+            : __prev_mapping_result.lane_mask();
         return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
       }
       __sum += __i_count;
@@ -214,7 +216,7 @@ public:
     return _GroupCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(::cuda::std::size_t __i) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i) noexcept
   {
     if (__i >= _GroupCount)
     {
@@ -228,7 +230,7 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned count(::cuda::std::size_t __i) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned unit_count(::cuda::std::size_t __i) const noexcept
   {
     if (__i >= _GroupCount)
     {
@@ -237,12 +239,12 @@ public:
     return __counts_[__i];
   }
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
-    constexpr auto __static_prev_nunits  = _PrevMappingResult::static_count();
+    constexpr auto __static_prev_nunits  = _PrevMappingResult::static_unit_count();
     constexpr auto __static_curr_ngroups = _GroupCount;
     constexpr auto __static_ngroups =
       (__static_prev_ngroups != ::cuda::std::dynamic_extent)
@@ -260,8 +262,8 @@ public:
       return _MappingResult::invalid();
     }
 
-    const auto __prev_nunits      = __prev_mapping_result.count();
-    const auto __prev_unit_rank   = __prev_mapping_result.rank();
+    const auto __prev_nunits      = __prev_mapping_result.unit_count();
+    const auto __prev_unit_rank   = __prev_mapping_result.unit_rank();
     constexpr auto __curr_ngroups = static_cast<unsigned>(_GroupCount);
     const auto __ngroups          = __prev_mapping_result.group_count() * __curr_ngroups;
 
@@ -280,15 +282,17 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (unsigned __i = 0; __i < __curr_ngroups; ++__i)
     {
-      const auto __i_count = count(__i);
+      const auto __i_count = unit_count(__i);
       if (__prev_unit_rank < __sum + __i_count)
       {
         const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
         const auto __n          = __i_count;
         const auto __rank       = __prev_unit_rank - __sum;
         const auto __lane_mask =
-          ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
-            __prev_mapping_result.lane_mask(), __n, __rank);
+          (::cuda::std::is_same_v<_Unit, thread_level>)
+            ? ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
+                __prev_mapping_result.lane_mask(), __n, __rank)
+            : __prev_mapping_result.lane_mask();
         return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
       }
       __sum += __i_count;
@@ -297,13 +301,13 @@ public:
   }
 };
 
-template <::cuda::std::size_t... _Counts>
-_CCCL_DEVICE group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _Counts...>&)
-  -> group_as<__group_as_static_tag<_Counts...>, true>;
+template <::cuda::std::size_t... _UnitCounts>
+_CCCL_DEVICE group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&)
+  -> group_as<__group_as_static_tag<_UnitCounts...>, true>;
 
-template <::cuda::std::size_t... _Counts>
-_CCCL_DEVICE group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _Counts...>&, const non_exhaustive_t&)
-  -> group_as<__group_as_static_tag<_Counts...>, false>;
+template <::cuda::std::size_t... _UnitCounts>
+_CCCL_DEVICE group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&,
+                      const non_exhaustive_t&) -> group_as<__group_as_static_tag<_UnitCounts...>, false>;
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_spannable<_Tp> _CCCL_AND ::cuda::std::

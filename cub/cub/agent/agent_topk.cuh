@@ -369,7 +369,8 @@ struct AgentTopK
     OffsetT tile_base = blockIdx.x * tile_items;
     OffsetT offset    = threadIdx.x * items_per_thread + tile_base;
 
-    for (int i_block = blockIdx.x; i_block < total_num_blocks - 1; i_block += gridDim.x)
+    for (int i_block = static_cast<int>(blockIdx.x); i_block < total_num_blocks - 1;
+         i_block += static_cast<int>(gridDim.x))
     {
       // Ensure that the temporary storage from previous iteration can be reused
       __syncthreads();
@@ -601,7 +602,7 @@ struct AgentTopK
     int histo_offset = 0;
 
     auto body = [&] {
-      const int bin_idx  = histo_offset + threadIdx.x;
+      const int bin_idx  = static_cast<int>(histo_offset + threadIdx.x);
       const OffsetT prev = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
       const OffsetT cur  = temp_storage.histogram[bin_idx];
 

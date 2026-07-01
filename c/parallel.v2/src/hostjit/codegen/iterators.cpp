@@ -119,7 +119,7 @@ extern "C" __device__ void {}(const void* state, {}* result);
   __device__ {1} operator*() const {{
     {0} copy = *this;
     if (copy._delta != 0) {{
-      unsigned long long offset = static_cast<unsigned long long>(copy._delta);
+      long long offset = copy._delta;
       {3}(copy.state, &offset);
     }}
     {1} result;
@@ -257,7 +257,7 @@ extern "C" __device__ void {}(void* state, const void* value);
     {2} proxy;
     __builtin_memcpy(proxy.state, state, {3});
     if (_delta != 0) {{
-      unsigned long long offset = static_cast<unsigned long long>(_delta);
+      long long offset = _delta;
       {4}(proxy.state, &offset);
     }}
     return proxy;

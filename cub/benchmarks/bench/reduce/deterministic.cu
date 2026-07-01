@@ -29,7 +29,7 @@ struct policy_selector_t
 template <class T>
 void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
 {
-  using init_t = T;
+  using init_value_t = T;
 
   const auto elements = static_cast<int>(state.get_int64("Elements{io}"));
 
@@ -54,7 +54,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
-      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, elements, cuda::std::plus<>{}, init_t{}, env);
+      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, elements, cuda::std::plus<>{}, init_value_t{}, env);
   });
 }
 

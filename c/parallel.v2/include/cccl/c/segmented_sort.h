@@ -27,8 +27,8 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_segmented_sort_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
   void* jit_compiler; /* Owns both wrappers below — one TU, one cubin */
   void* sort_fn; /* Wrapper around CUB's copy-overload (selector always 0) */
   void* sort_fn_overwrite; /* Wrapper around CUB's DoubleBuffer overload; reports selector */
@@ -79,7 +79,7 @@ CCCL_C_API CUresult cccl_device_segmented_sort(
   cccl_iterator_t d_values_out,
   uint64_t num_items,
   uint64_t num_segments,
-  cccl_iterator_t start_offset_in,
+  cccl_iterator_t begin_offset_in,
   cccl_iterator_t end_offset_in,
   bool is_overwrite_okay,
   int* selector,

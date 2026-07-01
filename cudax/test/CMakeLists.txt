@@ -16,7 +16,10 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
   set(test_sources ${ARGN})
 
   cccl_add_executable(${test_target} SOURCES ${ARGN} ADD_CTEST)
-  target_include_directories(${test_target} PRIVATE "common")
+  target_include_directories(
+    ${test_target}
+    PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/common"
+  )
   target_link_libraries(
     ${test_target}
     PRIVATE #
@@ -90,6 +93,11 @@ cudax_add_catch2_test(test_target copy_bytes
     copy_bytes/mdspan_d2h_h2d_relaxed.cu
 )
 
+cudax_add_catch2_test(test_target fill_bytes
+    fill_bytes/fill_bytes_mdspan.cu
+    fill_bytes/fill_bytes_mdspan_example.cu
+)
+
 cudax_add_catch2_test(test_target copy
     copy/copy.cu
     copy/copy_edge_cases.cu
@@ -136,6 +144,8 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
+add_subdirectory(multi_gpu)
+
 cudax_add_catch2_test(test_target group.mapping.binary_partition
     group/mapping/binary_partition.cu
 )
@@ -172,6 +182,9 @@ cudax_add_catch2_test(test_target group.segmented_algorithm
 cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
 )
+cudax_add_catch2_test(test_target group.invoke_one
+    group/invoke_one.cu
+)
 
 cudax_add_catch2_test(test_target coop.reduce.this_thread
     coop/reduce/this_thread.cu
@@ -181,6 +194,30 @@ cudax_add_catch2_test(test_target coop.reduce.this_warp
 )
 cudax_add_catch2_test(test_target coop.reduce.this_block
     coop/reduce/this_block.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_cluster
+    coop/reduce/this_cluster.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_grid
+    coop/reduce/this_grid.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.threads_within_warp
+    coop/reduce/threads_within_warp.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.warps_within_block
+    coop/reduce/warps_within_block.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle.threads_within_warp
+    coop/shuffle/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle_down.threads_within_warp
+    coop/shuffle_down/threads_within_warp.cu
+)
+
+cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
+    coop/shuffle_up/threads_within_warp.cu
 )
 
 if (cudax_ENABLE_CUFILE)

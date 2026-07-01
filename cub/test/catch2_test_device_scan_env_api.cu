@@ -9,6 +9,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -415,3 +416,49 @@ C2H_TEST("cub::DeviceScan::InclusiveScan in-place accepts stream", "[scan][env]"
   REQUIRE(error == cudaSuccess);
   REQUIRE(data == expected);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin exclusive-sum-policy-selector
+struct ScanPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanPolicy
+  {
+    return {
+      .algorithm = cub::ScanAlgorithm::lookback,
+      .lookback =
+        cub::ScanLookbackPolicy{
+          .threads_per_block = 256,
+          .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 15 : 12,
+          .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+          .load_modifier     = cub::LOAD_DEFAULT,
+          .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+          .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+          .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
+      .lookahead = cub::ScanLookaheadPolicy{} // ignored since algorithm is lookback
+    };
+  }
+};
+// example-end exclusive-sum-policy-selector
+
+C2H_TEST("cub::DeviceScan::ExclusiveSum env-based API with tuning", "[scan][env]")
+{
+  // example-begin exclusive-sum-tuning
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
+  auto output = thrust::device_vector<int>(4, thrust::no_init);
+
+  const auto error = cub::DeviceScan::ExclusiveSum(
+    input.begin(), output.begin(), input.size(), cuda::execution::tune(ScanPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveSum failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{0, 1, 3, 6};
+  // example-end exclusive-sum-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

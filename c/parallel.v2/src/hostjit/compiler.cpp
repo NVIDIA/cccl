@@ -914,6 +914,9 @@ public:
 #ifdef _WIN32
     arg_strings.push_back("-fms-compatibility");
     arg_strings.push_back("-fms-compatibility-version=19.40");
+    // We do not have access to the windows CRT, but we are only running single threaded anyway
+    // Otherwise we have undefined symbols like _tls_index and _Init_thread_epoch
+    arg_strings.push_back("-fno-threadsafe-statics");
 #else
     arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
@@ -1204,9 +1207,11 @@ public:
         return result;
       }
 
-      // Feed any NVRTC LTOIR (Numba-produced user ops) directly to nvJitLink
-      // alongside the device PTX. nvJitLink resolves the extern op symbol(s)
-      // referenced by the PTX from these LTOIR modules.
+      // Feed LTO-IR inputs to nvJitLink alongside the device PTX. This is the
+      // escape-hatch path for callers with pre-built nvcc -dlto artifacts;
+      // Python-emitted user ops travel as LLVM bitcode through the path above
+      // and are already inlined into the PTX by the time we get here.
+      // nvJitLink resolves any remaining extern symbol(s) from these modules.
       for (const auto& ltoir_path : config.device_ltoir_files)
       {
         std::ifstream f(ltoir_path, std::ios::binary);
@@ -1371,6 +1376,7 @@ public:
        "cudaMemset",
        "cudaMemsetAsync",
        "cudaDeviceSynchronize",
+       "cudaFuncSetAttribute",
        "cudaGetDevice",
        "cudaGetDeviceProperties",
        "cudaGetLastError",

@@ -15,7 +15,7 @@
 
 __global__ void increment_kernel(int* p, int n)
 {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  int idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (idx < n)
   {
     p[idx] += 1;
@@ -58,9 +58,7 @@ TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
   }
   CUDART_REQUIRE(cudaDeviceSynchronize());
 
-  constexpr int block = 64;
-  const int grid      = (n + block - 1) / block;
-  increment_kernel<<<grid, block>>>(p, n); // device transform
+  increment_kernel<<<4, 64>>>(p, n); // device transform
   CUDART_REQUIRE(cudaGetLastError());
   CUDART_REQUIRE(cudaDeviceSynchronize());
 
@@ -70,5 +68,117 @@ TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
   }
 
   CUDART_REQUIRE(cudaFree(p));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
+
+// smoke test for GPU memory allocation/deallocation
+
+TEST_CASE("cudaMalloc/cudaFree round-trip works", "[cuda_smoke][device_memory]")
+{
+  (void) cudaGetLastError();
+
+  constexpr int n = 256;
+
+  int* d_ptr = nullptr;
+  CUDART_REQUIRE(cudaMalloc(&d_ptr, n * sizeof(int)));
+  REQUIRE(d_ptr != nullptr);
+
+  int h_ins[n];
+  for (int i = 0; i < n; ++i)
+  {
+    h_ins[i] = i;
+  }
+  CUDART_REQUIRE(cudaMemcpy(d_ptr, h_ins, n * sizeof(int), cudaMemcpyHostToDevice));
+
+  increment_kernel<<<4, 64>>>(d_ptr, n);
+  CUDART_REQUIRE(cudaGetLastError());
+  CUDART_REQUIRE(cudaDeviceSynchronize());
+
+  int h_outs[n];
+  CUDART_REQUIRE(cudaMemcpy(h_outs, d_ptr, n * sizeof(int), cudaMemcpyDeviceToHost));
+  for (int i = 0; i < n; ++i)
+  {
+    REQUIRE(h_outs[i] == i + 1);
+  }
+
+  CUDART_REQUIRE(cudaFree(d_ptr));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
+
+// smoke test for pinned host memory
+
+TEST_CASE("cudaMallocHost round-trip works", "[cuda_smoke][pinned_memory]")
+{
+  (void) cudaGetLastError();
+
+  constexpr int n = 256;
+
+  int* h_pinned = nullptr;
+  CUDART_REQUIRE(cudaMallocHost(&h_pinned, n * sizeof(int)));
+  REQUIRE(h_pinned != nullptr);
+
+  int* d_ptr = nullptr;
+  CUDART_REQUIRE(cudaMalloc(&d_ptr, n * sizeof(int)));
+  REQUIRE(d_ptr != nullptr);
+
+  for (int i = 0; i < n; ++i)
+  {
+    h_pinned[i] = i;
+  }
+  CUDART_REQUIRE(cudaMemcpy(d_ptr, h_pinned, n * sizeof(int), cudaMemcpyHostToDevice));
+
+  increment_kernel<<<4, 64>>>(d_ptr, n);
+  CUDART_REQUIRE(cudaGetLastError());
+  CUDART_REQUIRE(cudaDeviceSynchronize());
+
+  CUDART_REQUIRE(cudaMemcpy(h_pinned, d_ptr, n * sizeof(int), cudaMemcpyDeviceToHost));
+  for (int i = 0; i < n; ++i)
+  {
+    REQUIRE(h_pinned[i] == i + 1);
+  }
+
+  CUDART_REQUIRE(cudaFree(d_ptr));
+  CUDART_REQUIRE(cudaFreeHost(h_pinned));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
+
+// smoke test for mapped pinned host memory
+
+TEST_CASE("cudaHostAlloc mapped (zero-copy) works", "[cuda_smoke][pinned_memory][mapped]")
+{
+  (void) cudaGetLastError();
+
+  int can_map = 0;
+  CUDART_REQUIRE(cudaDeviceGetAttribute(&can_map, cudaDevAttrCanMapHostMemory, 0));
+  if (!can_map)
+  {
+    SKIP("Device cannot map host memory (cudaDevAttrCanMapHostMemory == 0).");
+  }
+
+  constexpr int n = 256;
+
+  int* h_mapped = nullptr;
+  CUDART_REQUIRE(cudaHostAlloc(&h_mapped, n * sizeof(int), cudaHostAllocMapped));
+  REQUIRE(h_mapped != nullptr);
+
+  for (int i = 0; i < n; ++i)
+  {
+    h_mapped[i] = i;
+  }
+
+  int* d_view = nullptr;
+  CUDART_REQUIRE(cudaHostGetDevicePointer(&d_view, h_mapped, 0));
+  REQUIRE(d_view != nullptr);
+
+  increment_kernel<<<4, 64>>>(d_view, n);
+  CUDART_REQUIRE(cudaGetLastError());
+  CUDART_REQUIRE(cudaDeviceSynchronize());
+
+  for (int i = 0; i < n; ++i)
+  {
+    REQUIRE(h_mapped[i] == i + 1);
+  }
+
+  CUDART_REQUIRE(cudaFreeHost(h_mapped));
   REQUIRE(cudaGetLastError() == cudaSuccess);
 }

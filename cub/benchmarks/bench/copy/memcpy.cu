@@ -78,8 +78,7 @@ struct offset_to_size_t
 
 struct policy_selector_t
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::batch_memcpy::batch_memcpy_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::BatchedCopyPolicy
   {
     return {
       {
@@ -90,14 +89,12 @@ struct policy_selector_t
         TUNE_LARGE_THREADS * TUNE_LARGE_BUFFER_BYTES_PER_THREAD,
         TUNE_WARP_LEVEL_THRESHOLD,
         TUNE_BLOCK_LEVEL_THRESHOLD,
-        cub::detail::delay_constructor_policy{
-          static_cast<cub::detail::delay_constructor_kind>(TUNE_BUFF_DELAY_CONSTRUCTOR_ID),
-          TUNE_BUFF_MAGIC_NS,
-          TUNE_BUFF_L2_WRITE_LATENCY_NS},
-        cub::detail::delay_constructor_policy{
-          static_cast<cub::detail::delay_constructor_kind>(TUNE_BLOCK_DELAY_CONSTRUCTOR_ID),
-          TUNE_BLOCK_MAGIC_NS,
-          TUNE_BLOCK_L2_WRITE_LATENCY_NS},
+        cub::LookbackDelayPolicy{static_cast<cub::LookbackDelayAlgorithm>(TUNE_BUFF_DELAY_CONSTRUCTOR_ID),
+                                 TUNE_BUFF_MAGIC_NS,
+                                 TUNE_BUFF_L2_WRITE_LATENCY_NS},
+        cub::LookbackDelayPolicy{static_cast<cub::LookbackDelayAlgorithm>(TUNE_BLOCK_DELAY_CONSTRUCTOR_ID),
+                                 TUNE_BLOCK_MAGIC_NS,
+                                 TUNE_BLOCK_L2_WRITE_LATENCY_NS},
 
       },
       {TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD},

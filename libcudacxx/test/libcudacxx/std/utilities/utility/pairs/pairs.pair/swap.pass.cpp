@@ -20,29 +20,19 @@
 struct S
 {
   int i;
-  TEST_FUNC S()
+  TEST_FUNC constexpr S()
       : i(0)
   {}
-  TEST_FUNC S(int j)
+  TEST_FUNC constexpr S(int j)
       : i(j)
   {}
-  TEST_FUNC S* operator&()
-  {
-    assert(false);
-    return this;
-  }
-  TEST_FUNC S const* operator&() const
-  {
-    assert(false);
-    return this;
-  }
-  TEST_FUNC bool operator==(int x) const
+  TEST_FUNC constexpr bool operator==(int x) const
   {
     return i == x;
   }
 };
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
   {
     using P1 = cuda::std::pair<int, short>;
@@ -54,6 +44,7 @@ int main(int, char**)
     assert(p2.first == 3);
     assert(p2.second == 4);
   }
+
   {
     using P1 = cuda::std::pair<int, S>;
     P1 p1(3, S(4));
@@ -64,6 +55,14 @@ int main(int, char**)
     assert(p2.first == 3);
     assert(p2.second == 4);
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

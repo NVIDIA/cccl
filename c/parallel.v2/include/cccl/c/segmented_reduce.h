@@ -26,8 +26,8 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_segmented_reduce_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
   void* jit_compiler;
   void* segmented_reduce_fn;
 } cccl_device_segmented_reduce_build_result_t;
@@ -71,8 +71,8 @@ CCCL_C_API CUresult cccl_device_segmented_reduce(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  uint64_t num_offsets,
-  cccl_iterator_t start_offset_in,
+  uint64_t num_segments,
+  cccl_iterator_t begin_offset_in,
   cccl_iterator_t end_offset_in,
   cccl_op_t op,
   cccl_value_t init,

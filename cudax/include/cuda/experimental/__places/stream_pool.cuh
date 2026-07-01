@@ -111,6 +111,12 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
   {
     return k_no_stream_id;
   }
+
+  // ``cuStreamGetId`` is not capture-safe: during
+  // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` it rejects the query
+  // *and* invalidates the capture itself. Gate on ``cudaStreamIsCapturing``
+  // (which is safe) and conservatively report an unknown stream ID while
+  // capture is in flight.
   if (is_stream_capturing(stream))
   {
     return k_no_stream_id;
@@ -179,8 +185,18 @@ class stream_pool
         , externally_owned(true)
     {}
 
-    // Release every stream the pool has lazily created. Externally-owned
-    // single-stream pools wrap user streams and must leave them alone.
+    // Release every stream the pool has lazily created. We intentionally
+    // skip entries that came from an externally-owned `decorated_stream`
+    // (single-stream pool built from a user-supplied stream, used for
+    // `exec_place::cuda_stream(s)`); those are not ours to destroy.
+    //
+    // `cudaStreamDestroy` is documented to be asynchronous when work is
+    // still pending on the stream: the call returns immediately and CUDA
+    // releases the stream's resources once the device has completed its
+    // pending work. That contract is what makes it safe to tear the pool
+    // down at the end of an STF context without blocking on a caller stream
+    // synchronize, as long as the outbound event chain has already been
+    // recorded back onto the user stream.
     ~impl() noexcept
     {
       if (externally_owned)

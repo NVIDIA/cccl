@@ -123,7 +123,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  std::string sass = inspect_sass(build.cubin, build.cubin_size);
+  std::string sass = inspect_sass(build.payload, build.payload_size);
   CHECK(sass.find("UBLKCP") != std::string::npos);
 
   op = make_operation("op", get_reduce_op(get_type_info<int>().type));
@@ -142,7 +142,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  sass = inspect_sass(build.cubin, build.cubin_size);
+  sass = inspect_sass(build.payload, build.payload_size);
   CHECK(sass.find("UBLKCP") != std::string::npos);
 }
 
@@ -264,6 +264,49 @@ C2H_TEST("Transform works with integral types with well-known operations", "[tra
   }
 }
 
+C2H_TEST("Transform works with logical and bitwise well-known operations", "[transform][well_known]")
+{
+  std::optional<transform_build_cache_t> no_cache = std::nullopt;
+  const std::optional<std::string> no_key         = std::nullopt;
+
+  {
+    const std::vector<uint32_t> input{0U, 1U, 0xaaaaaaaaU, 0xffffffffU};
+    pointer_t<uint32_t> input_ptr(input);
+    pointer_t<uint32_t> output_ptr(input.size());
+
+    cccl_op_t bit_not_op = make_well_known_unary_operation();
+    bit_not_op.type      = cccl_op_kind_t::CCCL_BIT_NOT;
+    unary_transform(input_ptr, output_ptr, input.size(), bit_not_op, no_cache, no_key);
+
+    REQUIRE(std::vector<uint32_t>(output_ptr) == std::vector<uint32_t>{0xffffffffU, 0xfffffffeU, 0x55555555U, 0U});
+  }
+
+  const std::vector<uint8_t> lhs{1, 1, 0, 0};
+  const std::vector<uint8_t> rhs{1, 0, 1, 0};
+  pointer_t<uint8_t> lhs_ptr(lhs);
+  pointer_t<uint8_t> rhs_ptr(rhs);
+
+  const auto check_logical_op = [&](cccl_op_kind_t kind, const std::vector<uint8_t>& expected) {
+    pointer_t<uint8_t> output_ptr(lhs.size());
+    cccl_op_t op = make_well_known_binary_operation();
+    op.type      = kind;
+
+    binary_transform(
+      make_boolean_iterator(lhs_ptr),
+      make_boolean_iterator(rhs_ptr),
+      make_boolean_iterator(output_ptr),
+      lhs.size(),
+      op,
+      no_cache,
+      no_key);
+
+    REQUIRE(std::vector<uint8_t>(output_ptr) == expected);
+  };
+
+  check_logical_op(cccl_op_kind_t::CCCL_LOGICAL_AND, {1, 0, 0, 0});
+  check_logical_op(cccl_op_kind_t::CCCL_LOGICAL_OR, {1, 1, 1, 0});
+}
+
 struct pair
 {
   short a;
@@ -274,6 +317,37 @@ struct pair
     return a == other.a && b == other.b;
   }
 };
+
+struct custom_int
+{
+  int value;
+};
+
+C2H_TEST("Transform works with C++ source for custom types with a well-known unary operation",
+         "[transform][well_known][cpp_source]")
+{
+  const std::string source = R"(
+struct custom_int { int value; };
+extern "C" __device__ void logical_not_custom_int(void* input_ptr, void* output_ptr) {
+  const custom_int* input = static_cast<const custom_int*>(input_ptr);
+  bool* output = static_cast<bool*>(output_ptr);
+  *output = !input->value;
+}
+)";
+  const std::vector<custom_int> input{{0}, {1}, {-2}, {42}};
+  pointer_t<custom_int> input_ptr(input);
+  std::optional<transform_build_cache_t> no_cache = std::nullopt;
+  const std::optional<std::string> no_key         = std::nullopt;
+
+  operation_t op_state = make_cpp_operation("logical_not_custom_int", source);
+  cccl_op_t op         = op_state;
+  op.type              = cccl_op_kind_t::CCCL_LOGICAL_NOT;
+  pointer_t<uint8_t> output_ptr(input.size());
+
+  unary_transform(input_ptr, make_boolean_iterator(output_ptr), input.size(), op, no_cache, no_key);
+
+  REQUIRE(std::vector<uint8_t>(output_ptr) == std::vector<uint8_t>{1, 0, 0, 0});
+}
 
 struct Transform_DifferentOutputTypes_Fixture_Tag;
 C2H_TEST("Transform works with output of different type", "[transform]")
@@ -743,7 +817,7 @@ C2H_TEST("Transform works with C++ source operations using custom headers", "[tr
   cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
-  cccl_device_transform_build_result_t build;
+  cccl_device_transform_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
@@ -818,3 +892,96 @@ extern "C" __device__ void op(void* state_ptr, void* x_ptr, void* out_ptr) {
     REQUIRE(counter[0] == static_cast<int>(num_items));
   }
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("Transform build result has AoT metadata populated", "[transform][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_unary_operation();
+  pointer_t<T> in(1);
+  pointer_t<T> out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unary_transform_build(
+      &build,
+      in,
+      out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.transform_kernel_lowered_name != nullptr);
+  CHECK(build.transform_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+}
+
+C2H_TEST("Transform compile/load round-trip", "[transform][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_unary_operation();
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unary_transform_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.transform_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.transform_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.transform_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(n);
+  CUstream null_stream = nullptr;
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_unary_transform(build, input_ptr, output_ptr, n, op, null_stream));
+
+  std::vector<T> expected(input);
+  std::transform(expected.begin(), expected.end(), expected.begin(), [](T x) {
+    return -x;
+  });
+  REQUIRE(expected == std::vector<T>(output_ptr));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+}
+#endif // CCCL_C_PARALLEL_V2

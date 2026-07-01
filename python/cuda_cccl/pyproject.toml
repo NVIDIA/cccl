@@ -3,7 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython"]
+# cmake>=3.30 is needed for FindCUDAToolkit's CUDA::nvfatbin /
+# CUDA::nvfatbin_static imported targets, which the v2 (HostJIT) backend links
+# against. Listed here so isolated builds (pip's default) pick it up.
+requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython", "cmake>=3.30"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -85,10 +88,30 @@ test-cu12 = [
 test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
 test-sysctk12 = ["cuda-cccl[sysctk12]", "pytest", "pytest-xdist", "cupy-cuda12x"]
 test-sysctk13 = ["cuda-cccl[sysctk13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
-bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]", "cupy-cuda12x"]
-bench-cu13 = ["cuda-cccl[cu13]", "cuda-bench[cu13]", "cupy-cuda13x"]
-bench-sysctk12 = ["cuda-cccl[sysctk12]", "cuda-bench[cu12]", "cupy-cuda12x"]
-bench-sysctk13 = ["cuda-cccl[sysctk13]", "cuda-bench[cu13]", "cupy-cuda13x"]
+bench-cu12 = [
+  "cuda-cccl[cu12]",
+  "cuda-bench[cu12]",
+  "cupy-cuda12x",
+  "pytest-benchmark",
+]
+bench-cu13 = [
+  "cuda-cccl[cu13]",
+  "cuda-bench[cu13]",
+  "cupy-cuda13x",
+  "pytest-benchmark",
+]
+bench-sysctk12 = [
+  "cuda-cccl[sysctk12]",
+  "cuda-bench[cu12]",
+  "cupy-cuda12x",
+  "pytest-benchmark",
+]
+bench-sysctk13 = [
+  "cuda-cccl[sysctk13]",
+  "cuda-bench[cu13]",
+  "cupy-cuda13x",
+  "pytest-benchmark",
+]
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
@@ -101,7 +124,7 @@ minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"
 
 [tool.scikit-build.cmake]
-version = ">=3.21"
+version = ">=3.30"
 args = []
 build-type = "Release"
 source-dir = "."
@@ -127,6 +150,10 @@ python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = [
+  # numpy>=2.3 stubs use PEP 695 syntax that mypy can't parse under
+  # python_version=3.10; skip following its imports to keep the 3.10 target.
+  "numpy",
+  "numpy.*",
   "numba.*",
   "llvmlite.*",
   "cuda.cccl.*",
