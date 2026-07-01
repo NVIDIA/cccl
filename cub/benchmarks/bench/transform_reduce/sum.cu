@@ -3,6 +3,8 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/functional.h>
+
 #include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
@@ -25,21 +27,12 @@ struct policy_selector
 };
 #endif // !TUNE_BASE
 
-template <class T>
-struct square_t
-{
-  __host__ __device__ T operator()(const T& x) const
-  {
-    return x * x;
-  }
-};
-
 template <typename T, typename OffsetT>
 void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using init_value_t   = T;
   using reduction_op_t = ::cuda::std::plus<>;
-  using transform_op_t = square_t<T>;
+  using transform_op_t = thrust::square<T>;
 
   // Retrieve axis parameters
   const auto elements = state.get_int64("Elements{io}");
