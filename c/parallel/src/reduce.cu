@@ -63,7 +63,7 @@ auto convert_determinism(cccl_determinism_t d)
     case CCCL_GPU_TO_GPU:
       return __determinism_t::__gpu_to_gpu;
   }
-  std::terminate();
+  throw std::runtime_error("unknown cccl_determinism_t value");
 }
 
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
