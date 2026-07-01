@@ -506,6 +506,12 @@ operators or ``cuda.coop._experimental``. The full ``cu12`` and ``cu13`` extras
 remain outside the support claim until the Numba CUDA dependency is replaced by
 a free-threading-compatible implementation.
 
+CI runs ``test_free_threading_stress.py`` directly from the minimal test job.
+The v1 backend is covered across the supported CUDA 12 and 13 lanes, and a
+separate CTK 13.X minimal job runs the same suite against the v2 HostJIT
+backend. Pytest runs each suite in one process while the stress tests create
+and synchronize their own worker threads.
+
 Build and validation requirements
 +++++++++++++++++++++++++++++++++
 
