@@ -288,9 +288,12 @@ public:
     return __size_;
   }
 
+  // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
+  // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+  template <class _SizeType = size_type>
   [[nodiscard]] _CCCL_API constexpr size_type max_size() const noexcept
   {
-    return numeric_limits<size_type>::max() / sizeof(value_type);
+    return numeric_limits<_SizeType>::max() / sizeof(value_type);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept
