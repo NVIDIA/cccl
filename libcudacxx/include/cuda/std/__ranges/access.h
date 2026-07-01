@@ -85,6 +85,7 @@ struct __fn
   // This has been made valid as a defect report for C++17 onwards, however gcc below 11.0 does not implement it
 #if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
   _CCCL_TEMPLATE(class _Tp)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[]) const noexcept
   {
@@ -93,6 +94,7 @@ struct __fn
 #endif // (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
 
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
   {
@@ -193,6 +195,7 @@ _CCCL_CONCEPT __unqualified_end = _CCCL_FRAGMENT(__unqualified_end_, _Tp);
 struct __fn
 {
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
   {

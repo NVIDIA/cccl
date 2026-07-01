@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: msvc
-
 // <utility>
 
 // template <class T1, class T2> struct pair
@@ -22,7 +20,7 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
   {
     using P1 = cuda::std::pair<int, int*>;
@@ -33,6 +31,12 @@ int main(int, char**)
     assert(p3.first == P1(3, nullptr));
     assert(p3.second == P2(nullptr, 4));
   }
+  return true;
+}
 
+int main(int, char**)
+{
+  test();
+  static_assert(test());
   return 0;
 }

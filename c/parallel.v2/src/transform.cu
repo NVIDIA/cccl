@@ -58,7 +58,7 @@ try
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build_ptr->cc = cc_major * 10 + cc_minor;
-  cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
+  cccl::detail::copy_cubin(result.cubin, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler = result.compiler;
   build_ptr->transform_fn = result.fn_ptr;
 
@@ -106,7 +106,7 @@ try
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build_ptr->cc = cc_major * 10 + cc_minor;
-  cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
+  cccl::detail::copy_cubin(result.cubin, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler = result.compiler;
   build_ptr->transform_fn = result.fn_ptr;
 

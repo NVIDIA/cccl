@@ -40,6 +40,32 @@ Example: handle interop patterns
      assert(released == raw_stream);
    }
 
+Error handling
+--------------
+
+CCCL Runtime APIs use C++ exceptions for error handling. Failures from runtime abstractions are reported by throwing an
+exception, so normal code can be written without manually checking and propagating a status code after each operation.
+
+This differs from the traditional CUDA Runtime API, where operations generally return ``cudaError_t`` values that the
+caller must check against ``cudaSuccess`` and propagate or handle. When using CUDA Runtime calls directly, continue to
+check their return values; when using CCCL Runtime wrappers, handle failures with normal C++ exception handling.
+
+At a CUDA Runtime-style boundary, catch ``cuda::cuda_error`` and return its stored status.
+
+.. code:: cpp
+
+   #include <cuda/stream>
+
+   cudaError_t use_stream(cuda::stream_ref stream) noexcept {
+     try {
+       // stream usage
+       stream.sync();
+       return cudaSuccess;
+     } catch (const cuda::cuda_error& err) {
+       return err.status();
+     }
+   }
+
 Device selection
 ----------------
 

@@ -599,7 +599,7 @@ struct WarpScanShfl
     ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
     // Find index of first set bit
-    int segment_first_lane = ::cuda::std::__bit_log2(ballot);
+    int segment_first_lane = static_cast<int>(::cuda::std::__bit_log2(ballot));
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()

@@ -75,7 +75,6 @@ private:
   using traits                 = detail::radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
-  using bit_ordered_inversion  = typename traits::bit_ordered_inversion_policy;
 
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
 
@@ -133,7 +132,7 @@ private:
   }
 
   // Compute histogram over keys
-  template <bool IsFullTile, typename DigitExtractorT, typename FilterOpT>
+  template <detail::topk::select SelectDirection, bool IsFullTile, typename DigitExtractorT, typename FilterOpT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void compute_histograms(
     const bit_ordered_type (&unsigned_keys)[items_per_thread],
     int valid_items,
@@ -147,8 +146,9 @@ private:
       const bit_ordered_type key = unsigned_keys[i];
       if ((IsFullTile || item_index < valid_items) && filter_op(key))
       {
-        const auto digit = digit_extractor.Digit(key);
-        atomicAdd(&storage.stage.passes.histogram[digit], histo_counter_t{1});
+        const auto digit  = static_cast<int>(digit_extractor.Digit(key));
+        const auto bucket = (SelectDirection == detail::topk::select::min) ? digit : (num_buckets - 1 - digit);
+        atomicAdd(&storage.stage.passes.histogram[bucket], histo_counter_t{1});
       }
     }
   }
@@ -255,7 +255,7 @@ private:
       auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_prefix};
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(pass_begin_bit, pass_bits, decomposer);
-      compute_histograms<IsFullTile>(unsigned_keys, valid_items, digit_extractor, filter_op);
+      compute_histograms<SelectDirection, IsFullTile>(unsigned_keys, valid_items, digit_extractor, filter_op);
       __syncthreads();
 
       // Compute prefix sum over buckets
@@ -273,7 +273,11 @@ private:
 
       // Update the kth_key_prefix and prefix_mask for the next pass
       // Basically, we will have valid_items candidates with the prefix kth_key_prefix
-      kth_key_prefix |= bit_ordered_type(storage.stage.passes.pass_state.bucket) << pass_begin_bit;
+      const auto kth_key_digit =
+        (SelectDirection == detail::topk::select::min)
+          ? storage.stage.passes.pass_state.bucket
+          : (num_buckets - 1 - storage.stage.passes.pass_state.bucket);
+      kth_key_prefix |= bit_ordered_type(kth_key_digit) << pass_begin_bit;
       prefix_mask |= pass_mask;
 
       // Short-circuit if all candidates are amongst the top-k
@@ -346,10 +350,6 @@ private:
           flip_back_bits[i / 32] |= (1u << (i % 32));
           unsigned_keys[i] = twiddled_zero;
         }
-        if constexpr (SelectDirection == detail::topk::select::max)
-        {
-          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
-        }
       }
     }
     else
@@ -358,10 +358,6 @@ private:
       for (int i = 0; i < items_per_thread; ++i)
       {
         unsigned_keys[i] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[i]);
-        if constexpr (SelectDirection == detail::topk::select::max)
-        {
-          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
-        }
       }
     }
 
@@ -420,18 +416,16 @@ private:
     {
       const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
 
-      const bool is_valid     = (IsFullTile || linear_tid * items_per_thread + i < valid_items);
-      const bool is_selected  = key_prefix < kth_prefix;
+      const bool is_valid = (IsFullTile || linear_tid * items_per_thread + i < valid_items);
+      using comparison_t  = ::cuda::std::
+        conditional_t<SelectDirection == detail::topk::select::min, ::cuda::std::less<>, ::cuda::std::greater<>>;
+      const bool is_selected  = comparison_t{}(key_prefix, kth_prefix);
       const bool is_candidate = key_prefix == kth_prefix;
 
       // We differentiate between candidates and selected only if not all candidates make it into the top-k items.
       int item_class = (!select_all_candidates) && is_candidate ? 1 : 0;
 
       // Untwiddle the key before storing in shared memory
-      if constexpr (SelectDirection == detail::topk::select::max)
-      {
-        unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
-      }
       unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
 
       if (is_valid && (is_selected || is_candidate))

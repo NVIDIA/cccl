@@ -157,6 +157,8 @@ html_static_path = ["_static"] if os.path.exists("_static") else []
 if os.path.exists("img"):
     html_static_path.append("img")
 
+html_js_files = ["deduplicate_toc.js"]
+
 html_title = "CUDA Core Compute Libraries"
 
 # -- Options for extensions --------------------------------------------------

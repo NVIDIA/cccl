@@ -20,6 +20,30 @@ struct non_sequence_value
   int payload;
 };
 
+enum class dependent_direction
+{
+  min,
+  max
+};
+
+template <dependent_direction Value>
+struct dependent_direction_tag
+{
+  static constexpr auto value = Value;
+};
+
+template <class Tag>
+TEST_FUNC void test_dependent_constant_type()
+{
+  constexpr auto direction = Tag::value;
+  using constant_t         = cuda::args::constant<direction>;
+
+  // Regression: NVCC bug generated a host stub using a cv/ref-qualified constant type while device registration used
+  // the unqualified type, causing cudaErrorInvalidDeviceFunction when launching the kernel.
+  static_assert(cuda::std::is_same_v<typename constant_t::value_type, dependent_direction>);
+  static_assert(cuda::std::is_same_v<constant_t, cuda::args::constant<Tag::value, dependent_direction>>);
+}
+
 TEST_FUNC void test()
 {
   // Basic value
@@ -45,6 +69,11 @@ TEST_FUNC void test()
   {
     constexpr auto sa_neg = cuda::args::constant<-1>{};
     static_assert(cuda::args::__unwrap(sa_neg) == -1);
+  }
+
+  // Dependent value
+  {
+    test_dependent_constant_type<dependent_direction_tag<dependent_direction::max>>();
   }
 
 #if TEST_HAS_CLASS_NTTP

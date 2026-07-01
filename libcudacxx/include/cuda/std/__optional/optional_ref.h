@@ -108,17 +108,21 @@ public:
     !__is_cuda_std_optional_v<remove_cvref_t<_Up>> && !is_same_v<remove_cvref_t<_Up>, in_place_t>
     && is_constructible_v<_Tp&, _Up> && !__from_temporary<_Up>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_construct_from_rvalue<_Up> _CCCL_AND is_convertible_v<_Up, _Tp&>)
   _CCCL_API constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_construct_from_rvalue<_Up> _CCCL_AND(!is_convertible_v<_Up, _Tp&>))
   _CCCL_API explicit constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__from_temporary<_Up>)

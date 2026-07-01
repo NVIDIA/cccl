@@ -69,11 +69,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   using requested_determinism_t =
     ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                 ::cuda::execution::determinism::__get_determinism_t,
-                                                ::cuda::execution::determinism::run_to_run_t>;
+                                                ::cuda::execution::determinism::gpu_to_gpu_t>;
   using requested_order_t =
     ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                 ::cuda::execution::output_ordering::__get_output_ordering_t,
-                                                ::cuda::execution::output_ordering::sorted_t>;
+                                                ::cuda::execution::output_ordering::stable_sorted_t>;
   constexpr auto is_determinism_not_guaranteed =
     ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
   constexpr auto is_output_order_unsorted =
@@ -83,6 +83,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   static_assert(is_determinism_not_guaranteed && is_output_order_unsorted,
                 "cub::DeviceTopK only supports the case where determinism is not guaranteed and output order is "
                 "unsorted.");
+
+  // TODO (elstehle): align requirement validation with cub::DeviceBatchedTopK in CCCL 4.0. cub::DeviceTopK does not
+  // yet inspect cuda::execution::tie_break, so it still accepts requirement combinations that cub::DeviceBatchedTopK
+  // rejects. It should enforce that determinism and tie_break are requested together (or both omitted to take the
+  // default) and that an explicit tie_break requires cuda::execution::determinism::gpu_to_gpu.
 
   // Query relevant properties from the environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
@@ -167,7 +172,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 //! The result of ``DeviceTopK`` is governed by two orthogonal execution requirements: *which* items are selected
 //! (``cuda::execution::determinism``, optionally refined by ``cuda::execution::tie_break``) and the order in which
 //! they are written (``cuda::execution::output_ordering``). When the caller does not opt out, the committed default
-//! is the most reproducible behavior: deterministic results (``cuda::execution::determinism::run_to_run``), ties
+//! is the most reproducible behavior: deterministic results (``cuda::execution::determinism::gpu_to_gpu``), ties
 //! resolved toward the smaller (lower) source index (``cuda::execution::tie_break::prefer_smaller_index``), and
 //! stable-sorted output (``cuda::execution::output_ordering::stable_sorted``). Callers opt *out* of these guarantees
 //! to obtain faster implementations.

@@ -553,7 +553,7 @@ struct AgentThreeWayPartition
   {
     // Blocks are launched in increasing order, so just assign one tile per block
     // Current tile index
-    const int tile_idx = blockIdx.x;
+    const int tile_idx = static_cast<int>(blockIdx.x);
 
     // Global offset for the current tile
     const OffsetT tile_offset = tile_idx * TILE_ITEMS;

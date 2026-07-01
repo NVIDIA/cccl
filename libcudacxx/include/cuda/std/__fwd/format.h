@@ -100,6 +100,19 @@ template <class... _Args>
 using wformat_string = basic_format_string<wchar_t, type_identity_t<_Args>...>;
 #endif // _CCCL_HAS_WCHAR_T()
 
+template <class _OutIt>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT format_to_n_result;
+
+enum class range_format
+{
+  disabled,
+  map,
+  set,
+  sequence,
+  string,
+  debug_string,
+};
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

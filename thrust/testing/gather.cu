@@ -127,7 +127,7 @@ void TestGatherToDiscardIterator(const size_t n)
   thrust::discard_iterator<> d_result =
     thrust::gather(d_map.begin(), d_map.end(), d_source.begin(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(n);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -307,7 +307,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
     thrust::make_discard_iterator(),
     is_even_gather_if<unsigned int>());
 
-  thrust::discard_iterator<> reference(n);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
