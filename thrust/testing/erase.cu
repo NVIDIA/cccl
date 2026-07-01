@@ -217,3 +217,15 @@ VectorUnitTest<TestVectorRangeEraseBigVector, NumericTypes, thrust::device_vecto
   TestVectorRangeEraseBigVectorDeviceInstance;
 VectorUnitTest<TestVectorRangeEraseBigVector, NumericTypes, thrust::host_vector, std::allocator>
   TestVectorRangeEraseBigVectorHostInstance;
+
+void TestEraseHeterogeneousType()
+{
+  thrust::device_vector<double> data{1.0, 2.0, 1.0, 3.0, 2.0};
+
+  auto erased = thrust::erase(data, 2);
+
+  thrust::device_vector<double> ref{1.0, 1.0, 3.0};
+  ASSERT_EQUAL(erased, 2ul);
+  ASSERT_EQUAL(data, ref);
+}
+DECLARE_UNITTEST(TestEraseHeterogeneousType);
