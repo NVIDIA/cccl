@@ -330,15 +330,22 @@ reduce(_Comm&& __comm, _Env&& __env, _InputRange&& __inputs, _OutputIt __output,
 //! @param[in] __comm The communicator.
 //! @param[in] __inputs The input range to reduce.
 //! @param[out] __output The output iterator receiving the result.
-_CCCL_TEMPLATE(class _Comm, class _InputRange, class _OutputIt)
+_CCCL_TEMPLATE(class _Comm,
+               class _InputRange,
+               class _OutputIt,
+               class _Tp       = ::cuda::std::iter_value_t<_OutputIt>,
+               class _BinaryOp = ::cuda::std::plus<>)
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::ranges::random_access_range<_InputRange>
-                 _CCCL_AND ::cuda::std::output_iterator<_OutputIt, ::cuda::std::ranges::range_value_t<_InputRange>>)
-_CCCL_HOST_API void reduce(_Comm&& __comm, _InputRange&& __inputs, _OutputIt __output)
+                 _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
+_CCCL_HOST_API void
+reduce(_Comm&& __comm, _InputRange&& __inputs, _OutputIt __output, _Tp __init = {}, _BinaryOp __op = {})
 {
   reduce(::cuda::std::forward<_Comm>(__comm),
          ::cuda::std::execution::env<>{},
          ::cuda::std::forward<_InputRange>(__inputs),
-         ::cuda::std::forward<_OutputIt>(__output));
+         ::cuda::std::forward<_OutputIt>(__output),
+         ::cuda::std::move(__init),
+         ::cuda::std::move(__op));
 }
 } // namespace cuda::experimental
 
