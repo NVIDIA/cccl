@@ -5,8 +5,6 @@
 // When the sequential backend is invoked from device code (CDP) with device_vector
 // iterators, wrapped_function also unwraps proxy references (device_reference<T> → T&)
 // before the implicit conversion occurs.
-//
-// See discussion: https://github.com/NVIDIA/cccl/issues/4420
 
 #include <thrust/adjacent_difference.h>
 #include <thrust/binary_search.h>
