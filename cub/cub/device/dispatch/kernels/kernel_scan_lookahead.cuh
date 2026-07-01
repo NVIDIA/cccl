@@ -790,11 +790,13 @@ struct lookahead_scan_closure
         regNextBlockIdx                     = refNextBlockIdxR.data();
         refNextBlockIdxR.setFenceLdsToAsyncProxy();
       }
-      bool nextIdxTileValid = false;
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_100,
-        (nextIdxTileValid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
-        (nextIdxTileValid = static_cast<int>(regNextBlockIdx.x) < numTiles;));
+      const bool nextIdxTileValid = [&] {
+        bool valid = false;
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                          (valid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
+                          (valid = static_cast<int>(regNextBlockIdx.x) < numTiles;));
+        return valid;
+      }();
 
       if (squad == squadReduce)
       {

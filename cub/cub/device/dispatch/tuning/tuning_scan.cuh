@@ -980,6 +980,7 @@ struct policy_selector
     }
     if (cc >= ::cuda::compute_capability{9, 0} && require_stable_reduction_order)
     {
+      // TODO(srinivasyadav18): tune for Hopper, using Blackwell default tunings for now.
       return get_sm100_fallback_lookahead_policy();
     }
     return {};
