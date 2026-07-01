@@ -130,14 +130,14 @@ Policy selectors can simply be added to those:
       stream_ref,
       resource,
       cuda::execution::tune(
-        my_reduce_tuning<int>{}, my_reduce_tuning{})
+        my_reduce_tuning<int>{}, my_scan_tuning{})
     };
     cub::DeviceReduce::Reduce(d_in, d_out, num_items, op, init, env);
 
     // alternatively, if we want to extend an env `other_env`
     auto env = cuda::std::execution::env{
       other_env,
-      cuda::execution::tune(my_reduce_tuning{})
+      cuda::execution::tune(my_scan_tuning{})
     };
     cub::DeviceReduce::Reduce(d_in, d_out, num_items, op, init, env);
 
