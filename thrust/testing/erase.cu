@@ -26,7 +26,7 @@ void verify_erase(Vector input, typename Vector::value_type value, Vector expect
   ASSERT_EQUAL(input, expected);
 }
 
-template <class Vector, class T>
+template <class Vector>
 void verify_erase(
   std::initializer_list<int> input, typename Vector::value_type value, std::initializer_list<int> expected)
 {
