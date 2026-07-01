@@ -26,16 +26,16 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! Policy for the large-segment radix sort step in DeviceSegmentedSort.
+//! Policy for the large-segment radix sort step in @ref DeviceSegmentedSort.
 struct SegmentedSortRadixSortPolicy
 {
-  int threads_per_block;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  RadixRankAlgorithm rank_algorithm;
-  BlockScanAlgorithm scan_algorithm;
-  int radix_bits;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading keys from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading keys from global memory
+  RadixRankAlgorithm rank_algorithm; //!< The @ref RadixRankAlgorithm used for ranking keys within a block
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the internal digit-count scan
+  int radix_bits; //!< Number of bits per radix digit pass
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const SegmentedSortRadixSortPolicy& lhs, const SegmentedSortRadixSortPolicy& rhs) noexcept
@@ -64,15 +64,15 @@ struct SegmentedSortRadixSortPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! Policy for the sub-warp merge sort step in DeviceSegmentedSort (small/medium segments).
+//! Policy for the sub-warp merge sort step in @ref DeviceSegmentedSort (small/medium segments).
 struct SegmentedSortSubWarpMergeSortPolicy
 {
-  int threads_per_block;
-  int threads_per_warp;
-  int items_per_thread;
-  WarpLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  WarpStoreAlgorithm store_algorithm;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int threads_per_warp; //!< Number of threads assigned to sort a single segment
+  int items_per_thread; //!< Number of items processed per thread
+  WarpLoadAlgorithm load_algorithm; //!< The @ref WarpLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  WarpStoreAlgorithm store_algorithm; //!< The @ref WarpStoreAlgorithm used for storing items to global memory
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int segments_per_block() const noexcept
   {
@@ -110,13 +110,13 @@ struct SegmentedSortSubWarpMergeSortPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! Top-level tuning policy for DeviceSegmentedSort.
+//! Top-level tuning policy for @ref DeviceSegmentedSort.
 struct SegmentedSortPolicy
 {
-  SegmentedSortRadixSortPolicy large_segment;
-  SegmentedSortSubWarpMergeSortPolicy small_segment;
-  SegmentedSortSubWarpMergeSortPolicy medium_segment;
-  int partitioning_threshold;
+  SegmentedSortRadixSortPolicy large_segment; //!< Policy used for segments sorted via radix sort
+  SegmentedSortSubWarpMergeSortPolicy small_segment; //!< Policy used for the smallest segments
+  SegmentedSortSubWarpMergeSortPolicy medium_segment; //!< Policy used for medium-sized segments
+  int partitioning_threshold; //!< Segment size threshold above which a segment is sorted via radix sort
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const SegmentedSortPolicy& lhs, const SegmentedSortPolicy& rhs) noexcept

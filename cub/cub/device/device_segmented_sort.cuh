@@ -120,7 +120,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //! Example:
 //!
-//! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+//! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
 //!    :language: c++
 //!    :dedent:
 //!    :start-after: example-begin sort-keys-custom-policy
