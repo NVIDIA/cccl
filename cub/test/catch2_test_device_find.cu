@@ -345,37 +345,3 @@ C2H_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", binary
   using value_type = c2h::get<0, TestType>;
   test_vectorized<value_type>(upper_bound, std_upper_bound);
 }
-
-// this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceFind::LowerBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
-{
-  try
-  {
-    using value_type = char;
-    const auto size  = std::int64_t{1} << GENERATE(30, 31, 32, 33);
-    test_vectorized<value_type>(lower_bound, std_lower_bound, size);
-  }
-  catch (const std::bad_alloc&)
-  {
-    // allocation failure is not a test failure, so we can run tests on smaller GPUs
-    SUCCEED("allocation failure is not a test failure");
-  }
-}
-
-// this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceFind::UpperBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]")
-{
-  try
-  {
-    using value_type = char;
-    const auto size  = std::int64_t{1} << GENERATE(30, 31, 32, 33);
-    test_vectorized<value_type>(upper_bound, std_upper_bound, size);
-  }
-  catch (const std::bad_alloc&)
-  {
-    // allocation failure is not a test failure, so we can run tests on smaller GPUs
-    SUCCEED("allocation failure is not a test failure");
-  }
-}

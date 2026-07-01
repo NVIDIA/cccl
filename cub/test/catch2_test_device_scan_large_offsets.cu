@@ -72,7 +72,7 @@ struct mod_op
   }
 };
 
-C2H_TEST("DeviceScan works for very large number of items", "[scan][device]", offset_types)
+C2H_TEST("DeviceScan works for very large number of items", "[large-mem][scan][device]", offset_types)
 try
 {
   using op_t     = cuda::std::plus<>;
@@ -116,7 +116,7 @@ catch (std::bad_alloc&)
   SUCCEED("exceeding memory is not a failure");
 }
 
-C2H_TEST("DeviceScan works for very large number of items", "[scan][device]", offset_types)
+C2H_TEST("DeviceScan works for very large number of items", "[large-mem][scan][device]", offset_types)
 try
 {
   using op_t     = cuda::std::plus<>;

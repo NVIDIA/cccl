@@ -20,6 +20,18 @@ if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(build_nvrtc_tests OFF)
 endif()
 
+# Some CUB tests allocate enough GPU memory (billions of elements / multi-GB buffers)
+# that running them concurrently under `ctest -j` can exhaust the device and cause
+# spurious failures on memory-limited GPUs. Such tests are marked with the
+# `[large-mem]` Catch2 tag (or, for non-Catch2 tests, a `// [large-mem]` comment).
+# When the option below is enabled, those tests are run serially while the rest of
+# the suite still runs in parallel.
+option(
+  CCCL_TEST_SERIALIZE_LARGE
+  "Run CUB tests tagged [large-mem] serially to avoid GPU OOM under ctest -j"
+  OFF
+)
+
 file(
   GLOB_RECURSE test_srcs
   RELATIVE "${CUB_SOURCE_DIR}/test"
@@ -276,6 +288,21 @@ function(
 
   # Disable build caching for compile tests
   set_tests_properties(${test_target} PROPERTIES ENVIRONMENT SCCACHE_NO_CACHE=1)
+
+  # Serialize memory-heavy tests so they do not run concurrently and exhaust GPU
+  # memory under `ctest -j`. A test opts in via the `[large-mem]` Catch2 tag (read
+  # here from the source text at configure time), or a `// [large-mem]` comment for
+  # non-Catch2 tests. Gated behind CCCL_TEST_SERIALIZE_LARGE so default runs are
+  # unaffected.
+  if (CCCL_TEST_SERIALIZE_LARGE)
+    file(READ "${test_src}" _cub_test_src_text)
+    if (_cub_test_src_text MATCHES "\\[large-mem\\]")
+      set_tests_properties(
+        ${test_target}
+        PROPERTIES RUN_SERIAL TRUE LABELS "large-mem"
+      )
+    endif()
+  endif()
 
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)

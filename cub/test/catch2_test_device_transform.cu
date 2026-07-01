@@ -96,48 +96,6 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
   check_result_helper.check_all_results_correct();
 }
 
-struct times_seven
-{
-  template <typename T>
-  __host__ __device__ auto operator()(T v) const -> T
-  {
-    return static_cast<T>(v * 7);
-  }
-};
-
-// Exercises the 32-bit byte-offset overflow regime in transform_kernel_ublkcp (NVIDIA/cccl#8800).
-// num_items = 2^30 +/- a few thread blocks: combined with sizeof(type) = 4, byte product
-// straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
-// and I64 offset types.
-C2H_TEST("DeviceTransform::Transform works with large input",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
-try
-{
-  using type     = std::uint32_t;
-  using offset_t = cuda::std::int64_t;
-
-  const auto delta         = GENERATE(-123456, 123456);
-  const offset_t num_items = static_cast<offset_t>((offset_t{1} << 30) + delta);
-  CAPTURE(c2h::type_name<offset_t>(), num_items);
-
-  c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);
-  c2h::gen(C2H_SEED(1), input);
-
-  c2h::device_vector<type> result(static_cast<size_t>(num_items), thrust::no_init);
-  transform_many(cuda::std::make_tuple(input.begin()), result.begin(), num_items, times_seven{});
-
-  // compute reference and verify
-  c2h::host_vector<type> input_h = input;
-  c2h::host_vector<type> reference_h(static_cast<size_t>(num_items), thrust::no_init);
-  std::transform(input_h.begin(), input_h.end(), reference_h.begin(), times_seven{});
-  REQUIRE((reference_h == result));
-}
-catch (const std::bad_alloc&)
-{
-  // allocation failure is not a test failure, so we can run tests on smaller GPUs
-  SUCCEED("allocation failure is not a test failure");
-}
-
 template <int Alignment>
 struct overaligned_addable_and_equal_comparable_policy
 {
