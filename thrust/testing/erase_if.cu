@@ -6,29 +6,30 @@
 struct IsFive
 {
   template <class T>
-  bool operator()(const T& x) const
+  _CCCL_HOST_DEVICE bool operator()(const T& x) const
   {
     return x == 5;
   }
 };
+
+template <class Vector, class Predicate>
+void check_erase_if(Vector input, Predicate pred, Vector expected)
+{
+  const auto old_size = input.size();
+
+  const auto erased = thrust::erase_if(input, pred);
+
+  ASSERT_EQUAL(input, expected);
+  ASSERT_EQUAL(erased, old_size - expected.size());
+  ASSERT_EQUAL(input.size(), expected.size());
+}
 
 template <class Vector>
 struct TestVectorRangeEraseIfSingleElement
 {
   void operator()(size_t)
   {
-    Vector v{5};
-
-    typename Vector::size_type erased{1};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase_if(v, IsFive{});
-
-    ASSERT_EQUAL(v, Vector{});
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    check_erase_if(Vector{5}, IsFive{}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfSingleElement, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -41,20 +42,7 @@ struct TestVectorRangeEraseIfMultipleElements
 {
   void operator()(size_t)
   {
-    Vector v{1, 2, 3, 5, 5, 4, 5};
-
-    typename Vector::size_type erased{3};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase_if(v, IsFive{});
-
-    Vector expected{1, 2, 3, 4};
-
-    ASSERT_EQUAL(v, expected);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size - new_size);
+    check_erase_if(Vector{1, 2, 3, 5, 5, 4, 5}, IsFive{}, Vector{1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfMultipleElements, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -67,14 +55,7 @@ struct TestVectorRangeEraseIfEmptyVector
 {
   void operator()(size_t)
   {
-    Vector v{};
-
-    typename Vector::size_type new_size{0};
-
-    auto del = thrust::erase_if(v, IsFive{});
-
-    ASSERT_EQUAL(v, Vector{});
-    ASSERT_EQUAL(del, new_size);
+    check_erase_if(Vector{}, IsFive{}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfEmptyVector, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -87,20 +68,7 @@ struct TestVectorRangeEraseIfNoMatch
 {
   void operator()(size_t)
   {
-    Vector v{1, 2, 3, 4};
-
-    typename Vector::size_type erased{0};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase_if(v, IsFive{});
-
-    Vector expected{1, 2, 3, 4};
-
-    ASSERT_EQUAL(v, expected);
-    ASSERT_EQUAL(v.size(), prev_size);
-    ASSERT_EQUAL(del, new_size);
+    check_erase_if(Vector{1, 2, 3, 4}, IsFive{}, Vector{1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfNoMatch, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -113,18 +81,7 @@ struct TestVectorRangeEraseIfAllMatch
 {
   void operator()(size_t)
   {
-    Vector v{5, 5, 5, 5};
-
-    typename Vector::size_type erased{0};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase_if(v, IsFive{});
-
-    ASSERT_EQUAL(v, Vector{});
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size);
+    check_erase_if(Vector{5, 5, 5, 5}, IsFive{}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfAllMatch, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
@@ -137,20 +94,7 @@ struct TestVectorRangeEraseIfAlternatingMatches
 {
   void operator()(size_t)
   {
-    Vector v{5, 1, 5, 2, 5, 3, 5, 4};
-
-    typename Vector::size_type erased{4};
-
-    auto prev_size{v.size()};
-    auto new_size{prev_size - erased};
-
-    auto del = thrust::erase_if(v, IsFive{});
-
-    Vector expected{1, 2, 3, 4};
-
-    ASSERT_EQUAL(v, expected);
-    ASSERT_EQUAL(v.size(), new_size);
-    ASSERT_EQUAL(del, prev_size);
+    check_erase_if(Vector{5, 1, 5, 2, 5, 3, 5, 4}, IsFive{}, Vector{1, 2, 3, 4});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfAlternatingMatches,
@@ -167,15 +111,8 @@ struct TestVectorRangeEraseIfBigVector
   void operator()(size_t)
   {
     const typename Vector::size_type n{10000};
-    Vector v(n, 5);
 
-    auto prev_size{v.size()};
-    auto new_size{prev_size - n};
-
-    auto del = thrust::erase_if(v, IsFive{});
-
-    ASSERT_EQUAL(v, Vector{});
-    ASSERT_EQUAL(del, new_size);
+    check_erase_if(Vector(n, typename Vector::value_type{5}), IsFive{}, Vector{});
   }
 };
 VectorUnitTest<TestVectorRangeEraseIfBigVector, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
