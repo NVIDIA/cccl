@@ -106,6 +106,15 @@ public:
     return true;
   }
 
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  {
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+    prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
+    prop.location.id         = view_.devid;
+    return cuMemCreate(handle, size, &prop, 0);
+  }
+
   ::std::shared_ptr<void> get_affine_exec_impl() const override;
 
 private:
