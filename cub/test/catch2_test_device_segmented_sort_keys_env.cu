@@ -476,15 +476,14 @@ C2H_TEST("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer uses enviro
 template <int BlockThreads>
 struct segmented_sort_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::segmented_sort::segmented_sort_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedSortPolicy
   {
     return {
-      cub::detail::segmented_sort::segmented_radix_sort_policy{
+      cub::SegmentedSortRadixSortPolicy{
         BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_BASIC, cub::BLOCK_SCAN_WARP_SCANS, 4},
-      cub::detail::segmented_sort::sub_warp_merge_sort_policy{
+      cub::SegmentedSortSubWarpMergeSortPolicy{
         BlockThreads, 4, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
-      cub::detail::segmented_sort::sub_warp_merge_sort_policy{
+      cub::SegmentedSortSubWarpMergeSortPolicy{
         BlockThreads, 32, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
       1000000};
   }
@@ -599,3 +598,59 @@ C2H_TEST("DeviceSegmentedSort::StableSortKeysDescending can be tuned", "[segment
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(MSVC)
+C2H_TEST("SegmentedSortPolicy structs", "[segmented_sort][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedSortRadixSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedSortRadixSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedSortSubWarpMergeSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedSortSubWarpMergeSortPolicy>);
+
+  constexpr auto p1 = cub::SegmentedSortPolicy{
+    cub::SegmentedSortRadixSortPolicy{
+      256, 16, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_RAKING_MEMOIZE, 6},
+    cub::SegmentedSortSubWarpMergeSortPolicy{
+      256, 4, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+    cub::SegmentedSortSubWarpMergeSortPolicy{
+      256, 32, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+    300};
+
+#  if _CCCL_STD_VER >= 2020
+  constexpr auto p2 = cub::SegmentedSortPolicy{
+    .large_segment =
+      cub::SegmentedSortRadixSortPolicy{
+        .threads_per_block = 256,
+        .items_per_thread  = 16,
+        .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+        .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
+        .radix_bits        = 6},
+    .small_segment =
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        .threads_per_block = 256,
+        .threads_per_warp  = 4,
+        .items_per_thread  = 7,
+        .load_algorithm    = cub::WARP_LOAD_DIRECT,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .store_algorithm   = cub::WARP_STORE_DIRECT},
+    .medium_segment =
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        .threads_per_block = 256,
+        .threads_per_warp  = 32,
+        .items_per_thread  = 7,
+        .load_algorithm    = cub::WARP_LOAD_DIRECT,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .store_algorithm   = cub::WARP_STORE_DIRECT},
+    .partitioning_threshold = 300};
+#  else
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(MSVC)
