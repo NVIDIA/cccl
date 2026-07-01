@@ -26,13 +26,13 @@ public:
   template <typename Invocation>
   int invoke(Invocation&& invocation)
   {
-    if (complete_.load(std::memory_order_acquire))
+    if (complete.load(std::memory_order_acquire))
     {
       return invocation();
     }
 
-    std::unique_lock lock(mutex_);
-    if (complete_.load(std::memory_order_relaxed))
+    std::unique_lock lock(mutex);
+    if (complete.load(std::memory_order_relaxed))
     {
       lock.unlock();
       return invocation();
@@ -41,13 +41,13 @@ public:
     const int status = invocation();
     if (status == 0)
     {
-      complete_.store(true, std::memory_order_release);
+      complete.store(true, std::memory_order_release);
     }
     return status;
   }
 
 private:
-  std::atomic<bool> complete_{false};
-  std::mutex mutex_;
+  std::atomic<bool> complete{false};
+  std::mutex mutex;
 };
 } // namespace cccl::detail
