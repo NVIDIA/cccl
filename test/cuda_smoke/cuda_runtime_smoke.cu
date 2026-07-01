@@ -113,10 +113,7 @@ TEST_CASE("cudaMallocAsync from default pool works", "[cuda_smoke][async_mempool
 
   int pools_supported = 0;
   CUDART_REQUIRE(cudaDeviceGetAttribute(&pools_supported, cudaDevAttrMemoryPoolsSupported, 0));
-  if (!pools_supported)
-  {
-    SKIP("Device does not support memory pools (cudaDevAttrMemoryPoolsSupported == 0).");
-  }
+  REQUIRE(pools_supported);
 
   cudaMemPool_t pool{};
   CUDART_REQUIRE(cudaDeviceGetDefaultMemPool(&pool, 0));
@@ -124,6 +121,7 @@ TEST_CASE("cudaMallocAsync from default pool works", "[cuda_smoke][async_mempool
 
   size_t release_threshold = 0;
   CUDART_REQUIRE(cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReleaseThreshold, &release_threshold));
+  REQUIRE(release_threshold == 0);
 
   cudaStream_t stream{};
   CUDART_REQUIRE(cudaStreamCreate(&stream));
@@ -131,7 +129,7 @@ TEST_CASE("cudaMallocAsync from default pool works", "[cuda_smoke][async_mempool
   constexpr int n = 256;
 
   int* d_ptr = nullptr;
-  CUDART_REQUIRE(cudaMallocAsync(&d_ptr, n * sizeof(int), stream));
+  CUDART_REQUIRE(cudaMallocFromPoolAsync(&d_ptr, n * sizeof(int), pool, stream));
   REQUIRE(d_ptr != nullptr);
 
   int h_ins[n];
