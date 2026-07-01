@@ -76,8 +76,7 @@ template <class _Result, class _Lhs, class _Rhs>
   const auto __uabs_lhs        = static_cast<_ULhs>(::cuda::uabs(__lhs));
   const auto __uabs_rhs        = static_cast<_URhs>(::cuda::uabs(__rhs));
   const auto __negative_result = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
-
-  auto __overflow_mul = false;
+  auto __overflow_mul          = false;
 
   if (__negative_result && !is_signed_v<_Result>)
   {
@@ -103,9 +102,10 @@ template <class _Result, class _Lhs, class _Rhs>
   // Floor to 16; smallest register size is 16-bits
   constexpr auto __max_nbits = ::cuda::std::max({__num_bits_v<_Lhs>, __num_bits_v<_Rhs>, 16});
   using _Up                  = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
-  _Up __result_lo            = 0;
-  _Up __ulhs                 = static_cast<_Up>(__lhs);
-  _Up __urhs                 = static_cast<_Up>(__rhs);
+  const auto __result_lo     = static_cast<_Up>(0);
+  const auto __ulhs          = static_cast<_Up>(__lhs);
+  const auto __urhs          = static_cast<_Up>(__rhs);
+
   if constexpr ((__max_nbits <= sizeof(int16_t)))
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
