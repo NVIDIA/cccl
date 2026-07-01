@@ -15,6 +15,8 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -34,33 +36,59 @@ enum class LookbackDelayAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm kind)
+namespace detail
 {
-  switch (kind)
+[[nodiscard]] constexpr const char* to_string(LookbackDelayAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case LookbackDelayAlgorithm::no_delay:
-      return os << "LookbackDelayAlgorithm::no_delay";
+      return "LookbackDelayAlgorithm::no_delay";
     case LookbackDelayAlgorithm::fixed_delay:
-      return os << "LookbackDelayAlgorithm::fixed_delay";
+      return "LookbackDelayAlgorithm::fixed_delay";
     case LookbackDelayAlgorithm::exponential_backoff:
-      return os << "LookbackDelayAlgorithm::exponential_backoff";
+      return "LookbackDelayAlgorithm::exponential_backoff";
     case LookbackDelayAlgorithm::exponential_backoff_jitter:
-      return os << "LookbackDelayAlgorithm::exponential_backoff_jitter";
+      return "LookbackDelayAlgorithm::exponential_backoff_jitter";
     case LookbackDelayAlgorithm::exponential_backoff_jitter_window:
-      return os << "LookbackDelayAlgorithm::exponential_backoff_jitter_window";
+      return "LookbackDelayAlgorithm::exponential_backoff_jitter_window";
     case LookbackDelayAlgorithm::exponential_backon_jitter_window:
-      return os << "LookbackDelayAlgorithm::exponential_backon_jitter_window";
+      return "LookbackDelayAlgorithm::exponential_backon_jitter_window";
     case LookbackDelayAlgorithm::exponential_backon_jitter:
-      return os << "LookbackDelayAlgorithm::exponential_backon_jitter";
+      return "LookbackDelayAlgorithm::exponential_backon_jitter";
     case LookbackDelayAlgorithm::exponential_backon:
-      return os << "LookbackDelayAlgorithm::exponential_backon";
+      return "LookbackDelayAlgorithm::exponential_backon";
     case LookbackDelayAlgorithm::__reduce_by_key:
-      return os << "LookbackDelayAlgorithm::__reduce_by_key";
+      return "LookbackDelayAlgorithm::__reduce_by_key";
     default:
-      return os << "<unknown LookbackDelayAlgorithm: " << static_cast<int>(kind) << ">";
+      return "<unknown LookbackDelayAlgorithm>";
   }
 }
+} // namespace detail
 #endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::LookbackDelayAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The policy configuring the delay algorithm used by decoupled lookback
 struct LookbackDelayPolicy
@@ -70,13 +98,13 @@ struct LookbackDelayPolicy
   unsigned int l2_write_latency; //!< The write latency of the L2 cache in nanoseconds
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs)
+  operator==(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs) noexcept
   {
     return lhs.kind == rhs.kind && lhs.delay == rhs.delay && lhs.l2_write_latency == rhs.l2_write_latency;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs)
+  operator!=(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }

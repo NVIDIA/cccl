@@ -734,7 +734,7 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
   const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
   const char* ctk_path        = TEST_CTK_PATH;
 
-  cccl_device_unique_by_key_build_result_t build;
+  cccl_device_unique_by_key_build_result_t build{};
   REQUIRE(
     CUDA_ERROR_UNKNOWN
     == cccl_device_unique_by_key_build(
@@ -947,7 +947,7 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
-  cccl_device_unique_by_key_build_result_t build;
+  cccl_device_unique_by_key_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
@@ -1031,3 +1031,147 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   // Cleanup
   REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_cleanup(&build));
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("UniqueByKey build result has AoT metadata populated", "[unique_by_key][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> keys_in(1);
+  pointer_t<T> values_in(1);
+  pointer_t<T> keys_out(1);
+  pointer_t<T> values_out(1);
+  pointer_t<uint64_t> num_selected_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unique_by_key_build(
+      &build,
+      keys_in,
+      values_in,
+      keys_out,
+      values_out,
+      num_selected_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.compact_init_kernel_lowered_name != nullptr);
+  CHECK(build.compact_init_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.sweep_kernel_lowered_name != nullptr);
+  CHECK(build.sweep_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_cleanup(&build));
+}
+
+C2H_TEST("UniqueByKey compile/load round-trip", "[unique_by_key][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_unique_binary_predicate();
+  pointer_t<T> dummy_keys_in(1);
+  pointer_t<T> dummy_values_in(1);
+  pointer_t<T> dummy_keys_out(1);
+  pointer_t<T> dummy_values_out(1);
+  pointer_t<uint64_t> dummy_num_selected_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unique_by_key_compile(
+      &build,
+      dummy_keys_in,
+      dummy_values_in,
+      dummy_keys_out,
+      dummy_values_out,
+      dummy_num_selected_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.compact_init_kernel_lowered_name != nullptr);
+  REQUIRE(build.sweep_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.compact_init_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.compact_init_kernel != nullptr);
+  CHECK(build.sweep_kernel != nullptr);
+
+  constexpr std::size_t n = 16;
+  // Input with consecutive duplicate keys: 0,0,1,1,2,2,...,7,7 → 8 unique keys
+  std::vector<T> input_keys(n);
+  std::vector<T> input_values(n);
+  for (std::size_t i = 0; i < n; ++i)
+  {
+    input_keys[i]   = static_cast<T>(i / 2);
+    input_values[i] = static_cast<T>(i);
+  }
+  pointer_t<T> keys_in(input_keys);
+  pointer_t<T> values_in(input_values);
+  pointer_t<T> keys_out(n);
+  pointer_t<T> values_out(n);
+  pointer_t<uint64_t> num_selected_out(1);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unique_by_key(
+      build,
+      nullptr,
+      &temp_storage_bytes,
+      keys_in,
+      values_in,
+      keys_out,
+      values_out,
+      num_selected_out,
+      op,
+      n,
+      null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unique_by_key(
+      build,
+      temp_storage.ptr,
+      &temp_storage_bytes,
+      keys_in,
+      values_in,
+      keys_out,
+      values_out,
+      num_selected_out,
+      op,
+      n,
+      null_stream));
+
+  REQUIRE(num_selected_out[0] == 8); // 8 unique keys
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_cleanup(&build));
+}
+#endif // CCCL_C_PARALLEL_V2

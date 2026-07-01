@@ -180,8 +180,8 @@ void release_jit_artifacts(BuildResult* build_ptr)
 {
   delete static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
   build_ptr->jit_compiler = nullptr;
-  delete[] static_cast<char*>(build_ptr->cubin);
-  build_ptr->cubin      = nullptr;
-  build_ptr->cubin_size = 0;
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = nullptr;
+  build_ptr->payload_size = 0;
 }
 } // namespace cccl::detail

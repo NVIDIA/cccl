@@ -68,7 +68,7 @@ struct __fmt_formatter_ptr
         ? __fmt_spec_type::__hexadecimal_upper_case
         : __fmt_spec_type::__hexadecimal_lower_case;
 
-    return ::cuda::std::__fmt_format_int(reinterpret_cast<uintptr_t>(__value), __ctx, __specs);
+    return ::cuda::std::__fmt_format_int(reinterpret_cast<uintptr_t>(__value), __ctx.out(), __specs);
   }
 
   __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.

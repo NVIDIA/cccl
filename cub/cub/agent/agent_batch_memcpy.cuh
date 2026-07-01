@@ -38,6 +38,54 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+template <uint32_t ThreadsPerBlock,
+          uint32_t BuffersPerThread,
+          uint32_t TlevBytesPerThread,
+          bool PreferPow2Bits,
+          uint32_t BlockLevelTileSize,
+          uint32_t WarpLevelThreshold,
+          uint32_t BlockLevelThreshold,
+          class BuffDelayConstructor,
+          class BlockDelayConstructor>
+struct agent_batch_memcpy_policy
+{
+  static constexpr uint32_t BLOCK_THREADS         = ThreadsPerBlock;
+  static constexpr uint32_t BUFFERS_PER_THREAD    = BuffersPerThread;
+  static constexpr uint32_t TLEV_BYTES_PER_THREAD = TlevBytesPerThread;
+  static constexpr uint32_t PREFER_POW2_BITS      = PreferPow2Bits;
+  static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = BlockLevelTileSize;
+  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = WarpLevelThreshold;
+  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = BlockLevelThreshold;
+
+  using buff_delay_constructor  = BuffDelayConstructor;
+  using block_delay_constructor = BlockDelayConstructor;
+};
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <uint32_t ThreadsPerBlock,
+          uint32_t BuffersPerThread,
+          uint32_t TlevBytesPerThread,
+          bool PreferPow2Bits,
+          uint32_t BlockLevelTileSize,
+          uint32_t WarpLevelThreshold,
+          uint32_t BlockLevelThreshold,
+          class BuffDelayConstructor,
+          class BlockDelayConstructor>
+using AgentBatchMemcpyPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceMemcpy") = detail::agent_batch_memcpy_policy<
+    ThreadsPerBlock,
+    BuffersPerThread,
+    TlevBytesPerThread,
+    PreferPow2Bits,
+    BlockLevelTileSize,
+    WarpLevelThreshold,
+    BlockLevelThreshold,
+    BuffDelayConstructor,
+    BlockDelayConstructor>;
+
 namespace detail::batch_memcpy
 {
 template <bool PTR_IS_FOUR_BYTE_ALIGNED>
@@ -445,41 +493,6 @@ private:
   BackingUnitT data[NUM_TOTAL_UNITS] = {};
 };
 
-/**
- * Parameterizable tuning policy type for AgentBatchMemcpy
- */
-template <uint32_t ThreadsPerBlock,
-          uint32_t BuffersPerThread,
-          uint32_t TlevBytesPerThread,
-          bool PreferPow2Bits,
-          uint32_t BlockLevelTileSize,
-          uint32_t WarpLevelThreshold,
-          uint32_t BlockLevelThreshold,
-          class BuffDelayConstructor,
-          class BlockDelayConstructor>
-struct AgentBatchMemcpyPolicy
-{
-  /// Threads per thread block
-  static constexpr uint32_t BLOCK_THREADS = ThreadsPerBlock;
-  /// Items per thread (per tile of input)
-  static constexpr uint32_t BUFFERS_PER_THREAD = BuffersPerThread;
-  /// The number of bytes that each thread will work on with each iteration of reading in bytes
-  /// from one or more
-  // source-buffers and writing them out to the respective destination-buffers.
-  static constexpr uint32_t TLEV_BYTES_PER_THREAD = TlevBytesPerThread;
-  /// Whether the bit_packed_counter should prefer allocating a power-of-2 number of bits per
-  /// counter
-  static constexpr uint32_t PREFER_POW2_BITS = PreferPow2Bits;
-  /// BLEV tile size granularity
-  static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = BlockLevelTileSize;
-
-  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = WarpLevelThreshold;
-  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = BlockLevelThreshold;
-
-  using buff_delay_constructor  = BuffDelayConstructor;
-  using block_delay_constructor = BlockDelayConstructor;
-};
-
 template <typename AgentMemcpySmallBuffersPolicyT,
           typename InputBufferIt,
           typename OutputBufferIt,
@@ -841,7 +854,7 @@ private:
     BufferSizeIteratorT tile_buffer_sizes,
     BlockBufferOffsetT num_wlev_buffers)
   {
-    const int32_t warp_id              = threadIdx.x / warp_threads;
+    const int32_t warp_id              = static_cast<int32_t>(threadIdx.x / warp_threads);
     constexpr uint32_t warps_per_block = BLOCK_THREADS / warp_threads;
 
     for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)
