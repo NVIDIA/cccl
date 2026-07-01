@@ -1077,7 +1077,7 @@ C2H_TEST("ReducePassPolicy", "[reduce][device]")
     .threads_per_block = 256,
     .items_per_thread  = 16,
     .vec_size          = 4,
-    .block_algorithm   = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
+    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
     .load_modifier     = cub::CacheLoadModifier::LOAD_LDG};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;

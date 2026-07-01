@@ -132,7 +132,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
                         0,
                         void,
                         large_pol.vec_size,
-                        large_pol.block_algorithm,
+                        large_pol.reduce_algorithm,
                         large_pol.load_modifier,
                         NoScaling<large_pol.threads_per_block, large_pol.items_per_thread>>;
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
@@ -338,7 +338,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
                         0,
                         void,
                         large_pol.vec_size,
-                        large_pol.block_algorithm,
+                        large_pol.reduce_algorithm,
                         large_pol.load_modifier,
                         NoScaling<large_pol.threads_per_block, large_pol.items_per_thread>>;
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;

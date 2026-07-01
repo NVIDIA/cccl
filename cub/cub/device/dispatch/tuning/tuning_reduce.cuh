@@ -32,14 +32,14 @@ struct ReducePassPolicy
   int threads_per_block; //!< Number of threads in a CUDA block
   int items_per_thread; //!< Number of items processed per thread
   int vec_size; //!< Number of items per vectorized load
-  BlockReduceAlgorithm block_algorithm; //!< The @ref BlockReduceAlgorithm to use
+  BlockReduceAlgorithm reduce_algorithm; //!< The @ref BlockReduceAlgorithm to use
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const ReducePassPolicy& lhs, const ReducePassPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.vec_size == rhs.vec_size && lhs.block_algorithm == rhs.block_algorithm
+        && lhs.vec_size == rhs.vec_size && lhs.reduce_algorithm == rhs.reduce_algorithm
         && lhs.load_modifier == rhs.load_modifier;
   }
 
@@ -54,7 +54,7 @@ struct ReducePassPolicy
   {
     return os << "ReducePassPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
-              << ", .block_algorithm = " << p.block_algorithm << ", .load_modifier = " << p.load_modifier << " }";
+              << ", .reduce_algorithm = " << p.reduce_algorithm << ", .load_modifier = " << p.load_modifier << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -450,7 +450,7 @@ struct policy_selector
     auto policy = get_two_phase_tuning(cc);
     if (determinism == __determinism_t::__not_guaranteed)
     {
-      policy.multi_tile.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
+      policy.multi_tile.reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
     }
     return policy;
   }
