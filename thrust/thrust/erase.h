@@ -27,7 +27,6 @@ THRUST_NAMESPACE_BEGIN
 /*! \addtogroup stream_compaction Stream Compaction
  *  \ingroup reordering
  *  \{
- *
  */
 
 /*! \p erase removes all elements equal to \p value from the vector \p c.
