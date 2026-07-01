@@ -52,17 +52,17 @@ void TestEraseCudaStreams()
   Vector data{1, 2, 1, 3, 2};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamCreate(&s));
 
   size_t removed = thrust::erase(thrust::cuda::par.on(s), data, (T) 2);
 
-  cudaStreamSynchronize(s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamSynchronize(s));
 
   Vector ref{1, 1, 3};
   ASSERT_EQUAL(removed, 2ul);
   ASSERT_EQUAL(data, ref);
 
-  cudaStreamDestroy(s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamDestroy(s));
 }
 
 DECLARE_UNITTEST(TestEraseCudaStreams);
@@ -75,17 +75,17 @@ void TestEraseIfCudaStreams()
   Vector data{1, 2, 1, 3, 2};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamCreate(&s));
 
   size_t removed = thrust::erase_if(thrust::cuda::par.on(s), data, is_even<T>());
 
-  cudaStreamSynchronize(s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamSynchronize(s));
 
   Vector ref{1, 1, 3};
   ASSERT_EQUAL(removed, 2ul);
   ASSERT_EQUAL(data, ref);
 
-  cudaStreamDestroy(s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamDestroy(s));
 }
 DECLARE_UNITTEST(TestEraseIfCudaStreams);
 
@@ -96,16 +96,16 @@ void TestEraseIfCudaStreamsNonTrivialType()
   Vector data{1, 2, 1, 3, 2};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamCreate(&s));
 
   size_t removed = thrust::erase_if(thrust::cuda::par.on(s), data, is_even_tracked_int());
 
-  cudaStreamSynchronize(s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamSynchronize(s));
 
   Vector ref{1, 1, 3};
   ASSERT_EQUAL(removed, 2ul);
   ASSERT_EQUAL(data, ref);
 
-  cudaStreamDestroy(s);
+  ASSERT_EQUAL(cudaSuccess, cudaStreamDestroy(s));
 }
 DECLARE_UNITTEST(TestEraseIfCudaStreamsNonTrivialType);
