@@ -111,7 +111,7 @@ _CCCL_CONCEPT __has_all_reduce = _CCCL_REQUIRES_EXPR(
 
 // ==========================================================================================
 
-template <class _Comm, class _Ptr = void*>
+template <class _Comm, class _Ptr = int*>
 _CCCL_CONCEPT __has_gather = _CCCL_REQUIRES_EXPR(
   (_Comm, _Ptr),
   _Comm& __comm,
@@ -126,7 +126,7 @@ _CCCL_CONCEPT __has_gather = _CCCL_REQUIRES_EXPR(
 
 // ==========================================================================================
 
-template <class _Comm, class _Ptr = void*>
+template <class _Comm, class _Ptr = int*>
 _CCCL_CONCEPT __has_gather_v = _CCCL_REQUIRES_EXPR(
   (_Comm, _Ptr),
   _Comm& __comm,
@@ -150,7 +150,7 @@ _CCCL_CONCEPT __has_gather_v = _CCCL_REQUIRES_EXPR(
 
 // ==========================================================================================
 
-template <class _Comm, class _Ptr = void*>
+template <class _Comm, class _Ptr = int*>
 _CCCL_CONCEPT __has_all_gather = _CCCL_REQUIRES_EXPR(
   (_Comm, _Ptr),
   _Comm& __comm,
@@ -164,7 +164,7 @@ _CCCL_CONCEPT __has_all_gather = _CCCL_REQUIRES_EXPR(
 
 // ==========================================================================================
 
-template <class _Comm, class _Ptr = void*>
+template <class _Comm, class _Ptr = int*>
 _CCCL_CONCEPT __has_broadcast = _CCCL_REQUIRES_EXPR(
   (_Comm, _Ptr),
   _Comm& __comm,
@@ -179,7 +179,7 @@ _CCCL_CONCEPT __has_broadcast = _CCCL_REQUIRES_EXPR(
 
 // ==========================================================================================
 
-template <class _Comm, class _Ptr = void*>
+template <class _Comm, class _Ptr = int*>
 _CCCL_CONCEPT __has_all_to_all = _CCCL_REQUIRES_EXPR(
   (_Comm, _Ptr),
   _Comm& __comm,
@@ -193,7 +193,7 @@ _CCCL_CONCEPT __has_all_to_all = _CCCL_REQUIRES_EXPR(
 
 // ==========================================================================================
 
-template <class _Comm, class _Ptr = void*>
+template <class _Comm, class _Ptr = int*>
 _CCCL_CONCEPT __has_all_to_all_v = _CCCL_REQUIRES_EXPR(
   (_Comm, _Ptr),
   _Comm& __comm,

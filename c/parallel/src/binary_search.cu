@@ -18,12 +18,14 @@
 #include <type_traits>
 #include <vector>
 
+#include <cccl/c/aot.h>
 #include <cccl/c/binary_search.h>
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h>
 #include <jit_templates/templates/input_iterator.h>
 #include <jit_templates/templates/operation.h>
 #include <nvrtc/command_list.h>
+#include <util/aot_serialize.h>
 #include <util/build_utils.h>
 #include <util/context.h>
 #include <util/errors.h>
@@ -442,5 +444,103 @@ try
 }
 catch (...)
 {
+  return CUDA_ERROR_UNKNOWN;
+}
+
+// binary_search delegates the bulk of its build_result_t to transform; we
+// reuse the transform serializer for the inner blob and add a small outer
+// header carrying the binary_search-specific scalar fields.
+CUresult cccl_device_binary_search_serialize(
+  const cccl_device_binary_search_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  void* inner_buf       = nullptr;
+  size_t inner_buf_size = 0;
+  CUresult rc           = cccl_device_transform_serialize(&build_ptr->transform, &inner_buf, &inner_buf_size);
+  if (rc != CUDA_SUCCESS)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return rc;
+  }
+  // Ensure the inner buffer is freed even if writing the outer blob throws.
+  std::unique_ptr<char[]> inner_owner(static_cast<char*>(inner_buf));
+
+  using namespace cccl::aot;
+  buffer_writer w;
+  // Outer header re-uses the transform's payload_kind / cc fields, since the
+  // binary_search build_result_t doesn't carry its own copies.
+  write_header(w, CCCL_AOT_ALGO_BINARY_SEARCH, build_ptr->transform.payload_kind, build_ptr->transform.cc);
+  w.write_pod<uint64_t>(static_cast<uint64_t>(build_ptr->op_state_size));
+  w.write_pod<uint64_t>(static_cast<uint64_t>(build_ptr->op_state_alignment));
+  w.write_blob(inner_owner.get(), inner_buf_size);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_binary_search_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult
+cccl_device_binary_search_deserialize(cccl_device_binary_search_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_reader r{buf, size};
+  read_and_validate_header(r, CCCL_AOT_ALGO_BINARY_SEARCH);
+
+  const uint64_t state_size  = r.read_pod<uint64_t>();
+  const uint64_t state_align = r.read_pod<uint64_t>();
+  if (state_size > 0)
+  {
+    if (state_align == 0 || (state_align & (state_align - 1)) != 0)
+    {
+      throw std::runtime_error(std::format("aot blob: invalid binary_search state alignment ({})", state_align));
+    }
+  }
+
+  // Pull the inner transform blob and hand it to the transform deserializer.
+  std::unique_ptr<char[]> inner_owner;
+  size_t inner_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &inner_size);
+    inner_owner.reset(static_cast<char*>(p));
+  }
+  if (inner_size == 0)
+  {
+    throw std::runtime_error("aot blob: empty payload");
+  }
+
+  cccl_device_binary_search_build_result_t result{};
+  CUresult rc = cccl_device_transform_deserialize(&result.transform, inner_owner.get(), inner_size);
+  if (rc != CUDA_SUCCESS)
+  {
+    return rc;
+  }
+  result.op_state_size      = static_cast<size_t>(state_size);
+  result.op_state_alignment = static_cast<size_t>(state_align);
+  *build_ptr                = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_binary_search_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }
