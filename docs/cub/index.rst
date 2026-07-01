@@ -8,7 +8,7 @@ CUB
    :maxdepth: 3
 
    Overview <self>
-   test_overview
+   determinism
    benchmarking
    policy_selectors
    tuning

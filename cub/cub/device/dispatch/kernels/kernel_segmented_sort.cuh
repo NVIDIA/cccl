@@ -143,7 +143,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
 {
   static constexpr segmented_sort_policy active_policy = current_policy<PolicySelector>();
   static constexpr auto large_policy                   = active_policy.large_segment;
-  using LargeSegmentPolicyT                            = AgentRadixSortDownsweepPolicy<
+  using LargeSegmentPolicyT                            = detail::agent_radix_sort_downsweep_policy<
                                0,
                                0,
                                void,
@@ -478,7 +478,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
     const _CCCL_GRID_CONSTANT EndOffsetIteratorT d_end_offsets)
 {
   static constexpr segmented_radix_sort_policy large_policy = current_policy<PolicySelector>().large_segment;
-  using LargeSegmentPolicyT                                 = AgentRadixSortDownsweepPolicy<
+  using LargeSegmentPolicyT                                 = detail::agent_radix_sort_downsweep_policy<
                                     0,
                                     0,
                                     void,

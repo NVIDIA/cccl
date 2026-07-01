@@ -266,7 +266,7 @@ struct AgentUniqueByKey
     // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
     // types
     _CCCL_PRAGMA_NOUNROLL()
-    for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += BLOCK_THREADS)
     {
       items_out[num_selections_prefix + item] = GetShared(tag)[item];
     }
@@ -561,7 +561,7 @@ struct AgentUniqueByKey
   ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
-    int tile_idx = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    int tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
 
     // Global offset for the current tile
     OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(ITEMS_PER_TILE);

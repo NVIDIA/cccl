@@ -8,6 +8,7 @@ All non-public symbols must be C++ reserved identifiers:
 
 - `_` for macros and template parameters, e.g. `_MY_MACRO`, `_MyParameter`.
 - `__` for all other symbols, e.g. `__my_variable`.
+- Never use reserved keywords, such as `__in`, `__out`, or `__inout` as variables, parameters, or function names.
 - Avoid single-letter template parameter names. Wrong: `_T`; correct: `_Tp`.
 
 ## Class / Struct

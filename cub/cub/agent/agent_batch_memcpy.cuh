@@ -40,6 +40,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+// TODO(bgruber): drop in CCCL 4.0
 template <uint32_t ThreadsPerBlock,
           uint32_t BuffersPerThread,
           uint32_t TlevBytesPerThread,
@@ -64,6 +65,7 @@ struct agent_batch_memcpy_policy
 };
 } // namespace detail
 
+// TODO(bgruber): drop in CCCL 4.0
 //! Deprecated [Since 3.5]
 template <uint32_t ThreadsPerBlock,
           uint32_t BuffersPerThread,
@@ -854,7 +856,7 @@ private:
     BufferSizeIteratorT tile_buffer_sizes,
     BlockBufferOffsetT num_wlev_buffers)
   {
-    const int32_t warp_id              = threadIdx.x / warp_threads;
+    const int32_t warp_id              = static_cast<int32_t>(threadIdx.x / warp_threads);
     constexpr uint32_t warps_per_block = BLOCK_THREADS / warp_threads;
 
     for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)

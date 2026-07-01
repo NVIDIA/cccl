@@ -27,8 +27,8 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_histogram_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
   void* jit_compiler;
   void* histogram_fn;
   cccl_type_info counter_type;
@@ -45,7 +45,7 @@ CCCL_C_API CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -64,7 +64,7 @@ CCCL_C_API CUresult cccl_device_histogram_build_ex(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,

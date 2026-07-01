@@ -97,17 +97,17 @@ struct __this_mapping_result
     return 0;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_count() const noexcept
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_rank() const noexcept
   {
     return 0;
   }

@@ -21,6 +21,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -543,27 +545,51 @@ enum BlockStoreAlgorithm
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
+namespace detail
+{
+[[nodiscard]] constexpr const char* to_string(BlockStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case BLOCK_STORE_DIRECT:
-      return os << "BLOCK_STORE_DIRECT";
+      return "BLOCK_STORE_DIRECT";
     case BLOCK_STORE_STRIPED:
-      return os << "BLOCK_STORE_STRIPED";
+      return "BLOCK_STORE_STRIPED";
     case BLOCK_STORE_VECTORIZE:
-      return os << "BLOCK_STORE_VECTORIZE";
+      return "BLOCK_STORE_VECTORIZE";
     case BLOCK_STORE_TRANSPOSE:
-      return os << "BLOCK_STORE_TRANSPOSE";
+      return "BLOCK_STORE_TRANSPOSE";
     case BLOCK_STORE_WARP_TRANSPOSE:
-      return os << "BLOCK_STORE_WARP_TRANSPOSE";
+      return "BLOCK_STORE_WARP_TRANSPOSE";
     case BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED:
-      return os << "BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED";
+      return "BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED";
     default:
-      return os << "<unknown BlockStoreAlgorithm: " << static_cast<int>(algo) << ">";
+      return "<unknown BlockStoreAlgorithm>";
   }
 }
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockStoreAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockStore class provides :ref:`collective <collective-primitives>` data movement

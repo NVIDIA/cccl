@@ -119,6 +119,7 @@ private:
   using TextureWord = typename UnitWord<T>::TextureWord;
 
   // Number of texture words per T
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static constexpr int TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord);
 
 private:
