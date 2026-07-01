@@ -89,7 +89,7 @@ _CCCL_HOST typename Vector::size_type erase(Vector& c, const U& value);
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam Vector must be a Thrust vector type.
- *  tparam U must be a type comparable (operator '==') to \c Vector's \c value_type.
+ *  \tparam U must be a type comparable (operator '==') to \c Vector's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p erase
  *  to remove all instances of a value from a vector using the \p thrust::device parallelization policy:
