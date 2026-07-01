@@ -14,6 +14,8 @@
 #endif // no system header
 #include <thrust/erase.h>
 
+#include <cuda/std/__iterator/distance.h>
+
 THRUST_NAMESPACE_BEGIN
 
 template <class Vector, class U, ::cuda::std::enable_if_t<is_thrust_vector_v<Vector>, int>>
