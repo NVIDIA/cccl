@@ -150,6 +150,10 @@ python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = [
+  # numpy>=2.3 stubs use PEP 695 syntax that mypy can't parse under
+  # python_version=3.10; skip following its imports to keep the 3.10 target.
+  "numpy",
+  "numpy.*",
   "numba.*",
   "llvmlite.*",
   "cuda.cccl.*",
