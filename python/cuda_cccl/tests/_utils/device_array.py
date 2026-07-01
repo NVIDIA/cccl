@@ -14,6 +14,10 @@ from numpy.typing import DTypeLike
 from cuda.core import Buffer, Device, Stream
 
 
+def get_compute_capability() -> tuple[int, int]:
+    return Device().compute_capability
+
+
 def _normalize_shape(shape: int | Iterable[int]) -> tuple[int, ...]:
     try:
         dimensions = (operator.index(shape),)  # type: ignore[arg-type]

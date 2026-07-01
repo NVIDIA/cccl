@@ -5,7 +5,7 @@
 
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import (
@@ -15,7 +15,6 @@ from cuda.compute import (
     TransformOutputIterator,
     gpu_struct,
 )
-from cuda.core import Device
 
 
 def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
@@ -52,7 +51,7 @@ def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, strea
     [True, False],
 )
 def test_scan_array_input(force_inclusive, input_array, monkeypatch):
-    cc_major, _ = Device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification if input is complex
     # as LDL/STL instructions are emitted for complex types.
     # Also skip for:
@@ -234,7 +233,7 @@ def test_exclusive_scan_well_known_plus():
 
 
 def test_inclusive_scan_well_known_plus(monkeypatch):
-    cc_major, _ = Device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -362,7 +361,7 @@ def test_inclusive_scan_add():
 
 
 def test_reverse_input_iterator(monkeypatch):
-    cc_major, _ = Device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -446,7 +445,7 @@ def test_no_init_value(monkeypatch):
     dtype = np.dtype("int32")
 
     # Skip SASS check for CC 9.0 due to LDL/STL CI failure.
-    cc_major, _ = Device().compute_capability
+    cc_major, _ = get_compute_capability()
     if cc_major >= 9:
         import cuda.compute._cccl_interop
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import (
@@ -12,7 +12,6 @@ from cuda.compute import (
     ZipIterator,
     gpu_struct,
 )
-from cuda.core import Device
 
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
@@ -272,9 +271,7 @@ def test_zip_iterator_with_scan(num_items):
 def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     """Test ZipIterator as output iterator with scan operations."""
     # Skip SASS check for CC 8.0+ due to LDL/STL CI failure.
-    device = Device()
-    device.set_current()
-    cc_major, _ = device.compute_capability
+    cc_major, _ = get_compute_capability()
     if cc_major >= 8:
         monkeypatch.setattr(
             cuda.compute._cccl_interop,
@@ -442,9 +439,7 @@ def test_deeply_nested_zip_iterators():
     ],
 )
 def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
-    device = Device()
-    device.set_current()
-    cc_major, _ = device.compute_capability
+    cc_major, _ = get_compute_capability()
     if cc_major >= 8:
         monkeypatch.setattr(
             cuda.compute._cccl_interop,

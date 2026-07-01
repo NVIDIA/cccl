@@ -7,14 +7,13 @@ from typing import Tuple
 
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import (
     DoubleBuffer,
     SortOrder,
 )
-from cuda.core import Device
 
 
 def get_mark(dt, log_size):
@@ -44,12 +43,6 @@ DTYPE_SIZE = [
     for dt in DTYPE_LIST
     for log_size in PROBLEM_SIZES
 ]
-
-
-def get_compute_capability_major():
-    device = Device()
-    device.set_current()
-    return device.compute_capability[0]
 
 
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
@@ -154,7 +147,7 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     DTYPE_SIZE,
 )
 def test_radix_sort_keys(dtype, num_items, monkeypatch):
-    cc_major = get_compute_capability_major()
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -224,7 +217,7 @@ def test_radix_sort_pairs(dtype, num_items, monkeypatch):
     DTYPE_SIZE,
 )
 def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
-    cc_major = get_compute_capability_major()
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -259,7 +252,7 @@ def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
-    cc_major = get_compute_capability_major()
+    cc_major, _ = get_compute_capability()
     # NOTE: int16 failures seen only with NVRTC 13.1:
     if cc_major >= 9 or np.isdtype(dtype, (np.int16, np.uint32)):
         import cuda.compute._cccl_interop
@@ -310,7 +303,7 @@ DTYPE_SIZE_BIT_WINDOW = [
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
-    cc_major = get_compute_capability_major()
+    cc_major, _ = get_compute_capability()
     # NOTE: int16 failures seen only with NVRTC 13.1:
     if cc_major >= 9 or np.isdtype(dtype, (np.int16, np.uint32)):
         import cuda.compute._cccl_interop
@@ -482,7 +475,7 @@ def test_radix_sort_with_stream(cuda_stream):
 
 
 def test_radix_sort(monkeypatch):
-    cc_major = get_compute_capability_major()
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -528,7 +521,7 @@ def test_radix_sort(monkeypatch):
 
 
 def test_radix_sort_double_buffer(monkeypatch):
-    cc_major = get_compute_capability_major()
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:

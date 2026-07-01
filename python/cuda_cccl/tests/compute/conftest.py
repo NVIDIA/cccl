@@ -1,4 +1,5 @@
 import builtins
+from collections.abc import Generator
 
 import numpy as np
 import pytest
@@ -71,10 +72,14 @@ def floating_array(request):
 
 
 @pytest.fixture(scope="function")
-def cuda_stream() -> Stream:
+def cuda_stream() -> Generator[Stream, None, None]:
     device = Device()
     device.set_current()
-    return device.create_stream()
+    stream = device.create_stream()
+    try:
+        yield stream
+    finally:
+        stream.close()
 
 
 @pytest.fixture(scope="function", autouse=True)

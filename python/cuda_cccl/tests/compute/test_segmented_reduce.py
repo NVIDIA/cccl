@@ -18,6 +18,7 @@ from cuda.compute import (
 
 
 def is_out_of_memory_error(error):
+    # cuda-core exception types vary by memory resource, so classify by message.
     message = str(error).lower()
     return any(
         marker in message
@@ -196,7 +197,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input(monkeypatch):
     num_segments = (2**15 + 2**3) * 2**16
     try:
         res = DeviceArray.empty(num_segments, np.uint8)
-    except RuntimeError as error:
+    except Exception as error:
         if not is_out_of_memory_error(error):
             raise
         pytest.skip("Insufficient memory to run the large number of segments test")
@@ -271,7 +272,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input(monkeypatch):
     num_segments = (2**15 + 2**3) * 2**16
     try:
         res = DeviceArray.empty(num_segments, np.int16)
-    except RuntimeError as error:
+    except Exception as error:
         if not is_out_of_memory_error(error):
             raise
         pytest.skip("Insufficient memory to run the large number of segments test")

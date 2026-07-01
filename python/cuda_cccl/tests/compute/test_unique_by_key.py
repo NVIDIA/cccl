@@ -5,7 +5,7 @@
 
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import (
@@ -14,7 +14,6 @@ from cuda.compute import (
     OpKind,
     gpu_struct,
 )
-from cuda.core import Device
 
 DTYPE_LIST = [
     np.uint8,
@@ -125,7 +124,7 @@ unique_by_key_params = [
 
 @pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
 def test_unique_by_key(dtype, num_items, op, monkeypatch):
-    cc_major, _ = Device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -174,7 +173,7 @@ def test_unique_by_key(dtype, num_items, op, monkeypatch):
 
 @pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
 def test_unique_by_key_iterators(dtype, num_items, op, monkeypatch):
-    cc_major, _ = Device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -370,7 +369,7 @@ def test_unique_by_key_struct_types():
 
 
 def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
-    cc_major, _ = Device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -390,7 +389,6 @@ def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
     h_out_items = np.empty(num_items, dtype=np.float32)
     h_out_num_selected = np.empty(1, np.int32)
 
-    h_in_keys = random_array(num_items, np.int32)
     d_in_keys = DeviceArray.from_numpy(h_in_keys, stream=cuda_stream)
     d_in_items = DeviceArray.from_numpy(h_in_items, stream=cuda_stream)
     d_out_keys = DeviceArray.empty(
@@ -431,7 +429,7 @@ def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
 
 
 def test_unique_by_key_well_known_equal_to(monkeypatch):
-    cc_major, _ = Device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
