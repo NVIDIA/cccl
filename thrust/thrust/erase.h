@@ -27,6 +27,7 @@ THRUST_NAMESPACE_BEGIN
 /*! \addtogroup stream_compaction Stream Compaction
  *  \ingroup reordering
  *  \{
+ *
  */
 
 /*! \p erase removes all elements equal to \p value from the vector \p c.
@@ -77,9 +78,12 @@ _CCCL_HOST typename Vector::size_type erase(Vector& c, const U& value);
  *
  *  The return value is the number of elements that were erased.
  *
- *  Note: unlike \p remove, erase performs container resizing and is host-only.
+ *  Note: unlike remove, erase performs container resizing and is host-only.
  *
- *  The algorithm's execution is parallelized as determined by \p exec.
+ *  The supplied execution policy \p exec is applied to the stream compaction phase
+ *  (the underlying call to remove/remove_if). After compaction, the vector
+ *  is resized through Vector::erase on the host to remove the trailing
+ *  elements.
  *
  *  \param exec The execution policy to use for parallelization.
  *  \param c The vector from which to erase elements.
@@ -171,9 +175,12 @@ _CCCL_HOST typename Vector::size_type erase_if(Vector& c, Predicate pred);
  *
  *  The return value is the number of elements that were erased.
  *
- *  Note: unlike \p remove_if, erase_if performs container resizing and is host-only.
+ *  Note: unlike remove_if, erase_if performs container resizing and is host-only.
  *
- *  The algorithm's execution is parallelized as determined by \p exec.
+ *  The supplied execution policy \p exec is applied to the stream compaction phase
+ *  (the underlying call to remove/remove_if). After compaction, the vector
+ *  is resized through Vector::erase on the host to remove the trailing
+ *  elements.
  *
  *  \param exec The execution policy to use for parallelization.
  *  \param c The vector from which to erase elements.
