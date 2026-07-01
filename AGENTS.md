@@ -35,6 +35,18 @@ For a given task, you should:
 
 ---
 
+## PR Review Workflow
+
+When helping with a pull request review, separate context gathering from review comments. Use the repo-local
+`review-cccl` skill when available. The default mode is context gathering: use `ci/util/pr_review_context.sh`, explain the
+issue, PR intent, implementation strategy, and suggested file review order, but do not produce review findings until the
+user explicitly asks for feedback. If no issue or PR context is discoverable, explicitly flag that the review is missing
+required context before proceeding.
+
+Follow `docs/cccl/development/pr_review.rst` for the full review workflow and CCCL-specific review focus.
+
+---
+
 ## Known Agent Limitations
 
 ### OpenAI Codex
