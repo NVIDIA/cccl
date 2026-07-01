@@ -80,7 +80,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-designator")
 // example-begin memcpy-batched-policy-selector
 struct BatchedMemcpyPolicySelector
 {
-  __host__ __device__ constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedMemcpyPolicy
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
   {
     return {.small_buffer = {.threads_per_block     = 128,
                              .buffers_per_thread    = 4,

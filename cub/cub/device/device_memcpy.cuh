@@ -30,7 +30,7 @@ CUB_NAMESPACE_BEGIN
 //! @par Tuning
 //! @rst
 //! All algorithms in DeviceMemcpy that accept an environment can be tuned by passing a custom :ref:`policy selector
-//! <cub-policy-selectors>` that returns a @ref BatchedMemcpyPolicy, as shown in the example below:
+//! <cub-policy-selectors>` that returns a @ref BatchedCopyPolicy, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
 //!      :language: c++

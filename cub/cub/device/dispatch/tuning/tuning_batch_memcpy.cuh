@@ -22,8 +22,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The small buffer sub-policy for @ref BatchedMemcpyPolicy.
-struct BatchMemcpySmallBufferPolicy
+//! The small buffer sub-policy for @ref BatchedCopyPolicy.
+struct BatchedCopySmallBufferPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
   int buffers_per_thread; //!< Number of buffers processed per thread
@@ -39,7 +39,7 @@ struct BatchMemcpySmallBufferPolicy
   LookbackDelayPolicy block_lookback_delay; //!< The @ref LookbackDelayPolicy for the block offset scan
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const BatchMemcpySmallBufferPolicy& lhs, const BatchMemcpySmallBufferPolicy& rhs) noexcept
+  operator==(const BatchedCopySmallBufferPolicy& lhs, const BatchedCopySmallBufferPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.buffers_per_thread == rhs.buffers_per_thread
         && lhs.bytes_per_thread == rhs.bytes_per_thread && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits
@@ -51,16 +51,16 @@ struct BatchMemcpySmallBufferPolicy
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const BatchMemcpySmallBufferPolicy& lhs, const BatchMemcpySmallBufferPolicy& rhs) noexcept
+  operator!=(const BatchedCopySmallBufferPolicy& lhs, const BatchedCopySmallBufferPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const BatchMemcpySmallBufferPolicy& policy)
+  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopySmallBufferPolicy& policy)
   {
     return os
-        << "BatchMemcpySmallBufferPolicy { .threads_per_block = " << policy.threads_per_block
+        << "BatchedCopySmallBufferPolicy { .threads_per_block = " << policy.threads_per_block
         << ", .buffers_per_thread = " << policy.buffers_per_thread
         << ", .bytes_per_thread = " << policy.bytes_per_thread << ", .prefer_pow2_bits = " << policy.prefer_pow2_bits
         << ", .block_level_tile_size = " << policy.block_level_tile_size << ", .warp_level_threshold = "
@@ -71,55 +71,55 @@ struct BatchMemcpySmallBufferPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The large buffer sub-policy for @ref BatchedMemcpyPolicy.
-struct BatchMemcpyLargeBufferPolicy
+//! The large buffer sub-policy for @ref BatchedCopyPolicy.
+struct BatchedCopyLargeBufferPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
   int bytes_per_thread; //!< Number of bytes processed per thread
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const BatchMemcpyLargeBufferPolicy& lhs, const BatchMemcpyLargeBufferPolicy& rhs) noexcept
+  operator==(const BatchedCopyLargeBufferPolicy& lhs, const BatchedCopyLargeBufferPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.bytes_per_thread == rhs.bytes_per_thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const BatchMemcpyLargeBufferPolicy& lhs, const BatchMemcpyLargeBufferPolicy& rhs) noexcept
+  operator!=(const BatchedCopyLargeBufferPolicy& lhs, const BatchedCopyLargeBufferPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const BatchMemcpyLargeBufferPolicy& policy)
+  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyLargeBufferPolicy& policy)
   {
-    return os << "BatchMemcpyLargeBufferPolicy { .threads_per_block = " << policy.threads_per_block
+    return os << "BatchedCopyLargeBufferPolicy { .threads_per_block = " << policy.threads_per_block
               << ", .bytes_per_thread = " << policy.bytes_per_thread << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
 //! The tuning policy for all algorithms in @ref DeviceMemcpy.
-struct BatchedMemcpyPolicy
+struct BatchedCopyPolicy
 {
-  BatchMemcpySmallBufferPolicy small_buffer; //!< Sub-policy for small buffers copied by a single thread block
-  BatchMemcpyLargeBufferPolicy large_buffer; //!< Sub-policy for large buffers requiring multi-block collaboration
+  BatchedCopySmallBufferPolicy small_buffer; //!< Sub-policy for small buffers copied by a single thread block
+  BatchedCopyLargeBufferPolicy large_buffer; //!< Sub-policy for large buffers requiring multi-block collaboration
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const BatchedMemcpyPolicy& lhs, const BatchedMemcpyPolicy& rhs) noexcept
+  operator==(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
   {
     return lhs.small_buffer == rhs.small_buffer && lhs.large_buffer == rhs.large_buffer;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const BatchedMemcpyPolicy& lhs, const BatchedMemcpyPolicy& rhs) noexcept
+  operator!=(const BatchedCopyPolicy& lhs, const BatchedCopyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedMemcpyPolicy& policy)
+  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyPolicy& policy)
   {
-    return os << "BatchedMemcpyPolicy { .small_buffer = " << policy.small_buffer
+    return os << "BatchedCopyPolicy { .small_buffer = " << policy.small_buffer
               << ", .large_buffer = " << policy.large_buffer << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -129,20 +129,20 @@ namespace detail::batch_memcpy
 {
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept batch_memcpy_policy_selector = policy_selector<T, BatchedMemcpyPolicy>;
+concept batch_memcpy_policy_selector = policy_selector<T, BatchedCopyPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> BatchedMemcpyPolicy
+    -> BatchedCopyPolicy
   {
-    const auto large = BatchMemcpyLargeBufferPolicy{
+    const auto large = BatchedCopyLargeBufferPolicy{
       256,
       32,
     };
-    return BatchedMemcpyPolicy{
-      BatchMemcpySmallBufferPolicy{
+    return BatchedCopyPolicy{
+      BatchedCopySmallBufferPolicy{
         /* .threads_per_block = */ 128,
         /* .buffers_per_thread = */ 4,
         /* .bytes_per_thread = */ 8,

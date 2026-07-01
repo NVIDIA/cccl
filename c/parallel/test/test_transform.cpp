@@ -264,6 +264,49 @@ C2H_TEST("Transform works with integral types with well-known operations", "[tra
   }
 }
 
+C2H_TEST("Transform works with logical and bitwise well-known operations", "[transform][well_known]")
+{
+  std::optional<transform_build_cache_t> no_cache = std::nullopt;
+  const std::optional<std::string> no_key         = std::nullopt;
+
+  {
+    const std::vector<uint32_t> input{0U, 1U, 0xaaaaaaaaU, 0xffffffffU};
+    pointer_t<uint32_t> input_ptr(input);
+    pointer_t<uint32_t> output_ptr(input.size());
+
+    cccl_op_t bit_not_op = make_well_known_unary_operation();
+    bit_not_op.type      = cccl_op_kind_t::CCCL_BIT_NOT;
+    unary_transform(input_ptr, output_ptr, input.size(), bit_not_op, no_cache, no_key);
+
+    REQUIRE(std::vector<uint32_t>(output_ptr) == std::vector<uint32_t>{0xffffffffU, 0xfffffffeU, 0x55555555U, 0U});
+  }
+
+  const std::vector<uint8_t> lhs{1, 1, 0, 0};
+  const std::vector<uint8_t> rhs{1, 0, 1, 0};
+  pointer_t<uint8_t> lhs_ptr(lhs);
+  pointer_t<uint8_t> rhs_ptr(rhs);
+
+  const auto check_logical_op = [&](cccl_op_kind_t kind, const std::vector<uint8_t>& expected) {
+    pointer_t<uint8_t> output_ptr(lhs.size());
+    cccl_op_t op = make_well_known_binary_operation();
+    op.type      = kind;
+
+    binary_transform(
+      make_boolean_iterator(lhs_ptr),
+      make_boolean_iterator(rhs_ptr),
+      make_boolean_iterator(output_ptr),
+      lhs.size(),
+      op,
+      no_cache,
+      no_key);
+
+    REQUIRE(std::vector<uint8_t>(output_ptr) == expected);
+  };
+
+  check_logical_op(cccl_op_kind_t::CCCL_LOGICAL_AND, {1, 0, 0, 0});
+  check_logical_op(cccl_op_kind_t::CCCL_LOGICAL_OR, {1, 1, 1, 0});
+}
+
 struct pair
 {
   short a;
@@ -274,6 +317,37 @@ struct pair
     return a == other.a && b == other.b;
   }
 };
+
+struct custom_int
+{
+  int value;
+};
+
+C2H_TEST("Transform works with C++ source for custom types with a well-known unary operation",
+         "[transform][well_known][cpp_source]")
+{
+  const std::string source = R"(
+struct custom_int { int value; };
+extern "C" __device__ void logical_not_custom_int(void* input_ptr, void* output_ptr) {
+  const custom_int* input = static_cast<const custom_int*>(input_ptr);
+  bool* output = static_cast<bool*>(output_ptr);
+  *output = !input->value;
+}
+)";
+  const std::vector<custom_int> input{{0}, {1}, {-2}, {42}};
+  pointer_t<custom_int> input_ptr(input);
+  std::optional<transform_build_cache_t> no_cache = std::nullopt;
+  const std::optional<std::string> no_key         = std::nullopt;
+
+  operation_t op_state = make_cpp_operation("logical_not_custom_int", source);
+  cccl_op_t op         = op_state;
+  op.type              = cccl_op_kind_t::CCCL_LOGICAL_NOT;
+  pointer_t<uint8_t> output_ptr(input.size());
+
+  unary_transform(input_ptr, make_boolean_iterator(output_ptr), input.size(), op, no_cache, no_key);
+
+  REQUIRE(std::vector<uint8_t>(output_ptr) == std::vector<uint8_t>{1, 0, 0, 0});
+}
 
 struct Transform_DifferentOutputTypes_Fixture_Tag;
 C2H_TEST("Transform works with output of different type", "[transform]")
