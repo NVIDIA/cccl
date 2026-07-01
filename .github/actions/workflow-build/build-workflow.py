@@ -599,6 +599,7 @@ def generate_dispatch_job_origin(matrix_job, job_type, job_info):
 
 def generate_dispatch_job_json(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
+    project = get_project(matrix_job["project"])["id"]
     command = generate_dispatch_job_command(matrix_job, job_type, job_info)
 
     if (
@@ -608,8 +609,22 @@ def generate_dispatch_job_json(matrix_job, job_type):
         and not job_info["gpu"]
         # Only use the build cluster for Linux jobs
         and not is_windows(matrix_job)
-        # Only use the build cluster for every 1 out of 10 runs
-        and random.randint(0, 10) == 10
+        and (
+            # Use the build cluster for 1 of 2 cudax jobs
+            (project == "cudax" and random.randint(0, 1) == 0)
+            or
+            # Use the build cluster for 1 of 10 CUB jobs
+            (project == "cub" and random.randint(0, 9) == 0)
+            or
+            # Use the build cluster for 1 of 10 Thrust jobs
+            (project == "thrust" and random.randint(0, 9) == 0)
+            or
+            # Use the build cluster for 1 of 10 libcu++ jobs
+            (project == "libcudacxx" and random.randint(0, 9) == 0)
+            or
+            # Don't use the build cluster for other project's jobs
+            False
+        )
     ):
         matrix_job["use_sccache_dist"] = True
         matrix_job["environment"] = matrix_job.get("environment") or []
