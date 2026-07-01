@@ -1094,7 +1094,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     const auto __tensor_req_size                = __globalDim[__tensorRank - 1] * __globalStrides[__tensorRank - 1];
     ::cuda::std::size_t __tensor_req_size_bytes = 0;
     __tensor_req_size_bytes   = ::cuda::__driver::__cutensormap_size_bytes(__tensor_req_size, __tensorDataType);
-    const auto __tensorMapPtr = reinterpret_cast<::cuda::std::uint64_t*>(static_cast<void*>(&__tensorMap));
+    const auto __tensorMapPtr = reinterpret_cast<::cuda::std::uint64_t*>(&__tensorMap);
     if (__tensor_req_size_bytes < 128 * 1024) // 128 KiB
     {
       __tensorMapPtr[1] &= ~(::cuda::std::uint64_t{1} << 21); // clear the bit

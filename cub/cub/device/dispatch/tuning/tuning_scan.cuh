@@ -33,8 +33,10 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
@@ -51,19 +53,46 @@ enum class ScanAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algorithm)
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] constexpr const char* to_string(ScanAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case ScanAlgorithm::lookback:
-      return os << "ScanAlgorithm::lookback";
+      return "ScanAlgorithm::lookback";
     case ScanAlgorithm::lookahead:
-      return os << "ScanAlgorithm::lookahead";
+      return "ScanAlgorithm::lookahead";
     default:
-      return os << "ScanAlgorithm::<unknown>";
+      return "<unknown ScanAlgorithm>";
   }
 }
+} // namespace detail
 #endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::ScanAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::ScanAlgorithm& algo, FmtCtx& ctx) const
+  {
+    const auto str = CUB_NS_QUALIFIER::detail::to_string(algo);
+    return formatter<const CharT*, CharT>::format(str, ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for the lookback scan algorithm in @ref DeviceScan.
 struct ScanLookbackPolicy
@@ -882,15 +911,7 @@ struct policy_selector
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_lookahead_policy() const -> ScanLookaheadPolicy
   {
     ScanLookaheadPolicy lookahead_policy{};
-
-    // TODO(bgruber): tune this
-#if _CCCL_COMPILER(NVHPC)
-    // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
-    // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700.
-    lookahead_policy.reduce_and_scan_warps = 2;
-#else // _CCCL_COMPILER(NVHPC)
     lookahead_policy.reduce_and_scan_warps = 4;
-#endif // _CCCL_COMPILER(NVHPC)
 
     // TODO(bgruber): 5 is a bit better for complex<float>
     lookahead_policy.lookahead_items_per_thread = accum_size == 2 ? 3 : 4;
@@ -1039,9 +1060,17 @@ struct policy_selector
     // lookback stable reduction order implementation below.
     if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{10, 0})
     {
-      const auto lookahead_policy_opt = get_lookahead_policy(cc);
+      auto lookahead_policy_opt = get_lookahead_policy(cc);
       if (lookahead_policy_opt && can_use_lookahead(cc, *lookahead_policy_opt))
       {
+#if _CCCL_COMPILER(NVHPC)
+        // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
+        // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700 and
+        // https://github.com/NVIDIA/cccl/issues/9208. This probably degrades performance a lot. We should revert this
+        // once nvhpc can properly inline a function again.
+        lookahead_policy_opt->reduce_and_scan_warps = 2;
+#endif // _CCCL_COMPILER(NVHPC)
+
         return {ScanAlgorithm::lookahead, ScanLookbackPolicy{}, *lookahead_policy_opt};
       }
     }

@@ -299,8 +299,7 @@ struct partition_policy_selector
 template <unsigned int BlockThreads>
 struct three_way_partition_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::three_way_partition::three_way_partition_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::ThreeWayPartitionPolicy
   {
     return {static_cast<int>(BlockThreads),
             10,
@@ -387,3 +386,37 @@ C2H_TEST("DevicePartition::If three-way can be tuned", "[partition][device]", bl
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("ThreeWayPartitionPolicy", "[partition][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ThreeWayPartitionPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ThreeWayPartitionPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::ThreeWayPartitionPolicy{
+    256,
+    9,
+    cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    cub::CacheLoadModifier::LOAD_DEFAULT,
+    cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+    cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::ThreeWayPartitionPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 9,
+    .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+    .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+    .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

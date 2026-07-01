@@ -11,6 +11,7 @@
 // UNSUPPORTED: enable-tile
 // error: asm statement is unsupported in tile code
 
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/devices>
 #include <cuda/memory>
 #include <cuda/std/cassert>
@@ -58,6 +59,32 @@ void test_host(T& object)
     assert(attributes.devicePointer == device_address);
   }
 }
+
+void test_explicit_device_with_different_current_device()
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+
+  int* device_address = nullptr;
+  {
+    cuda::__ensure_current_context guard(current_device);
+    device_address = cuda::get_device_address(scalar_object, explicit_device);
+  }
+
+  {
+    cuda::__ensure_current_context guard(explicit_device);
+    cudaPointerAttributes attributes;
+    cudaError_t status = cudaPointerGetAttributes(&attributes, device_address);
+    assert(status == cudaSuccess);
+    assert(attributes.device == explicit_device.get());
+    assert(attributes.devicePointer == device_address);
+  }
+}
 #endif // !TEST_COMPILER(NVRTC)
 
 template <class T>
@@ -73,6 +100,9 @@ int main(int argc, char** argv)
   test(const_scalar_object);
   test(array_object);
   test(const_array_object);
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test_explicit_device_with_different_current_device();))
+#endif // !TEST_COMPILER(NVRTC)
 
   return 0;
 }

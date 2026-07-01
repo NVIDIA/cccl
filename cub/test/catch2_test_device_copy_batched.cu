@@ -11,6 +11,7 @@
 
 #include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/execution>
 
 #include <cstdint>
 
@@ -162,18 +163,94 @@ try
     static_cast<std::uint8_t*>(thrust::raw_pointer_cast(d_out.data()))};
   auto d_range_dsts = cuda::transform_iterator(d_range_dst_offsets.begin(), dst_transform_op);
 
-  // Invoke device-side algorithm
-  copy_batched(d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges);
-
-  // Prepare CPU-side result for verification
-  for (range_offset_t i = 0; i < num_ranges; i++)
+  SECTION("With environment")
   {
-    auto out_begin = h_out.begin() + h_dst_offsets[i];
-    auto out_end   = out_begin + h_range_sizes[i];
-    std::fill(out_begin, out_end, static_cast<std::uint8_t>(i));
+    // Invoke device-side algorithm
+    copy_batched(d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges);
+
+    // Prepare CPU-side result for verification
+    for (range_offset_t i = 0; i < num_ranges; i++)
+    {
+      auto out_begin = h_out.begin() + h_dst_offsets[i];
+      auto out_end   = out_begin + h_range_sizes[i];
+      std::fill(out_begin, out_end, static_cast<std::uint8_t>(i));
+    }
+    REQUIRE(d_out == h_out);
   }
 
-  REQUIRE(d_out == h_out);
+#if TEST_LAUNCH == 0
+  SECTION("With user provided memory and environment")
+  {
+    auto test_copy_batched = [&](const auto& env) {
+      size_t num_bytes = 0;
+      auto error       = cub::DeviceCopy::Batched(
+        static_cast<void*>(nullptr), num_bytes, d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges, env);
+      REQUIRE(error == cudaSuccess);
+      REQUIRE(cudaSuccess == cudaPeekAtLastError());
+      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+      auto d_temp        = c2h::device_vector<uint8_t>(num_bytes, thrust::no_init);
+      void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+      error = cub::DeviceCopy::Batched(
+        temp_storage, num_bytes, d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges, env);
+      REQUIRE(error == cudaSuccess);
+      REQUIRE(cudaSuccess == cudaPeekAtLastError());
+      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+      // Prepare CPU-side result for verification
+      for (range_offset_t i = 0; i < num_ranges; i++)
+      {
+        auto out_begin = h_out.begin() + h_dst_offsets[i];
+        auto out_end   = out_begin + h_range_sizes[i];
+        std::fill(out_begin, out_end, static_cast<std::uint8_t>(i));
+      }
+      REQUIRE(d_out == h_out);
+    };
+
+    int current_device;
+    auto error = cudaGetDevice(&current_device);
+    REQUIRE(error == cudaSuccess);
+
+    SECTION("DeviceCopy::Batched works with cudaStream_t")
+    {
+      cuda::stream stream{cuda::devices[current_device]};
+      test_copy_batched(stream.get());
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::stream")
+    {
+      cuda::stream stream{cuda::devices[current_device]};
+      test_copy_batched(stream);
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::stream_ref")
+    {
+      cuda::stream stream{cuda::devices[current_device]};
+      cuda::stream_ref stream_ref{stream};
+      test_copy_batched(stream_ref);
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::std::execution::env")
+    {
+      cuda::std::execution::env env{};
+      test_copy_batched(env);
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::execution::gpu")
+    {
+      const auto policy = cuda::execution::gpu;
+      test_copy_batched(policy);
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::execution::gpu with stream")
+    {
+      cuda::stream stream{cuda::devices[current_device]};
+      const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+      test_copy_batched(policy);
+    }
+  }
+#endif // TEST_LAUNCH == 0
 }
 catch (std::bad_alloc& e)
 {

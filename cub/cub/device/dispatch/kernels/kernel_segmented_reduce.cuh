@@ -141,7 +141,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
   static constexpr warp_reduce_policy med_pol = full_policy.medium_reduce;
   using medium_agent_policy_t =
     AgentWarpReducePolicy<med_pol.threads_per_block,
-                          med_pol.warp_threads,
+                          med_pol.threads_per_warp,
                           med_pol.items_per_thread,
                           void,
                           med_pol.vec_size,
@@ -153,7 +153,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
   static constexpr warp_reduce_policy small_pol = full_policy.small_reduce;
   using small_agent_policy_t =
     AgentWarpReducePolicy<small_pol.threads_per_block,
-                          small_pol.warp_threads,
+                          small_pol.threads_per_warp,
                           small_pol.items_per_thread,
                           void,
                           small_pol.vec_size,
@@ -165,9 +165,9 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
   constexpr int medium_items_per_tile = med_pol.items_per_tile();
 
   constexpr int segments_per_small_block  = small_pol.segments_per_block();
-  constexpr int small_threads_per_warp    = small_pol.warp_threads;
+  constexpr int small_threads_per_warp    = small_pol.threads_per_warp;
   constexpr int segments_per_medium_block = med_pol.segments_per_block();
-  constexpr int medium_threads_per_warp   = med_pol.warp_threads;
+  constexpr int medium_threads_per_warp   = med_pol.threads_per_warp;
 
   // Shared memory storage
   __shared__ union
@@ -177,8 +177,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     typename AgentSmallReduceT::TempStorage small_storage[segments_per_small_block];
   } temp_storage;
 
-  const int bid = blockIdx.x;
-  const int tid = threadIdx.x;
+  const int bid = static_cast<int>(blockIdx.x);
+  const int tid = static_cast<int>(threadIdx.x);
 
   auto small_medium_seg_reduction =
     [&](auto agent_tag, auto& storage, auto threads_per_warp_tag, auto segments_per_block_tag) {
@@ -347,7 +347,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   static constexpr warp_reduce_policy med_pol = full_policy.medium_reduce;
   using medium_agent_policy_t =
     AgentWarpReducePolicy<med_pol.threads_per_block,
-                          med_pol.warp_threads,
+                          med_pol.threads_per_warp,
                           med_pol.items_per_thread,
                           void,
                           med_pol.vec_size,
@@ -358,7 +358,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   static constexpr warp_reduce_policy small_pol = full_policy.small_reduce;
   using small_agent_policy_t =
     AgentWarpReducePolicy<small_pol.threads_per_block,
-                          small_pol.warp_threads,
+                          small_pol.threads_per_warp,
                           small_pol.items_per_thread,
                           void,
                           small_pol.vec_size,
@@ -369,9 +369,9 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   constexpr int medium_items_per_tile = med_pol.items_per_tile();
 
   constexpr int segments_per_small_block  = small_pol.segments_per_block();
-  constexpr int small_threads_per_warp    = small_pol.warp_threads;
+  constexpr int small_threads_per_warp    = small_pol.threads_per_warp;
   constexpr int segments_per_medium_block = med_pol.segments_per_block();
-  constexpr int medium_threads_per_warp   = med_pol.warp_threads;
+  constexpr int medium_threads_per_warp   = med_pol.threads_per_warp;
 
   // Shared memory storage
   __shared__ union
@@ -381,8 +381,8 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
     typename AgentSmallReduceT::TempStorage small_storage[segments_per_small_block];
   } temp_storage;
 
-  const int bid = blockIdx.x;
-  const int tid = threadIdx.x;
+  const int bid = static_cast<int>(blockIdx.x);
+  const int tid = static_cast<int>(threadIdx.x);
 
   if (segment_size <= small_items_per_tile)
   {

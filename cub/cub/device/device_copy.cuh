@@ -122,6 +122,9 @@ struct DeviceCopy
   //!   **[inferred]** Device-accessible random-access input iterator type providing the number of items to be
   //!   copied for each pair of ranges
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -140,11 +143,9 @@ struct DeviceCopy
   //! @param[in] num_ranges
   //!   The total number of range pairs
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename InputIt, typename OutputIt, typename SizeIteratorT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename InputIt, typename OutputIt, typename SizeIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t Batched(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -152,17 +153,21 @@ struct DeviceCopy
     OutputIt output_it,
     SizeIteratorT sizes,
     ::cuda::std::int64_t num_ranges,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
     // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_ranges, 64)
-    using BlockOffsetT = uint32_t;
+    using BlockOffsetT            = uint32_t;
+    using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return detail::batch_memcpy::dispatch<CopyAlg::Copy, BlockOffsetT>(
-      d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::batch_memcpy::dispatch<CopyAlg::Copy, BlockOffsetT>(
+          storage, bytes, input_it, output_it, sizes, num_ranges, stream, policy_selector);
+      });
   }
 
   //! @rst
@@ -224,11 +229,14 @@ struct DeviceCopy
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename InputIt, typename OutputIt, typename SizeIteratorT, typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Batched(InputIt input_it, OutputIt output_it, SizeIteratorT sizes, ::cuda::std::int64_t num_ranges, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Batched(
+    InputIt input_it, OutputIt output_it, SizeIteratorT sizes, ::cuda::std::int64_t num_ranges, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceCopy::Batched");
 
+    // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
+    // upper bound on num_thread_blocks_launched can be assumed to be given by
+    // IDIV_CEIL(num_ranges, 64)
     using BlockOffsetT            = uint32_t;
     using default_policy_selector = detail::batch_memcpy::policy_selector;
 
@@ -294,6 +302,9 @@ struct DeviceCopy
   //! @tparam Accessor_Out
   //!   **[inferred]** The accessor type of the destination mdspan
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -306,10 +317,8 @@ struct DeviceCopy
   //! @param[in] mdspan_out
   //!   Destination mdspan where the data will be copied
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!
   //! @returns
   //!   @rst
@@ -322,18 +331,26 @@ struct DeviceCopy
             typename T_Out,
             typename Extents_Out,
             typename Layout_Out,
-            typename Accessor_Out>
+            typename Accessor_Out,
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Copy(void* d_temp_storage,
        size_t& temp_storage_bytes,
        ::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
        ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
-       ::cudaStream_t stream = nullptr)
+       const EnvT& env = {})
   {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return ::cudaSuccess;
+    }
+
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
     _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
     _CCCL_ASSERT((mdspan_in.data_handle() != nullptr && mdspan_out.data_handle() != nullptr) || mdspan_in.size() == 0,
                  "mdspan data handle must not be nullptr if the size is not 0");
+
     // Check for memory overlap between input and output mdspans
     if (mdspan_in.size() != 0)
     {
@@ -344,12 +361,8 @@ struct DeviceCopy
       // TODO(fbusato): replace with __are_ptrs_overlapping
       _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
     }
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = 1;
-      return ::cudaSuccess;
-    }
-    return detail::copy_mdspan::copy(mdspan_in, mdspan_out, stream);
+
+    return detail::copy_mdspan::copy(mdspan_in, mdspan_out, env);
   }
 
   //! @rst
@@ -435,12 +448,14 @@ struct DeviceCopy
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Copy(::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
        ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
-       EnvT env = {})
+       const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceCopy::Copy");
     _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
     _CCCL_ASSERT((mdspan_in.data_handle() != nullptr && mdspan_out.data_handle() != nullptr) || mdspan_in.size() == 0,
                  "mdspan data handle must not be nullptr if the size is not 0");
+
+    // Check for memory overlap between input and output mdspans
     if (mdspan_in.size() != 0)
     {
       auto in_start  = mdspan_in.data_handle();

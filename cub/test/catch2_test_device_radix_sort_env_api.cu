@@ -9,6 +9,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -658,3 +659,88 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer+bits env-based
   REQUIRE(keys == expected_keys);
   REQUIRE(values == expected_values);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin radix-sort-keys-policy-selector
+struct RadixSortKeysPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::RadixSortPolicy
+  {
+    const int onesweep_threads = cc >= cuda::compute_capability{8, 0} ? 256 : 128;
+    return {
+      .algorithm     = cub::RadixSortAlgorithm::onesweep,
+      .histogram     = {.threads_per_block = 256, .items_per_thread = 8, .num_private_partitions = 1, .radix_bits = 8},
+      .exclusive_sum = {.threads_per_block = 256, .radix_bits = 8},
+      .onesweep      = {.threads_per_block           = onesweep_threads,
+                        .items_per_thread            = 21,
+                        .store_algorithm             = cub::RADIX_SORT_STORE_DIRECT,
+                        .rank_algorithm              = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+                        .scan_algorithm              = cub::BLOCK_SCAN_WARP_SCANS,
+                        .rank_num_private_partitions = 2,
+                        .radix_bits                  = 8},
+      .scan          = {.algorithm = cub::ScanAlgorithm::lookback,
+                        .lookback  = {.threads_per_block = 512,
+                                      .items_per_thread  = 23,
+                                      .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                                      .load_modifier     = cub::LOAD_DEFAULT,
+                                      .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+                                      .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
+                                      .lookback_delay    = {}},
+                        .lookahead = {}},
+      .downsweep     = {.threads_per_block = 256,
+                        .items_per_thread  = 25,
+                        .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+                        .load_modifier     = cub::LOAD_DEFAULT,
+                        .rank_algorithm    = cub::RADIX_RANK_MATCH,
+                        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                        .radix_bits        = 7},
+      .alt_downsweep = {.threads_per_block = 192,
+                        .items_per_thread  = 39,
+                        .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+                        .load_modifier     = cub::LOAD_DEFAULT,
+                        .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+                        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                        .radix_bits        = 6},
+      .upsweep = {.threads_per_block = 256, .items_per_thread = 25, .load_modifier = cub::LOAD_DEFAULT, .radix_bits = 7},
+      .alt_upsweep =
+        {.threads_per_block = 192, .items_per_thread = 39, .load_modifier = cub::LOAD_DEFAULT, .radix_bits = 6},
+      .single_tile = {
+        .threads_per_block = 256,
+        .items_per_thread  = 19,
+        .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+        .load_modifier     = cub::LOAD_LDG,
+        .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+        .radix_bits        = 6}};
+  }
+};
+// example-end radix-sort-keys-policy-selector
+
+C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API with tuning", "[radix_sort][env]")
+{
+  // example-begin radix-sort-keys-tuning
+  auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = thrust::device_vector<int>(7, thrust::no_init);
+
+  auto error = cub::DeviceRadixSort::SortKeys(
+    keys_in.data().get(),
+    keys_out.data().get(),
+    static_cast<int>(keys_in.size()),
+    0,
+    sizeof(int) * 8,
+    cuda::execution::tune(RadixSortKeysPolicySelector{}));
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortKeys failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  // example-end radix-sort-keys-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(keys_out == expected_keys);
+}
+
+#endif // _CCCL_STD_VER >= 2020

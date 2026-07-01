@@ -22,6 +22,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__new/device_new.h>
 
@@ -191,6 +193,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 #  if _CCCL_COMPILER(CLANG, >=, 10)
   _CCCL_DIAG_SUPPRESS_CLANG("-Wsizeof-array-div")
 #  endif // _CCCL_COMPILER(CLANG, >=, 10)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   constexpr int total_words = static_cast<int>(sizeof(dst_items) / sizeof(device_word_t));
   _CCCL_DIAG_POP
   constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
@@ -724,27 +727,51 @@ enum BlockLoadAlgorithm
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
+namespace detail
+{
+[[nodiscard]] constexpr const char* to_string(BlockLoadAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case BLOCK_LOAD_DIRECT:
-      return os << "BLOCK_LOAD_DIRECT";
+      return "BLOCK_LOAD_DIRECT";
     case BLOCK_LOAD_STRIPED:
-      return os << "BLOCK_LOAD_STRIPED";
+      return "BLOCK_LOAD_STRIPED";
     case BLOCK_LOAD_VECTORIZE:
-      return os << "BLOCK_LOAD_VECTORIZE";
+      return "BLOCK_LOAD_VECTORIZE";
     case BLOCK_LOAD_TRANSPOSE:
-      return os << "BLOCK_LOAD_TRANSPOSE";
+      return "BLOCK_LOAD_TRANSPOSE";
     case BLOCK_LOAD_WARP_TRANSPOSE:
-      return os << "BLOCK_LOAD_WARP_TRANSPOSE";
+      return "BLOCK_LOAD_WARP_TRANSPOSE";
     case BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED:
-      return os << "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED";
+      return "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED";
     default:
-      return os << "<unknown BlockLoadAlgorithm: " << static_cast<int>(algo) << ">";
+      return "<unknown BlockLoadAlgorithm>";
   }
 }
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockLoadAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockLoadAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear

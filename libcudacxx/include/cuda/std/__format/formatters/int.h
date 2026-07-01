@@ -76,7 +76,7 @@ struct __fmt_formatter_int
       __make_nbit_int_t<::cuda::std::max(sizeof(_Tp) * CHAR_BIT, sizeof(int32_t) * CHAR_BIT), is_signed_v<_Tp>>;
 
     // Reduce the number of instantiation of the integer formatter
-    return ::cuda::std::__fmt_format_int(static_cast<_Type>(__value), __ctx, __specs);
+    return ::cuda::std::__fmt_format_int(static_cast<_Type>(__value), __ctx.out(), __specs);
   }
 
   __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.

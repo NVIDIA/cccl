@@ -81,7 +81,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   ftype* shared_bins = detail::rfa::get_shared_bin_array<ftype, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < bin_length; index += threads_per_block)
+  for (int index = static_cast<int>(threadIdx.x); index < bin_length; index += threads_per_block)
   {
     shared_bins[index] = AccumT::initialize_bin(index);
   }
@@ -221,7 +221,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   float_type* shared_bins = detail::rfa::get_shared_bin_array<float_type, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < bin_length; index += threads_per_block)
+  for (int index = static_cast<int>(threadIdx.x); index < bin_length; index += threads_per_block)
   {
     shared_bins[index] = AccumT::initialize_bin(index);
   }
@@ -232,7 +232,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
 
   // Consume block aggregates of previous kernel
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = threadIdx.x; i < num_items; i += threads_per_block)
+  for (int i = static_cast<int>(threadIdx.x); i < num_items; i += threads_per_block)
   {
     thread_aggregate += transform_op(d_in[i]);
   }
