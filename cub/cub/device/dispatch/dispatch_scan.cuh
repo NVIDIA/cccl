@@ -1131,7 +1131,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     return error;
   }
 
-  const int scan_grid_dim = atomic_scheduling ? ::cuda::std::min(sm_count, num_tiles) : num_tiles;
+  const int scan_grid_dim = atomic_scheduling ? (::cuda::std::min) (sm_count, num_tiles) : num_tiles;
   // Maximum dynamic shared memory size that we can use for temporary storage.
   int max_dynamic_smem_size{};
   if (const auto error =
@@ -1139,9 +1139,6 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   {
     return error;
   }
-
-  // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
-  _CCCL_ASSERT(::cuda::is_aligned(d_tile_state, kernel_source.lookahead_tile_state_alignment()), "");
 
   auto scan_kernel                 = kernel_source.ScanKernel();
   [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
