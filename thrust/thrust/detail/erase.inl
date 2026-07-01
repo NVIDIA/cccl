@@ -20,9 +20,8 @@ template <class Vector, class U, ::cuda::std::enable_if_t<is_thrust_vector_v<Vec
 _CCCL_HOST typename Vector::size_type erase(Vector& c, const U& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::erase");
-  using value_type = typename Vector::value_type;
 
-  auto first = thrust::remove(c.begin(), c.end(), static_cast<value_type>(value));
+  auto first = thrust::remove(c.begin(), c.end(), value);
 
   auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
 
@@ -36,11 +35,11 @@ _CCCL_HOST typename Vector::size_type
 erase(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Vector& c, const U& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::erase");
-  using value_type = typename Vector::value_type;
 
-  auto first = thrust::remove(exec, c.begin(), c.end(), static_cast<value_type>(value));
+  auto first = thrust::remove(exec, c.begin(), c.end(), value);
 
   auto removed = static_cast<typename Vector::size_type>(::cuda::std::distance(first, c.end()));
+
   c.erase(first, c.end());
 
   return removed;
