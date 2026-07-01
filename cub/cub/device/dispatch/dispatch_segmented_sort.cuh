@@ -335,7 +335,7 @@ struct policy_selector_from_hub
 static constexpr size_t num_selected_groups = 2;
 } // namespace detail::segmented_sort
 
-// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
+// TODO(bgruber): remove in CCCL 4.0
 template <
   SortOrder Order,
   typename KeyT,
@@ -369,7 +369,8 @@ template <
     detail::three_way_partition::streaming_context_t<cub::detail::segmented_sort::global_segment_offset_t>,
     detail::choose_signed_offset<cub::detail::segmented_sort::global_segment_offset_t>::type>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchSegmentedSort
+struct CCCL_DEPRECATED_BECAUSE("Use the environment-based API instead (DeviceSegmentedSort::SortKeys et al.)")
+DispatchSegmentedSort
 {
   using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
