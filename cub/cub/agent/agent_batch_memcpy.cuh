@@ -40,6 +40,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+// TODO(bgruber): drop in CCCL 4.0
 template <uint32_t ThreadsPerBlock,
           uint32_t BuffersPerThread,
           uint32_t TlevBytesPerThread,
@@ -64,6 +65,7 @@ struct agent_batch_memcpy_policy
 };
 } // namespace detail
 
+// TODO(bgruber): drop in CCCL 4.0
 //! Deprecated [Since 3.5]
 template <uint32_t ThreadsPerBlock,
           uint32_t BuffersPerThread,

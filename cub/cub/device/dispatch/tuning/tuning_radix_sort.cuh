@@ -24,6 +24,8 @@
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/optional>
 
@@ -37,19 +39,45 @@ enum class RadixSortAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algorithm)
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case RadixSortAlgorithm::multi_pass:
-      return os << "RadixSortAlgorithm::multi_pass";
+      return "RadixSortAlgorithm::multi_pass";
     case RadixSortAlgorithm::onesweep:
-      return os << "RadixSortAlgorithm::onesweep";
+      return "RadixSortAlgorithm::onesweep";
     default:
-      return os << "RadixSortAlgorithm::unknown(" << static_cast<int>(algorithm) << ")";
+      return "<unknown RadixSortAlgorithm>";
   }
 }
+} // namespace detail
 #endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::RadixSortAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::RadixSortAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for the histogram pass of @ref DeviceRadixSort (used by the onesweep algorithm).
 struct RadixSortHistogramPolicy
