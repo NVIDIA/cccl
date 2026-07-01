@@ -131,10 +131,10 @@ public:
       __thread_rank_in_unit = gpu_thread.rank(_Unit{}, __parent.hierarchy());
     }
 
-    if (__mapping_result.is_valid() && __mapping_result.rank() == 0 && __thread_rank_in_unit == 0)
+    if (__mapping_result.is_valid() && __mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
     {
       init(&__barriers_[__mapping_result.group_rank()],
-           static_cast<::cuda::std::ptrdiff_t>(__mapping_result.count() * __nthread_in_unit));
+           static_cast<::cuda::std::ptrdiff_t>(__mapping_result.unit_count() * __nthread_in_unit));
     }
 
     // todo(dabayer): How we can expose making this aligned?

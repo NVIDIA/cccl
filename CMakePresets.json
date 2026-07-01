@@ -90,6 +90,8 @@
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_CUFILE": false,
+        "cudax_ENABLE_NCCL": true,
+        "HACK_cudax_ALLOW_MISSING_NCCL": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true,
         "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
@@ -386,7 +388,9 @@
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
-        "cudax_ENABLE_CUFILE": false
+        "cudax_ENABLE_CUFILE": false,
+        "cudax_ENABLE_NCCL": true,
+        "HACK_cudax_ALLOW_MISSING_NCCL": true
       }
     },
     {

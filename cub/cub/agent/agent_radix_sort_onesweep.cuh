@@ -26,6 +26,8 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -51,20 +53,46 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] constexpr const char* to_string(RadixSortStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case RADIX_SORT_STORE_DIRECT:
-      return os << "RADIX_SORT_STORE_DIRECT";
+      return "RADIX_SORT_STORE_DIRECT";
     case RADIX_SORT_STORE_ALIGNED:
-      return os << "RADIX_SORT_STORE_ALIGNED";
+      return "RADIX_SORT_STORE_ALIGNED";
     default:
-      return os << "<unknown RadixSortStoreAlgorithm: " << static_cast<int>(algo) << ">";
+      return "<unknown RadixSortStoreAlgorithm>";
   }
 }
+} // namespace detail
+#endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::RadixSortStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::RadixSortStoreAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 namespace detail
 {

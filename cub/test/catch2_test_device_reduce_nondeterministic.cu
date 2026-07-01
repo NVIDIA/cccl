@@ -3,7 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
+#include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
@@ -224,7 +224,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   std::size_t temp_storage_bytes{};
 
-  auto error = cub::detail::reduce_nondeterministic::dispatch(
+  auto error = cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
     nullptr,
     temp_storage_bytes,
     input,
@@ -238,7 +238,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  error = cub::detail::reduce_nondeterministic::dispatch(
+  error = cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input,
