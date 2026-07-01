@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from typing import Callable
 
-from .. import _aot_serde, _bindings, types
+from .. import _bindings, types
 from .. import _cccl_interop as cccl
+from .._aot import serde as _aot_serde
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols

@@ -9,8 +9,9 @@ from typing import Callable
 
 import numpy as np
 
-from .. import _aot_serde, _bindings
+from .. import _bindings
 from .. import _cccl_interop as cccl
+from .._aot import serde as _aot_serde
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
     call_build,

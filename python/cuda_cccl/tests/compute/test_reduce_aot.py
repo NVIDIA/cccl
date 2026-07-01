@@ -94,6 +94,10 @@ def test_serialize_deserialize_jit_op_round_trip():
     blob = reducer.serialize()
 
     loaded = _Reduce.deserialize(blob)
+    # The user op's device code is rebuilt from the blob, not from a re-supplied
+    # / recompiled operator: assert it is present before any object reaches the
+    # call below (deserialize took only the blob).
+    assert len(loaded.op_cccl.ltoir) > 0
     _run(loaded, d_in=d_in, d_out=d_out, num_items=d_in.size, op=_add, h_init=h_init)
 
     assert int(d_out[0].get()) == int(cp.sum(d_in).get())
@@ -112,6 +116,11 @@ def test_serialize_deserialize_counting_iterator_input():
     blob = reducer.serialize()
 
     loaded = _Reduce.deserialize(blob)
+    # The ITERATOR-kind descriptor (with its advance/dereference device code) was
+    # rebuilt purely from the blob — no iterator object was passed to deserialize,
+    # so a regression to caller-supplied descriptors would fail here, not silently
+    # pass via the object reconstructed for the call.
+    assert loaded.d_in_cccl.is_kind_iterator()
     _run(
         loaded,
         d_in=CountingIterator(np.int32(0)),
@@ -140,6 +149,9 @@ def test_serialize_deserialize_transform_iterator_input():
     blob = reducer.serialize()
 
     loaded = _Reduce.deserialize(blob)
+    # Iterator descriptor (incl. the transform op's embedded LTOIR) rebuilt from
+    # the blob alone — deserialize took no objects.
+    assert loaded.d_in_cccl.is_kind_iterator()
     _run(
         loaded, d_in=make_it(), d_out=d_out, num_items=n, op=OpKind.PLUS, h_init=h_init
     )

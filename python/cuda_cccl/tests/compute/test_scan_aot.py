@@ -9,6 +9,7 @@ import numpy as np
 
 from cuda.compute import (
     OpKind,
+    clear_all_caches,
     exclusive_scan,
     make_exclusive_scan,
     make_inclusive_scan,
@@ -107,23 +108,28 @@ def test_deserialize_after_jit_matches_jit_result():
     def max_op(a, b):
         return a if a > b else b
 
-    exclusive_scan(
-        d_in=d_in,
-        d_out=d_out_jit,
-        op=max_op,
-        init_value=init_value,
-        num_items=d_in.size,
-    )
-
-    builder = make_exclusive_scan(
+    # Build + serialize (this JITs), then clear every in-process cache so the AoT
+    # leg below runs cold: the deserialized scan must stand on its own and cannot
+    # free-ride on a callable warmed by the build or by the JIT reference.
+    blob = make_exclusive_scan(
         d_in=d_in, d_out=d_out_aot, op=max_op, init_value=init_value
-    )
-    blob = builder.serialize()
+    ).serialize()
+    clear_all_caches()
+
     loaded = _Scan.deserialize(blob)
     _run(
         loaded,
         d_in=d_in,
         d_out=d_out_aot,
+        op=max_op,
+        init_value=init_value,
+        num_items=d_in.size,
+    )
+
+    # Compute the JIT reference only after the AoT path has already run.
+    exclusive_scan(
+        d_in=d_in,
+        d_out=d_out_jit,
         op=max_op,
         init_value=init_value,
         num_items=d_in.size,

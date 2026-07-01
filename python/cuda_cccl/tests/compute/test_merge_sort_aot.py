@@ -76,6 +76,8 @@ def test_serialize_deserialize_merge_sort_keys_values():
         op=OpKind.LESS,
     )
 
-    argsort = np.argsort(h_in_keys, stable=True)
+    # kind="stable" works on all supported NumPy versions; the stable= keyword
+    # was only added in NumPy 2.0 and cuda-cccl pins no numpy floor.
+    argsort = np.argsort(h_in_keys, kind="stable")
     np.testing.assert_array_equal(d_out_keys.get(), h_in_keys[argsort])
     np.testing.assert_array_equal(d_out_values.get(), h_in_values[argsort])
