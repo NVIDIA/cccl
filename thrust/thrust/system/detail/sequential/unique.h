@@ -36,7 +36,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   BinaryPredicate binary_pred)
 {
   // wrap binary_pred to handle proxy references
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
   return ::cuda::std::unique_copy(first, last, output, wrapped_pred);
 } // end unique_copy()
 
@@ -45,7 +45,7 @@ _CCCL_HOST_DEVICE ForwardIterator unique(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
   // wrap binary_pred to handle proxy references
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
   return ::cuda::std::unique(first, last, wrapped_pred);
 } // end unique()
 
@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
   // wrap binary_pred to handle proxy references
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
   thrust::detail::it_difference_t<ForwardIterator> count{};

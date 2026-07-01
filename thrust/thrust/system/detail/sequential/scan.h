@@ -40,7 +40,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   using ValueType = thrust::detail::it_value_t<InputIterator>;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
   return ::cuda::std::inclusive_scan(first, last, result, wrapped_binary_op);
 }
 
@@ -62,7 +62,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
     typename ::cuda::std::__accumulator_t<BinaryFunction, thrust::detail::it_value_t<InputIterator>, InitialValueType>;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
   return ::cuda::std::inclusive_scan(first, last, result, wrapped_binary_op, init);
 }
 
@@ -84,7 +84,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   using ValueType = InitialValueType;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
   return ::cuda::std::exclusive_scan(first, last, result, init, wrapped_binary_op);
 }
 } // namespace system::detail::sequential

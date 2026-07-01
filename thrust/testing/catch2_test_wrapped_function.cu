@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 // Test that sequential algorithms correctly handle predicates
 // that require implicit type conversions (e.g., float → const double&).
 // This validates that wrapped_function properly handles the conversion chain
@@ -9,6 +12,7 @@
 #include <thrust/adjacent_difference.h>
 #include <thrust/binary_search.h>
 #include <thrust/count.h>
+#include <thrust/device_vector.h>
 #include <thrust/extrema.h>
 #include <thrust/find.h>
 #include <thrust/for_each.h>
@@ -95,7 +99,7 @@ TEST_CASE("SequentialFindIfProxyReference", "[sequential][proxy_reference]")
   thrust::host_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
   // Use thrust::seq to force sequential backend
-  auto result = thrust::find_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
+  const auto result = thrust::find_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(result - vec.begin() == 2);
 }
 
@@ -111,7 +115,7 @@ TEST_CASE("SequentialForEachNProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{1.0f, 2.0f, 3.0f};
 
-  auto result = thrust::for_each_n(thrust::seq, vec.begin(), 3, double_negate{});
+  const auto result = thrust::for_each_n(thrust::seq, vec.begin(), 3, double_negate{});
   CHECK(result == vec.end());
 }
 
@@ -119,7 +123,7 @@ TEST_CASE("SequentialMinElementProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
 
-  auto result = thrust::min_element(thrust::seq, vec.begin(), vec.end(), double_less{});
+  const auto result = thrust::min_element(thrust::seq, vec.begin(), vec.end(), double_less{});
   CHECK(result - vec.begin() == 1);
 }
 
@@ -127,7 +131,7 @@ TEST_CASE("SequentialMaxElementProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
 
-  auto result = thrust::max_element(thrust::seq, vec.begin(), vec.end(), double_less{});
+  const auto result = thrust::max_element(thrust::seq, vec.begin(), vec.end(), double_less{});
   CHECK(result - vec.begin() == 3);
 }
 
@@ -135,7 +139,7 @@ TEST_CASE("SequentialMinmaxElementProxyReference", "[sequential][proxy_reference
 {
   thrust::host_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
 
-  auto result = thrust::minmax_element(thrust::seq, vec.begin(), vec.end(), double_less{});
+  const auto result = thrust::minmax_element(thrust::seq, vec.begin(), vec.end(), double_less{});
   CHECK(result.first - vec.begin() == 1);
   CHECK(result.second - vec.begin() == 3);
 }
@@ -144,7 +148,7 @@ TEST_CASE("SequentialLowerBoundProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
-  auto result = thrust::lower_bound(thrust::seq, vec.begin(), vec.end(), 3.0f, double_less{});
+  const auto result = thrust::lower_bound(thrust::seq, vec.begin(), vec.end(), 3.0f, double_less{});
   CHECK(result - vec.begin() == 2);
 }
 
@@ -152,7 +156,7 @@ TEST_CASE("SequentialUpperBoundProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
-  auto result = thrust::upper_bound(thrust::seq, vec.begin(), vec.end(), 3.0f, double_less{});
+  const auto result = thrust::upper_bound(thrust::seq, vec.begin(), vec.end(), 3.0f, double_less{});
   CHECK(result - vec.begin() == 3);
 }
 
@@ -160,7 +164,7 @@ TEST_CASE("SequentialRemoveIfProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
-  auto new_end = thrust::remove_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
+  const auto new_end = thrust::remove_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(new_end - vec.begin() == 2);
   CHECK(vec[0] == 1.0f);
   CHECK(vec[1] == 2.0f);
@@ -170,7 +174,7 @@ TEST_CASE("SequentialUniqueProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{1.0f, 1.0f, 2.0f, 2.0f, 3.0f};
 
-  auto new_end = thrust::unique(thrust::seq, vec.begin(), vec.end(), double_equal{});
+  const auto new_end = thrust::unique(thrust::seq, vec.begin(), vec.end(), double_equal{});
   CHECK(new_end - vec.begin() == 3);
 }
 
@@ -179,7 +183,7 @@ TEST_CASE("SequentialUniqueCopyProxyReference", "[sequential][proxy_reference]")
   thrust::host_vector<float> input{1.0f, 1.0f, 2.0f, 2.0f, 3.0f};
   thrust::host_vector<float> output(5);
 
-  auto new_end = thrust::unique_copy(thrust::seq, input.begin(), input.end(), output.begin(), double_equal{});
+  const auto new_end = thrust::unique_copy(thrust::seq, input.begin(), input.end(), output.begin(), double_equal{});
   CHECK(new_end - output.begin() == 3);
   CHECK(output[0] == 1.0f);
   CHECK(output[1] == 2.0f);
@@ -208,7 +212,7 @@ TEST_CASE("SequentialSetDifferenceProxyReference", "[sequential][proxy_reference
   thrust::host_vector<float> b{2.0f, 4.0f};
   thrust::host_vector<float> out(5);
 
-  auto new_end =
+  const auto new_end =
     thrust::set_difference(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), out.begin(), double_less{});
   CHECK(new_end - out.begin() == 3);
   CHECK(out[0] == 1.0f);
@@ -222,7 +226,7 @@ TEST_CASE("SequentialSetIntersectionProxyReference", "[sequential][proxy_referen
   thrust::host_vector<float> b{2.0f, 4.0f, 6.0f};
   thrust::host_vector<float> out(5);
 
-  auto new_end =
+  const auto new_end =
     thrust::set_intersection(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), out.begin(), double_less{});
   CHECK(new_end - out.begin() == 2);
   CHECK(out[0] == 2.0f);
@@ -235,7 +239,8 @@ TEST_CASE("SequentialSetUnionProxyReference", "[sequential][proxy_reference]")
   thrust::host_vector<float> b{2.0f, 3.0f, 4.0f};
   thrust::host_vector<float> out(6);
 
-  auto new_end = thrust::set_union(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), out.begin(), double_less{});
+  const auto new_end =
+    thrust::set_union(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), out.begin(), double_less{});
   CHECK(new_end - out.begin() == 5);
   CHECK(out[0] == 1.0f);
   CHECK(out[1] == 2.0f);
@@ -249,7 +254,7 @@ TEST_CASE("SequentialRemoveCopyIfProxyReference", "[sequential][proxy_reference]
   thrust::host_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
   thrust::host_vector<float> output(5);
 
-  auto new_end =
+  const auto new_end =
     thrust::remove_copy_if(thrust::seq, input.begin(), input.end(), output.begin(), double_greater_than_two{});
   CHECK(new_end - output.begin() == 2);
   CHECK(output[0] == 1.0f);
@@ -261,7 +266,8 @@ TEST_CASE("SequentialAdjacentDifferenceProxyReference", "[sequential][proxy_refe
   thrust::host_vector<float> input{1.0f, 4.0f, 9.0f, 16.0f};
   thrust::host_vector<float> output(4);
 
-  auto result = thrust::adjacent_difference(thrust::seq, input.begin(), input.end(), output.begin(), double_minus{});
+  const auto result =
+    thrust::adjacent_difference(thrust::seq, input.begin(), input.end(), output.begin(), double_minus{});
   CHECK(result == output.end());
   CHECK(output[0] == 1.0f); // first element copied
   CHECK(output[1] == 3.0f); // 4 - 1
@@ -273,7 +279,7 @@ TEST_CASE("SequentialReduceProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f};
 
-  float result = thrust::reduce(thrust::seq, vec.begin(), vec.end(), 0.0f, double_plus{});
+  const float result = thrust::reduce(thrust::seq, vec.begin(), vec.end(), 0.0f, double_plus{});
   CHECK(result == 10.0f);
 }
 
@@ -307,10 +313,10 @@ TEST_CASE("SequentialStablePartitionCopyProxyReference", "[sequential][proxy_ref
   thrust::host_vector<float> out_true(5);
   thrust::host_vector<float> out_false(5);
 
-  auto result = thrust::stable_partition_copy(
+  const auto result = thrust::stable_partition_copy(
     thrust::seq, input.begin(), input.end(), out_true.begin(), out_false.begin(), double_greater_than_two{});
-  auto n_true  = result.first - out_true.begin();
-  auto n_false = result.second - out_false.begin();
+  const auto n_true  = result.first - out_true.begin();
+  const auto n_false = result.second - out_false.begin();
   CHECK(n_true == 3);
   CHECK(n_false == 2);
   CHECK(out_true[0] == 3.0f);
@@ -324,7 +330,7 @@ TEST_CASE("SequentialPartitionProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{1.0f, 3.0f, 2.0f, 5.0f, 4.0f};
 
-  auto mid = thrust::partition(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
+  const auto mid = thrust::partition(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(mid - vec.begin() == 3);
   // all elements in [begin, mid) satisfy pred; none in [mid, end) do
   for (auto it = vec.begin(); it != mid; ++it)
@@ -353,7 +359,7 @@ TEST_CASE("SequentialCountIfProxyReference", "[sequential][proxy_reference]")
 {
   thrust::host_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
-  auto n = thrust::count_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
+  const auto n = thrust::count_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(n == 3);
 }
 
@@ -376,4 +382,18 @@ TEST_CASE("SequentialNoneOfProxyReference", "[sequential][proxy_reference]")
   thrust::host_vector<float> vec{1.0f, 2.0f};
 
   CHECK(thrust::none_of(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{}));
+}
+
+// Real proxy-reference test using device_vector
+// This validates that wrapped_function correctly unwraps device_reference<T> → T
+// before the implicit conversion to const double& occurs
+TEST_CASE("SequentialFindIfRealProxyReference", "[sequential][proxy_reference]")
+{
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+
+  // Use thrust::seq to force sequential backend
+  // device_vector iterators return device_reference<float>, which is a proxy reference
+  // This test validates that wrapped_function unwraps the proxy before conversion
+  const auto result = thrust::find_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
+  CHECK(result - vec.begin() == 2);
 }

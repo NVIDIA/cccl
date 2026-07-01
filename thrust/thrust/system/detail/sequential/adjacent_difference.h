@@ -34,9 +34,10 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   OutputIterator result,
   BinaryFunction binary_op)
 {
-  using InputType = thrust::detail::it_value_t<InputIterator>;
+  using InputType    = thrust::detail::it_value_t<InputIterator>;
+  using OpResultType = ::cuda::std::invoke_result_t<BinaryFunction&, InputType, InputType>;
   // wrap binary_op to handle proxy references
-  thrust::detail::wrapped_function<BinaryFunction, InputType> wrapped_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, OpResultType> wrapped_op{binary_op};
   return ::cuda::std::adjacent_difference(first, last, result, wrapped_op);
 }
 } // namespace system::detail::sequential
