@@ -352,7 +352,7 @@ C2H_TEST("ThreeWayPartition works with Boolean well-known operations", "[three_w
     num_selected_ptr,
     identity_op,
     logical_not_op,
-    num_items,
+    static_cast<int64_t>(num_items),
     no_cache,
     no_key);
 
