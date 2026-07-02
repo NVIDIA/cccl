@@ -233,6 +233,33 @@ C2H_TEST("Block load direct with L2 prefetch works with cache modified iterators
 }
 #endif // IPT == 1
 
+using prefetch_kind =
+  c2h::enum_type_list<cub::detail::BlockLoadPrefetch,
+                      cub::detail::BlockLoadPrefetch::l2,
+                      cub::detail::BlockLoadPrefetch::bulk_l2>;
+
+// Guarded to compile in only one IPT unit — test uses hardcoded items_per_thread and does not exercise the IPT sweep
+// axis.
+#if IPT == 1
+C2H_TEST("Block load with prefetch works across all algorithms and cache levels",
+         "[load][block]",
+         load_algorithm,
+         prefetch_kind)
+{
+  using type                                               = int;
+  constexpr int items_per_thread                           = 4;
+  constexpr int threads_in_block                           = 64;
+  constexpr int tile_size                                  = items_per_thread * threads_in_block;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm  = c2h::get<0, TestType>::value;
+  static constexpr cub::detail::BlockLoadPrefetch prefetch = c2h::get<1, TestType>::value;
+
+  c2h::device_vector<type> d_input(GENERATE_COPY(0, tile_size / 2, tile_size), thrust::no_init);
+  c2h::gen(C2H_SEED(10), d_input);
+  test_block_load<items_per_thread, threads_in_block, load_algorithm, type, type*, prefetch>(
+    d_input, thrust::raw_pointer_cast(d_input.data()));
+}
+#endif // IPT == 1
+
 #if IPT == 1
 C2H_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
          "[load][block]",
