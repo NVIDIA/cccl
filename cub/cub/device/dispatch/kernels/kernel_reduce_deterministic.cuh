@@ -15,7 +15,7 @@
 
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce_deterministic.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_arch.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
@@ -65,9 +65,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   TransformOpT transform_op,
   const int reduce_grid_size)
 {
-  constexpr rfa::reduce_policy policy = current_policy<PolicySelector>().reduce;
-  constexpr int items_per_thread      = policy.items_per_thread;
-  constexpr int threads_per_block     = policy.threads_per_block;
+  constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
+  constexpr int items_per_thread       = policy.items_per_thread;
+  constexpr int threads_per_block      = policy.threads_per_block;
 
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.block_algorithm>;
 
@@ -197,8 +197,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                     InitValueT init,
                                                     TransformOpT transform_op)
 {
-  constexpr rfa::single_tile_policy policy = current_policy<PolicySelector>().single_tile;
-  constexpr int threads_per_block          = policy.threads_per_block;
+  constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
+  constexpr int threads_per_block      = policy.threads_per_block;
 
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.block_algorithm>;
 

@@ -140,6 +140,7 @@ NCCL_COMM_TEST("nccl_communicator_ref send/recv transports trivially copyable pa
     auto pool                               = cuda::mr::legacy_pinned_memory_resource{};
     const cuda::host_buffer<payload> actual = cuda::make_buffer(recv[r].stream(), pool, recv[r]);
 
+    actual.stream().sync();
     for (cuda::std::size_t k = 0; k < actual.size(); ++k)
     {
       REQUIRE(actual[k].from == static_cast<cuda::std::int32_t>(prev));
