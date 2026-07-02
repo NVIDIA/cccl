@@ -27,9 +27,13 @@ Invoke-Expression $buildCmd
 
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
-# Run ctest-based and lit-based test presets like on Linux
-test_preset "libcudacxx (CTest)" "libcudacxx-ctest-cpp${CXX_STANDARD}"
-test_preset "libcudacxx (lit)"   "libcudacxx-lit-cpp${CXX_STANDARD}"
+$PRESET = "libcudacxx"
+$LOCAL_CMAKE_OPTIONS = "-DCMAKE_CXX_STANDARD=$CXX_STANDARD -DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
+
+configure_preset "libcudacxx" $PRESET $LOCAL_CMAKE_OPTIONS
+
+test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
+test_preset "libcudacxx (lit)"   "libcudacxx-lit"
 
 If($CURRENT_PATH -ne "ci") {
     popd
