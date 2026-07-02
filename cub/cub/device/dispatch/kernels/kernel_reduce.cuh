@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -14,12 +14,14 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_arch.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/atomic>
+#include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -112,6 +114,9 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, no_init_t, Acc
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
+ * @tparam NormalizedNumItemsT
+ *   Integral problem size or a deferred problem-size descriptor
+ *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
  *   `auto operator()(const T &a, const U &b)`
@@ -128,8 +133,8 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, no_init_t, Acc
  * @param[out] d_out
  *   Pointer to the output aggregate
  *
- * @param[in] num_items
- *   Total number of input data items
+ * @param[in] normalized_num_items
+ *   Immediate problem size or a deferred problem-size descriptor
  *
  * @param[in] even_share
  *   Even-share descriptor for mapping an equal number of tiles onto each
@@ -143,6 +148,7 @@ template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
+          typename NormalizedNumItemsT,
           typename ReductionOpT,
           typename AccumT,
           typename InitValueT,
@@ -154,13 +160,39 @@ _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)) void DeviceReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  _CCCL_GRID_CONSTANT const NormalizedNumItemsT normalized_num_items,
   GridEvenShare<OffsetT> even_share,
   ReductionOpT reduction_op,
   [[maybe_unused]] _CCCL_GRID_CONSTANT const InitValueT init,
   TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
+  const OffsetT num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
+
+  // Early return from surplus blocks for deferred num_items
+  if constexpr (!::cuda::std::is_integral_v<NormalizedNumItemsT>)
+  {
+    constexpr int tile_size = policy.threads_per_block * policy.items_per_thread;
+    even_share.DispatchInit(num_items, static_cast<int>(gridDim.x), tile_size);
+
+    if constexpr (StableReductionOrder)
+    {
+      if (static_cast<int>(blockIdx.x) >= even_share.grid_size)
+      {
+        return;
+      }
+    }
+    else
+    {
+      // Only block zero handles an empty atomic reduction. For non-empty problems, all surplus blocks return.
+      if ((num_items == 0 && blockIdx.x != 0)
+          || (num_items != 0 && static_cast<int>(blockIdx.x) >= even_share.grid_size))
+      {
+        return;
+      }
+    }
+  }
+
   if constexpr (!StableReductionOrder)
   {
     static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
@@ -220,6 +252,45 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
         }),
         (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
     }
+  }
+}
+
+template <typename AgentReduceT,
+          typename AccumT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitValueT,
+          typename TransformOpT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void reduce_single_tile(
+  typename AgentReduceT::TempStorage& temp_storage,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT num_items,
+  ReductionOpT reduction_op,
+  InitValueT init,
+  TransformOpT transform_op)
+{
+  // Check if empty problem
+  if (num_items == 0)
+  {
+    if (threadIdx.x == 0)
+    {
+      detail::reduce::handle_empty_problem(d_out, init);
+    }
+
+    return;
+  }
+
+  // Consume input tiles
+  AccumT block_aggregate =
+    AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(OffsetT{0}, num_items);
+
+  // Output result
+  if (threadIdx.x == 0)
+  {
+    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
   }
 }
 
@@ -306,26 +377,61 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
 
-  // Check if empty problem
-  if (num_items == 0)
-  {
-    if (threadIdx.x == 0)
-    {
-      detail::reduce::handle_empty_problem(d_out, init);
-    }
+  reduce_single_tile<AgentReduceT, AccumT>(temp_storage, d_in, d_out, num_items, reduction_op, init, transform_op);
+}
 
-    return;
-  }
+//! Single-tile entry point that derives the number of first-pass partials from a deferred problem size.
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename NormalizedNumItemsT,
+          typename ReductionOpT,
+          typename InitValueT,
+          typename AccumT,
+          typename TransformOpT = ::cuda::std::identity>
+#if _CCCL_HAS_CONCEPTS()
+  requires reduce_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
+  int(current_policy<PolicySelector>().single_tile.threads_per_block),
+  1) void DeviceReduceDeferredSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+                                               OutputIteratorT d_out,
+                                               _CCCL_GRID_CONSTANT const NormalizedNumItemsT normalized_num_items,
+                                               _CCCL_GRID_CONSTANT const int first_pass_grid_size,
+                                               _CCCL_GRID_CONSTANT const int first_pass_tile_size,
+                                               ReductionOpT reduction_op,
+                                               _CCCL_GRID_CONSTANT const InitValueT init,
+                                               TransformOpT transform_op)
+{
+  const OffsetT num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
+  GridEvenShare<OffsetT> even_share;
+  even_share.DispatchInit(num_items, first_pass_grid_size, first_pass_tile_size);
 
-  // Consume input tiles
-  AccumT block_aggregate =
-    AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(OffsetT(0), num_items);
+  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
 
-  // Output result
-  if (threadIdx.x == 0)
-  {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
-  }
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
+  using agent_policy_t =
+    AgentReducePolicy<0,
+                      0,
+                      AccumT,
+                      policy.vec_size,
+                      policy.block_algorithm,
+                      policy.load_modifier,
+                      NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
+
+  // Thread block type for reducing input tiles
+  using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT, TransformOpT>;
+
+  static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
+                "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
+                "file an issue at: https://github.com/NVIDIA/cccl/issues");
+
+  // Shared memory storage
+  __shared__ typename AgentReduceT::TempStorage temp_storage;
+
+  reduce_single_tile<AgentReduceT, AccumT>(
+    temp_storage, d_in, d_out, even_share.grid_size, reduction_op, init, transform_op);
 }
 } // namespace detail::reduce
 
