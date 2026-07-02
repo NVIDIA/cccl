@@ -462,6 +462,33 @@ cdef uintptr_t _get_stream_pointer(object stream) except? 0:
     )
 
 
+def _dtype_from_cai(dict cai):
+    """Return the numpy dtype described by a CUDA Array Interface dict."""
+    typestr = cai["typestr"]
+    if typestr.startswith("|V") and "descr" in cai:
+        return np.dtype(cai["descr"])
+    return np.dtype(typestr)
+
+
+def _cai_from_pointer(uintptr_t ptr, tuple shape, dtype, uintptr_t stream=0):
+    """Build a CUDA Array Interface v3 dict for an STF task argument."""
+    dtype = np.dtype(dtype)
+    cai = {
+        'version': 3,
+        'shape': shape,
+        'typestr': dtype.str,
+        'data': (ptr, False),
+        'strides': None,
+        'stream': stream if stream != 0 else None,  # CAI v3: 0 disallowed
+    }
+    if dtype.fields is not None:
+        # Structured dtypes need ``descr``; ``typestr`` is only "|V..." and
+        # loses the field layout. This and _dtype_from_cai are candidates for
+        # a future shared, lightweight protocol utility with cuda.compute.
+        cai["descr"] = dtype.descr
+    return cai
+
+
 class stf_cai:
     """
     Wrapper that exposes CUDA Array Interface v3 for interop (torch, cupy, etc.).
@@ -472,14 +499,8 @@ class stf_cai:
         self.shape = shape
         self.dtype = np.dtype(dtype)
         self.stream = int(stream)    # CUDA stream handle (int or 0)
-        self.__cuda_array_interface__ = {
-            'version': 3,
-            'shape': self.shape,
-            'typestr': self.dtype.str,     # e.g., '<f4' for float32
-            'data': (self.ptr, False),     # (ptr, read-only?)
-            'strides': None,               # or tuple of strides in bytes
-            'stream': self.stream if self.stream != 0 else None,  # CAI v3: 0 disallowed
-        }
+        self.__cuda_array_interface__ = _cai_from_pointer(
+            <uintptr_t>self.ptr, self.shape, self.dtype, <uintptr_t>self.stream)
 
     def __getitem__(self, key):
         return self.__cuda_array_interface__[key]
@@ -639,16 +660,7 @@ cdef class logical_data:
             # Extract CAI information
             data_ptr, readonly = cai['data']
             original_shape = cai['shape']
-            typestr = cai['typestr']
-
-            # Handle vector types (e.g., wp.vec2, wp.vec3)
-            # Use structured dtype from descr if available
-            if typestr.startswith('|V') and 'descr' in cai:
-                # Vector/structured type - use descr field
-                self._dtype = np.dtype(cai['descr'])
-            else:
-                # Regular scalar type or vector without descr - use typestr
-                self._dtype = np.dtype(typestr)
+            self._dtype = _dtype_from_cai(cai)
 
             # Shape is always the same regardless of type
             self._shape = original_shape
@@ -3131,11 +3143,7 @@ cdef class stackable_context:
             cai = buf.__cuda_array_interface__
             data_ptr, readonly = cai['data']
             original_shape = cai['shape']
-            typestr = cai['typestr']
-            if typestr.startswith('|V') and 'descr' in cai:
-                out._dtype = np.dtype(cai['descr'])
-            else:
-                out._dtype = np.dtype(typestr)
+            out._dtype = _dtype_from_cai(cai)
             out._shape = original_shape
             out._ndim = len(out._shape)
             itemsize = out._dtype.itemsize

@@ -157,13 +157,16 @@ class DeviceArray:
 
     @property
     def __cuda_array_interface__(self):
-        return {
+        cai = {
             "version": 3,
             "shape": (self._size,),
             "typestr": self._dtype.str,
             "data": (self._ptr, False),
             "strides": None,
         }
+        if self._dtype.fields is not None:
+            cai["descr"] = self._dtype.descr
+        return cai
 
     # -- properties --------------------------------------------------------
 
