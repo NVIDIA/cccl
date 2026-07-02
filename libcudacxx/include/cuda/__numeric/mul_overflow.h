@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/uabs.h>
 #include <cuda/__numeric/overflow_result.h>
@@ -70,33 +71,20 @@ template <class _Result, class _Lhs, class _Rhs>
   constexpr auto __max_nbits =
     ::cuda::std::max({__num_bits_v<_Lhs>, __num_bits_v<_Rhs>, __num_bits_v<_Result>, __num_bits_v<unsigned int>});
   using _UPromoted             = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
-  const auto __ulhs            = static_cast<_UPromoted>(::cuda::uabs(__lhs));
-  const auto __urhs            = static_cast<_UPromoted>(::cuda::uabs(__rhs));
+  const auto __ulhs            = _UPromoted{::cuda::uabs(__lhs)};
+  const auto __urhs            = _UPromoted{::cuda::uabs(__rhs)};
   const auto __sign_mismatch   = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
   const auto __negative_result = __sign_mismatch && __ulhs != 0 && __urhs != 0;
-  auto __overflow_mul          = false;
 
-  if (__negative_result && !is_signed_v<_Result>)
-  {
-    __overflow_mul = true;
-  }
-  else
-  {
-    using _UResult = ::cuda::std::make_unsigned_t<_Result>;
+  constexpr auto __min = ::cuda::std::numeric_limits<_Result>::min();
+  constexpr auto __max = ::cuda::std::numeric_limits<_Result>::max();
 
-    constexpr auto __nbits = __num_bits_v<_Result>;
-    const auto c           = is_signed_v<_Result>
-                             ? (static_cast<_UResult>(1) << (__nbits - 1)) - static_cast<_UResult>(__negative_result ? 0 : 1)
-                             : static_cast<_UResult>(-1);
+  const auto __uresult_lo  = __ulhs * __urhs;
+  const auto __uresult_hi  = ::cuda::mul_hi(__ulhs, __urhs);
+  const auto __uresult_max = _UPromoted{::cuda::uabs((__negative_result) ? __min : __max)};
 
-    if (__urhs != 0)
-    {
-      __overflow_mul = __ulhs > c / __urhs;
-    }
-  }
-
-  const auto __result_lo = static_cast<_UPromoted>(__lhs) * static_cast<_UPromoted>(__rhs);
-  return {static_cast<_Result>(__result_lo), __overflow_mul};
+  const auto __result = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
+  return {__result, __uresult_hi != 0 || __uresult_lo > __uresult_max};
 }
 
 #if !_CCCL_COMPILER(NVRTC)
