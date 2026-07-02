@@ -22,44 +22,6 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
-    # Revalidate new MSVC test coverage across all workflows (PR #5725). Reset to empty before merging.
-    # --- from pull_request ---
-    - {jobs: ['test'], project: 'thrust', std: 'max', cxx: ['msvc'], gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'libcudacxx', std: 'max', cxx: ['msvc'], gpu: 'rtx2080'}
-    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: ['msvc'], gpu: 'rtxa6000'}
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['msvc2022'], gpu: ['rtx2080']}
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['msvc2022']}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.14'], gpu: 'l4', cxx: ['msvc2022']}
-    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['msvc14.39'], gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['msvc2022'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['msvc2022'], gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['msvc'], gpu: 'rtx2080'}
-    # --- from pull_request_lite ---
-    - {project: 'libcudacxx', jobs: ['test'], std: 'max', cxx: ['msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'cub', jobs: ['test_nolid', 'test_lid0'], std: 'max', cxx: ['msvc'], gpu: 'rtxa6000', sm: 'gpu'}
-    - {project: 'thrust', jobs: ['test'], std: 'max', cxx: ['msvc'], gpu: 'rtx4090', sm: 'gpu'}
-    - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: ['msvc2022'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['msvc2022']}
-    - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    # --- from nightly ---
-    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'max', cxx: ['msvc2022'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'cub', ctk: '12.X', std: 'max', cxx: ['msvc2022'], gpu: 'rtxa6000'}
-    - {jobs: ['test'], project: 'thrust', ctk: '12.X', std: 'max', cxx: ['msvc2022'], gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 'max', cxx: ['msvc'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'cub', ctk: '13.X', std: 'max', cxx: ['msvc'], gpu: 'rtxa6000'}
-    - {jobs: ['test'], project: 'thrust', ctk: '13.X', std: 'max', cxx: ['msvc'], gpu: 'rtx4090'}
-    - {jobs: ['test_gpu'], project: 'thrust', cxx: ['msvc'], cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
-    - {jobs: ['test_gpu'], project: 'thrust', cxx: ['msvc'], cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['msvc2022']}
-    # --- from weekly ---
-    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'minmax', cxx: ['msvc2022'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'cub', ctk: '12.X', std: 'minmax', cxx: ['msvc2022'], gpu: 'rtxa6000'}
-    - {jobs: ['test'], project: 'thrust', ctk: '12.X', std: 'minmax', cxx: ['msvc2022'], gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 'minmax', cxx: ['msvc'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'cub', ctk: '13.X', std: 'minmax', cxx: ['msvc'], gpu: 'rtxa6000'}
-    - {jobs: ['test'], project: 'thrust', ctk: '13.X', std: 'minmax', cxx: ['msvc'], gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: ['msvc2022']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
