@@ -72,6 +72,9 @@ struct __atomic_arithmetic
 
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile)
+
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, volatile)
 };
 
 template <typename _Tp, typename _Sco>
@@ -97,6 +100,9 @@ struct __atomic_bitwise
 
   _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, )
   _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, volatile)
+
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, volatile)
 };
 
 template <typename _Tp, typename _Sco>
@@ -119,6 +125,9 @@ struct __atomic_pointer
 
   _LIBCUDACXX_ATOMIC_POINTER_IMPL(, )
   _LIBCUDACXX_ATOMIC_POINTER_IMPL(, volatile)
+
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, volatile)
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
