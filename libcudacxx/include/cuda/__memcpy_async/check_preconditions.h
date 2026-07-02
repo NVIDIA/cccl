@@ -22,9 +22,11 @@
 #endif // no system header
 
 #include <cuda/__memory/aligned_size.h>
+#include <cuda/__memory/ranges_overlap.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -45,31 +47,29 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 // Check the memcpy_async preconditions, return value is intended for testing purposes exclusively
 template <class _Tp, class _Size>
-_CCCL_HOST_DEVICE_API inline bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* __src, _Size __size)
+_CCCL_HOST_DEVICE_API inline bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* __src, _Size __size_bytes)
 {
-  constexpr auto __align = ::cuda::std::max(alignof(_Tp), __get_size_align_v<_Size>);
-
-  const auto __dst_val = reinterpret_cast<uintptr_t>(__dst);
-  const auto __src_val = reinterpret_cast<uintptr_t>(__src);
-
-  // check src and dst alignment
+  constexpr auto __align     = ::cuda::std::max(alignof(_Tp), __get_size_align_v<_Size>);
+  constexpr auto __copy_size = ::cuda::std::min(::cuda::std::size_t{16}, __align);
+  _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(__size_bytes % __copy_size == 0, //
+                                      "size must be a multiple of the memcpy_async copy chunk size");
+  _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(::cuda::std::is_sufficiently_aligned<__align>(__dst),
+                                      "destination pointer must be aligned to the specified alignment");
+  _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(::cuda::std::is_sufficiently_aligned<__align>(__src), //
+                                      "source pointer must be aligned to the specified alignment");
+  const auto __dst_char = reinterpret_cast<const char*>(__dst);
+  const auto __src_char = reinterpret_cast<const char*>(__src);
   _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(
-    __dst_val % __align == 0, "destination pointer must be aligned to the specified alignment");
-  _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(
-    __src_val % __align == 0, "source pointer must be aligned to the specified alignment");
-
-  // check src and dst overlap
-  _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(
-    !((__dst_val <= __src_val && __src_val < __dst_val + __size)
-      || (__src_val <= __dst_val && __dst_val < __src_val + __size)),
+    !::cuda::ranges_overlap(__dst_char, __dst_char + __size_bytes, __src_char, __src_char + __size_bytes),
     "destination and source buffers must not overlap");
   return true;
 }
 
 template <class _Size>
-_CCCL_HOST_DEVICE_API inline bool __memcpy_async_check_pre(void* __dst, const void* __src, _Size __size)
+_CCCL_HOST_DEVICE_API inline bool __memcpy_async_check_pre(void* __dst, const void* __src, _Size __size_bytes)
 {
-  return ::cuda::__memcpy_async_check_pre(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src), __size);
+  return ::cuda::__memcpy_async_check_pre(
+    reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src), __size_bytes);
 }
 
 _CCCL_END_NAMESPACE_CUDA
