@@ -375,9 +375,17 @@ struct agent_batched_topk_cluster
   // resident range, so such types fall back to plain per-element loads/stores.
   static constexpr bool key_is_bulk_tileable =
     int{sizeof(key_t)} == int{alignof(key_t)} && LoadAlignBytes % int{sizeof(key_t)} == 0;
+
+  // A statically-bounded size spanning at most one aligned chunk (`num_chunks = ceil((size-head_items)/chunk_items)`,
+  // `head_items < chunk_items`) has one working CTA and never overflows to gmem, so the bulk-copy pipeline has nothing
+  // to overlap or stream. Prefer the scalar fallback: it still stages the lone chunk resident and reads any unaligned
+  // tail inline, skipping the mbarrier/TMA/edge-peel setup. Only bounded sizes trip this; unbounded runtime sizes
+  // report the type maximum (`highest`) and keep the pipeline.
+  static constexpr bool single_chunk_bounded =
+    static_max_segment_size > 0 && static_max_segment_size <= ::cuda::std::int64_t{chunk_items};
   static constexpr bool use_block_load_to_shared =
     THRUST_NS_QUALIFIER::is_trivially_relocatable_v<key_t> && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<key_it_t>
-    && key_is_bulk_tileable;
+    && key_is_bulk_tileable && !single_chunk_bounded;
 
   // ---------------------------------------------------------------------------
   // Block-scan used by the leader block to prefix-sum its merged histogram
