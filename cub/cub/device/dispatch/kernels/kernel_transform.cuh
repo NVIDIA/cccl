@@ -722,7 +722,6 @@ template <int threads_per_block,
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items,
   int num_elem_per_thread,
-  [[maybe_unused]] bool can_vectorize,
   Predicate pred,
   F f,
   RandomAccessIteratorOut out,
@@ -899,13 +898,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   using output_t         = it_value_t<RandomAccessIteratorOut>;
   constexpr int out_size = int{size_of<output_t>};
-  // cap the vectorized store at 16 bytes (STG.128): STG.256 is sm_100+ only, so capping here keeps the
-  // max vector width arch-independent, and B200 benchmarks showed no gain from 256-bit stores
-  constexpr int possible_vec_size = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
-  static_assert(StoreVecSize == 0 || ::cuda::is_power_of_two(StoreVecSize),
-                "store_vec_size must be 0 (auto) or a power of two");
-  constexpr int store_vec_size =
-    (StoreVecSize > 0) ? (::cuda::std::min) (StoreVecSize, possible_vec_size) : possible_vec_size;
+  static_assert(::cuda::is_power_of_two(StoreVecSize) && (StoreVecSize == 1 || StoreVecSize * out_size <= 16),
+                "store_vec_size must be a power of two, and (unless 1 = scalar) store_vec_size * sizeof(output) <= 16");
+  constexpr int store_vec_size = StoreVecSize;
   // compile time eligibility for the vectorized store (STG.128):
   // 1. there are no predicates
   // 2. memory layout is contiguous
@@ -919,6 +914,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   if constexpr (vectorize_eligible)
   {
+    const bool can_vectorize = ::cuda::std::is_sufficiently_aligned<out_size * store_vec_size>(out)
+                            && (... && (aligned_ptrs.head_padding % (int{sizeof(InTs)} * store_vec_size) == 0));
     if (can_vectorize)
     {
       // store_vec_size: element count for vectorized store. default = 16 / sizeof(output). must be pow2
@@ -1194,7 +1191,6 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
                                policy.async_copy.store_vec_size>(
          num_items,
          num_elem_per_thread,
-         can_vectorize,
          ::cuda::std::move(pred),
          ::cuda::std::move(f),
          ::cuda::std::move(out),

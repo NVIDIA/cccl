@@ -315,27 +315,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
 
   auto [launcher, kernel, items_per_thread] = *ret;
 
-  // Runtime check whether this launch can take the ublkcp kernel's vectorized (STG.128) store path. The output value
-  // type must pack into a 16-byte vector and all pointers must be suitably aligned. The kernel additionally gates on
-  // compile-time eligibility (contiguous, trivially relocatable, power-of-two element sizes, no predicate).
-  bool can_vectorize = false;
-  if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>)
-  {
-    using output_t         = it_value_t<RandomAccessIteratorOut>;
-    constexpr int out_size = int{size_of<output_t>};
-    constexpr int vec_size = (out_size > 0 && out_size <= 16) ? 16 / out_size : 1;
-    if constexpr (vec_size > 1 && ::cuda::is_power_of_two(out_size)
-                  && (... && ::cuda::is_power_of_two(int{sizeof(it_value_t<RandomAccessIteratorsIn>)})))
-    {
-      can_vectorize = kernel_source.CanVectorize(vec_size, out, ::cuda::std::get<Is>(in)...);
-    }
-  }
-
   return launcher.doit(
     kernel,
     num_items,
     items_per_thread,
-    can_vectorize,
+    false,
     pred,
     op,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
