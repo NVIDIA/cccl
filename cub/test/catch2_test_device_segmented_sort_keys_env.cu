@@ -609,6 +609,7 @@ C2H_TEST("SegmentedSortPolicy structs", "[segmented_sort][device]")
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedSortSubWarpMergeSortPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedSortSubWarpMergeSortPolicy>);
 
+  // aggregate init
   constexpr auto p1 = cub::SegmentedSortPolicy{
     cub::SegmentedSortRadixSortPolicy{
       256, 16, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_RAKING_MEMOIZE, 6},
@@ -619,6 +620,7 @@ C2H_TEST("SegmentedSortPolicy structs", "[segmented_sort][device]")
     300};
 
 #  if _CCCL_STD_VER >= 2020
+  // designated init
   constexpr auto p2 = cub::SegmentedSortPolicy{
     .large_segment =
       cub::SegmentedSortRadixSortPolicy{
@@ -650,6 +652,7 @@ C2H_TEST("SegmentedSortPolicy structs", "[segmented_sort][device]")
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
+  // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 }
