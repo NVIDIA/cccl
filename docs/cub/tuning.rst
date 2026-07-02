@@ -57,7 +57,7 @@ taking a ``cuda::compute_capability`` and returning the algorithm's policy struc
           return { .multi_tile = pass, .single_tile = pass };
         }
         // fallback for older GPUs
-        const auto policy = cub::ReducePassPolicy{
+        const auto pass = cub::ReducePassPolicy{
           .threads_per_block = 256,
           .items_per_thread = 12,
           .vec_size = 1,
