@@ -10,8 +10,8 @@ CUB
    Overview <self>
    determinism
    benchmarking
-   policy_selectors
    tuning
+   tuning_infra
    developer_overview
    API documentation <api>
    API reference <api/index>

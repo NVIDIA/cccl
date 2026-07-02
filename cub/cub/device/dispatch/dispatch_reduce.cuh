@@ -800,28 +800,33 @@ template <typename InputIteratorT,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, use_default>, int> = 0>
 _CCCL_HOST_DEVICE_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
-template <typename OverrideAccumT   = use_default,
-          bool StableReductionOrder = true,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitValueT     = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-          typename TransformOpT   = ::cuda::std::identity,
-          typename AccumT         = decltype(select_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
-            static_cast<OverrideAccumT*>(nullptr))),
-          typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT, StableReductionOrder>,
-          typename KernelSource   = DeviceReduceKernelSource<
-              PolicySelector,
-              InputIteratorT,
-              OutputIteratorT,
-              OffsetT,
-              ReductionOpT,
-              InitValueT,
-              AccumT,
-              TransformOpT,
-              StableReductionOrder>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  typename OverrideAccumT   = use_default,
+  bool StableReductionOrder = true,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename InitValueT     = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+  typename TransformOpT   = ::cuda::std::identity,
+  typename AccumT         = decltype(select_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
+    static_cast<OverrideAccumT*>(nullptr))),
+  typename PolicySelector = policy_selector_from_types<
+    AccumT,
+    OffsetT,
+    ReductionOpT,
+    StableReductionOrder ? __determinism_t::__run_to_run : __determinism_t::__not_guaranteed>,
+  typename KernelSource = DeviceReduceKernelSource<
+    PolicySelector,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ReductionOpT,
+    InitValueT,
+    AccumT,
+    TransformOpT,
+    StableReductionOrder>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
