@@ -79,7 +79,7 @@ template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std:
 template <typename Op, typename OutIter, typename... InIters>
 inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
-  && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
+  && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...) && ::cuda::std::is_empty_v<Op>
   && cub::transform::tile_eligible_v<Op, ::cuda::std::iter_value_t<OutIter>, sizeof...(InIters)>;
 
 // Runtime arch gate: tile needs sm_80+. False (fall back to CUB) below sm_80 or if the cc query fails.
