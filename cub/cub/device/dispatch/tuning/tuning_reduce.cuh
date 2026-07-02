@@ -59,7 +59,7 @@ struct ReducePassPolicy
 #endif // _CCCL_HOSTED()
 };
 
-//! The tuning policy for all algorithms in @ref DeviceReduce.
+//! The tuning policy for all algorithms in @ref DeviceReduce, except ``ReduceByKey``
 struct ReducePolicy
 {
   ReducePassPolicy multi_tile; //!< Policy used for the multi-tile (first) pass
