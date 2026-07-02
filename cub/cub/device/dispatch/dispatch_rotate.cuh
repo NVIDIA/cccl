@@ -98,7 +98,7 @@ inline size_t get_max_dependency_distance(cudaStream_t stream)
   return static_cast<size_t>(grid_size - 50); // TODO: could be a tuning parameter
 }
 
-constexpr int SHORT_TILE_BYTES = USE_SHORT_PIPELINE ? rotate_short::TILE_BYTES : rotate_short_no_pipeline::TILE_BYTES;
+constexpr int SHORT_TILE_BYTES = rotate_short::TILE_BYTES;
 
 enum class RotateAlgo
 {
@@ -257,23 +257,13 @@ template <typename T>
 void compute_temp_size_and_state(
   T* d_array, size_t size, size_t rotate_distance, cudaStream_t stream, size_t& temp_storage_bytes, RotateState_t& state)
 {
-  int num_sms;
-  get_num_sms(stream, num_sms);
-
   if (rotate_distance <= SHORT_TILE_BYTES / sizeof(T))
   {
-    if constexpr (USE_SHORT_PIPELINE)
-    {
-      temp_storage_bytes = sizeof(device_flag_t) * num_sms;
-    }
-    else
-    {
-      uint32_t const head_size_short = compute_head_size(d_array, size, rotate_distance);
-      size_t const num_main_tiles =
-        cuda::ceil_div((size - rotate_distance - head_size_short) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
-      temp_storage_bytes = sizeof(int) + sizeof(device_flag_t) * num_main_tiles;
-    }
-    state = RotateState_t{};
+    uint32_t const head_size_short = compute_head_size(d_array, size, rotate_distance);
+    size_t const num_main_tiles =
+      cuda::ceil_div((size - rotate_distance - head_size_short) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
+    temp_storage_bytes = sizeof(int) + sizeof(device_flag_t) * num_main_tiles;
+    state              = RotateState_t{};
     return;
   }
 
@@ -382,46 +372,40 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
       {
         const int shmem = static_cast<int>(size * sizeof(T));
         CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-          rotate_short_no_pipeline::rotate_tiny_kernel<T>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
-        rotate_short_no_pipeline::rotate_tiny_kernel<T><<<1, 512, shmem, stream>>>(d_array, size, rotate_distance);
+          rotate_short::rotate_tiny_kernel<T>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+        rotate_short::rotate_tiny_kernel<T><<<1, 512, shmem, stream>>>(d_array, size, rotate_distance);
         CUB_ROTATE_CHECK(cudaGetLastError());
       }
       else
       {
-        if constexpr (USE_SHORT_PIPELINE)
-        {
-          auto const head_size = compute_head_size(d_array, size, rotate_distance);
-          size_t const num_main_tiles =
-            cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
-          assert(reinterpret_cast<uintptr_t>(d_array + head_size) % BYTES_PER_SECTOR == 0 || num_main_tiles == 0);
+        auto const head_size = compute_head_size(d_array, size, rotate_distance);
+        size_t const num_main_tiles =
+          cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
 
-          rotate_short::setup_kernel<<<1, 512, 0, stream>>>(d_temp_storage, temp_storage_bytes, num_sms);
-          CUB_ROTATE_CHECK(cudaGetLastError());
+        int block_size, grid_size;
+        // Reuse get_launch_config by scaling the tile footprint by the stage count: each block
+        // stages PIPELINE_STAGES shmem tiles, so its per-block shmem cost is PIPELINE_STAGES *
+        // TILE_BYTES (reproduces the device-side rotate_short::LAUNCH_BOUNDS on the real device).
+        CUB_ROTATE_CHECK(get_launch_config(
+          stream, rotate_short::TILE_BYTES * rotate_short::PIPELINE_STAGES, block_size, grid_size));
 
-          const auto dynamic_shmem = rotate_short::get_shmem_usage<T>(stream);
-          CUB_ROTATE_CHECK(cudaFuncSetAttribute(
-            rotate_short::rotate_short_kernel<T>, cudaFuncAttributeMaxDynamicSharedMemorySize, dynamic_shmem));
-          rotate_short::rotate_short_kernel<T><<<num_sms, rotate_short::BLOCK_SIZE, dynamic_shmem, stream>>>(
-            d_array, size, d_temp_storage, temp_storage_bytes, rotate_distance, num_main_tiles, head_size);
-          CUB_ROTATE_CHECK(cudaGetLastError());
-        }
-        else
-        {
-          auto const head_size = compute_head_size(d_array, size, rotate_distance);
-          size_t const num_main_tiles =
-            cuda::ceil_div((size - rotate_distance - head_size) * sizeof(T), static_cast<size_t>(SHORT_TILE_BYTES));
+        // Zero-initialize the temp buffer ([int counter][device_flag_t flags...]) with a plain
+        // async memset instead of a separate setup_kernel launch. The kernel's tile counter now
+        // counts UP from 0 (fetch_add) and maps each ascending claim to a descending run top, so
+        // 0 is the correct counter start and the flags start at 0 -- memset suffices. This removes
+        // a kernel launch + its host launch latency from the critical path, a large fixed-cost
+        // fraction for the small 256MiB arrays (~16x fewer tiles than the 4GiB arrays).
+        CUB_ROTATE_CHECK(cudaMemsetAsync(d_temp_storage, 0, temp_storage_bytes, stream));
 
-          int block_size, grid_size;
-          CUB_ROTATE_CHECK(get_launch_config(stream, rotate_short_no_pipeline::TILE_BYTES, block_size, grid_size));
-
-          rotate_short_no_pipeline::setup_kernel<<<1, 512, 0, stream>>>(
-            d_temp_storage, temp_storage_bytes, num_main_tiles);
-          CUB_ROTATE_CHECK(cudaGetLastError());
-
-          rotate_short_no_pipeline::rotate_short_kernel_no_pipeline<T><<<grid_size, block_size, 0, stream>>>(
-            d_array, size, d_temp_storage, temp_storage_bytes, rotate_distance, num_main_tiles, head_size);
-          CUB_ROTATE_CHECK(cudaGetLastError());
-        }
+        // Multi-stage pipeline holds PIPELINE_STAGES tile buffers in dynamic shared memory.
+        constexpr int dynamic_shmem = rotate_short::get_shmem_usage<T>();
+        CUB_ROTATE_CHECK(cudaFuncSetAttribute(
+          rotate_short::rotate_short_kernel<T>,
+          cudaFuncAttributeMaxDynamicSharedMemorySize,
+          dynamic_shmem));
+        rotate_short::rotate_short_kernel<T><<<grid_size, block_size, dynamic_shmem, stream>>>(
+          d_array, size, d_temp_storage, temp_storage_bytes, rotate_distance, num_main_tiles, head_size);
+        CUB_ROTATE_CHECK(cudaGetLastError());
       }
     }
     else if (algo_to_use == RotateAlgo::Long)

@@ -91,7 +91,7 @@ __device__ inline void overcopy_memcpy_async(
 
 // Copies a tile from shared memory to global memory through registers.
 // Buffers up to MAX_REGS_PER_THREAD uint32_t registers worth of data from shmem
-// BEFORE calling sync_op.sync(), then writes to gmem AFTER.  Any remaining
+// BEFORE calling sync_op.sync(), to maximally overlap the atomic polling with other work, then writes to gmem AFTER.  Any remaining
 // iterations that do not fit in the register budget are processed post-sync.
 // sync_op must provide sync() and thread_rank().
 //
@@ -106,6 +106,8 @@ __device__ inline void shared_to_global_through_regs(T* dst, T* src, uint32_t co
   constexpr int CHUNK_REGS     = cuda::std::min(MAX_REGS_PER_THREAD, REGS_PER_T);
   constexpr int BUFFERED_ITERS = CHUNK_REGS / 4;
   static_assert(BUFFERED_ITERS >= 1 && BUFFERED_ITERS <= ITERS);
+
+  constexpr int VEC_TILE_BYTES = ITERS * 4 * NUM_THREADS * static_cast<int>(sizeof(uint32_t));
 
   auto const tid = sync_op.thread_rank();
 
@@ -136,40 +138,48 @@ __device__ inline void shared_to_global_through_regs(T* dst, T* src, uint32_t co
 #pragma unroll
       for (int k = 0; k < BUFFERED_ITERS; ++k)
       {
-        new_dst[tid + k * NUM_THREADS] = regs[k];
+        // Write-through store to not pollute L2
+        cub::ThreadStore<cub::STORE_WT>(new_dst + tid + k * NUM_THREADS, regs[k]);
       }
 #pragma unroll
       for (int k = BUFFERED_ITERS; k < ITERS; ++k)
       {
-        new_dst[tid + k * NUM_THREADS] = new_src[tid + k * NUM_THREADS];
+        cub::ThreadStore<cub::STORE_WT>(new_dst + tid + k * NUM_THREADS, new_src[tid + k * NUM_THREADS]);
       }
     }
-    else if constexpr (sizeof(T) >= 4)
+    else if ((reinterpret_cast<uintptr_t>(src) % sizeof(uint32_t)) == 0)
     {
       uint32_t* new_src = reinterpret_cast<uint32_t*>(src);
       uint4* new_dst    = reinterpret_cast<uint4*>(dst);
 
-      uint32_t const group = (tid >> 3) & 3;
+      // s = words `src` is above the 16B boundary; in {1,2,3} in this branch.
+      uint32_t const s         = (static_cast<uint32_t>(reinterpret_cast<uintptr_t>(src)) % sizeof(uint4)) / sizeof(uint32_t);
+      uint4 const* aligned_src = reinterpret_cast<uint4 const*>(new_src - s);
+      bool const is_top_lane      = (tid % WS) == (WS - 1);
 
-      auto load_swizzled = [&](int k) {
-        int const i         = tid + k * NUM_THREADS;
-        uint32_t const base = i * 4;
-        uint32_t w[4];
-#pragma unroll
-        for (int r = 0; r < 4; ++r)
+      auto load_funnel = [&](int k) -> uint4 {
+        int const j   = tid + k * NUM_THREADS;
+        uint4 const A = aligned_src[j];
+        // Boundary words = the first `s` words of B = aligned_src[j+1] = the neighbor lane's A.
+        // Shuffle them from lane+1; the top lane has no in-warp neighbor, so load B directly.
+        uint32_t bx = __shfl_down_sync(0xffffffffu, A.x, 1);
+        uint32_t by = (s >= 2u) ? __shfl_down_sync(0xffffffffu, A.y, 1) : 0u;
+        uint32_t bz = (s >= 3u) ? __shfl_down_sync(0xffffffffu, A.z, 1) : 0u;
+        if (is_top_lane)
         {
-          w[r] = new_src[base + ((r + group) & 3)];
+          uint4 const B = aligned_src[j + 1];
+          bx            = B.x;
+          by            = B.y;
+          bz            = B.z;
         }
-        switch (group)
+        switch (s)
         {
-          case 0:
-            return make_uint4(w[0], w[1], w[2], w[3]);
           case 1:
-            return make_uint4(w[3], w[0], w[1], w[2]);
+            return make_uint4(A.y, A.z, A.w, bx);
           case 2:
-            return make_uint4(w[2], w[3], w[0], w[1]);
-          default:
-            return make_uint4(w[1], w[2], w[3], w[0]);
+            return make_uint4(A.z, A.w, bx, by);
+          default: // s == 3
+            return make_uint4(A.w, bx, by, bz);
         }
       };
 
@@ -177,18 +187,18 @@ __device__ inline void shared_to_global_through_regs(T* dst, T* src, uint32_t co
 #pragma unroll
       for (int k = 0; k < BUFFERED_ITERS; ++k)
       {
-        regs[k] = load_swizzled(k);
+        regs[k] = load_funnel(k);
       }
       sync_op.sync();
 #pragma unroll
       for (int k = 0; k < BUFFERED_ITERS; ++k)
       {
-        new_dst[tid + k * NUM_THREADS] = regs[k];
+        cub::ThreadStore<cub::STORE_WT>(new_dst + tid + k * NUM_THREADS, regs[k]);
       }
 #pragma unroll
       for (int k = BUFFERED_ITERS; k < ITERS; ++k)
       {
-        new_dst[tid + k * NUM_THREADS] = load_swizzled(k);
+        cub::ThreadStore<cub::STORE_WT>(new_dst + tid + k * NUM_THREADS, load_funnel(k));
       }
     }
     else
@@ -245,16 +255,31 @@ __device__ inline void shared_to_global_through_regs(T* dst, T* src, uint32_t co
 #pragma unroll
       for (int k = 0; k < BUFFERED_ITERS; ++k)
       {
-        new_dst[tid + k * NUM_THREADS] = regs[k];
+        cub::ThreadStore<cub::STORE_WT>(new_dst + tid + k * NUM_THREADS, regs[k]);
       }
 #pragma unroll
       for (int k = BUFFERED_ITERS; k < ITERS; ++k)
       {
-        new_dst[tid + k * NUM_THREADS] = load_funnel_shifted(k);
+        cub::ThreadStore<cub::STORE_WT>(new_dst + tid + k * NUM_THREADS, load_funnel_shifted(k));
+      }
+    }
+
+    // TODO: see if adapting the tile size to remove the tail improves perf
+    if constexpr (VEC_TILE_BYTES < TILE_BYTES)
+    {
+      // The uncovered tail [VEC_TILE_BYTES, TILE_BYTES) is a contiguous src->dst block copy: the
+      // rotation lives entirely in dst's gmem offset, so a plain element copy is byte-identical for
+      // all three realignment branches above.
+      uint32_t const elems_to_load  = bytes_to_load / sizeof(T);
+      constexpr uint32_t tail_begin = VEC_TILE_BYTES / static_cast<int>(sizeof(T));
+      for (uint32_t i = tail_begin + tid; i < elems_to_load; i += NUM_THREADS)
+      {
+        dst[i] = src[i];
       }
     }
   }
 }
+
 
 // ============================================================================
 // Tile coordinate helpers (host + device)
@@ -465,261 +490,23 @@ __host__ __device__ size_t tile_ix_to_arr_ix(int32_t const tile_ix, uint32_t con
 } // namespace tile_detail
 
 // ============================================================================
-// Short-distance rotate kernel
+// Short-distance rotate kernel (no pipelining)
 // ============================================================================
 
 namespace rotate_short
 {
+// Dynamic shared-memory bytes for the multi-stage short kernel: PIPELINE_STAGES tile
+// buffers, each TILE_BYTES + BYTES_PER_SECTOR (overcopy / bank-conflict slack).
 template <typename T>
-int get_shmem_usage(cudaStream_t stream)
+constexpr int get_shmem_usage()
 {
-  int device;
-  cudaStreamGetDevice(stream, &device);
-
-  int shmem_per_sm;
-  cudaDeviceGetAttribute(&shmem_per_sm, cudaDevAttrMaxSharedMemoryPerMultiprocessor, device);
-
-  const auto pipeline_depth = get_pipeline_depth(TILE_BYTES, shmem_per_sm);
-  return pipeline_depth * (TILE_BYTES + BYTES_PER_SECTOR);
+  constexpr auto ELEMS_PER_SECTOR = BYTES_PER_SECTOR / static_cast<int>(sizeof(T));
+  constexpr int TILE_SIZE         = TILE_BYTES / static_cast<int>(sizeof(T));
+  // Must match SLOT_BYTES inside the kernel (each slot rounded up to 128B for TMA alignment).
+  constexpr int SLOT_BYTES = cuda::round_up((TILE_SIZE + ELEMS_PER_SECTOR) * static_cast<int>(sizeof(T)), 128);
+  return PIPELINE_STAGES * SLOT_BYTES;
 }
 
-__global__ void setup_kernel(void* d_temp_storage, size_t const temp_bytes, size_t const num_sms)
-{
-  auto* flags       = reinterpret_cast<device_flag_t*>(d_temp_storage);
-  auto const tid    = blockIdx.x * blockDim.x + threadIdx.x;
-  auto const stride = blockDim.x * gridDim.x;
-  for (int i = tid; i < num_sms; i += stride)
-  {
-    // Initialize as blocked
-    flags[i].store(0, cuda::memory_order_relaxed);
-  }
-}
-
-template <typename T>
-CUB_ROTATE_LB(BLOCK_SIZE, BLOCKS_PER_SM)
-__global__ void rotate_short_kernel(
-  T* arr,
-  size_t const size,
-  void* d_temp_storage,
-  size_t const temp_size,
-  size_t const rotate_distance,
-  size_t const num_tiles,
-  uint32_t const head_size)
-{
-  assert(blockDim.x == BLOCK_SIZE);
-  constexpr int TILE_SIZE         = TILE_BYTES / sizeof(T);
-  constexpr auto ELEMS_PER_SECTOR = BYTES_PER_SECTOR / sizeof(T);
-
-  assert(rotate_distance <= TILE_SIZE);
-  assert(head_size < ELEMS_PER_SECTOR);
-
-  constexpr int P = get_pipeline_depth(TILE_BYTES, SHMEM_PER_SM);
-
-  alignas(BYTES_PER_SECTOR) extern __shared__ unsigned char smem_raw[];
-  T(*cache)[TILE_SIZE + ELEMS_PER_SECTOR] = reinterpret_cast<T(*)[TILE_SIZE + ELEMS_PER_SECTOR]>(smem_raw);
-
-  // Space in shared memory for the first chunk's head tile used for alignment of the others
-  __shared__ T head_tile[ELEMS_PER_SECTOR];
-
-#pragma nv_diag_suppress static_var_with_dynamic_init
-  __shared__ cuda::barrier<cuda::thread_scope_block> bars[P];
-
-  __shared__ cuda::atomic<uint32_t, cuda::thread_scope_block> num_loaded;
-  __shared__ cuda::atomic<uint32_t, cuda::thread_scope_block> num_consumed;
-
-  auto* flags = reinterpret_cast<device_flag_t*>(d_temp_storage);
-
-  auto const tid         = threadIdx.x;
-  bool const is_producer = tid < WS;
-
-  if (tid < P)
-  {
-    init(&bars[tid], NUM_CONSUMER_THREADS);
-  }
-  if (tid == 0)
-  {
-    num_loaded   = 0;
-    num_consumed = 0;
-  }
-  __syncthreads();
-
-  assert(2 * rotate_distance <= size);
-  assert(size > TILE_SIZE);
-
-  const auto nominal_tiles_per_chunk = num_tiles / gridDim.x;
-  const uint32_t tiles_to_process =
-    blockIdx.x == gridDim.x - 1 ? nominal_tiles_per_chunk + num_tiles % gridDim.x : nominal_tiles_per_chunk;
-  assert(tiles_to_process > 0 || nominal_tiles_per_chunk == 0);
-
-  // Blocks with no tiles to process must still set their flag
-  // to prevent deadlocks in subsequent blocks waiting on them
-  if (tiles_to_process == 0)
-  {
-    if (tid == 0)
-    {
-      flags[blockIdx.x].store(1, cuda::memory_order_release);
-      flags[blockIdx.x].notify_all();
-    }
-    return;
-  }
-
-  const auto chunk_start_ix = rotate_distance + head_size + blockIdx.x * nominal_tiles_per_chunk * TILE_SIZE;
-  uint32_t const overcopy_extra_head_elems = static_cast<uint32_t>(rotate_distance % ELEMS_PER_SECTOR);
-  bool const is_first_chunk                = chunk_start_ix == rotate_distance + head_size;
-
-  auto get_tile_load_index = [&](uint32_t tile_num) -> size_t {
-    // We load from the back forwards
-    return chunk_start_ix + (tiles_to_process - 1 - tile_num) * TILE_SIZE;
-  };
-
-  auto get_bytes_to_load = [&](uint32_t tile_num) -> uint32_t {
-    bool const is_last_chunks_first_tile = blockIdx.x == gridDim.x - 1 && tile_num == 0;
-    if (!is_last_chunks_first_tile)
-    {
-      return TILE_SIZE * sizeof(T);
-    }
-    uint32_t const remainder = (size - rotate_distance - head_size) % TILE_SIZE;
-    return (remainder == 0u ? TILE_SIZE : remainder) * sizeof(T);
-  };
-
-  // ========================= PRODUCER (warp 0) =========================
-  if (is_producer)
-  {
-    auto warp = cooperative_groups::tiled_partition<WS>(cooperative_groups::this_thread_block());
-
-    auto producer_load = [&](uint32_t tile_num) {
-      int const slot       = tile_num % P;
-      T* src               = arr + get_tile_load_index(tile_num);
-      uint32_t const bytes = get_bytes_to_load(tile_num);
-      while (tile_num >= num_consumed.load(cuda::memory_order_acquire) + P)
-      {
-        __nanosleep(0);
-      }
-      // cuda::memcpy_async(warp, ...) is a warp-collective op: every lane of the producer warp must
-      // call it together (the library elects a single thread internally to issue the TMA bulk-copy
-      // instruction). Wrapping it in cooperative_groups::invoke_one ran it on one lane only, leaving
-      // the collective's internal warp sync waiting on the 31 lanes that skipped it -> warp deadlock.
-      overcopy_memcpy_async<T, WS>(cache[slot], src, bytes / sizeof(T), overcopy_extra_head_elems, warp, bars[slot]);
-      if (tid == 0)
-      {
-        num_loaded++;
-      }
-    };
-
-    // Load head tile
-    if (is_first_chunk)
-    {
-      for (uint32_t i = tid; i < head_size; i += WS)
-      {
-        head_tile[i] = arr[rotate_distance + i];
-      }
-    }
-
-    // Main loop
-    for (int i = 0; i < static_cast<int>(tiles_to_process); i++)
-    {
-      producer_load(i);
-    }
-  }
-  // ======================== CONSUMERS (warps 1+) ========================
-  else
-  {
-    uint32_t const consumer_tid = tid - WS;
-
-    // wait on the first tile and set global flag
-    if (consumer_tid == 0)
-    {
-      while (num_loaded.load(cuda::memory_order_acquire) == 0)
-      {
-        __nanosleep(0);
-      }
-    }
-    bars[0].arrive_and_wait();
-    if (consumer_tid == 0)
-    {
-      flags[blockIdx.x].store(1, cuda::memory_order_release);
-      flags[blockIdx.x].notify_all();
-    }
-
-    for (int i = 0; i < static_cast<int>(tiles_to_process); i++)
-    {
-      int const slot = i % P;
-
-      // Handle inter-block dependencies on the last tile
-      if (i == static_cast<int>(tiles_to_process) - 1)
-      {
-        if (is_first_chunk)
-        {
-          assert(blockIdx.x == 0 || blockIdx.x == gridDim.x - 1);
-          if (consumer_tid == 0)
-          {
-            flags[gridDim.x - 1].wait(0, cuda::memory_order_acquire);
-            flags[gridDim.x - 2].wait(0, cuda::memory_order_acquire);
-          }
-          bar_sync(1, NUM_CONSUMER_THREADS);
-          for (uint32_t j = consumer_tid; j < rotate_distance; j += NUM_CONSUMER_THREADS)
-          {
-            arr[size - rotate_distance + j] = arr[j];
-          }
-          bar_sync(1, NUM_CONSUMER_THREADS);
-        }
-        else
-        {
-          if (consumer_tid == 0)
-          {
-            flags[blockIdx.x - 1].wait(0, cuda::memory_order_acquire);
-          }
-          bar_sync(1, NUM_CONSUMER_THREADS);
-        }
-      }
-
-      // Store tile from shmem to gmem
-      auto const load_index = get_tile_load_index(i);
-      T* src                = cache[slot] + overcopy_extra_head_elems;
-      T* dst                = arr + load_index - rotate_distance;
-      assert(load_index > rotate_distance || head_size == 0);
-
-      // wait on next tile to finish loading (all consumers participate)
-      if (i < static_cast<int>(tiles_to_process) - 1)
-      {
-        if (consumer_tid == 0)
-        {
-          while (num_loaded.load(cuda::memory_order_acquire) <= static_cast<uint32_t>(i + 1))
-          {
-            __nanosleep(0);
-          }
-        }
-        bars[(slot + 1) % P].arrive_and_wait();
-      }
-      named_barrier_sync nbs{1, NUM_CONSUMER_THREADS, consumer_tid};
-      constexpr int MAX_REGS = REGS_PER_SM / (BLOCKS_PER_SM * BLOCK_SIZE);
-      shared_to_global_through_regs<T, NUM_CONSUMER_THREADS, TILE_BYTES, MAX_REGS>(dst, src, get_bytes_to_load(i), nbs);
-      bar_sync(1, NUM_CONSUMER_THREADS);
-      if (consumer_tid == 0)
-      {
-        num_consumed++;
-      }
-    }
-  }
-
-  __syncthreads();
-
-  if (is_first_chunk && tid < WS)
-  {
-    for (uint32_t i = tid; i < head_size; i += WS)
-    {
-      arr[i] = head_tile[i];
-    }
-  }
-}
-} // namespace rotate_short
-
-// ============================================================================
-// Short-distance rotate kernel (no pipelining)
-// ============================================================================
-
-namespace rotate_short_no_pipeline
-{
 __global__ void setup_kernel(void* d_temp_storage, size_t const temp_bytes, size_t const num_tiles)
 {
   auto* counter     = reinterpret_cast<int*>(d_temp_storage);
@@ -767,7 +554,7 @@ __global__ void rotate_tiny_kernel(T* arr, size_t const size, size_t const rotat
 
 template <typename T>
 CUB_ROTATE_LB(BLOCK_SIZE, BLOCKS_PER_SM)
-__global__ void rotate_short_kernel_no_pipeline(
+__global__ void rotate_short_kernel(
   T* arr,
   size_t const size,
   void* d_temp_storage,
@@ -779,78 +566,137 @@ __global__ void rotate_short_kernel_no_pipeline(
   assert(blockDim.x == BLOCK_SIZE);
   constexpr int TILE_SIZE         = TILE_BYTES / sizeof(T);
   constexpr auto ELEMS_PER_SECTOR = BYTES_PER_SECTOR / sizeof(T);
+  constexpr int P                 = PIPELINE_STAGES;
 
   assert(rotate_distance <= TILE_SIZE);
   assert(head_size < ELEMS_PER_SECTOR);
   assert(2 * rotate_distance <= size);
   assert(size > TILE_SIZE);
 
-  alignas(BYTES_PER_SECTOR) __shared__ T cache[TILE_SIZE + ELEMS_PER_SECTOR];
-  __shared__ int tile_ix;
+  constexpr int SLOT_BYTES = cuda::round_up((TILE_SIZE + ELEMS_PER_SECTOR) * static_cast<int>(sizeof(T)), BYTES_PER_SECTOR);
+  constexpr int SLOT_ELEMS = SLOT_BYTES / static_cast<int>(sizeof(T));
+  alignas(BYTES_PER_SECTOR) extern __shared__ unsigned char smem_raw[];
+  T(*cache)[SLOT_ELEMS] = reinterpret_cast<T(*)[SLOT_ELEMS]>(smem_raw);
+
+  constexpr int B = TILES_PER_GRAB;
+
+  __shared__ int tile_ix_buf[P];
+  __shared__ bool is_top_buf[P]; // tile is the highest of its contiguous grab-run
+  __shared__ bool is_bot_buf[P]; // tile is the lowest of its contiguous grab-run
+  __shared__ int batch_next; // next (descending) tile to issue within the current run
+  __shared__ int batch_lo; // lowest tile index in the current run
   __shared__ T head_tile_cache[ELEMS_PER_SECTOR];
 #pragma nv_diag_suppress static_var_with_dynamic_init
-  __shared__ cuda::barrier<cuda::thread_scope_block> bar;
+  __shared__ cuda::barrier<cuda::thread_scope_block> bars[P];
 
   auto* tile_counter = reinterpret_cast<cuda::atomic<int, cuda::thread_scope_device>*>(d_temp_storage);
   auto* flags        = reinterpret_cast<device_flag_t*>(reinterpret_cast<int*>(d_temp_storage) + 1);
 
-  auto const tid = threadIdx.x;
   auto cta       = cooperative_groups::this_thread_block();
+  auto const tid = cta.thread_rank();
 
+  if (tid < P)
+  {
+    init(&bars[tid], BLOCK_SIZE);
+  }
   if (tid == 0)
   {
-    init(&bar, BLOCK_SIZE);
+    batch_next = -1; // no run claimed yet -> force a fetch on the first grab
+    batch_lo   = 0;
   }
+  __syncthreads();
 
   uint32_t const overcopy_extra_head_elems = static_cast<uint32_t>(rotate_distance % ELEMS_PER_SECTOR);
+  constexpr int MAX_REGS_OCCUPANCY         = REGS_PER_SM / (BLOCKS_PER_SM * BLOCK_SIZE);
+  constexpr int MAX_REGS = MAX_REGS_PER_THREAD_OVERRIDE > 0 ? MAX_REGS_PER_THREAD_OVERRIDE : MAX_REGS_OCCUPANCY;
 
-  bool first_iteration = true;
-  while (true)
-  {
+  auto bytes_to_load_for = [&](int curr_tile) -> uint32_t {
+    bool const is_first_tile = static_cast<size_t>(curr_tile) == num_tiles - 1;
+    if (!is_first_tile)
+    {
+      return TILE_SIZE * sizeof(T);
+    }
+    uint32_t const remainder = (size - rotate_distance - head_size) % TILE_SIZE;
+    return (remainder == 0u ? TILE_SIZE : remainder) * sizeof(T);
+  };
+
+  // Claim the next tile (descending) from this CTA's current contiguous run, refilling the run
+  // from the global counter via a single fetch_sub(B) when it is exhausted, issue the tile's
+  // async load into slot `slot`, and record the tile index plus whether it is the top/bottom
+  // of its run.  Returns the grabbed tile index (negative => no more work).
+  auto grab_and_load = [&](int slot) -> int {
     if (tid == 0)
     {
-      tile_ix = tile_counter->fetch_sub(1, cuda::memory_order_relaxed);
+      bool new_run = false;
+      if (batch_next < batch_lo)
+      {
+        // Claim a new contiguous run, top tile first (descending), exactly as the original
+        // descending counter did -- but the global counter counts UP from 0 (fetch_add) so the
+        // temp buffer can be zero-initialized with a plain cudaMemsetAsync (no separate
+        // setup_kernel launch, a large fixed-cost fraction for the small 256MiB arrays). The
+        // ascending claim value is mapped to a descending run top, reproducing the proven
+        // high->low tile claim order and run partition; only the counter *storage* changed.
+        int const claim = tile_counter->fetch_add(B, cuda::memory_order_relaxed);
+        int const hi    = static_cast<int>(num_tiles) - 1 - claim; // descending run top
+        batch_next      = hi; // negative once past the end
+        batch_lo        = (hi - (B - 1) < 0) ? 0 : hi - (B - 1);
+        new_run         = true;
+      }
+      int const t       = batch_next; // negative once the counter is past the end
+      tile_ix_buf[slot] = t;
+      // The first tile issued of a run is its top; the tile equal to batch_lo is its bottom.
+      is_top_buf[slot] = new_run && (t >= 0);
+      is_bot_buf[slot] = (t == batch_lo);
+      --batch_next;
     }
     __syncthreads();
-    int const curr_tile = tile_ix;
+    int const curr_tile = tile_ix_buf[slot];
     if (curr_tile < 0)
     {
-      if (!first_iteration)
-      {
-        bar.arrive_and_wait();
-      }
-      return;
+      return curr_tile;
     }
-
-    bool const is_first_tile = static_cast<size_t>(curr_tile) == num_tiles - 1;
-    uint32_t bytes_to_load   = TILE_SIZE * sizeof(T);
-    if (is_first_tile)
-    {
-      uint32_t const remainder = (size - rotate_distance - head_size) % TILE_SIZE;
-      bytes_to_load            = (remainder == 0u ? TILE_SIZE : remainder) * sizeof(T);
-    }
-
     size_t const load_index = rotate_distance + head_size + static_cast<size_t>(curr_tile) * TILE_SIZE;
-    T* src                  = arr + load_index;
+    overcopy_memcpy_async<T, BLOCK_SIZE>(
+      cache[slot],
+      arr + load_index,
+      bytes_to_load_for(curr_tile) / sizeof(T),
+      overcopy_extra_head_elems,
+      cta,
+      bars[slot]);
+    return curr_tile;
+  };
 
-    if (!first_iteration)
-    {
-      bar.arrive_and_wait();
-    }
-    else
-    {
-      first_iteration = false;
-    }
-    overcopy_memcpy_async<T, BLOCK_SIZE>(cache, src, bytes_to_load / sizeof(T), overcopy_extra_head_elems, cta, bar);
-    bar.arrive_and_wait();
-
-    bool const is_last_tile = curr_tile == 0;
-    if (tid == 0)
+  // Wait until slot's load has landed in shmem, then publish this tile's load-complete flag.
+  // Splitting flag publication from the store is what keeps the per-CTA pipeline deadlock-free:
+  // tiles are grabbed in descending order, but a tile's store waits on its *predecessor's* flag,
+  // so every in-flight tile must publish its flag (when its data is in shmem) before any
+  // dependent store can proceed.
+  auto await_and_publish = [&](int slot) {
+    int const curr_tile = tile_ix_buf[slot];
+    bars[slot].arrive_and_wait();
+    // Only the top tile of a run is ever waited on by another CTA (whose run-bottom predecessor
+    // is exactly this tile), so only run tops publish a device-scope flag.
+    if (tid == 0 && is_top_buf[slot])
     {
       flags[curr_tile].store(1, cuda::memory_order_release);
       flags[curr_tile].notify_all();
-      auto const ix = is_last_tile ? num_tiles - 1 : curr_tile - 1;
-      flags[ix].wait(0, cuda::memory_order_acquire);
+    }
+  };
+
+  // Store the tile held in slot back to gmem, shifted left by rotate_distance.  Waits on the
+  // predecessor tile's load-complete flag first (the in-place RAW ordering).
+  auto store_tile = [&](int slot) {
+    int const curr_tile          = tile_ix_buf[slot];
+    bool const is_last_tile      = curr_tile == 0;
+    bool const is_bot            = is_bot_buf[slot];
+    uint32_t const bytes_to_load = bytes_to_load_for(curr_tile);
+    size_t const load_index      = rotate_distance + head_size + static_cast<size_t>(curr_tile) * TILE_SIZE;
+
+    // Only a run-bottom tile's predecessor lives in another CTA; interior tiles rely on the
+    // in-CTA pipeline (predecessor loaded before this tile is stored), so they skip the flag.
+    if (tid == 0 && is_bot && !is_last_tile)
+    {
+      flags[curr_tile - 1].wait(0, cuda::memory_order_acquire);
     }
 
     if (is_last_tile)
@@ -874,10 +720,9 @@ __global__ void rotate_short_kernel_no_pipeline(
       __syncthreads();
     }
 
-    T* dst                 = arr + load_index - rotate_distance;
-    constexpr int MAX_REGS = REGS_PER_SM / (BLOCKS_PER_SM * BLOCK_SIZE);
-    shared_to_global_through_regs<T, BLOCK_SIZE, TILE_BYTES, MAX_REGS>(
-      dst, cache + overcopy_extra_head_elems, bytes_to_load, cta);
+    T* dst       = arr + load_index - rotate_distance;
+    T* store_src = cache[slot] + overcopy_extra_head_elems;
+    shared_to_global_through_regs<T, BLOCK_SIZE, TILE_BYTES, MAX_REGS>(dst, store_src, bytes_to_load, cta);
 
     // Tile 0 owns the head: write it after storing the main tile
     if (is_last_tile && head_size > 0u)
@@ -888,9 +733,64 @@ __global__ void rotate_short_kernel_no_pipeline(
         arr[i] = head_tile_cache[i];
       }
     }
+  };
+
+  // Software pipeline keeping up to P cp.async tile loads in flight, tracked by three monotone
+  // grab-order cursors (grab-order index g maps to ring slot g % P):
+  //   issued    : loads issued (cp.async in flight)
+  //   published : loads awaited + flags[tile] published (load-complete signalled to other CTAs)
+  //   stored    : tiles written back
+  // with the ring invariant   stored <= published <= issued <= stored + P.
+  int issued     = 0;
+  int published  = 0;
+  int stored     = 0;
+  bool exhausted = false;
+
+  auto try_issue = [&]() {
+    if (!exhausted && (issued - stored) < P)
+    {
+      if (grab_and_load(issued % P) < 0)
+      {
+        exhausted = true;
+      }
+      else
+      {
+        ++issued;
+      }
+    }
+  };
+
+  // Prime the pipeline: issue up to P loads.
+  while (!exhausted && (issued - stored) < P)
+  {
+    try_issue();
   }
+  if (issued == 0)
+  {
+    return; // no tiles for this CTA
+  }
+
+  while (stored < issued)
+  {
+    // Eagerly await + publish every issued-but-unpublished load.  The awaited load for the
+    // oldest slot was issued up to P iterations ago, so this rarely stalls; publishing it now
+    // (before the dependent store) keeps every CTA's flags visible and the chain unblocked.
+    while (published < issued)
+    {
+      await_and_publish(published % P);
+      ++published;
+    }
+
+    // Store the oldest tile; the next load (issued below) overlaps this store.
+    store_tile(stored % P);
+    ++stored;
+
+    // Refill the freed slot, keeping a load in flight to overlap the next store.
+    try_issue();
+  }
+
 }
-} // namespace rotate_short_no_pipeline
+} // namespace rotate_short
 
 // ============================================================================
 // Long-distance rotate kernel

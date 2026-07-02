@@ -66,12 +66,6 @@ __device__ constexpr bool hasTMA()
 #endif
 }
 
-constexpr int get_pipeline_depth(const int tile_bytes, const int shmem_per_sm)
-{
-  const int depth = shmem_per_sm / (tile_bytes + 1'000); // extra bytes to ensure no spilling
-  return depth > 0 ? depth : 1;
-}
-
 constexpr std::pair<int, int> get_launch_bounds(const int tile_bytes, const int shmem_per_sm, const int max_tpsm)
 {
   const int BLOCKS_PER_SM = shmem_per_sm / (tile_bytes + 1'000); // extra bytes to ensure no spilling
@@ -84,23 +78,27 @@ constexpr std::pair<int, int> get_launch_bounds(const int tile_bytes, const int 
   return {BLOCK_SIZE, BLOCKS_PER_SM};
 }
 
-constexpr bool USE_SHORT_PIPELINE = false;
-
 namespace rotate_short
 {
-constexpr int TILE_BYTES                  = 32 * 1024;
-inline constexpr int NUM_CONSUMER_THREADS = 512;
-inline constexpr int BLOCK_SIZE           = NUM_CONSUMER_THREADS + WS;
-inline constexpr int BLOCKS_PER_SM        = 1;
-} // namespace rotate_short
+// Short-path tile size.  The test suite also keys its per-case sizes to `rotate_short::TILE_BYTES`.
+constexpr int TILE_BYTES = 18 * 1024;
 
-namespace rotate_short_no_pipeline
-{
-constexpr int TILE_BYTES            = 32 * 1024;
-constexpr auto LAUNCH_BOUNDS        = get_launch_bounds(TILE_BYTES, SHMEM_PER_SM, MAX_TPSM);
+// How many contiguous tiles a CTA grabs at once.
+constexpr int TILES_PER_GRAB = 6;
+
+// Number of shmem tile buffers per block (double-buffer for staging contiguous runs of tiles).
+constexpr int PIPELINE_STAGES = 2;
+
+// Each block stages PIPELINE_STAGES shmem tile buffers, so its effective per-block shmem footprint
+// is PIPELINE_STAGES * TILE_BYTES.  Feeding that product to get_launch_bounds divides occupancy by
+// the stage count exactly as a bespoke helper would, keeping the register-buffering budget in
+// shared_to_global_through_regs correctly sized -- no separate launch-bounds function needed.
+constexpr auto LAUNCH_BOUNDS        = get_launch_bounds(TILE_BYTES * PIPELINE_STAGES, SHMEM_PER_SM, MAX_TPSM);
 inline constexpr auto BLOCK_SIZE    = LAUNCH_BOUNDS.first;
 inline constexpr auto BLOCKS_PER_SM = LAUNCH_BOUNDS.second;
-} // namespace rotate_short_no_pipeline
+// Limit the number of registers per thread when copying from shared to global.
+constexpr int MAX_REGS_PER_THREAD_OVERRIDE = 4;
+} // namespace rotate_short
 
 namespace rotate_long
 {
