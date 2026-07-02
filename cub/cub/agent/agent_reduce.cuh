@@ -44,6 +44,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+// TODO(bgruber): drop in CCCL 4.0
 /**
  * Parameterizable tuning policy type for AgentReduce
  * @tparam NominalThreadsPerBlock4B Threads per thread block
@@ -73,6 +74,7 @@ struct agent_reduce_policy : ScalingType
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
