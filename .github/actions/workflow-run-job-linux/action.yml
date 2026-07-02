@@ -132,7 +132,7 @@ runs:
           echo ""
           echo "For additional information, see:"
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
-          echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+          echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/docs/infrastructure/ci/references/ci_overview.rst"
         fi
 
         ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code > /dev/null
