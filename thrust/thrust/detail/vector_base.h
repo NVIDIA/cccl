@@ -116,6 +116,13 @@ public:
    */
   explicit vector_base(size_type n, const value_type& value, const Alloc& alloc);
 
+  /*! This constructor creates a vector_base with default-initialized elements.
+   *  \param n The number of elements to create.
+   *  \param alloc The allocator to use by this vector_base.
+   */
+  template <typename T2 = T>
+  explicit vector_base(size_type n, default_init_t, const Alloc& alloc);
+
   /*! This constructor creates a vector_base without initializing elements. It mandates that the element type is
    *  trivially default-constructible.
    *  \param n The number of elements to create.
