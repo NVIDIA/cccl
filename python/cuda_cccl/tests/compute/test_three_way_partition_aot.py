@@ -7,9 +7,8 @@
 import cupy as cp
 import numpy as np
 
-from cuda.compute import make_three_way_partition
+from cuda.compute import deserialize, make_three_way_partition, serialize
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._three_way_partition import _ThreeWayPartition
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -86,10 +85,10 @@ def test_serialize_deserialize_three_way_partition_round_trip():
         select_first_part_op=_less_than_8,
         select_second_part_op=_greater_eq_8,
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = _ThreeWayPartition.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in=d_input,

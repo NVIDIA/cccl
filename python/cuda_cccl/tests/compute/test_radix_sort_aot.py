@@ -7,9 +7,8 @@
 import cupy as cp
 import numpy as np
 
-from cuda.compute import SortOrder, make_radix_sort
+from cuda.compute import SortOrder, deserialize, make_radix_sort, serialize
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._sort._radix_sort import _RadixSort
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -60,10 +59,10 @@ def test_serialize_deserialize_radix_sort_keys_values():
         d_out_values=d_out_values,
         order=SortOrder.ASCENDING,
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = _RadixSort.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in_keys=d_in_keys,

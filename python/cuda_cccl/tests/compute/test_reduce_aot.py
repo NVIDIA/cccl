@@ -18,10 +18,11 @@ from cuda.compute import (
     Determinism,
     OpKind,
     TransformIterator,
+    deserialize,
     make_reduce_into,
+    serialize,
 )
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._reduce import _Reduce
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -68,11 +69,11 @@ def test_serialize_deserialize_well_known_op_round_trip():
     h_init = np.zeros(1, dtype=np.int32)
 
     reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init)
-    blob = reducer.serialize()
+    blob = serialize(reducer)
     assert len(blob) > 0
 
     # Loaded reducer is fully usable without any JIT and without supplying objects.
-    loaded = _Reduce.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in=d_in,
@@ -91,9 +92,9 @@ def test_serialize_deserialize_jit_op_round_trip():
     h_init = np.zeros(1, dtype=np.int32)
 
     reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=_add, h_init=h_init)
-    blob = reducer.serialize()
+    blob = serialize(reducer)
 
-    loaded = _Reduce.deserialize(blob)
+    loaded = deserialize(blob)
     # The user op's device code is rebuilt from the blob, not from a re-supplied
     # / recompiled operator: assert it is present before any object reaches the
     # call below (deserialize took only the blob).
@@ -113,9 +114,9 @@ def test_serialize_deserialize_counting_iterator_input():
     reducer = make_reduce_into(
         d_in=CountingIterator(np.int32(0)), d_out=d_out, op=OpKind.PLUS, h_init=h_init
     )
-    blob = reducer.serialize()
+    blob = serialize(reducer)
 
-    loaded = _Reduce.deserialize(blob)
+    loaded = deserialize(blob)
     # The ITERATOR-kind descriptor (with its advance/dereference device code) was
     # rebuilt purely from the blob — no iterator object was passed to deserialize,
     # so a regression to caller-supplied descriptors would fail here, not silently
@@ -146,9 +147,9 @@ def test_serialize_deserialize_transform_iterator_input():
     reducer = make_reduce_into(
         d_in=make_it(), d_out=d_out, op=OpKind.PLUS, h_init=h_init
     )
-    blob = reducer.serialize()
+    blob = serialize(reducer)
 
-    loaded = _Reduce.deserialize(blob)
+    loaded = deserialize(blob)
     # Iterator descriptor (incl. the transform op's embedded LTOIR) rebuilt from
     # the blob alone — deserialize took no objects.
     assert loaded.d_in_cccl.is_kind_iterator()
@@ -172,12 +173,12 @@ def test_serialize_deserialize_preserves_determinism():
         h_init=h_init,
         determinism=Determinism.NOT_GUARANTEED,
     )
-    blob = reducer.serialize()
+    blob = serialize(reducer)
 
-    loaded = _Reduce.deserialize(blob)
+    loaded = deserialize(blob)
     assert loaded.build_result.determinism == int(Determinism.NOT_GUARANTEED)
 
 
 def test_deserialize_garbage_raises():
     with pytest.raises((ValueError, RuntimeError)):
-        _Reduce.deserialize(b"not a real aot blob" + b"\0" * 64)
+        deserialize(b"not a real aot blob" + b"\0" * 64)

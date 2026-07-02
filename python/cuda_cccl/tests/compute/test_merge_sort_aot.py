@@ -7,9 +7,8 @@
 import cupy as cp
 import numpy as np
 
-from cuda.compute import OpKind, make_merge_sort
+from cuda.compute import OpKind, deserialize, make_merge_sort, serialize
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._sort._merge_sort import _MergeSort
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -62,10 +61,10 @@ def test_serialize_deserialize_merge_sort_keys_values():
         d_out_values=d_out_values,
         op=OpKind.LESS,
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = _MergeSort.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in_keys=d_in_keys,

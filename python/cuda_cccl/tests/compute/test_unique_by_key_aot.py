@@ -7,9 +7,8 @@
 import cupy as cp
 import numpy as np
 
-from cuda.compute import OpKind, make_unique_by_key
+from cuda.compute import OpKind, deserialize, make_unique_by_key, serialize
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._unique_by_key import _UniqueByKey
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -75,10 +74,10 @@ def test_serialize_deserialize_unique_by_key_round_trip():
         d_out_num_selected=d_out_num_selected,
         op=OpKind.EQUAL_TO,
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = _UniqueByKey.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in_keys=d_in_keys,
