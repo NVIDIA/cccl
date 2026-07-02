@@ -20,10 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/mul_hi.h>
 #include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/uabs.h>
-#include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__numeric/overflow_result.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -72,10 +70,10 @@ template <class _Result, class _Lhs, class _Rhs>
   constexpr auto __max_nbits =
     ::cuda::std::max({__num_bits_v<_Lhs>, __num_bits_v<_Rhs>, __num_bits_v<_Result>, __num_bits_v<unsigned int>});
   using _UPromoted             = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
-  const auto __uabs_lhs        = static_cast<_UPromoted>(::cuda::uabs(__lhs));
-  const auto __uabs_rhs        = static_cast<_UPromoted>(::cuda::uabs(__rhs));
+  const auto __ulhs            = static_cast<_UPromoted>(::cuda::uabs(__lhs));
+  const auto __urhs            = static_cast<_UPromoted>(::cuda::uabs(__rhs));
   const auto __sign_mismatch   = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
-  const auto __negative_result = __sign_mismatch && __uabs_lhs != 0 && __uabs_rhs != 0;
+  const auto __negative_result = __sign_mismatch && __ulhs != 0 && __urhs != 0;
   auto __overflow_mul          = false;
 
   if (__negative_result && !is_signed_v<_Result>)
@@ -91,30 +89,14 @@ template <class _Result, class _Lhs, class _Rhs>
                              ? (static_cast<_UResult>(1) << (__nbits - 1)) - static_cast<_UResult>(__negative_result ? 0 : 1)
                              : static_cast<_UResult>(-1);
 
-    if (__uabs_rhs != 0)
+    if (__urhs != 0)
     {
-      __overflow_mul = __uabs_lhs > c / __uabs_rhs;
-    }
-    else if (__uabs_lhs != 0)
-    {
-      __overflow_mul = __uabs_rhs > c / __uabs_lhs;
+      __overflow_mul = __ulhs > c / __urhs;
     }
   }
 
-  if (__overflow_mul)
-  {
-    // Multiply with overflow results in UB, which isn't allowed during constant
-    // evaluation. Instead, multiply the absolute values of lhs and rhs and
-    // apply negative sign if needed to get expected low-word result
-    const auto __uresult_lo = __uabs_lhs * __uabs_rhs;
-    const auto __result_lo  = __negative_result ? ::cuda::neg(__uresult_lo) : __uresult_lo;
-    return {static_cast<_Result>(__result_lo), __overflow_mul};
-  }
-  else
-  {
-    const auto __result_lo = static_cast<_UPromoted>(__lhs) * static_cast<_UPromoted>(__rhs);
-    return {static_cast<_Result>(__result_lo), __overflow_mul};
-  }
+  const auto __result_lo = static_cast<_UPromoted>(__lhs) * static_cast<_UPromoted>(__rhs);
+  return {static_cast<_Result>(__result_lo), __overflow_mul};
 }
 
 #if !_CCCL_COMPILER(NVRTC)
