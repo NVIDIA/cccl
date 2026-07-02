@@ -18,7 +18,11 @@ function(cudax_add_header_test label definitions)
     cudax/include
     # The cudax header template removes the check for the `small` macro.
     HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
-    GLOBS "cuda/experimental/*.cuh"
+    GLOBS
+      "cuda/experimental/*.cuh"
+      # cuco carries some `.hpp` headers; scope the glob to `__cuco` so we don't pull in the
+      # untested `__nccl`/`__multi_gpu` `.h` headers.
+      "cuda/experimental/__cuco/*.hpp"
     EXCLUDES
       # The following internal headers are not required to compile independently:
       "cuda/experimental/__execution/prologue.cuh"
