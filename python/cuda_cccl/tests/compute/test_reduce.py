@@ -998,7 +998,7 @@ def test_reduce_input_and_accumulator_type_mismatch():
 
 
 class TestReduceAPI:
-    def test_default_usage(self):
+    def test_mem_compute_api(self):
         h_init = np.array([False])
         d_input = cp.array([True, False, True])
         d_output = cp.empty_like(d_input, shape=(1,))
@@ -1011,27 +1011,22 @@ class TestReduceAPI:
             op=OpKind.MAXIMUM,
             h_init=h_init,
         )
-
-        reducer.compute()
-        expected = True
-        assert d_output.get()[0] == expected
-
-    def test_compute_with_explicit_storage_arg(self):
-        h_init = np.array([False])
-        d_input = cp.array([True, False, True])
-        d_output = cp.empty_like(d_input, shape=(1,))
-
-        # Perform the reduction.
-        reducer = cuda.compute.make_reduce_into(
+        temp_storage_size = reducer.get_temp_storage_bytes(
             d_in=d_input,
             d_out=d_output,
             num_items=len(d_input),
             op=OpKind.MAXIMUM,
             h_init=h_init,
         )
-        temp_storage_size = reducer.get_temp_storage_bytes()
         d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-        reducer.compute(temp_storage=d_temp_storage)
+        reducer.compute(
+            temp_storage=d_temp_storage,
+            d_in=d_input,
+            d_out=d_output,
+            num_items=len(d_input),
+            op=OpKind.MAXIMUM,
+            h_init=h_init,
+        )
         expected = True
         assert d_output.get()[0] == expected
 
