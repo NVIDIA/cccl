@@ -554,6 +554,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") DispatchReduce
  * @tparam InitValueT
  *   Initial value type
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <
   typename InputIteratorT,
   typename OutputIteratorT,
@@ -576,7 +577,7 @@ template <
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-_CCCL_SUPPRESS_DEPRECATED_PUSH using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") =
+using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
                  OffsetT,
