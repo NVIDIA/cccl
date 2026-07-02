@@ -80,3 +80,34 @@ def test_serialize_deserialize_merge_sort_keys_values():
     argsort = np.argsort(h_in_keys, kind="stable")
     np.testing.assert_array_equal(d_out_keys.get(), h_in_keys[argsort])
     np.testing.assert_array_equal(d_out_values.get(), h_in_values[argsort])
+
+
+def test_serialize_deserialize_merge_sort_keys_only():
+    # Keys-only: d_in_values / d_out_values are None, which become "none"
+    # iterators — the plain ITER schema members round-trip them fine.
+    h_in_keys = np.array([5, 2, 8, 1, 9, 3, 7, 0, 6, 4], dtype="int32")
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.empty_like(d_in_keys)
+
+    builder = make_merge_sort(
+        d_in_keys=d_in_keys,
+        d_in_values=None,
+        d_out_keys=d_out_keys,
+        d_out_values=None,
+        op=OpKind.LESS,
+    )
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    _run(
+        loaded,
+        d_in_keys=d_in_keys,
+        d_in_values=None,
+        d_out_keys=d_out_keys,
+        d_out_values=None,
+        num_items=d_in_keys.size,
+        op=OpKind.LESS,
+    )
+
+    np.testing.assert_array_equal(d_out_keys.get(), np.sort(h_in_keys))

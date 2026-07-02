@@ -29,13 +29,15 @@ def serialize(algorithm: Any) -> bytes:
         A versioned, self-describing byte blob. Reconstruct it with
         :func:`deserialize` — no objects required at load time.
     """
-    try:
-        return algorithm.serialize()
-    except AttributeError as e:
+    # Gate on the method's presence rather than catching AttributeError from the
+    # call, so a genuine AttributeError raised *inside* a valid serialize() isn't
+    # masked as "not serializable".
+    if not callable(getattr(type(algorithm), "serialize", None)):
         raise TypeError(
             f"{type(algorithm).__name__} is not an AoT-serializable algorithm "
             "(expected an object from a make_* factory)."
-        ) from e
+        )
+    return algorithm.serialize()
 
 
 def deserialize(blob: bytes):
