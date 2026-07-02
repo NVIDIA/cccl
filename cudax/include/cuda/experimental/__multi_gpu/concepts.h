@@ -80,14 +80,14 @@ _CCCL_CONCEPT __communicator = _CCCL_REQUIRES_EXPR((_Comm), _Comm& __comm)(
 
 // Use a typed pointer as default here, since the op may need to instantiated with a
 // dereferenceable pointer type for reductions
-template <class _Comm, class _Ptr = int*>
+template <class _Comm, class _Ptr = int*, class _Op = cuda::std::plus<>>
 _CCCL_CONCEPT __has_reduce = _CCCL_REQUIRES_EXPR(
-  (_Comm, _Ptr),
+  (_Comm, _Ptr, _Op),
   _Comm& __comm,
   _Ptr __sendbuff,
   _Ptr __recvbuff,
   ::cuda::std::size_t __count,
-  ::cuda::std::plus<> __op,
+  _Op __op,
   ::cuda::std::int32_t __root,
   ::cuda::stream_ref __stream)(
   requires(__communicator<_Comm>),
@@ -98,14 +98,14 @@ _CCCL_CONCEPT __has_reduce = _CCCL_REQUIRES_EXPR(
 
 // Use a typed pointer as default here, since the op may need to instantiated with a
 // dereferenceable pointer type for reductions
-template <class _Comm, class _Ptr = int*>
+template <class _Comm, class _Ptr = int*, class _Op = ::cuda::std::plus<>>
 _CCCL_CONCEPT __has_all_reduce = _CCCL_REQUIRES_EXPR(
-  (_Comm, _Ptr),
+  (_Comm, _Ptr, _Op),
   _Comm& __comm,
   _Ptr __sendbuff,
   _Ptr __recvbuff,
   ::cuda::std::size_t __count,
-  ::cuda::std::plus<> __op,
+  _Op __op,
   ::cuda::stream_ref __stream)(
   requires(__communicator<_Comm>),
   _Same_as(void) __comm.all_reduce(

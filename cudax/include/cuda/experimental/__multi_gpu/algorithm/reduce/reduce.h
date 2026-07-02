@@ -121,14 +121,12 @@ template <class _Buffer, class _Comm, class _Env, class _InputRange, class _Tp, 
 }
 
 template <class _CommRange, class _PartialType, class _RangeOfOutputIt, class _BinaryOp>
-void __direct_reduction(_CommRange&& __comms,
-                        const ::std::vector<_PartialType>& __partials,
-                        _RangeOfOutputIt&& __outputs,
-                        const _BinaryOp& __op)
+void __direct_reduction(
+  _CommRange&& __comms, _RangeOfOutputIt&& __outputs, const _BinaryOp& __op, ::std::vector<_PartialType>* __partials)
 {
   auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-  for (const auto [__comm, __local, __out_it] : ::cuda::std::ranges::views::zip(__comms, __partials, __outputs))
+  for (auto&& [__comm, __local, __out_it] : ::cuda::std::ranges::views::zip(__comms, *__partials, __outputs))
   {
     __comm.all_reduce(
       __guard,
@@ -142,15 +140,12 @@ void __direct_reduction(_CommRange&& __comms,
 
 template <class _CommRange, class _PartialType, class _RangeOfOutputIt, class _BinaryOp>
 void __two_stage_gather_reduction(
-  _CommRange&& __comms,
-  const ::std::vector<_PartialType>& __partials,
-  _RangeOfOutputIt&& __outputs,
-  const _BinaryOp& __op)
+  _CommRange&& __comms, _RangeOfOutputIt&& __outputs, const _BinaryOp& __op, ::std::vector<_PartialType>* __partials)
 {
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
-    for (const auto& [__comm, __local] : ::cuda::std::ranges::views::zip(__comms, __partials))
+    for (auto&& [__comm, __local] : ::cuda::std::ranges::views::zip(__comms, *__partials))
     {
       auto* const __ptr = __local.__buffer.data();
 
@@ -158,7 +153,7 @@ void __two_stage_gather_reduction(
     }
   }
 
-  for (auto&& [__comm, __part, __out] : ::cuda::std::ranges::views::zip(__comms, __partials, __outputs))
+  for (auto&& [__comm, __part, __out] : ::cuda::std::ranges::views::zip(__comms, *__partials, __outputs))
   {
     auto&& [__buffer, __env, _] = __part;
     const auto __num_items      = __buffer.size();
@@ -265,13 +260,14 @@ _CCCL_HOST_API void reduce(
   }
 
   if constexpr (::cuda::experimental::__has_all_reduce<::cuda::std::ranges::range_value_t<_CommRange>,
-                                                       typename __properties::__output_type*>)
+                                                       typename __properties::__output_type*,
+                                                       _BinaryOp>)
   {
-    __direct_reduction(__comms, __partials, __outputs, __op);
+    __direct_reduction(__comms, __outputs, __op, &__partials);
   }
   else
   {
-    __two_stage_gather_reduction(__comms, __partials, __outputs, __op);
+    __two_stage_gather_reduction(__comms, __outputs, __op, &__partials);
   }
 }
 
