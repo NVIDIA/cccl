@@ -898,9 +898,11 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   using output_t         = it_value_t<RandomAccessIteratorOut>;
   constexpr int out_size = int{size_of<output_t>};
-  static_assert(::cuda::is_power_of_two(StoreVecSize) && (StoreVecSize == 1 || StoreVecSize * out_size <= 16),
-                "store_vec_size must be a power of two, and (unless 1 = scalar) store_vec_size * sizeof(output) <= 16");
-  constexpr int store_vec_size = StoreVecSize;
+  static_assert(
+    StoreVecSize == 0
+      || (::cuda::is_power_of_two(StoreVecSize) && (StoreVecSize == 1 || StoreVecSize * out_size <= 16)),
+    "store_vec_size must be 0 (auto) or a power of two, and (unless 1 = scalar) store_vec_size * sizeof(output) <= 16");
+  constexpr int store_vec_size = StoreVecSize == 0 ? auto_ublkcp_store_vec_size(out_size) : StoreVecSize;
   // compile time eligibility for the vectorized store (STG.128):
   // 1. there are no predicates
   // 2. memory layout is contiguous
