@@ -10,6 +10,7 @@
 
 #include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
@@ -229,6 +230,35 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, cuda::mr::host_accessible>);
+}
+
+C2H_CCCLRT_TEST("cuda::buffer make_buffer uses the explicit device", "[container][buffer][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+  cuda::stream explicit_device_stream{explicit_device};
+  cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+
+  {
+    cuda::__ensure_current_context guard{current_device};
+    auto resource = cuda::device_default_memory_pool(explicit_device);
+    cuda::device_buffer<int> source{explicit_device_stream, resource, input};
+    auto copy = cuda::make_buffer(explicit_device_stream, resource, source);
+
+    CCCLRT_CHECK(source.size() == input.size());
+    CCCLRT_CHECK(copy.size() == source.size());
+    check_allocation_device(source, explicit_device);
+    check_allocation_device(copy, explicit_device);
+    CCCLRT_CHECK(equal_range(source));
+    CCCLRT_CHECK(equal_range(copy));
+  }
+
+  explicit_device_stream.sync();
 }
 
 C2H_CCCLRT_TEST("make_buffer with legacy resource", "[container][buffer]")

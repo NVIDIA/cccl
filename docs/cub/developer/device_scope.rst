@@ -420,7 +420,7 @@ Tunings
 Because the values to parameterize an agent may vary a lot for different compile-time parameters,
 the selection of values can involve complex logic.
 Often, such tunings are found by experimentation or heuristic search.
-See also :ref:`cub-tuning`.
+See also :ref:`cub-tuning-infra`.
 
 Tunings are expressed as logic and values inside the ``constexpr operator()`` of a policy selector.
 Because of the complexity of some policy selectors, nested functions may be used.

@@ -59,7 +59,7 @@ template <typename T_In,
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
      ::cuda::std::mdspan<T_Out, E_Out, L_Out, A_Out> mdspan_out,
-     EnvT env = {})
+     const EnvT& env = {})
 {
   if (mdspan_in.is_exhaustive() && mdspan_out.is_exhaustive()
       && detail::have_same_strides(mdspan_in.mapping(), mdspan_out.mapping()))

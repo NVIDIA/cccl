@@ -59,22 +59,26 @@ minimal-sysctk13 = [
 ]
 cu12 = [
   "cuda-cccl[minimal-cu12]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 cu13 = [
   "cuda-cccl[minimal-cu13]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
 ]
 sysctk12 = [
   "cuda-cccl[minimal-sysctk12]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
 ]
 sysctk13 = [
   "cuda-cccl[minimal-sysctk13]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 test-cu12 = [
@@ -150,6 +154,10 @@ python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = [
+  # numpy>=2.3 stubs use PEP 695 syntax that mypy can't parse under
+  # python_version=3.10; skip following its imports to keep the 3.10 target.
+  "numpy",
+  "numpy.*",
   "numba.*",
   "llvmlite.*",
   "cuda.cccl.*",

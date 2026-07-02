@@ -19,6 +19,7 @@
 #include <cub/util_macro.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/determinism.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
 #include <cuda/std/optional>
@@ -337,14 +338,64 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
+using cuda::execution::determinism::__determinism_t;
+
 struct policy_selector
 {
   type_t accum_t;
   op_kind_t operation_t;
   int offset_size;
   int accum_size;
+  __determinism_t determinism = __determinism_t::__run_to_run;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_deterministic_tuning(::cuda::compute_capability cc) const
+    -> reduce_policy
+  {
+    if (cc >= ::cuda::compute_capability{9, 0})
+    {
+      // only tuned for float, fall through for other types
+      if (accum_t == type_t::float32)
+      {
+        // ipt_13.tpb_224  1.107188  1.009709  1.097114  1.316820
+        const auto scaled = scale_mem_bound(224, 13, accum_size);
+        return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
+                {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
+      }
+    }
+
+    if (cc >= ::cuda::compute_capability{8, 6})
+    {
+      // only tuned for float and double, fall through for other types
+      if (accum_t == type_t::float32)
+      {
+        // ipt_6.tpb_224  1.034383  1.000000  1.032097  1.090909
+        const auto scaled = scale_mem_bound(224, 6, accum_size);
+        return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
+                {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
+      }
+      if (accum_t == type_t::float64)
+      {
+        // ipt_11.tpb_128 ()  1.232089  1.002124  1.245336  1.582279
+        const auto scaled = scale_mem_bound(128, 11, accum_size);
+        return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
+                {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
+      }
+    }
+
+    if (cc >= ::cuda::compute_capability{6, 0})
+    {
+      const auto scaled = scale_mem_bound(256, 16, accum_size);
+      return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
+              {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
+    }
+
+    const auto scaled = scale_mem_bound(256, 20, accum_size);
+    return {{scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT},
+            {scaled.threads_per_block, scaled.items_per_thread, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_two_phase_tuning(::cuda::compute_capability cc) const
+    -> reduce_policy
   {
     // if we don't have a tuning for sm100, fall through
     auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
@@ -381,19 +432,37 @@ struct policy_selector
       agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
     return {rp, rp};
   }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
+  {
+    if (determinism == __determinism_t::__gpu_to_gpu)
+    {
+      return get_deterministic_tuning(cc);
+    }
+
+    auto policy = get_two_phase_tuning(cc);
+    if (determinism == __determinism_t::__not_guaranteed)
+    {
+      policy.reduce.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
+    }
+    return policy;
+  }
 };
 #if _CCCL_HAS_CONCEPTS()
 static_assert(reduce_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
 // stateless version which can be passed to kernels
-template <typename AccumT, typename OffsetT, typename ReductionOpT>
+template <typename AccumT,
+          typename OffsetT,
+          typename ReductionOpT,
+          __determinism_t Determinism = __determinism_t::__run_to_run>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
   {
-    constexpr auto policies =
-      policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
+    constexpr auto policies = policy_selector{
+      classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}, Determinism};
     return policies(cc);
   }
 };

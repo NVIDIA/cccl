@@ -597,6 +597,35 @@ C2H_CCCLRT_TEST("cuda::make_device_buffer", "[container][buffer]")
   stream.sync();
 }
 
+C2H_CCCLRT_TEST("cuda::make_device_buffer uses the explicit device", "[container][buffer][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  cuda::device_ref current_device{0};
+  cuda::device_ref explicit_device{1};
+  cuda::stream explicit_device_stream{explicit_device};
+  cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+
+  {
+    cuda::__ensure_current_context guard{current_device};
+    auto buf = cuda::make_device_buffer<int>(explicit_device_stream, explicit_device, input);
+
+    CCCLRT_CHECK(buf.size() == input.size());
+    check_allocation_device(buf, explicit_device);
+    CCCLRT_CHECK(equal_range(buf));
+
+    auto filled = cuda::make_device_buffer<int>(explicit_device_stream, explicit_device, 5, 42);
+    CCCLRT_CHECK(filled.size() == 5);
+    check_allocation_device(filled, explicit_device);
+    CCCLRT_CHECK(equal_size_value(filled, 5, 42));
+  }
+
+  explicit_device_stream.sync();
+}
+
 // ── make_pinned_buffer ──────────────────────────────────────────────────────
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
