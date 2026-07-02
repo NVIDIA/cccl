@@ -143,13 +143,9 @@ struct SegmentedSortPolicy
 
 namespace detail::segmented_sort
 {
-using segmented_radix_sort_policy = SegmentedSortRadixSortPolicy;
-using sub_warp_merge_sort_policy  = SegmentedSortSubWarpMergeSortPolicy;
-using segmented_sort_policy       = SegmentedSortPolicy;
-
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept segmented_sort_policy_selector = policy_selector<T, segmented_sort_policy>;
+concept segmented_sort_policy_selector = policy_selector<T, SegmentedSortPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
@@ -173,7 +169,7 @@ struct policy_selector
     int radix_bits) const
   {
     const auto scaled = scale_reg_bound(nominal_4B_threads_per_block, nominal_4B_items_per_thread, __dominant_size());
-    return segmented_radix_sort_policy{
+    return SegmentedSortRadixSortPolicy{
       scaled.threads_per_block,
       scaled.items_per_thread,
       load_algorithm,
@@ -184,7 +180,7 @@ struct policy_selector
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> segmented_sort_policy
+    -> SegmentedSortPolicy
   {
     const auto scale_items = [&](int nominal_4b_items_per_thread) {
       return nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
@@ -196,12 +192,12 @@ struct policy_selector
       const int radix_bits   = key_size > 1 ? 6 : 4;
       const int small_itp    = scale_items(large_items ? 7 : 9);
       const int medium_itp   = scale_items(large_items ? 9 : 7);
-      return segmented_sort_policy{
+      return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{
+        SegmentedSortSubWarpMergeSortPolicy{
           256, large_items ? 8 : 2, small_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
-        sub_warp_merge_sort_policy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
         500};
     }
 
@@ -210,12 +206,12 @@ struct policy_selector
       const int radix_bits = key_size > 1 ? 6 : 4;
       const int small_itp  = scale_items(9);
       const int medium_itp = scale_items(keys_only ? 7 : 11);
-      return segmented_sort_policy{
+      return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{
+        SegmentedSortSubWarpMergeSortPolicy{
           256, keys_only ? 4 : 2, small_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
-        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 32, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -224,11 +220,12 @@ struct policy_selector
       const int radix_bits = key_size > 1 ? 6 : 4;
       const int small_itp  = scale_items(7);
       const int medium_itp = scale_items(keys_only ? 11 : 7);
-      return segmented_sort_policy{
+      return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, keys_only ? 4 : 8, small_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
-        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{
+          256, keys_only ? 4 : 8, small_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 32, medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -236,11 +233,12 @@ struct policy_selector
     {
       const int radix_bits       = key_size > 1 ? 5 : 4;
       const int small_medium_itp = scale_items(9);
-      return segmented_sort_policy{
+      return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 16, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_RAKING_MEMOIZE, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{
+          256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -248,11 +246,12 @@ struct policy_selector
     {
       const int radix_bits       = key_size > 1 ? 6 : 4;
       const int small_medium_itp = scale_items(9);
-      return segmented_sort_policy{
+      return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{
+          256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -260,22 +259,23 @@ struct policy_selector
     {
       const int radix_bits       = key_size > 1 ? 6 : 4;
       const int small_medium_itp = scale_items(9);
-      return segmented_sort_policy{
+      return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MATCH, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{
+          256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
     // default for SM50
     const int radix_bits       = key_size > 1 ? 6 : 4;
     const int small_medium_itp = scale_items(7);
-    return segmented_sort_policy{
+    return SegmentedSortPolicy{
       __make_scaled_segmented_radix_sort_policy(
         256, 16, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_RAKING_MEMOIZE, radix_bits),
-      sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
-      sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+      SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+      SegmentedSortSubWarpMergeSortPolicy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
       300};
   }
 };
@@ -288,7 +288,7 @@ template <typename KeyT, typename ValueT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> segmented_sort_policy
+    -> SegmentedSortPolicy
   {
     return policy_selector{int{sizeof(KeyT)}, int{sizeof(ValueT)}, ::cuda::std::is_same_v<ValueT, NullType>}(cc);
   }
