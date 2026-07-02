@@ -138,6 +138,7 @@ struct policy_selector_from_hub
  * Single-problem dispatch
  *****************************************************************************/
 
+// TODO(bgruber): drop in CCCL 4.0
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
