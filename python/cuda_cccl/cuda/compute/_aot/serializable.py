@@ -13,8 +13,9 @@ share one field order (they can't drift). Subclasses auto-register by ``tag``
 for the free-function ``deserialize`` dispatcher.
 
 Derived state (e.g. a compute-fn chosen from ``build_result``) is *not* in the
-schema — express it as a ``@property`` so it needs no post-load step. Fields
-used only at build time (never on the load path) are simply omitted.
+schema — express it as a ``@property`` that recomputes on access, so a
+reconstructed instance needs nothing set beyond its schema members. Fields used
+only while building the algorithm (never when it is invoked) are simply omitted.
 
 Irregular algorithms (a member whose kind depends on another member's value)
 still subclass ``Serializable`` for the tag/registry/header framing but override

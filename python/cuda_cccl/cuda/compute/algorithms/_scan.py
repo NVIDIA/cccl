@@ -135,8 +135,8 @@ class _Scan(Serializable):
 
     @property
     def device_scan_fn(self):
-        # Derived from (force_inclusive, init_kind) — both serialized — so no
-        # post-load step is needed on the deserialize path.
+        # Recomputed from force_inclusive + init_kind (both serialized) on each
+        # access, so a scan reconstructed by deserialize() needs nothing extra set.
         match (self.force_inclusive, self.init_kind):
             case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
                 return self.build_result.compute_inclusive_future_value

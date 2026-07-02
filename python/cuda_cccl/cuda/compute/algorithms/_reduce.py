@@ -79,8 +79,8 @@ class _Reduce(Serializable):
 
     @property
     def device_reduce_fn(self):
-        # Derived from the (serialized) build_result, so no post-load step is
-        # needed on the deserialize path.
+        # Recomputed from build_result (which is serialized) on each access, so a
+        # reducer reconstructed by deserialize() needs nothing extra set.
         if Determinism(self.build_result.determinism) is Determinism.NOT_GUARANTEED:
             return self.build_result.compute_nondeterministic
         return self.build_result.compute
