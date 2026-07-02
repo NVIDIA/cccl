@@ -317,8 +317,8 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys with custom policy selector", "[seg
   auto offsets  = thrust::device_vector<int>{0, 3, 7};
 
   auto error = cub::DeviceSegmentedSort::SortKeys(
-    keys_in.data(),
-    keys_out.data(),
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
     keys_in.size(),
     2,
     offsets.data(),

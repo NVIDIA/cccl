@@ -1261,7 +1261,7 @@ template <
     choose_signed_offset<global_segment_offset_t>::type>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
-  requires SegmentedSortPolicy_selector<PolicySelector>
+  requires segmented_sort_policy_selector<PolicySelector>
         && three_way_partition::three_way_partition_policy_selector<PartitionPolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
