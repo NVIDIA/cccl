@@ -76,7 +76,7 @@ template <typename SegmentSizeParameterT>
 // Kernel entry points
 // -----------------------------------------------------------------------------
 // Dynamic-cluster kernel for host launches; the agent reads the active cluster
-// width via cooperative groups.
+// width from the `%cluster_nctarank` PTX special register.
 template <int ThreadsPerBlock,
           int MinBlocksPerSm,
           int HistogramItemsPerThread,
