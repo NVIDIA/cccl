@@ -576,7 +576,7 @@ template <
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") =
+_CCCL_SUPPRESS_DEPRECATED_PUSH using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
                  OffsetT,
@@ -587,6 +587,7 @@ using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce")
                  PolicyHub,
                  KernelSource,
                  KernelLauncherFactory>;
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace detail::reduce
 {
