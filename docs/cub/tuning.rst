@@ -40,34 +40,31 @@ Defining a policy selector
 A policy selector is any type with a :code:`__host__`,  :code:`__device__`, :code:`constexpr`, and :code:`const` call operator
 taking a ``cuda::compute_capability`` and returning the algorithm's policy struct:
 
-..
-    TODO(bgruber): we have to update this example again after the reduce tuning API has been actually released
-
 .. code:: c++
 
     template <typename T>
-    struct my_reduce_tuning {
+    struct CustomReducePolicySelector {
       __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ReducePolicy {
         // tuning for Hopper and later
         if (cc >= cuda::compute_capability(9, 0)) {
-          const auto policy = cub::detail::agent_reduce_policy{
+          const auto pass = cub::ReducePassPolicy{
             .threads_per_block = 512,
             .items_per_thread = 64 / sizeof(T), // 8 double, 16 float, 32 half_t, ...
-            .vector_load_length = 2,
-            .block_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+            .vec_size = 2,
+            .reduce_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
             .load_modifier = cub::LOAD_DEFAULT
           };
-          return {policy, policy, policy, policy};
+          return { .multi_tile = pass, .single_tile = pass };
         }
         // fallback for older GPUs
-        const auto policy = cub::detail::agent_reduce_policy{
+        const auto pass = cub::ReducePassPolicy{
           .threads_per_block = 256,
           .items_per_thread = 12,
-          .vector_load_length = 1,
-          .block_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+          .vec_size = 1,
+          .reduce_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
           .load_modifier = cub::LOAD_DEFAULT
         };
-        return {policy, policy, policy, policy};
+        return { .multi_tile = pass, .single_tile = pass };
       }
     };
 

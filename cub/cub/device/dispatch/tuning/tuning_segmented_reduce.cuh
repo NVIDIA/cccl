@@ -65,7 +65,7 @@ struct warp_reduce_policy
 
 struct segmented_reduce_policy
 {
-  reduce::agent_reduce_policy large_reduce;
+  ReducePassPolicy large_reduce;
   warp_reduce_policy small_reduce;
   warp_reduce_policy medium_reduce;
 
@@ -109,7 +109,7 @@ struct policy_selector
     constexpr int small_threads_per_warp  = 1;
     constexpr int medium_threads_per_warp = 32;
 
-    const auto rp = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(cc).reduce;
+    const auto rp = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(cc).multi_tile;
 
     return segmented_reduce_policy{
       rp,
@@ -156,12 +156,12 @@ struct policy_hub
 
   public:
     using ReducePolicy =
-      cub::AgentReducePolicy<nominal_4b_large_threads_per_block,
-                             nominal_4b_large_items_per_thread,
-                             AccumT,
-                             items_per_vec_load,
-                             cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-                             cub::LOAD_LDG>;
+      agent_reduce_policy<nominal_4b_large_threads_per_block,
+                          nominal_4b_large_items_per_thread,
+                          AccumT,
+                          items_per_vec_load,
+                          cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+                          cub::LOAD_LDG>;
 
     using SmallReducePolicy =
       cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
