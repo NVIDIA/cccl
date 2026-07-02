@@ -85,7 +85,7 @@ struct __pstl_dispatch<__pstl_algorithm::__min_element, __execution_backend::__c
       static_cast<size_t*>(nullptr),
       __count,
       __pred,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<size_t> __storage{__policy, __num_bytes, 1};
@@ -101,7 +101,7 @@ struct __pstl_dispatch<__pstl_algorithm::__min_element, __execution_backend::__c
         __storage.template __get_raw_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(

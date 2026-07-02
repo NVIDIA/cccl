@@ -59,22 +59,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_indexed(
   KParamT k,
   SelectDirectionParamT select_direction,
   NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items,
+  [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items,
   EnvT env)
 {
   if constexpr (selected_backend == topk_backend::cluster)
   {
     return cub::detail::batched_topk_cluster::dispatch_with_env<selected_determinism, selected_tie_break>(
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      segment_sizes,
-      k,
-      select_direction,
-      num_segments,
-      total_num_items,
-      env);
+      d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, select_direction, num_segments, env);
   }
   else
   {

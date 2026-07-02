@@ -62,7 +62,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
   KParamT k,
   SelectDirectionParamT select_direction,
   NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items,
+  [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items,
   [[maybe_unused]] const HostSegSizeT* h_segment_sizes,
   EnvT env)
 {
@@ -77,7 +77,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
       k,
       select_direction,
       num_segments,
-      total_num_items,
       env);
   }
   else if constexpr (selected_backend == topk_backend::device)

@@ -3,7 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/device_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 #include <cub/util_type.cuh>
 
@@ -15,9 +15,12 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
+#include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cmath/signbit.h>
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
@@ -54,7 +57,7 @@ enum class topk_backend
 
 inline constexpr topk_backend selected_backend = topk_backend::cluster;
 
-template <cub::detail::topk::select Direction,
+template <cub::detail::topk::select SelectDirection,
           cuda::execution::determinism::__determinism_t Determinism =
             cuda::execution::determinism::__determinism_t::__not_guaranteed,
           cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
@@ -62,8 +65,7 @@ template <cub::detail::topk::select Direction,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
           typename KParamT,
-          typename NumSegmentsParameterT,
-          typename TotalNumItemsGuaranteeT>
+          typename NumSegmentsParameterT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -72,7 +74,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   SegmentSizeParamT segment_sizes,
   KParamT k,
   NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = nullptr)
 {
   if constexpr (selected_backend == topk_backend::cluster)
@@ -86,27 +87,44 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
       static_cast<cub::NullType**>(nullptr),
       segment_sizes,
       k,
-      cuda::args::constant<Direction>{},
+      cuda::args::constant<SelectDirection>{},
       num_segments,
-      total_num_items_guarantee,
       stream);
   }
   else
   {
-    auto values_it = static_cast<cub::NullType**>(nullptr);
-    return cub::detail::batched_topk::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      values_it,
-      values_it,
-      segment_sizes,
-      k,
-      cuda::args::constant<Direction>{},
-      num_segments,
-      total_num_items_guarantee,
-      stream);
+    // Baseline backend routes through the public API; the cluster backend keeps using the lower-level dispatch above.
+    // The public API takes no total-items guarantee and always runs nondeterministic (the determinism-aware tests skip
+    // the deterministic combos for non-cluster backends).
+    auto env = cuda::std::execution::env{
+      cuda::stream_ref{stream},
+      cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                               cuda::execution::tie_break::unspecified,
+                               cuda::execution::output_ordering::unsorted)};
+    if constexpr (SelectDirection == cub::detail::topk::select::max)
+    {
+      return cub::DeviceBatchedTopK::MaxKeys(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_key_segments_it,
+        d_key_segments_out_it,
+        segment_sizes,
+        k,
+        num_segments,
+        env);
+    }
+    else
+    {
+      return cub::DeviceBatchedTopK::MinKeys(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_key_segments_it,
+        d_key_segments_out_it,
+        segment_sizes,
+        k,
+        num_segments,
+        env);
+    }
   }
 }
 
@@ -115,11 +133,11 @@ DECLARE_TMPL_LAUNCH_WRAPPER(
   dispatch_batched_topk_keys,
   batched_topk_keys,
   ESCAPE_LIST(
-    cub::detail::topk::select Direction,
+    cub::detail::topk::select SelectDirection,
     cuda::execution::determinism::__determinism_t Determinism =
       cuda::execution::determinism::__determinism_t::__not_guaranteed,
     cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified),
-  ESCAPE_LIST(Direction, Determinism, TieBreak));
+  ESCAPE_LIST(SelectDirection, Determinism, TieBreak));
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
@@ -281,8 +299,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
     d_keys_out,
     make_segment_size_arg<fixed_seg_size_arg, segment_size_t{1}, max_segment_size>(segment_size),
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
   // Prepare expected results
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -329,8 +346,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a compile-time-constant seg
     d_keys_out,
     cuda::args::constant<segment_size>{},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, segment_size>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -378,8 +394,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys clamp k larger than the segment size"
     d_keys_out,
     cuda::args::constant<segment_size>{},
     cuda::args::immediate{k_requested, cuda::args::bounds<segment_size_t{1}, 10 * segment_size>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, effective_k); // clamped k == segment_size keeps everything
@@ -448,8 +463,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle a segment-size type narrower t
     d_keys_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<seg_size_t{1}, seg_size_t{127}>()},
     cuda::args::immediate{k, cuda::args::bounds<seg_size_t{1}, seg_size_t{127}>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   // Guards must be untouched by the algorithm.
   const c2h::device_vector<key_t> expected_guard(guard, key_canary);
@@ -510,8 +524,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a deferred (device-resident
     d_keys_out,
     cuda::args::deferred{d_segment_size_ptr, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, segment_size>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -586,8 +599,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
     d_keys_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -647,8 +659,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 3
     d_keys_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<seg_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<seg_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -738,8 +749,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-c
     d_keys_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   // The flattened input is the identity sequence, so build the expected keys directly and reuse the standard
   // sort + compact verification.
@@ -840,8 +850,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
     d_keys_out,
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   // Verify keys are returned correctly: sort each segment of the expected input, then compact the top-k
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
@@ -937,8 +946,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
     d_keys_out,
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
   expected_keys = compact_to_topk_batched(expected_keys, segment_offsets, k);
@@ -1035,8 +1043,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
     cuda::args::deferred_sequence{
       thrust::raw_pointer_cast(segment_k.data()), cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   // Prepare expected results: sort each fixed-size input segment, then compact each to its per-segment top-k.
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
@@ -1134,8 +1141,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::deferred_sequence{
       thrust::raw_pointer_cast(segment_k.data()), cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   // Verify keys are returned correctly: sort each segment of the expected input, then compact the per-segment top-k
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
@@ -1209,8 +1215,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundar
     d_keys_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -1222,15 +1227,22 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundar
 #endif // TEST_TYPES == 2
 
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
-C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys preserve -0.0f in output",
+         "[keys][segmented][topk][device][float]",
+         select_direction_list)
 {
   constexpr cuda::std::int64_t segment_size                      = 8;
-  constexpr cuda::std::int64_t k                                 = 5;
   constexpr cuda::std::int64_t num_segments                      = 1;
   [[maybe_unused]] constexpr cuda::std::int64_t max_segment_size = 64; // msvc warns, only used in nttp
 
-  // Input: one segment containing -0.0f and +0.0f; top-5 min should include both zeros.
-  c2h::device_vector<float> d_keys_in{3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f};
+  constexpr auto direction = c2h::get<0, TestType>::value;
+
+  c2h::device_vector<float> d_keys_in =
+    (direction == cub::detail::topk::select::min)
+      ? c2h::device_vector<float>{3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f}
+      : c2h::device_vector<float>{-2.0f, -0.0f, -3.0f, 0.0f, -1.0f, -4.0f, -5.0f, -6.0f};
+  const cuda::std::int64_t k = (direction == cub::detail::topk::select::min) ? 5 : 3;
+
   c2h::device_vector<float> d_keys_out(k, thrust::no_init);
 
   auto d_keys_in_it =
@@ -1238,14 +1250,63 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
   auto d_keys_out_it =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(d_keys_out.data())), k);
 
-  batched_topk_keys<cub::detail::topk::select::min>(
+  batched_topk_keys<direction>(
     d_keys_in_it,
     d_keys_out_it,
     cuda::args::immediate{segment_size, cuda::args::bounds<cuda::std::int64_t{1}, max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<cuda::std::int64_t{1}, k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   const int num_minus_zero = static_cast<int>(thrust::count_if(d_keys_out.begin(), d_keys_out.end(), is_minus_zero{}));
   REQUIRE(num_minus_zero >= 1);
+}
+
+// Users may pass `k` and `num_segments` un-annotated. A plain integral value is taken as a uniform immediate with no
+// compile-time bound.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys accept unwrapped (plain integral) k and num_segments",
+         "[keys][segmented][topk][device]",
+         key_types,
+         max_segment_size_list,
+         max_num_k_list,
+         select_direction_list)
+{
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using key_t = c2h::get<0, TestType>;
+
+  constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
+  constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
+  constexpr auto direction                         = c2h::get<3, TestType>::value;
+
+  // Fixed sizes: this test exercises the argument form, not the size matrix.
+  const segment_size_t segment_size  = (cuda::std::min) (segment_size_t{256}, static_max_segment_size);
+  const segment_size_t k             = (cuda::std::min) (static_max_k, segment_size);
+  const segment_index_t num_segments = 42;
+
+  CAPTURE(c2h::type_name<key_t>(), static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  // `k` and `num_segments` are passed as plain integral values (un-annotated immediate).
+  batched_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    k,
+    num_segments);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
 }

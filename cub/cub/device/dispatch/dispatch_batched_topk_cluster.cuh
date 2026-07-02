@@ -311,7 +311,6 @@ template <
   typename KParameterT,
   typename SelectDirectionT,
   typename NumSegmentsParameterT,
-  typename TotalNumItemsGuaranteeT,
   typename PolicySelector = policy_selector>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
@@ -324,7 +323,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   KParameterT k_param,
   SelectDirectionT select_direction,
   NumSegmentsParameterT num_segments,
-  [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
@@ -747,8 +745,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 // Env-based dispatch that also handles temporary-storage allocation. This is usually done by the device-layer, but
 // there is no public API for cluster segmented top-k yet. Mirrors `batched_topk::dispatch_with_env`: the cluster
 // algorithm is single-phase (one kernel launch over a placeholder allocation), but routing it through the shared
-// env-based machinery keeps the call shape identical to the baseline backend and lets it pick up the stream, memory
-// resource, and tuning carried by the environment.
+// env-based machinery keeps the call shape close to the baseline backend (the cluster path takes no total-items
+// guarantee -- it needs no gmem large-segment tiling) and lets it pick up the stream, memory resource, and tuning
+// carried by the environment.
 //
 // `Determinism`/`TieBreak` are forwarded verbatim to `dispatch` (the public env-based interface is handled separately);
 // they default to the nondeterministic, unspecified-tie-break behavior.
@@ -764,7 +763,6 @@ template <
   typename KParameterT,
   typename SelectDirectionT,
   typename NumSegmentsParameterT,
-  typename TotalNumItemsGuaranteeT,
   typename EnvT = ::cuda::std::execution::env<>>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_env(
   KeyInputItItT d_key_segments_it,
@@ -775,7 +773,6 @@ template <
   KParameterT k_param,
   SelectDirectionT select_direction,
   NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items_guarantee,
   EnvT env = {})
 {
   return detail::dispatch_with_env_and_tuning<policy_selector>(
@@ -791,7 +788,6 @@ template <
         k_param,
         select_direction,
         num_segments,
-        total_num_items_guarantee,
         stream,
         policy_sel);
     });

@@ -305,7 +305,7 @@ struct ReduceAgent
       CAN_VECTORIZE)
     {
       // Partial tile
-      int thread_offset = threadIdx.x;
+      int thread_offset = static_cast<int>(threadIdx.x);
 
       // Read first item
       if ((IS_FIRST_TILE) && (thread_offset < valid_items))

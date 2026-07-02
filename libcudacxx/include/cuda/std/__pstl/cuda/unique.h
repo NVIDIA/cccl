@@ -64,69 +64,55 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
 {
-  template <CUB_NS_QUALIFIER::SelectImpl Select,
-            class _Policy,
-            class _InputIterator,
-            class _OutputIterator,
-            class _BinaryPredicate>
-  [[nodiscard]] _CCCL_HOST_API static _InputIterator __par_impl(
-    const _Policy& __policy,
-    _InputIterator __first,
-    _InputIterator __last,
-    _OutputIterator __result,
-    _BinaryPredicate __pred)
+  template <class _Policy, class _InputIterator, class _BinaryPredicate>
+  [[nodiscard]] _CCCL_HOST_API static _InputIterator
+  __par_impl(const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPredicate __pred)
   {
     const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+    const auto __count  = ::cuda::std::distance(__first, __last);
 
     using _OffsetType          = iter_difference_t<_InputIterator>;
-    const auto __count         = ::cuda::std::distance(__first, __last);
     _OffsetType __num_selected = 0;
-    size_t __num_bytes         = 0;
 
+    size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
-      CUB_NS_QUALIFIER::detail::select::dispatch<Select>,
-      "__pstl_cuda_unique: determination of device storage for cub::DispatchSelectIf::Dispatch failed",
+      CUB_NS_QUALIFIER::DeviceSelect::Unique,
+      "__pstl_cuda_unique: determination of device storage for cub::DeviceSelect::Unique failed",
       static_cast<void*>(nullptr),
       __num_bytes,
       __first,
-      static_cast<CUB_NS_QUALIFIER::NullType*>(nullptr),
-      __result,
       static_cast<_OffsetType*>(nullptr),
-      CUB_NS_QUALIFIER::NullType{},
-      __pred,
       __count,
-      __stream.get());
+      __pred,
+      __policy);
 
-    { // Create temporary storage for the return value as well as a copy of the input sequence as Unique is not inplace
+    { // Create temporary storage for the return value (num_selected) and CUB internal scratch space
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::detail::select::dispatch<Select>,
-        "__pstl_cuda_unique: kernel launch of cub::DispatchSelectIf::Dispatch failed",
+        CUB_NS_QUALIFIER::DeviceSelect::Unique,
+        "__pstl_cuda_unique: kernel launch of cub::DeviceSelect::Unique failed",
         __storage.__get_temp_storage(),
         __num_bytes,
-        ::cuda::std::move(__first),
-        static_cast<CUB_NS_QUALIFIER::NullType*>(nullptr),
-        __result,
-        __storage.template __get_ptr<0>(),
-        CUB_NS_QUALIFIER::NullType{},
-        ::cuda::std::move(__pred),
+        __first,
+        __storage.template __get_raw_ptr<0>(),
         __count,
-        __stream.get());
+        ::cuda::std::move(__pred),
+        __policy);
 
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_unique: copy of num_selected from device to host failed",
         ::cuda::std::addressof(__num_selected),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         sizeof(_OffsetType),
         cudaMemcpyDefault,
         __stream.get());
     }
 
     __stream.sync();
-    return __result + static_cast<iter_difference_t<_OutputIterator>>(__num_selected);
+    return __first + __num_selected;
   }
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _BinaryPredicate)
@@ -141,8 +127,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
     {
       _CCCL_TRY
       {
-        return __par_impl<CUB_NS_QUALIFIER::SelectImpl::SelectPotentiallyInPlace>(
-          __policy, __first, ::cuda::std::move(__last), __first, ::cuda::std::move(__pred));
+        return __par_impl(__policy, __first, ::cuda::std::move(__last), ::cuda::std::move(__pred));
       }
       _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
@@ -162,50 +147,6 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
       static_assert(__always_false_v<_Policy>,
                     "__pstl_dispatch: CUDA backend of cuda::std::unique requires at least random access iterators");
       return ::cuda::std::unique(::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
-    }
-  }
-
-  _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _BinaryPredicate)
-  _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy,
-    _InputIterator __first,
-    _InputIterator __last,
-    _OutputIterator __result,
-    _BinaryPredicate __pred) const
-  {
-    if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
-                  && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
-    {
-      _CCCL_TRY
-      {
-        return __par_impl<CUB_NS_QUALIFIER::SelectImpl::Select>(
-          __policy,
-          ::cuda::std::move(__first),
-          ::cuda::std::move(__last),
-          ::cuda::std::move(__result),
-          ::cuda::std::move(__pred));
-      }
-      _CCCL_CATCH (const ::cuda::cuda_error& __err)
-      {
-        if (__err.status() == ::cudaErrorMemoryAllocation)
-        {
-          _CCCL_THROW(::std::bad_alloc);
-        }
-        else
-        {
-          _CCCL_RETHROW;
-        }
-      }
-      _CCCL_CATCH_FALLTHROUGH
-    }
-    else
-    {
-      static_assert(__always_false_v<_Policy>,
-                    "__pstl_dispatch: CUDA backend of cuda::std::unique_copy requires at least random access "
-                    "iterators");
-      return ::cuda::std::unique_copy(
-        ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result), ::cuda::std::move(__pred));
     }
   }
 };

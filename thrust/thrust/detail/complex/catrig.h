@@ -624,9 +624,9 @@ _CCCL_HOST_DEVICE inline double real_part_reciprocal(double x, double y)
    * example 2.
    */
   get_high_word(hx, x);
-  ix = hx & 0x7ff00000;
+  ix = static_cast<int32_t>(hx & 0x7ff00000);
   get_high_word(hy, y);
-  iy = hy & 0x7ff00000;
+  iy = static_cast<int32_t>(hy & 0x7ff00000);
   // #define	BIAS	(DBL_MAX_EXP - 1)
   const int BIAS = DBL_MAX_EXP - 1;
   /* XXX more guard digits are useful iff there is extra precision. */

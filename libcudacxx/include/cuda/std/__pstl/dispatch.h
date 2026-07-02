@@ -56,6 +56,7 @@ enum class __pstl_algorithm
   __transform,
   __transform_reduce,
   __unique,
+  __unique_copy,
 };
 
 //! @brief tag type to indicate that we cannot dispatch to a parallel algorithm and should run the algorithm serially

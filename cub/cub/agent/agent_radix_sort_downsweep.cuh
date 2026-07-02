@@ -34,11 +34,8 @@
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
-
-/******************************************************************************
- * Tuning policy types
- ******************************************************************************/
-
+namespace detail
+{
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortDownsweep
  *
@@ -75,7 +72,7 @@ template <int NominalThreadsPerBlock4B,
           BlockScanAlgorithm ScanAlgorithm,
           int RadixBits,
           typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentRadixSortDownsweepPolicy : ScalingType
+struct agent_radix_sort_downsweep_policy : ScalingType
 {
   /// The number of radix bits, i.e., log2(bins)
   static constexpr int RADIX_BITS = RadixBits;
@@ -92,6 +89,32 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
   /// The BlockScan algorithm to use
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
+} // namespace detail
+
+/******************************************************************************
+ * Tuning policy types
+ ******************************************************************************/
+
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          RadixRankAlgorithm RankAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentRadixSortDownsweepPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") = detail::agent_radix_sort_downsweep_policy<
+    NominalThreadsPerBlock4B,
+    NominalItemsPerThread4B,
+    ComputeT,
+    LoadAlgorithm,
+    LoadModifier,
+    RankAlgorithm,
+    ScanAlgorithm,
+    RadixBits,
+    ScalingType>;
 
 /******************************************************************************
  * Thread block abstractions

@@ -118,6 +118,39 @@ def test_three_way_partition_basic(dtype, num_items, monkeypatch):
     assert num_selected[0] == n1 and num_selected[1] == n2
 
 
+def test_three_way_partition_well_known_logical_not():
+    h_in = np.array([True, False, False, True, True, False], dtype=np.bool_)
+    num_items = h_in.size
+
+    d_in = cp.asarray(h_in)
+    d_first = cp.empty_like(d_in)
+    d_second = cp.empty_like(d_in)
+    d_unselected = cp.empty_like(d_in)
+    d_num_selected = cp.empty(2, dtype=np.int64)
+
+    cuda.compute.three_way_partition(
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=cuda.compute.OpKind.IDENTITY,
+        select_second_part_op=cuda.compute.OpKind.LOGICAL_NOT,
+        num_items=num_items,
+    )
+
+    num_selected = d_num_selected.get()
+    num_unselected = num_items - int(num_selected.sum())
+
+    np.testing.assert_array_equal(num_selected, np.array([3, 3], dtype=np.int64))
+    np.testing.assert_array_equal(d_first.get()[: num_selected[0]], h_in[h_in])
+    np.testing.assert_array_equal(d_second.get()[: num_selected[1]], h_in[~h_in])
+    np.testing.assert_array_equal(
+        d_unselected.get()[:num_unselected], np.empty(0, dtype=np.bool_)
+    )
+    assert num_unselected == 0
+
+
 def test_three_way_partition_empty():
     dtype = np.int32
     d_in = cp.empty(0, dtype=dtype)

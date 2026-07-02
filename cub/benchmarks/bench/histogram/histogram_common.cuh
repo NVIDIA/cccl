@@ -38,7 +38,7 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
 struct bench_policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> cub::detail::histogram::histogram_policy
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> cub::HistogramPolicy
   {
     constexpr cub::BlockLoadAlgorithm load_algorithm =
       (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)

@@ -3,7 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/device_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
 #include <thrust/count.h>
@@ -13,6 +13,8 @@
 #include <thrust/sequence.h>
 
 #include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
+#include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/iterator>
 
@@ -66,7 +68,7 @@ inline constexpr topk_backend selected_backend = topk_backend::cluster;
 
 // Routes the key-value (pairs) top-k to the baseline or cluster backend. `Determinism`/`TieBreak` are forwarded to the
 // cluster dispatch to request the deterministic tie-break path; they default to the nondeterministic behavior.
-template <cub::detail::topk::select Direction,
+template <cub::detail::topk::select SelectDirection,
           cuda::execution::determinism::__determinism_t Determinism =
             cuda::execution::determinism::__determinism_t::__not_guaranteed,
           cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
@@ -76,8 +78,7 @@ template <cub::detail::topk::select Direction,
           typename ValueOutputItItT,
           typename SegmentSizeParameterT,
           typename KParameterT,
-          typename NumSegmentsParameterT,
-          typename TotalNumItemsGuaranteeT>
+          typename NumSegmentsParameterT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -88,7 +89,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
   SegmentSizeParameterT segment_sizes,
   KParameterT k,
   NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = nullptr)
 {
   if constexpr (selected_backend == topk_backend::cluster)
@@ -102,26 +102,48 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
       d_value_segments_out_it,
       segment_sizes,
       k,
-      cuda::args::constant<Direction>{},
+      cuda::args::constant<SelectDirection>{},
       num_segments,
-      total_num_items_guarantee,
       stream);
   }
   else
   {
-    return cub::detail::batched_topk::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      d_value_segments_it,
-      d_value_segments_out_it,
-      segment_sizes,
-      k,
-      cuda::args::constant<Direction>{},
-      num_segments,
-      total_num_items_guarantee,
-      stream);
+    // Baseline backend routes through the public API; the cluster backend keeps using the lower-level dispatch above.
+    // The public API takes no total-items guarantee and always runs nondeterministic (the determinism-aware tests skip
+    // the deterministic combos for non-cluster backends).
+    auto env = cuda::std::execution::env{
+      cuda::stream_ref{stream},
+      cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                               cuda::execution::tie_break::unspecified,
+                               cuda::execution::output_ordering::unsorted)};
+    if constexpr (SelectDirection == cub::detail::topk::select::max)
+    {
+      return cub::DeviceBatchedTopK::MaxPairs(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_key_segments_it,
+        d_key_segments_out_it,
+        d_value_segments_it,
+        d_value_segments_out_it,
+        segment_sizes,
+        k,
+        num_segments,
+        env);
+    }
+    else
+    {
+      return cub::DeviceBatchedTopK::MinPairs(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_key_segments_it,
+        d_key_segments_out_it,
+        d_value_segments_it,
+        d_value_segments_out_it,
+        segment_sizes,
+        k,
+        num_segments,
+        env);
+    }
   }
 }
 
@@ -130,11 +152,11 @@ DECLARE_TMPL_LAUNCH_WRAPPER(
   dispatch_batched_topk_pairs,
   batched_topk_pairs,
   ESCAPE_LIST(
-    cub::detail::topk::select Direction,
+    cub::detail::topk::select SelectDirection,
     cuda::execution::determinism::__determinism_t Determinism =
       cuda::execution::determinism::__determinism_t::__not_guaranteed,
     cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified),
-  ESCAPE_LIST(Direction, Determinism, TieBreak));
+  ESCAPE_LIST(SelectDirection, Determinism, TieBreak));
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
@@ -336,8 +358,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
     d_values_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   // Verification:
   // - We verify correct top-k selection through the keys
@@ -408,8 +429,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs clamp k larger than the segment size
     d_values_out,
     cuda::args::constant<segment_size>{},
     cuda::args::immediate{k_requested, cuda::args::bounds<segment_size_t{1}, 10 * segment_size>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, effective_k) == true);
@@ -496,8 +516,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs handle a segment-size type narrower 
     d_values_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<seg_size_t{1}, seg_size_t{127}>()},
     cuda::args::immediate{k, cuda::args::bounds<seg_size_t{1}, seg_size_t{127}>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   // Guards must be untouched by the algorithm.
   const c2h::device_vector<key_t> expected_kguard(guard, key_canary);
@@ -609,8 +628,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-
     d_values_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   // The flattened input is the identity sequence, so materialize it for the standard pair verification.
   c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
@@ -693,8 +711,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned
     d_values_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   // Verify (before sorting) that values stayed associated with their keys and that no index repeats within a segment.
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
@@ -769,8 +786,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments with a signed 
     d_values_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<seg_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<seg_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
@@ -905,8 +921,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
     d_values_out,
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   // Values still belong to their keys, and no source index is selected twice.
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
@@ -1017,7 +1032,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
           cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
           cuda::args::constant<direction>{},
           cuda::args::immediate{num_segments},
-          cuda::args::immediate{num_items},
           cudaStream_t{0},
           policy_selector);
       };
@@ -1143,8 +1157,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with mixed effective-width vari
     d_values_out,
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, compacted_offsets, num_segments) == true);
@@ -1254,8 +1267,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
     d_values_out,
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   // Verification:
   // - We verify correct top-k selection through the keys
@@ -1372,8 +1384,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
     cuda::args::deferred_sequence{
       thrust::raw_pointer_cast(segment_k.data()), cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_segments * segment_size});
+    cuda::args::immediate{num_segments});
 
   // Verification:
   // - We verify correct top-k selection through the keys
@@ -1492,8 +1503,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
     cuda::args::deferred_sequence{segment_size_it, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
     cuda::args::deferred_sequence{
       thrust::raw_pointer_cast(segment_k.data()), cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-    cuda::args::immediate{num_segments},
-    cuda::args::immediate{num_items});
+    cuda::args::immediate{num_segments});
 
   // Verification:
   // - We verify correct top-k selection through the keys

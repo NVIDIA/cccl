@@ -96,6 +96,7 @@ public:
       : __block_(::cuda::std::exchange(__other.__block_, nullptr))
   {}
 
+  // NOLINTNEXTLINE(bugprone-unhandled-self-assignment): yes it does
   _CCCL_HOST_API __shared_block_ptr& operator=(const __shared_block_ptr& __other) noexcept
   {
     __shared_block_ptr(__other).swap(*this);
@@ -151,8 +152,8 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_HOST_API friend bool
-  operator!=(const __shared_block_ptr& __lhs, const __shared_block_ptr& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_HOST_API friend bool operator!=(const __shared_block_ptr& __lhs, const __shared_block_ptr& __rhs) noexcept
   {
     return __lhs.__block_ != __rhs.__block_;
   }

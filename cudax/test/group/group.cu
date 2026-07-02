@@ -83,7 +83,7 @@ test_queries(const cudax::group<cuda::thread_level, ParentGroup, cudax::group_by
   using Group = cuda::std::remove_cvref_t<decltype(group)>;
   using Level = typename Group::level_type;
 
-  const auto count_ref = group.__mapping_result().count();
+  const auto count_ref = group.__mapping_result().unit_count();
   const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
 
   REQUIRE(cuda::gpu_thread.count(group) == count_ref);
