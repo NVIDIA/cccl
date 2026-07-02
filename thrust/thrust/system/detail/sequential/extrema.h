@@ -19,6 +19,9 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/max_element.h>
+#include <cuda/std/__algorithm/min_element.h>
+#include <cuda/std/__algorithm/minmax_element.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -30,19 +33,8 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
-
-  ForwardIterator imin = first;
-
-  for (; first != last; ++first)
-  {
-    if (wrapped_comp(*first, *imin))
-    {
-      imin = first;
-    }
-  }
-
-  return imin;
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  return ::cuda::std::min_element(first, last, wrapped_comp);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -51,19 +43,8 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
-
-  ForwardIterator imax = first;
-
-  for (; first != last; ++first)
-  {
-    if (wrapped_comp(*imax, *first))
-    {
-      imax = first;
-    }
-  }
-
-  return imax;
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  return ::cuda::std::max_element(first, last, wrapped_comp);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -72,25 +53,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
-
-  ForwardIterator imin = first;
-  ForwardIterator imax = first;
-
-  for (; first != last; ++first)
-  {
-    if (wrapped_comp(*first, *imin))
-    {
-      imin = first;
-    }
-
-    if (wrapped_comp(*imax, *first))
-    {
-      imax = first;
-    }
-  }
-
-  return ::cuda::std::make_pair(imin, imax);
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  return ::cuda::std::minmax_element(first, last, wrapped_comp);
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

@@ -16,8 +16,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/function.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__algorithm/unique.h>
+#include <cuda/std/__algorithm/unique_copy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -31,48 +35,27 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   OutputIterator output,
   BinaryPredicate binary_pred)
 {
-  using T = thrust::detail::it_value_t<InputIterator>;
-
-  if (first != last)
-  {
-    T prev = *first;
-
-    for (++first; first != last; ++first)
-    {
-      T temp = *first;
-
-      if (!binary_pred(prev, temp))
-      {
-        *output = prev;
-
-        ++output;
-
-        prev = temp;
-      }
-    }
-
-    *output = prev;
-    ++output;
-  }
-
-  return output;
+  // wrap binary_pred to handle proxy references
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
+  return ::cuda::std::unique_copy(first, last, output, wrapped_pred);
 } // end unique_copy()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator unique(
-  sequential::execution_policy<DerivedPolicy>& exec,
-  ForwardIterator first,
-  ForwardIterator last,
-  BinaryPredicate binary_pred)
+  sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
-  // sequential unique_copy permits in-situ operation
-  return sequential::unique_copy(exec, first, last, first, binary_pred);
+  // wrap binary_pred to handle proxy references
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
+  return ::cuda::std::unique(first, last, wrapped_pred);
 } // end unique()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
+  // wrap binary_pred to handle proxy references
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_pred{binary_pred};
+
   using T = thrust::detail::it_value_t<ForwardIterator>;
   thrust::detail::it_difference_t<ForwardIterator> count{};
 
@@ -85,7 +68,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
     {
       T temp = *first;
 
-      if (!binary_pred(prev, temp))
+      if (!wrapped_pred(prev, temp))
       {
         count++;
         prev = temp;
