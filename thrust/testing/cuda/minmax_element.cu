@@ -1,71 +1,77 @@
 #include <thrust/extrema.h>
 
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
+#include <cuda/stream>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator1, typename Iterator2>
-__global__ void minmax_element_kernel(ExecutionPolicy exec, Iterator1 first, Iterator1 last, Iterator2 result)
+struct minmax_element_kernel
 {
-  *result = thrust::minmax_element(exec, first, last);
-}
+  template <typename ExecutionPolicy, typename Input>
+  __device__ void operator()(
+    ExecutionPolicy exec, Input data, cuda::std::ptrdiff_t expected_first, cuda::std::ptrdiff_t expected_second) const
+  {
+    const auto result = thrust::minmax_element(exec, data.begin(), data.end());
+    TEST_ASSERT_DEVICE(result.first - data.begin() == expected_first);
+    TEST_ASSERT_DEVICE(result.second - data.begin() == expected_second);
+  }
+};
 
-template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename BinaryPredicate>
-__global__ void
-minmax_element_kernel(ExecutionPolicy exec, Iterator1 first, Iterator1 last, BinaryPredicate pred, Iterator2 result)
+struct minmax_element_pred_kernel
 {
-  *result = thrust::minmax_element(exec, first, last, pred);
-}
+  template <typename ExecutionPolicy, typename Input, typename BinaryPredicate>
+  __device__ void operator()(
+    ExecutionPolicy exec,
+    Input data,
+    BinaryPredicate pred,
+    cuda::std::ptrdiff_t expected_first,
+    cuda::std::ptrdiff_t expected_second) const
+  {
+    const auto result = thrust::minmax_element(exec, data.begin(), data.end(), pred);
+    TEST_ASSERT_DEVICE(result.first - data.begin() == expected_first);
+    TEST_ASSERT_DEVICE(result.second - data.begin() == expected_second);
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestMinMaxElementDevice(ExecutionPolicy exec)
 {
-  size_t n = 1000;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  thrust::host_vector<int> h_data   = unittest::random_samples<int>(n);
-  thrust::device_vector<int> d_data = h_data;
+  constexpr cuda::std::size_t n = 1000;
+  auto h_data                   = test_runtime::random_samples_buffer<int>(stream, n);
+  auto d_data                   = cuda::make_device_buffer<int>(stream, device, h_data);
 
-  typename thrust::host_vector<int>::iterator h_min;
-  typename thrust::host_vector<int>::iterator h_max;
-  typename thrust::device_vector<int>::iterator d_min;
-  typename thrust::device_vector<int>::iterator d_max;
+  const auto h_result = thrust::minmax_element(h_data.begin(), h_data.end());
 
-  using pair_type =
-    cuda::std::pair<typename thrust::device_vector<int>::iterator, typename thrust::device_vector<int>::iterator>;
+  cuda::launch(
+    stream,
+    test_runtime::single_thread_config(),
+    minmax_element_kernel{},
+    exec,
+    d_data,
+    h_result.first - h_data.begin(),
+    h_result.second - h_data.begin());
+  stream.sync();
 
-  thrust::device_vector<pair_type> d_result(1);
+  const auto h_greater_result = thrust::minmax_element(h_data.begin(), h_data.end(), ::cuda::std::greater<int>{});
 
-  h_min = thrust::minmax_element(h_data.begin(), h_data.end()).first;
-  h_max = thrust::minmax_element(h_data.begin(), h_data.end()).second;
-
-  d_min = thrust::minmax_element(d_data.begin(), d_data.end()).first;
-  d_max = thrust::minmax_element(d_data.begin(), d_data.end()).second;
-
-  minmax_element_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
-
-  d_min = ((pair_type) d_result[0]).first;
-  d_max = ((pair_type) d_result[0]).second;
-
-  ASSERT_EQUAL(h_min - h_data.begin(), d_min - d_data.begin());
-  ASSERT_EQUAL(h_max - h_data.begin(), d_max - d_data.begin());
-
-  h_max = thrust::minmax_element(h_data.begin(), h_data.end(), ::cuda::std::greater<int>()).first;
-  h_min = thrust::minmax_element(h_data.begin(), h_data.end(), ::cuda::std::greater<int>()).second;
-
-  minmax_element_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), ::cuda::std::greater<int>(), d_result.begin());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
-
-  d_max = ((pair_type) d_result[0]).first;
-  d_min = ((pair_type) d_result[0]).second;
-
-  ASSERT_EQUAL(h_min - h_data.begin(), d_min - d_data.begin());
-  ASSERT_EQUAL(h_max - h_data.begin(), d_max - d_data.begin());
+  cuda::launch(
+    stream,
+    test_runtime::single_thread_config(),
+    minmax_element_pred_kernel{},
+    exec,
+    d_data,
+    ::cuda::std::greater<int>{},
+    h_greater_result.first - h_data.begin(),
+    h_greater_result.second - h_data.begin());
+  stream.sync();
 }
 
 void TestMinMaxElementDeviceSeq()
@@ -83,44 +89,33 @@ DECLARE_UNITTEST(TestMinMaxElementDeviceDevice);
 
 void TestMinMaxElementCudaStreams()
 {
-  using Vector = thrust::device_vector<int>;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  auto data = cuda::make_device_buffer<int>(stream, device, {3, 5, 1, 2, 5, 1});
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
+  const auto result = thrust::minmax_element(thrust::cuda::par.on(stream.get()), data.begin(), data.end());
 
-  ASSERT_EQUAL(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first, 1);
-  ASSERT_EQUAL(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second, 5);
-  ASSERT_EQUAL(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first - data.begin(), 2);
-  ASSERT_EQUAL(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second - data.begin(), 1);
+  ASSERT_EQUAL(result.first - data.begin(), 2);
+  ASSERT_EQUAL(result.second - data.begin(), 1);
 
-  cudaStreamDestroy(s);
+  stream.sync();
 }
 DECLARE_UNITTEST(TestMinMaxElementCudaStreams);
 
 void TestMinMaxElementDevicePointer()
 {
-  using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  auto data = cuda::make_device_buffer<int>(stream, device, {3, 5, 1, 2, 5, 1});
 
-  T* raw_ptr = thrust::raw_pointer_cast(data.data());
-  size_t n   = data.size();
-  ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).first - raw_ptr, 2);
-  ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).second - raw_ptr, 1);
+  auto policy   = thrust::cuda::par.on(stream.get());
+  auto* raw_ptr = data.data();
+  const auto n  = data.size();
+  ASSERT_EQUAL(thrust::minmax_element(policy, raw_ptr, raw_ptr + n).first - raw_ptr, 2);
+  ASSERT_EQUAL(thrust::minmax_element(policy, raw_ptr, raw_ptr + n).second - raw_ptr, 1);
+
+  stream.sync();
 }
 DECLARE_UNITTEST(TestMinMaxElementDevicePointer);
