@@ -34,14 +34,12 @@ typedef struct cccl_device_reduce_build_result_t
   CUkernel single_tile_kernel;
   CUkernel single_tile_second_kernel;
   CUkernel reduction_kernel;
-  CUkernel nondeterministic_atomic_kernel;
   cccl_determinism_t determinism;
   void* runtime_policy;
   size_t runtime_policy_size;
   char* single_tile_kernel_lowered_name;
   char* single_tile_second_kernel_lowered_name;
   char* reduction_kernel_lowered_name;
-  char* nondeterministic_kernel_lowered_name;
 } cccl_device_reduce_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?

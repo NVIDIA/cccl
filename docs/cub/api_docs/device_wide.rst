@@ -110,6 +110,8 @@ CUB device-level segmented-problem (batched) parallel algorithms:
 * :cpp:struct:`cub::DeviceSegmentedSort` computes batched sort across non-overlapping sequences of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceSegmentedRadixSort` computes batched radix sort across non-overlapping sequences of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceSegmentedReduce` computes reductions across multiple sequences of data residing within device-accessible memory
+* :cpp:struct:`cub::DeviceSegmentedScan` computes prefix scans across multiple sequences of data residing within device-accessible memory
+* :cpp:struct:`cub::DeviceBatchedTopK` finds the largest (or smallest) K items from each of multiple unordered lists (segments) residing within device-accessible memory
 * :cpp:struct:`cub::DeviceCopy` provides device-wide, parallel operations for batched copying of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceMemcpy` provides device-wide, parallel operations for batched copying of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceFind` provides vectorized binary search algorithms

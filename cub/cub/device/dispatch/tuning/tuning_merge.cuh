@@ -29,18 +29,18 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::merge
+//! The tuning policy for all algorithms in @ref DeviceMerge.
+struct MergePolicy
 {
-struct merge_policy
-{
-  int threads_per_block;
-  int items_per_thread;
-  CacheLoadModifier load_modifier;
-  BlockStoreAlgorithm store_algorithm;
-  bool use_bulk_copy_for_keys;
-  bool use_bulk_copy_for_values;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
+  bool use_bulk_copy_for_keys; //!< Whether to use bulk copy (cp.async.bulk) for loading keys into shared memory
+  bool use_bulk_copy_for_values; //!< Whether to use bulk copy (cp.async.bulk) for loading values into shared memory
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const merge_policy& lhs, const merge_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm
@@ -48,16 +48,17 @@ struct merge_policy
         && lhs.use_bulk_copy_for_values == rhs.use_bulk_copy_for_values;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const merge_policy& lhs, const merge_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const merge_policy& p)
+  friend ::std::ostream& operator<<(::std::ostream& os, const MergePolicy& p)
   {
     return os
-        << "merge_policy { .threads_per_block = " << p.threads_per_block
+        << "MergePolicy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier
         << ", .store_algorithm = " << p.store_algorithm << ", .use_bulk_copy_for_keys = " << p.use_bulk_copy_for_keys
         << ", .use_bulk_copy_for_values = " << p.use_bulk_copy_for_values << " }";
@@ -65,9 +66,11 @@ struct merge_policy
 #endif // _CCCL_HOSTED()
 };
 
+namespace detail::merge
+{
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept merge_policy_selector = policy_selector<T, merge_policy>;
+concept merge_policy_selector = policy_selector<T, MergePolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
@@ -84,7 +87,7 @@ struct policy_selector
   bool value_iterator_value_types_are_the_same;
   int offset_size;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> MergePolicy
   {
     const int tune_type_size = key_size + value_size;
     const int ipt_800_plus   = nominal_4B_items_to_items(15, tune_type_size);
@@ -95,7 +98,7 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
-      return merge_policy{512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, can_bulk_keys, can_bulk_values};
+      return MergePolicy{512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, can_bulk_keys, can_bulk_values};
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})
@@ -107,7 +110,7 @@ struct policy_selector
             || (key_size == 16 && value_size == 8));
       // TODO(bgruber): consider not using a combined should_bl2sh flag. Kept to avoid SASS diffs
       const bool should_bl2sh = value_size == 0 ? should_bl2sh_keys : should_bl2sh_pairs;
-      return merge_policy{
+      return MergePolicy{
         512,
         ipt_800_plus,
         LOAD_DEFAULT,
@@ -123,7 +126,7 @@ struct policy_selector
         key_size == 1 || (key_size == 2 && value_size < 4) || (key_size == 4 && value_size == 1);
       // TODO(bgruber): consider not using a combined should_bl2sh flag. Kept to avoid SASS diffs
       const bool should_bl2sh = value_size == 0 ? should_bl2sh_keys : should_bl2sh_pairs;
-      return merge_policy{
+      return MergePolicy{
         512,
         ipt_800_plus,
         LOAD_DEFAULT,
@@ -135,12 +138,12 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{6, 0})
     {
       const int ipt_600 = nominal_4B_items_to_items(15, tune_type_size);
-      return merge_policy{512, ipt_600, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, false, false};
+      return MergePolicy{512, ipt_600, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, false, false};
     }
 
     // default is SM52
     const int ipt_520 = nominal_4B_items_to_items(13, tune_type_size);
-    return merge_policy{512, ipt_520, LOAD_LDG, BLOCK_STORE_WARP_TRANSPOSE, false, false};
+    return MergePolicy{512, ipt_520, LOAD_LDG, BLOCK_STORE_WARP_TRANSPOSE, false, false};
   }
 };
 
@@ -151,7 +154,7 @@ static_assert(merge_policy_selector<policy_selector>);
 template <typename KeysIt1, typename ItemsIt1, typename KeysIt2, typename ItemsIt2, typename OffsetT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> MergePolicy
   {
     using key_t  = it_value_t<KeysIt1>;
     using item_t = it_value_t<ItemsIt1>;

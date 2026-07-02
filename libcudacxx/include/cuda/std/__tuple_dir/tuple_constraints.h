@@ -266,27 +266,34 @@ __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tupl
   {
     return __select_constructor::__invalid;
   }
+  else if constexpr (sizeof...(_UTypes) == 1 && (is_same_v<remove_cvref_t<_UTypes>, tuple<_Types...>> && ...))
+  { // Avoid this shadowing the copy / move constructors
+    return __select_constructor::__invalid;
+  }
   else
-  {
-    using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
-    using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-    [[maybe_unused]] constexpr __select_constructor __variadic_trait =
-      ::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{});
-    [[maybe_unused]] constexpr __select_constructor __defaulted_trait =
-      ::cuda::std::__tuple_select_default_constructible(__defaulted_list{});
-    if constexpr (__variadic_trait == __select_constructor::__invalid
-                  || __variadic_trait == __select_constructor::__deleted)
-    {
-      return __select_constructor::__invalid;
-    }
-    else if constexpr (__defaulted_trait == __select_constructor::__invalid
-                       || __defaulted_trait == __select_constructor::__deleted)
+  { // MSVC has issues with constexpr variables here, so no `__can_construct<_Trait>` or constexpr variable
+    using __arg_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
+    if constexpr (::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
+                    == __select_constructor::__invalid
+                  || ::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
+                       == __select_constructor::__deleted)
     {
       return __select_constructor::__invalid;
     }
     else
     {
-      return __select_constructor::__explicit;
+      using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
+      if constexpr (::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
+                      == __select_constructor::__invalid
+                    || ::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
+                         == __select_constructor::__deleted)
+      {
+        return __select_constructor::__invalid;
+      }
+      else
+      {
+        return __select_constructor::__explicit;
+      }
     }
   }
   _CCCL_UNREACHABLE();
