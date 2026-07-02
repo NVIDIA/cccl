@@ -934,7 +934,7 @@ private:
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
             typename CompareOpT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t __arg_min(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -964,6 +964,39 @@ private:
           stream,
           tuning_env);
       });
+  }
+
+  template <typename InputIteratorT,
+            typename ExtremumOutIteratorT,
+            typename IndexOutIteratorT,
+            typename CompareOpT,
+            typename EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __arg_min(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    const EnvT& env)
+  {
+    static_assert(__validate_determinism_streaming_reduce<EnvT>(), "gpu_to_gpu determinism is not supported");
+
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+    using reduce_op_t         = detail::arg_reduce_op<CompareOpT>;
+
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+        storage,
+        bytes,
+        d_in,
+        d_min_out,
+        d_index_out,
+        static_cast<GlobalOffsetT>(num_items),
+        reduce_op_t{compare_op},
+        stream,
+        tuning_env);
+    });
   }
 
 public:
@@ -1117,40 +1150,6 @@ public:
     return ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
 
-private:
-  template <typename InputIteratorT,
-            typename ExtremumOutIteratorT,
-            typename IndexOutIteratorT,
-            typename CompareOpT,
-            typename EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __arg_min_env(
-    InputIteratorT d_in,
-    ExtremumOutIteratorT d_min_out,
-    IndexOutIteratorT d_index_out,
-    ::cuda::std::int64_t num_items,
-    CompareOpT compare_op,
-    const EnvT& env = {})
-  {
-    static_assert(__validate_determinism_streaming_reduce<EnvT>(), "gpu_to_gpu determinism is not supported");
-
-    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
-    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-    using reduce_op_t         = detail::arg_reduce_op<CompareOpT>;
-
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-        storage,
-        bytes,
-        d_in,
-        d_min_out,
-        d_index_out,
-        static_cast<GlobalOffsetT>(num_items),
-        reduce_op_t{compare_op},
-        stream,
-        tuning_env);
-    });
-  }
-
 public:
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
@@ -1232,7 +1231,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
-    return __arg_min_env(d_in, d_min_out, d_index_out, num_items, compare_op, env);
+    return __arg_min(d_in, d_min_out, d_index_out, num_items, compare_op, env);
   }
 
   //! @overload
@@ -1252,7 +1251,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
-    return __arg_min_env(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
+    return __arg_min(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
 
   //! @rst
@@ -1929,7 +1928,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::swap_args{compare_op}, env);
+    return __arg_min(d_in, d_max_out, d_index_out, num_items, detail::swap_args{compare_op}, env);
   }
 
   //! @overload
@@ -1949,7 +1948,7 @@ public:
          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, ::cuda::std::greater{}, env);
+    return __arg_min(d_in, d_max_out, d_index_out, num_items, ::cuda::std::greater{}, env);
   }
 
   //! @rst
