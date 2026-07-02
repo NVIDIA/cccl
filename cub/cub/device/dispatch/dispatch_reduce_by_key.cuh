@@ -210,7 +210,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
                 policy.load_algorithm,
                 policy.load_modifier,
                 policy.scan_algorithm,
-                delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+                delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>,
+                policy.load_prefetch>;
 
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
     AgentReduceByKeyPolicyT,
@@ -654,7 +655,8 @@ _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_get
                           policy.load_algorithm,
                           policy.load_modifier,
                           policy.scan_algorithm,
-                          delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+                          delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>,
+                          policy.load_prefetch>;
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
   return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,

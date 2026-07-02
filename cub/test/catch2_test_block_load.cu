@@ -22,11 +22,12 @@ template <int ItemsPerThread,
           int ThreadsInBlock,
           cub::BlockLoadAlgorithm LoadAlgorithm,
           typename InputIteratorT,
-          typename OutputIteratorT>
+          typename OutputIteratorT,
+          cub::detail::BlockLoadPrefetch Prefetch = cub::detail::BlockLoadPrefetch::none>
 __global__ void kernel(cuda::std::true_type, InputIteratorT input, OutputIteratorT output, int num_items)
 {
   using input_t      = cub::detail::it_value_t<InputIteratorT>;
-  using block_load_t = cub::BlockLoad<input_t, ThreadsInBlock, ItemsPerThread, LoadAlgorithm>;
+  using block_load_t = cub::BlockLoad<input_t, ThreadsInBlock, ItemsPerThread, LoadAlgorithm, 1, 1, Prefetch>;
   using storage_t    = typename block_load_t::TempStorage;
 
   __shared__ storage_t storage;
@@ -69,16 +70,21 @@ __global__ void kernel(cuda::std::false_type, InputIteratorT input, OutputIterat
   }
 }
 
-template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm, typename T, typename InputIteratorT>
+template <int ItemsPerThread,
+          int ThreadsInBlock,
+          cub::BlockLoadAlgorithm LoadAlgorithm,
+          typename T,
+          typename InputIteratorT,
+          cub::detail::BlockLoadPrefetch Prefetch = cub::detail::BlockLoadPrefetch::none>
 void test_block_load(const c2h::device_vector<T>& d_input, InputIteratorT input)
 {
-  using block_load_t = cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, LoadAlgorithm>;
+  using block_load_t = cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, LoadAlgorithm, 1, 1, Prefetch>;
   using storage_t    = typename block_load_t::TempStorage;
   constexpr auto sufficient_resources =
     cuda::std::bool_constant<sizeof(storage_t) <= cub::detail::max_smem_per_block>{};
 
   c2h::device_vector<T> d_output(d_input.size());
-  kernel<ItemsPerThread, ThreadsInBlock, LoadAlgorithm><<<1, ThreadsInBlock>>>(
+  kernel<ItemsPerThread, ThreadsInBlock, LoadAlgorithm, InputIteratorT, T*, Prefetch><<<1, ThreadsInBlock>>>(
     sufficient_resources, input, thrust::raw_pointer_cast(d_output.data()), static_cast<int>(d_input.size()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -110,6 +116,15 @@ using odd_load_algorithm =
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE>;
+using cache_load_modifier =
+  c2h::enum_type_list<cub::CacheLoadModifier,
+                      cub::CacheLoadModifier::LOAD_DEFAULT,
+                      cub::CacheLoadModifier::LOAD_CA,
+                      cub::CacheLoadModifier::LOAD_CG,
+                      cub::CacheLoadModifier::LOAD_CS,
+                      cub::CacheLoadModifier::LOAD_CV,
+                      cub::CacheLoadModifier::LOAD_LDG,
+                      cub::CacheLoadModifier::LOAD_VOLATILE>;
 
 template <class TestType>
 struct params_t
@@ -197,6 +212,26 @@ C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_t
     thrust::raw_pointer_cast(d_input.data()));
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, in);
 }
+
+// Guarded to compile in only one IPT unit — test uses hardcoded items_per_thread and does not exercise the IPT sweep
+// axis.
+#if IPT == 1
+C2H_TEST("Block load direct with L2 prefetch works with cache modified iterators", "[load][block]", cache_load_modifier)
+{
+  using type                                               = int;
+  constexpr int items_per_thread                           = 4;
+  constexpr int threads_in_block                           = 64;
+  constexpr int tile_size                                  = items_per_thread * threads_in_block;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm  = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT;
+  static constexpr cub::detail::BlockLoadPrefetch prefetch = cub::detail::BlockLoadPrefetch::l2;
+  static constexpr cub::CacheLoadModifier load_modifier    = c2h::get<0, TestType>::value;
+
+  c2h::device_vector<type> d_input(GENERATE_COPY(0, tile_size / 2, tile_size), thrust::no_init);
+  c2h::gen(C2H_SEED(10), d_input);
+  cub::CacheModifiedInputIterator<load_modifier, type> in(thrust::raw_pointer_cast(d_input.data()));
+  test_block_load<items_per_thread, threads_in_block, load_algorithm, type, decltype(in), prefetch>(d_input, in);
+}
+#endif // IPT == 1
 
 #if IPT == 1
 C2H_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
