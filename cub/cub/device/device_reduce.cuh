@@ -160,8 +160,8 @@ private:
     EnvT env)
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = ::cuda::std::
-      __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
+    using accum_t  = decltype(detail::reduce::template select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
+      static_cast<detail::use_default*>(nullptr)));
 
     if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
     {
