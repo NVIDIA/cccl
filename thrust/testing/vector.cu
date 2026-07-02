@@ -1023,3 +1023,43 @@ void TestVectorNoInitResize()
   // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
 }
 DECLARE_UNITTEST(TestVectorNoInitResize);
+
+void TestVectorDefaultInitCtorWithAlloc()
+{
+  // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
+  {
+    thrust::host_vector<int, std::allocator<int>> hv(10, thrust::default_init, std::allocator<int>{});
+    thrust::device_vector<int, thrust::device_allocator<int>> dv(10, thrust::default_init, thrust::device_allocator<int>{});
+  }
+
+  // non-trivially-constructible type: check that initialization was performed
+  {
+    thrust::host_vector<IntWithInit, std::allocator<IntWithInit>> hv(10, thrust::default_init, std::allocator<IntWithInit>{});
+    for (auto e : hv)
+    {
+      ASSERT_EQUAL(e.value, 42);
+    }
+
+    thrust::device_vector<IntWithInit, thrust::device_allocator<IntWithInit>> dv(10, thrust::default_init, thrust::device_allocator<IntWithInit>{});
+    for (auto e : dv)
+    {
+      ASSERT_EQUAL(static_cast<IntWithInit>(e).value, 42);
+    }
+  }
+}
+DECLARE_UNITTEST(TestVectorDefaultInitCtorWithAlloc);
+
+void TestVectorNoInitCtorWithAlloc()
+{
+  // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
+  {
+
+    thrust::host_vector<int, std::allocator<int>> hv(10, thrust::no_init, std::allocator<int>{});
+    thrust::device_vector<int, thrust::device_allocator<int>> dv(10, thrust::no_init, thrust::device_allocator<int>{});
+  }
+
+  // non-trivially-constructible type: those should fail to compile
+  // thrust::host_vector<IntWithInit, std::allocator<int>> hv(10, thrust::no_init, std::allocator<int>{});
+  // thrust::device_vector<IntWithInit, thrust::device_allocator<int>> dv(10, thrust::no_init, thrust::device_allocator<int>{});
+}
+DECLARE_UNITTEST(TestVectorNoInitCtorWithAlloc);
