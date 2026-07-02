@@ -986,13 +986,8 @@ cdef class exec_place_resources:
       ``ctx.finalize()``.
     """
     cdef stf_exec_place_resources_handle _h
-    # Owned registries are destroyed in __dealloc__; borrowed ones are
-    # released by the owning STF context when it is finalized.
-    cdef bint _owned
-
     def __cinit__(self, *, bint _borrow=False):
         self._h = NULL
-        self._owned = not _borrow
 
     def __init__(self, *, bint _borrow=False):
         if _borrow:
@@ -1004,12 +999,14 @@ cdef class exec_place_resources:
     @staticmethod
     cdef exec_place_resources _borrow_from(stf_exec_place_resources_handle h):
         cdef exec_place_resources r = exec_place_resources.__new__(exec_place_resources, _borrow=True)
-        r._owned = False
         r._h = h
         return r
 
     def __dealloc__(self):
-        if self._owned and self._h != NULL:
+        # Every handle returned by the C API must be destroyed. For
+        # ctx.place_resources this only releases the opaque handle wrapper; the
+        # context keeps owning the underlying stream pools.
+        if self._h != NULL:
             stf_exec_place_resources_destroy(self._h)
             self._h = NULL
 
