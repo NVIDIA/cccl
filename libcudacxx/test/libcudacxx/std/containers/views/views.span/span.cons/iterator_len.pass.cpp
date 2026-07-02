@@ -26,6 +26,10 @@ TEST_FUNC constexpr bool test_constructibility()
 {
   struct Other
   {};
+  struct Base
+  {};
+  struct Derived : Base
+  {};
   static_assert(cuda::std::is_constructible<cuda::std::span<int, Extent>, int*, size_t>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, const int*, size_t>::value);
   static_assert(cuda::std::is_constructible<cuda::std::span<const int, Extent>, int*, size_t>::value);
@@ -44,6 +48,8 @@ TEST_FUNC constexpr bool test_constructibility()
   static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, size_t, size_t>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, Other*, size_t>::value); // unrelated
                                                                                                     // iterator type
+  static_assert(!cuda::std::is_constructible<cuda::std::span<Base, Extent>, Derived*, size_t>::value);
+  static_assert(!cuda::std::is_constructible<cuda::std::span<const Base, Extent>, Derived*, size_t>::value);
 
   return true;
 }

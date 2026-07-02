@@ -49,10 +49,12 @@
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/array>
@@ -120,18 +122,38 @@ public:
   _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
   _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
 
+  _CCCL_TEMPLATE(class _Ptr)
+  _CCCL_REQUIRES(is_pointer_v<_Ptr> _CCCL_AND __span_array_convertible<remove_pointer_t<_Ptr>, element_type>)
+  _CCCL_API constexpr explicit span(_Ptr __first, [[maybe_unused]] size_type __count) noexcept
+      : __data_{__first}
+  {
+    _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (ptr, len)");
+  }
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _It)
-  _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
+  _CCCL_REQUIRES((!is_pointer_v<_It>) _CCCL_AND __span_compatible_iterator<_It, element_type>)
   _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] size_type __count)
       : __data_{::cuda::std::to_address(__first)}
   {
     _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (iterator, len)");
   }
 
+  _CCCL_TEMPLATE(class _It, class _End)
+  _CCCL_REQUIRES(
+    is_pointer_v<_It> _CCCL_AND is_pointer_v<_End> _CCCL_AND
+      __span_array_convertible<remove_pointer_t<_It>, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
+  _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] _End __last)
+      : __data_{__first}
+  {
+    _CCCL_ASSERT((__last - __first >= 0), "invalid range in span's constructor (ptr, ptr)");
+    _CCCL_ASSERT(__last - __first == _Extent, "invalid range in span's constructor (ptr, ptr): last - first != extent");
+  }
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _It, class _End)
-  _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
+  _CCCL_REQUIRES((!is_pointer_v<_It>) _CCCL_AND __span_compatible_iterator<_It, element_type> _CCCL_AND
+                   __span_compatible_sentinel_for<_End, _It>)
   _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] _End __last)
       : __data_{::cuda::std::to_address(__first)}
   {
@@ -379,17 +401,36 @@ public:
   _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
   _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
 
+  _CCCL_TEMPLATE(class _Ptr)
+  _CCCL_REQUIRES(is_pointer_v<_Ptr> _CCCL_AND __span_array_convertible<remove_pointer_t<_Ptr>, element_type>)
+  _CCCL_API constexpr span(_Ptr __first, size_type __count) noexcept
+      : __data_{__first}
+      , __size_{__count}
+  {}
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _It)
-  _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
+  _CCCL_REQUIRES((!is_pointer_v<_It>) _CCCL_AND __span_compatible_iterator<_It, element_type>)
   _CCCL_API constexpr span(_It __first, size_type __count)
       : __data_{::cuda::std::to_address(__first)}
       , __size_{__count}
   {}
 
+  _CCCL_TEMPLATE(class _It, class _End)
+  _CCCL_REQUIRES(
+    is_pointer_v<_It> _CCCL_AND is_pointer_v<_End> _CCCL_AND
+      __span_array_convertible<remove_pointer_t<_It>, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
+  _CCCL_API constexpr span(_It __first, _End __last)
+      : __data_(__first)
+      , __size_(__last - __first)
+  {
+    _CCCL_ASSERT(__last - __first >= 0, "invalid range in span's constructor (ptr, ptr)");
+  }
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _It, class _End)
-  _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
+  _CCCL_REQUIRES((!is_pointer_v<_It>) _CCCL_AND __span_compatible_iterator<_It, element_type> _CCCL_AND
+                   __span_compatible_sentinel_for<_End, _It>)
   _CCCL_API constexpr span(_It __first, _End __last)
       : __data_(::cuda::std::to_address(__first))
       , __size_(__last - __first)

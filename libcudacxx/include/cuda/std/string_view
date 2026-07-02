@@ -808,6 +808,14 @@ private:
       , __size_{__len}
   {}
 
+public:
+  [[nodiscard]] _CCCL_API static constexpr basic_string_view
+  __from_string_literal(const _CharT* __s, size_type __len) noexcept
+  {
+    return basic_string_view{__assume_valid{}, __s, __len};
+  }
+
+private:
   const value_type* __data_;
   size_type __size_;
 };
@@ -879,31 +887,31 @@ inline namespace string_view_literals
 {
 _CCCL_API constexpr basic_string_view<char> operator""sv(const char* __str, size_t __len) noexcept
 {
-  return basic_string_view<char>{__str, __len};
+  return basic_string_view<char>::__from_string_literal(__str, __len);
 }
 
 #if _CCCL_HAS_WCHAR_T()
 _CCCL_API constexpr basic_string_view<wchar_t> operator""sv(const wchar_t* __str, size_t __len) noexcept
 {
-  return basic_string_view<wchar_t>{__str, __len};
+  return basic_string_view<wchar_t>::__from_string_literal(__str, __len);
 }
 #endif // _CCCL_HAS_WCHAR_T()
 
 #if _CCCL_HAS_CHAR8_T()
 _CCCL_API constexpr basic_string_view<char8_t> operator""sv(const char8_t* __str, size_t __len) noexcept
 {
-  return basic_string_view<char8_t>{__str, __len};
+  return basic_string_view<char8_t>::__from_string_literal(__str, __len);
 }
 #endif // _CCCL_HAS_CHAR8_T()
 
 _CCCL_API constexpr basic_string_view<char16_t> operator""sv(const char16_t* __str, size_t __len) noexcept
 {
-  return basic_string_view<char16_t>{__str, __len};
+  return basic_string_view<char16_t>::__from_string_literal(__str, __len);
 }
 
 _CCCL_API constexpr basic_string_view<char32_t> operator""sv(const char32_t* __str, size_t __len) noexcept
 {
-  return basic_string_view<char32_t>{__str, __len};
+  return basic_string_view<char32_t>::__from_string_literal(__str, __len);
 }
 } // namespace string_view_literals
 } // namespace literals
