@@ -9,11 +9,17 @@ import numpy as np
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
+from .._aot import serde as _aot_serde
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
+
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde). The search
+# mode (lower/upper bound) is embedded in the sidecar so load_lower_bound /
+# load_upper_bound can reject a blob that was saved for the opposite mode.
+_ALGO_BINARY_SEARCH = 5
 
 
 class _BinarySearch:
@@ -25,6 +31,7 @@ class _BinarySearch:
         "op_cccl",
         "data_ptr",
         "out_ptr",
+        "mode",
     ]
 
     def __init__(
@@ -50,6 +57,7 @@ class _BinarySearch:
 
         self.data_ptr = protocols.get_data_pointer(d_data)
         self.out_ptr = protocols.get_data_pointer(d_out)
+        self.mode = mode
 
         self.d_data_cccl = cccl.to_cccl_input_iter(d_data)
         self.d_values_cccl = cccl.to_cccl_input_iter(d_values)
@@ -66,6 +74,63 @@ class _BinarySearch:
             self.d_out_cccl,
             self.op_cccl,
         )
+
+    @classmethod
+    def _deserialize(
+        cls,
+        blob: bytes,
+        expected_mode: "_bindings.BinarySearchMode | None" = None,
+    ) -> "_BinarySearch":
+        """Reconstruct a binary_search from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. ``expected_mode`` rejects a blob saved for the opposite mode.
+        """
+        r = _aot_serde.open(blob, _ALGO_BINARY_SEARCH)
+        mode = _bindings.BinarySearchMode(r.u8())
+        if expected_mode is not None and mode != expected_mode:
+            actual = (
+                "lower_bound"
+                if mode == _bindings.BinarySearchMode.LOWER_BOUND
+                else "upper_bound"
+            )
+            wanted = (
+                "lower_bound"
+                if expected_mode == _bindings.BinarySearchMode.LOWER_BOUND
+                else "upper_bound"
+            )
+            raise ValueError(
+                f"AoT blob mode mismatch: blob was saved as {actual!r}, "
+                f"but loaded through {wanted!r}."
+            )
+        obj = cls.__new__(cls)
+        obj.mode = mode
+        obj.d_data_cccl = _aot_serde.read_iterator(r)
+        obj.d_values_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_cccl = _aot_serde.read_iterator(r)
+        obj.op_cccl = _aot_serde.read_op(r)
+        # data_ptr/out_ptr are only used as cache keys at build time; a
+        # deserialized object is not cached, so leave them as sentinels.
+        obj.data_ptr = 0
+        obj.out_ptr = 0
+        obj.build_result = _bindings.DeviceBinarySearchBuildResult.deserialize(
+            r.remaining()
+        )
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a self-contained bytes blob for this built binary_search.
+
+        The blob encodes the search mode (lower_bound or upper_bound).
+        Use :func:`load_lower_bound` or :func:`load_upper_bound` to reconstruct.
+        """
+        w = _aot_serde.begin(_ALGO_BINARY_SEARCH)
+        w.u8(int(self.mode))
+        _aot_serde.write_iterator(w, self.d_data_cccl)
+        _aot_serde.write_iterator(w, self.d_values_cccl)
+        _aot_serde.write_iterator(w, self.d_out_cccl)
+        _aot_serde.write_op(w, self.op_cccl)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,
@@ -271,4 +336,38 @@ def upper_bound(
         d_out=d_out,
         comp=comp,
         stream=stream,
+    )
+
+
+def load_lower_bound(blob: bytes):
+    """Reconstruct a lower_bound searcher from a blob produced by ``searcher.serialize()``.
+
+    Takes only the blob — no objects required. Raises ``ValueError`` if the blob
+    was produced by an upper_bound searcher.
+
+    Args:
+        blob: Bytes blob produced by a lower_bound searcher's ``serialize()`` method.
+
+    Returns:
+        A callable lower_bound searcher.
+    """
+    return _BinarySearch._deserialize(
+        blob, expected_mode=_bindings.BinarySearchMode.LOWER_BOUND
+    )
+
+
+def load_upper_bound(blob: bytes):
+    """Reconstruct an upper_bound searcher from a blob produced by ``searcher.serialize()``.
+
+    Takes only the blob — no objects required. Raises ``ValueError`` if the blob
+    was produced by a lower_bound searcher.
+
+    Args:
+        blob: Bytes blob produced by an upper_bound searcher's ``serialize()`` method.
+
+    Returns:
+        A callable upper_bound searcher.
+    """
+    return _BinarySearch._deserialize(
+        blob, expected_mode=_bindings.BinarySearchMode.UPPER_BOUND
     )

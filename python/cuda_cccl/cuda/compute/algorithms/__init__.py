@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+from .._aot.dispatch import deserialize as deserialize
+from .._aot.dispatch import serialize as serialize
+from ._binary_search import load_lower_bound as load_lower_bound
+from ._binary_search import load_upper_bound as load_upper_bound
 from ._binary_search import lower_bound as lower_bound
 from ._binary_search import make_lower_bound as make_lower_bound
 from ._binary_search import make_upper_bound as make_upper_bound
@@ -37,11 +41,15 @@ from ._unique_by_key import make_unique_by_key as make_unique_by_key
 from ._unique_by_key import unique_by_key as unique_by_key
 
 __all__ = [
+    "serialize",
+    "deserialize",
     "reduce_into",
     "make_reduce_into",
     "lower_bound",
+    "load_lower_bound",
     "make_lower_bound",
     "upper_bound",
+    "load_upper_bound",
     "make_upper_bound",
     "inclusive_scan",
     "make_inclusive_scan",

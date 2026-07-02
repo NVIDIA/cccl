@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
+from ..._aot import serde as _aot_serde
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
 from ..._utils.protocols import (
@@ -17,6 +18,9 @@ from ..._utils.protocols import (
 from ..._utils.temp_storage_buffer import TempStorageBuffer
 from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
+
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
+_ALGO_RADIX_SORT = 7
 
 
 class _RadixSort:
@@ -52,7 +56,7 @@ class _RadixSort:
             operator_type=cccl.OpKind.STATELESS,
             ltoir=b"",
             state_alignment=1,
-            state=None,
+            state=b"",  # explicit empty bytes so the AoT serialize path is byte-safe
         )
         decomposer_return_type = "".encode("utf-8")
 
@@ -66,6 +70,35 @@ class _RadixSort:
             self.decomposer_op,
             decomposer_return_type,
         )
+
+    @classmethod
+    def deserialize(cls, blob: bytes) -> "_RadixSort":
+        """Reconstruct a radix_sort from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; all descriptors are rebuilt from the embedded
+        sidecar. No objects required.
+        """
+        r = _aot_serde.open(blob, _ALGO_RADIX_SORT)
+        obj = cls.__new__(cls)
+        obj.d_in_keys_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_keys_cccl = _aot_serde.read_iterator(r)
+        obj.d_in_values_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_values_cccl = _aot_serde.read_iterator(r)
+        obj.decomposer_op = _aot_serde.read_op(r)
+        obj.build_result = _bindings.DeviceRadixSortBuildResult.deserialize(
+            r.remaining()
+        )
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a self-contained bytes blob for this built radix_sort."""
+        w = _aot_serde.begin(_ALGO_RADIX_SORT)
+        _aot_serde.write_iterator(w, self.d_in_keys_cccl)
+        _aot_serde.write_iterator(w, self.d_out_keys_cccl)
+        _aot_serde.write_iterator(w, self.d_in_values_cccl)
+        _aot_serde.write_iterator(w, self.d_out_values_cccl)
+        _aot_serde.write_op(w, self.decomposer_op)
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

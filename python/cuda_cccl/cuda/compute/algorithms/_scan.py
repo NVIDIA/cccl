@@ -11,6 +11,7 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
+from .._aot import serde as _aot_serde
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
     call_build,
@@ -40,6 +41,10 @@ def get_init_kind(
             return _bindings.InitKind.VALUE_INIT
 
 
+# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
+_ALGO_SCAN = 2
+
+
 class _Scan:
     __slots__ = [
         "build_result",
@@ -49,6 +54,7 @@ class _Scan:
         "op_cccl",
         "device_scan_fn",
         "init_kind",
+        "force_inclusive",
     ]
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
@@ -86,6 +92,8 @@ class _Scan:
                 value_type = get_value_type(init_value_typed)
                 init_value_type_info = self.init_value_cccl.type
 
+        self.force_inclusive = force_inclusive
+
         # Compile the op with value types
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
@@ -99,6 +107,9 @@ class _Scan:
             self.init_kind,
         )
 
+        self._select_device_scan_fn(force_inclusive)
+
+    def _select_device_scan_fn(self, force_inclusive: bool) -> None:
         match (force_inclusive, self.init_kind):
             case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
                 self.device_scan_fn = self.build_result.compute_inclusive_future_value
@@ -113,6 +124,54 @@ class _Scan:
                 self.device_scan_fn = self.build_result.compute_exclusive
             case (False, _bindings.InitKind.NO_INIT):
                 raise ValueError("Exclusive scan with No init value is not supported")
+
+    @classmethod
+    def deserialize(cls, blob: bytes) -> "_Scan":
+        """Reconstruct a scan from a blob produced by :meth:`serialize`.
+
+        Takes only the blob; iterators, operator, and init value are rebuilt
+        from the embedded descriptor sidecar. No objects are required.
+        """
+        r = _aot_serde.open(blob, _ALGO_SCAN)
+        obj = cls.__new__(cls)
+        obj.init_kind = _bindings.InitKind(r.u8())
+        obj.force_inclusive = bool(r.u8())
+        obj.d_in_cccl = _aot_serde.read_iterator(r)
+        obj.d_out_cccl = _aot_serde.read_iterator(r)
+        obj.op_cccl = _aot_serde.read_op(r)
+        match obj.init_kind:
+            case _bindings.InitKind.NO_INIT:
+                obj.init_value_cccl = None
+            case _bindings.InitKind.FUTURE_VALUE_INIT:
+                obj.init_value_cccl = _aot_serde.read_iterator(r)
+            case _bindings.InitKind.VALUE_INIT:
+                obj.init_value_cccl = _aot_serde.read_value(r)
+        obj.build_result = _bindings.DeviceScanBuildResult.deserialize(r.remaining())
+        obj._select_device_scan_fn(obj.force_inclusive)
+        return obj
+
+    def serialize(self) -> bytes:
+        """Return a self-contained bytes blob for this built scan.
+
+        Embeds the iterator/op/init-value descriptors (no JIT on load) followed
+        by the compiled build_result. Reconstruct with :meth:`deserialize`.
+        """
+        w = _aot_serde.begin(_ALGO_SCAN)
+        w.u8(int(self.init_kind))
+        w.u8(1 if self.force_inclusive else 0)
+        _aot_serde.write_iterator(w, self.d_in_cccl)
+        _aot_serde.write_iterator(w, self.d_out_cccl)
+        _aot_serde.write_op(w, self.op_cccl)
+        match self.init_kind:
+            case _bindings.InitKind.NO_INIT:
+                pass
+            case _bindings.InitKind.FUTURE_VALUE_INIT:
+                _aot_serde.write_iterator(
+                    w, cast(_bindings.Iterator, self.init_value_cccl)
+                )
+            case _bindings.InitKind.VALUE_INIT:
+                _aot_serde.write_value(w, cast(_bindings.Value, self.init_value_cccl))
+        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,
