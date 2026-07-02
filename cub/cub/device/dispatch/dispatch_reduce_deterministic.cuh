@@ -21,7 +21,7 @@
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce_deterministic.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -42,6 +42,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rfa
 {
+using cuda::execution::determinism::__determinism_t;
+using reduce::policy_selector_from_types;
+using reduce::reduce_policy;
+
 template <typename Invocable, typename InputT>
 using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
 
@@ -97,7 +101,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
-  rfa_policy active_policy,
+  reduce_policy active_policy,
   KernelLauncherFactory launcher_factory)
 {
   // Return if the caller is simply requesting the size of the storage allocation
@@ -166,7 +170,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
-  rfa_policy active_policy,
+  reduce_policy active_policy,
   KernelLauncherFactory launcher_factory)
 {
   int sm_count;
@@ -323,9 +327,10 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename InitValueT,
-          typename TransformOpT          = ::cuda::std::identity,
-          typename AccumT                = accum_t<InitValueT, InputIteratorT, TransformOpT>,
-          typename PolicySelector        = policy_selector_from_types<AccumT>,
+          typename TransformOpT = ::cuda::std::identity,
+          typename AccumT       = accum_t<InitValueT, InputIteratorT, TransformOpT>,
+          typename PolicySelector =
+            policy_selector_from_types<AccumT, OffsetT, deterministic_sum_t<AccumT>, __determinism_t::__gpu_to_gpu>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
@@ -346,7 +351,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const rfa_policy active_policy = policy_selector(cc);
+  const reduce_policy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
