@@ -67,7 +67,8 @@ template <class _Result, class _Lhs, class _Rhs>
   using ::cuda::std::is_signed_v;
 
   // Floor __max_nbits to sizeof(unsigned int); anything smaller is automatically
-  // promoted to (signed) int, even if the original type was explicitly unsigned
+  // promoted to (signed) int, even if the original type was explicitly unsigned,
+  // which can result in UB from multiplication overflow
   constexpr auto __max_nbits =
     ::cuda::std::max({__num_bits_v<_Lhs>, __num_bits_v<_Rhs>, __num_bits_v<_Result>, __num_bits_v<unsigned int>});
   using _UPromoted             = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
