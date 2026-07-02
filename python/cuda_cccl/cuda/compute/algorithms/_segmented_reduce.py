@@ -11,7 +11,7 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_result, cache_with_registered_key_functions
 from .._cccl_interop import (
     call_build,
     get_value_type,
@@ -58,14 +58,23 @@ class _SegmentedReduce:
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self.build_result = call_build(
+        self.build_result = cache_build_result(
             _bindings.DeviceSegmentedReduceBuildResult,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
-            self.op_cccl,
-            self.h_init_cccl,
+            d_in,
+            d_out,
+            start_offsets_in,
+            end_offsets_in,
+            op,
+            h_init,
+            builder=lambda: call_build(
+                _bindings.DeviceSegmentedReduceBuildResult,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.start_offsets_in_cccl,
+                self.end_offsets_in_cccl,
+                self.op_cccl,
+                self.h_init_cccl,
+            ),
         )
 
     def __call__(

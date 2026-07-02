@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_result, cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
 from .._utils import protocols
 from ..op import OpAdapter, make_op_adapter
@@ -33,11 +33,17 @@ class _UnaryTransform:
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in_type,), out_type)
 
-        self.build_result = cccl.call_build(
+        self.build_result = cache_build_result(
             _bindings.DeviceUnaryTransform,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.op_cccl,
+            d_in,
+            d_out,
+            op,
+            builder=lambda: cccl.call_build(
+                _bindings.DeviceUnaryTransform,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.op_cccl,
+            ),
         )
 
     def __call__(
@@ -92,12 +98,19 @@ class _BinaryTransform:
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in1_type, in2_type), out_type)
 
-        self.build_result = cccl.call_build(
+        self.build_result = cache_build_result(
             _bindings.DeviceBinaryTransform,
-            self.d_in1_cccl,
-            self.d_in2_cccl,
-            self.d_out_cccl,
-            self.op_cccl,
+            d_in1,
+            d_in2,
+            d_out,
+            op,
+            builder=lambda: cccl.call_build(
+                _bindings.DeviceBinaryTransform,
+                self.d_in1_cccl,
+                self.d_in2_cccl,
+                self.d_out_cccl,
+                self.op_cccl,
+            ),
         )
 
     def __call__(

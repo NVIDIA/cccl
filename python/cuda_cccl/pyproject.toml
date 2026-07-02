@@ -6,7 +6,7 @@
 # cmake>=3.30 is needed for FindCUDAToolkit's CUDA::nvfatbin /
 # CUDA::nvfatbin_static imported targets, which the v2 (HostJIT) backend links
 # against. Listed here so isolated builds (pip's default) pick it up.
-requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython", "cmake>=3.30"]
+requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython>=3.1.0", "cmake>=3.30"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -181,4 +181,5 @@ markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
   "no_numba: tests that should not import numba or numba.cuda",
+  "free_threading: tests requiring free-threaded CPython with the GIL disabled",
 ]

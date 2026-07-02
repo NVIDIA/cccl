@@ -55,6 +55,7 @@ LLD_HAS_DRIVER(elf)
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <vector>
 
@@ -63,26 +64,21 @@ LLD_HAS_DRIVER(elf)
 
 namespace hostjit
 {
-static bool llvm_initialized = false;
+static std::once_flag llvm_init_flag;
 
 static void initialize_llvm()
 {
-  if (llvm_initialized)
-  {
-    return;
-  }
-
-  LLVMInitializeX86TargetInfo();
-  LLVMInitializeX86Target();
-  LLVMInitializeX86TargetMC();
-  LLVMInitializeX86AsmPrinter();
-  LLVMInitializeX86AsmParser();
-  LLVMInitializeNVPTXTargetInfo();
-  LLVMInitializeNVPTXTarget();
-  LLVMInitializeNVPTXTargetMC();
-  LLVMInitializeNVPTXAsmPrinter();
-
-  llvm_initialized = true;
+  std::call_once(llvm_init_flag, [] {
+    LLVMInitializeX86TargetInfo();
+    LLVMInitializeX86Target();
+    LLVMInitializeX86TargetMC();
+    LLVMInitializeX86AsmPrinter();
+    LLVMInitializeX86AsmParser();
+    LLVMInitializeNVPTXTargetInfo();
+    LLVMInitializeNVPTXTarget();
+    LLVMInitializeNVPTXTargetMC();
+    LLVMInitializeNVPTXAsmPrinter();
+  });
 }
 
 #ifdef _WIN32

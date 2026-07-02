@@ -6,15 +6,14 @@
 from __future__ import annotations
 
 import functools
+import threading
 import types
+import weakref
 from typing import Any, Callable, Hashable
 
 import numpy as np
 
-try:
-    from cuda.core import Device
-except ImportError:
-    from cuda.core.experimental import Device
+from cuda.core import Device
 
 from ._utils.protocols import get_dtype, get_shape, is_device_array
 from .struct import _Struct
@@ -89,8 +88,139 @@ def _make_cache_key_from_args(*args, **kwargs) -> tuple:
     return positional_keys
 
 
-# Central registry of all algorithm caches
-_cache_registry: dict[str, object] = {}
+# Process-wide registry of all algorithm caches.
+_process_wide_cache_registry: dict[str, object] = {}
+
+
+class _ThreadLocalCaches:
+    """
+    Container for wrapper caches owned by a single Python thread.
+
+    Each thread gets its own instance via ``threading.local()``. We use
+    ``__weakref__`` to enable the process-wide registry of caches to hold weak
+    references to the thread's caches. That way, if a thread exits, its caches
+    will be garbage collected and removed from the registry even if the
+    process-wide registry still references them.
+    """
+
+    __slots__ = ("wrapper_caches", "__weakref__")
+
+    def __init__(self) -> None:
+        # Outer key: decorated algorithm factory name. Inner key: current thread
+        # id, current CUDA runtime device ordinal, compute capability, and
+        # specialization key derived from factory arguments.
+        self.wrapper_caches: dict[str, dict[Hashable, Any]] = {}
+
+
+class _InFlightBuild:
+    """
+    Coordination state for one shared build-result currently being built.
+
+    The first thread for a cache key runs the builder. Other threads wait on
+    ``event`` and receive either the completed build result or the builder's
+    exception.
+    """
+
+    def __init__(self) -> None:
+        self.event = threading.Event()
+        self.result: Any = None
+        self.exception: BaseException | None = None
+
+
+_thread_local = threading.local()
+# Process wide registry of per-thread caches. It enables a thread to call
+# clear_all_caches() to clear all caches across all threads.
+_process_wide_thread_cache_registry: weakref.WeakSet[_ThreadLocalCaches] = (
+    weakref.WeakSet()
+)
+_process_wide_thread_cache_registry_lock = threading.Lock()
+
+# Values are either completed build results or temporary _InFlightBuild entries.
+_process_wide_shared_build_cache: dict[Hashable, Any] = {}
+_CACHE_MISS = object()
+
+
+def _get_current_device_info() -> tuple[int, tuple[int, int]]:
+    device = Device()
+    cc = device.compute_capability
+    return device.device_id, (cc.major, cc.minor)
+
+
+def _get_thread_caches() -> _ThreadLocalCaches:
+    caches = getattr(_thread_local, "caches", None)
+    if caches is None:
+        caches = _ThreadLocalCaches()
+        _thread_local.caches = caches
+        with _process_wide_thread_cache_registry_lock:
+            _process_wide_thread_cache_registry.add(caches)
+    return caches
+
+
+def _clear_wrapper_caches(cache_name: str | None = None) -> None:
+    with _process_wide_thread_cache_registry_lock:
+        thread_caches = list(_process_wide_thread_cache_registry)
+
+    for caches in thread_caches:
+        if cache_name is None:
+            caches.wrapper_caches.clear()
+        else:
+            caches.wrapper_caches.pop(cache_name, None)
+
+
+def cache_build_result(
+    build_result_type: type,
+    *key_args,
+    builder: Callable[[], Any],
+) -> Any:
+    """
+    Cache a shared Cython build-result object for the current CUDA device.
+
+    The key intentionally excludes the current Python thread. Wrappers are
+    cached per thread, but build results are shared across threads for the same
+    device ordinal and specialization key.
+
+    Args:
+        build_result_type: Cython build-result type. This separates different
+            build-result caches that may otherwise have identical specialization
+            keys.
+        *key_args: Positional values used to form the specialization part of
+            the cache key.
+        builder: Callable that creates the build result on a cache miss.
+            Exactly one thread runs this callable for a given key while other
+            threads wait for the result.
+
+    Returns:
+        The cached or newly built Cython build-result object.
+    """
+    device_id, cc_key = _get_current_device_info()
+    user_cache_key = _make_cache_key_from_args(*key_args)
+    cache_key = (build_result_type, device_id, cc_key, user_cache_key)
+
+    cache_entry = _process_wide_shared_build_cache.get(cache_key, _CACHE_MISS)
+    if cache_entry is _CACHE_MISS:
+        in_flight = _InFlightBuild()
+        # setdefault elects one builder without an explicit lock on cache hits.
+        cache_entry = _process_wide_shared_build_cache.setdefault(cache_key, in_flight)
+        if cache_entry is in_flight:
+            try:
+                result = builder()
+                in_flight.result = result
+                _process_wide_shared_build_cache[cache_key] = result
+            except BaseException as exc:
+                in_flight.exception = exc
+                _process_wide_shared_build_cache.pop(cache_key, None)
+                raise
+            finally:
+                in_flight.event.set()
+            return result
+
+    if isinstance(cache_entry, _InFlightBuild):
+        cache_entry.event.wait()
+        if cache_entry.exception is not None:
+            raise cache_entry.exception
+        return cache_entry.result
+
+    return cache_entry
 
 
 class _CacheWithRegisteredKeyFunctions:
@@ -113,22 +243,24 @@ class _CacheWithRegisteredKeyFunctions:
         The CUDA compute capability of the current device is appended to
         the cache key.
         """
-        cache: dict = {}
+        cache_name = func.__qualname__
 
         @functools.wraps(func)
         def inner(*args, **kwargs):
-            cc = Device().compute_capability
+            device_id, cc_key = _get_current_device_info()
             user_cache_key = _make_cache_key_from_args(*args, **kwargs)
-            cache_key = (user_cache_key, tuple(cc))
+            cache_key = (threading.get_ident(), device_id, cc_key, user_cache_key)
+            thread_caches = _get_thread_caches()
+            cache = thread_caches.wrapper_caches.setdefault(cache_name, {})
             if cache_key not in cache:
                 result = func(*args, **kwargs)
                 cache[cache_key] = result
             return cache[cache_key]
 
-        inner.cache_clear = cache.clear  # type: ignore[attr-defined]
+        inner.cache_clear = lambda: _clear_wrapper_caches(cache_name)  # type: ignore[attr-defined]
 
         # Register the cache in the central registry
-        _cache_registry[func.__qualname__] = inner
+        _process_wide_cache_registry[func.__qualname__] = inner
 
         return inner
 
@@ -175,17 +307,23 @@ def clear_all_caches():
     """
     Clear all algorithm caches.
 
-    This function clears all cached algorithm build results, forcing
-    recompilation on the next invocation. Useful for benchmarking
-    compilation time.
+    This function clears cached algorithm wrappers and completed build results
+    in the current process, forcing recompilation on the next invocation.
+    Useful for benchmarking compilation time.
+
+    This function is not synchronized with active factory calls or algorithm
+    execution. Callers that use it in a multi-threaded program must externally
+    synchronize with all threads that may create or use cuda.compute algorithm
+    objects. If a build is already in progress, that build may complete after
+    this function returns and repopulate the completed build-result cache.
 
     Example
     -------
     >>> import cuda.compute
     >>> cuda.compute.clear_all_caches()
     """
-    for cached_func in _cache_registry.values():
-        cached_func.cache_clear()
+    _clear_wrapper_caches()
+    _process_wide_shared_build_cache.clear()
 
 
 class CachableFunction:

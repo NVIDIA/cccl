@@ -127,6 +127,9 @@ struct transform_kernel_source
   cub::detail::transform::cuda_expected<cub::detail::transform::async_config>
   CacheAsyncConfiguration(const ActionT& action)
   {
+#if defined(CCCL_PYTHON_FREE_THREADED)
+    return action();
+#else // defined(CCCL_PYTHON_FREE_THREADED)
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
     if (cache == nullptr)
     {
@@ -137,12 +140,16 @@ struct transform_kernel_source
       cache->async_config = action();
     }
     return *cache->async_config;
+#endif // defined(CCCL_PYTHON_FREE_THREADED)
   }
 
   template <class ActionT>
   cub::detail::transform::cuda_expected<cub::detail::transform::prefetch_config>
   CachePrefetchConfiguration(const ActionT& action)
   {
+#if defined(CCCL_PYTHON_FREE_THREADED)
+    return action();
+#else // defined(CCCL_PYTHON_FREE_THREADED)
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
     if (cache == nullptr)
     {
@@ -153,6 +160,7 @@ struct transform_kernel_source
       cache->prefetch_config = action();
     }
     return *cache->prefetch_config;
+#endif // defined(CCCL_PYTHON_FREE_THREADED)
   }
 
   CUkernel TransformKernel() const
@@ -348,7 +356,9 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
     return CUDA_ERROR_OUT_OF_MEMORY;
   }
   std::memcpy(runtime_policy.get(), &policy_sel, sizeof(policy_sel));
-  auto cache_obj        = std::make_unique<transform::cache>();
+#if !defined(CCCL_PYTHON_FREE_THREADED)
+  auto cache_obj = std::make_unique<transform::cache>();
+#endif // !defined(CCCL_PYTHON_FREE_THREADED)
   auto kernel_name_copy = std::unique_ptr<char[]>(duplicate_c_string(kernel_lowered_name));
 
   build_ptr->loaded_bytes_per_iteration = static_cast<int>(input_it.value_type.size);
@@ -374,7 +384,11 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
 
-  build_ptr->cache                         = cache_obj.release();
+#if defined(CCCL_PYTHON_FREE_THREADED)
+  build_ptr->cache = nullptr;
+#else // defined(CCCL_PYTHON_FREE_THREADED)
+  build_ptr->cache = cache_obj.release();
+#endif // defined(CCCL_PYTHON_FREE_THREADED)
   build_ptr->transform_kernel_lowered_name = kernel_name_copy.release();
   build_ptr->runtime_policy                = runtime_policy.release();
   build_ptr->runtime_policy_size           = sizeof(policy_sel);
@@ -644,7 +658,9 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
     return CUDA_ERROR_OUT_OF_MEMORY;
   }
   std::memcpy(runtime_policy.get(), &policy_sel, sizeof(policy_sel));
-  auto cache_obj        = std::make_unique<transform::cache>();
+#if !defined(CCCL_PYTHON_FREE_THREADED)
+  auto cache_obj = std::make_unique<transform::cache>();
+#endif // !defined(CCCL_PYTHON_FREE_THREADED)
   auto kernel_name_copy = std::unique_ptr<char[]>(duplicate_c_string(kernel_lowered_name));
 
   build_ptr->loaded_bytes_per_iteration = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
@@ -670,7 +686,11 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
     build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
 
-  build_ptr->cache                         = cache_obj.release();
+#if defined(CCCL_PYTHON_FREE_THREADED)
+  build_ptr->cache = nullptr;
+#else // defined(CCCL_PYTHON_FREE_THREADED)
+  build_ptr->cache = cache_obj.release();
+#endif // defined(CCCL_PYTHON_FREE_THREADED)
   build_ptr->transform_kernel_lowered_name = kernel_name_copy.release();
   build_ptr->runtime_policy                = runtime_policy.release();
   build_ptr->runtime_policy_size           = sizeof(policy_sel);

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from ... import _bindings, types
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_registered_key_functions
+from ..._caching import cache_build_result, cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
 from ..._utils.protocols import (
     get_data_pointer,
@@ -52,13 +52,21 @@ class _MergeSort:
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.int8)
 
-        self.build_result = call_build(
+        self.build_result = cache_build_result(
             _bindings.DeviceMergeSortBuildResult,
-            self.d_in_keys_cccl,
-            self.d_in_values_cccl,
-            self.d_out_keys_cccl,
-            self.d_out_values_cccl,
-            self.op_cccl,
+            d_in_keys,
+            d_in_values,
+            d_out_keys,
+            d_out_values,
+            op,
+            builder=lambda: call_build(
+                _bindings.DeviceMergeSortBuildResult,
+                self.d_in_keys_cccl,
+                self.d_in_values_cccl,
+                self.d_out_keys_cccl,
+                self.d_out_values_cccl,
+                self.op_cccl,
+            ),
         )
 
     def __call__(

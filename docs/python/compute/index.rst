@@ -250,10 +250,14 @@ When working with structured data, there are two common memory layouts:
 Caching
 -------
 
-Algorithms in ``cuda.compute`` are compiled to GPU code at runtime. To avoid
-recompiling on every call, build results are cached in memory. When you invoke
-an algorithm with the same configuration—same dtypes, iterator kinds, operator,
-and compute capability—the cached build is reused.
+Algorithms in ``cuda.compute`` are compiled to GPU code at runtime. To
+avoid recompiling on every call, build results are cached in memory.
+When you invoke an algorithm with the same configuration—same dtypes,
+iterator kinds, operator, compute capability, and current device—the
+cached build is reused. On systems with multiple GPUs, builds may be
+cached separately for each GPU. When free-threaded Python is enabled,
+compiled build results may be reused by multiple threads in the same
+process.
 
 What determines the cache key
 +++++++++++++++++++++++++++++
@@ -265,11 +269,60 @@ Each algorithm computes a cache key from:
 * **Operator identity** — for user-defined functions, the function's bytecode,
   constants, and closure contents (see below)
 * **Compute capability** — the GPU architecture of the current device
+* **Current device** — the CUDA device active when the algorithm is built
 * **Algorithm-specific parameters** — such as initial value dtype or determinism mode
 
 Note that array *contents* or *pointers* are not part of the cache key—only
 the array's dtype. This means you can reuse a cached algorithm across different
 arrays of the same type.
+
+Multi-GPU behavior
+++++++++++++++++++
+
+Cached builds are device-specific. If the same algorithm configuration is used
+on multiple GPUs, ``cuda.compute`` may compile and cache a separate build for
+each device. Set the intended current CUDA device before constructing or invoking
+an algorithm, and pass arrays that are valid on that device.
+
+Free-threaded Python
+++++++++++++++++++++
+
+.. important::
+
+   Free-threaded Python support is currently validated on Linux with the
+   ``minimal-cu12`` and ``minimal-cu13`` extras, which do not install Numba or
+   Numba CUDA:
+
+   .. code-block:: bash
+
+      pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
+
+   The full ``cu12`` and ``cu13`` extras, ``cuda.coop._experimental``, and
+   Python-callable operators that require Numba CUDA are not currently
+   supported in free-threaded Python. Use built-in
+   :class:`OpKind <cuda.compute.op.OpKind>` operations or externally compiled
+   :class:`RawOp <cuda.compute.op.RawOp>` operations with the minimal
+   installation.
+
+When ``cuda.compute`` is built for a free-threaded Python interpreter,
+independent calls from multiple Python threads can reuse compiled build results
+within the same process.
+
+The cache is local to the current Python process. Separate Python processes build
+and cache independently, even if they use the same GPU and algorithm
+configuration.
+
+This does not make user-provided memory or CUDA work automatically safe to share.
+Users are still responsible for avoiding data races, such as two threads writing
+to the same output array at the same time. Read-only iterator and operator
+objects may be shared across threads, but concurrent mutation of those objects,
+captured state, or underlying arrays requires external synchronization. For
+concurrent use, prefer the direct
+algorithm APIs, such as
+:func:`reduce_into <cuda.compute.algorithms.reduce_into>`, or create a separate
+reusable algorithm object in each thread (for example, the object returned by
+:func:`make_reduce_into <cuda.compute.algorithms.make_reduce_into>`). If multiple
+threads share one of these objects, serialize access to that object.
 
 How user-defined functions are cached
 +++++++++++++++++++++++++++++++++++++

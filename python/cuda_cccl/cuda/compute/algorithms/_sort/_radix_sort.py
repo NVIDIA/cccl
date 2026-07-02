@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_registered_key_functions
+from ..._caching import cache_build_result, cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
 from ..._utils.protocols import (
     get_data_pointer,
@@ -56,15 +56,26 @@ class _RadixSort:
         )
         decomposer_return_type = "".encode("utf-8")
 
-        self.build_result = call_build(
-            _bindings.DeviceRadixSortBuildResult,
+        build_order = (
             _bindings.SortOrder.ASCENDING
             if order is SortOrder.ASCENDING
-            else _bindings.SortOrder.DESCENDING,
-            self.d_in_keys_cccl,
-            self.d_in_values_cccl,
-            self.decomposer_op,
-            decomposer_return_type,
+            else _bindings.SortOrder.DESCENDING
+        )
+        self.build_result = cache_build_result(
+            _bindings.DeviceRadixSortBuildResult,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            order,
+            builder=lambda: call_build(
+                _bindings.DeviceRadixSortBuildResult,
+                build_order,
+                self.d_in_keys_cccl,
+                self.d_in_values_cccl,
+                self.decomposer_op,
+                decomposer_return_type,
+            ),
         )
 
     def __call__(

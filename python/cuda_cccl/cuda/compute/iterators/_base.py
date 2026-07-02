@@ -9,6 +9,7 @@ Base classes for iterators.
 from __future__ import annotations
 
 import hashlib
+import threading
 from typing import Hashable
 
 from .._bindings import Iterator, IteratorKind, IteratorState, Op
@@ -51,9 +52,13 @@ class IteratorBase:
         "_state_alignment",
         "_value_type",
         "_advance_op",
+        "_advance_built",
         "_input_deref_op",
+        "_input_deref_built",
         "_output_deref_op",
+        "_output_deref_built",
         "_uid_cached",
+        "_op_lock",
     ]
 
     def __init__(
@@ -72,9 +77,17 @@ class IteratorBase:
         self._state_alignment = state_alignment
         self._value_type = value_type
         self._advance_op: Op | None = None
+        self._advance_built = False
         self._input_deref_op: Op | None = None
+        self._input_deref_built = False
         self._output_deref_op: Op | None = None
+        self._output_deref_built = False
         self._uid_cached: str | None = None
+        # Free-threaded Python can let multiple threads share a read-only
+        # iterator object and race during the first lazy Op construction.
+        # The lock only protects that cache miss path; cached access stays
+        # lock-free and iterator mutation remains the caller's responsibility.
+        self._op_lock = threading.Lock()
 
     @property
     def state(self) -> IteratorState:
@@ -116,20 +129,30 @@ class IteratorBase:
 
     def get_advance_op(self) -> Op:
         """Get the cached Op for the advance operation."""
-        if self._advance_op is None:
-            self._advance_op = self._make_advance_op()
+        if not self._advance_built:
+            with self._op_lock:
+                if not self._advance_built:
+                    self._advance_op = self._make_advance_op()
+                    self._advance_built = True
+        assert self._advance_op is not None
         return self._advance_op
 
     def get_input_deref_op(self) -> Op | None:
         """Get the cached Op for input dereference operation, or None if not supported."""
-        if self._input_deref_op is None:
-            self._input_deref_op = self._make_input_deref_op()
+        if not self._input_deref_built:
+            with self._op_lock:
+                if not self._input_deref_built:
+                    self._input_deref_op = self._make_input_deref_op()
+                    self._input_deref_built = True
         return self._input_deref_op
 
     def get_output_deref_op(self) -> Op | None:
         """Get the cached Op for output dereference operation, or None if not supported."""
-        if self._output_deref_op is None:
-            self._output_deref_op = self._make_output_deref_op()
+        if not self._output_deref_built:
+            with self._op_lock:
+                if not self._output_deref_built:
+                    self._output_deref_op = self._make_output_deref_op()
+                    self._output_deref_built = True
         return self._output_deref_op
 
     @property
