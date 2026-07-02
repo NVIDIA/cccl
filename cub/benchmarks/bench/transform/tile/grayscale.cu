@@ -14,8 +14,9 @@
 
 struct rgb_to_y
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class R, class G, class B>
-  __host__ __device__ auto operator()(R r, G g, B b) const
+  __host__ __device__ _CCCL_TILE auto operator()(R r, G g, B b) const
   {
     constexpr float w_r = 0.2989f;
     constexpr float w_g = 0.587f;
@@ -25,18 +26,6 @@ struct rgb_to_y
 };
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
-struct tile_rgb_to_y
-{
-  template <class R, class G, class B>
-  __tile__ auto operator()(R r, G g, B b) const
-  {
-    constexpr float w_r = 0.2989f;
-    constexpr float w_g = 0.587f;
-    constexpr float w_b = 0.114f;
-    return w_r * r + w_g * g + w_b * b;
-  }
-};
-
 CUB_NAMESPACE_BEGIN
 namespace transform
 {
@@ -45,7 +34,7 @@ inline constexpr bool tile_eligible_v<rgb_to_y, T, 3> = true;
 template <>
 struct tile_operator<rgb_to_y>
 {
-  using type = tile_rgb_to_y;
+  using type = rgb_to_y;
 };
 } // namespace transform
 CUB_NAMESPACE_END

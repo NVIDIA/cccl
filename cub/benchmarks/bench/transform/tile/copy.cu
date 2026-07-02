@@ -15,23 +15,15 @@
 
 struct identity
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class T>
-  __host__ __device__ auto operator()(T v) const
+  __host__ __device__ _CCCL_TILE auto operator()(T v) const
   {
     return v;
   }
 };
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
-struct tile_identity
-{
-  template <class T>
-  __tile__ auto operator()(T v) const
-  {
-    return v;
-  }
-};
-
 CUB_NAMESPACE_BEGIN
 namespace transform
 {
@@ -40,7 +32,7 @@ inline constexpr bool tile_eligible_v<identity, T, 1> = true;
 template <>
 struct tile_operator<identity>
 {
-  using type = tile_identity;
+  using type = identity;
 };
 } // namespace transform
 CUB_NAMESPACE_END

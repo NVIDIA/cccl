@@ -21,10 +21,6 @@
 // Eligibility ("may this combo use the tile path?") and substitution ("which
 // __tile__ functor do we actually run?") are separate traits, so an eligible op
 // always registers both: tile_eligible_v<Op,T,NIn> and tile_operator<Op>.
-//
-// INTERNAL (cub::detail::transform::tile):
-//   tile_plus, tile_multiplies   -- shipped tile-friendly substitutes used by
-//                                    the built-in specializations below.
 
 #pragma once
 
@@ -78,36 +74,11 @@ template <typename Op>
 inline constexpr bool tile_mufu_heavy_v = false;
 } // namespace transform
 
-// Internal substitutes shipped by CCCL.
-namespace detail::transform::tile
-{
-// Tile-friendly mirrors of common cuda::std ops. Each has a __tile__
-// templated operator() so it can be invoked from inside transform_kernel
-// where the arguments are ct::tile<T, ...> rather than scalar T.
-struct tile_plus
-{
-  template <class A, class B>
-  __tile__ auto operator()(A a, B b) const
-  {
-    return a + b;
-  }
-};
-
-struct tile_multiplies
-{
-  template <class A, class B>
-  __tile__ auto operator()(A a, B b) const
-  {
-    return a * b;
-  }
-};
-} // namespace detail::transform::tile
-
-// Built-in trait specializations live in the public namespace alongside the
-// trait, but reference the internal substitute functors.
+// Built-in trait specializations.
 namespace transform
 {
-// cuda::std::plus / multiplies are scalar ops, so each is marked eligible and given a tile_operator mirror.
+// The transparent cuda::std::plus<>/multiplies<> have a templated operator() that is tile-callable, so they
+// serve directly as the tile_operator for the typed cuda::std::plus<T>/multiplies<T> a user passes.
 #  if _CCCL_HAS_NVFP16()
 template <>
 inline constexpr bool tile_eligible_v<::cuda::std::plus<::__half>, ::__half, 2> = true;
@@ -116,12 +87,12 @@ inline constexpr bool tile_eligible_v<::cuda::std::multiplies<::__half>, ::__hal
 template <>
 struct tile_operator<::cuda::std::plus<::__half>>
 {
-  using type = cub::detail::transform::tile::tile_plus;
+  using type = ::cuda::std::plus<>;
 };
 template <>
 struct tile_operator<::cuda::std::multiplies<::__half>>
 {
-  using type = cub::detail::transform::tile::tile_multiplies;
+  using type = ::cuda::std::multiplies<>;
 };
 #  endif // _CCCL_HAS_NVFP16()
 
@@ -133,12 +104,12 @@ inline constexpr bool tile_eligible_v<::cuda::std::multiplies<::__nv_bfloat16>, 
 template <>
 struct tile_operator<::cuda::std::plus<::__nv_bfloat16>>
 {
-  using type = cub::detail::transform::tile::tile_plus;
+  using type = ::cuda::std::plus<>;
 };
 template <>
 struct tile_operator<::cuda::std::multiplies<::__nv_bfloat16>>
 {
-  using type = cub::detail::transform::tile::tile_multiplies;
+  using type = ::cuda::std::multiplies<>;
 };
 #  endif // _CCCL_HAS_NVBF16()
 } // namespace transform

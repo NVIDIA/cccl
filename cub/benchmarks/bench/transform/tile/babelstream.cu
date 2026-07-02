@@ -17,71 +17,42 @@
 // `c * scalar` is `-(c + c)`, `b + scalar * c` is `b - c - c`, etc.
 struct mul_op
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class B>
-  __host__ __device__ auto operator()(B b) const
+  __host__ __device__ _CCCL_TILE auto operator()(B b) const
   {
     return -(b + b);
   }
 };
 struct add_op
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class A, class B>
-  __host__ __device__ auto operator()(A a, B b) const
+  __host__ __device__ _CCCL_TILE auto operator()(A a, B b) const
   {
     return a + b;
   }
 };
 struct triad_op
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class B, class C>
-  __host__ __device__ auto operator()(B b, C c) const
+  __host__ __device__ _CCCL_TILE auto operator()(B b, C c) const
   {
     return b - c - c;
   }
 };
 struct nstream_op
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class A, class B, class C>
-  __host__ __device__ auto operator()(A a, B b, C c) const
+  __host__ __device__ _CCCL_TILE auto operator()(A a, B b, C c) const
   {
     return a + b - c - c;
   }
 };
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
-struct tile_mul_op
-{
-  template <class B>
-  __tile__ auto operator()(B b) const
-  {
-    return -(b + b);
-  }
-};
-struct tile_add_op
-{
-  template <class A, class B>
-  __tile__ auto operator()(A a, B b) const
-  {
-    return a + b;
-  }
-};
-struct tile_triad_op
-{
-  template <class B, class C>
-  __tile__ auto operator()(B b, C c) const
-  {
-    return b - c - c;
-  }
-};
-struct tile_nstream_op
-{
-  template <class A, class B, class C>
-  __tile__ auto operator()(A a, B b, C c) const
-  {
-    return a + b - c - c;
-  }
-};
-
 CUB_NAMESPACE_BEGIN
 namespace transform
 {
@@ -96,22 +67,22 @@ inline constexpr bool tile_eligible_v<nstream_op, T, 3> = true;
 template <>
 struct tile_operator<mul_op>
 {
-  using type = tile_mul_op;
+  using type = mul_op;
 };
 template <>
 struct tile_operator<add_op>
 {
-  using type = tile_add_op;
+  using type = add_op;
 };
 template <>
 struct tile_operator<triad_op>
 {
-  using type = tile_triad_op;
+  using type = triad_op;
 };
 template <>
 struct tile_operator<nstream_op>
 {
-  using type = tile_nstream_op;
+  using type = nstream_op;
 };
 } // namespace transform
 CUB_NAMESPACE_END

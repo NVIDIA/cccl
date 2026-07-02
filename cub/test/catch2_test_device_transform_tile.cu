@@ -22,43 +22,29 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 
 namespace ct = ::cuda::tiles;
 
-// Each scalar op (passed to Transform, used by the CUB fallback) pairs with a tile-side mirror
-// registered through tile_operator. The bodies use tile-tile arithmetic and wrap for unsigned types,
-// so the tile result is bit-exact with the host reference.
+// Each op is passed to Transform (used scalar in the CUB fallback) and registers itself as its own
+// tile_operator. _CCCL_EXEC_CHECK_DISABLE lets the single __host__ __device__ __tile__ operator() call
+// tile-only arithmetic in the tile instantiation; static_cast keeps unsigned wrap bit-exact with the host.
 
 // Unary: v * v.
 struct square_op
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class T>
-  __host__ __device__ T operator()(T v) const
+  __host__ __device__ __tile__ T operator()(T v) const
   {
     return static_cast<T>(v * v);
-  }
-};
-struct tile_square_op
-{
-  template <class T>
-  __tile__ auto operator()(T v) const
-  {
-    return v * v;
   }
 };
 
 // Binary: a + b.
 struct add_op
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class A, class B>
-  __host__ __device__ auto operator()(A a, B b) const
+  __host__ __device__ __tile__ auto operator()(A a, B b) const
   {
     return static_cast<A>(a + b);
-  }
-};
-struct tile_add_op
-{
-  template <class A, class B>
-  __tile__ auto operator()(A a, B b) const
-  {
-    return a + b;
   }
 };
 
@@ -70,7 +56,7 @@ inline constexpr bool tile_eligible_v<square_op, T, 1> = true;
 template <>
 struct tile_operator<square_op>
 {
-  using type = tile_square_op;
+  using type = square_op;
 };
 
 template <class T>
@@ -78,7 +64,7 @@ inline constexpr bool tile_eligible_v<add_op, T, 2> = true;
 template <>
 struct tile_operator<add_op>
 {
-  using type = tile_add_op;
+  using type = add_op;
 };
 } // namespace transform
 CUB_NAMESPACE_END
