@@ -40,16 +40,13 @@ struct ReduceByKeyPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
   LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
-  detail::BlockLoadPrefetch load_prefetch = detail::BlockLoadPrefetch::none; //!< The @ref detail::BlockLoadPrefetch
-                                                                             //!< level for global-memory prefetch hints
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const ReduceByKeyPolicy& lhs, const ReduceByKeyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay
-        && lhs.load_prefetch == rhs.load_prefetch;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -62,10 +59,9 @@ struct ReduceByKeyPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyPolicy& p)
   {
     return os
-        << "ReduceByKeyPolicy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .load_modifier = " << p.load_modifier << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .lookback_delay = " << p.lookback_delay << ", .load_prefetch = " << p.load_prefetch << " }";
+        << "ReduceByKeyPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -662,7 +658,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   using delay_constructor                            = exponential_backon_jitter_window_constructor_t<2044, 240>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 template <class KeyT, class AccumT>
@@ -674,7 +669,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   using delay_constructor                            = exponential_backoff_jitter_window_constructor_t<224, 390>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 template <class KeyT, class AccumT>
@@ -686,7 +680,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   using delay_constructor                            = exponential_backoff_constructor_t<248, 285>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 template <class KeyT, class AccumT>
@@ -698,7 +691,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   using delay_constructor                            = fixed_delay_constructor_t<132, 540>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 // todo(gonidelis): Add tunings for I128.
@@ -722,7 +714,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   using delay_constructor                            = detail::exponential_backoff_constructor_t<164, 290>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 template <class KeyT, class AccumT>
@@ -734,7 +725,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   using delay_constructor                            = exponential_backoff_constructor_t<180, 975>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 template <class KeyT, class AccumT>
@@ -746,7 +736,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   using delay_constructor                            = exponential_backoff_constructor_t<224, 550>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 template <class KeyT, class AccumT>
@@ -758,7 +747,6 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   using delay_constructor                            = fixed_delay_constructor_t<156, 725>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 // I16, F32, I32 regresses, default it back.
@@ -781,175 +769,113 @@ struct sm100_tuning<KeyT, float, primitive_op::yes, primitive_key::yes, primitiv
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_1>
 {
-  // ipt_15.tpb_224.trp_0.ld_0.ns_220.dcid_5.l2w_650.prf_1 1.060842
-  static constexpr int items                         = 15;
+  // ipt_10.tpb_224.trp_0.ld_0.ns_324.dcid_2.l2w_285 1.157217  1.073724  1.166510  1.356940
+  static constexpr int items                         = 10;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = exponential_backon_jitter_window_constructor_t<220, 650>;
+  using delay_constructor                            = exponential_backoff_constructor_t<324, 285>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::l2;
 };
 
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_2>
 {
-  // ipt_15.tpb_224.trp_1.ld_0.ns_112.dcid_7.l2w_790.prf_1 1.159591
-  static constexpr int items                         = 15;
-  static constexpr int threads                       = 224;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backon_constructor_t<112, 790>;
+  // ipt_11.tpb_256.trp_0.ld_0.ns_1984.dcid_5.l2w_115 1.214155  1.128842  1.214093  1.364476
+  static constexpr int items                         = 11;
+  static constexpr int threads                       = 256;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = exponential_backon_jitter_window_constructor_t<1984, 115>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::l2;
 };
 
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_4>
 {
-  // ipt_22.tpb_128.trp_1.ld_1.ns_712.dcid_7.l2w_325.prf_1 1.147089
-  static constexpr int items                         = 22;
-  static constexpr int threads                       = 128;
+  // ipt_14.tpb_224.trp_1.ld_0.ns_476.dcid_5.l2w_1005 1.187378  1.119705  1.185397  1.258420
+  static constexpr int items                         = 14;
+  static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backon_constructor_t<712, 325>;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::l2;
-};
-
-// I32 key, F32 value
-template <class KeyT>
-struct sm100_tuning<KeyT, float, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_4>
-{
-  // ipt_12.tpb_256.trp_1.ld_0.ns_328.dcid_7.l2w_630.prf_1 1.110952
-  static constexpr int items                         = 12;
-  static constexpr int threads                       = 256;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backon_constructor_t<328, 630>;
+  using delay_constructor                            = exponential_backon_jitter_window_constructor_t<476, 1005>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::l2;
 };
 
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_8>
 {
-  // ipt_18.tpb_160.trp_1.ld_0.ns_368.dcid_7.l2w_960.prf_1 1.107240 (second best; first best has mins=0.886)
-  static constexpr int items                         = 18;
-  static constexpr int threads                       = 160;
+  // ipt_10.tpb_256.trp_1.ld_0.ns_1868.dcid_7.l2w_145 1.142915  1.020581  1.137459  1.237913
+  static constexpr int items                         = 10;
+  static constexpr int threads                       = 256;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backon_constructor_t<368, 960>;
+  using delay_constructor                            = exponential_backon_constructor_t<1868, 145>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::l2;
 };
 
-// I32 key, F64 value
-template <class KeyT>
-struct sm100_tuning<KeyT, double, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_8>
-{
-  // ipt_14.tpb_128.trp_1.ld_1.ns_116.dcid_1.l2w_675.prf_1 1.088496
-  static constexpr int items                         = 14;
-  static constexpr int threads                       = 128;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = fixed_delay_constructor_t<116, 675>;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::l2;
-};
-
-template <class KeyT, class AccumT>
-struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_4, accum_size::_16>
-{
-  // ipt_11.tpb_128.trp_1.ld_0.ns_172.dcid_2.l2w_1110.prf_0 1.023318
-  static constexpr int items                         = 11;
-  static constexpr int threads                       = 128;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backoff_constructor_t<172, 1110>;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
-};
+// todo(gonidelis): Add tunings for I128.
+// template <class KeyT, class AccumT>
+// struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_4,
+// accum_size::_16>
+// {
+// static constexpr int threads                       = 128;
+// static constexpr int items                         = 11;
+// static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+// using delay_constructor                            = detail::no_delay_constructor_t<1100>;
+// };
 
 // 64-bit key
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_1>
 {
-  // ipt_13.tpb_160.trp_1.ld_0.ns_164.dcid_1.l2w_685.prf_1 1.075069
-  static constexpr int items                         = 13;
-  static constexpr int threads                       = 160;
+  // ipt_9.tpb_224.trp_1.ld_0.ns_1940.dcid_5.l2w_460 1.157294  1.075650  1.153566  1.250729
+  static constexpr int items                         = 9;
+  static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = fixed_delay_constructor_t<164, 685>;
+  using delay_constructor                            = exponential_backon_jitter_window_constructor_t<1940, 460>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::l2;
 };
 
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_2>
 {
-  // ipt_10.tpb_256.trp_0.ld_1.ns_204.dcid_2.l2w_840.prf_0 1.060259
-  static constexpr int items                         = 10;
-  static constexpr int threads                       = 256;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = exponential_backoff_constructor_t<204, 840>;
+  // ipt_11.tpb_224.trp_1.ld_1.ns_392.dcid_2.l2w_550 1.104034  1.007212  1.099543  1.220401
+  static constexpr int items                         = 11;
+  static constexpr int threads                       = 224;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = exponential_backoff_constructor_t<392, 550>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
 
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_4>
 {
-  // ipt_15.tpb_160.trp_1.ld_0.ns_144.dcid_2.l2w_460.prf_0 1.056840
-  static constexpr int items                         = 15;
-  static constexpr int threads                       = 160;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backoff_constructor_t<144, 460>;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
-};
-
-// I64 key, F32 value
-template <class KeyT>
-struct sm100_tuning<KeyT, float, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_4>
-{
-  // ipt_9.tpb_192.trp_1.ld_1.ns_136.dcid_2.l2w_535.prf_0 1.066794
+  // ipt_9.tpb_224.trp_1.ld_0.ns_244.dcid_2.l2w_475 1.130098  1.000000  1.130661  1.215722
   static constexpr int items                         = 9;
-  static constexpr int threads                       = 192;
+  static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backoff_constructor_t<136, 535>;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
+  using delay_constructor                            = exponential_backoff_constructor_t<244, 475>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
 };
 
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_8>
 {
-  // ipt_11.tpb_256.trp_1.ld_0.ns_540.dcid_7.l2w_145.prf_0 1.015146
-  static constexpr int items                         = 11;
-  static constexpr int threads                       = 256;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backon_constructor_t<540, 145>;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
-};
-
-// I64 key, F64 value
-template <class KeyT>
-struct sm100_tuning<KeyT, double, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_8>
-{
-  // ipt_19.tpb_160.trp_1.ld_0.ns_764.dcid_7.l2w_155.prf_0 1.141686
-  static constexpr int items                         = 19;
-  static constexpr int threads                       = 160;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backon_constructor_t<764, 155>;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
-};
-
-template <class KeyT, class AccumT>
-struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_8, accum_size::_16>
-{
-  // ipt_9.tpb_160.trp_1.ld_0.ns_292.dcid_2.l2w_855.prf_0 1.004895
+  // ipt_9.tpb_224.trp_1.ld_0.ns_196.dcid_2.l2w_340 1.272056  1.142857  1.262499  1.352941
   static constexpr int items                         = 9;
-  static constexpr int threads                       = 160;
+  static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = exponential_backoff_constructor_t<292, 855>;
+  using delay_constructor                            = exponential_backoff_constructor_t<196, 340>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  static constexpr BlockLoadPrefetch load_prefetch   = BlockLoadPrefetch::none;
 };
+
+// todo(gonidelis): Add tunings for I128.
+// template <class KeyT, class AccumT>
+// struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_8,
+// accum_size::_16>
+// {
+//   static constexpr int threads                       = 128;
+//   static constexpr int items                         = 11;
+//   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+//   using delay_constructor                            = detail::no_delay_constructor_t<1125>;
+// };
 
 // todo(gonidelis): Add tunings for 128-bit key.
 // 128-bit key
@@ -1034,14 +960,13 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise fall back to SM90
     template <typename Tuning>
-    static auto select_agent_policy(int) -> agent_reduce_by_key_policy<
-      Tuning::threads,
-      Tuning::items,
-      Tuning::load_algorithm,
-      Tuning::load_modifier,
-      BLOCK_SCAN_WARP_SCANS,
-      typename Tuning::delay_constructor,
-      Tuning::load_prefetch>;
+    static auto select_agent_policy(int)
+      -> agent_reduce_by_key_policy<Tuning::threads,
+                                    Tuning::items,
+                                    Tuning::load_algorithm,
+                                    Tuning::load_modifier,
+                                    BLOCK_SCAN_WARP_SCANS,
+                                    typename Tuning::delay_constructor>;
 
     template <typename Tuning>
     static auto select_agent_policy(long) -> typename Policy900::ReduceByKeyPolicyT;
@@ -1112,8 +1037,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_CA,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 2044, 240},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 2044, 240}};
       }
       if (key_size == 1 && accum_size == 2)
       {
@@ -1123,8 +1047,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff_jitter_window, 224, 390},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backoff_jitter_window, 224, 390}};
       }
       if (key_size == 1 && accum_size == 4)
       {
@@ -1134,8 +1057,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 248, 285},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backoff, 248, 285}};
       }
       if (key_size == 1 && accum_size == 8)
       {
@@ -1145,8 +1067,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::fixed_delay, 132, 540},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::fixed_delay, 132, 540}};
       }
       if (key_size == 2 && accum_size == 1)
       {
@@ -1156,8 +1077,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 164, 290},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backoff, 164, 290}};
       }
       if (key_size == 2 && accum_size == 2)
       {
@@ -1167,8 +1087,7 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 180, 975},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backoff, 180, 975}};
       }
       if (key_size == 2 && accum_size == 4 && accum_t != type_t::float32) // I16, F32, I32 regressed, fall back to SM90
       {
@@ -1178,8 +1097,7 @@ struct policy_selector
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 224, 550},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backoff, 224, 550}};
       }
       if (key_size == 2 && accum_size == 8)
       {
@@ -1189,162 +1107,87 @@ struct policy_selector
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::fixed_delay, 156, 725},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::fixed_delay, 156, 725}};
       }
       if (key_size == 4 && accum_size == 1)
       {
-        // ipt_15.tpb_224.trp_0.ld_0.ns_220.dcid_5.l2w_650.prf_1 1.060842
+        // ipt_10.tpb_224.trp_0.ld_0.ns_324.dcid_2.l2w_285 1.157217  1.073724  1.166510  1.356940
         return {224,
-                15,
+                10,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 220, 650},
-                BlockLoadPrefetch::l2};
+                {LookbackDelayAlgorithm::exponential_backoff, 324, 285}};
       }
       if (key_size == 4 && accum_size == 2)
       {
-        // ipt_15.tpb_224.trp_1.ld_0.ns_112.dcid_7.l2w_790.prf_1 1.159591
-        return {224,
-                15,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_DEFAULT,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon, 112, 790},
-                BlockLoadPrefetch::l2};
-      }
-      if (key_size == 4 && accum_size == 4 && accum_t == type_t::float32) // I32 key, F32 value
-      {
-        // ipt_12.tpb_256.trp_1.ld_0.ns_328.dcid_7.l2w_630.prf_1 1.110952
+        // ipt_11.tpb_256.trp_0.ld_0.ns_1984.dcid_5.l2w_115 1.214155  1.128842  1.214093  1.364476
         return {256,
-                12,
-                BLOCK_LOAD_WARP_TRANSPOSE,
+                11,
+                BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon, 328, 630},
-                BlockLoadPrefetch::l2};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 1984, 115}};
       }
       if (key_size == 4 && accum_size == 4)
       {
-        // ipt_22.tpb_128.trp_1.ld_1.ns_712.dcid_7.l2w_325.prf_1 1.147089
-        return {128,
-                22,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_CA,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon, 712, 325},
-                BlockLoadPrefetch::l2};
-      }
-      if (key_size == 4 && accum_size == 8 && accum_t == type_t::float64) // I32 key, F64 value
-      {
-        // ipt_14.tpb_128.trp_1.ld_1.ns_116.dcid_1.l2w_675.prf_1 1.088496
-        return {128,
+        // ipt_14.tpb_224.trp_1.ld_0.ns_476.dcid_5.l2w_1005 1.187378  1.119705  1.185397  1.258420
+        return {224,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_CA,
+                LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::fixed_delay, 116, 675},
-                BlockLoadPrefetch::l2};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 476, 1005}};
       }
       if (key_size == 4 && accum_size == 8)
       {
-        // ipt_18.tpb_160.trp_1.ld_0.ns_368.dcid_7.l2w_960.prf_1 1.107240 (second best; first best has mins=0.886)
-        return {160,
-                18,
+        // ipt_10.tpb_256.trp_1.ld_0.ns_1868.dcid_7.l2w_145 1.142915  1.020581  1.137459  1.237913
+        return {256,
+                10,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon, 368, 960},
-                BlockLoadPrefetch::l2};
-      }
-      if (key_size == 4 && accum_size == 16)
-      {
-        // ipt_11.tpb_128.trp_1.ld_0.ns_172.dcid_2.l2w_1110.prf_0 1.023318
-        return {128,
-                11,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_DEFAULT,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 172, 1110},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backon, 1868, 145}};
       }
       if (key_size == 8 && accum_size == 1)
       {
-        // ipt_13.tpb_160.trp_1.ld_0.ns_164.dcid_1.l2w_685.prf_1 1.075069
-        return {160,
-                13,
+        // ipt_9.tpb_224.trp_1.ld_0.ns_1940.dcid_5.l2w_460 1.157294  1.075650  1.153566  1.250729
+        return {224,
+                9,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::fixed_delay, 164, 685},
-                BlockLoadPrefetch::l2};
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 1940, 460}};
       }
       if (key_size == 8 && accum_size == 2)
       {
-        // ipt_10.tpb_256.trp_0.ld_1.ns_204.dcid_2.l2w_840.prf_0 1.060259
-        return {256,
-                10,
-                BLOCK_LOAD_DIRECT,
-                LOAD_CA,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 204, 840},
-                BlockLoadPrefetch::none};
-      }
-      if (key_size == 8 && accum_size == 4 && accum_t == type_t::float32) // I64 key, F32 value
-      {
-        // ipt_9.tpb_192.trp_1.ld_1.ns_136.dcid_2.l2w_535.prf_0 1.066794
-        return {192,
-                9,
+        // ipt_11.tpb_224.trp_1.ld_1.ns_392.dcid_2.l2w_550 1.104034  1.007212  1.099543  1.220401
+        return {224,
+                11,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_CA,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 136, 535},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backoff, 392, 550}};
       }
       if (key_size == 8 && accum_size == 4)
       {
-        // ipt_15.tpb_160.trp_1.ld_0.ns_144.dcid_2.l2w_460.prf_0 1.056840
-        return {160,
-                15,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_DEFAULT,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 144, 460},
-                BlockLoadPrefetch::none};
-      }
-      if (key_size == 8 && accum_size == 8 && accum_t == type_t::float64) // I64 key, F64 value
-      {
-        // ipt_19.tpb_160.trp_1.ld_0.ns_764.dcid_7.l2w_155.prf_0 1.141686
-        return {160,
-                19,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_DEFAULT,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon, 764, 155},
-                BlockLoadPrefetch::none};
-      }
-      if (key_size == 8 && accum_size == 8)
-      {
-        // ipt_11.tpb_256.trp_1.ld_0.ns_540.dcid_7.l2w_145.prf_0 1.015146
-        return {256,
-                11,
-                BLOCK_LOAD_WARP_TRANSPOSE,
-                LOAD_DEFAULT,
-                BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backon, 540, 145},
-                BlockLoadPrefetch::none};
-      }
-      if (key_size == 8 && accum_size == 16)
-      {
-        // ipt_9.tpb_160.trp_1.ld_0.ns_292.dcid_2.l2w_855.prf_0 1.004895
-        return {160,
+        // ipt_9.tpb_224.trp_1.ld_0.ns_244.dcid_2.l2w_475 1.130098  1.000000  1.130661  1.215722
+        return {224,
                 9,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                {LookbackDelayAlgorithm::exponential_backoff, 292, 855},
-                BlockLoadPrefetch::none};
+                {LookbackDelayAlgorithm::exponential_backoff, 244, 475}};
+      }
+      if (key_size == 8 && accum_size == 8)
+      {
+        // ipt_9.tpb_224.trp_1.ld_0.ns_196.dcid_2.l2w_340 1.272056  1.142857  1.262499  1.352941
+        return {224,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backoff, 196, 340}};
       }
     }
 
