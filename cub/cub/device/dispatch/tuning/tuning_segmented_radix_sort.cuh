@@ -19,39 +19,44 @@
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
-namespace detail::segmented_radix_sort
-{
-using radix_sort::make_reg_scaled_radix_sort_downsweep_policy;
 
-struct segmented_radix_sort_policy
+//! The tuning policy for @ref DeviceSegmentedRadixSort.
+struct SegmentedRadixSortPolicy
 {
-  RadixSortDownsweepPolicy segmented;
-  RadixSortDownsweepPolicy alt_segmented;
+  RadixSortDownsweepPolicy segmented; //!< Policy for the primary radix sort pass on each segment
+  RadixSortDownsweepPolicy alt_segmented; //!< Policy for the alternate radix sort pass on each segment
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const segmented_radix_sort_policy& lhs, const segmented_radix_sort_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const SegmentedRadixSortPolicy& lhs, const SegmentedRadixSortPolicy& rhs) noexcept
   {
     return lhs.segmented == rhs.segmented && lhs.alt_segmented == rhs.alt_segmented;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const segmented_radix_sort_policy& lhs, const segmented_radix_sort_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const SegmentedRadixSortPolicy& lhs, const SegmentedRadixSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const segmented_radix_sort_policy& p)
+  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
   {
-    return os << "segmented_radix_sort_policy { .segmented = " << p.segmented
-              << ", .alt_segmented = " << p.alt_segmented << " }";
+    return os << "SegmentedRadixSortPolicy { .segmented = " << p.segmented << ", .alt_segmented = " << p.alt_segmented
+              << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
+namespace detail::segmented_radix_sort
+{
+using radix_sort::make_reg_scaled_radix_sort_downsweep_policy;
+
+// TODO(bgruber): remove in CCCL 4.0
+using segmented_radix_sort_policy = SegmentedRadixSortPolicy;
+
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept segmented_radix_sort_policy_selector = detail::policy_selector<T, segmented_radix_sort_policy>;
+concept segmented_radix_sort_policy_selector = detail::policy_selector<T, SegmentedRadixSortPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
@@ -66,7 +71,7 @@ struct policy_selector
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> segmented_radix_sort_policy
+    -> SegmentedRadixSortPolicy
   {
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -92,7 +97,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return segmented_radix_sort_policy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{segmented, alt_segmented};
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})
@@ -119,7 +124,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return segmented_radix_sort_policy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{segmented, alt_segmented};
     }
 
     if (cc >= ::cuda::compute_capability{8, 0})
@@ -146,7 +151,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return segmented_radix_sort_policy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{segmented, alt_segmented};
     }
 
     if (cc >= ::cuda::compute_capability{7, 0})
@@ -173,7 +178,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return segmented_radix_sort_policy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{segmented, alt_segmented};
     }
 
     if (cc >= ::cuda::compute_capability{6, 2})
@@ -202,7 +207,7 @@ struct policy_selector
         BLOCK_SCAN_RAKING_MEMOIZE,
         alt_radix_bits);
 
-      return segmented_radix_sort_policy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{segmented, alt_segmented};
     }
 
     if (cc >= ::cuda::compute_capability{6, 1})
@@ -229,7 +234,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return segmented_radix_sort_policy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{segmented, alt_segmented};
     }
 
     if (cc >= ::cuda::compute_capability{6, 0})
@@ -256,7 +261,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return segmented_radix_sort_policy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{segmented, alt_segmented};
     }
 
     // SM50
@@ -282,7 +287,7 @@ struct policy_selector
       BLOCK_SCAN_WARP_SCANS,
       segmented_radix_bits - 1);
 
-    return segmented_radix_sort_policy{segmented, alt_segmented};
+    return SegmentedRadixSortPolicy{segmented, alt_segmented};
   }
 };
 
@@ -294,7 +299,7 @@ template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const
-    -> segmented_radix_sort_policy
+    -> SegmentedRadixSortPolicy
   {
     constexpr auto policies =
       policy_selector{int{sizeof(KeyT)}, ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)}};
