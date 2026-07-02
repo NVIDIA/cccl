@@ -65,7 +65,8 @@ protected:
   difference_type repeats;
 };
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   thrust::device_vector<int> data{10, 20, 30, 40};
 

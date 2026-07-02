@@ -24,7 +24,8 @@ void do_stuff_with_vector(typename Vec::allocator_type alloc)
   assert(v1.size() == 2);
 }
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   thrust::mr::new_delete_resource memres;
 

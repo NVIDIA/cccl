@@ -27,7 +27,8 @@ struct square
   }
 };
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   // initialize device vector directly
   thrust::device_vector<float> d_x = {1.0, 2.0, 3.0, 4.0};
