@@ -2,17 +2,127 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/device/device_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
+#include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/argument>
 #include <cuda/iterator>
+#include <cuda/std/__execution/env.h>
+
+#include <algorithm>
+#include <vector>
 
 #include <nvbench_helper.cuh>
 
 #include "common.cuh"
+
+enum class topk_backend
+{
+  baseline,
+  cluster,
+  device,
+};
+
+inline constexpr topk_backend selected_backend = topk_backend::baseline;
+
+// Determinism / tie-break requirement benchmarked by the cluster backend (a single combination for now).
+inline constexpr auto selected_determinism = cuda::execution::determinism::__determinism_t::__not_guaranteed;
+inline constexpr auto selected_tie_break   = cuda::execution::tie_break::__tie_break_t::__unspecified;
+
+// The baseline/device backends ignore these requirements, so require the defaults there to avoid a silent mismatch.
+static_assert(selected_backend == topk_backend::cluster
+                || (selected_determinism == cuda::execution::determinism::__determinism_t::__not_guaranteed
+                    && selected_tie_break == cuda::execution::tie_break::__tie_break_t::__unspecified),
+              "Only the cluster backend implements determinism/tie-break requirements; keep selected_determinism and "
+              "selected_tie_break at their defaults for the baseline/device backends.");
+
+// Env-based dispatch over the selected backend. The cluster and baseline backends route through their respective
+// `dispatch_with_env` entry points (temporary storage is allocated from the memory resource carried by `env`); the
+// device backend issues one `cub::DeviceTopK::MaxKeys` per segment, reading the host-side segment sizes.
+template <typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename SegmentSizeParamT,
+          typename KParamT,
+          typename SelectDirectionParamT,
+          typename NumSegmentsParameterT,
+          typename TotalNumItemsGuaranteeT,
+          typename HostSegSizeT,
+          typename EnvT>
+CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
+  KeyInputItItT d_keys_in,
+  KeyOutputItItT d_keys_out,
+  SegmentSizeParamT segment_sizes,
+  KParamT k,
+  SelectDirectionParamT select_direction,
+  NumSegmentsParameterT num_segments,
+  [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items,
+  [[maybe_unused]] const HostSegSizeT* h_segment_sizes,
+  EnvT env)
+{
+  if constexpr (selected_backend == topk_backend::cluster)
+  {
+    return cub::detail::batched_topk_cluster::dispatch_with_env<selected_determinism, selected_tie_break>(
+      d_keys_in,
+      d_keys_out,
+      static_cast<cub::NullType**>(nullptr),
+      static_cast<cub::NullType**>(nullptr),
+      segment_sizes,
+      k,
+      select_direction,
+      num_segments,
+      env);
+  }
+  else if constexpr (selected_backend == topk_backend::device)
+  {
+    using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
+    const auto num_segs      = cub::detail::params::get_param(num_segments, num_segments_val_t{0});
+
+    // The per-segment device backend uses the unsorted / not-guaranteed-determinism fast path. Layer the requirement
+    // on top of the benchmark environment (which carries the stream and the caching memory resource).
+    auto seg_env = cuda::std::execution::env{
+      env,
+      cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+                               cuda::execution::output_ordering::unsorted)};
+
+    for (num_segments_val_t i = 0; i < num_segs; ++i)
+    {
+      const auto k_value  = cub::detail::params::get_param(k, i);
+      const auto seg_size = h_segment_sizes[i];
+      if (const auto err = cub::DeviceTopK::MaxKeys(
+            d_keys_in[i],
+            d_keys_out[i],
+            static_cast<cuda::std::int64_t>(seg_size),
+            static_cast<cuda::std::int64_t>(k_value),
+            seg_env);
+          err != cudaSuccess)
+      {
+        return err;
+      }
+    }
+    return cudaSuccess;
+  }
+  else
+  {
+    return cub::detail::batched_topk::dispatch_with_env(
+      d_keys_in,
+      d_keys_out,
+      static_cast<cub::NullType**>(nullptr),
+      static_cast<cub::NullType**>(nullptr),
+      segment_sizes,
+      k,
+      select_direction,
+      num_segments,
+      total_num_items,
+      env);
+  }
+}
 
 template <typename KeyT, int MaxSegmentSize, int K>
 void decode_style_variable_topk_keys(
@@ -56,22 +166,25 @@ void decode_style_variable_topk_keys(
   state.add_global_memory_reads<cuda::std::int64_t>(num_segments, "SegmentSizes");
   state.add_global_memory_writes<KeyT>(output_elements, "OutputKeys");
 
+  // Host copy of segment sizes — consumed only by the per-segment device backend.
+  std::vector<cuda::std::int64_t> h_segment_sizes(static_cast<std::size_t>(num_segments));
+  thrust::copy(d_segment_sizes.begin(), d_segment_sizes.end(), h_segment_sizes.begin());
+
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(alloc, launch);
     // TODO(bgruber): call the public API once available
     _CCCL_TRY_CUDA_API(
-      cub::detail::batched_topk::dispatch_with_env,
+      batched_topk_keys,
       "batched topk failed",
       d_keys_in,
       d_keys_out,
-      static_cast<cub::NullType**>(nullptr),
-      static_cast<cub::NullType**>(nullptr),
       segment_sizes_param,
       k_param,
       select_direction,
       num_segments_param,
       total_num_items,
+      h_segment_sizes.data(),
       env);
   });
 }

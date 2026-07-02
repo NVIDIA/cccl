@@ -496,6 +496,8 @@ MaxPotentialDynamicSmemBytes(int& max_dyn_smem_bytes, KernelPtr kernel_ptr) noex
     return error;
   }
 
+  // TODO: over-conservative by ~`reserved_smem_size`. `MaxSharedMemoryPerBlockOptin` already excludes reserved
+  // (opt_in == perSM - reserved), so subtracting reserved here double-counts it.
   max_dyn_smem_bytes = max_smem_size_optin - reserved_smem_size - static_cast<int>(kernel_attrs.sharedSizeBytes);
   return cudaSuccess;
 }
@@ -597,6 +599,12 @@ namespace detail
 {
 // This should stay an implementation detail even when below functions become public.
 inline constexpr int bulk_copy_min_align = 16;
+
+// Largest thread-block cluster width guaranteed on every SM 9.0+ device.
+inline constexpr int max_portable_cluster_blocks = 8;
+
+// CUDA's hardware ceiling on thread-block cluster width (Hopper supports up to 16).
+inline constexpr int max_supported_cluster_blocks = 16;
 
 //! @brief Returns the alignment needed for the shared memory destination buffer of BlockLoadToShared.
 //! @tparam T
