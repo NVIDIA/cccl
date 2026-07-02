@@ -371,8 +371,8 @@ struct segmented_reduce_tuning
     // need the repetition of the return type for GCC9
     return cub::SegmentedReducePolicy{
       rp,
-      cub::SegmentedReduceWarpReducePolicy{ThreadsPerBlock, 1, 1, 1, cub::LOAD_DEFAULT},
-      cub::SegmentedReduceWarpReducePolicy{ThreadsPerBlock, 32, 1, 1, cub::LOAD_DEFAULT}};
+      cub::SegmentedReduceWarpReducePolicy{ThreadsPerBlock, 32, 1, 1, cub::LOAD_DEFAULT},
+      cub::SegmentedReduceWarpReducePolicy{ThreadsPerBlock, 1, 1, 1, cub::LOAD_DEFAULT}};
   }
 };
 
@@ -669,15 +669,15 @@ C2H_TEST("SegmentedReducePolicy", "[segmented_reduce][device]")
   // aggregate init
   constexpr auto p1 = cub::SegmentedReducePolicy{
     cub::ReducePassPolicy{256, 16, 4, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG},
-    cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG},
-    cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG}};
+    cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG},
+    cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::SegmentedReducePolicy{
     .large_reduce  = cub::ReducePassPolicy{256, 16, 4, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG},
-    .small_reduce  = cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG},
-    .medium_reduce = cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG}};
+    .medium_reduce = cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG},
+    .small_reduce  = cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

@@ -618,13 +618,13 @@ struct SegmentedReducePolicySelector
       .load_modifier     = cub::LOAD_LDG};
     return {
       .large_reduce  = rp,
-      .small_reduce  = {.threads_per_block = rp.threads_per_block,
-                        .threads_per_warp  = 1,
+      .medium_reduce = {.threads_per_block = rp.threads_per_block,
+                        .threads_per_warp  = 32,
                         .items_per_thread  = rp.items_per_thread,
                         .vec_size          = rp.vec_size,
                         .load_modifier     = rp.load_modifier},
-      .medium_reduce = {.threads_per_block = rp.threads_per_block,
-                        .threads_per_warp  = 32,
+      .small_reduce  = {.threads_per_block = rp.threads_per_block,
+                        .threads_per_warp  = 1,
                         .items_per_thread  = rp.items_per_thread,
                         .vec_size          = rp.vec_size,
                         .load_modifier     = rp.load_modifier}};
