@@ -14,6 +14,7 @@
 #include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/complex>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
@@ -202,22 +203,45 @@ struct complex_diverse_generator
   }
 };
 
-template <typename T, int N>
-TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array(int __offset = 1)
+template <typename T, int N, int Offset = 1>
+TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array()
 {
   cuda::std::array<T, N> arr{};
   for (int i = 0; i < N; ++i)
   {
-    arr[i] = static_cast<T>(i + __offset);
+    arr[i] = static_cast<T>(i + Offset);
   }
   return arr;
 }
 
+template <typename T, int N>
+TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array(int offset)
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(i + offset);
+  }
+  return arr;
+}
+
+template <typename T, int N, int Offset = 0>
+TEST_FUNC constexpr cuda::std::array<T, N> make_reverse_iota_array()
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(N - 1 - i + Offset);
+  }
+  return arr;
+}
+
+// Elementwise comparison of a basic_vec against a cuda::std::array
 template <typename T, typename Abi, typename U, size_t N>
 TEST_FUNC constexpr bool operator==(const simd::basic_vec<T, Abi>& vec, const cuda::std::array<U, N>& arr)
 {
   static_assert(simd::basic_vec<T, Abi>::size() == static_cast<int>(N));
-  for (int i = 0; i < static_cast<int>(N); ++i)
+  for (size_t i = 0; i < N; ++i)
   {
     if (vec[i] != arr[i])
     {

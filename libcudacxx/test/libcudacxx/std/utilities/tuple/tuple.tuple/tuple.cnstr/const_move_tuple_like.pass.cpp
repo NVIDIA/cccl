@@ -102,14 +102,14 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<1>(t).v == 42.0f);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
   NV_IF_TARGET(NV_IS_HOST, ({
                  const std::complex<float> p{1.0f, 42.0f};
                  cuda::std::tuple<ConvertibleFrom<float>, ConvertibleFrom<float>> t = cuda::std::move(p);
                  assert(cuda::std::get<0>(t).v == 1.0f);
                  assert(cuda::std::get<1>(t).v == 42.0f);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
 
   // test explicit conversions.
   {
@@ -185,14 +185,14 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<1>(t).v == 42.0f);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
   NV_IF_TARGET(NV_IS_HOST, ({
                  const std::complex<float> p{1.0f, 42.0f};
                  cuda::std::tuple<ExplicitConstructibleFrom<float>, ConvertibleFrom<float>> t{cuda::std::move(p)};
                  assert(cuda::std::get<0>(t).v == 1.0f);
                  assert(cuda::std::get<1>(t).v == 42.0f);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
 
   // const overload should be called
   {

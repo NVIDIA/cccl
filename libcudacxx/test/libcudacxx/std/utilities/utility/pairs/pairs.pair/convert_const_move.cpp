@@ -69,6 +69,7 @@ struct ImplicitT
 
 TEST_FUNC constexpr bool test()
 {
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
   {
     using P1 = cuda::std::pair<cuda::std::unique_ptr<Derived>, int>;
     using P2 = cuda::std::pair<cuda::std::unique_ptr<Base>, long>;
@@ -77,6 +78,7 @@ TEST_FUNC constexpr bool test()
     assert(p2.first == nullptr);
     assert(p2.second == 4);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     // We allow derived types to use this constructor

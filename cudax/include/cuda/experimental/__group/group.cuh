@@ -98,14 +98,14 @@ class group
     if (__mapping_result.is_valid())
     {
       _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
-      _CCCL_ASSERT(__mapping_result.rank() < __mapping_result.count(), "invalid rank");
+      _CCCL_ASSERT(__mapping_result.unit_rank() < __mapping_result.unit_count(), "invalid unit rank");
 
       if constexpr (::cuda::std::is_same_v<_Unit, thread_level>)
       {
         _CCCL_ASSERT(
           (__mapping_result.lane_mask() & ::cuda::device::lane_mask::this_lane()) != ::cuda::device::lane_mask::none(),
           "invalid lane mask - this lane must be contained in the lane mask");
-        _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.count(),
+        _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.unit_count(),
                      "invalid lane mask - too many lanes are set in the lane mask");
       }
       else

@@ -90,7 +90,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
     TileT buffer_offset_tile,
     _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
 {
-  static constexpr BatchMemcpyLargeBufferPolicy policy = current_policy<PolicySelector>().large_buffer;
+  static constexpr BatchedCopyLargeBufferPolicy policy = current_policy<PolicySelector>().large_buffer;
   using StatusWord                                     = typename TileT::StatusWord;
   using BufferSizeT                                    = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
@@ -224,7 +224,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
     _CCCL_GRID_CONSTANT const BLevBufferOffsetTileState blev_buffer_scan_state,
     _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
 {
-  static constexpr BatchMemcpySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
+  static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
   // Internal type used for storing a buffer's size
   using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 
@@ -315,7 +315,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     return error;
   }
-  const BatchedMemcpyPolicy active_policy = policy_selector(cc);
+  const BatchedCopyPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({

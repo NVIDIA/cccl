@@ -298,6 +298,21 @@ def test_unary_transform_well_known_identity():
     np.testing.assert_equal(d_output.get(), expected)
 
 
+def test_unary_transform_well_known_bit_not():
+    d_input = cp.array([0, 1, -2, 42, -100], dtype=np.int32)
+    d_output = cp.empty_like(d_input)
+
+    cuda.compute.unary_transform(
+        d_in=d_input,
+        d_out=d_output,
+        op=OpKind.BIT_NOT,
+        num_items=len(d_input),
+    )
+
+    expected = np.array([-1, -2, 1, -43, 99], dtype=np.int32)
+    np.testing.assert_array_equal(d_output.get(), expected)
+
+
 @pytest.mark.parametrize("dtype", [np.int32, np.float16])
 def test_binary_transform_well_known_plus(dtype):
     """Test binary transform with well-known PLUS operation."""
@@ -338,6 +353,31 @@ def test_binary_transform_well_known_multiplies():
     # Check the result is correct
     expected = np.array([2, 6, 12, 20, 30])
     np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.parametrize(
+    "op,host_op",
+    [
+        pytest.param(OpKind.LOGICAL_AND, np.logical_and, id="logical_and"),
+        pytest.param(OpKind.LOGICAL_OR, np.logical_or, id="logical_or"),
+    ],
+)
+def test_binary_transform_well_known_logical(op, host_op):
+    h_input1 = np.array([True, True, False, False], dtype=np.bool_)
+    h_input2 = np.array([True, False, True, False], dtype=np.bool_)
+    d_input1 = cp.asarray(h_input1)
+    d_input2 = cp.asarray(h_input2)
+    d_output = cp.empty_like(d_input1)
+
+    cuda.compute.binary_transform(
+        d_in1=d_input1,
+        d_in2=d_input2,
+        d_out=d_output,
+        op=op,
+        num_items=len(d_input1),
+    )
+
+    np.testing.assert_array_equal(d_output.get(), host_op(h_input1, h_input2))
 
 
 def test_unary_transform_struct_type_with_annotations():

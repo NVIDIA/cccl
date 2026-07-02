@@ -22,6 +22,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -46,30 +48,56 @@ enum CacheLoadModifier
   LOAD_VOLATILE, ///< Volatile (any memory space)
 };
 
-#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier)
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] constexpr const char* to_string(CacheLoadModifier modifier) noexcept
 {
   switch (modifier)
   {
     case LOAD_DEFAULT:
-      return os << "LOAD_DEFAULT";
+      return "LOAD_DEFAULT";
     case LOAD_CA:
-      return os << "LOAD_CA";
+      return "LOAD_CA";
     case LOAD_CG:
-      return os << "LOAD_CG";
+      return "LOAD_CG";
     case LOAD_CS:
-      return os << "LOAD_CS";
+      return "LOAD_CS";
     case LOAD_CV:
-      return os << "LOAD_CV";
+      return "LOAD_CV";
     case LOAD_LDG:
-      return os << "LOAD_LDG";
+      return "LOAD_LDG";
     case LOAD_VOLATILE:
-      return os << "LOAD_VOLATILE";
+      return "LOAD_VOLATILE";
     default:
-      return os << "<unknown CacheLoadModifier: " << static_cast<int>(modifier) << ">";
+      return "<unknown CacheLoadModifier>";
   }
 }
+} // namespace detail
+#endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(modifier);
+}
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::CacheLoadModifier, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::CacheLoadModifier& modifier, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(modifier), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @name Thread I/O (cache modified)
 //! @{
