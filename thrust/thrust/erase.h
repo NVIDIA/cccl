@@ -22,6 +22,8 @@
 #include <thrust/remove.h>
 #include <thrust/type_traits/is_thrust_vector.h>
 
+#include <cuda/std/__type_traits/enable_if.h>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup stream_compaction Stream Compaction
