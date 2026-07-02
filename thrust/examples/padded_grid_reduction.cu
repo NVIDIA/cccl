@@ -57,13 +57,9 @@ struct reduce_tuple
     {
       return t0;
     }
-    else if (cuda::std::get<0>(t1))
-    {
-      return t1;
-    }
     else
     {
-      return t1; // if neither is valid then it doesn't matter what we return
+      return t1; // if t0 is not valid, return t1 whether it is valid or not
     }
   }
 };

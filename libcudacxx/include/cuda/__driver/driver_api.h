@@ -143,14 +143,13 @@ _CCCL_SUPPRESS_DEPRECATED_POP
     {
       _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInvalidValue, "Driver version is too low to use this API", __name);
     }
+
     if (__result == ::CU_GET_PROC_ADDRESS_VERSION_NOT_SUFFICIENT)
     {
       _CCCL_THROW(::cuda::cuda_error, ::cudaErrorNotSupported, "Driver does not support this API", __name);
     }
-    else
-    {
-      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorUnknown, "Failed to access driver API", __name);
-    }
+
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorUnknown, "Failed to access driver API", __name);
   }
   return __fn;
 }

@@ -184,7 +184,7 @@ private:
   [[nodiscard]] _CCCL_API static constexpr auto
   __offset(const _StridedMapping& __mapping, index_sequence<_Pos...>) noexcept
   {
-    return static_cast<typename _StridedMapping::index_type>(__mapping((_Pos ? 0 : 0)...));
+    return static_cast<typename _StridedMapping::index_type>(__mapping((static_cast<void>(_Pos), 0)...));
   }
 
   template <class _StridedMapping>
