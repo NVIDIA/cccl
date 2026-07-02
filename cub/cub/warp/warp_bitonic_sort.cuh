@@ -99,6 +99,7 @@ public:
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
   //!   are equivalent: neither one is less than the other. It is not guaranteed
   //!   that the relative order of these two elements will be preserved by sort.
+  //! - All threads in the calling warp must invoke this collective.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
@@ -116,6 +117,8 @@ public:
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
   //!   are equivalent: neither one is less than the other. It is not guaranteed
   //!   that the relative order of these two elements will be preserved by sort.
+  //! - All threads in the calling warp must invoke this collective.
+  //! - All threads in the calling warp must agree on the same value for `valid_items`.
   //! - The value of `oob_default` is assigned to all keys that are out of
   //!   `valid_items` boundaries. It's expected that `oob_default` is ordered
   //!   after any key in the `valid_items` boundaries.
@@ -148,6 +151,8 @@ public:
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
   //!   are equivalent: neither one is less than the other. It is not guaranteed
   //!   that the relative order of these two elements will be preserved by sort.
+  //! - All threads in the calling warp must invoke this collective.
+  //! - All threads in the calling warp must agree on the same value for `valid_items`.
   //! - `KeyT` should be default constructible. Keys out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
@@ -177,6 +182,7 @@ public:
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
   //!   are equivalent: neither one is less than the other. It is not guaranteed
   //!   that the relative order of these two elements will be preserved by sort.
+  //! - All threads in the calling warp must invoke this collective.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
@@ -196,6 +202,8 @@ public:
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
   //!   are equivalent: neither one is less than the other. It is not guaranteed
   //!   that the relative order of these two elements will be preserved by sort.
+  //! - All threads in the calling warp must invoke this collective.
+  //! - All threads in the calling warp must agree on the same value for `valid_items`.
   //! - The value of `oob_default` is assigned to all keys that are out of
   //!   `valid_items` boundaries. It's expected that `oob_default` is ordered
   //!   after any key in the `valid_items` boundaries.
@@ -235,6 +243,8 @@ public:
   //! - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
   //!   are equivalent: neither one is less than the other. It is not guaranteed
   //!   that the relative order of these two elements will be preserved by sort.
+  //! - All threads in the calling warp must invoke this collective.
+  //! - All threads in the calling warp must agree on the same value for `valid_items`.
   //! - `KeyT` and `ValueT` should be default constructible. Keys and values out of `valid_items` boundary may get
   //! overwritten.
   //!
