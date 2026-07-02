@@ -656,3 +656,15 @@ C2H_TEST("cub::DeviceReduce::Sum queries both stream and resource from composed 
   REQUIRE(bytes_allocated > 0);
   REQUIRE(bytes_deallocated == bytes_allocated);
 }
+
+C2H_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][env]")
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
+  auto output = thrust::device_vector<int>(1);
+
+  auto error = cub::DeviceReduce::Reduce(
+    input.begin(), output.begin(), static_cast<int>(input.size()), cuda::std::plus<>{}, cub::detail::reduce::no_init);
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 15);
+}
