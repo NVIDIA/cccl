@@ -4,6 +4,22 @@
 cdef extern from "cccl/c/aot.h":
     cdef void cccl_aot_buffer_free(void*) nogil
 
+cdef extern from "cccl/c/aot_diagnostics.h":
+    cdef const char* cccl_aot_last_error() nogil
+    cdef CUresult cccl_aot_validate_blob(const void*, size_t) nogil
+
+
+cdef _aot_check_loadable(const void* buf, size_t size):
+    # Validate the blob header (magic / format / ABI version) and, for CUBIN
+    # payloads, that the target compute-capability major matches this device,
+    # BEFORE the opaque cuLibraryLoadData failure. On mismatch, raise with the
+    # C layer's descriptive message instead of a bare CUDA error code.
+    cdef CUresult st
+    with nogil:
+        st = cccl_aot_validate_blob(buf, size)
+    if st != 0:
+        raise RuntimeError((<bytes> cccl_aot_last_error()).decode("utf-8", "replace"))
+
 cdef extern from "cccl/c/reduce.h":
     cdef CUresult cccl_device_reduce_load(
         cccl_device_reduce_build_result_t*
@@ -198,6 +214,7 @@ def _aot_reduce_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_reduce_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -240,6 +257,7 @@ def _aot_scan_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_scan_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -278,6 +296,7 @@ def _aot_segmented_reduce_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_segmented_reduce_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -316,6 +335,7 @@ def _aot_merge_sort_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_merge_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -354,6 +374,7 @@ def _aot_unique_by_key_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_unique_by_key_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -392,6 +413,7 @@ def _aot_radix_sort_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_radix_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -429,6 +451,7 @@ def _aot_unary_transform_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_transform_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -466,6 +489,7 @@ def _aot_binary_transform_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_transform_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -504,6 +528,7 @@ def _aot_histogram_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_histogram_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -542,6 +567,7 @@ def _aot_binary_search_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_binary_search_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -580,6 +606,7 @@ def _aot_three_way_partition_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_three_way_partition_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -618,6 +645,7 @@ def _aot_segmented_sort_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _aot_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_segmented_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)
