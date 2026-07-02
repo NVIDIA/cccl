@@ -75,8 +75,14 @@ class StorageBase:
 
 class SQLiteStorage(StorageBase):
     def __init__(self, db_path):
+        if sqlite3.threadsafety < 3:
+            raise RuntimeError(
+                "SQLite threadsafety level is {}, but serialized mode (3) is required".format(
+                    sqlite3.threadsafety
+                )
+            )
         self.db_path = db_path
-        self.conn = sqlite3.connect(db_path)
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
 
     def connection(self):
         return self.conn
