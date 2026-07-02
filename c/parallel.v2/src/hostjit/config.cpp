@@ -1,6 +1,6 @@
 #include <cstdlib>
 #include <filesystem>
-#include <iostream>
+#include <string>
 
 #include <cuda_runtime.h>
 
@@ -8,6 +8,126 @@
 
 namespace hostjit
 {
+namespace
+{
+void append_system_include_path(std::vector<std::string>& args, const std::string& include_path)
+{
+  if (!include_path.empty())
+  {
+    args.push_back("--system-include-path=" + include_path);
+  }
+}
+
+void append_macro_definition(
+  std::vector<std::string>& args, const std::string& macro_name, const std::string& macro_value)
+{
+  if (macro_value.empty())
+  {
+    args.push_back("-D" + macro_name);
+  }
+  else
+  {
+    args.push_back("-D" + macro_name + "=" + macro_value);
+  }
+}
+
+void append_cccl_include_paths(std::vector<std::string>& args, const CompilerConfig& config)
+{
+  if (!config.cccl_include_path.empty())
+  {
+    append_system_include_path(args, config.cccl_include_path);
+    return;
+  }
+
+#ifdef CCCL_SOURCE_DIR
+  append_system_include_path(args, std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include");
+  append_system_include_path(args, std::string(CCCL_SOURCE_DIR) + "/cub");
+  append_system_include_path(args, std::string(CCCL_SOURCE_DIR) + "/thrust");
+#endif
+}
+
+void append_cccl_macro_definitions(std::vector<std::string>& args)
+{
+  append_macro_definition(args, "CCCL_DISABLE_CTK_COMPATIBILITY_CHECK", "");
+  append_macro_definition(args, "_CCCL_ENABLE_FREESTANDING", "1");
+  append_macro_definition(args, "CCCL_DISABLE_NVTX", "1");
+  append_macro_definition(args, "CCCL_DISABLE_EXCEPTIONS", "1");
+}
+} // namespace
+
+void CompilerConfig::appendCommandLineArguments(std::vector<std::string>& args) const
+{
+  if (!cuda_toolkit_path.empty())
+  {
+    args.push_back("--cuda-path=" + cuda_toolkit_path);
+  }
+  if (!hostjit_include_path.empty())
+  {
+    args.push_back("--hostjit-include-path=" + hostjit_include_path);
+  }
+  if (!clang_headers_path.empty())
+  {
+    args.push_back("--clang-headers-path=" + clang_headers_path);
+  }
+  append_cccl_include_paths(args, *this);
+  for (const auto& include_path : include_paths)
+  {
+    args.push_back("-I" + include_path);
+  }
+  for (const auto& library_path : library_paths)
+  {
+    args.push_back("-L" + library_path);
+  }
+  for (const auto& bitcode_file : device_bitcode_files)
+  {
+    args.push_back("--device-bitcode=" + bitcode_file);
+  }
+  for (const auto& ltoir_file : device_ltoir_files)
+  {
+    args.push_back("--device-ltoir=" + ltoir_file);
+  }
+  append_cccl_macro_definitions(args);
+  for (const auto& [macro_name, macro_value] : macro_definitions)
+  {
+    append_macro_definition(args, macro_name, macro_value);
+  }
+  for (const auto& clang_arg : extra_clang_args)
+  {
+    args.push_back("-XClang");
+    args.push_back(clang_arg);
+  }
+  if (!device_pch_path.empty())
+  {
+    args.push_back("--device-pch=" + device_pch_path);
+  }
+  if (!host_pch_path.empty())
+  {
+    args.push_back("--host-pch=" + host_pch_path);
+  }
+  args.push_back("--gpu-architecture=sm_" + std::to_string(sm_version));
+  args.push_back("-O" + std::to_string(optimization_level));
+  if (debug)
+  {
+    args.push_back("--debug");
+  }
+  if (verbose)
+  {
+    args.push_back("--verbose");
+  }
+  if (trace_includes)
+  {
+    args.push_back("--trace-includes");
+  }
+  if (keep_artifacts)
+  {
+    args.push_back("--keep-artifacts");
+  }
+  if (!entry_point_name.empty())
+  {
+    args.push_back("--entry-point=" + entry_point_name);
+  }
+}
+
 CompilerConfig detectDefaultConfig()
 {
   CompilerConfig config;
