@@ -29,6 +29,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/cstdint>
@@ -321,7 +322,7 @@ struct WarpReduceShfl
   {
     KeyValuePair<KeyT, ValueT> output;
 
-    KeyT other_key = ShuffleDown<LOGICAL_WARP_THREADS>(input.key, offset, last_lane, member_mask);
+    KeyT other_key = ::cuda::device::warp_shuffle_down<LOGICAL_WARP_THREADS>(input.key, offset, member_mask);
 
     output.key   = input.key;
     output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
@@ -390,7 +391,7 @@ struct WarpReduceShfl
   {
     _Tp output = input;
 
-    _Tp temp = ShuffleDown<LOGICAL_WARP_THREADS>(output, offset, last_lane, member_mask);
+    _Tp temp = ::cuda::device::warp_shuffle_down<LOGICAL_WARP_THREADS>(output, offset, member_mask);
 
     // Perform reduction op if valid
     if (offset + lane_id <= last_lane)
