@@ -25,14 +25,23 @@
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/std/cstdint>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+template <typename AccumT>
+struct lookahead_tile_state_arg_t
+{
+  warpspeed::tile_state_t<AccumT>* tile_states;
+  ::cuda::std::uint32_t* atomic_counter;
+};
+
 template <typename ScanTileState, typename AccumT>
 union tile_state_kernel_arg_t
 {
-  warpspeed::tile_state_t<AccumT>* lookahead;
+  lookahead_tile_state_arg_t<AccumT> lookahead;
   ScanTileState lookback;
 
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
@@ -69,7 +78,11 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   constexpr ScanPolicy policy = current_policy<PolicySelectorT>();
   if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
+    device_scan_init_lookahead_body(tile_state.lookahead.tile_states, num_tiles);
+    if (tile_state.lookahead.atomic_counter != nullptr && blockIdx.x == 0 && threadIdx.x == 0)
+    {
+      *tile_state.lookahead.atomic_counter = 0;
+    }
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -205,12 +218,13 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-    NV_IF_TARGET(NV_PROVIDES_SM_100, ({
-                   auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-                     d_in, d_out, tile_state.lookahead, num_items, num_stages};
-                   device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
-                     scan_params, scan_op, init_value);
-                 }));
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_90, ({
+        auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
+          d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
+        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
+          scan_params, scan_op, init_value);
+      }));
 #else
     static_assert(sizeof(d_in) == 0,
                   "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");
