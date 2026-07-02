@@ -172,6 +172,22 @@ function(
       target_compile_options(${test_target} PRIVATE -ftemplate-depth=1000) # for handling large type lists
     endif()
 
+    # Tile-DSL transform test: compile under --enable-tile and turn on the dispatch hook. Gated by
+    # CCCL_ENABLE_TILE_TRANSFORM_DISPATCH (default OFF) so CI keeps the tile path compiled out.
+    if (
+      CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
+      AND "${test_src}" MATCHES "test_device_transform_tile\\.cu$"
+    )
+      target_compile_options(
+        ${test_target}
+        PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>
+      )
+      target_compile_definitions(
+        ${test_target}
+        PRIVATE CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
+      )
+    endif()
+
     # enable lambdas for all API examples
     if ("${test_src}" MATCHES "test.+_api\\.cu$")
       target_compile_options(

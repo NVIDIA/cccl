@@ -91,6 +91,22 @@ function(add_bench target_name bench_name bench_src)
       cccl.nvbench_helper
       nvbench::main
   )
+
+  # Tile-DSL transform benches: build under --enable-tile + the dispatch opt-in when requested. Gated by
+  # CCCL_ENABLE_TILE_TRANSFORM_DISPATCH (default OFF) so CI builds the tile/ benches with the tile path off.
+  if (
+    CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
+    AND "${bench_src}" MATCHES "/transform/tile/"
+  )
+    target_compile_options(
+      ${bench_target}
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>"
+    )
+    target_compile_definitions(
+      ${bench_target}
+      PRIVATE CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
+    )
+  endif()
 endfunction()
 
 function(add_bench_dir bench_dir)
