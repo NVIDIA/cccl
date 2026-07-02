@@ -18,6 +18,8 @@ import numpy as np
 
 from cuda.bindings import runtime as cudart
 
+from ._stream_utils import get_stream_pointer
+
 if TYPE_CHECKING:
     from cuda.stf._experimental._stf_bindings_impl import data_place
 
@@ -77,7 +79,7 @@ class DeviceArray:
         self._size = size
         self._nbytes = size * self._dtype.itemsize
         self._dplace = dplace
-        self._stream_int = int(stream) if stream is not None else 0
+        self._stream_int = get_stream_pointer(stream)
         self._base = None
 
         if self._nbytes > 0:

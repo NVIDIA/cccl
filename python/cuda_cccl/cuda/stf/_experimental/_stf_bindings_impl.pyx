@@ -416,6 +416,52 @@ def _logical_data_default_dtype(dtype):
     return np.float64 if dtype is None else dtype
 
 
+# Adapted from cuda.compute._utils.protocols.validate_and_get_stream.
+# We intentionally copy the ~15 lines here rather than importing
+# cuda.compute, to avoid pulling in that (heavy) package as a dependency
+# for such a small utility. Factoring these stream/CAI helpers into a
+# shared, lightweight common module would be useful future work.
+cdef uintptr_t _get_stream_pointer(object stream) except? 0:
+    """Resolve a user stream to a raw CUstream pointer (0 == null stream).
+
+    Accepts None, a raw integer pointer, or any object implementing the
+    __cuda_stream__ protocol. Mirrors
+    cuda.compute._utils.protocols.validate_and_get_stream but additionally
+    permits plain-int pointers for backward compatibility.
+    """
+    cdef object cuda_stream
+    cdef object stream_property
+    cdef object version
+    cdef object handle
+
+    if stream is None:
+        return 0
+
+    cuda_stream = getattr(stream, "__cuda_stream__", None)
+    if cuda_stream is not None:
+        try:
+            stream_property = cuda_stream()
+            version = stream_property[0]
+            handle = stream_property[1]
+        except (TypeError, ValueError, IndexError) as e:
+            raise TypeError(
+                f"could not obtain __cuda_stream__ protocol version and handle from {stream}"
+            ) from e
+        if version != 0:
+            raise TypeError(f"unsupported __cuda_stream__ version {version}")
+        if not isinstance(handle, int):
+            raise TypeError(f"invalid stream handle {handle}")
+        return <uintptr_t>handle
+
+    if isinstance(stream, int):
+        return <uintptr_t>stream
+
+    raise TypeError(
+        f"stream argument {stream!r} does not implement the '__cuda_stream__' "
+        "protocol and is not an int pointer"
+    )
+
+
 class stf_cai:
     """
     Wrapper that exposes CUDA Array Interface v3 for interop (torch, cupy, etc.).
@@ -1374,9 +1420,7 @@ cdef class data_place:
             If the underlying place cannot allocate (out of memory, or
             the place type does not support allocation).
         """
-        cdef uintptr_t s_val = 0
-        if stream is not None:
-            s_val = <uintptr_t>int(stream)
+        cdef uintptr_t s_val = _get_stream_pointer(stream)
         cdef cudaStream_t s = <cudaStream_t>s_val
         cdef void* ptr = stf_data_place_allocate(self._h, <ptrdiff_t>nbytes, s)
         if ptr == NULL:
@@ -1395,9 +1439,7 @@ cdef class data_place:
         stream : optional
             CUDA stream for stream-ordered deallocation.
         """
-        cdef uintptr_t s_val = 0
-        if stream is not None:
-            s_val = <uintptr_t>int(stream)
+        cdef uintptr_t s_val = _get_stream_pointer(stream)
         cdef cudaStream_t s = <cudaStream_t>s_val
         stf_data_place_deallocate(self._h, <void*>ptr, nbytes, s)
 
@@ -1855,7 +1897,7 @@ cdef class context:
             # has_stream distinguishes "user explicitly passed a stream" from
             # "user omitted stream" (unlike nullptr, which is a valid NULL stream).
             if stream is not None:
-                stream_val = <uintptr_t>int(stream)
+                stream_val = _get_stream_pointer(stream)
                 opts.has_stream = 1
             else:
                 opts.has_stream = 0
