@@ -116,7 +116,8 @@ struct SegmentedSortPolicy
   SegmentedSortRadixSortPolicy large_segment; //!< Policy used for segments sorted via radix sort
   SegmentedSortSubWarpMergeSortPolicy small_segment; //!< Policy used for the smallest segments
   SegmentedSortSubWarpMergeSortPolicy medium_segment; //!< Policy used for medium-sized segments
-  int partitioning_threshold; //!< Segment size threshold above which a segment is sorted via radix sort
+  int partitioning_threshold; //!< Number of segments above which different algorithms will be used for different size
+                              //!< buckets
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const SegmentedSortPolicy& lhs, const SegmentedSortPolicy& rhs) noexcept
