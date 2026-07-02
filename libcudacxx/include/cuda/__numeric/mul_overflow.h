@@ -107,7 +107,7 @@ template <class _Result, class _Lhs, class _Rhs>
   const auto __ulhs          = static_cast<_Up>(__lhs);
   const auto __urhs          = static_cast<_Up>(__rhs);
 
-  if constexpr ((__max_nbits <= sizeof(int16_t)))
+  if constexpr ((sizeof(_Up) <= sizeof(int16_t)))
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
       NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u16 %0, %1, %2;"
@@ -115,7 +115,7 @@ template <class _Result, class _Lhs, class _Rhs>
                                         : "h"(__ulhs), "h"(__urhs)); }))};
     return {static_cast<_Result>(__result_lo), __overflow_mul};
   }
-  else if constexpr ((__max_nbits <= sizeof(int32_t)))
+  else if constexpr ((sizeof(_Up) <= sizeof(int32_t)))
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
       NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u32 %0, %1, %2;"
@@ -123,7 +123,7 @@ template <class _Result, class _Lhs, class _Rhs>
                                         : "r"(__ulhs), "r"(__urhs)); }))};
     return {static_cast<_Result>(__result_lo), __overflow_mul};
   }
-  else if constexpr ((__max_nbits <= sizeof(int64_t)))
+  else if constexpr ((sizeof(_Up) <= sizeof(int64_t)))
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
       NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u64 %0, %1, %2;"
