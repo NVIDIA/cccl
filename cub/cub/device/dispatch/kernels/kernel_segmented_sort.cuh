@@ -154,7 +154,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
                                large_policy.radix_bits,
                                NoScaling<large_policy.threads_per_block, large_policy.items_per_thread>>;
   static constexpr auto medium_policy = active_policy.medium_segment;
-  using MediumPolicyT                 = detail::sub_warp_merge_sort::agent_sub_warp_merge_sort_policy<
+  using MediumPolicyT                 = agent_sub_warp_merge_sort_policy<
                     medium_policy.threads_per_block,
                     medium_policy.threads_per_warp,
                     medium_policy.items_per_thread,
@@ -348,7 +348,7 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
 
   static constexpr segmented_sort_policy active_policy = current_policy<PolicySelector>();
   static constexpr auto small_policy                   = active_policy.small_segment;
-  using SmallPolicyT                                   = detail::sub_warp_merge_sort::agent_sub_warp_merge_sort_policy<
+  using SmallPolicyT                                   = agent_sub_warp_merge_sort_policy<
                                       small_policy.threads_per_block,
                                       small_policy.threads_per_warp,
                                       small_policy.items_per_thread,
@@ -356,7 +356,7 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
                                       small_policy.load_modifier,
                                       small_policy.store_algorithm>;
   static constexpr auto medium_policy = active_policy.medium_segment;
-  using MediumPolicyT                 = detail::sub_warp_merge_sort::agent_sub_warp_merge_sort_policy<
+  using MediumPolicyT                 = agent_sub_warp_merge_sort_policy<
                     medium_policy.threads_per_block,
                     medium_policy.threads_per_warp,
                     medium_policy.items_per_thread,
