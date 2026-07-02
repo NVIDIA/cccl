@@ -125,6 +125,15 @@ else()
   set(LIBCUDACXX_ENABLE_TILE False)
 endif()
 
+# enable libc++ support
+if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(LIBCUDACXX_HOST_STL "msvc")
+elseif (CCCL_USE_LIBCXX)
+  set(LIBCUDACXX_HOST_STL "libc++")
+else()
+  set(LIBCUDACXX_HOST_STL "libstdc++")
+endif()
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
 endif()
