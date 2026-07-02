@@ -123,6 +123,42 @@ def test_task_outlives_context():
     gc.collect()
 
 
+def test_task_rejects_logical_data_from_different_context():
+    ctx1 = stf.context()
+    ctx2 = stf.context()
+    ld = ctx1.logical_data(np.ones(8, dtype=np.float64), name="lA")
+
+    with pytest.raises(ValueError, match="different context"):
+        ctx2.task(ld.read())
+
+    ctx2.finalize()
+    ctx1.finalize()
+
+
+def test_cuda_kernel_rejects_logical_data_from_different_context():
+    ctx1 = stf.context()
+    ctx2 = stf.context()
+    ld = ctx1.logical_data(np.ones(8, dtype=np.float64), name="lA")
+
+    with pytest.raises(ValueError, match="different context"):
+        ctx2.cuda_kernel(ld.read())
+
+    ctx2.finalize()
+    ctx1.finalize()
+
+
+def test_host_launch_rejects_logical_data_from_different_context():
+    ctx1 = stf.context()
+    ctx2 = stf.context()
+    ld = ctx1.logical_data(np.ones(8, dtype=np.float64), name="lA")
+
+    with pytest.raises(ValueError, match="different context"):
+        ctx2.host_launch(ld.read(), fn=lambda _: None)
+
+    ctx2.finalize()
+    ctx1.finalize()
+
+
 # ---------------------------------------------------------------------------
 # stackable_context
 # ---------------------------------------------------------------------------
@@ -200,6 +236,30 @@ def test_stackable_task_outlives_context():
     del t
     del sld
     gc.collect()
+
+
+def test_stackable_task_rejects_logical_data_from_different_context():
+    sctx1 = stf.stackable_context()
+    sctx2 = stf.stackable_context()
+    sld = sctx1.logical_data(np.ones(8, dtype=np.float64), name="lA")
+
+    with pytest.raises(ValueError, match="different context"):
+        sctx2.task(sld.read())
+
+    sctx2.finalize()
+    sctx1.finalize()
+
+
+def test_stackable_host_launch_rejects_logical_data_from_different_context():
+    sctx1 = stf.stackable_context()
+    sctx2 = stf.stackable_context()
+    sld = sctx1.logical_data(np.ones(8, dtype=np.float64), name="lA")
+
+    with pytest.raises(ValueError, match="different context"):
+        sctx2.host_launch(sld.read(), fn=lambda _: None)
+
+    sctx2.finalize()
+    sctx1.finalize()
 
 
 def test_stackable_double_finalize_is_safe():

@@ -1460,6 +1460,7 @@ cdef class data_place:
 
 cdef class task:
     cdef stf_task_handle _t
+    cdef stf_ctx_handle _ctx
 
     # list of logical data in deps: we need this because we can't exchange
     # dtype/shape easily through the C API of STF
@@ -1471,6 +1472,7 @@ cdef class task:
         self._t = stf_task_create(ctx._ctx)
         if self._t == NULL:
             raise RuntimeError("failed to create STF task")
+        self._ctx = ctx._ctx
         self._lds_args = []
         self._alive = ctx._alive
 
@@ -1510,10 +1512,9 @@ cdef class task:
         cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
         cdef data_place dp
 
-        # Only the dep *type* is validated here, not its owning context. A dep
-        # whose logical_data belongs to a different context is rejected later by
-        # the C++ core when the task acquires its deps (it aborts with a
-        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
+        if ldata._ctx != self._ctx:
+            raise ValueError("dep logical_data belongs to a different context")
+
         if d.dplace is None:
             stf_task_add_dep(self._t, ldata._ld, mode_ce)
         else:
@@ -1649,6 +1650,7 @@ cdef class cuda_kernel:
     kernel nodes, avoiding stream-capture overhead.
     """
     cdef stf_cuda_kernel_handle _k
+    cdef stf_ctx_handle _ctx
     cdef list _lds_args
     cdef list _arg_holders  # keep ParamHolder(s) alive until end()
     # Shared "alive" sentinel from the parent context. See context._alive.
@@ -1658,6 +1660,7 @@ cdef class cuda_kernel:
         self._k = stf_cuda_kernel_create(ctx._ctx)
         if self._k == NULL:
             raise RuntimeError("failed to create STF cuda_kernel")
+        self._ctx = ctx._ctx
         self._lds_args = []
         self._arg_holders = []
         self._alive = ctx._alive
@@ -1690,10 +1693,9 @@ cdef class cuda_kernel:
         cdef logical_data ldata = <logical_data>d.ld
         cdef int mode_int = int(d.mode)
         cdef stf_access_mode mode_ce = <stf_access_mode>mode_int
-        # Only the dep *type* is validated here, not its owning context. A dep
-        # whose logical_data belongs to a different context is rejected later by
-        # the C++ core when the task acquires its deps (it aborts with a
-        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
+        if ldata._ctx != self._ctx:
+            raise ValueError("dep logical_data belongs to a different context")
+
         stf_cuda_kernel_add_dep(self._k, ldata._ld, mode_ce)
         self._lds_args.append(ldata)
 
@@ -2377,10 +2379,6 @@ cdef class context:
 
         cdef logical_data ldata
         dep_meta = []
-        # Only the dep *type* is validated here, not its owning context. A dep
-        # whose logical_data belongs to a different context is rejected later by
-        # the C++ core when the host launch acquires its deps (it aborts with a
-        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
         for d in deps:
             if not isinstance(d, dep):
                 raise TypeError(
@@ -2392,6 +2390,8 @@ cdef class context:
                     "(non-stackable context)"
                 )
             ldata = <logical_data>d.ld
+            if ldata._ctx != self._ctx:
+                raise ValueError("dep logical_data belongs to a different context")
             dep_meta.append((ldata._shape, ldata._dtype))
 
         payload = (fn, user_args, dep_meta)
@@ -2593,10 +2593,9 @@ cdef class stackable_task:
         cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
         cdef data_place dp
 
-        # Only the dep *type* is validated here, not its owning context. A dep
-        # whose logical_data belongs to a different context is rejected later by
-        # the C++ core when the task acquires its deps (it aborts with a
-        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
+        if ldata._ctx != self._ctx:
+            raise ValueError("dep stackable_logical_data belongs to a different context")
+
         if d.dplace is None:
             stf_stackable_task_add_dep(self._ctx, self._t, ldata._ld, mode_ce)
         else:
@@ -3354,10 +3353,6 @@ cdef class stackable_context:
 
         cdef stackable_logical_data sldata
         dep_meta = []
-        # Only the dep *type* is validated here, not its owning context. A dep
-        # whose logical_data belongs to a different context is rejected later by
-        # the C++ core when the host launch acquires its deps (it aborts with a
-        # context-mismatch error; see cudax .../internal/acquire_release.cuh).
         for d in deps:
             if not isinstance(d, dep):
                 raise TypeError(
@@ -3369,6 +3364,8 @@ cdef class stackable_context:
                     "(stackable_context)"
                 )
             sldata = <stackable_logical_data>d.ld
+            if sldata._ctx != self._ctx:
+                raise ValueError("dep stackable_logical_data belongs to a different context")
             dep_meta.append((sldata._shape, sldata._dtype))
 
         payload = (fn, user_args, dep_meta)
