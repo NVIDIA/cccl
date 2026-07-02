@@ -424,7 +424,7 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t 
   }
   else
   {
-    static_assert(::cuda::std::__always_false_v<_Tp>, "Unsupported type for memset");
+    static_assert(::cuda::std::__always_false_v<_Tp>, "Unsupported type for memset, must be 1, 2, or 4 bytes");
   }
 }
 
