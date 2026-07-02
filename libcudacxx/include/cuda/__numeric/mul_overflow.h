@@ -64,17 +64,16 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Result, class _Lhs, class _Rhs>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Result> __mul_overflow_generic(_Lhs __lhs, _Rhs __rhs) noexcept
 {
-  using ::cuda::std::__cccl_uintmax_t;
   using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
-  using ::cuda::std::make_unsigned_t;
 
-  using _UResult = make_unsigned_t<_Result>;
-  using _ULhs    = make_unsigned_t<_Lhs>;
-  using _URhs    = make_unsigned_t<_Rhs>;
-
-  const auto __uabs_lhs        = static_cast<_ULhs>(::cuda::uabs(__lhs));
-  const auto __uabs_rhs        = static_cast<_URhs>(::cuda::uabs(__rhs));
+  // Floor __max_nbits to sizeof(unsigned int); anything smaller is automatically
+  // promoted to (signed) int, even if the original type was explicitly unsigned
+  constexpr auto __max_nbits =
+    ::cuda::std::max({__num_bits_v<_Lhs>, __num_bits_v<_Rhs>, __num_bits_v<_Result>, __num_bits_v<unsigned int>});
+  using _UPromoted             = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
+  const auto __uabs_lhs        = static_cast<_UPromoted>(::cuda::uabs(__lhs));
+  const auto __uabs_rhs        = static_cast<_UPromoted>(::cuda::uabs(__rhs));
   const auto __sign_mismatch   = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
   const auto __negative_result = __sign_mismatch && __uabs_lhs != 0 && __uabs_rhs != 0;
   auto __overflow_mul          = false;
@@ -85,6 +84,8 @@ template <class _Result, class _Lhs, class _Rhs>
   }
   else
   {
+    using _UResult = ::cuda::std::make_unsigned_t<_Result>;
+
     constexpr auto __nbits = __num_bits_v<_Result>;
     const auto c           = is_signed_v<_Result>
                              ? (static_cast<_UResult>(1) << (__nbits - 1)) - static_cast<_UResult>(__negative_result ? 0 : 1)
@@ -100,45 +101,19 @@ template <class _Result, class _Lhs, class _Rhs>
     }
   }
 
-  // Floor to 16; smallest register size is 16-bits
-  constexpr auto __max_nbits = ::cuda::std::max({__num_bits_v<_Lhs>, __num_bits_v<_Rhs>, 16});
-  using _Up                  = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
-  const auto __result_lo     = static_cast<_Up>(0);
-  const auto __ulhs          = static_cast<_Up>(__lhs);
-  const auto __urhs          = static_cast<_Up>(__rhs);
-
-  if constexpr ((sizeof(_Up) <= sizeof(int16_t)))
-  {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
-      NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u16 %0, %1, %2;"
-                                        : "=h"(__result_lo)
-                                        : "h"(__ulhs), "h"(__urhs)); }))};
-    return {static_cast<_Result>(__result_lo), __overflow_mul};
-  }
-  else if constexpr ((sizeof(_Up) <= sizeof(int32_t)))
-  {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
-      NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u32 %0, %1, %2;"
-                                        : "=r"(__result_lo)
-                                        : "r"(__ulhs), "r"(__urhs)); }))};
-    return {static_cast<_Result>(__result_lo), __overflow_mul};
-  }
-  else if constexpr ((sizeof(_Up) <= sizeof(int64_t)))
-  {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT{
-      NV_IF_TARGET(NV_IS_DEVICE, ({ asm("mul.lo.u64 %0, %1, %2;"
-                                        : "=l"(__result_lo)
-                                        : "l"(__ulhs), "l"(__urhs)); }))};
-    return {static_cast<_Result>(__result_lo), __overflow_mul};
-  }
-  else
+  if (__overflow_mul)
   {
     // Multiply with overflow results in UB, which isn't allowed during constant
     // evaluation. Instead, multiply the absolute values of lhs and rhs and
     // apply negative sign if needed to get expected low-word result
-    const auto __uresult_lo = __cccl_uintmax_t{__uabs_lhs} * __cccl_uintmax_t{__uabs_rhs};
-    const auto __result_lo  = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
-    return {__result_lo, __overflow_mul};
+    const auto __uresult_lo = __uabs_lhs * __uabs_rhs;
+    const auto __result_lo  = __negative_result ? ::cuda::neg(__uresult_lo) : __uresult_lo;
+    return {static_cast<_Result>(__result_lo), __overflow_mul};
+  }
+  else
+  {
+    const auto __result_lo = static_cast<_UPromoted>(__lhs) * static_cast<_UPromoted>(__rhs);
+    return {static_cast<_Result>(__result_lo), __overflow_mul};
   }
 }
 
