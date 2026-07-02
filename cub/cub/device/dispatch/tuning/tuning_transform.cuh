@@ -23,6 +23,8 @@
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
@@ -43,23 +45,49 @@ enum class TransformAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algorithm)
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] constexpr const char* to_string(TransformAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case TransformAlgorithm::prefetch:
-      return os << "TransformAlgorithm::prefetch";
+      return "TransformAlgorithm::prefetch";
     case TransformAlgorithm::vectorized:
-      return os << "TransformAlgorithm::vectorized";
+      return "TransformAlgorithm::vectorized";
     case TransformAlgorithm::ldgsts:
-      return os << "TransformAlgorithm::ldgsts";
+      return "TransformAlgorithm::ldgsts";
     case TransformAlgorithm::ublkcp:
-      return os << "TransformAlgorithm::ublkcp";
+      return "TransformAlgorithm::ublkcp";
     default:
-      return os << "TransformAlgorithm::<unknown>";
+      return "<unknown TransformAlgorithm>";
   }
 }
+} // namespace detail
 #endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::TransformAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::TransformAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The prefetch sub-policy for @ref TransformPolicy.
 struct TransformPrefetchPolicy
