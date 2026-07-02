@@ -32,7 +32,7 @@ C2H_TEST("nccl_communicator_ref not constructible from NCCL_COMM_NULL", "[multi_
   STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, cuda::std::nullptr_t>);
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref basic")
+MGMN_TEST("nccl_communicator_ref basic", )
 {
   SECTION("rank and size")
   {

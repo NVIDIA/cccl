@@ -26,6 +26,8 @@
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 
@@ -78,14 +80,14 @@ _CCCL_CONCEPT __communicator = _CCCL_REQUIRES_EXPR((_Comm), _Comm& __comm)(
 
 // Use a typed pointer as default here, since the op may need to instantiated with a
 // dereferenceable pointer type for reductions
-template <class _Comm, class _Ptr = int*>
+template <class _Comm, class _Ptr = int*, class _Op = cuda::std::plus<>>
 _CCCL_CONCEPT __has_reduce = _CCCL_REQUIRES_EXPR(
-  (_Comm, _Ptr),
+  (_Comm, _Ptr, _Op),
   _Comm& __comm,
   _Ptr __sendbuff,
   _Ptr __recvbuff,
   ::cuda::std::size_t __count,
-  ::cuda::std::plus<> __op,
+  _Op __op,
   ::cuda::std::int32_t __root,
   ::cuda::stream_ref __stream)(
   requires(__communicator<_Comm>),
@@ -96,14 +98,14 @@ _CCCL_CONCEPT __has_reduce = _CCCL_REQUIRES_EXPR(
 
 // Use a typed pointer as default here, since the op may need to instantiated with a
 // dereferenceable pointer type for reductions
-template <class _Comm, class _Ptr = int*>
+template <class _Comm, class _Ptr = int*, class _Op = ::cuda::std::plus<>>
 _CCCL_CONCEPT __has_all_reduce = _CCCL_REQUIRES_EXPR(
-  (_Comm, _Ptr),
+  (_Comm, _Ptr, _Op),
   _Comm& __comm,
   _Ptr __sendbuff,
   _Ptr __recvbuff,
   ::cuda::std::size_t __count,
-  ::cuda::std::plus<> __op,
+  _Op __op,
   ::cuda::stream_ref __stream)(
   requires(__communicator<_Comm>),
   _Same_as(void) __comm.all_reduce(
@@ -214,6 +216,18 @@ _CCCL_CONCEPT __has_all_to_all_v = _CCCL_REQUIRES_EXPR(
     __recv_counts,
     __recv_displs,
     __stream));
+
+// ==========================================================================================
+
+template <class _Range>
+_CCCL_CONCEPT __range_of_communicators = _CCCL_REQUIRES_EXPR((_Range), )(
+  requires(::cuda::std::ranges::forward_range<_Range>),
+  requires(__communicator<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_Range>>>));
+
+template <class _Range>
+_CCCL_CONCEPT __range_of_streams = _CCCL_REQUIRES_EXPR((_Range), )(
+  requires(::cuda::std::ranges::forward_range<_Range>),
+  requires(::cuda::std::ranges::__container_compatible_range<_Range, ::cuda::stream_ref>));
 } // namespace cuda::experimental
 // NOLINTEND(bugprone-reserved-identifier)
 
