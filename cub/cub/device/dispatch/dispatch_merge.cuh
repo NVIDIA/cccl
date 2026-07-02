@@ -32,11 +32,11 @@ namespace detail::merge
 inline constexpr int fallback_BLOCK_THREADS    = 64;
 inline constexpr int fallback_ITEMS_PER_THREAD = 1;
 
-// TODO(bgruber): we should choose the merge_policy rather than the agent, but before C++20 this is more verbose
+// TODO(bgruber): we should choose the MergePolicy rather than the agent, but before C++20 this is more verbose
 template <typename PolicyGetter, class... Args>
 class choose_merge_agent
 {
-  static constexpr merge_policy active_policy = PolicyGetter{}();
+  static constexpr MergePolicy active_policy = PolicyGetter{}();
 
   using default_load2sh_agent_t =
     agent_t<active_policy.threads_per_block,

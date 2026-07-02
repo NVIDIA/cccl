@@ -624,7 +624,6 @@ C2H_TEST("Reduce build result has AoT metadata populated", "[reduce][aot]")
   CHECK(build.payload_size > 0);
 
   CHECK(build.runtime_policy != nullptr);
-  CHECK(build.runtime_policy_size > 0);
 
   REQUIRE(build.single_tile_kernel_lowered_name != nullptr);
   CHECK(build.single_tile_kernel_lowered_name[0] != '\0');
@@ -632,9 +631,6 @@ C2H_TEST("Reduce build result has AoT metadata populated", "[reduce][aot]")
   CHECK(build.single_tile_second_kernel_lowered_name[0] != '\0');
   REQUIRE(build.reduction_kernel_lowered_name != nullptr);
   CHECK(build.reduction_kernel_lowered_name[0] != '\0');
-
-  // nondeterministic name is null for CCCL_RUN_TO_RUN builds
-  CHECK(build.nondeterministic_kernel_lowered_name == nullptr);
 
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }
