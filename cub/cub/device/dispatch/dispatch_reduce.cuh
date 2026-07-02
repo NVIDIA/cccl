@@ -873,9 +873,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     if constexpr (StableReductionOrder)
     {
-      const bool single_tile_problem =
-        num_items <= static_cast<OffsetT>(
-          active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
+      const bool single_tile_problem = num_items <= (static_cast<OffsetT>(active_policy.single_tile.threads_per_block)
+                                                     * active_policy.single_tile.items_per_thread);
 
       // if the problem is small enough to fit into a single tile, just handle it and return early
       if (single_tile_problem)
