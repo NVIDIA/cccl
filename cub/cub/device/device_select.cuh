@@ -1800,251 +1800,6 @@ struct DeviceSelect
   }
 
   //! @rst
-  //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
-  //! equal-valued keys, only the first key and its value from each run is selectively copied
-  //! to ``d_keys_out`` and ``d_values_out``.
-  //! The total number of items selected is written to ``d_num_selected_out``.
-  //!
-  //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 13.4.
-  //!
-  //! This is an environment-based API that allows customization of:
-  //!
-  //! - Stream: Query via ``cuda::get_stream``
-  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
-  //!
-  //! - The user-provided equality operator, ``equality_op``, is used to determine whether keys are equivalent.
-  //! - Copies of the selected items are compacted into ``d_keys_out`` and ``d_values_out`` and maintain
-  //!   their original relative ordering.
-  //! - In-place operations are not supported. There must be no overlap between
-  //!   any of the provided ranges.
-  //!
-  //!
-  //! Snippet
-  //! +++++++++++++++++++++++++++++++++++++++++++++
-  //!
-  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
-  //! using environment-based API:
-  //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
-  //!     :language: c++
-  //!     :dedent:
-  //!     :start-after: example-begin select-uniquebykey-env
-  //!     :end-before: example-end select-uniquebykey-env
-  //!
-  //! @par Tuning
-  //! @rst
-  //! All *ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a
-  //! custom :ref:`policy selector <cub-policy-selectors>` that returns a @ref UniqueByKeyPolicy, as shown in the
-  //! example below:
-  //!
-  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
-  //!      :language: c++
-  //!      :dedent:
-  //!      :start-after: example-begin unique-by-key-policy-selector
-  //!      :end-before: example-end unique-by-key-policy-selector
-  //!
-  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
-  //!      :language: c++
-  //!      :dedent:
-  //!      :start-after: example-begin unique-by-key-tuning
-  //!      :end-before: example-end unique-by-key-tuning
-  //!
-  //! @endrst
-  //!
-  //! @tparam KeyInputIteratorT
-  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
-  //!
-  //! @tparam ValueInputIteratorT
-  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
-  //!
-  //! @tparam KeyOutputIteratorT
-  //!   **[inferred]** Random-access output iterator type for writing selected keys @iterator
-  //!
-  //! @tparam ValueOutputIteratorT
-  //!   **[inferred]** Random-access output iterator type for writing selected values @iterator
-  //!
-  //! @tparam NumSelectedIteratorT
-  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
-  //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
-  //! @tparam EqualityOpT
-  //!   **[inferred]** Type of equality_op
-  //!
-  //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
-  //!
-  //! @param[in] d_keys_in
-  //!   Pointer to the input sequence of keys
-  //!
-  //! @param[in] d_values_in
-  //!   Pointer to the input sequence of values
-  //!
-  //! @param[out] d_keys_out
-  //!   Pointer to the output sequence of selected keys
-  //!
-  //! @param[out] d_values_out
-  //!   Pointer to the output sequence of selected values
-  //!
-  //! @param[out] d_num_selected_out
-  //!   Pointer to the total number of items selected (i.e., length of `d_keys_out` or `d_values_out`)
-  //!
-  //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_keys_in` or `d_values_in`)
-  //!
-  //! @param[in] equality_op
-  //!   Binary predicate to determine equality
-  //!
-  //! @param[in] env
-  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename NumItemsT,
-            typename EqualityOpT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>&& ::cuda::std::
-                                       indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
-                                     int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    EnvT env = {})
-  {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::UniqueByKey");
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    using default_policy_selector =
-      detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
-                                                        detail::it_value_t<ValueInputIteratorT>>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::unique_by_key::dispatch(
-          storage,
-          bytes,
-          d_keys_in,
-          d_values_in,
-          d_keys_out,
-          d_values_out,
-          d_num_selected_out,
-          equality_op,
-          static_cast<offset_t>(num_items),
-          stream,
-          policy_selector);
-      });
-  }
-
-  //! @rst
-  //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
-  //! equal-valued keys, only the first key and its value from each run is selectively copied
-  //! to ``d_keys_out`` and ``d_values_out``.
-  //! The total number of items selected is written to ``d_num_selected_out``.
-  //!
-  //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 13.4.
-  //!
-  //! This is an environment-based API that allows customization of:
-  //!
-  //! - Stream: Query via ``cuda::get_stream``
-  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
-  //!
-  //! - The ``==`` equality operator is used to determine whether keys are equivalent.
-  //! - Copies of the selected items are compacted into ``d_keys_out`` and ``d_values_out`` and maintain
-  //!   their original relative ordering.
-  //! - In-place operations are not supported. There must be no overlap between
-  //!   any of the provided ranges.
-  //!
-  //!
-  //! Snippet
-  //! +++++++++++++++++++++++++++++++++++++++++++++
-  //!
-  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
-  //! using environment-based API and default key equality:
-  //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
-  //!     :language: c++
-  //!     :dedent:
-  //!     :start-after: example-begin select-uniquebykey-default-eq-env
-  //!     :end-before: example-end select-uniquebykey-default-eq-env
-  //!
-  //! @endrst
-  //!
-  //! @tparam KeyInputIteratorT
-  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
-  //!
-  //! @tparam ValueInputIteratorT
-  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
-  //!
-  //! @tparam KeyOutputIteratorT
-  //!   **[inferred]** Random-access output iterator type for writing selected keys @iterator
-  //!
-  //! @tparam ValueOutputIteratorT
-  //!   **[inferred]** Random-access output iterator type for writing selected values @iterator
-  //!
-  //! @tparam NumSelectedIteratorT
-  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
-  //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
-  //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
-  //!
-  //! @param[in] d_keys_in
-  //!   Pointer to the input sequence of keys
-  //!
-  //! @param[in] d_values_in
-  //!   Pointer to the input sequence of values
-  //!
-  //! @param[out] d_keys_out
-  //!   Pointer to the output sequence of selected keys
-  //!
-  //! @param[out] d_values_out
-  //!   Pointer to the output sequence of selected values
-  //!
-  //! @param[out] d_num_selected_out
-  //!   Pointer to the total number of items selected (i.e., length of `d_keys_out` or `d_values_out`)
-  //!
-  //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_keys_in` or `d_values_in`)
-  //!
-  //! @param[in] env
-  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename KeyInputIteratorT,
-    typename ValueInputIteratorT,
-    typename KeyOutputIteratorT,
-    typename ValueOutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>
-                               && !::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>,
-                             int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
-    EnvT env = {})
-  {
-    return UniqueByKey(
-      d_keys_in, d_values_in, d_keys_out, d_values_out, d_num_selected_out, num_items, ::cuda::std::equal_to<>{}, env);
-  }
-
-  //! @rst
   //! Given an input sequence ``d_in`` having runs of consecutive equal-valued keys,
   //! only the first key from each run is selectively copied to ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
@@ -2488,6 +2243,252 @@ struct DeviceSelect
   //! to ``d_keys_out`` and ``d_values_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The user-provided equality operator, ``equality_op``, is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted into ``d_keys_out`` and ``d_values_out`` and maintain
+  //!   their original relative ordering.
+  //! - In-place operations are not supported. There must be no overlap between
+  //!   any of the provided ranges.
+  //!
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
+  //! using environment-based API:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-uniquebykey-env
+  //!     :end-before: example-end select-uniquebykey-env
+  //!
+  //! @par Tuning
+  //! @rst
+  //! All *ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a
+  //! custom :ref:`policy selector <cub-policy-selectors>` that returns a @ref UniqueByKeyPolicy, as shown in the
+  //! example below:
+  //!
+  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!      :language: c++
+  //!      :dedent:
+  //!      :start-after: example-begin unique-by-key-policy-selector
+  //!      :end-before: example-end unique-by-key-policy-selector
+  //!
+  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!      :language: c++
+  //!      :dedent:
+  //!      :start-after: example-begin unique-by-key-tuning
+  //!      :end-before: example-end unique-by-key-tuning
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam ValueInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
+  //!
+  //! @tparam KeyOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected keys @iterator
+  //!
+  //! @tparam ValueOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected values @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Type of equality_op
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input sequence of keys
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the input sequence of values
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the output sequence of selected keys
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the output sequence of selected values
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the total number of items selected (i.e., length of `d_keys_out` or `d_values_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_keys_in` or `d_values_in`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary predicate to determine equality
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EqualityOpT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
+                             int>                                        = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
+    KeyInputIteratorT d_keys_in,
+    ValueInputIteratorT d_values_in,
+    KeyOutputIteratorT d_keys_out,
+    ValueOutputIteratorT d_values_out,
+    NumSelectedIteratorT d_num_selected_out,
+    NumItemsT num_items,
+    EqualityOpT equality_op,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::UniqueByKey");
+
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+
+    using default_policy_selector =
+      detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
+                                                        detail::it_value_t<ValueInputIteratorT>>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::unique_by_key::dispatch(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_keys_out,
+          d_values_out,
+          d_num_selected_out,
+          equality_op,
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
+  //! equal-valued keys, only the first key and its value from each run is selectively copied
+  //! to ``d_keys_out`` and ``d_values_out``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The ``==`` equality operator is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted into ``d_keys_out`` and ``d_values_out`` and maintain
+  //!   their original relative ordering.
+  //! - In-place operations are not supported. There must be no overlap between
+  //!   any of the provided ranges.
+  //!
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
+  //! using environment-based API and default key equality:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-uniquebykey-default-eq-env
+  //!     :end-before: example-end select-uniquebykey-default-eq-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam ValueInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
+  //!
+  //! @tparam KeyOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected keys @iterator
+  //!
+  //! @tparam ValueOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected values @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input sequence of keys
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the input sequence of values
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the output sequence of selected keys
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the output sequence of selected values
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the total number of items selected (i.e., length of `d_keys_out` or `d_values_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_keys_in` or `d_values_in`)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>, int> =
+      0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
+    KeyInputIteratorT d_keys_in,
+    ValueInputIteratorT d_values_in,
+    KeyOutputIteratorT d_keys_out,
+    ValueOutputIteratorT d_values_out,
+    NumSelectedIteratorT d_num_selected_out,
+    NumItemsT num_items,
+    const EnvT& env = {})
+  {
+    return UniqueByKey(
+      d_keys_in, d_values_in, d_keys_out, d_values_out, d_num_selected_out, num_items, ::cuda::std::equal_to<>{}, env);
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
+  //! equal-valued keys, only the first key and its value from each run is selectively copied
+  //! to ``d_keys_out`` and ``d_values_out``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
@@ -2568,6 +2569,9 @@ struct DeviceSelect
   //! @tparam EqualityOpT
   //!   **[inferred]** Type of equality_op
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2595,48 +2599,54 @@ struct DeviceSelect
   //! @param[in] equality_op
   //!   Binary predicate to determine equality
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename NumItemsT,
-            typename EqualityOpT>
-  CUB_RUNTIME_FUNCTION __forceinline__ static //
-    ::cuda::std::enable_if_t< //
-      !::cuda::std::is_convertible_v<EqualityOpT, cudaStream_t>, //
-      cudaError_t>
-    UniqueByKey(
-      void* d_temp_storage,
-      size_t& temp_storage_bytes,
-      KeyInputIteratorT d_keys_in,
-      ValueInputIteratorT d_values_in,
-      KeyOutputIteratorT d_keys_out,
-      ValueOutputIteratorT d_values_out,
-      NumSelectedIteratorT d_num_selected_out,
-      NumItemsT num_items,
-      EqualityOpT equality_op,
-      cudaStream_t stream = nullptr)
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EqualityOpT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
+                             int>                                        = 0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyInputIteratorT d_keys_in,
+    ValueInputIteratorT d_values_in,
+    KeyOutputIteratorT d_keys_out,
+    ValueOutputIteratorT d_values_out,
+    NumSelectedIteratorT d_num_selected_out,
+    NumItemsT num_items,
+    EqualityOpT equality_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::UniqueByKey");
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::unique_by_key::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_keys_out,
-      d_values_out,
-      d_num_selected_out,
-      equality_op,
-      static_cast<offset_t>(num_items),
-      stream);
+    using default_policy_selector =
+      detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
+                                                        detail::it_value_t<ValueInputIteratorT>>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::unique_by_key::dispatch(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_keys_out,
+          d_values_out,
+          d_num_selected_out,
+          equality_op,
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -2722,6 +2732,9 @@ struct DeviceSelect
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2746,17 +2759,20 @@ struct DeviceSelect
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_keys_in` or `d_values_in`)
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t UniqueByKey(
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>, int> =
+      0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_keys_in,
@@ -2765,7 +2781,7 @@ struct DeviceSelect
     ValueOutputIteratorT d_values_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     return UniqueByKey(
       d_temp_storage,
@@ -2777,7 +2793,7 @@ struct DeviceSelect
       d_num_selected_out,
       num_items,
       ::cuda::std::equal_to<>{},
-      stream);
+      env);
   }
 };
 
