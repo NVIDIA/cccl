@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Callable
 
 import numpy as np
@@ -77,6 +78,70 @@ class _Reduce:
                 raise ValueError(f"Invalid determinism: {determinism}")
 
     def __call__(
+        self,
+        *,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        op: Callable | OpAdapter,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        if temp_storage is not None:
+            msg = (
+                "Treating `Reducer` as callable to execute algorithm "
+                "is deprecated; Use `.compute()` instead."
+            )
+        else:
+            msg = (
+                "Treating `Reducer` as callable to generate temporary storage "
+                "is deprecated; Use `.get_temp_storage_bytes()` instead."
+            )
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+        return self._execute_call_legacy(
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=num_items,
+            op=op,
+            h_init=h_init,
+            stream=stream,
+        )
+
+    def get_temp_storage_bytes(
+        self,
+        *,
+        d_in,
+        d_out,
+        num_items: int,
+        op: Callable | OpAdapter,
+        h_init: np.ndarray | GpuStruct,
+    ):
+        pass
+        # return self._execute_call_legacy(
+        #     temp_storage=None,
+        #     d_in=d_in,
+        #     d_out=d_out,
+        #     num_items=num_items,
+        #     op=op,
+        #     h_init=h_init,
+        #     stream=None,
+        # )
+
+    def compute(self, temp_storage=None):
+        pass
+        # return self._execute_call(
+        #     temp_storage=temp_storage,
+        #     d_in=d_in,
+        #     d_out=d_out,
+        #     num_items=num_items,
+        #     op=op,
+        #     h_init=h_init,
+        #     stream=stream,
+        # )
+
+    def _execute_call_legacy(
         self,
         *,
         temp_storage,
