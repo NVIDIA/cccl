@@ -167,7 +167,8 @@ private:
     {
       // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
       (void) reduction_op;
-      using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
+      using default_policy_selector = detail::reduce::
+        policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
       return detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
@@ -177,7 +178,7 @@ private:
     else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
     {
       using default_policy_selector =
-        detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, /* StableReductionOrder */ false>;
+        detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
       return detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::reduce::dispatch<accum_t, /* StableReductionOrder */ false>(
@@ -196,7 +197,7 @@ private:
     else
     {
       using default_policy_selector =
-        detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, /* StableReductionOrder */ true>;
+        detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
       return detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::reduce::dispatch<accum_t>(
