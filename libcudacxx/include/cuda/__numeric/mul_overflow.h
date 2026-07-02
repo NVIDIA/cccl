@@ -75,7 +75,8 @@ template <class _Result, class _Lhs, class _Rhs>
 
   const auto __uabs_lhs        = static_cast<_ULhs>(::cuda::uabs(__lhs));
   const auto __uabs_rhs        = static_cast<_URhs>(::cuda::uabs(__rhs));
-  const auto __negative_result = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
+  const auto __sign_mismatch   = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
+  const auto __negative_result = __sign_mismatch && __uabs_lhs != 0 && __uabs_rhs != 0;
   auto __overflow_mul          = false;
 
   if (__negative_result && !is_signed_v<_Result>)
