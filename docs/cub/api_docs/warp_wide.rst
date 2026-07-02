@@ -18,5 +18,7 @@ These algorithms may only be invoked by ``1 <= n <= 32`` *consecutive* threads i
 * :cpp:class:`cub::WarpMergeSort` sorts items partitioned across a CUDA warp
 * :cpp:struct:`cub::WarpReduce` computes reduction of items partitioned across a CUDA warp
 * :cpp:struct:`cub::WarpReduceBatched` computes reduction of multiple batches of items partitioned across a CUDA warp
+* :cpp:class:`cub::WarpReduceBatchedBroadcast` computes batched reductions and returns every batch aggregate to every
+  participating logical lane
 * :cpp:struct:`cub::WarpScan` computes a prefix scan of items partitioned across a CUDA warp
 * :cpp:class:`cub::WarpStore` stores items partitioned across a CUDA warp to a linear segment of memory
