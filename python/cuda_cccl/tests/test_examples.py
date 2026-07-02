@@ -25,6 +25,7 @@ def discover_examples():
     example_directories = [
         ("Coop Experimental", "coop/_experimental/examples"),
         ("Compute", "compute/examples"),
+        ("STF", "stf/examples"),
     ]
 
     for framework, example_dir in example_directories:
@@ -78,6 +79,16 @@ def run_example_module(module_name, display_name):
         except SystemExit as exit_exc:
             if exit_exc.code in (None, 0):
                 print(f"  {display_name} skipped (sys.exit({exit_exc.code}))")
+                return True
+            raise
+        except ImportError as import_exc:
+            # Some STF examples require optional nvmath-python dependencies that
+            # are not installed in all CI example test environments.
+            if module_name in {
+                "stf.examples.cholesky",
+                "stf.examples.potri",
+            } and "requires nvmath-python" in str(import_exc):
+                print(f"  {display_name} skipped ({import_exc})")
                 return True
             raise
 

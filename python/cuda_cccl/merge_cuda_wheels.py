@@ -5,23 +5,25 @@ Script to merge CUDA-specific wheels into a single multi-CUDA wheel.
 This script takes wheels built for different CUDA versions (cu12, cu13) and merges them
 into a single wheel that supports both CUDA versions.
 
-In particular, each wheel contains a CUDA-specific build of the `cccl.c.parallel` library
-and the associated bindings. These are present in the directory `compute/cu<version>`.
-For example, for a wheel built with CUDA 12, the directory is `compute/cu12`,
-and for a wheel built with CUDA 13, the directory is `compute/cu13`.
-This script merges these directories into a single wheel that supports both CUDA versions, i.e.,
-containing both `compute/cu12` and `compute/cu13`.
-At runtime, a shim module `compute/_bindings.py` is used to import the appropriate
-CUDA-specific bindings. See `compute/_bindings.py` for more details.
+Each wheel contains CUDA-specific builds in versioned directories:
+- `cuda/compute/cu<version>` -- cccl.c.parallel and cuda.compute bindings
+- `cuda/stf/_experimental/cu<version>` -- cccl.c.experimental.stf and cuda.stf._experimental bindings (Linux only)
+
+This script merges those directories so the final wheel supports both CUDA versions.
+At runtime, shim modules choose the right extension from the detected CUDA version
+(see `cuda/compute/_bindings.py` and `cuda/stf/_experimental/_stf_bindings.py`).
 """
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import List
+
+_CUDA_WHEEL_SUFFIX_RE = re.compile(r"\.cu(?P<version>\d+)(?=\.whl$)")
 
 
 def run_command(
@@ -43,6 +45,17 @@ def run_command(
     return result
 
 
+def cuda_version_from_wheel_name(wheel_name: str) -> str:
+    match = _CUDA_WHEEL_SUFFIX_RE.search(wheel_name)
+    if match is None:
+        raise ValueError(f"Could not find CUDA suffix in wheel name: {wheel_name}")
+    return match.group("version")
+
+
+def strip_cuda_suffix(wheel_name: str) -> str:
+    return _CUDA_WHEEL_SUFFIX_RE.sub("", wheel_name)
+
+
 def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
     """Merge multiple wheels into a single wheel with version-specific binaries."""
     print("\n=== Merging wheels ===")
@@ -51,9 +64,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
     if len(wheels) == 1:
         # Single wheel, just copy it and remove CUDA version suffix
         output_dir.mkdir(parents=True, exist_ok=True)
-        final_wheel = output_dir / wheels[0].name.replace(
-            f".cu{wheels[0].name.split('.cu')[1].split('.')[0]}.whl", ".whl"
-        )
+        final_wheel = output_dir / strip_cuda_suffix(wheels[0].name)
         shutil.copy2(wheels[0], final_wheel)
         print(f"Single wheel copied to: {final_wheel}")
         return final_wheel
@@ -100,27 +111,32 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
         # Use the first wheel as the base and merge binaries from others
         base_wheel = extracted_wheels[0]
 
-        # now copy the version-specific directory from other wheels
+        # now copy the version-specific directories from other wheels
         # into the appropriate place in the base wheel
+        version_subdirs = [
+            Path("cuda") / "compute",
+            Path("cuda") / "stf" / "_experimental",
+        ]
         for i, wheel_dir in enumerate(extracted_wheels):
-            cuda_version = wheels[i].name.split(".cu")[1].split(".")[0]
+            cuda_version = cuda_version_from_wheel_name(wheels[i].name)
             if i == 0:
                 # For base wheel, do nothing
                 continue
-            else:
-                version_dir = Path("cuda") / "compute" / f"cu{cuda_version}"
-                # Copy from other wheels
+            for parent in version_subdirs:
+                version_dir = parent / f"cu{cuda_version}"
+                src = wheel_dir / version_dir
+                if not src.is_dir():
+                    # STF is gated off on Windows; the source dir may not exist.
+                    continue
+                dst = base_wheel / version_dir
                 print(f"  Copying {version_dir} to {base_wheel}")
-                shutil.copytree(wheel_dir / version_dir, base_wheel / version_dir)
+                shutil.copytree(src, dst)
 
         # Repack the merged wheel
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Create a clean wheel name without CUDA version suffixes
-        base_wheel_name = wheels[0].name
-        # Remove any .cu* suffix from the wheel name
-        if ".cu" in base_wheel_name:
-            base_wheel_name = base_wheel_name.split(".cu")[0] + ".whl"
+        base_wheel_name = strip_cuda_suffix(wheels[0].name)
 
         print(f"Repacking merged wheel as: {base_wheel_name}")
         run_command(

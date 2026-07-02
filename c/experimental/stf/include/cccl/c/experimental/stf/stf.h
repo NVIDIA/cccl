@@ -121,6 +121,11 @@ typedef struct stf_exec_place_scope_opaque_t* stf_exec_place_scope_handle;
 //! stf_exec_place_resources_destroy().
 typedef struct stf_exec_place_resources_opaque_t* stf_exec_place_resources_handle;
 
+//! \brief Forward declaration of \c stf_ctx_handle (full definition appears
+//! below in the context section). Declared here so the
+//! stf_ctx_get_place_resources() accessor can refer to it.
+typedef struct stf_ctx_handle_t* stf_ctx_handle;
+
 //! \brief 4D position (coordinates) for partition mapping.
 //! Layout matches C++ pos4 for use as partition function arguments/result.
 typedef struct stf_pos4
@@ -335,8 +340,7 @@ int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h);
 //!
 //! Context stores the state of the STF library and serves as entry point for all API calls.
 //! Must be created with stf_ctx_create() or stf_ctx_create_graph() and destroyed with stf_ctx_finalize().
-
-typedef struct stf_ctx_handle_t* stf_ctx_handle;
+//! (Forward declared earlier in the place section.)
 
 //!
 //! \brief Opaque handle for logical data
