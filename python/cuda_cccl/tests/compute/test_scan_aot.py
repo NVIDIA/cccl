@@ -10,12 +10,13 @@ import numpy as np
 from cuda.compute import (
     OpKind,
     clear_all_caches,
+    deserialize,
     exclusive_scan,
     make_exclusive_scan,
     make_inclusive_scan,
+    serialize,
 )
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._scan import _Scan
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -57,10 +58,10 @@ def test_serialize_deserialize_exclusive_scan_round_trip():
     builder = make_exclusive_scan(
         d_in=d_in, d_out=d_out, op=OpKind.PLUS, init_value=init_value
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = _Scan.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in=d_in,
@@ -83,9 +84,9 @@ def test_serialize_deserialize_inclusive_scan_round_trip():
     builder = make_inclusive_scan(
         d_in=d_in, d_out=d_out, op=OpKind.PLUS, init_value=init_value
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
 
-    loaded = _Scan.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in=d_in,
@@ -111,12 +112,14 @@ def test_deserialize_after_jit_matches_jit_result():
     # Build + serialize (this JITs), then clear every in-process cache so the AoT
     # leg below runs cold: the deserialized scan must stand on its own and cannot
     # free-ride on a callable warmed by the build or by the JIT reference.
-    blob = make_exclusive_scan(
-        d_in=d_in, d_out=d_out_aot, op=max_op, init_value=init_value
-    ).serialize()
+    blob = serialize(
+        make_exclusive_scan(
+            d_in=d_in, d_out=d_out_aot, op=max_op, init_value=init_value
+        )
+    )
     clear_all_caches()
 
-    loaded = _Scan.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in=d_in,

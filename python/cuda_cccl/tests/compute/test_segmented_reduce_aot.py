@@ -7,9 +7,8 @@
 import cupy as cp
 import numpy as np
 
-from cuda.compute import OpKind, make_segmented_reduce
+from cuda.compute import OpKind, deserialize, make_segmented_reduce, serialize
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._segmented_reduce import _SegmentedReduce
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -65,10 +64,10 @@ def test_serialize_deserialize_segmented_reduce_round_trip():
         op=OpKind.PLUS,
         h_init=h_init,
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = _SegmentedReduce.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in=d_in,

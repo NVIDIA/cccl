@@ -7,8 +7,8 @@
 import cupy as cp
 import numpy as np
 
-from cuda.compute import make_lower_bound, make_upper_bound
-from cuda.compute.algorithms._binary_search import load_lower_bound, load_upper_bound
+from cuda.compute import make_lower_bound, make_upper_bound, serialize
+from cuda.compute.algorithms import load_lower_bound, load_upper_bound
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -30,7 +30,7 @@ def test_serialize_deserialize_lower_bound_round_trip():
     d_out = cp.empty(len(h_values), dtype=np.uintp)
 
     builder = make_lower_bound(d_data=d_data, d_values=d_values, d_out=d_out)
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
     loaded = load_lower_bound(blob)
@@ -55,7 +55,7 @@ def test_serialize_deserialize_upper_bound_round_trip():
     d_out = cp.empty(len(h_values), dtype=np.uintp)
 
     builder = make_upper_bound(d_data=d_data, d_values=d_values, d_out=d_out)
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
     loaded = load_upper_bound(blob)

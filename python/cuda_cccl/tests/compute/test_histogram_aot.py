@@ -7,9 +7,8 @@
 import cupy as cp
 import numpy as np
 
-from cuda.compute import make_histogram_even
+from cuda.compute import deserialize, make_histogram_even, serialize
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._histogram import _Histogram
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -74,10 +73,10 @@ def test_serialize_deserialize_histogram_even_round_trip():
         h_upper_level=h_upper_level,
         num_samples=num_samples,
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = _Histogram.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_samples=d_samples,

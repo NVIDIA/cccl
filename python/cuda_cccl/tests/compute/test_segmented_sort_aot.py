@@ -7,9 +7,8 @@
 import cupy as cp
 import numpy as np
 
-from cuda.compute import SortOrder, make_segmented_sort
+from cuda.compute import SortOrder, deserialize, make_segmented_sort, serialize
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
-from cuda.compute.algorithms._sort._segmented_sort import _SegmentedSort
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -82,10 +81,10 @@ def test_serialize_deserialize_segmented_sort_round_trip():
         end_offsets_in=end,
         order=SortOrder.ASCENDING,
     )
-    blob = builder.serialize()
+    blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = _SegmentedSort.deserialize(blob)
+    loaded = deserialize(blob)
     _run(
         loaded,
         d_in_keys=d_in_keys,
