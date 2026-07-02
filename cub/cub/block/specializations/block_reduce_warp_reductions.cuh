@@ -21,13 +21,19 @@
 #endif // no system header
 
 #include <cub/detail/uninitialized_copy.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/warp/specializations/warp_redux.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -109,7 +115,7 @@ struct BlockReduceWarpReductions
   //! @param[in] warp_aggregate
   //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregatesNonDeterministic(ReductionOp reduction_op, T warp_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregatesNonDeterministic(ReductionOp /*reduction_op*/, T warp_aggregate)
   {
     if (linear_tid == 0)
     {
@@ -118,7 +124,7 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
-    // Warp 0 already contributed its aggregate above since its also linear_tid == 0
+    // Warp 0 already contributed its aggregate above since it is also linear_tid == 0
     if (lane_id == 0 && warp_id != 0)
     {
       // TODO: replace this with other atomic operations when specified
@@ -136,7 +142,10 @@ struct BlockReduceWarpReductions
   }
 
   //! @rst
-  //! Recursively applies warp aggregates using template unrolling for deterministic reduction.
+  //! Cooperatively reduces warp aggregates.
+  //!
+  //! For small blocks (few warps) the reduction is performed sequentially by ``linear_tid == 0``.
+  //! For larger blocks, warp 0 reduces the warp aggregates in parallel:
   //! @endrst
   //!
   //! @tparam FullTile
@@ -147,6 +156,15 @@ struct BlockReduceWarpReductions
   template <bool FullTile, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
+    // Nothing to reduce when the tile has no valid items.
+    if constexpr (!FullTile)
+    {
+      if (num_valid <= 0)
+      {
+        return warp_aggregate;
+      }
+    }
+
     // Share lane aggregates
     if (lane_id == 0)
     {
@@ -155,21 +173,75 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
-    // Update total aggregate in warp 0, lane 0
-    if (linear_tid == 0)
+    // Below this number of warps the parallel warp-0 reduction is not worthwhile compared to a
+    // single-thread sequential loop over the warp aggregates.
+    // When __reduce_<op>_sync is available (redux), the parallel path is a single HW instruction,
+    // so we use a lower threshold.
+    // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
+    constexpr int small_block_warp_threshold = is_warp_redux_op_supported<ReductionOp, T> ? 2 : 4;
+    constexpr bool use_parallel_reduction =
+      (warps >= small_block_warp_threshold) && (threads_per_block >= warp_threads);
+
+    // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
+    if constexpr (!use_parallel_reduction)
     {
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
+      // Sequential reduction in linear_tid == 0 (legacy path for small blocks).
+      if (linear_tid == 0)
       {
-        if (FullTile || (warp_idx * logical_warp_size < num_valid))
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
         {
-          T addend       = temp_storage.warp_aggregates[warp_idx];
-          warp_aggregate = reduction_op(warp_aggregate, addend);
+          if (FullTile || (warp_idx * logical_warp_size < num_valid))
+          {
+            warp_aggregate = reduction_op(warp_aggregate, temp_storage.warp_aggregates[warp_idx]);
+          }
         }
       }
+      return warp_aggregate;
     }
+    else
+    {
+      // Parallel reduction in warp 0.
+      if (warp_id == 0)
+      {
+        const int num_warps =
+          FullTile ? warps : ::cuda::std::min(::cuda::ceil_div(num_valid, logical_warp_size), warps);
 
-    return warp_aggregate;
+        constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
+        T val;
+        if constexpr (has_identity)
+        {
+          const T id = ::cuda::identity_element<ReductionOp, T>();
+          val        = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : id;
+        }
+        else
+        {
+          val = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : T{};
+        }
+
+        constexpr int logical_lanes = ::cuda::next_power_of_two(warps);
+        NullType dummy_storage;
+        WarpReduceShfl<T, logical_lanes> warp_reduce(dummy_storage);
+
+        if constexpr (is_warp_redux_op_supported<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>)
+        {
+          if (const auto result = cub::detail::warp_redux(val, 0xFFFFFFFFu, reduction_op))
+          {
+            return *result;
+          }
+          warp_aggregate = warp_reduce.template Reduce<true>(val, num_warps, reduction_op);
+        }
+        else
+        {
+          // When we have an identity element, every lane in the logical warp holds a valid value
+          // (real or identity), so we can take the all-lanes-valid fast path. Otherwise, fall back
+          // to the partial-valid form which uses num_warps as the last lane.
+          constexpr bool all_lanes_valid = has_identity || (FullTile && (warps == logical_lanes));
+          warp_aggregate                 = warp_reduce.template Reduce<all_lanes_valid>(val, num_warps, reduction_op);
+        }
+      }
+      return warp_aggregate;
+    }
   }
 
   //! @rst
