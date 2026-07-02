@@ -16,9 +16,9 @@ reconstructed from bytes alone, with no live objects supplied to ``deserialize``
 Only the per-call ``state`` (device pointers, iterator-state bytes, operator /
 init-value bytes) is left out — it is bound at ``__call__`` time as usual.
 
-Layout is little-endian, length-prefixed, and versioned. A blob produced here is
-*prepended* to the C ``build_result`` blob by the algorithm wrapper; on read, the
-descriptor region is consumed and ``Reader.remaining()`` yields the C blob.
+Layout is little-endian, length-prefixed, and versioned. The C ``build_result``
+blob is carried as one length-prefixed member of the descriptor schema (see
+``serializable.Serializable``), so a whole blob is self-delimiting.
 """
 
 from __future__ import annotations
@@ -32,24 +32,7 @@ from .._device_code import DeviceCode
 
 # Bump when the descriptor wire format changes incompatibly.
 _MAGIC = b"CCAOTPY1"
-_VERSION = 1
-
-# Sanity caps on blob-controlled allocation sizes. The descriptor sidecar only
-# carries small metadata (operator state structs, scalar/struct value types, a
-# handful of extra LTOIR modules); a blob requesting more than these is corrupt
-# or malicious, and materializing it would be a needless OOM/CPU DoS. These are
-# generous upper bounds, not tight limits — legitimate blobs stay far below.
-_MAX_PLACEHOLDER_BYTES = 1 << 24  # 16 MiB: op-state / value-type placeholders
-_MAX_EXTRA_LTOIRS = 1 << 16  # 65536: extra LTOIR modules per op
-
-
-def _check_size(n: int, what: str, limit: int = _MAX_PLACEHOLDER_BYTES) -> int:
-    if n > limit:
-        raise ValueError(
-            f"AoT blob: {what} ({n}) exceeds the maximum allowed ({limit}); "
-            "blob is corrupt or untrusted."
-        )
-    return n
+_VERSION = 2
 
 
 class Writer:
@@ -201,8 +184,8 @@ def read_op(r: Reader) -> Op:
     code = r.blob()
     code_kind = r.text()
     state_alignment = r.u32()
-    state_size = _check_size(r.u64(), "operator state size")
-    n_extra = _check_size(r.u32(), "extra-LTOIR count", _MAX_EXTRA_LTOIRS)
+    state_size = r.u64()
+    n_extra = r.u32()
     extras = [DeviceCode(op_bytes=r.blob(), kind=r.text()) for _ in range(n_extra)]
     return Op(
         name=name,
@@ -239,7 +222,6 @@ def write_value(w: Writer, val: Value) -> None:
 
 def read_value(r: Reader) -> Value:
     value_type = read_type_info(r)
-    _check_size(value_type.size, "value type size")
     # Placeholder state sized to the value type; __call__ rebinds the real bytes.
     placeholder = np.zeros(value_type.size, dtype=np.uint8)
     return Value(value_type, placeholder)

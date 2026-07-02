@@ -7,13 +7,14 @@ from __future__ import annotations
 
 from functools import cache
 
+from .._aot import NESTED, AlgoTag, Serializable
 from .._caching import cache_with_registered_key_functions
 from .._cpp_compile import compile_cpp_op_code
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators import DiscardIterator
 from ..op import OpAdapter, RawOp, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
-from ._three_way_partition import make_three_way_partition
+from ._three_way_partition import _ThreeWayPartition, make_three_way_partition
 
 
 @cache
@@ -27,8 +28,16 @@ extern "C" __device__ void always_false(void*, void* result) {{
     return RawOp(ltoir=code, name="always_false")
 
 
-class _Select:
-    __slots__ = ["partitioner", "discard_second", "discard_unselected", "false_op"]
+class _Select(Serializable):
+    _serde_tag = AlgoTag.SELECT
+    __slots__ = ["partitioner"]
+
+    # select is three_way_partition with an always-false second predicate and
+    # the second/unselected outputs discarded. Those helpers are derived from
+    # d_out (a DiscardIterator matching its type) and a cached constant op, so
+    # they're rebuilt where needed rather than stored — the partitioner is the
+    # only state, which lets _Select serialize via its (nested) schema.
+    __serde_schema__ = (("partitioner", NESTED(_ThreeWayPartition)),)
 
     def __init__(
         self,
@@ -37,23 +46,14 @@ class _Select:
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
     ):
-        # Create discard iterators for unused outputs, using d_out as reference
-        # to match the input/output type
-        self.discard_second = DiscardIterator(d_out)
-        self.discard_unselected = DiscardIterator(d_out)
-
-        # Create adapter for the always-false second predicate
-        self.false_op = _always_false_op()
-
-        # Use three_way_partition internally
         self.partitioner = make_three_way_partition(
             d_in=d_in,
             d_first_part_out=d_out,
-            d_second_part_out=self.discard_second,
-            d_unselected_out=self.discard_unselected,
+            d_second_part_out=DiscardIterator(d_out),
+            d_unselected_out=DiscardIterator(d_out),
             d_num_selected_out=d_num_selected_out,
             select_first_part_op=cond,
-            select_second_part_op=self.false_op,
+            select_second_part_op=_always_false_op(),
         )
 
     def __call__(
@@ -71,11 +71,11 @@ class _Select:
             temp_storage=temp_storage,
             d_in=d_in,
             d_first_part_out=d_out,
-            d_second_part_out=self.discard_second,
-            d_unselected_out=self.discard_unselected,
+            d_second_part_out=DiscardIterator(d_out),
+            d_unselected_out=DiscardIterator(d_out),
             d_num_selected_out=d_num_selected_out,
             select_first_part_op=make_op_adapter(cond),
-            select_second_part_op=self.false_op,
+            select_second_part_op=_always_false_op(),
             num_items=num_items,
             stream=stream,
         )

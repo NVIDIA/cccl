@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._aot import serde as _aot_serde
+from ..._aot import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
 from ..._utils.protocols import (
@@ -19,11 +19,9 @@ from ..._utils.temp_storage_buffer import TempStorageBuffer
 from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
-# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
-_ALGO_RADIX_SORT = 7
 
-
-class _RadixSort:
+class _RadixSort(Serializable):
+    _serde_tag = AlgoTag.RADIX_SORT
     __slots__ = [
         "d_in_keys_cccl",
         "d_out_keys_cccl",
@@ -32,6 +30,15 @@ class _RadixSort:
         "decomposer_op",
         "build_result",
     ]
+
+    __serde_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_in_values_cccl", ITER),
+        ("d_out_values_cccl", ITER),
+        ("decomposer_op", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceRadixSortBuildResult)),
+    )
 
     def __init__(
         self,
@@ -70,35 +77,6 @@ class _RadixSort:
             self.decomposer_op,
             decomposer_return_type,
         )
-
-    @classmethod
-    def deserialize(cls, blob: bytes) -> "_RadixSort":
-        """Reconstruct a radix_sort from a blob produced by :meth:`serialize`.
-
-        Takes only the blob; all descriptors are rebuilt from the embedded
-        sidecar. No objects required.
-        """
-        r = _aot_serde.open(blob, _ALGO_RADIX_SORT)
-        obj = cls.__new__(cls)
-        obj.d_in_keys_cccl = _aot_serde.read_iterator(r)
-        obj.d_out_keys_cccl = _aot_serde.read_iterator(r)
-        obj.d_in_values_cccl = _aot_serde.read_iterator(r)
-        obj.d_out_values_cccl = _aot_serde.read_iterator(r)
-        obj.decomposer_op = _aot_serde.read_op(r)
-        obj.build_result = _bindings.DeviceRadixSortBuildResult.deserialize(
-            r.remaining()
-        )
-        return obj
-
-    def serialize(self) -> bytes:
-        """Return a self-contained bytes blob for this built radix_sort."""
-        w = _aot_serde.begin(_ALGO_RADIX_SORT)
-        _aot_serde.write_iterator(w, self.d_in_keys_cccl)
-        _aot_serde.write_iterator(w, self.d_out_keys_cccl)
-        _aot_serde.write_iterator(w, self.d_in_values_cccl)
-        _aot_serde.write_iterator(w, self.d_out_values_cccl)
-        _aot_serde.write_op(w, self.decomposer_op)
-        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

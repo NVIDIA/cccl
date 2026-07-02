@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
-from .._aot.dispatch import deserialize as deserialize
-from .._aot.dispatch import serialize as serialize
+from .._aot import deserialize as deserialize
+from .._aot import serialize as serialize
 from ._binary_search import load_lower_bound as load_lower_bound
 from ._binary_search import load_upper_bound as load_upper_bound
 from ._binary_search import lower_bound as lower_bound

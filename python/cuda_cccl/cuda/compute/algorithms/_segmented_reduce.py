@@ -11,7 +11,7 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._aot import serde as _aot_serde
+from .._aot import BUILD_RESULT, ITER, OP, VALUE, AlgoTag, Serializable
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
     call_build,
@@ -27,11 +27,9 @@ from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
-# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
-_ALGO_SEGMENTED_REDUCE = 3
 
-
-class _SegmentedReduce:
+class _SegmentedReduce(Serializable):
+    _serde_tag = AlgoTag.SEGMENTED_REDUCE
     __slots__ = [
         "build_result",
         "d_in_cccl",
@@ -41,6 +39,16 @@ class _SegmentedReduce:
         "h_init_cccl",
         "op_cccl",
     ]
+
+    __serde_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("start_offsets_in_cccl", ITER),
+        ("end_offsets_in_cccl", ITER),
+        ("h_init_cccl", VALUE),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceSegmentedReduceBuildResult)),
+    )
 
     def __init__(
         self,
@@ -71,37 +79,6 @@ class _SegmentedReduce:
             self.op_cccl,
             self.h_init_cccl,
         )
-
-    @classmethod
-    def deserialize(cls, blob: bytes) -> "_SegmentedReduce":
-        """Reconstruct a segmented_reduce from a blob produced by :meth:`serialize`.
-
-        Takes only the blob; all descriptors are rebuilt from the embedded
-        sidecar. No objects required.
-        """
-        r = _aot_serde.open(blob, _ALGO_SEGMENTED_REDUCE)
-        obj = cls.__new__(cls)
-        obj.d_in_cccl = _aot_serde.read_iterator(r)
-        obj.d_out_cccl = _aot_serde.read_iterator(r)
-        obj.start_offsets_in_cccl = _aot_serde.read_iterator(r)
-        obj.end_offsets_in_cccl = _aot_serde.read_iterator(r)
-        obj.h_init_cccl = _aot_serde.read_value(r)
-        obj.op_cccl = _aot_serde.read_op(r)
-        obj.build_result = _bindings.DeviceSegmentedReduceBuildResult.deserialize(
-            r.remaining()
-        )
-        return obj
-
-    def serialize(self) -> bytes:
-        """Return a self-contained bytes blob for this built segmented_reduce."""
-        w = _aot_serde.begin(_ALGO_SEGMENTED_REDUCE)
-        _aot_serde.write_iterator(w, self.d_in_cccl)
-        _aot_serde.write_iterator(w, self.d_out_cccl)
-        _aot_serde.write_iterator(w, self.start_offsets_in_cccl)
-        _aot_serde.write_iterator(w, self.end_offsets_in_cccl)
-        _aot_serde.write_value(w, self.h_init_cccl)
-        _aot_serde.write_op(w, self.op_cccl)
-        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,

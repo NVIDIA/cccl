@@ -12,18 +12,16 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._aot import serde as _aot_serde
+from .._aot import BUILD_RESULT, ITER, U64, VALUE, AlgoTag, Serializable
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..typing import DeviceArrayLike, IteratorT
 
-# Algorithm tag stored in the descriptor sidecar (see _aot_serde).
-_ALGO_HISTOGRAM = 11
 
-
-class _Histogram:
+class _Histogram(Serializable):
+    _serde_tag = AlgoTag.HISTOGRAM
     __slots__ = [
         "num_rows",
         "d_samples_cccl",
@@ -33,6 +31,16 @@ class _Histogram:
         "h_upper_level_cccl",
         "build_result",
     ]
+
+    __serde_schema__ = (
+        ("num_rows", U64),
+        ("d_samples_cccl", ITER),
+        ("d_histogram_cccl", ITER),
+        ("h_num_output_levels_cccl", VALUE),
+        ("h_lower_level_cccl", VALUE),
+        ("h_upper_level_cccl", VALUE),
+        ("build_result", BUILD_RESULT(_bindings.DeviceHistogramBuildResult)),
+    )
 
     def __init__(
         self,
@@ -68,37 +76,6 @@ class _Histogram:
             row_stride_samples,
             is_evenly_segmented,
         )
-
-    @classmethod
-    def deserialize(cls, blob: bytes) -> "_Histogram":
-        """Reconstruct a histogram from a blob produced by :meth:`serialize`.
-
-        Takes only the blob; all descriptors are rebuilt from the embedded
-        sidecar. No objects required.
-        """
-        r = _aot_serde.open(blob, _ALGO_HISTOGRAM)
-        obj = cls.__new__(cls)
-        obj.num_rows = r.u64()
-        obj.d_samples_cccl = _aot_serde.read_iterator(r)
-        obj.d_histogram_cccl = _aot_serde.read_iterator(r)
-        obj.h_num_output_levels_cccl = _aot_serde.read_value(r)
-        obj.h_lower_level_cccl = _aot_serde.read_value(r)
-        obj.h_upper_level_cccl = _aot_serde.read_value(r)
-        obj.build_result = _bindings.DeviceHistogramBuildResult.deserialize(
-            r.remaining()
-        )
-        return obj
-
-    def serialize(self) -> bytes:
-        """Return a self-contained bytes blob for this built histogram."""
-        w = _aot_serde.begin(_ALGO_HISTOGRAM)
-        w.u64(self.num_rows)
-        _aot_serde.write_iterator(w, self.d_samples_cccl)
-        _aot_serde.write_iterator(w, self.d_histogram_cccl)
-        _aot_serde.write_value(w, self.h_num_output_levels_cccl)
-        _aot_serde.write_value(w, self.h_lower_level_cccl)
-        _aot_serde.write_value(w, self.h_upper_level_cccl)
-        return w.getvalue() + self.build_result.serialize()
 
     def __call__(
         self,
