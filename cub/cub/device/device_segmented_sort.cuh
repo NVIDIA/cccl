@@ -106,19 +106,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! DeviceSegmentedSort supports custom tuning policies to control the underlying
-//! algorithms. The tuning policy is passed via the CUDA execution environment
-//! using ``cuda::execution::tune()``.
-//!
-//! The top-level policy type is ``cub::SegmentedSortPolicy``, which aggregates:
-//!
-//! - ``cub::SegmentedSortRadixSortPolicy`` — controls the radix sort kernel for
-//!   large segments
-//! - ``cub::SegmentedSortSubWarpMergeSortPolicy`` — controls the sub-warp merge
-//!   sort kernel for small segments (``small_segment`` member) and medium segments
-//!   (``medium_segment`` member)
-//!
-//! Example:
+//! All algorithms in DeviceSegmentedSort that accept an environment can be tuned by passing a custom :ref:`policy
+//! selector <cub-policy-selectors>` that returns a @ref SegmentedSortPolicy, as shown in the example below:
 //!
 //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
 //!    :language: c++
