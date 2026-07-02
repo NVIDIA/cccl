@@ -13,6 +13,7 @@
 
 #include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 
 #include <sstream>
 
@@ -146,7 +147,7 @@ struct overaligned_addable_and_equal_comparable_policy
   {
     __host__ __device__ static void check(const CustomType& obj)
     {
-      _CCCL_VERIFY(reinterpret_cast<uintptr_t>(&obj) % Alignment == 0,
+      _CCCL_VERIFY(cuda::std::is_sufficiently_aligned<Alignment>(&obj),
                    "overaligned_addable_policy_t<Alignment> is not sufficiently aligned");
     }
 
