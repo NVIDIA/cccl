@@ -8,7 +8,7 @@
 //! the multi-kernel + global histogram pipeline used by cub::DeviceTopK. Each
 //! cluster processes exactly one segment.
 //!
-//! Histogram strategy (Pattern C):
+//! Histogram strategy (block-private accumulation, then DSMEM merge into the leader):
 //!   1. Every block lays out `hist[num_buckets]` at the same offset in its own
 //!      shared memory. Each block accumulates a block-private histogram using
 //!      shared-space `red` reductions (cheap, SMEM-local): cta scope for
@@ -418,7 +418,7 @@ struct agent_batched_topk_cluster
     // (ping-ponged) across radix passes; all are initialized once up front by `init_load_barriers`.
     ::cuda::std::uint64_t load_mbar[PipelineStages];
     // Persistent unaligned boundary edges (block-load path only): the head prefix (`[0, head_edge_cap)`, on rank 0) and
-    // the peeled tail suffix (`[head_edge_cap, 2 * head_edge_cap)`, on the tail owner when `full_slots == 1`), each
+    // the peeled tail suffix (`[head_edge_cap, 2 * head_edge_cap)`, on the tail owner whenever it is unaligned), each
     // strictly `< load_align_items` keys. Loaded once in the first pass and folded into every pass + the final filter.
     // Block-local (never reached through DSMEM).
     key_t edge_keys[2 * load_align_items];
@@ -615,8 +615,8 @@ struct agent_batched_topk_cluster
     }
   }
 
-  // Stage a small (`< load_align_items` items) unaligned run -- a boundary edge (head prefix / tail suffix) or a
-  // resident chunk's suffix -- from gmem `src` into SMEM `dst` and fold it into the first pass in one strided sweep:
+  // Stage a small (`< load_align_items` items) unaligned run -- a boundary edge (head prefix / tail suffix) -- from
+  // gmem `src` into SMEM `dst` and fold it into the first pass in one strided sweep:
   // each thread copies *and* folds the same indices it owns (`local % threads_per_block == threadIdx.x`), folding from
   // the just-loaded register rather than from SMEM. These runs cannot go through the aligned (16-byte-aligned dst,
   // guard-free) BlockLoadToShared path. Fusing the copy and the fold means no thread ever reads a key another thread
@@ -1072,9 +1072,8 @@ private:
       const offset_t chunk_idx = chunk_index_of(overflow_idx);
       const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
       // Every chunk begins on a `load_align` boundary (zero prefix), so the guard-free aligned (TMA bulk) path applies.
-      // Only the global-last chunk can carry an unaligned suffix, and it only reaches the streamer when that tail was
-      // peeled (its suffix lives in `edge_keys`); streaming just the aligned bulk excludes it. For every interior chunk
-      // `bulk == count`.
+      // The global-last chunk's unaligned suffix is always peeled into `edge_keys`, so streaming just its aligned bulk
+      // excludes it. For every interior chunk `bulk == count`.
       const auto split = agent.split_chunk(block_keys_base, chunk);
       _CCCL_ASSERT(split.prefix == offset_t{0}, "overflow streamer received a chunk with an unaligned start");
       char* const dst = agent.key_slots + (stream_slot_base + stage) * ChunkBytes;
@@ -1086,7 +1085,7 @@ private:
 
     // Rebuild the shared span for the chunk currently resident in `stage`'s slot without storing per-stage state: the
     // slot address is a pure function of `stage` and the length is recomputed from chunk index `o`, so there is no
-    // spillable `pending[]` array (see `bulk_span`). Returns the aligned bulk only (a peeled tail's suffix is
+    // spillable `pending[]` array (see `bulk_span`). Returns the aligned bulk only (the always-peeled tail suffix is
     // excluded).
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<key_t> stage_span(int stage, offset_t o) const
     {
@@ -1454,20 +1453,19 @@ private:
     // tail of its block_tile and re-streams its overflow chunks from gmem each pass via `streamer`.
     //
     // Boundary edges (the unaligned head prefix on rank 0 and the unaligned tail suffix on the tail owner) cannot use
-    // the aligned TMA streamer. The head is always peeled into the persistent `edge_keys` buffer; the tail suffix is
-    // kept resident in its (partial, single-slot) tail chunk, peeled into `edge_keys` only when a single slot fits
-    // (`full_slots == 1`). Peeling the head removes the dual-boundary pressure, so streaming needs only `full_slots >=
+    // the aligned TMA streamer, so both are always peeled into the persistent `edge_keys` buffer. The tail chunk's
+    // aligned bulk is then a normal (possibly partial) aligned chunk that can be resident or streamed like any other;
+    // no partial tail chunk is ever kept resident. Peeling both boundaries means streaming needs only `full_slots >=
     // 1`.
     //
-    // `stream_slots` is right-sized: clamped to leave a resident slot for a non-peeled tail without exceeding the
-    // available slots; deep overflows still get the full `PipelineStages` depth. The generic fallback has no async
-    // pipeline (it re-reads overflow from gmem each pass and peels nothing), so it reserves no streaming slots.
+    // `stream_slots` is right-sized: clamped into `[1, full_slots]` when streaming; deep overflows still get the full
+    // `PipelineStages` depth. The generic fallback has no async pipeline (it re-reads overflow from gmem each pass and
+    // peels nothing), so it reserves no streaming slots.
     const offset_t full_slots                   = block_tile_capacity / static_cast<offset_t>(chunk_items);
     [[maybe_unused]] const bool needs_streaming = my_chunks > full_slots;
 
     // Does this rank own the global tail, and does that tail carry an unaligned suffix? (block-load path only; the
     // generic fallback reads any trailing items straight from gmem and never peels.)
-    [[maybe_unused]] offset_t tail_local        = offset_t{0};
     [[maybe_unused]] offset_t tail_suffix_items = offset_t{0};
     bool owns_suffix_tail                       = false;
     if constexpr (use_block_load_to_shared)
@@ -1476,29 +1474,23 @@ private:
       // true for both the strided and blocked partitions).
       if (my_chunks > 0 && part.global_index(my_chunks - offset_t{1}) == chunks - offset_t{1})
       {
-        tail_local            = my_chunks - offset_t{1};
         const auto tail_chunk = get_chunk(chunks - offset_t{1}, segment_size_u32, head_items);
         tail_suffix_items     = split_chunk(block_keys_base, tail_chunk).suffix;
         owns_suffix_tail      = tail_suffix_items != offset_t{0};
       }
     }
 
-    // Peel the suffix tail only when streaming and no resident slot can be spared for it (`full_slots == 1`); otherwise
-    // keep it resident. `reserved_resident` holds back one slot for a non-peeled tail; `stream_slots` is then clamped
-    // into `[1, full_slots - reserved_resident]`.
-    offset_t stream_slots    = offset_t{0};
-    bool peel_tail           = false;
-    bool force_tail_resident = false;
+    // `peel_tail` mirrors `owns_suffix_tail` (always peel, per above). `stream_slots` clamps into `[1, full_slots]`.
+    offset_t stream_slots = offset_t{0};
+    bool peel_tail        = false;
     if constexpr (use_block_load_to_shared)
     {
+      peel_tail = owns_suffix_tail;
       if (needs_streaming)
       {
-        peel_tail                        = owns_suffix_tail && full_slots < offset_t{2};
-        const offset_t reserved_resident = (owns_suffix_tail && !peel_tail) ? offset_t{1} : offset_t{0};
-        const offset_t excess            = my_chunks - full_slots;
-        const offset_t want_stream       = (::cuda::std::min) (static_cast<offset_t>(PipelineStages), excess);
-        const offset_t max_stream        = full_slots - reserved_resident; // >= 1 (full_slots >= 1; reserve <= f-1)
-        stream_slots = (::cuda::std::max) (offset_t{1}, (::cuda::std::min) (want_stream, max_stream));
+        const offset_t excess      = my_chunks - full_slots;
+        const offset_t want_stream = (::cuda::std::min) (static_cast<offset_t>(PipelineStages), excess);
+        stream_slots               = (::cuda::std::max) (offset_t{1}, (::cuda::std::min) (want_stream, full_slots));
       }
     }
     const offset_t resident_slots_cap = full_slots - stream_slots;
@@ -1507,28 +1499,15 @@ private:
     // `[resident_slots_cap, full_slots)`, so both regions live inside the allocated block_tile buffer.
     _CCCL_ASSERT(my_resident_chunks <= resident_slots_cap, "Dynamic shared memory block_tile is too small");
 
-    // A non-peeled suffix tail is forced into the last resident slot iff it would otherwise stream (it falls in the
-    // overflow region). The overflow then begins one chunk earlier so the displaced middle chunk streams in its place.
     const offset_t overflow_count = (my_chunks > my_resident_chunks) ? (my_chunks - my_resident_chunks) : offset_t{0};
-    if constexpr (use_block_load_to_shared)
-    {
-      // Under `reverse_residency` the suffix tail (global-last chunk) is the top resident chunk by construction, so no
-      // forced-tail exception is needed (its suffix is appended to the resident span like any other resident tail).
-      force_tail_resident = !reverse_residency && owns_suffix_tail && !peel_tail && overflow_count > 0
-                         && (tail_local >= my_resident_chunks);
-    }
     // Rank-local base of the resident and overflow (streamed) chunk windows. Default: resident `[0,
     // my_resident_chunks)`, overflow the high-index rest. `reverse_residency` swaps them: resident `[overflow_count,
-    // my_chunks)`, overflow
-    // `[0, overflow_count)`.
+    // my_chunks)`, overflow `[0, overflow_count)`.
     const offset_t resident_base = reverse_residency ? overflow_count : offset_t{0};
-    const offset_t overflow_base =
-      reverse_residency ? offset_t{0} : (force_tail_resident ? (my_resident_chunks - offset_t{1}) : my_resident_chunks);
-    _CCCL_ASSERT(!force_tail_resident || my_resident_chunks >= offset_t{1},
-                 "a forced-resident tail needs at least one resident slot");
+    const offset_t overflow_base = reverse_residency ? offset_t{0} : my_resident_chunks;
 
     // Persistent boundary-edge lengths: the head prefix lives on rank 0 (`head_items` is 0 on the generic fallback and
-    // for an aligned base); the peeled tail suffix lives on the tail owner only when `peel_tail`.
+    // for an aligned base); the peeled tail suffix lives on the tail owner whenever it is unaligned.
     [[maybe_unused]] const int head_edge_len = (cluster_rank == 0u) ? static_cast<int>(head_items) : 0;
     [[maybe_unused]] const int tail_edge_len = peel_tail ? static_cast<int>(tail_suffix_items) : 0;
 
@@ -1602,19 +1581,19 @@ private:
           // Chunks are written densely in slot order from offset 0 and read back in the same order, so the read cursor
           // (`read_off`) mirrors the write cursor (`next_off`) as a running prefix sum, avoiding a dynamically-indexed
           // `pending_spans` array that would anchor surrounding state to local memory. Every chunk begins on a
-          // `load_align` boundary (zero prefix), so its whole `count` is the aligned bulk - except a resident suffix
-          // tail, whose bulk is loaded here and whose suffix is appended afterwards. The read span is rebuilt from a
-          // rooted 32-bit shared address (see `bulk_span`) so a spilled cursor cannot demote the reads to `LD`.
+          // `load_align` boundary (zero prefix), so its whole `count` is the aligned bulk - except the global-last
+          // chunk, whose unaligned suffix is always peeled into `edge_keys`, leaving only its aligned bulk here. The
+          // read span is rebuilt from a rooted 32-bit shared address (see `bulk_span`) so a spilled cursor cannot
+          // demote the reads to `LD`.
           const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_resident_chunks));
 
-          // Resident slot -> rank-local chunk index. `resident_base + slot` (identity unless `reverse_residency` shifts
-          // the resident window to the high-index chunks), except the last slot holds a forced-resident tail.
+          // Resident slot -> rank-local chunk index (`resident_base + slot`; identity unless `reverse_residency` shifts
+          // the resident window to the high-index chunks).
           const auto resident_local = [&](offset_t slot) -> offset_t {
-            return (force_tail_resident && slot == my_resident_chunks - offset_t{1})
-                   ? tail_local
-                   : (resident_base + slot);
+            return resident_base + slot;
           };
-          // Aligned bulk of the resident chunk in `slot` (its `count` minus any tail suffix); empty when it has none.
+          // Aligned bulk of the resident chunk in `slot` (its `count` minus any peeled tail suffix); empty when it has
+          // none.
           const auto bulk_src = [&](offset_t slot) -> ::cuda::std::span<const key_t> {
             const offset_t chunk_idx = part.global_index(resident_local(slot));
             const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
@@ -1630,8 +1609,7 @@ private:
           // in `edge_keys`), so there is no reserved front gap: the write cursor starts at offset 0.
           int next_off = 0;
 
-          // Load every resident chunk's aligned bulk, densely packed in slot order, so the last slot's bulk (the tail
-          // bulk in the forced case) ends the packed region and its suffix can be appended right after it.
+          // Load every resident chunk's aligned bulk, densely packed in slot order.
           for (int stage = 0; stage < prologue; ++stage)
           {
             const auto src = bulk_src(static_cast<offset_t>(stage));
@@ -1664,22 +1642,7 @@ private:
             }
           }
 
-          // Tail suffix of a resident (non-peeled) suffix tail: append right after the last (tail) bulk. Nothing
-          // follows, so its non-16 length is harmless. A peeled tail's suffix lives in `edge_keys` instead.
-          const offset_t last_slot = my_resident_chunks - offset_t{1};
-          const auto last_chunk = get_chunk(part.global_index(resident_local(last_slot)), segment_size_u32, head_items);
-          const auto last_split = split_chunk(block_keys_base, last_chunk);
-          if (last_split.suffix > 0)
-          {
-            key_t* const edge_dst = reinterpret_cast<key_t*>(key_slots + next_off);
-            stage_and_fold_edge(edge_dst,
-                                block_keys_base + last_chunk.offset + last_split.prefix + last_split.bulk,
-                                static_cast<int>(last_split.suffix),
-                                add_first_pass);
-            next_off += static_cast<int>(last_split.suffix) * int{sizeof(key_t)};
-          }
-
-          // The resident region is one contiguous span [bulks | tail suffix] for the later passes; the head prefix is
+          // The resident region is one contiguous span of aligned bulks for the later passes; both boundary edges are
           // folded separately from `edge_keys`.
           resident_keys   = {reinterpret_cast<key_t*>(key_slots),
                              static_cast<::cuda::std::size_t>(next_off / int{sizeof(key_t)})};
@@ -1711,7 +1674,8 @@ private:
 
       // Stage the persistent boundary edges into `edge_keys` and fold them into the first pass in the same sweep (see
       // `stage_and_fold_edge`: each thread folds keys it just wrote, so no barrier is needed here). The head prefix
-      // (rank 0) precedes chunk 0; the peeled tail suffix (tail owner, `full_slots == 1`) trails the last chunk. The
+      // (rank 0) precedes chunk 0; the peeled tail suffix (tail owner, always when unaligned) trails the last chunk.
+      // The
       // `__syncthreads()` below publishes `edge_keys` for the later passes and the final filter (which read it via
       // `fold_edges` after a barrier).
       if constexpr (use_block_load_to_shared)
@@ -2160,43 +2124,34 @@ private:
                       region_is_terminal);
       };
 
-      // Resident-front extent (bulk path): the contiguous resident span minus the forced-resident tail chunk, visited
-      // separately after the overflow because it is the globally-last chunk. Only the ascending `force_tail_resident`
-      // case splits off a tail; under `reverse_residency` the tail stays folded into the span (`tail_count == 0`).
-      int tail_count  = 0;
-      int front_count = span_size(resident_keys);
-      if constexpr (use_block_load_to_shared)
-      {
-        if (force_tail_resident)
-        {
-          tail_count  = get_chunk(chunks - offset_t{1}, segment_size_u32, head_items).count;
-          front_count = front_count - tail_count;
-        }
-      }
+      // Resident-front extent (bulk path): the whole contiguous resident span. The unaligned tail suffix (the
+      // globally-last chunk's) is always peeled into `edge_keys` and folded by `process_tail_edge`, so it is never
+      // part of this span.
+      const int front_count = span_size(resident_keys);
 
       // Terminal-region flags for the last-tile direct-scan gate (block-load regions only; the generic resident loop
       // and overflow stream pass `false` and stay on lazy per-tile detection). A region is terminal when no later
-      // region in the sweep (head/resident/overflow/tail/tail-edge ascending, reversed descending) carries work. A
-      // forced tail/edge after the last overflow chunk is not special-cased -- a stray direct scan there is still
-      // correct, just rare.
+      // region in the sweep (head/resident/overflow/tail-edge ascending, reversed descending) carries work.
       const bool has_head      = head_edge_len > 0;
       const bool has_resident  = front_count > 0;
       const bool has_overflow  = overflow_count > offset_t{0};
-      const bool has_tail      = tail_count > 0;
       const bool has_tail_edge = tail_edge_len > 0;
       [[maybe_unused]] const bool resident_terminal =
-        tie_reversed ? (!has_overflow && !has_head) : (!has_overflow && !has_tail && !has_tail_edge);
-      [[maybe_unused]] const bool tail_terminal =
-        tie_reversed ? (!has_resident && !has_overflow && !has_head) : (!has_tail_edge);
+        tie_reversed ? (!has_overflow && !has_head) : (!has_overflow && !has_tail_edge);
       [[maybe_unused]] const bool head_edge_terminal =
-        tie_reversed ? true : (!has_resident && !has_overflow && !has_tail && !has_tail_edge);
+        tie_reversed ? true : (!has_resident && !has_overflow && !has_tail_edge);
       [[maybe_unused]] const bool tail_edge_terminal =
-        tie_reversed ? (!has_tail && !has_resident && !has_overflow && !has_head) : true;
+        tie_reversed ? (!has_resident && !has_overflow && !has_head) : true;
 
       // Segment-local base of the resident-front span (its lowest-index resident chunk; `resident_base` shifts it to
       // the high-index window under `reverse_residency`). The blocked partition packs the front contiguously, so
-      // element `pos` maps to `front_seg_base + pos`.
-      const offset_t front_seg_base = get_chunk(part.global_index(resident_base), segment_size_u32, head_items).offset;
+      // element `pos` maps to `front_seg_base + pos`. Guarded on `front_count > 0`: with a fully-streamed rank
+      // (`stream_slots == full_slots`) there are no resident chunks and `resident_base` would name an out-of-range
+      // local chunk under `reverse_residency`.
+      const offset_t front_seg_base =
+        (front_count > 0)
+          ? get_chunk(part.global_index(resident_base), segment_size_u32, head_items).offset
+          : offset_t{0};
 
       auto process_resident = [&](bool reversed) {
         if constexpr (use_block_load_to_shared)
@@ -2373,46 +2328,6 @@ private:
           });
       };
 
-      auto process_tail = [&](bool reversed) {
-        if constexpr (use_block_load_to_shared)
-        {
-          if (!force_tail_resident)
-          {
-            return;
-          }
-          key_t* const rfront = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
-          key_t* const tptr   = rfront + front_count;
-          const int tc        = tail_count;
-          // The forced-resident tail is the globally-last chunk `chunks-1`; its segment-local base is that chunk's
-          // offset.
-          const offset_t tail_seg_base = get_chunk(chunks - offset_t{1}, segment_size_u32, head_items).offset;
-          if (reversed)
-          {
-            process_flat(
-              [&](int pos) {
-                return tptr[tc - 1 - pos];
-              },
-              [&](int pos) {
-                return tail_seg_base + static_cast<offset_t>(tc - 1 - pos);
-              },
-              tc,
-              tail_terminal);
-          }
-          else
-          {
-            process_flat(
-              [&](int pos) {
-                return tptr[pos];
-              },
-              [&](int pos) {
-                return tail_seg_base + static_cast<offset_t>(pos);
-              },
-              tc,
-              tail_terminal);
-          }
-        }
-      };
-
       // Head prefix edge (rank 0): the segment's lowest indices `[0, head_edge_len)`, staged in `edge_keys`. Processed
       // before every chunk (ascending) / after (descending) to keep global index order. `count == 0` is a no-op, so
       // non-head ranks skip it.
@@ -2448,9 +2363,9 @@ private:
         }
       };
 
-      // Peeled tail suffix edge (tail owner, `full_slots == 1`): the segment's highest indices, staged in `edge_keys`.
-      // Processed after every chunk (ascending) / before (descending). `tail_edge_len == 0` (tail kept resident or not
-      // owned here) makes it a no-op.
+      // Peeled tail suffix edge (tail owner): the segment's highest indices, staged in `edge_keys`. Processed after
+      // every chunk (ascending) / before (descending). `tail_edge_len == 0` (aligned tail or not owned here) makes it
+      // a no-op.
       auto process_tail_edge = [&](bool reversed) {
         if constexpr (use_block_load_to_shared)
         {
@@ -2492,10 +2407,6 @@ private:
         process_tail_edge(true);
         if (!should_stop())
         {
-          process_tail(true);
-        }
-        if (!should_stop())
-        {
           process_resident(true);
         }
         if (!should_stop())
@@ -2517,10 +2428,6 @@ private:
         if (!should_stop())
         {
           process_overflow(false);
-        }
-        if (!should_stop())
-        {
-          process_tail(false);
         }
         if (!should_stop())
         {
@@ -2635,16 +2542,17 @@ private:
         const auto fold_resident = [&] {
           if constexpr (use_block_load_to_shared)
           {
-            // Resident keys are densely packed in slot order, so a running cursor recovers per-chunk spans. The last
-            // slot holds the forced-resident tail when applicable.
+            // Resident keys are densely packed in slot order (aligned bulks only), so a running cursor recovers
+            // per-chunk spans. Only the global-last chunk can be partial (its unaligned suffix is peeled into
+            // `edge_keys` and folded below), so iterate `split.bulk`, not `chunk.count`.
             key_t* const rk = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
             int cursor      = 0;
             for (offset_t s = 0; s < my_resident_chunks; ++s)
             {
-              const offset_t rl       = (force_tail_resident && s == my_resident_chunks - offset_t{1}) ? tail_local : s;
-              const auto chunk        = get_chunk(part.global_index(rl), segment_size_u32, head_items);
-              const offset_t base_off = chunk.offset;
-              const int cc            = chunk.count;
+              const auto chunk        = get_chunk(part.global_index(resident_base + s), segment_size_u32, head_items);
+              const auto split        = split_chunk(block_keys_base, chunk);
+              const offset_t base_off = chunk.offset + split.prefix;
+              const int cc            = split.bulk;
               write_run(
                 [&](int local) {
                   return rk[cursor + local];
@@ -2700,10 +2608,10 @@ private:
       }
     }
 
-    // No final cluster barrier: both filter paths place output via block-local SMEM atomics into gmem, so the last
-    // cross-CTA DSMEM access is the combined scan's `prefix_pair` push, already fenced by its post-push
-    // `cluster.sync()` (and `early_stop` is cached pre-scan). With no shared-memory access to another block after the
-    // scan, a block can return without risking a "cluster target block not present" fault from a straggler.
+    // No cluster barrier after the final filter pass: both filter paths place output via block-local SMEM atomics into
+    // gmem, so the last cross-CTA DSMEM access is the combined scan's `prefix_pair` push, already fenced by its
+    // post-push `cluster.sync()` (and `early_stop` is cached pre-scan). With no shared-memory access to another block
+    // after the scan, a block can return without risking a "cluster target block not present" fault from a straggler.
   }
 
   // Copies an entire segment `input[i] -> output[i]` for the select-all fast path (`k >= segment_size`).

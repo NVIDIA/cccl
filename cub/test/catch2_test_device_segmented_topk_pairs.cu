@@ -630,11 +630,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-
 
 // Pair analog of the keys "large fixed-size unaligned segments" test: contiguous keys offset by `pad` take the
 // block-load path with an unaligned head edge, and the 1 Mi-element segments stream, so the value payloads exercise
-// the boundary-edge value writes that the small and non-contiguous pair tests above do not. Which boundary the launch
-// stresses depends on its resident capacity: the host/graph configs keep the tail suffix resident (`full_slots > 1`),
-// covering the head edge and the resident-suffix write; the device-launch (`lid_1`) static config has a small
-// `full_slots`, so the tail suffix is peeled into `edge_keys` and the persistent `tail_edge_len`/`process_tail_edge`
-// path is covered there.
+// the boundary-edge value writes that the small and non-contiguous pair tests above do not. An unaligned tail suffix
+// is always peeled into `edge_keys` (like the head prefix), so every launch config that owns such a tail exercises the
+// head edge plus the persistent `tail_edge_len`/`process_tail_edge` value writes.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned segments",
          "[pairs][segmented][topk][device][cluster]",
          select_direction_list)
@@ -651,11 +649,18 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned
   constexpr segment_index_t num_segments           = 3;
 
   const int pad = GENERATE(0, 1, 3, 7);
-  const segment_size_t segment_size =
-    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, segment_size_t{128 * 1024}}));
-  const segment_size_t max_k     = (cuda::std::min) (static_max_k, segment_size);
-  const segment_size_t k         = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
-  const segment_size_t num_items = num_segments * segment_size;
+  // The `+ 1` / `- 4095` sizes make the global-last chunk a single item, i.e. a pure-suffix tail with an empty aligned
+  // bulk (`bulk == 0`) once `pad == 0` aligns the base, exercising the always-peeled tail edge value writes on top of a
+  // zero-length resident/streamed tail chunk (resident `128 Ki + 1`, streamed `1 Mi - 4095`).
+  const segment_size_t segment_size = GENERATE_COPY(values(
+    {static_max_segment_size,
+     static_max_segment_size - 31,
+     static_max_segment_size - 4095,
+     segment_size_t{128 * 1024},
+     segment_size_t{128 * 1024 + 1}}));
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k            = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
+  const segment_size_t num_items    = num_segments * segment_size;
 
   CAPTURE(pad, static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
 

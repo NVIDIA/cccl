@@ -548,17 +548,24 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
   // `static_max_segment_size` is chosen to exceed the largest all-resident cluster coverage (~16 blocks worth of
   // resident SMEM), so the 1 Mi-element segments force the agent's gmem-streaming overflow path (including an
   // unaligned overflow tail via `- 31`), while the 128 Ki-element segment still runs fully resident under the same
-  // streaming-capable launch configuration.
+  // streaming-capable launch configuration. The `+ 1` / `- 4095` sizes make the global-last chunk a single item, i.e.
+  // a pure-suffix tail with an empty aligned bulk (`bulk == 0`) once `pad == 0` aligns the base, exercising the
+  // always-peeled tail edge on top of a zero-length resident/streamed tail chunk (resident `128 Ki + 1`, streamed
+  // `1 Mi - 4095`).
   constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments           = 3;
 
-  constexpr auto direction = cub::detail::topk::select::max;
-  const int pad            = GENERATE(0, 1, 3, 7);
-  const segment_size_t segment_size =
-    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, segment_size_t{128 * 1024}}));
-  const segment_size_t max_k = (cuda::std::min) (static_max_k, segment_size);
-  const segment_size_t k     = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
+  constexpr auto direction          = cub::detail::topk::select::max;
+  const int pad                     = GENERATE(0, 1, 3, 7);
+  const segment_size_t segment_size = GENERATE_COPY(values(
+    {static_max_segment_size,
+     static_max_segment_size - 31,
+     static_max_segment_size - 4095,
+     segment_size_t{128 * 1024},
+     segment_size_t{128 * 1024 + 1}}));
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k            = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
 
   CAPTURE(pad, static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
 
