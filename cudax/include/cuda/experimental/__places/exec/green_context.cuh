@@ -65,8 +65,8 @@ public:
 
   ::std::string to_string() const override
   {
-    return "green_ctx(dev=" + ::std::to_string(view_.devid) + ", ctx="
-         + ::std::to_string(reinterpret_cast<::std::uintptr_t>(view_.g_ctx)) + ")";
+    return "green_ctx(dev=" + ::std::to_string(view_.devid)
+         + ", ctx=" + ::std::to_string(reinterpret_cast<::std::uintptr_t>(view_.g_ctx)) + ")";
   }
 
   size_t hash() const override
