@@ -4,6 +4,7 @@
 
 import functools
 import random
+from unittest.mock import call, patch
 
 import cupy as cp
 import numba.cuda
@@ -609,14 +610,23 @@ def test_reduce_with_stream(cuda_stream):
         d_in = cp.asarray(h_in)
         d_out = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(
-        d_in=d_in,
-        d_out=d_out,
-        num_items=d_in.size,
-        op=add_op,
-        h_init=h_init,
-        stream=cuda_stream,
-    )
+    with patch.object(
+        cuda.compute.algorithms._reduce, "validate_and_get_stream", autospec=True
+    ) as mock:
+        cuda.compute.reduce_into(
+            d_in=d_in,
+            d_out=d_out,
+            num_items=d_in.size,
+            op=add_op,
+            h_init=h_init,
+            stream=cuda_stream,
+        )
+
+        assert mock.call_args_list == [
+            call(cuda_stream),  # From 'get_temp_storage_bytes' call
+            call(cuda_stream),  # From 'compute' call
+        ]
+
     with cp_stream:
         cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
@@ -1007,14 +1017,14 @@ class TestReduceAPI:
         reducer = cuda.compute.make_reduce_into(
             d_in=d_input,
             d_out=d_output,
-            num_items=len(d_input),
+            num_items=d_input.size,
             op=OpKind.MAXIMUM,
             h_init=h_init,
         )
         temp_storage_size = reducer.get_temp_storage_bytes(
             d_in=d_input,
             d_out=d_output,
-            num_items=len(d_input),
+            num_items=d_input.size,
             op=OpKind.MAXIMUM,
             h_init=h_init,
         )
@@ -1023,7 +1033,7 @@ class TestReduceAPI:
             temp_storage=d_temp_storage,
             d_in=d_input,
             d_out=d_output,
-            num_items=len(d_input),
+            num_items=d_input.size,
             op=OpKind.MAXIMUM,
             h_init=h_init,
         )
