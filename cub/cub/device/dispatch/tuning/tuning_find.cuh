@@ -22,7 +22,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for all algorithms in @ref DeviceFind.
+//! The tuning policy for the @c FindIf algorithms in @ref DeviceFind.
 struct FindIfPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
