@@ -206,9 +206,10 @@ library and software abstraction layer, CUB provides:
      change grain sizes (threads per block, items per thread, etc.) to best match
      the processor resources of their target architecture
    * **Variant tuning**.  Most CUB primitives support alternative algorithmic
-     strategies. For example, ``cub::BlockHistogram`` is parameterized to implement either
-     an atomic-based approach or a sorting-based approach. (The latter provides uniform
-     performance regardless of input distribution.)
+     strategies. For example, ``cub::BlockHistogram`` is parameterized to implement
+     atomic-based, warp-aggregated atomic, or sorting-based approaches. The sorting-based
+     approach provides uniform performance regardless of input distribution. The
+     warp-aggregated atomic approach targets contended counters in global memory.
    * **Co-optimization**.  When the enclosing kernel
      is similarly parameterizable, a tuning configuration can be found that optimally
      accommodates their combined register and shared memory pressure.
@@ -398,10 +399,10 @@ Static tuning and co-tuning
 
 This style of flexible interface simplifies performance tuning. Most CUB
 primitives support alternative algorithmic strategies that can be
-statically targeted by a compiler-based or JIT-based autotuner. (For
-example, ``cub::BlockHistogram`` is parameterized to implement either an
-atomic-based approach or a sorting-based approach.) Algorithms are also
-tunable over parameters such as thread count and grain size as well.
+statically targeted by a compiler-based or JIT-based autotuner. For
+example, ``cub::BlockHistogram`` is parameterized to implement atomic-based,
+warp-aggregated atomic, or sorting-based approaches. Algorithms are also
+tunable over parameters such as thread count and grain size.
 Taken together, each of the CUB algorithms provides a fairly rich tuning
 space.
 
