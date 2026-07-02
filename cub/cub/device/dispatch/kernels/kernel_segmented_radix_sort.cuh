@@ -33,7 +33,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
-  constexpr segmented_radix_sort_policy policy = current_policy<PolicySelector>();
+  constexpr SegmentedRadixSortPolicy policy = current_policy<PolicySelector>();
   return AltDigitBits ? policy.alt_segmented.threads_per_block : policy.segmented.threads_per_block;
 }
 
@@ -125,7 +125,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
   // Constants
   //
 
-  static constexpr segmented_radix_sort_policy policy     = current_policy<PolicySelector>();
+  static constexpr SegmentedRadixSortPolicy policy        = current_policy<PolicySelector>();
   static constexpr RadixSortDownsweepPolicy active_policy = AltDigitBits ? policy.alt_segmented : policy.segmented;
 
   static constexpr int threads_per_block = active_policy.threads_per_block;
