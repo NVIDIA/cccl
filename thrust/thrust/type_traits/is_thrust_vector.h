@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/type_traits.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
@@ -34,13 +35,19 @@ THRUST_NAMESPACE_BEGIN
  *  Thrust vector and \c false otherwise.
  */
 template <typename T>
-inline constexpr bool is_thrust_vector_v = false;
+struct is_thrust_vector : thrust::detail::false_type
+{};
 
 template <typename T, typename Alloc>
-inline constexpr bool is_thrust_vector_v<thrust::host_vector<T, Alloc>> = true;
+struct is_thrust_vector<thrust::host_vector<T, Alloc>> : thrust::detail::true_type
+{};
 
 template <typename T, typename Alloc>
-inline constexpr bool is_thrust_vector_v<thrust::device_vector<T, Alloc>> = true;
+struct is_thrust_vector<thrust::device_vector<T, Alloc>> : thrust::detail::true_type
+{};
+
+template <typename T>
+inline constexpr bool is_thrust_vector_v = is_thrust_vector<::cuda::std::remove_cvref_t<T>>::value;
 
 /*! \} // type traits
  */
