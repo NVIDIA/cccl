@@ -29,7 +29,9 @@
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -72,25 +74,49 @@ enum RadixRankAlgorithm
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
+namespace detail
+{
+[[nodiscard]] constexpr const char* to_string(RadixRankAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case RADIX_RANK_BASIC:
-      return os << "RADIX_RANK_BASIC";
+      return "RADIX_RANK_BASIC";
     case RADIX_RANK_MEMOIZE:
-      return os << "RADIX_RANK_MEMOIZE";
+      return "RADIX_RANK_MEMOIZE";
     case RADIX_RANK_MATCH:
-      return os << "RADIX_RANK_MATCH";
+      return "RADIX_RANK_MATCH";
     case RADIX_RANK_MATCH_EARLY_COUNTS_ANY:
-      return os << "RADIX_RANK_MATCH_EARLY_COUNTS_ANY";
+      return "RADIX_RANK_MATCH_EARLY_COUNTS_ANY";
     case RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR:
-      return os << "RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR";
+      return "RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR";
     default:
-      return os << "<unknown RadixRankAlgorithm: " << static_cast<int>(algo) << ">";
+      return "<unknown RadixRankAlgorithm>";
   }
 }
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::RadixRankAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::RadixRankAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 /** Empty callback implementation */
 template <int BINS_PER_THREAD>

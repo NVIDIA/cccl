@@ -29,7 +29,7 @@ using block_size_extracting_less_t = block_size_extracting_op<cuda::std::less<>>
 template <int ThreadsPerBlock>
 struct merge_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::merge::merge_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::MergePolicy
   {
     return {ThreadsPerBlock, 1, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false, false};
   }
@@ -318,3 +318,32 @@ TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]")
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("MergePolicy", "[merge][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::MergePolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::MergePolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::MergePolicy{
+    128, 7, cub::CacheLoadModifier::LOAD_LDG, cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE, true, false};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::MergePolicy{
+    .threads_per_block        = 128,
+    .items_per_thread         = 7,
+    .load_modifier            = cub::CacheLoadModifier::LOAD_LDG,
+    .store_algorithm          = cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
+    .use_bulk_copy_for_keys   = true,
+    .use_bulk_copy_for_values = false};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

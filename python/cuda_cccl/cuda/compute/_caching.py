@@ -293,6 +293,14 @@ def _make_hashable(value):
         return (get_dtype(value), get_shape(value))
     elif isinstance(value, (np.number, np.bool_)):
         return ("numpy.scalar", value.dtype.str, value.tobytes())
+    elif isinstance(value, (bool, int, float)):
+        # Python scalars are immutable values; key them by type and value so
+        # equal-valued scalars share a cache entry. Without this they fall
+        # through to ``id(value)`` below, and a fresh (non-interned) ``int``/
+        # ``float`` with the same value misses the build cache on every call.
+        # ``_type_fqn`` keeps ``True`` distinct from ``1``/``1.0`` (and avoids
+        # collisions between like-named scalar subclasses from other modules).
+        return ("python.scalar", _type_fqn(value), value)
     elif isinstance(value, (list, tuple)):
         return tuple(_make_hashable(v) for v in value)
     elif isinstance(value, dict):
