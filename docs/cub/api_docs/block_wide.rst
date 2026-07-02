@@ -20,6 +20,7 @@ CUB block-level algorithms are specialized for execution by threads in the same 
 * :cpp:class:`cub::BlockMergeSort` sorts items partitioned across a CUDA thread block
 * :cpp:class:`cub::BlockRadixSort` sorts items partitioned across a CUDA thread block using radix sorting method
 * :cpp:struct:`cub::BlockReduce` computes reduction of items partitioned across a CUDA thread block
+* :cpp:class:`cub::BlockReduceBroadcast` computes reduction of items partitioned across a CUDA thread block and returns the aggregate to every thread
 * :cpp:class:`cub::BlockRunLengthDecode` decodes a run-length encoded sequence partitioned across a CUDA thread block
 * :cpp:struct:`cub::BlockScan` computes a prefix scan of items partitioned across a CUDA thread block
 * :cpp:struct:`cub::BlockShuffle` shifts items partitioned across a CUDA thread block
