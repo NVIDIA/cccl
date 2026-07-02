@@ -60,7 +60,7 @@ non-CI ``.github/workflows/``, and their unholy ilk should be catalogued here
 lest they anger the gods.
 
 The public/internal split
---------------------------
+-------------------------
 
 Large libraries are split into two projects: a ``_public`` project matching only
 the public headers, and an ``_internal`` project matching everything else.

@@ -8,7 +8,7 @@ Purpose-built scripts exist that drive routine work, and using the wrong tool ca
 For example, the ``ci/test_*.sh`` scripts can take hours to run a full validation suite, while the
 ``ci/util/build_and_test_targets.sh`` tool configures, builds, and runs a small subset in seconds.
 Prebuilt development containers simplify working in specific toolchains and environments.
-Core members can launch Github Actions benchmarking / bisection workflows that run on cloud infrastructure.
+Core members can launch GitHub Actions benchmarking / bisection workflows that run on cloud infrastructure.
 
 Pick a path by goal
 -------------------

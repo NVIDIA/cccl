@@ -30,7 +30,7 @@ The images are maintained in the https://github.com/rapidsai/devcontainers/ repo
 matrix file. If new images are required for the coverage, submit a PR against `main`.
 
 Add the combination to ci/matrix.yaml
---------------------------------------
+-------------------------------------
 
 The source-of-truth when generating devcontainer toolchains is the ``matrix.yaml`` file. All jobs
 from all workflows are parsed, the toolchains extracted, and the ``.devcontainer/...`` directories built.
@@ -42,7 +42,7 @@ Occasionally we'll need a devcontainer that isn't referenced in any workflow, an
 Make sure that your new toolchain is listed and documented here.
 
 Regenerate the devcontainer configs
--------------------------------------
+-----------------------------------
 
 From the repository root, regenerate every ``.devcontainer/<name>/devcontainer.json`` from the updated matrix:
 
@@ -61,7 +61,7 @@ the next run. To change settings that apply to every combination, edit the root
 ``.devcontainer/devcontainer.json`` template, then rerun the generator to propagate the change.
 
 Verify before merge
---------------------
+-------------------
 
 Locally test launching the devcontainer using the appropriate ``.devcontainer/launch.sh`` invocation.
 See :ref:`infra-devcontainer-launching` for details on launching and using the devcontainer.

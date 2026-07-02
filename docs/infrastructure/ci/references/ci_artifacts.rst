@@ -48,7 +48,7 @@ Producers and consumers find each other through ``ci/util/workflow/`` helpers:
 ``get_consumers.sh`` let a producer skip work when nothing downstream needs its output.
 
 Producer: stage and pack build outputs
----------------------------------------
+--------------------------------------
 
 A producer stages the files a consumer will need, prunes what it does not, then packs and
 uploads the set as one archive. It first checks whether any consumer exists and exits early if

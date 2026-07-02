@@ -25,7 +25,7 @@ compiler combination builds and tests inside the same ``rapidsai/devcontainers``
 image a developer would launch locally.
 
 Image source: rapidsai/devcontainers
--------------------------------------
+------------------------------------
 
 The base images are built and published by the
 `rapidsai/devcontainers <https://github.com/rapidsai/devcontainers>`_ repository,

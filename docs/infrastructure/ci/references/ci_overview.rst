@@ -8,7 +8,7 @@ The pipeline turns one push into hundreds of jobs across CUDA Toolkit versions,
 host compilers, GPU architectures, C++ standards, and operating systems.
 
 Triggering and the copy-pr-bot security model
-----------------------------------------------
+---------------------------------------------
 
 CCCL's runners have access to NVIDIA infrastructure, so arbitrary fork code must
 never run on them unreviewed. The ``copy-pr-bot`` GitHub App enforces this. CI does
@@ -52,7 +52,7 @@ To enable commit signing using your existing ssh key, set the following git opti
 
 Git is now configured to sign commits with your ssh key.
 
-To complete the process, upload the public key to your `Github Signing Keys
+To complete the process, upload the public key to your `GitHub Signing Keys
 <https://github.com/settings/keys>`_ in your browser or using the ``gh`` CLI tool:
 
 .. code-block:: bash
@@ -108,8 +108,9 @@ consumed in one or more test jobs, which may uses GPUs if needed.
 Accelerating build times with sccache
 -------------------------------------
 
-CCCL's CI uses `sccache <https://github.com/mozilla/sccache>`_ to cache compiler artifacts for
-files that haven't changed and dramatically accelerate build times. Local builds inside `CCCL's
+CCCL's CI uses a `heavily modified fork of sccache <https://github.com/rapidsai/sccache>`_ with
+improved CUDA support to cache compiler artifacts for files that haven't changed and dramatically
+accelerate build times. Local builds inside `CCCL's
 Dev Containers <https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md>`_ can share the
 same cache such that local builds and CI jobs mutually benefit from accelerated build times.
 Follow the `GitHub Authentication

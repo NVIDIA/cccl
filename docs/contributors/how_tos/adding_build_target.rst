@@ -84,7 +84,7 @@ the target but does not link libraries. Add them after the call::
     )
 
 Place the target in the hierarchy
-----------------------------------
+---------------------------------
 
 By default the metatarget path equals the target name. A target named
 ``foo.bar.baz`` builds via metatargets ``foo`` and ``foo.bar``. Running
@@ -94,7 +94,7 @@ Use ``METATARGET_PATH`` to decouple the target name from its hierarchy
 position. Rare; advanced use only.
 
 Exclude a target from the hierarchy
-------------------------------------
+-----------------------------------
 
 Pass ``NO_METATARGETS`` for targets that should not appear in the test
 hierarchy: benchmarks, standalone tools, and anything outside the

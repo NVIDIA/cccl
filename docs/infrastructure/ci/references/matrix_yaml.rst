@@ -148,7 +148,7 @@ In total this spawns six jobs:
 - test_gpu clang
 
 C++ standard resolution
-----------------------------------------------
+-----------------------
 
 ``std`` accepts integers or four keywords resolved against the intersection of the standards
 supported by the selected CTK, host compiler, device compiler, and project:

@@ -132,7 +132,7 @@ If you're adding files that should not ever trigger CI, add them to the top-leve
 change detection.
 
 Test the entry with the override matrix
-----------------------------------------
+---------------------------------------
 
 Validate new entries with ``workflows.override`` before merge. A non-empty ``override`` replaces the
 entire ``pull_request`` matrix for the PR, so CI runs only the entries you are testing. The override

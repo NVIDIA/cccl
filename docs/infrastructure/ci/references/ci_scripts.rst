@@ -13,7 +13,7 @@ exact script and arguments it ran. Scripts are organized by role:
 - ``ci/windows/`` — PowerShell equivalents of the per-project scripts for Windows runners.
 
 Per-project build and test scripts
------------------------------------
+----------------------------------
 
 Each project has a pair of scripts following a fixed naming convention:
 ``ci/build_<project>.sh`` configures and builds it, ``ci/test_<project>.sh`` builds and runs

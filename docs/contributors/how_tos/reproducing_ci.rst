@@ -7,7 +7,7 @@ A failing CI job prints everything needed to reproduce it. Open the failed
 job from the PR's checks list and expand the log.
 
 On failure: reproduction block
--------------------------------
+------------------------------
 
 When a job exits non-zero, the runner emits an
 **Instructions to Reproduce CI Failure Locally** block. It contains two steps:

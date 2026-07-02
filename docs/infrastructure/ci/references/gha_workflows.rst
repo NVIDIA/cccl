@@ -75,7 +75,7 @@ Contributors invoke these through ``workflow_dispatch`` inputs on the Actions ta
      - Runs an automated ``git bisect`` across a commit range to locate a regression.
 
 Documentation
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 .. list-table::
    :header-rows: 1
@@ -93,7 +93,7 @@ CI orchestration
 ----------------
 
 The build-workflow action
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The "build workflow from matrix" job runs the ``build-workflow`` action at
 ``.github/actions/workflow-build/``. Its script ``build-workflow.py`` reads
@@ -106,7 +106,7 @@ A second script, ``prepare-workflow-dispatch.py``, splits ``workflow.json`` into
 ``dispatch.json``. This is the structure the GHA workflow is actually dispatched over.
 
 The four-bucket split
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 ``dispatch.json`` carries four buckets, keyed by operating system crossed with job
 structure:

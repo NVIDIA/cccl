@@ -30,7 +30,7 @@ The temporary-directory copy lets you run multiple variants of the same environm
 side by side, each in its own VSCode window.
 
 Launch directly in Docker
---------------------------
+-------------------------
 
 **Drop into a shell.** Add ``--docker`` to skip VSCode and run a bash shell inside the
 container.
