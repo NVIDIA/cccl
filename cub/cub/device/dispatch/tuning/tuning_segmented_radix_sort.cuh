@@ -24,7 +24,7 @@ CUB_NAMESPACE_BEGIN
 struct SegmentedRadixSortPolicy
 {
   RadixSortDownsweepPolicy segmented; //!< Policy for the primary radix sort pass on each segment
-  RadixSortDownsweepPolicy alt_segmented; //!< Alternate policy for remainder passes
+  RadixSortDownsweepPolicy alt_segmented; //!< Policy for the alternate radix sort pass on each segment
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const SegmentedRadixSortPolicy& lhs, const SegmentedRadixSortPolicy& rhs) noexcept
