@@ -23,7 +23,6 @@
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/uabs.h>
-#include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__numeric/overflow_result.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -64,39 +63,29 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Result, class _Lhs, class _Rhs>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Result> __mul_overflow_generic(_Lhs __lhs, _Rhs __rhs) noexcept
 {
-  using ::cuda::std::__cccl_uintmax_t;
   using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
 
-  // If there is a wider type available, upcast the operands and check for overflow
-  if constexpr (sizeof(_Lhs) < sizeof(__cccl_uintmax_t) && sizeof(_Rhs) < sizeof(__cccl_uintmax_t))
-  {
-    constexpr auto __max_nbits = ::cuda::std::max(__num_bits_v<_Lhs>, __num_bits_v<_Rhs>);
-    using _Up           = ::cuda::std::__make_nbit_int_t<2 * __max_nbits, is_signed_v<_Lhs> || is_signed_v<_Rhs>>;
-    const auto __result = static_cast<_Up>(__lhs) * static_cast<_Up>(__rhs);
-    return ::cuda::overflow_cast<_Result>(__result);
-  }
-  else if constexpr (is_signed_v<_Lhs> || is_signed_v<_Rhs>)
-  {
-    constexpr auto __min = ::cuda::std::numeric_limits<_Result>::min();
-    constexpr auto __max = ::cuda::std::numeric_limits<_Result>::max();
+  // Floor __max_nbits to sizeof(unsigned int); anything smaller is automatically
+  // promoted to (signed) int, even if the original type was explicitly unsigned,
+  // which can result in UB from multiplication overflow
+  constexpr auto __max_nbits =
+    ::cuda::std::max({__num_bits_v<_Lhs>, __num_bits_v<_Rhs>, __num_bits_v<_Result>, __num_bits_v<unsigned int>});
+  using _UPromoted             = ::cuda::std::__make_nbit_int_t<__max_nbits, false>;
+  const auto __ulhs            = _UPromoted{::cuda::uabs(__lhs)};
+  const auto __urhs            = _UPromoted{::cuda::uabs(__rhs)};
+  const auto __sign_mismatch   = (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
+  const auto __negative_result = __sign_mismatch && __ulhs != 0 && __urhs != 0;
 
-    const auto __negative_result =
-      (::cuda::std::cmp_greater_equal(__lhs, 0) != ::cuda::std::cmp_greater_equal(__rhs, 0));
-    const auto __ulhs        = __cccl_uintmax_t{::cuda::uabs(__lhs)};
-    const auto __urhs        = __cccl_uintmax_t{::cuda::uabs(__rhs)};
-    const auto __uresult_lo  = __ulhs * __urhs;
-    const auto __uresult_hi  = ::cuda::mul_hi(__ulhs, __urhs);
-    const auto __uresult_max = __cccl_uintmax_t{::cuda::uabs((__negative_result) ? __min : __max)};
+  constexpr auto __min = ::cuda::std::numeric_limits<_Result>::min();
+  constexpr auto __max = ::cuda::std::numeric_limits<_Result>::max();
 
-    const auto __result = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
-    return {__result, __uresult_hi != 0 || __uresult_lo > __uresult_max};
-  }
-  else
-  {
-    const auto [__result, __overflow] = ::cuda::overflow_cast<_Result>(__lhs * __rhs);
-    return {__result, __overflow || ::cuda::mul_hi(__cccl_uintmax_t{__lhs}, __cccl_uintmax_t{__rhs}) != 0};
-  }
+  const auto __uresult_lo  = __ulhs * __urhs;
+  const auto __uresult_hi  = ::cuda::mul_hi(__ulhs, __urhs);
+  const auto __uresult_max = _UPromoted{::cuda::uabs((__negative_result) ? __min : __max)};
+
+  const auto __result = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
+  return {__result, __uresult_hi != 0 || __uresult_lo > __uresult_max};
 }
 
 #if !_CCCL_COMPILER(NVRTC)
