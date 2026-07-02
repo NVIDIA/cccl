@@ -843,6 +843,30 @@ def _extract_state(func: Callable):
     return state_names, state_arrays
 
 
+def _state_array_numba_types(state_arrays):
+    """Build the Numba Array types for a stateful op's captured device arrays."""
+    return [
+        numba.types.Array(numba.from_dtype(get_dtype(s)), 1, "A") for s in state_arrays
+    ]
+
+
+def _infer_stateful_return_type(op, numba_input_types, state_array_types):
+    """Infer the return TypeDescriptor of a state-parameterized stateful op.
+
+    ``op`` must already be transformed to take the state arrays as leading
+    parameters (see :func:`_transform_function_ast`), so the inference signature
+    is ``(state_arrays..., regular_args...)``.
+    """
+    all_numba_input_types = tuple(state_array_types) + tuple(numba_input_types)
+    sanitized_name = sanitize_identifier(op.__name__)
+    unique_suffix = hex(id(op))[2:]
+    abi_name = f"{sanitized_name}_{unique_suffix}"
+    _, return_type = numba.cuda.compile(
+        op, all_numba_input_types, abi_info={"abi_name": abi_name}
+    )
+    return cccl_types.from_numpy_dtype(numba.np.numpy_support.as_dtype(return_type))
+
+
 def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     """
     Compile a stateful operator for use with CCCL algorithms.
@@ -869,24 +893,12 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
 
     # Create Numba array types for state arrays
-    state_array_types = [
-        numba.types.Array(numba.from_dtype(get_dtype(s)), 1, "A") for s in state_arrays
-    ]
+    state_array_types = _state_array_numba_types(state_arrays)
 
     # Infer output type if needed
     if output_type is None:
-        # Compile with Numba to infer return type
-        # The transformed function expects (state_arrays..., regular_args...)
-        all_numba_input_types = tuple(state_array_types) + numba_input_types
-        sanitized_name = sanitize_identifier(op.__name__)
-        unique_suffix = hex(id(op))[2:]
-        abi_name = f"{sanitized_name}_{unique_suffix}"
-        _, return_type = numba.cuda.compile(
-            op, all_numba_input_types, abi_info={"abi_name": abi_name}
-        )
-        # Convert return type to TypeDescriptor
-        output_type = cccl_types.from_numpy_dtype(
-            numba.np.numpy_support.as_dtype(return_type)
+        output_type = _infer_stateful_return_type(
+            op, numba_input_types, state_array_types
         )
 
     # Convert output type to Numba type
@@ -970,6 +982,15 @@ class _StatefulOp(OpAdapter):
         transformed_func = _transform_function_ast(self._func, self._state.names)
         return _compile_stateful_op(
             transformed_func, input_types, self._state.arrays, output_type
+        )
+
+    def get_return_type(self, input_types):
+        transformed_func = _transform_function_ast(self._func, self._state.names)
+        _ensure_function_structs_registered(transformed_func)
+        numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
+        state_array_types = _state_array_numba_types(self._state.arrays)
+        return _infer_stateful_return_type(
+            transformed_func, numba_input_types, state_array_types
         )
 
     def get_cache_key(self):

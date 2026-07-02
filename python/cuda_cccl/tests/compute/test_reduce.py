@@ -829,6 +829,185 @@ def test_transform_iterator():
     assert (d_output == expected_output).all()
 
 
+def test_transform_iterator_stateful_op():
+    """Stateful transform op (captures a device array) as a reduce input iterator.
+
+    Regression test for gh-9627: a stateful op inside a TransformIterator used as
+    an algorithm input previously crashed with cudaErrorLaunchFailure because the
+    op's state was not threaded through to the device function.
+    """
+    num_items = 1000
+    src = cp.arange(num_items, dtype=np.float32)
+
+    def gather_double(i) -> np.float32:
+        return src[i] * np.float32(2.0)
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), gather_double)
+    d_output = cp.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = cp.sum(src * np.float32(2.0))
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-3)
+
+
+def test_transform_iterator_stateful_op_inferred_return_type():
+    """A stateful transform op without a return annotation infers its return type.
+
+    Regression test for gh-9627: get_return_type was not implemented for stateful
+    ops, so constructing such a TransformIterator raised NotImplementedError.
+    """
+    num_items = 1000
+    src = cp.arange(num_items, dtype=np.float32)
+
+    def gather_double(i):  # no return annotation -> type is inferred
+        return src[i] * np.float32(2.0)
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), gather_double)
+    assert transform_it.value_type.dtype == np.float32
+
+    d_output = cp.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = cp.sum(src * np.float32(2.0))
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-3)
+
+
+def test_transform_iterator_stateful_op_multiple_arrays():
+    """A stateful transform op capturing more than one device array (gh-9627)."""
+    num_items = 500
+    a = cp.arange(num_items, dtype=np.float32)
+    b = cp.full(num_items, 3.0, dtype=np.float32)
+
+    def weighted(i) -> np.float32:
+        return a[i] * b[i]
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), weighted)
+    d_output = cp.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = cp.sum(a * b)
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-3)
+
+
+def test_transform_iterator_stateful_op_cache_reuse():
+    """Two stateful transform iterators with identical op bytecode but different
+    captured arrays must produce independent, correct results (gh-9627).
+
+    They share the same cached reducer, so the op state (the captured array
+    pointers) must travel with each iterator's state rather than being baked in.
+    """
+    num_items = 1000
+
+    def reduce_gather_double(src):
+        def gather_double(i) -> np.float32:
+            return src[i] * np.float32(2.0)
+
+        transform_it = TransformIterator(CountingIterator(np.int64(0)), gather_double)
+        d_output = cp.empty(1, dtype=np.float32)
+        h_init = np.zeros(1, dtype=np.float32)
+        cuda.compute.reduce_into(
+            d_in=transform_it,
+            d_out=d_output,
+            num_items=num_items,
+            op=OpKind.PLUS,
+            h_init=h_init,
+        )
+        return d_output
+
+    a = cp.arange(num_items, dtype=np.float32)
+    b = cp.full(num_items, 7.0, dtype=np.float32)
+
+    out_a = reduce_gather_double(a)
+    out_b = reduce_gather_double(b)
+
+    np.testing.assert_allclose(
+        out_a.get(), cp.sum(a * np.float32(2.0)).get(), atol=1e-3
+    )
+    np.testing.assert_allclose(
+        out_b.get(), cp.sum(b * np.float32(2.0)).get(), atol=1e-3
+    )
+
+
+def test_transform_iterator_stateful_op_nested():
+    """A stateful transform op nested under another transform iterator (gh-9627).
+
+    Exercises iterator-state composition: the inner (stateful) iterator's state,
+    including the op state, must sit at offset 0 of the outer iterator's state.
+    """
+    num_items = 400
+    bias = cp.full(num_items, 5.0, dtype=np.float32)
+
+    def add_bias(i) -> np.float32:  # stateful inner
+        return bias[i] + np.float32(i)
+
+    def double(x) -> np.float32:  # stateless outer
+        return x * np.float32(2.0)
+
+    transform_it = TransformIterator(
+        TransformIterator(CountingIterator(np.int64(0)), add_bias), double
+    )
+    d_output = cp.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = sum((5.0 + i) * 2.0 for i in range(num_items))
+    np.testing.assert_allclose(d_output.get(), np.float32(expected), rtol=1e-5)
+
+
+def test_transform_output_iterator_stateful_op():
+    """A stateful transform op as a reduce output iterator (gh-9627)."""
+    num_items = 256
+    factor = cp.full(1, 10.0, dtype=np.float32)
+    d_input = cp.arange(num_items, dtype=np.float32)
+    d_output = cp.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    def scale(x: np.float32) -> np.float32:
+        return x * factor[0]
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=TransformOutputIterator(d_output, scale),
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = cp.sum(d_input) * np.float32(10.0)
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-2)
+
+
 def test_reduce_struct_type():
     @gpu_struct
     class Pixel:
