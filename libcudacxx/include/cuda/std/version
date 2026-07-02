@@ -152,7 +152,7 @@
 #  define __cccl_lib_atomic_flag_test              201907L
 #  define __cccl_lib_atomic_float                  201711L
 #  define __cccl_lib_atomic_lock_free_type_aliases 201907L
-#  define __cccl_lib_atomic_ref                    201806L
+#  define __cccl_lib_atomic_ref                    202603L
 // # define __cccl_lib_atomic_shared_ptr                    201711L
 #  define __cccl_lib_atomic_value_initialization 201911L
 #  define __cccl_lib_atomic_wait                 201907L
