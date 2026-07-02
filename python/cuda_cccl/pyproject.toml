@@ -83,11 +83,22 @@ test-cu12 = [
   "cuda-cccl[cu12]",
   "pytest",
   "pytest-xdist",
-  "cupy-cuda12x",
 ]
-test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
-test-sysctk12 = ["cuda-cccl[sysctk12]", "pytest", "pytest-xdist", "cupy-cuda12x"]
-test-sysctk13 = ["cuda-cccl[sysctk13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
+test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist"]
+test-sysctk12 = [
+  "cuda-cccl[sysctk12]",
+  "pytest",
+  "pytest-xdist",
+]
+test-sysctk13 = [
+  "cuda-cccl[sysctk13]",
+  "pytest",
+  "pytest-xdist",
+]
+test-with-examples-cu12 = ["cuda-cccl[test-cu12]", "cupy-cuda12x"]
+test-with-examples-cu13 = ["cuda-cccl[test-cu13]", "cupy-cuda13x"]
+test-with-examples-sysctk12 = ["cuda-cccl[test-sysctk12]", "cupy-cuda12x"]
+test-with-examples-sysctk13 = ["cuda-cccl[test-sysctk13]", "cupy-cuda13x"]
 bench-cu12 = [
   "cuda-cccl[cu12]",
   "cuda-bench[cu12]",
@@ -177,6 +188,8 @@ known-first-party = [
 ]
 
 [tool.pytest.ini_options]
+# Make shared helpers in tests/_utils importable when pytest runs outside tests/.
+pythonpath = ["tests"]
 markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",

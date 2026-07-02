@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import cupy as cp
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import CacheModifiedInputIterator, gpu_struct
@@ -85,11 +85,11 @@ def test_three_way_partition_basic(dtype, num_items, monkeypatch):
     def greater_equal_op(x):
         return x >= 42
 
-    d_in = cp.asarray(h_in)
-    d_first = cp.empty_like(d_in)
-    d_second = cp.empty_like(d_in)
-    d_unselected = cp.empty_like(d_in)
-    d_num_selected = cp.empty(2, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_first = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_second = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_unselected = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_num_selected = DeviceArray.empty(2, np.int32)
     cuda.compute.three_way_partition(
         d_in=d_in,
         d_first_part_out=d_first,
@@ -101,10 +101,10 @@ def test_three_way_partition_basic(dtype, num_items, monkeypatch):
         num_items=num_items,
     )
 
-    num_selected = d_num_selected.get()
-    got_first = d_first.get()[: int(num_selected[0])]
-    got_second = d_second.get()[: int(num_selected[1])]
-    got_unselected = d_unselected.get()[
+    num_selected = d_num_selected.copy_to_host()
+    got_first = d_first.copy_to_host()[: int(num_selected[0])]
+    got_second = d_second.copy_to_host()[: int(num_selected[1])]
+    got_unselected = d_unselected.copy_to_host()[
         : int(num_items) - int(num_selected[0]) - int(num_selected[1])
     ]
 
@@ -153,11 +153,11 @@ def test_three_way_partition_well_known_logical_not():
 
 def test_three_way_partition_empty():
     dtype = np.int32
-    d_in = cp.empty(0, dtype=dtype)
-    d_first = cp.empty(0, dtype=dtype)
-    d_second = cp.empty(0, dtype=dtype)
-    d_unselected = cp.empty(0, dtype=dtype)
-    d_num_selected = cp.zeros(2, dtype=np.int64)
+    d_in = DeviceArray.empty(0, dtype)
+    d_first = DeviceArray.empty(0, dtype)
+    d_second = DeviceArray.empty(0, dtype)
+    d_unselected = DeviceArray.empty(0, dtype)
+    d_num_selected = DeviceArray.from_numpy(np.zeros(2, dtype=np.int64))
 
     def less_than_op(x):
         return x < 42
@@ -176,7 +176,7 @@ def test_three_way_partition_empty():
         num_items=0,
     )
 
-    np.testing.assert_array_equal(d_num_selected.get(), np.array([0, 0]))
+    np.testing.assert_array_equal(d_num_selected.copy_to_host(), np.array([0, 0]))
 
 
 def test_three_way_partition_with_iterators():
@@ -194,13 +194,13 @@ def test_three_way_partition_with_iterators():
         _host_three_way_partition(h_in, less_than_op, greater_equal_op)
     )
 
-    d_in = cp.asarray(h_in)
+    d_in = DeviceArray.from_numpy(h_in)
     in_it = CacheModifiedInputIterator(d_in, modifier="stream")
 
-    d_first = cp.empty_like(d_in)
-    d_second = cp.empty_like(d_in)
-    d_unselected = cp.empty_like(d_in)
-    d_num_selected = cp.empty(2, dtype=np.uint32)
+    d_first = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_second = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_unselected = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_num_selected = DeviceArray.empty(2, np.uint32)
 
     cuda.compute.three_way_partition(
         d_in=in_it,
@@ -213,10 +213,10 @@ def test_three_way_partition_with_iterators():
         num_items=num_items,
     )
 
-    num_selected = d_num_selected.get()
-    got_first = d_first.get()[: int(num_selected[0])]
-    got_second = d_second.get()[: int(num_selected[1])]
-    got_unselected = d_unselected.get()[
+    num_selected = d_num_selected.copy_to_host()
+    got_first = d_first.copy_to_host()[: int(num_selected[0])]
+    got_second = d_second.copy_to_host()[: int(num_selected[1])]
+    got_unselected = d_unselected.copy_to_host()[
         : int(num_items) - int(num_selected[0]) - int(num_selected[1])
     ]
 
@@ -257,12 +257,11 @@ def test_three_way_partition_struct_type():
     expected_second = h_in[remaining_mask][expected_second_mask]
     expected_unselected = h_in[remaining_mask][~expected_second_mask]
 
-    h_in_i32 = h_in.view(np.int32).reshape(num_items, 4)
-    d_in = cp.asarray(h_in_i32).view(pair_type.dtype).reshape(num_items)
-    d_first = cp.empty_like(d_in)
-    d_second = cp.empty_like(d_in)
-    d_unselected = cp.empty_like(d_in)
-    d_num_selected = cp.empty(2, dtype=np.uint64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_first = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_second = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_unselected = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_num_selected = DeviceArray.empty(2, np.uint64)
 
     cuda.compute.three_way_partition(
         d_in=d_in,
@@ -275,10 +274,10 @@ def test_three_way_partition_struct_type():
         num_items=num_items,
     )
 
-    num_selected = d_num_selected.get()
-    got_first = d_first.get()[: int(num_selected[0])]
-    got_second = d_second.get()[: int(num_selected[1])]
-    got_unselected = d_unselected.get()[
+    num_selected = d_num_selected.copy_to_host()
+    got_first = d_first.copy_to_host()[: int(num_selected[0])]
+    got_second = d_second.copy_to_host()[: int(num_selected[1])]
+    got_unselected = d_unselected.copy_to_host()[
         : int(num_items) - int(num_selected[0]) - int(num_selected[1])
     ]
 
@@ -302,13 +301,11 @@ def test_three_way_partition_with_stream(cuda_stream):
         _host_three_way_partition(h_in, less_than_op, greater_equal_op)
     )
 
-    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
-    with cp_stream:
-        d_in = cp.asarray(h_in)
-        d_first = cp.empty_like(d_in)
-        d_second = cp.empty_like(d_in)
-        d_unselected = cp.empty_like(d_in)
-        d_num_selected = cp.empty(2, dtype=np.int64)
+    d_in = DeviceArray.from_numpy(h_in, stream=cuda_stream)
+    d_first = DeviceArray.empty(h_in.shape, h_in.dtype, stream=cuda_stream)
+    d_second = DeviceArray.empty(h_in.shape, h_in.dtype, stream=cuda_stream)
+    d_unselected = DeviceArray.empty(h_in.shape, h_in.dtype, stream=cuda_stream)
+    d_num_selected = DeviceArray.empty(2, np.int64, stream=cuda_stream)
 
     cuda.compute.three_way_partition(
         d_in=d_in,
@@ -322,13 +319,12 @@ def test_three_way_partition_with_stream(cuda_stream):
         stream=cuda_stream,
     )
 
-    with cp_stream:
-        num_selected = d_num_selected.get()
-        got_first = d_first.get()[: int(num_selected[0])]
-        got_second = d_second.get()[: int(num_selected[1])]
-        got_unselected = d_unselected.get()[
-            : int(num_items) - int(num_selected[0]) - int(num_selected[1])
-        ]
+    num_selected = d_num_selected.copy_to_host(stream=cuda_stream)
+    got_first = d_first.copy_to_host(stream=cuda_stream)[: int(num_selected[0])]
+    got_second = d_second.copy_to_host(stream=cuda_stream)[: int(num_selected[1])]
+    got_unselected = d_unselected.copy_to_host(stream=cuda_stream)[
+        : int(num_items) - int(num_selected[0]) - int(num_selected[1])
+    ]
 
     np.testing.assert_array_equal(got_first, expected_first)
     np.testing.assert_array_equal(got_second, expected_second)
@@ -346,11 +342,11 @@ def test_three_way_partition_no_selection():
     def greater_equal_op(x):
         return x == 102
 
-    d_in = cp.asarray(h_in)
-    d_first = cp.empty_like(d_in)
-    d_second = cp.empty_like(d_in)
-    d_unselected = cp.empty_like(d_in)
-    d_num_selected = cp.empty(2, dtype=np.int64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_first = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_second = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_unselected = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_num_selected = DeviceArray.empty(2, np.int64)
 
     cuda.compute.three_way_partition(
         d_in=d_in,
@@ -363,12 +359,12 @@ def test_three_way_partition_no_selection():
         num_items=num_items,
     )
 
-    num_selected = d_num_selected.get()
+    num_selected = d_num_selected.copy_to_host()
     assert int(num_selected[0]) == 0 and int(num_selected[1]) == 0
 
-    got_first = d_first.get()[: int(num_selected[0])]
-    got_second = d_second.get()[: int(num_selected[1])]
-    got_unselected = d_unselected.get()[:num_items]
+    got_first = d_first.copy_to_host()[: int(num_selected[0])]
+    got_second = d_second.copy_to_host()[: int(num_selected[1])]
+    got_unselected = d_unselected.copy_to_host()[:num_items]
 
     np.testing.assert_array_equal(got_first, np.empty(0, dtype=dtype))
     np.testing.assert_array_equal(got_second, np.empty(0, dtype=dtype))
@@ -383,11 +379,11 @@ def test_three_way_partition_same_predicate():
     def always_true(x):
         return True
 
-    d_in = cp.asarray(h_in)
-    d_first = cp.empty_like(d_in)
-    d_second = cp.empty_like(d_in)
-    d_unselected = cp.empty_like(d_in)
-    d_num_selected = cp.empty(2, dtype=np.int64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_first = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_second = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_unselected = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_num_selected = DeviceArray.empty(2, np.int64)
 
     cuda.compute.three_way_partition(
         d_in=d_in,
@@ -400,7 +396,7 @@ def test_three_way_partition_same_predicate():
         num_items=num_items,
     )
 
-    num_selected = d_num_selected.get()
+    num_selected = d_num_selected.copy_to_host()
     assert int(num_selected[0]) == num_items
     assert int(num_selected[1]) == 0
 
@@ -416,11 +412,11 @@ def test_three_way_partition_all_selected_first():
     def greater_equal_op(x):
         return x == 42
 
-    d_in = cp.asarray(h_in)
-    d_first = cp.empty_like(d_in)
-    d_second = cp.empty_like(d_in)
-    d_unselected = cp.empty_like(d_in)
-    d_num_selected = cp.empty(2, dtype=np.int64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_first = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_second = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_unselected = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_num_selected = DeviceArray.empty(2, np.int64)
 
     cuda.compute.three_way_partition(
         d_in=d_in,
@@ -433,12 +429,12 @@ def test_three_way_partition_all_selected_first():
         num_items=num_items,
     )
 
-    num_selected = d_num_selected.get()
+    num_selected = d_num_selected.copy_to_host()
     assert int(num_selected[0]) == num_items and int(num_selected[1]) == 0
 
-    got_first = d_first.get()[: int(num_selected[0])]
-    got_second = d_second.get()[: int(num_selected[1])]
-    got_unselected = d_unselected.get()[
+    got_first = d_first.copy_to_host()[: int(num_selected[0])]
+    got_second = d_second.copy_to_host()[: int(num_selected[1])]
+    got_unselected = d_unselected.copy_to_host()[
         : int(num_items) - int(num_selected[0]) - int(num_selected[1])
     ]
 
