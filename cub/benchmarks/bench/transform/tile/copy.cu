@@ -17,7 +17,7 @@ struct identity
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class T>
-  __host__ __device__ _CCCL_TILE auto operator()(T v) const
+  _CCCL_API auto operator()(T v) const
   {
     return v;
   }

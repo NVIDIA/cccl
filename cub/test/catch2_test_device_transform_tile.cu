@@ -22,16 +22,12 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 
 namespace ct = ::cuda::tiles;
 
-// Each op is passed to Transform (used scalar in the CUB fallback) and registers itself as its own
-// tile_operator. _CCCL_EXEC_CHECK_DISABLE lets the single __host__ __device__ __tile__ operator() call
-// tile-only arithmetic in the tile instantiation; static_cast keeps unsigned wrap bit-exact with the host.
-
 // Unary: v * v.
 struct square_op
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class T>
-  __host__ __device__ __tile__ T operator()(T v) const
+  _CCCL_API T operator()(T v) const
   {
     return static_cast<T>(v * v);
   }
@@ -42,7 +38,7 @@ struct add_op
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class A, class B>
-  __host__ __device__ __tile__ auto operator()(A a, B b) const
+  _CCCL_API auto operator()(A a, B b) const
   {
     return static_cast<A>(a + b);
   }

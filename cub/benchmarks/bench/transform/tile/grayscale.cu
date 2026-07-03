@@ -16,7 +16,7 @@ struct rgb_to_y
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class R, class G, class B>
-  __host__ __device__ _CCCL_TILE auto operator()(R r, G g, B b) const
+  _CCCL_API auto operator()(R r, G g, B b) const
   {
     constexpr float w_r = 0.2989f;
     constexpr float w_g = 0.587f;

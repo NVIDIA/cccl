@@ -19,7 +19,7 @@ struct mul_op
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class B>
-  __host__ __device__ _CCCL_TILE auto operator()(B b) const
+  _CCCL_API auto operator()(B b) const
   {
     return -(b + b);
   }
@@ -28,7 +28,7 @@ struct add_op
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class A, class B>
-  __host__ __device__ _CCCL_TILE auto operator()(A a, B b) const
+  _CCCL_API auto operator()(A a, B b) const
   {
     return a + b;
   }
@@ -37,7 +37,7 @@ struct triad_op
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class B, class C>
-  __host__ __device__ _CCCL_TILE auto operator()(B b, C c) const
+  _CCCL_API auto operator()(B b, C c) const
   {
     return b - c - c;
   }
@@ -46,7 +46,7 @@ struct nstream_op
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class A, class B, class C>
-  __host__ __device__ _CCCL_TILE auto operator()(A a, B b, C c) const
+  _CCCL_API auto operator()(A a, B b, C c) const
   {
     return a + b - c - c;
   }
