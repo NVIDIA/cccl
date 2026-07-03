@@ -36,10 +36,8 @@ struct policy_selector
                   "Large segment size must be larger than small and medium segment sizes");
     static_assert(medium_segment_size > small_segment_size, "Medium segment size must be larger than small one");
 
-    using namespace cub::detail::segmented_sort;
-
-    return segmented_sort_policy{
-      segmented_radix_sort_policy{
+    return cub::SegmentedSortPolicy{
+      cub::SegmentedSortRadixSortPolicy{
         TUNE_THREADS,
         TUNE_L_ITEMS,
         (TUNE_TRANSPOSE == 0) ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
@@ -50,7 +48,7 @@ struct policy_selector
         cub::BLOCK_SCAN_WARP_SCANS,
         TUNE_RADIX_BITS,
       },
-      sub_warp_merge_sort_policy{
+      cub::SegmentedSortSubWarpMergeSortPolicy{
         TUNE_THREADS,
         tune_sw_threads,
         TUNE_S_ITEMS,
@@ -60,7 +58,7 @@ struct policy_selector
                              : cub::LOAD_CA,
         cub::WARP_STORE_DIRECT,
       },
-      sub_warp_merge_sort_policy{
+      cub::SegmentedSortSubWarpMergeSortPolicy{
         TUNE_THREADS,
         tune_mw_threads,
         TUNE_M_ITEMS,
