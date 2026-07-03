@@ -45,6 +45,10 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(342, 20094)
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
 
+// clang-tidy warns about for example _LIBCUDACXX_AUTO_CAST(++_Tp::value) being repeated multiple times in the macro
+// expansion.
+// NOLINTBEGIN(bugprone-macro-repeated-side-effects)
+
 template <auto _Xp, class = remove_cvref_t<decltype(_Xp)>>
 struct __constant_wrapper;
 
@@ -535,6 +539,8 @@ struct __constant_wrapper : __cw_operators
     return {};
   }
 };
+
+// NOLINTEND(bugprone-macro-repeated-side-effects)
 
 _CCCL_DIAG_POP
 
