@@ -46,6 +46,22 @@ CUB_NAMESPACE_BEGIN
 //!      :start-after: example-begin find-if-tuning
 //!      :end-before: example-end find-if-tuning
 //!
+//! The ``LowerBoundSortedValues`` and ``UpperBoundSortedValues`` algorithms that accept an environment can be tuned by
+//! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a
+//! @ref FindBoundSortedValuesPolicy, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_find_bound_sorted_values_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin lower-bound-sorted-values-policy-selector
+//!      :end-before: example-end lower-bound-sorted-values-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_find_bound_sorted_values_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin lower-bound-sorted-values-tuning
+//!      :end-before: example-end lower-bound-sorted-values-tuning
+//!
 //! @endrst
 struct DeviceFind
 {
