@@ -44,7 +44,6 @@ namespace detail::rfa
 {
 using cuda::execution::determinism::__determinism_t;
 using reduce::policy_selector_from_types;
-using reduce::reduce_policy;
 
 template <typename Invocable, typename InputT>
 using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
@@ -101,7 +100,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
-  reduce_policy active_policy,
+  ReducePolicy active_policy,
   KernelLauncherFactory launcher_factory)
 {
   // Return if the caller is simply requesting the size of the storage allocation
@@ -170,7 +169,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
-  reduce_policy active_policy,
+  ReducePolicy active_policy,
   KernelLauncherFactory launcher_factory)
 {
   int sm_count;
@@ -183,7 +182,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   if (const auto error = CubDebug(reduce_config.__init(
         detail::reduce::
           DeterministicDeviceReduceKernel<PolicySelector, InputIteratorT, ReductionOpT, DeterministicAccumT, TransformOpT>,
-        active_policy.reduce)))
+        active_policy.multi_tile)))
   {
     return error;
   }
@@ -242,14 +241,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
             "per thread, %d SM occupancy\n",
             current_grid_size,
-            active_policy.reduce.threads_per_block,
+            active_policy.multi_tile.threads_per_block,
             (long long) stream,
-            active_policy.reduce.items_per_thread,
+            active_policy.multi_tile.items_per_thread,
             reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
-          launcher_factory(current_grid_size, active_policy.reduce.threads_per_block, 0, stream)
+          launcher_factory(current_grid_size, active_policy.multi_tile.threads_per_block, 0, stream)
             .doit(detail::reduce::DeterministicDeviceReduceKernel<PolicySelector,
                                                                   InputIteratorT,
                                                                   ReductionOpT,
@@ -351,7 +350,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const reduce_policy active_policy = policy_selector(cc);
+  const ReducePolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({

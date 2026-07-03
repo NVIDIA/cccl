@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -171,7 +172,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   using Vector = typename CubVector<T, VEC_SIZE>::Type;
 
   // Add the alignment check to ensure the vectorized storing can proceed.
-  if (reinterpret_cast<uintptr_t>(block_ptr) % (alignof(Vector)) == 0)
+  if (::cuda::std::is_sufficiently_aligned<alignof(Vector)>(block_ptr))
   {
     // Alias global pointer
     Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
