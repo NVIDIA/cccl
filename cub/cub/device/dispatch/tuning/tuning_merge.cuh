@@ -38,7 +38,7 @@ struct MergePolicy
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   bool use_bulk_copy_for_keys; //!< Whether to use bulk copy (cp.async.bulk) for loading keys into shared memory
   bool use_bulk_copy_for_values; //!< Whether to use bulk copy (cp.async.bulk) for loading values into shared memory
-  bool unroll = true;
+  bool unroll = true; //<! Whether to unroll the loops inside the block and serial merge implementation
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
