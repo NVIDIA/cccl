@@ -32,7 +32,6 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 
