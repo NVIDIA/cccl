@@ -1061,6 +1061,29 @@ C2H_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]")
   REQUIRE(index_output[0] == 2);
 }
 
+C2H_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][env]")
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
+  auto output = thrust::device_vector<int>(1, thrust::no_init);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::Reduce(
+      nullptr,
+      expected_bytes_allocated,
+      input.begin(),
+      output.begin(),
+      input.size(),
+      cuda::std::plus<>{},
+      cub::detail::reduce::no_init));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce(input.begin(), output.begin(), input.size(), cuda::std::plus<>{}, cub::detail::reduce::no_init, env);
+  REQUIRE(output[0] == 15);
+}
+
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 C2H_TEST("ReduceByKeyPolicy", "[reduce][device]")
 {
