@@ -102,9 +102,9 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> SegmentedRadixSortPolic
 {
   using active_policy = LegacyActivePolicy;
 
-  const auto segmented     = radix_sort::convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
-  const auto alt_segmented = radix_sort::convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
-  return SegmentedRadixSortPolicy{segmented, alt_segmented};
+  const auto regular_pass   = radix_sort::convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
+  const auto alternate_pass = radix_sort::convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
+  return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
@@ -697,12 +697,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   auto alt_segmented_kernel = kernel_source.AltSegmentedRadixSortKernel();
 
   KernelConfig seg_config, alt_seg_config;
-  if (const auto error = CubDebug(seg_config.__init(segmented_kernel, active_policy.segmented, launcher_factory)))
+  if (const auto error = CubDebug(seg_config.__init(segmented_kernel, active_policy.regular_pass, launcher_factory)))
   {
     return error;
   }
   if (const auto error =
-        CubDebug(alt_seg_config.__init(alt_segmented_kernel, active_policy.alt_segmented, launcher_factory)))
+        CubDebug(alt_seg_config.__init(alt_segmented_kernel, active_policy.alternate_pass, launcher_factory)))
   {
     return error;
   }
@@ -728,8 +728,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
     return cudaSuccess;
   }
 
-  const int radix_bits         = active_policy.segmented.radix_bits;
-  const int alt_radix_bits     = active_policy.alt_segmented.radix_bits;
+  const int radix_bits         = active_policy.regular_pass.radix_bits;
+  const int alt_radix_bits     = active_policy.alternate_pass.radix_bits;
   const int num_bits           = end_bit - begin_bit;
   const int num_passes         = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1);
   const bool is_num_passes_odd = num_passes & 1;

@@ -817,8 +817,8 @@ struct segmented_radix_sort_block_size_tuning
   {
     using default_selector_t = cub::detail::segmented_radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
     auto policy              = default_selector_t{}(cc);
-    policy.segmented.threads_per_block     = ThreadsPerBlock;
-    policy.alt_segmented.threads_per_block = ThreadsPerBlock;
+    policy.regular_pass.threads_per_block   = ThreadsPerBlock;
+    policy.alternate_pass.threads_per_block = ThreadsPerBlock;
     return policy;
   }
 };
@@ -1076,7 +1076,7 @@ C2H_TEST("SegmentedRadixSortPolicy", "[segmented_radix_sort][device]")
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::SegmentedRadixSortPolicy{
-    .segmented =
+    .regular_pass =
       cub::RadixSortDownsweepPolicy{
         .threads_per_block = 192,
         .items_per_thread  = 15,
@@ -1085,7 +1085,7 @@ C2H_TEST("SegmentedRadixSortPolicy", "[segmented_radix_sort][device]")
         .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
         .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
         .radix_bits        = 6},
-    .alt_segmented = cub::RadixSortDownsweepPolicy{
+    .alternate_pass = cub::RadixSortDownsweepPolicy{
       .threads_per_block = 384,
       .items_per_thread  = 11,
       .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,

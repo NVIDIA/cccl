@@ -329,7 +329,7 @@ struct SegmentedRadixSortPolicySelector
   __host__ __device__ constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedRadixSortPolicy
   {
     return {
-      .segmented =
+      .regular_pass =
         cub::RadixSortDownsweepPolicy{
           .threads_per_block = 192,
           .items_per_thread  = 15,
@@ -338,7 +338,7 @@ struct SegmentedRadixSortPolicySelector
           .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
           .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
           .radix_bits        = 6},
-      .alt_segmented = cub::RadixSortDownsweepPolicy{
+      .alternate_pass = cub::RadixSortDownsweepPolicy{
         .threads_per_block = 384,
         .items_per_thread  = 11,
         .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,

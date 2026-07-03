@@ -23,13 +23,13 @@ CUB_NAMESPACE_BEGIN
 //! The tuning policy for @ref DeviceSegmentedRadixSort.
 struct SegmentedRadixSortPolicy
 {
-  RadixSortDownsweepPolicy segmented; //!< Policy for the primary radix sort pass on each segment
-  RadixSortDownsweepPolicy alt_segmented; //!< Policy for the alternate radix sort pass on each segment
+  RadixSortDownsweepPolicy regular_pass; //!< Policy for the regular radix sort pass on each segment
+  RadixSortDownsweepPolicy alternate_pass; //!< Policy for the alternate radix sort pass on each segment
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const SegmentedRadixSortPolicy& lhs, const SegmentedRadixSortPolicy& rhs) noexcept
   {
-    return lhs.segmented == rhs.segmented && lhs.alt_segmented == rhs.alt_segmented;
+    return lhs.regular_pass == rhs.regular_pass && lhs.alternate_pass == rhs.alternate_pass;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -41,8 +41,8 @@ struct SegmentedRadixSortPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
   {
-    return os << "SegmentedRadixSortPolicy { .segmented = " << p.segmented << ", .alt_segmented = " << p.alt_segmented
-              << " }";
+    return os << "SegmentedRadixSortPolicy { .regular_pass = " << p.regular_pass
+              << ", .alternate_pass = " << p.alternate_pass << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -77,7 +77,7 @@ struct policy_selector
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -87,7 +87,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -97,14 +97,14 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return SegmentedRadixSortPolicy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -114,7 +114,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -124,14 +124,14 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return SegmentedRadixSortPolicy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
     }
 
     if (cc >= ::cuda::compute_capability{8, 0})
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -141,7 +141,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -151,14 +151,14 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return SegmentedRadixSortPolicy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
     }
 
     if (cc >= ::cuda::compute_capability{7, 0})
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -168,7 +168,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -178,7 +178,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return SegmentedRadixSortPolicy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
     }
 
     if (cc >= ::cuda::compute_capability{6, 2})
@@ -187,7 +187,7 @@ struct policy_selector
       const int primary_radix_bits = 5;
       const int alt_radix_bits     = primary_radix_bits - 1;
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         16,
         __dominant_size(),
@@ -197,7 +197,7 @@ struct policy_selector
         BLOCK_SCAN_RAKING_MEMOIZE,
         primary_radix_bits);
 
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
         256,
         16,
         __dominant_size(),
@@ -207,14 +207,14 @@ struct policy_selector
         BLOCK_SCAN_RAKING_MEMOIZE,
         alt_radix_bits);
 
-      return SegmentedRadixSortPolicy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
     }
 
     if (cc >= ::cuda::compute_capability{6, 1})
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -224,7 +224,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -234,14 +234,14 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return SegmentedRadixSortPolicy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
     }
 
     if (cc >= ::cuda::compute_capability{6, 0})
     {
       const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-      const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
         192,
         39,
         __dominant_size(),
@@ -251,7 +251,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits);
 
-      const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
         384,
         11,
         __dominant_size(),
@@ -261,13 +261,13 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         segmented_radix_bits - 1);
 
-      return SegmentedRadixSortPolicy{segmented, alt_segmented};
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
     }
 
     // SM50
     const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
 
-    const auto segmented = make_reg_scaled_radix_sort_downsweep_policy(
+    const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
       192,
       31,
       __dominant_size(),
@@ -277,7 +277,7 @@ struct policy_selector
       BLOCK_SCAN_WARP_SCANS,
       segmented_radix_bits);
 
-    const auto alt_segmented = make_reg_scaled_radix_sort_downsweep_policy(
+    const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
       256,
       11,
       __dominant_size(),
@@ -287,7 +287,7 @@ struct policy_selector
       BLOCK_SCAN_WARP_SCANS,
       segmented_radix_bits - 1);
 
-    return SegmentedRadixSortPolicy{segmented, alt_segmented};
+    return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
   }
 };
 
