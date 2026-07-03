@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
-
 // nvcc 12.0 segfaults.
 // UNSUPPORTED: nvcc-12.0
 
@@ -243,12 +239,8 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<cuda::std::__constant_wrapper<!42>> decltype(auto) result4 = !cw42;
     static_assert(result4 == !42);
 
-    // gcc < 13 fails this test with error:
-    //  the address of ‘cuda::std::__4::__cw_fixed_value<int>{42}’ is not a valid template argument
-#if !_CCCL_COMPILER(GCC, <, 13)
     cuda::std::same_as<cuda::std::__constant_wrapper<&cw42.value>> decltype(auto) result5 = &cw42;
     static_assert(result5 == &cw42.value);
-#endif // !_CCCL_COMPILER(GCC, <, 13)
   }
 
   {

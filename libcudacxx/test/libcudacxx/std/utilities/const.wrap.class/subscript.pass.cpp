@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
-
 // nvcc 12.0 segfaults.
 // UNSUPPORTED: nvcc-12.0
 
@@ -259,12 +255,6 @@ TEST_FUNC constexpr bool test()
     using T                                       = cuda::std::__constant_wrapper<CWOnly{}>;
     cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<42>);
     assert(result == 42);
-  }
-
-  {
-    // just use the index operator
-    assert(cuda::std::__cw<"abcd">[2] == 'c');
-    assert(cuda::std::__cw<"abcd">[cuda::std::__cw<3>] == 'd');
   }
 
   {

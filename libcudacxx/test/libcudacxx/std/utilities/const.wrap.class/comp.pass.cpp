@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
-
 // nvcc 12.0 segfaults.
 // UNSUPPORTED: nvcc-12.0
 
