@@ -9,7 +9,10 @@
 
 // nvcc generates different symbol on host and device leading to kernel launch failure. Seems to be working with gcc as
 // the host compiler.
-// XFAIL: nvhpc || (clang && nvcc)
+// UNSUPPORTED: nvhpc || (clang && nvcc)
+
+// nvrtc is unsupported.
+// UNSUPPORTED: nvrtc
 
 // REQUIRES: !c++17
 
