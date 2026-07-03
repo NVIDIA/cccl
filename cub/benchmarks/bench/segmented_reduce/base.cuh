@@ -29,7 +29,7 @@ struct policy_selector
       cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD, accum_size)
         .items_per_thread;
 
-    const auto rp = cub::agent_reduce_policy{
+    const auto rp = cub::ReducePassPolicy{
       l_threads, l_items, TUNE_ITEMS_PER_VEC_LOAD, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
     return {
       rp,

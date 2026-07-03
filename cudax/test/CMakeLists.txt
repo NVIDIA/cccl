@@ -206,6 +206,16 @@ cudax_add_catch2_test(test_target group.invoke_one
     group/invoke_one.cu
 )
 
+cudax_add_catch2_test(test_target coop.any_of.this_thread
+    coop/any_of/this_thread.cu
+)
+cudax_add_catch2_test(test_target coop.any_of.this_warp
+    coop/any_of/this_warp.cu
+)
+cudax_add_catch2_test(test_target coop.any_of.threads_within_warp
+    coop/any_of/threads_within_warp.cu
+)
+
 cudax_add_catch2_test(test_target coop.reduce.this_thread
     coop/reduce/this_thread.cu
 )
