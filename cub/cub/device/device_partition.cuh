@@ -88,30 +88,6 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DevicePartition
 {
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  // Several algorithms dispatch to DeviceSelect, but we want to have a dedicated PartitionPolicy, so we need to adapt
-  // the policy selector to convert the tuning policy
-  template <typename PolicySelector>
-  struct __policy_selector_adapter
-  {
-    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
-    {
-      // the user-provided policy selector returns a PartitionPolicy, the default one a SelectPolicy
-      using policy_t = ::cuda::std::remove_cvref_t<decltype(PolicySelector{}(cc))>;
-      static_assert(
-        ::cuda::std::is_same_v<policy_t, PartitionPolicy> || ::cuda::std::is_same_v<policy_t, SelectPolicy>);
-      const auto policy = PolicySelector{}(cc);
-      return SelectPolicy{
-        policy.threads_per_block,
-        policy.items_per_thread,
-        policy.load_algorithm,
-        policy.load_modifier,
-        policy.scan_algorithm,
-        policy.lookback_delay};
-    }
-  };
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Uses the ``d_flags`` sequence to split the corresponding items from
   //! ``d_in`` into a partitioned sequence ``d_out``.
@@ -236,16 +212,8 @@ struct DevicePartition
       return error;
     }
 
-    // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
     return detail::dispatch_with_env(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        using default_policy_selector = detail::select::
-          policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
-        using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
@@ -257,7 +225,7 @@ struct DevicePartition
           NullType{},
           static_cast<offset_t>(num_items),
           stream,
-          __policy_selector_adapter<policy_selector_t>{});
+          tuning_env);
       });
   }
 
@@ -358,25 +326,20 @@ struct DevicePartition
     }
 
     // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        using default_policy_selector = detail::select::
-          policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
-        using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
-        return detail::select::dispatch<SelectImpl::Partition>(
-          storage,
-          bytes,
-          d_in,
-          d_flags,
-          d_out,
-          d_num_selected_out,
-          NullType{},
-          NullType{},
-          static_cast<offset_t>(num_items),
-          stream,
-          __policy_selector_adapter<policy_selector_t>{});
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::select::dispatch<SelectImpl::Partition>(
+        storage,
+        bytes,
+        d_in,
+        d_flags,
+        d_out,
+        d_num_selected_out,
+        NullType{},
+        NullType{},
+        static_cast<offset_t>(num_items),
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -536,7 +499,7 @@ struct DevicePartition
           NullType{},
           static_cast<offset_t>(num_items),
           stream,
-          __policy_selector_adapter<policy_selector_t>{});
+          tuning_env);
       });
   }
 
@@ -634,25 +597,20 @@ struct DevicePartition
     }
 
     // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        using default_policy_selector = detail::select::
-          policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, offset_t, SelectImpl::Partition>;
-        using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
-        return detail::select::dispatch<SelectImpl::Partition>(
-          storage,
-          bytes,
-          d_in,
-          static_cast<NullType*>(nullptr),
-          d_out,
-          d_num_selected_out,
-          select_op,
-          NullType{},
-          static_cast<offset_t>(num_items),
-          stream,
-          __policy_selector_adapter<policy_selector_t>{});
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::select::dispatch<SelectImpl::Partition>(
+        storage,
+        bytes,
+        d_in,
+        static_cast<NullType*>(nullptr),
+        d_out,
+        d_num_selected_out,
+        select_op,
+        NullType{},
+        static_cast<offset_t>(num_items),
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
