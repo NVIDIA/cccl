@@ -154,7 +154,7 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-N_CPUS="$(nproc --all --ignore=1)"
+N_CPUS="$(nproc --all --ignore=2)"
 readonly N_CPUS
 readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
