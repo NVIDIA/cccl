@@ -7,6 +7,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -270,3 +271,64 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-ba
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
+
+#if _CCCL_STD_VER >= 2020
+// example-begin sort-keys-custom-policy-selector
+struct SegmentedSortPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const noexcept -> cub::SegmentedSortPolicy
+  {
+    return cub::SegmentedSortPolicy{
+      .large_segment =
+        cub::SegmentedSortRadixSortPolicy{
+          .threads_per_block = 256,
+          .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 15 : 12,
+          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+          .load_modifier     = cub::LOAD_DEFAULT,
+          .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+          .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
+          .radix_bits        = 6},
+      .small_segment =
+        cub::SegmentedSortSubWarpMergeSortPolicy{
+          .threads_per_block = 256,
+          .threads_per_warp  = 4,
+          .items_per_thread  = 7,
+          .load_algorithm    = cub::WARP_LOAD_DIRECT,
+          .load_modifier     = cub::LOAD_DEFAULT,
+          .store_algorithm   = cub::WARP_STORE_DIRECT},
+      .medium_segment =
+        cub::SegmentedSortSubWarpMergeSortPolicy{
+          .threads_per_block = 256,
+          .threads_per_warp  = 32,
+          .items_per_thread  = 7,
+          .load_algorithm    = cub::WARP_LOAD_DIRECT,
+          .load_modifier     = cub::LOAD_DEFAULT,
+          .store_algorithm   = cub::WARP_STORE_DIRECT},
+      .partitioning_threshold = 300};
+  }
+};
+// example-end sort-keys-custom-policy-selector
+
+C2H_TEST("cub::DeviceSegmentedSort::SortKeys with custom policy selector", "[segmented_sort][keys][env]")
+{
+  // example-begin sort-keys-custom-policy
+  auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = thrust::device_vector<int>(7, thrust::no_init);
+  auto offsets  = thrust::device_vector<int>{0, 3, 7};
+
+  auto error = cub::DeviceSegmentedSort::SortKeys(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    keys_in.size(),
+    2,
+    offsets.data(),
+    offsets.data() + 1,
+    cuda::execution::tune(SegmentedSortPolicySelector{}));
+
+  thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  // example-end sort-keys-custom-policy
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(keys_out == expected);
+}
+#endif // _CCCL_STD_VER >= 2020
