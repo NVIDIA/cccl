@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// nvcc 12.0 segfaults.
-// UNSUPPORTED: nvcc-12.0
-
 // todo(dabayer): Find a way to make this work for nvrtc.
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
@@ -242,12 +239,15 @@ TEST_FUNC constexpr bool test()
     assert(result.get() == 5);
   }
 
+  // gcc < 14 doesn't think this is a constant expression.
+#if !_CCCL_COMPILER(GCC, <, 14)
   {
     // return non-structural type with constexpr param
     using T                                                 = cuda::std::__constant_wrapper<ReturnNonStructural{}>;
     cuda::std::same_as<NonStructural> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<5>);
     assert(result.get() == 5);
   }
+#endif // !_CCCL_COMPILER(GCC, <, 14)
 
   {
     // cw only

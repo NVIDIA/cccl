@@ -27,6 +27,7 @@
 #  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
+#  include <cuda/std/__type_traits/remove_const.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/__utility/auto_cast.h>
@@ -325,8 +326,10 @@ inline constexpr bool __cw_is_indexable_v<_Vp, void_t<decltype(_Vp::value[::cuda
 template <auto _Xp, class _Tp>
 struct __constant_wrapper : __cw_operators
 {
-  using type       = __constant_wrapper;
-  using value_type = _Tp;
+  using type = __constant_wrapper;
+
+  // This should be just `decltype(_Xp)`, but nvcc 12.0 adds `const` to the type.
+  using value_type = remove_const_t<decltype(_Xp)>;
 
   static constexpr decltype((_Xp)) value = (_Xp);
 
@@ -339,7 +342,7 @@ struct __constant_wrapper : __cw_operators
     return {};
   }
 
-  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL operator const _Tp&() const noexcept
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL operator decltype(value)() const noexcept
   {
     return value;
   }

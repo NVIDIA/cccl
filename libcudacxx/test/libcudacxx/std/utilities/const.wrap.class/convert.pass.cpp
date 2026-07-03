@@ -70,8 +70,8 @@ TEST_FUNC constexpr bool test()
     int (*result)(int) = cwFptr;
     assert(result(5) == 10);
 
-    // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#  if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+    // nvcc 13.3 fails to produce correct input file for host compiler. NVHPC fails, too. See nvbug 6249821.
+#  if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_COMPILER(NVHPC)
     static_assert(noexcept(static_cast<int (*)(int)>(decltype(cwFptr)::value)));
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) vvv
     static_assert(noexcept(static_cast<int (*)(int)>(cwFptr)));
@@ -79,14 +79,14 @@ TEST_FUNC constexpr bool test()
 #endif // !_CCCL_COMPILER(GCC, <, 13)
   }
 
+// nvcc < 13.3 fails to generate correct input file for host compiler.
+#if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
   {
-    // nvcc < 13.2 fails to evaluate the call properly.
-#if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
     // conversion is implicit
     cuda::std::__constant_wrapper<S{42}> cws;
     f1(cws);
-#endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
   }
+#endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
 
   return true;
 }

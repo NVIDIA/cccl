@@ -37,10 +37,22 @@ struct S
   int member = 42;
 };
 
-static_assert(cuda::std::__constant_wrapper<S{5}>::value.member == 5);
-static_assert(cuda::std::same_as<decltype(cuda::std::__constant_wrapper<S{5}>::value), const S&>);
-static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<S{5}>::type, cuda::std::__constant_wrapper<S{5}>>);
-static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<S{5}>::value_type, S>);
+constexpr cuda::std::__constant_wrapper<S{5}> s_value;
+using SValue = cuda::std::remove_const_t<decltype(s_value)>;
+
+static_assert(s_value.value.member == 5);
+
+// nvcc 12.0 fails to properly generate input file for host compiler.
+#if !(TEST_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_HOST_COMPILATION())
+static_assert(cuda::std::same_as<decltype(SValue::value), const S&>);
+#endif // !(TEST_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_HOST_COMPILATION())
+
+static_assert(cuda::std::same_as<SValue::type, SValue>);
+
+// nvcc 12.9 + 13.0 fails to properly generate input file for host compiler.
+#if !((TEST_CUDA_COMPILER(NVCC, ==, 12, 9) || TEST_CUDA_COMPILER(NVCC, ==, 13, 0)) && _CCCL_HOST_COMPILATION())
+static_assert(cuda::std::same_as<SValue::value_type, S>);
+#endif // !((TEST_CUDA_COMPILER(NVCC, ==, 12, 9) || TEST_CUDA_COMPILER(NVCC, ==, 13, 0)) && _CCCL_HOST_COMPILATION())
 
 template <auto V>
 TEST_FUNC constexpr bool value_ref_to_template_parameter_object()
@@ -54,7 +66,11 @@ constexpr int arr[] = {1, 2, 3, 4, 5};
 
 static_assert(cuda::std::__constant_wrapper<arr>::value == arr);
 static_assert(cuda::std::same_as<typename cuda::std::__constant_wrapper<arr>::type, cuda::std::__constant_wrapper<arr>>);
+
+// nvcc < 13.3 incorrectly generates input file for host compiler.
+#if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
 static_assert(cuda::std::same_as<typename cuda::std::__constant_wrapper<arr>::value_type, const int*>);
+#endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
 
 int main(int, char**)
 {
