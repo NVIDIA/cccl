@@ -43,13 +43,13 @@ taking a ``cuda::compute_capability`` and returning the algorithm's policy struc
 .. code:: c++
 
     template <typename T>
-    struct CustomReducePolicySelector {
+    struct my_reduce_tuning {
       __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ReducePolicy {
         // tuning for Hopper and later
         if (cc >= cuda::compute_capability(9, 0)) {
           const auto pass = cub::ReducePassPolicy{
             .threads_per_block = 512,
-            .items_per_thread = 64 / sizeof(T), // 8 double, 16 float, 32 half_t, ...
+            .items_per_thread = std::max(64 / sizeof(T), 1), // 8 double, 16 float, 32 half_t, ...
             .vec_size = 2,
             .reduce_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
             .load_modifier = cub::LOAD_DEFAULT
