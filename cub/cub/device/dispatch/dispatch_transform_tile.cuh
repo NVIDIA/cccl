@@ -6,8 +6,8 @@
 //   runtime_preconditions_valid  -- runtime alignment + divisibility predicate
 //   dispatch                  -- bridge that picks the tile size and launches
 //                                the tile kernel with the trait's substitute functor
-// User-facing extension points (tile_eligible / tile_mufu_heavy) live in
-// dispatch_transform_tile_traits.cuh under cub::transform.
+// Extension points (tile_eligible / tile_operator / tile_mufu_heavy) live in
+// dispatch_transform_tile_traits.cuh under cub::detail::transform::tile.
 // Requires CTK 13.4 or newer and nvcc invoked with --enable-tile.
 
 #pragma once
@@ -79,8 +79,8 @@ template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std:
 template <typename Op, typename OutIter, typename... InIters>
 inline constexpr bool tile_dispatch_eligible_v =
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutIter>
-  && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...) && ::cuda::std::is_empty_v<Op>
-  && cub::transform::tile_eligible_v<Op, ::cuda::std::iter_value_t<OutIter>, sizeof...(InIters)>;
+  && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
+  && ::cuda::std::is_empty_v<Op> && tile_eligible_v<Op, ::cuda::std::iter_value_t<OutIter>, sizeof...(InIters)>;
 
 // Runtime arch gate: tile needs sm_80+. False (fall back to CUB) below sm_80 or if the cc query fails.
 [[nodiscard]] CUB_RUNTIME_FUNCTION inline bool device_supports_tile()
@@ -133,15 +133,15 @@ dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_item
     },
     inputs);
 
-  using tile_op_t = cub::transform::tile_operator_t<TransformOp>;
+  using tile_op_t = tile_operator_t<TransformOp>;
   static_assert(::cuda::std::is_empty_v<tile_op_t>,
                 "tile_operator type must be stateless (the tile kernel default-constructs it)");
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_operator type must be trivially default constructible");
 
-  constexpr int tile_size = cub::detail::transform::tile::pick_tile_size<::cuda::std::iter_value_t<OutIter>,
-                                                                         ::cuda::std::iter_value_t<InIters>...>(
-    cub::transform::tile_mufu_heavy_v<TransformOp>);
+  constexpr int tile_size =
+    cub::detail::transform::tile::pick_tile_size<::cuda::std::iter_value_t<OutIter>,
+                                                 ::cuda::std::iter_value_t<InIters>...>(tile_mufu_heavy_v<TransformOp>);
   return cub::detail::transform::tile::launch_impl<tile_size, tile_op_t>(
     in_ptrs,
     out_ptr,

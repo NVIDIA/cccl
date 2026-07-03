@@ -27,7 +27,7 @@ struct rgb_to_y
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 CUB_NAMESPACE_BEGIN
-namespace transform
+namespace detail::transform::tile
 {
 template <class T>
 inline constexpr bool tile_eligible_v<rgb_to_y, T, 3> = true;
@@ -36,7 +36,7 @@ struct tile_operator<rgb_to_y>
 {
   using type = rgb_to_y;
 };
-} // namespace transform
+} // namespace detail::transform::tile
 CUB_NAMESPACE_END
 #endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 

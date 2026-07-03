@@ -45,7 +45,7 @@ struct add_op
 };
 
 CUB_NAMESPACE_BEGIN
-namespace transform
+namespace detail::transform::tile
 {
 template <class T>
 inline constexpr bool tile_eligible_v<square_op, T, 1> = true;
@@ -62,7 +62,7 @@ struct tile_operator<add_op>
 {
   using type = add_op;
 };
-} // namespace transform
+} // namespace detail::transform::tile
 CUB_NAMESPACE_END
 
 // Unsigned types so arithmetic wraps deterministically and matches the host reference bit-for-bit.

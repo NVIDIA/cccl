@@ -25,7 +25,7 @@ struct identity
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 CUB_NAMESPACE_BEGIN
-namespace transform
+namespace detail::transform::tile
 {
 template <class T>
 inline constexpr bool tile_eligible_v<identity, T, 1> = true;
@@ -34,7 +34,7 @@ struct tile_operator<identity>
 {
   using type = identity;
 };
-} // namespace transform
+} // namespace detail::transform::tile
 CUB_NAMESPACE_END
 #endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 

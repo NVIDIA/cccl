@@ -3,7 +3,7 @@
 
 // Compile-time policy for cub::DeviceTransform's tile path.
 //
-// PUBLIC EXTENSION POINTS (cub::transform) -- two independent axes:
+// INTERNAL EXTENSION POINTS (cub::detail::transform::tile) -- two independent axes:
 //   tile_eligible_v<Op, T, NIn> -- specialize to true to opt a (functor type,
 //                                   element type, input arity) combo into the
 //                                   tile dispatch path. Eligibility only.
@@ -46,8 +46,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-// Public extension surface.
-namespace transform
+// Internal extension surface.
+namespace detail::transform::tile
 {
 // Opt a (functor type, element type, input arity) combo into the tile dispatch path: specialize this to
 // true for the combo. Eligibility only -- the __tile__ functor to actually run is named by tile_operator<Op>.
@@ -61,7 +61,7 @@ template <typename Op>
 struct tile_operator
 {
   static_assert(sizeof(Op) == 0,
-                "cub::transform::tile_operator<Op> must be specialized for every tile-eligible Op: "
+                "cub::detail::transform::tile::tile_operator<Op> must be specialized for every tile-eligible Op: "
                 "provide `using type = <stateless __tile__ functor mirroring Op>`.");
 };
 
@@ -72,10 +72,10 @@ using tile_operator_t = typename tile_operator<Op>::type;
 // policy picker cap items/thread so MUFU pipes are not oversaturated.
 template <typename Op>
 inline constexpr bool tile_mufu_heavy_v = false;
-} // namespace transform
+} // namespace detail::transform::tile
 
 // Built-in trait specializations.
-namespace transform
+namespace detail::transform::tile
 {
 // The transparent cuda::std::plus<>/multiplies<> have a templated operator() that is tile-callable, so they
 // serve directly as the tile_operator for the typed cuda::std::plus<T>/multiplies<T> a user passes.
@@ -112,7 +112,7 @@ struct tile_operator<::cuda::std::multiplies<::__nv_bfloat16>>
   using type = ::cuda::std::multiplies<>;
 };
 #  endif // _CCCL_HAS_NVBF16()
-} // namespace transform
+} // namespace detail::transform::tile
 
 CUB_NAMESPACE_END
 

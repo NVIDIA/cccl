@@ -282,7 +282,7 @@ struct tile_binary_fmax
 };
 
 CUB_NAMESPACE_BEGIN
-namespace transform
+namespace detail::transform::tile
 {
 // Unary
 template <class T>
@@ -398,7 +398,7 @@ struct tile_operator<binary_fmax>
 {
   using type = tile_binary_fmax;
 };
-} // namespace transform
+} // namespace detail::transform::tile
 CUB_NAMESPACE_END
 #endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 

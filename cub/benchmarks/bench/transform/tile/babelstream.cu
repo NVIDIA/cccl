@@ -54,7 +54,7 @@ struct nstream_op
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 CUB_NAMESPACE_BEGIN
-namespace transform
+namespace detail::transform::tile
 {
 template <class T>
 inline constexpr bool tile_eligible_v<mul_op, T, 1> = true;
@@ -84,7 +84,7 @@ struct tile_operator<nstream_op>
 {
   using type = nstream_op;
 };
-} // namespace transform
+} // namespace detail::transform::tile
 CUB_NAMESPACE_END
 #endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 
