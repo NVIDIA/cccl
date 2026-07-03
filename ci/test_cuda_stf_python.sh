@@ -19,7 +19,12 @@ setup_python_env "${py_version}"
 find_one_wheel() {
   local glob="$1"
   local wheelhouse="/home/coder/cccl/wheelhouse"
-  local wheels=("${wheelhouse}"/${glob})
+  local wheels
+  # Glob-expand into an array. A non-matching glob yields the literal pattern
+  # (caught by the existence check below), matching the previous behavior.
+  # ${glob} is intentionally unquoted so the shell expands the wildcard.
+  # shellcheck disable=SC2086
+  mapfile -t wheels < <(printf '%s\n' "${wheelhouse}"/${glob})
 
   if [[ ! -e "${wheels[0]}" ]]; then
     echo "No wheel matching '${glob}' found in ${wheelhouse}" >&2
@@ -35,25 +40,18 @@ find_one_wheel() {
   echo "${wheels[0]}"
 }
 
-# Fetch or build the cuda_cccl and cuda_stf wheels. cuda-stf depends on
-# cuda-cccl for cuda.cccl.headers and cuda.cccl._cuda_version_utils, and the
-# interop tests exercise cuda.compute, so both wheels are required.
+# Fetch or build the cuda_stf wheel. cuda-stf is standalone (ships its own STF
+# bindings, headers, and CUDA version detection), so only its wheel is needed.
+# cuda-cccl is pulled from the test extra for the cuda.compute interop tests.
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  cccl_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" "${cccl_artifact_name}" /home/coder/cccl/
   stf_artifact_name=$(CCCL_WHEEL_KIND=stf "$ci_dir/util/workflow/get_wheel_artifact_name.sh")
   "$ci_dir/util/artifacts/download.sh" "${stf_artifact_name}" /home/coder/cccl/
 else
-  "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
   "$ci_dir/build_cuda_stf_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl first (provides cuda.cccl.headers, cuda.compute), then
-# cuda_stf with its test extra. cuda-stf's unpinned cuda-cccl dependency is
-# satisfied by the already-installed local wheel.
-CUDA_CCCL_WHEEL_PATH="$(find_one_wheel 'cuda_cccl-*.whl')"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
-
+# Install cuda_stf with its test extra (which also pulls in cuda-cccl for the
+# cuda.compute interop tests).
 CUDA_STF_WHEEL_PATH="$(find_one_wheel 'cuda_stf-*.whl')"
 python -m pip install "${CUDA_STF_WHEEL_PATH}[test-cu${cuda_major_version}]"
 

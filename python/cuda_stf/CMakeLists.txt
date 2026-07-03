@@ -53,11 +53,12 @@ set(cudax_ENABLE_EXAMPLES OFF)
 set(cudax_ENABLE_HEADER_TESTING OFF)
 
 # Build the CCCL targets (cccl.c.experimental.stf and cudax) but do NOT ship
-# the libcudacxx/CUB/Thrust headers from here: cuda-cccl already owns
-# cuda/cccl/headers/include for those, and shipping them again would create
-# file-ownership conflicts when both wheels are installed. We install only the
-# cudax and C STF headers cuda-cccl does not provide (see below), placing them
-# into the same include root so cuda.cccl.headers can discover them.
+# the libcudacxx/CUB/Thrust headers from here: those are owned by cuda-cccl and
+# shipping them again would bloat the wheel and duplicate cuda-cccl's headers.
+# We install only the cudax and C STF headers that cuda-cccl does not provide
+# (see below), placing them in cuda-stf's own include root so the package stays
+# importable/usable without cuda-cccl. cuda.stf._experimental.paths augments
+# these with cuda-cccl's libcudacxx/CUB/Thrust root when it is installed.
 set(libcudacxx_ENABLE_INSTALL_RULES OFF)
 set(CUB_ENABLE_INSTALL_RULES OFF)
 set(Thrust_ENABLE_INSTALL_RULES OFF)
@@ -113,18 +114,20 @@ endif()
 
 set(_stf_install_dir "cuda/stf/_experimental/${CUDA_VERSION_DIR}")
 
+# cuda-stf's own include root, independent of cuda-cccl. It is not
+# CUDA-version-specific (headers are identical across cu12/cu13), so it lives
+# outside the cu12/cu13 extension directories.
+set(_stf_include_dir "cuda/stf/_experimental/include")
+
 file(MAKE_DIRECTORY "${_stf_install_dir}/cccl")
 
-install(
-  TARGETS cccl.c.experimental.stf
-  DESTINATION "${_stf_install_dir}/cccl"
-)
+install(TARGETS cccl.c.experimental.stf DESTINATION "${_stf_install_dir}/cccl")
 
-# Ship the C STF public header(s) into the same include root as the other CCCL
-# headers so consumers can `#include <cccl/c/experimental/stf/stf.h>`.
+# Ship the C STF public header(s) so consumers can
+# `#include <cccl/c/experimental/stf/stf.h>`.
 install(
   DIRECTORY ${_cccl_root}/c/experimental/stf/include/cccl
-  DESTINATION cuda/cccl/headers/include
+  DESTINATION "${_stf_include_dir}"
   FILES_MATCHING
   PATTERN "*.h"
 )
@@ -136,7 +139,7 @@ install(
 # defined, so it cannot be reliably enabled from here.
 install(
   DIRECTORY ${_cccl_root}/cudax/include/cuda
-  DESTINATION cuda/cccl/headers/include
+  DESTINATION "${_stf_include_dir}"
   FILES_MATCHING
   PATTERN "*.cuh"
 )
@@ -145,10 +148,7 @@ set(
   stf_pyx_source_file
   "${cuda_stf_SOURCE_DIR}/cuda/stf/_experimental/_stf_bindings_impl.pyx"
 )
-set(
-  _stf_generated_extension_src
-  "${cuda_stf_BINARY_DIR}/_stf_bindings_impl.c"
-)
+set(_stf_generated_extension_src "${cuda_stf_BINARY_DIR}/_stf_bindings_impl.c")
 set(_stf_depfile "${cuda_stf_BINARY_DIR}/_stf_bindings_impl.c.dep")
 
 add_custom_command(

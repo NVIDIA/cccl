@@ -17,13 +17,16 @@ from cuda.stf._experimental.paths import (
     get_include_paths,
     get_library_dir,
     get_library_path,
+    get_stf_include_dir,
 )
 
 
 @pytest.fixture
 def include_root():
-    # All include_paths fields point at the same shipped CCCL include root.
-    return get_include_paths().libcudacxx
+    # cuda-stf ships its own include root with the cudax + C STF headers. It is
+    # also exposed via get_include_paths().stf.
+    assert get_include_paths().stf == get_stf_include_dir()
+    return get_stf_include_dir()
 
 
 def test_stf_c_header_shipped(include_root):

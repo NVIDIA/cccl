@@ -34,12 +34,14 @@ dependencies = [
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
   "typing_extensions",
-  # cuda.stf._experimental imports cuda.cccl.headers (for the shipped CCCL
-  # include root) and cuda.cccl._cuda_version_utils (to pick the cu12/cu13
-  # extension). The version is intentionally unpinned so a locally-built
-  # cuda-cccl wheel satisfies it in CI.
-  "cuda-cccl",
 ]
+# Note: cuda-stf has no hard dependency on cuda-cccl. It ships its own CUDA
+# version-detection helper (cuda.stf._experimental._cuda_version_utils) and its
+# own STF/cudax headers. cuda-cccl is an optional peer: when installed,
+# cuda.stf._experimental.paths.get_include_paths() adds its libcudacxx/CUB/
+# Thrust include root so external C++ code can compile against the cudax
+# headers. The interop tests also use cuda.compute, so cuda-cccl is pulled in
+# by the test extras below.
 
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -81,17 +83,32 @@ sysctk13 = [
   "numba>=0.60.0",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
+# The test extras add cuda-cccl: the interop tests exercise cuda.compute, and
+# get_include_paths()'s C++ header path resolves libcudacxx/CUB/Thrust from it.
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
   # GH pypa #11296
   "cuda-stf[cu12]",
+  "cuda-cccl",
   "pytest",
   "pytest-xdist",
   "cupy-cuda12x",
 ]
-test-cu13 = ["cuda-stf[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
-test-sysctk12 = ["cuda-stf[sysctk12]", "pytest", "pytest-xdist", "cupy-cuda12x"]
-test-sysctk13 = ["cuda-stf[sysctk13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
+test-cu13 = ["cuda-stf[cu13]", "cuda-cccl", "pytest", "pytest-xdist", "cupy-cuda13x"]
+test-sysctk12 = [
+  "cuda-stf[sysctk12]",
+  "cuda-cccl",
+  "pytest",
+  "pytest-xdist",
+  "cupy-cuda12x",
+]
+test-sysctk13 = [
+  "cuda-stf[sysctk13]",
+  "cuda-cccl",
+  "pytest",
+  "pytest-xdist",
+  "cupy-cuda13x",
+]
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
@@ -121,10 +138,11 @@ root = "../.."
 git_describe_command = ["git", "describe", "--tags", "--match", "v[0-9]*"]
 fallback_version = "0.0.0"
 
-# Ship only the STF subtree. `cuda`, `cuda.stf`, and `cuda.cccl` are namespace
-# packages shared with cuda-cccl, so this package must not own their parent
-# __init__.py files. The cu12/cu13 extension directories and the shared header
-# tree under cuda/cccl/headers are installed by CMake, not listed here.
+# Ship only the STF subtree. `cuda` and `cuda.stf` are namespace packages
+# (potentially shared with other cuda-* distributions), so this package must
+# not own their parent __init__.py files. The cu12/cu13 extension directories
+# and the STF include tree (cuda/stf/_experimental/include) are installed by
+# CMake, not listed here.
 [tool.scikit-build.wheel.packages]
 "cuda/stf/_experimental" = "cuda/stf/_experimental"
 "cuda/stf/_experimental/interop" = "cuda/stf/_experimental/interop"

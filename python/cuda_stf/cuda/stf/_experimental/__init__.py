@@ -10,7 +10,12 @@ import importlib
 from typing import TYPE_CHECKING, Any
 
 from . import paths
-from .paths import get_include_paths, get_library_dir, get_library_path
+from .paths import (
+    get_include_paths,
+    get_library_dir,
+    get_library_path,
+    get_stf_include_dir,
+)
 
 # Map each lazily-exported public symbol to the submodule that defines it.
 # Importing those submodules pulls in the STF extension (_stf_bindings_impl)
@@ -84,6 +89,7 @@ __all__ = [
     "get_include_paths",
     "get_library_dir",
     "get_library_path",
+    "get_stf_include_dir",
     "green_context_helper",
     "green_ctx_view",
     "data_place",
