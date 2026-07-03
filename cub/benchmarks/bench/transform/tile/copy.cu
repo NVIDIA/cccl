@@ -3,7 +3,7 @@
 
 // Pure copy (identity transform) -- measures plain load/store bandwidth through the tile
 // load_masked/store_masked path. The identity op registers a tile_operator substitute (gated); under
-// --enable-tile + CCCL_ENABLE_TILE_TRANSFORM_DISPATCH the dispatch hook routes it to the tile kernel,
+// --enable-tile + CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH the dispatch hook routes it to the tile kernel,
 // otherwise it falls through to CUB's standard transform. This file disappears once tile dispatch is
 // fully transparent.
 

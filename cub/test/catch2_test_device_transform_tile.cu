@@ -8,7 +8,7 @@
 #include <c2h/catch2_test_helper.h>
 
 // The tile dispatch path only exists when nvcc is invoked with --enable-tile and the user opts in via
-// CCCL_ENABLE_TILE_TRANSFORM_DISPATCH. In any other build this file compiles to a single skipped test.
+// CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH. In any other build this file compiles to a single skipped test.
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <algorithm>
 

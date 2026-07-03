@@ -3,7 +3,7 @@
 
 // Tile variant of the BabelStream transform bench. The lambdas of the base benchmark are replaced by
 // named, stateless ops that register a tile_operator substitute (gated). Under --enable-tile +
-// CCCL_ENABLE_TILE_TRANSFORM_DISPATCH the dispatch hook routes them to the tile kernel; otherwise this
+// CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH the dispatch hook routes them to the tile kernel; otherwise this
 // is the standard CUB transform path. This file disappears once tile dispatch is fully transparent.
 
 #include "../common.h"

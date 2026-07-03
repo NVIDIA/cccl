@@ -173,9 +173,9 @@ function(
     endif()
 
     # Tile-DSL transform test: compile under --enable-tile and turn on the dispatch hook. Gated by
-    # CCCL_ENABLE_TILE_TRANSFORM_DISPATCH (default OFF) so CI keeps the tile path compiled out.
+    # CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH (default OFF) so CI keeps the tile path compiled out.
     if (
-      CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
+      CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
       AND "${test_src}" MATCHES "test_device_transform_tile\\.cu$"
     )
       target_compile_options(
@@ -184,7 +184,7 @@ function(
       )
       target_compile_definitions(
         ${test_target}
-        PRIVATE CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
+        PRIVATE _CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
       )
     endif()
 

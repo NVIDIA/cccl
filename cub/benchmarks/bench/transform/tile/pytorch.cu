@@ -4,7 +4,7 @@
 // Tile variant of the PyTorch-style transform benches. Each named op registers a tile_operator
 // substitute (gated); MUFU-heavy ops also opt into tile_mufu_heavy_v so the tile policy picker caps
 // items/thread at the vector width on sub-4-byte types. Under --enable-tile +
-// CCCL_ENABLE_TILE_TRANSFORM_DISPATCH the dispatch hook routes them to the tile kernel; otherwise this
+// CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH the dispatch hook routes them to the tile kernel; otherwise this
 // is the standard CUB path. This file disappears once tile dispatch is fully transparent.
 
 #include <cuda_bf16.h>

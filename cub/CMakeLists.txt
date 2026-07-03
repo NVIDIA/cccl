@@ -22,18 +22,18 @@ if (
   set(_cccl_tile_transform_default ON)
 endif()
 option(
-  CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
-  "Build cub::DeviceTransform's tile path (requires nvcc --enable-tile)."
+  CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+  "EXPERIMENTAL: build cub::DeviceTransform's tile path (requires nvcc --enable-tile). This flag is experimental and may change or be removed."
   ${_cccl_tile_transform_default}
 )
 if (
-  CCCL_ENABLE_TILE_TRANSFORM_DISPATCH
+  CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
   AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
   AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS 13.4
 )
   message(
     FATAL_ERROR
-    "CCCL_ENABLE_TILE_TRANSFORM_DISPATCH requires CUDA 13.4+ (nvcc --enable-tile). "
+    "CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH requires CUDA 13.4+ (nvcc --enable-tile). "
     "Found ${CMAKE_CUDA_COMPILER_VERSION}."
   )
 endif()
