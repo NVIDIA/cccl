@@ -5,7 +5,7 @@
 # _stf_bindings_impl extension module. The shim serves the same purposes as
 # cuda.compute._bindings:
 #
-# 1. Import a CUDA-specific extension. The cuda-cccl wheel ships
+# 1. Import a CUDA-specific extension. The cuda-stf wheel ships
 #    cuda/stf/_experimental/cu12/ and cuda/stf/_experimental/cu13/; at runtime
 #    this shim chooses based on the detected CUDA version and imports all
 #    symbols from the matching extension.
@@ -38,8 +38,8 @@ def _select_cuda_extra():
     except ImportError as e:
         raise ImportError(
             "CUDASTF bindings require cuda-bindings to detect the CUDA version. "
-            "Reinstall cuda-cccl with a CUDA extra (for example, "
-            "`pip install cuda-cccl[cu13]`)."
+            "Reinstall cuda-stf with a CUDA extra (for example, "
+            "`pip install cuda-stf[cu13]`)."
         ) from e
 
     cuda_version = detect_cuda_version()
@@ -71,5 +71,5 @@ try:
 except ImportError as e:
     raise ImportError(
         f"CUDASTF bindings for CUDA {cuda_version} are not available: {e}. "
-        f"Reinstall cuda-cccl with the matching extra (e.g. `pip install cuda-cccl[cu{cuda_version}]`)."
+        f"Reinstall cuda-stf with the matching extra (e.g. `pip install cuda-stf[cu{cuda_version}]`)."
     ) from e

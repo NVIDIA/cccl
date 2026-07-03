@@ -23,7 +23,7 @@ from __future__ import annotations
 
 _NUMBA_INSTALL_HINT = (
     "This functionality requires ``numba-cuda`` to be installed. "
-    "Install it with e.g. ``pip install cuda-cccl[cu13]``."
+    "Install it with e.g. ``pip install cuda-stf[cu13]``."
 )
 
 

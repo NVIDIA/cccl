@@ -9,10 +9,12 @@ or write that data; STF infers dependencies and orchestrates execution and data
 movement. For the full description of the model, see the
 :ref:`C++ CUDASTF documentation <stf>`.
 
-The module ships inside the ``cuda-cccl`` wheel; install it with
-``pip install cuda-cccl[cu13]`` (or ``[cu12]``). It is exposed under the
-``_experimental`` subpackage because the Python API is still evolving and may change
-without notice.
+The module ships in the standalone ``cuda-stf`` wheel; install it with
+``pip install cuda-stf[cu13]`` (or ``[cu12]``). ``cuda-stf`` depends on
+``cuda-cccl``, which provides the shared CCCL headers and CUDA-version
+detection it uses. It is exposed under the ``_experimental`` subpackage because
+the Python API is still evolving and may change without notice. CUDASTF is
+currently Linux-only.
 
 Example
 -------
@@ -26,10 +28,10 @@ context is finalized. ``scale`` and ``axpy`` are ordinary Numba CUDA kernels;
 ``t.stream_ptr()`` and ``numba_arguments(t)`` (described in *Tasks and interop* below)
 bridge each task to its kernel launch.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/stf/interop/test_numba.py
+.. literalinclude:: ../../python/cuda_stf/tests/stf/interop/test_numba.py
    :language: python
    :pyobject: axpy_chain_example
-   :caption: Real tasks with dependencies inferred from data accesses. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/interop/test_numba.py>`__
+   :caption: Real tasks with dependencies inferred from data accesses. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_stf/tests/stf/interop/test_numba.py>`__
 
 Context and logical data
 -------------------------
@@ -149,12 +151,12 @@ many times. The graph owns a ``stackable_context`` exposed as ``graph.context``.
 logical data before recording, enter ``with graph:`` exactly once to submit tasks, then
 call ``graph.launch()`` whenever the recorded graph should replay.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/stf/test_task_graph.py
+.. literalinclude:: ../../python/cuda_stf/tests/stf/test_task_graph.py
    :language: python
    :pyobject: _record_add_graph
-   :caption: Record a task graph once. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/test_task_graph.py>`__
+   :caption: Record a task graph once. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_stf/tests/stf/test_task_graph.py>`__
 
-.. literalinclude:: ../../python/cuda_cccl/tests/stf/test_task_graph.py
+.. literalinclude:: ../../python/cuda_stf/tests/stf/test_task_graph.py
    :language: python
    :pyobject: test_task_graph_relaunch
    :caption: Replay the recorded graph many times.
@@ -201,7 +203,7 @@ Example collections
 -------------------
 
 For runnable examples, see the
-`STF tests and examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/stf>`_.
+`STF tests and examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_stf/tests/stf>`_.
 The ``interop/`` subdirectory exercises the Numba and PyTorch adapters (kernels,
 tokens, multi-GPU, FDTD), and ``examples/`` holds larger end-to-end programs
 (conjugate gradient, Cholesky, Burger, neural ODE).

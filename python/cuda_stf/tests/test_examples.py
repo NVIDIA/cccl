@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Test runner for CCCL examples.
+Test runner for CUDASTF examples.
 
-This module automatically discovers and runs all example scripts from both
-coop and compute directories to ensure they execute without errors.
-
-CUDASTF examples live in the separate cuda-stf package
-(python/cuda_stf/tests/test_examples.py).
+This module automatically discovers and runs all example scripts from the STF
+examples directory to ensure they execute without errors.
 """
 
 import importlib
@@ -26,8 +23,7 @@ def discover_examples():
     examples = []
 
     example_directories = [
-        ("Coop Experimental", "coop/_experimental/examples"),
-        ("Compute", "compute/examples"),
+        ("STF", "stf/examples"),
     ]
 
     for framework, example_dir in example_directories:
@@ -47,14 +43,13 @@ def discover_examples():
             rel_path = python_file.relative_to(tests_dir)
 
             # Convert path to module name (OS-agnostic)
-            # Example: coop/_experimental/examples/block/reduce.py
-            #          -> coop._experimental.examples.block.reduce
+            # Example: stf/examples/cg.py -> stf.examples.cg
             module_name = ".".join(rel_path.with_suffix("").parts)
 
             # Extract category info for display
             parts = python_file.relative_to(example_path).parts
             if len(parts) >= 2:
-                category = parts[0].title()  # Block, Warp, Reduction, etc.
+                category = parts[0].title()
                 filename = parts[1].replace(".py", "").replace("_", " ").title()
                 display_name = f"{framework} - {category} - {filename}"
             elif len(parts) == 1:
@@ -74,13 +69,22 @@ def run_example_module(module_name, display_name):
         print(f"Testing {display_name}...")
 
         # Import the module. Examples may sys.exit(0) at module load to skip
-        # when their preconditions aren't met on this build (e.g. v2-only
-        # RawOp examples loaded against a v1 wheel). Treat that as a pass.
+        # when their preconditions aren't met on this build.
         try:
             module = importlib.import_module(module_name)
         except SystemExit as exit_exc:
             if exit_exc.code in (None, 0):
                 print(f"  {display_name} skipped (sys.exit({exit_exc.code}))")
+                return True
+            raise
+        except ImportError as import_exc:
+            # Some STF examples require optional nvmath-python dependencies that
+            # are not installed in all CI example test environments.
+            if module_name in {
+                "stf.examples.cholesky",
+                "stf.examples.potri",
+            } and "requires nvmath-python" in str(import_exc):
+                print(f"  {display_name} skipped ({import_exc})")
                 return True
             raise
 

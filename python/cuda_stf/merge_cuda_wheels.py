@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-Script to merge CUDA-specific wheels into a single multi-CUDA wheel.
+Script to merge CUDA-specific cuda-stf wheels into a single multi-CUDA wheel.
 
 This script takes wheels built for different CUDA versions (cu12, cu13) and merges them
 into a single wheel that supports both CUDA versions.
 
-Each wheel contains CUDA-specific builds in versioned directories:
-- `cuda/compute/cu<version>` -- cccl.c.parallel and cuda.compute bindings
+Each wheel contains a CUDA-specific build in a versioned directory:
+- `cuda/stf/_experimental/cu<version>` -- cccl.c.experimental.stf and
+  cuda.stf._experimental bindings (Linux only)
 
 This script merges those directories so the final wheel supports both CUDA versions.
-At runtime, shim modules choose the right extension from the detected CUDA version
-(see `cuda/compute/_bindings.py`).
+At runtime, the shim module chooses the right extension from the detected CUDA version
+(see `cuda/stf/_experimental/_stf_bindings.py`).
 """
 
 import argparse
@@ -91,7 +92,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
             # Find the extracted directory (wheel unpack creates a subdirectory)
             extract_dir = None
             for item in temp_path.iterdir():
-                if item.is_dir() and item.name.startswith("cuda_cccl"):
+                if item.is_dir() and item.name.startswith("cuda_stf"):
                     extract_dir = item
                     break
 
@@ -113,7 +114,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
         # now copy the version-specific directories from other wheels
         # into the appropriate place in the base wheel
         version_subdirs = [
-            Path("cuda") / "compute",
+            Path("cuda") / "stf" / "_experimental",
         ]
         for i, wheel_dir in enumerate(extracted_wheels):
             cuda_version = cuda_version_from_wheel_name(wheels[i].name)
@@ -172,8 +173,8 @@ def main():
 
     args = parser.parse_args()
 
-    print("CUDA CCCL Wheel Merger")
-    print("======================")
+    print("CUDA STF Wheel Merger")
+    print("=====================")
 
     # Convert wheel paths to Path objects and validate
     wheels = []

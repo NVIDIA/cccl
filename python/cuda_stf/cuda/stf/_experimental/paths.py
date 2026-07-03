@@ -72,7 +72,7 @@ def get_library_dir() -> Path:
     raise RuntimeError(
         f"Unable to locate the CUDASTF library '{_STF_LIBRARY_NAME}'. "
         "Searched for cu12/cu13 layouts under the installed package and site roots. "
-        "Reinstall cuda-cccl with a CUDA extra (e.g. `pip install cuda-cccl[cu13]`)."
+        "Reinstall cuda-stf with a CUDA extra (e.g. `pip install cuda-stf[cu13]`)."
     )
 
 

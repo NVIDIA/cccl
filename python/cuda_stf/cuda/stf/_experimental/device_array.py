@@ -15,7 +15,6 @@ import weakref
 from typing import TYPE_CHECKING
 
 import numpy as np
-
 from cuda.bindings import runtime as cudart
 
 from ._stream_utils import get_stream_pointer

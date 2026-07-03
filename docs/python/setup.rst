@@ -50,6 +50,18 @@ For a minimal install without Numba (useful when you supply your own
    pip install cuda-cccl[minimal-cu13]      # pip-installed CUDA toolkit
    pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
 
+Optional: Sequential Task Flow (``cuda-stf``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:ref:`cuda.stf._experimental <cccl-python-stf>` (CUDASTF) ships as a separate,
+Linux-only package. Install it explicitly when you need it:
+
+.. code-block:: bash
+
+   pip install cuda-stf[cu13]  # or cuda-stf[cu12]
+
+``cuda-stf`` depends on ``cuda-cccl`` and will pull it in automatically.
+
 Install from conda-forge
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -97,3 +109,4 @@ Now that you have ``cuda-cccl`` installed, check out:
 
 * :doc:`compute/index` - Parallel computing primitives for operations on arrays or data ranges
 * :doc:`coop` - Block and warp-level cooperative algorithms for building custom CUDA kernels with Numba
+* :doc:`stf` - Sequential Task Flow for CUDA (installed separately via ``cuda-stf``)

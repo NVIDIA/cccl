@@ -8,10 +8,12 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
-# Add Python CCCL package to path for autodoc
-python_package_path = os.path.abspath("../python/cuda_cccl")
-if os.path.exists(python_package_path):
-    sys.path.insert(0, python_package_path)
+# Add Python CCCL packages to path for autodoc. cuda-cccl and cuda-stf are
+# separate distributions that both contribute to the shared ``cuda`` namespace.
+for _pkg in ("../python/cuda_cccl", "../python/cuda_stf"):
+    python_package_path = os.path.abspath(_pkg)
+    if os.path.exists(python_package_path):
+        sys.path.insert(0, python_package_path)
 
 # Note: numpy is installed as a real dependency (see requirements.txt)
 # This avoids issues with type annotations using union syntax (ndarray | type)

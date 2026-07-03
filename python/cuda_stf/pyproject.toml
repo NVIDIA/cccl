@@ -1,20 +1,19 @@
-# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-# cmake>=3.30 is needed for FindCUDAToolkit's CUDA::nvfatbin /
-# CUDA::nvfatbin_static imported targets, which the v2 (HostJIT) backend links
-# against. Listed here so isolated builds (pip's default) pick it up.
+# cmake>=3.30 mirrors cuda-cccl: STF builds cccl.c.experimental.stf and cudax
+# through the top-level CCCL project, which requires a recent FindCUDAToolkit.
 requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython", "cmake>=3.30"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "cuda-cccl"
-description = "CUDA Core Compute Libraries for Python"
+name = "cuda-stf"
+description = "CUDASTF (Stream Task Flow) bindings for CUDA Python"
 authors = [{ name = "NVIDIA Corporation" }]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Programming Language :: Python :: 3 :: Only",
@@ -25,8 +24,8 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Environment :: GPU :: NVIDIA CUDA",
   "License :: OSI Approved :: Apache Software License",
+  # CUDASTF ships Linux-only; the native extension is gated off on Windows.
   "Operating System :: POSIX :: Linux",
-  "Operating System :: Microsoft :: Windows",
 ]
 requires-python = ">=3.10"
 
@@ -35,6 +34,11 @@ dependencies = [
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
   "typing_extensions",
+  # cuda.stf._experimental imports cuda.cccl.headers (for the shipped CCCL
+  # include root) and cuda.cccl._cuda_version_utils (to pick the cu12/cu13
+  # extension). The version is intentionally unpinned so a locally-built
+  # cuda-cccl wheel satisfies it in CI.
+  "cuda-cccl",
 ]
 
 dynamic = ["version"]
@@ -58,64 +62,36 @@ minimal-sysctk13 = [
   "cuda-bindings>=13.0.0,<14.0.0",
 ]
 cu12 = [
-  "cuda-cccl[minimal-cu12]",
-  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
-  "numba>=0.60.0,<0.66",
+  "cuda-stf[minimal-cu12]",
+  "numba>=0.60.0",
   "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 cu13 = [
-  "cuda-cccl[minimal-cu13]",
-  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
-  "numba>=0.60.0,<0.66",
-  "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
+  "cuda-stf[minimal-cu13]",
+  "numba>=0.60.0",
+  "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 sysctk12 = [
-  "cuda-cccl[minimal-sysctk12]",
-  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
-  "numba>=0.60.0,<0.66",
-  "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
+  "cuda-stf[minimal-sysctk12]",
+  "numba>=0.60.0",
+  "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 sysctk13 = [
-  "cuda-cccl[minimal-sysctk13]",
-  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
-  "numba>=0.60.0,<0.66",
+  "cuda-stf[minimal-sysctk13]",
+  "numba>=0.60.0",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
   # GH pypa #11296
-  "cuda-cccl[cu12]",
+  "cuda-stf[cu12]",
   "pytest",
   "pytest-xdist",
   "cupy-cuda12x",
 ]
-test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
-test-sysctk12 = ["cuda-cccl[sysctk12]", "pytest", "pytest-xdist", "cupy-cuda12x"]
-test-sysctk13 = ["cuda-cccl[sysctk13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
-bench-cu12 = [
-  "cuda-cccl[cu12]",
-  "cuda-bench[cu12]",
-  "cupy-cuda12x",
-  "pytest-benchmark",
-]
-bench-cu13 = [
-  "cuda-cccl[cu13]",
-  "cuda-bench[cu13]",
-  "cupy-cuda13x",
-  "pytest-benchmark",
-]
-bench-sysctk12 = [
-  "cuda-cccl[sysctk12]",
-  "cuda-bench[cu12]",
-  "cupy-cuda12x",
-  "pytest-benchmark",
-]
-bench-sysctk13 = [
-  "cuda-cccl[sysctk13]",
-  "cuda-bench[cu13]",
-  "cupy-cuda13x",
-  "pytest-benchmark",
-]
+test-cu13 = ["cuda-stf[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
+test-sysctk12 = ["cuda-stf[sysctk12]", "pytest", "pytest-xdist", "cupy-cuda12x"]
+test-sysctk13 = ["cuda-stf[sysctk13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
@@ -143,10 +119,15 @@ provider = "scikit_build_core.metadata.setuptools_scm"
 [tool.setuptools_scm]
 root = "../.."
 git_describe_command = ["git", "describe", "--tags", "--match", "v[0-9]*"]
+fallback_version = "0.0.0"
 
-
+# Ship only the STF subtree. `cuda`, `cuda.stf`, and `cuda.cccl` are namespace
+# packages shared with cuda-cccl, so this package must not own their parent
+# __init__.py files. The cu12/cu13 extension directories and the shared header
+# tree under cuda/cccl/headers are installed by CMake, not listed here.
 [tool.scikit-build.wheel.packages]
-"cuda" = "cuda"
+"cuda/stf/_experimental" = "cuda/stf/_experimental"
+"cuda/stf/_experimental/interop" = "cuda/stf/_experimental/interop"
 
 [tool.mypy]
 cache_dir = "../../.cache/mypy"
@@ -154,13 +135,10 @@ python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = [
-  # numpy>=2.3 stubs use PEP 695 syntax that mypy can't parse under
-  # python_version=3.10; skip following its imports to keep the 3.10 target.
-  "numpy",
-  "numpy.*",
   "numba.*",
   "llvmlite.*",
   "cuda.cccl.*",
+  "cuda.compute.*",
   "cuda.bindings.*",
   "cuda.core.*",
   "cuda.pathfinder.*",
@@ -173,16 +151,11 @@ extend = "../../pyproject.toml"
 
 [tool.ruff.lint.isort]
 known-first-party = [
-  "cuda.cccl",
-  "cuda.cccl.headers",
-  "cuda.compute",
-  "cuda.coop",
-  "cuda.coop._experimental",
+  "cuda.stf",
+  "cuda.stf._experimental",
 ]
 
 [tool.pytest.ini_options]
 markers = [
-  "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
-  "no_numba: tests that should not import numba or numba.cuda",
 ]

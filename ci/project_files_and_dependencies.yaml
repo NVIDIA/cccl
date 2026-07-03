@@ -152,6 +152,9 @@ projects:
     full_dependencies: []
     include_regexes:
     - "python/cuda_cccl/"
+    # cuda-stf is a separate distribution but is built/tested by the same
+    # 'python' matrix jobs (build_py_stf_wheel / test_py_stf).
+    - "python/cuda_stf/"
     - "pyproject.toml"
     exclude_regexes: []
 

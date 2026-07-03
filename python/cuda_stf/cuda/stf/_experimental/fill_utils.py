@@ -8,7 +8,6 @@ single fallback (CuPy) for 8-byte.
 """
 
 import numpy as np
-
 from cuda.core import Buffer, Stream
 
 

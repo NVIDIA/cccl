@@ -207,7 +207,7 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
 * **cuda.coop._experimental** — Block/warp-level primitives for Numba CUDA
-* **cuda.stf._experimental** — Stream Task Flow (CUDASTF) Python bindings (Linux only)
+* **cuda.stf._experimental** — Stream Task Flow (CUDASTF) Python bindings, shipped in the standalone `cuda-stf` package (Linux only)
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -271,8 +271,8 @@ Test organization:
 * `tests/compute` — Algorithms and iterators
 * `tests/coop` — Cooperative primitives
 * `tests/headers` — Header integration
-* `tests/stf` — Sequential Task Flow (Linux only)
-* `test_examples.py` — Runs compute/coop examples
+* `python/cuda_stf/tests/stf` — Sequential Task Flow (separate `cuda-stf` package, Linux only)
+* `test_examples.py` — Runs compute/coop examples (STF examples live in `python/cuda_stf/tests/test_examples.py`)
 
 ---
 
