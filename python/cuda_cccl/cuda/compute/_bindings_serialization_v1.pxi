@@ -1,24 +1,24 @@
-# Auto-generated AoT extern declarations and implementations for v1 backend.
+# Auto-generated serialization extern declarations and implementations for v1 backend.
 # Included at the end of _bindings_impl.pyx by CMake-selected include.
 
-cdef extern from "cccl/c/aot.h":
-    cdef void cccl_aot_buffer_free(void*) nogil
+cdef extern from "cccl/c/serialization.h":
+    cdef void cccl_serialization_buffer_free(void*) nogil
 
-cdef extern from "cccl/c/aot_diagnostics.h":
-    cdef const char* cccl_aot_last_error() nogil
-    cdef CUresult cccl_aot_validate_blob(const void*, size_t) nogil
+cdef extern from "cccl/c/serialization_diagnostics.h":
+    cdef const char* cccl_serialization_last_error() nogil
+    cdef CUresult cccl_serialization_validate_blob(const void*, size_t) nogil
 
 
-cdef _aot_check_loadable(const void* buf, size_t size):
+cdef _serialization_check_loadable(const void* buf, size_t size):
     # Validate the blob header (magic / format / ABI version) and, for CUBIN
     # payloads, that the target compute-capability major matches this device,
     # BEFORE the opaque cuLibraryLoadData failure. On mismatch, raise with the
     # C layer's descriptive message instead of a bare CUDA error code.
     cdef CUresult st
     with nogil:
-        st = cccl_aot_validate_blob(buf, size)
+        st = cccl_serialization_validate_blob(buf, size)
     if st != 0:
-        raise RuntimeError((<bytes> cccl_aot_last_error()).decode("utf-8", "replace"))
+        raise RuntimeError((<bytes> cccl_serialization_last_error()).decode("utf-8", "replace"))
 
 cdef extern from "cccl/c/reduce.h":
     cdef CUresult cccl_device_reduce_load(
@@ -185,7 +185,7 @@ cdef extern from "cccl/c/segmented_sort.h":
         size_t
     ) nogil
 
-def _aot_reduce_serialize(DeviceReduceBuildResult self):
+def _serialization_reduce_serialize(DeviceReduceBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -193,16 +193,16 @@ def _aot_reduce_serialize(DeviceReduceBuildResult self):
         status = cccl_device_reduce_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(
             f"Failed serializing reduce, error code: {status}"
         )
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_reduce_deserialize(blob):
+def _serialization_reduce_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -214,7 +214,7 @@ def _aot_reduce_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_reduce_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -230,7 +230,7 @@ def _aot_reduce_deserialize(blob):
         )
     return self
 
-def _aot_scan_serialize(DeviceScanBuildResult self):
+def _serialization_scan_serialize(DeviceScanBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -238,14 +238,14 @@ def _aot_scan_serialize(DeviceScanBuildResult self):
         status = cccl_device_scan_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing scan, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_scan_deserialize(blob):
+def _serialization_scan_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -257,7 +257,7 @@ def _aot_scan_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_scan_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -269,7 +269,7 @@ def _aot_scan_deserialize(blob):
         raise RuntimeError(f"Failed loading scan after deserialize, error code: {status}")
     return self
 
-def _aot_segmented_reduce_serialize(DeviceSegmentedReduceBuildResult self):
+def _serialization_segmented_reduce_serialize(DeviceSegmentedReduceBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -277,14 +277,14 @@ def _aot_segmented_reduce_serialize(DeviceSegmentedReduceBuildResult self):
         status = cccl_device_segmented_reduce_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing segmented_reduce, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_segmented_reduce_deserialize(blob):
+def _serialization_segmented_reduce_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -296,7 +296,7 @@ def _aot_segmented_reduce_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_segmented_reduce_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -308,7 +308,7 @@ def _aot_segmented_reduce_deserialize(blob):
         raise RuntimeError(f"Failed loading segmented_reduce after deserialize, error code: {status}")
     return self
 
-def _aot_merge_sort_serialize(DeviceMergeSortBuildResult self):
+def _serialization_merge_sort_serialize(DeviceMergeSortBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -316,14 +316,14 @@ def _aot_merge_sort_serialize(DeviceMergeSortBuildResult self):
         status = cccl_device_merge_sort_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing merge_sort, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_merge_sort_deserialize(blob):
+def _serialization_merge_sort_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -335,7 +335,7 @@ def _aot_merge_sort_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_merge_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -347,7 +347,7 @@ def _aot_merge_sort_deserialize(blob):
         raise RuntimeError(f"Failed loading merge_sort after deserialize, error code: {status}")
     return self
 
-def _aot_unique_by_key_serialize(DeviceUniqueByKeyBuildResult self):
+def _serialization_unique_by_key_serialize(DeviceUniqueByKeyBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -355,14 +355,14 @@ def _aot_unique_by_key_serialize(DeviceUniqueByKeyBuildResult self):
         status = cccl_device_unique_by_key_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing unique_by_key, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_unique_by_key_deserialize(blob):
+def _serialization_unique_by_key_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -374,7 +374,7 @@ def _aot_unique_by_key_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_unique_by_key_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -386,7 +386,7 @@ def _aot_unique_by_key_deserialize(blob):
         raise RuntimeError(f"Failed loading unique_by_key after deserialize, error code: {status}")
     return self
 
-def _aot_radix_sort_serialize(DeviceRadixSortBuildResult self):
+def _serialization_radix_sort_serialize(DeviceRadixSortBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -394,14 +394,14 @@ def _aot_radix_sort_serialize(DeviceRadixSortBuildResult self):
         status = cccl_device_radix_sort_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing radix_sort, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_radix_sort_deserialize(blob):
+def _serialization_radix_sort_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -413,7 +413,7 @@ def _aot_radix_sort_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_radix_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -425,7 +425,7 @@ def _aot_radix_sort_deserialize(blob):
         raise RuntimeError(f"Failed loading radix_sort after deserialize, error code: {status}")
     return self
 
-def _aot_unary_transform_serialize(DeviceUnaryTransform self):
+def _serialization_unary_transform_serialize(DeviceUnaryTransform self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -433,14 +433,14 @@ def _aot_unary_transform_serialize(DeviceUnaryTransform self):
         status = cccl_device_transform_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing unary_transform, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_unary_transform_deserialize(blob):
+def _serialization_unary_transform_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -451,7 +451,7 @@ def _aot_unary_transform_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_transform_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -463,7 +463,7 @@ def _aot_unary_transform_deserialize(blob):
         raise RuntimeError(f"Failed loading unary_transform after deserialize, error code: {status}")
     return self
 
-def _aot_binary_transform_serialize(DeviceBinaryTransform self):
+def _serialization_binary_transform_serialize(DeviceBinaryTransform self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -471,14 +471,14 @@ def _aot_binary_transform_serialize(DeviceBinaryTransform self):
         status = cccl_device_transform_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing binary_transform, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_binary_transform_deserialize(blob):
+def _serialization_binary_transform_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -489,7 +489,7 @@ def _aot_binary_transform_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_transform_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -501,7 +501,7 @@ def _aot_binary_transform_deserialize(blob):
         raise RuntimeError(f"Failed loading binary_transform after deserialize, error code: {status}")
     return self
 
-def _aot_histogram_serialize(DeviceHistogramBuildResult self):
+def _serialization_histogram_serialize(DeviceHistogramBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -509,14 +509,14 @@ def _aot_histogram_serialize(DeviceHistogramBuildResult self):
         status = cccl_device_histogram_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing histogram, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_histogram_deserialize(blob):
+def _serialization_histogram_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -528,7 +528,7 @@ def _aot_histogram_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_histogram_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -540,7 +540,7 @@ def _aot_histogram_deserialize(blob):
         raise RuntimeError(f"Failed loading histogram after deserialize, error code: {status}")
     return self
 
-def _aot_binary_search_serialize(DeviceBinarySearchBuildResult self):
+def _serialization_binary_search_serialize(DeviceBinarySearchBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -548,14 +548,14 @@ def _aot_binary_search_serialize(DeviceBinarySearchBuildResult self):
         status = cccl_device_binary_search_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing binary_search, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_binary_search_deserialize(blob):
+def _serialization_binary_search_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -567,7 +567,7 @@ def _aot_binary_search_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_binary_search_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -579,7 +579,7 @@ def _aot_binary_search_deserialize(blob):
         raise RuntimeError(f"Failed loading binary_search after deserialize, error code: {status}")
     return self
 
-def _aot_three_way_partition_serialize(DeviceThreeWayPartitionBuildResult self):
+def _serialization_three_way_partition_serialize(DeviceThreeWayPartitionBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -587,14 +587,14 @@ def _aot_three_way_partition_serialize(DeviceThreeWayPartitionBuildResult self):
         status = cccl_device_three_way_partition_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing three_way_partition, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_three_way_partition_deserialize(blob):
+def _serialization_three_way_partition_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -606,7 +606,7 @@ def _aot_three_way_partition_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_three_way_partition_deserialize(
             &self.build_data, buf_ptr, buf_size)
@@ -618,7 +618,7 @@ def _aot_three_way_partition_deserialize(blob):
         raise RuntimeError(f"Failed loading three_way_partition after deserialize, error code: {status}")
     return self
 
-def _aot_segmented_sort_serialize(DeviceSegmentedSortBuildResult self):
+def _serialization_segmented_sort_serialize(DeviceSegmentedSortBuildResult self):
     cdef CUresult status = -1
     cdef void* buf_ptr = NULL
     cdef size_t buf_size = 0
@@ -626,14 +626,14 @@ def _aot_segmented_sort_serialize(DeviceSegmentedSortBuildResult self):
         status = cccl_device_segmented_sort_serialize(&self.build_data, &buf_ptr, &buf_size)
     if status != 0:
         if buf_ptr != NULL:
-            cccl_aot_buffer_free(buf_ptr)
+            cccl_serialization_buffer_free(buf_ptr)
         raise RuntimeError(f"Failed serializing segmented_sort, error code: {status}")
     try:
         return PyBytes_FromStringAndSize(<const char*>buf_ptr, buf_size)
     finally:
-        cccl_aot_buffer_free(buf_ptr)
+        cccl_serialization_buffer_free(buf_ptr)
 
-def _aot_segmented_sort_deserialize(blob):
+def _serialization_segmented_sort_deserialize(blob):
     # Copy to immutable bytes: the C deserialize reads the buffer under
     # `nogil`, so a writable bytearray/memoryview could be mutated mid-read.
     blob = bytes(blob)
@@ -645,7 +645,7 @@ def _aot_segmented_sort_deserialize(blob):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    _aot_check_loadable(buf_ptr, buf_size)
+    _serialization_check_loadable(buf_ptr, buf_size)
     with nogil:
         status = cccl_device_segmented_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)

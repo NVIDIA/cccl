@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._aot import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._serialization import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     get_dtype,
@@ -21,7 +21,7 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
 class _RadixSort(Serializable):
-    _serde_tag = AlgoTag.RADIX_SORT
+    _serialization_tag = AlgoTag.RADIX_SORT
     __slots__ = [
         "d_in_keys_cccl",
         "d_out_keys_cccl",
@@ -31,7 +31,7 @@ class _RadixSort(Serializable):
         "build_result",
     ]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("d_in_keys_cccl", ITER),
         ("d_out_keys_cccl", ITER),
         ("d_in_values_cccl", ITER),
@@ -63,7 +63,7 @@ class _RadixSort(Serializable):
             operator_type=cccl.OpKind.STATELESS,
             ltoir=b"",
             state_alignment=1,
-            state=b"",  # explicit empty bytes so the AoT serialize path is byte-safe
+            state=b"",  # explicit empty bytes so the serialize path is byte-safe
         )
         decomposer_return_type = "".encode("utf-8")
 

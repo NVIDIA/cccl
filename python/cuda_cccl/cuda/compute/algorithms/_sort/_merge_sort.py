@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from ... import _bindings, types
 from ... import _cccl_interop as cccl
-from ..._aot import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._serialization import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -21,7 +21,7 @@ from ...typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _MergeSort(Serializable):
-    _serde_tag = AlgoTag.MERGE_SORT
+    _serialization_tag = AlgoTag.MERGE_SORT
     __slots__ = [
         "d_in_keys_cccl",
         "d_in_values_cccl",
@@ -32,7 +32,7 @@ class _MergeSort(Serializable):
         "build_result",
     ]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("d_in_keys_cccl", ITER),
         ("d_in_values_cccl", ITER),
         ("d_out_keys_cccl", ITER),

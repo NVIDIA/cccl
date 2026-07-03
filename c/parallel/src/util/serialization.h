@@ -20,14 +20,14 @@
 #include <type_traits>
 #include <vector>
 
-#include <cccl/c/aot.h>
+#include <cccl/c/serialization.h>
 #include <cccl/c/types.h>
 
-namespace cccl::aot
+namespace cccl::serialization
 {
-// 8-byte magic identifying a CCCL AoT blob. Bumping the trailing digit
+// 8-byte magic identifying a CCCL serialization blob. Bumping the trailing digit
 // signals a hard format break (older blobs become unloadable).
-inline constexpr char k_blob_magic[8] = {'C', 'C', 'C', 'L', 'A', 'O', 'T', '1'};
+inline constexpr char k_blob_magic[8] = {'C', 'C', 'C', 'L', 'S', 'E', 'R', '1'};
 
 // Per-algorithm format version. Bump when the layout *for that algorithm*
 // changes (e.g. a new field added to its build_result_t).
@@ -38,7 +38,7 @@ inline constexpr uint32_t k_format_version = 1;
 struct blob_header
 {
   char magic[8]; // k_blob_magic
-  uint32_t algo_tag; // cccl_aot_algo_t
+  uint32_t algo_tag; // cccl_serialization_algo_t
   uint32_t format_version; // k_format_version at write time
   uint64_t cccl_version; // CCCL_C_PARALLEL_VERSION at serialize time; mismatched → reject
   uint32_t payload_kind; // cccl_payload_kind_t
@@ -48,7 +48,7 @@ static_assert(sizeof(blob_header) == 32, "blob_header layout must be stable");
 
 // Append-only byte buffer used by *_serialize implementations.
 // Owns a std::vector<char> internally; release() hands back a heap buffer
-// allocated with new[] (matching cccl_aot_buffer_free, which does delete[]).
+// allocated with new[] (matching cccl_serialization_buffer_free, which does delete[]).
 class buffer_writer
 {
   std::vector<char> data;
@@ -130,7 +130,7 @@ public:
   {
     if (n > nrem)
     {
-      throw std::runtime_error("aot blob truncated");
+      throw std::runtime_error("serialization blob truncated");
     }
     std::memcpy(out, pos, n);
     pos += n;
@@ -157,7 +157,7 @@ public:
     }
     if (n > nrem)
     {
-      throw std::runtime_error("aot blob truncated (cstring)");
+      throw std::runtime_error("serialization blob truncated (cstring)");
     }
     auto out = std::make_unique<char[]>(n + 1);
     std::memcpy(out.get(), pos, n);
@@ -174,7 +174,7 @@ public:
     const uint64_t n = read_pod<uint64_t>();
     if (n > nrem)
     {
-      throw std::runtime_error("aot blob truncated (blob)");
+      throw std::runtime_error("serialization blob truncated (blob)");
     }
     if (n == 0)
     {
@@ -198,7 +198,7 @@ public:
     const uint64_t n = read_pod<uint64_t>();
     if (n != expected_size)
     {
-      throw std::runtime_error("aot blob runtime_policy size mismatch");
+      throw std::runtime_error("serialization blob runtime_policy size mismatch");
     }
     if (n > 0)
     {
@@ -213,7 +213,7 @@ public:
 };
 
 // Writes the standard blob header.
-inline void write_header(buffer_writer& w, cccl_aot_algo_t algo_tag, cccl_payload_kind_t kind, int cc)
+inline void write_header(buffer_writer& w, cccl_serialization_algo_t algo_tag, cccl_payload_kind_t kind, int cc)
 {
   blob_header h{};
   std::memcpy(h.magic, k_blob_magic, sizeof(k_blob_magic));
@@ -228,29 +228,31 @@ inline void write_header(buffer_writer& w, cccl_aot_algo_t algo_tag, cccl_payloa
 // Reads + validates a blob header. Throws on magic / algo_tag / format_version /
 // cccl_version mismatch. Returns the parsed header for the caller to use
 // (payload_kind, cc).
-inline blob_header read_and_validate_header(buffer_reader& r, cccl_aot_algo_t expected_algo)
+inline blob_header read_and_validate_header(buffer_reader& r, cccl_serialization_algo_t expected_algo)
 {
   const auto h = r.read_pod<blob_header>();
   if (std::memcmp(h.magic, k_blob_magic, sizeof(k_blob_magic)) != 0)
   {
-    throw std::runtime_error("aot blob: bad magic");
+    throw std::runtime_error("serialization blob: bad magic");
   }
   if (h.algo_tag != static_cast<uint32_t>(expected_algo))
   {
-    throw std::runtime_error("aot blob: wrong algorithm");
+    throw std::runtime_error("serialization blob: wrong algorithm");
   }
   if (h.format_version != k_format_version)
   {
-    throw std::runtime_error("aot blob: unsupported format version");
+    throw std::runtime_error("serialization blob: unsupported format version");
   }
   if (h.cccl_version != static_cast<uint64_t>(CCCL_C_PARALLEL_VERSION))
   {
-    throw std::runtime_error(std::format(
-      "aot blob: CCCL C parallel version mismatch (blob={}, current={})", h.cccl_version, CCCL_C_PARALLEL_VERSION));
+    throw std::runtime_error(
+      std::format("serialization blob: CCCL C parallel version mismatch (blob={}, current={})",
+                  h.cccl_version,
+                  CCCL_C_PARALLEL_VERSION));
   }
   if (h.payload_kind != CCCL_PAYLOAD_LTOIR && h.payload_kind != CCCL_PAYLOAD_CUBIN)
   {
-    throw std::runtime_error("aot blob: unknown payload kind");
+    throw std::runtime_error("serialization blob: unknown payload kind");
   }
   return h;
 }
@@ -271,9 +273,9 @@ inline cccl_type_info read_type_info(buffer_reader& r)
   const auto type_v = r.read_pod<uint32_t>();
   if (type_v > static_cast<uint32_t>(CCCL_BOOLEAN))
   {
-    throw std::runtime_error(std::format("aot blob: invalid type enum ({})", type_v));
+    throw std::runtime_error(std::format("serialization blob: invalid type enum ({})", type_v));
   }
   t.type = static_cast<cccl_type_enum>(type_v);
   return t;
 }
-} // namespace cccl::aot
+} // namespace cccl::serialization

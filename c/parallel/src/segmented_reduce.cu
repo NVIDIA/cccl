@@ -31,10 +31,10 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
-#include "util/aot_serialize.h"
 #include "util/nvjitlink.h"
-#include <cccl/c/aot.h>
+#include "util/serialization.h"
 #include <cccl/c/segmented_reduce.h>
+#include <cccl/c/serialization.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -577,9 +577,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_SEGMENTED_REDUCE, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_SEGMENTED_REDUCE, build_ptr->payload_kind, build_ptr->cc);
   w.write_pod<uint64_t>(build_ptr->accumulator_size);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
@@ -604,9 +604,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SEGMENTED_REDUCE);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_SEGMENTED_REDUCE);
 
   const uint64_t accum_size = r.read_pod<uint64_t>();
 
@@ -619,7 +619,7 @@ try
   }
   if (payload_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   std::unique_ptr<cub::detail::segmented_reduce::policy_selector, decltype(&std::free)> policy(

@@ -9,19 +9,19 @@ from typing import Callable
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._aot import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
+from .._serialization import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
 from .._utils import protocols
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _UnaryTransform(Serializable):
-    _serde_tag = AlgoTag.UNARY_TRANSFORM
+    _serialization_tag = AlgoTag.UNARY_TRANSFORM
     __slots__ = ["d_in_cccl", "d_out_cccl", "op_cccl", "build_result"]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("d_in_cccl", ITER),
         ("d_out_cccl", ITER),
         ("op_cccl", OP),
@@ -76,7 +76,7 @@ class _UnaryTransform(Serializable):
 
 
 class _BinaryTransform(Serializable):
-    _serde_tag = AlgoTag.BINARY_TRANSFORM
+    _serialization_tag = AlgoTag.BINARY_TRANSFORM
     __slots__ = [
         "d_in1_cccl",
         "d_in2_cccl",
@@ -85,7 +85,7 @@ class _BinaryTransform(Serializable):
         "build_result",
     ]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("d_in1_cccl", ITER),
         ("d_in2_cccl", ITER),
         ("d_out_cccl", ITER),

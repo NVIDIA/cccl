@@ -23,7 +23,7 @@ except ImportError:
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
 )
 
 

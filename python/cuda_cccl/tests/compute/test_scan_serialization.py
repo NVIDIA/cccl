@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Round-trip tests for scan serialize/deserialize AoT APIs."""
+"""Round-trip tests for scan serialize/deserialize APIs."""
 
 import cupy as cp
 import numpy as np
@@ -26,7 +26,7 @@ except ImportError:
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
 )
 
 
@@ -103,18 +103,18 @@ def test_deserialize_after_jit_matches_jit_result():
     """Serialize a JITed scan, deserialize, and confirm output matches a fresh JIT."""
     d_in = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=cp.int32)
     d_out_jit = cp.empty_like(d_in)
-    d_out_aot = cp.empty_like(d_in)
+    d_out_serialization = cp.empty_like(d_in)
     init_value = np.array([1], dtype=np.int32)
 
     def max_op(a, b):
         return a if a > b else b
 
-    # Build + serialize (this JITs), then clear every in-process cache so the AoT
+    # Build + serialize (this JITs), then clear every in-process cache so the serialization
     # leg below runs cold: the deserialized scan must stand on its own and cannot
     # free-ride on a callable warmed by the build or by the JIT reference.
     blob = serialize(
         make_exclusive_scan(
-            d_in=d_in, d_out=d_out_aot, op=max_op, init_value=init_value
+            d_in=d_in, d_out=d_out_serialization, op=max_op, init_value=init_value
         )
     )
     clear_all_caches()
@@ -123,13 +123,13 @@ def test_deserialize_after_jit_matches_jit_result():
     _run(
         loaded,
         d_in=d_in,
-        d_out=d_out_aot,
+        d_out=d_out_serialization,
         op=max_op,
         init_value=init_value,
         num_items=d_in.size,
     )
 
-    # Compute the JIT reference only after the AoT path has already run.
+    # Compute the JIT reference only after the serialization path has already run.
     exclusive_scan(
         d_in=d_in,
         d_out=d_out_jit,
@@ -138,4 +138,4 @@ def test_deserialize_after_jit_matches_jit_result():
         num_items=d_in.size,
     )
 
-    np.testing.assert_array_equal(d_out_aot.get(), d_out_jit.get())
+    np.testing.assert_array_equal(d_out_serialization.get(), d_out_jit.get())

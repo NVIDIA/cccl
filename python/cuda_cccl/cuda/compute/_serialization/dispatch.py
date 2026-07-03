@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Public, free-standing ahead-of-time (AoT) serialize/deserialize entry points.
+"""Public, free-standing serialize/deserialize entry points.
 
 The per-algorithm builder classes (``_Reduce``, ``_Scan``, ...) are private, so
 their ``serialize``/``deserialize`` are exposed here as module-level functions.
@@ -14,12 +14,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from . import serde
+from . import codec
 from .serializable import Serializable
 
 
 def serialize(algorithm: Any) -> bytes:
-    """Serialize a built algorithm into a self-contained AoT blob.
+    """Serialize a built algorithm into a self-contained serialization blob.
 
     Args:
         algorithm: An object returned by a ``make_*`` factory (e.g.
@@ -34,7 +34,7 @@ def serialize(algorithm: Any) -> bytes:
     # masked as "not serializable".
     if not callable(getattr(type(algorithm), "serialize", None)):
         raise TypeError(
-            f"{type(algorithm).__name__} is not an AoT-serializable algorithm "
+            f"{type(algorithm).__name__} is not a serializable algorithm "
             "(expected an object from a make_* factory)."
         )
     return algorithm.serialize()
@@ -51,9 +51,9 @@ def deserialize(blob: bytes):
     Raises:
         ValueError: if the blob is malformed or its algorithm tag is unknown.
     """
-    tag = serde.peek_algo(blob)
+    tag = codec.peek_algo(blob)
     try:
         cls = Serializable._registry[tag]
     except KeyError:
-        raise ValueError(f"AoT blob: unknown algorithm tag {tag}") from None
+        raise ValueError(f"serialization blob: unknown algorithm tag {tag}") from None
     return cls.deserialize(blob)

@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Tests for AoT deserialize diagnostics.
+"""Tests for serialization deserialize diagnostics.
 
 Before these checks, every C-side deserialize/load failure surfaced in Python as
 an opaque ``error code: <n>`` with the real reason printed only to stdout. The C
 layer now validates the blob header (magic / format / ABI version) and — for
 CUBIN payloads — the target compute-capability major against the current device,
 *before* the opaque ``cuLibraryLoadData`` failure, and propagates a descriptive
-message via ``cccl_aot_last_error()``.
+message via ``cccl_serialization_last_error()``.
 
 The compute-capability case is exercised single-GPU by patching the ``cc`` field
 of a real blob (a true cross-GPU load is the same code path but needs a second
@@ -30,10 +30,10 @@ except ImportError:
     USING_V2 = False
 
 pytestmark = pytest.mark.skipif(
-    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
 )
 
-_C_MAGIC = b"CCCLAOT1"
+_C_MAGIC = b"CCCLSER1"
 # Field offsets within the C build_result header, past the 8-byte magic:
 #   algo_tag u32 | format_version u32 | cccl_version u64 | payload_kind u32 | cc u32
 _OFF_CCCL_VERSION = 4 + 4

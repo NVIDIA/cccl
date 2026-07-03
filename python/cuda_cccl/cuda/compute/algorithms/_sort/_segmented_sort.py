@@ -9,9 +9,9 @@ import numpy as np
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._aot import BUILD_RESULT, ITER, AlgoTag, Serializable
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._serialization import BUILD_RESULT, ITER, AlgoTag, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -22,7 +22,7 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
 class _SegmentedSort(Serializable):
-    _serde_tag = AlgoTag.SEGMENTED_SORT
+    _serialization_tag = AlgoTag.SEGMENTED_SORT
     __slots__ = [
         "build_result",
         "d_in_keys_cccl",
@@ -33,7 +33,7 @@ class _SegmentedSort(Serializable):
         "end_offsets_in_cccl",
     ]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("d_in_keys_cccl", ITER),
         ("d_out_keys_cccl", ITER),
         ("d_in_values_cccl", ITER),

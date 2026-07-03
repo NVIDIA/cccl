@@ -2,17 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Ahead-of-time (AoT) serialization for cuda.compute algorithms.
+"""Ahead-of-time (serialization) serialization for cuda.compute algorithms.
 
 This package's ``__init__`` is the front door: everything a consumer needs is
-re-exported here, so algorithm modules import ``from .._aot import ...`` and
+re-exported here, so algorithm modules import ``from .._serialization import ...`` and
 never reach into a submodule. The submodules are internal implementation:
 
-    serde        -- low-level blob codec (Writer/Reader, framing, descriptor I/O).
+    codec        -- low-level blob codec (Writer/Reader, framing, descriptor I/O).
     serializable -- the ``Serializable`` schema base, its kinds, and ``AlgoTag``.
     dispatch     -- the public free-standing ``serialize`` / ``deserialize``.
 
-Importing ``dispatch`` at package init is safe: it depends only on ``serde`` and
+Importing ``dispatch`` at package init is safe: it depends only on ``codec`` and
 ``serializable`` (not on the algorithm modules), so there is no import cycle —
 each algorithm registers itself with the ``Serializable`` registry as it is
 imported, and ``deserialize`` consults that registry at call time.

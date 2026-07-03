@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "util/serialization.h"
+
 #include <cstring>
 #include <format>
 #include <string>
@@ -15,28 +17,27 @@
 
 #include <cuda.h>
 
-#include "util/aot_serialize.h"
-#include <cccl/c/aot.h>
-#include <cccl/c/aot_diagnostics.h>
+#include <cccl/c/serialization.h>
+#include <cccl/c/serialization_diagnostics.h>
 #include <cccl/c/types.h>
 
-extern "C" CCCL_C_API void cccl_aot_buffer_free(void* buf)
+extern "C" CCCL_C_API void cccl_serialization_buffer_free(void* buf)
 {
   // Buffers handed out by *_serialize are allocated with new[] in the
-  // matching cccl_aot::buffer_writer::release implementation.
+  // matching cccl::serialization::buffer_writer::release implementation.
   delete[] static_cast<char*>(buf);
 }
 
 namespace
 {
-// Per-thread last-error string. Set on an AoT failure, read via
-// cccl_aot_last_error(). Cleared at the start of cccl_aot_validate_blob so a
+// Per-thread last-error string. Set on a serialization failure, read via
+// cccl_serialization_last_error(). Cleared at the start of cccl_serialization_validate_blob so a
 // stale message from an earlier call is never reported for a later one.
-thread_local std::string g_aot_last_error;
+thread_local std::string g_serialization_last_error;
 
-void set_aot_error(std::string msg)
+void set_serialization_error(std::string msg)
 {
-  g_aot_last_error = std::move(msg);
+  g_serialization_last_error = std::move(msg);
 }
 
 // Compute capability of the device the blob will most likely load on, or false
@@ -67,20 +68,20 @@ bool current_compute_capability(int& major, int& minor)
 }
 } // namespace
 
-extern "C" CCCL_C_API const char* cccl_aot_last_error(void)
+extern "C" CCCL_C_API const char* cccl_serialization_last_error(void)
 {
-  return g_aot_last_error.c_str();
+  return g_serialization_last_error.c_str();
 }
 
-extern "C" CCCL_C_API CUresult cccl_aot_validate_blob(const void* buf, size_t size)
+extern "C" CCCL_C_API CUresult cccl_serialization_validate_blob(const void* buf, size_t size)
 try
 {
-  using namespace cccl::aot;
-  g_aot_last_error.clear();
+  using namespace cccl::serialization;
+  g_serialization_last_error.clear();
 
   if (buf == nullptr || size < sizeof(blob_header))
   {
-    set_aot_error("AoT blob: buffer is null or smaller than the blob header");
+    set_serialization_error("serialization blob: buffer is null or smaller than the blob header");
     return CUDA_ERROR_INVALID_VALUE;
   }
 
@@ -89,23 +90,23 @@ try
 
   if (std::memcmp(h.magic, k_blob_magic, sizeof(k_blob_magic)) != 0)
   {
-    set_aot_error("AoT blob: bad magic (not a CCCL AoT blob)");
+    set_serialization_error("serialization blob: bad magic (not a CCCL serialization blob)");
     return CUDA_ERROR_INVALID_VALUE;
   }
   if (h.format_version != k_format_version)
   {
-    set_aot_error(
-      std::format("AoT blob: unsupported format version (blob={}, current={}); rebuild the blob with this cuda-cccl",
-                  h.format_version,
-                  k_format_version));
+    set_serialization_error(std::format(
+      "serialization blob: unsupported format version (blob={}, current={}); rebuild the blob with this cuda-cccl",
+      h.format_version,
+      k_format_version));
     return CUDA_ERROR_INVALID_VALUE;
   }
   if (h.cccl_version != static_cast<uint64_t>(CCCL_C_PARALLEL_VERSION))
   {
-    set_aot_error(
-      std::format("AoT blob: CCCL C parallel ABI mismatch (blob={}, current={}); rebuild the blob with this cuda-cccl",
-                  h.cccl_version,
-                  CCCL_C_PARALLEL_VERSION));
+    set_serialization_error(std::format(
+      "serialization blob: CCCL C parallel ABI mismatch (blob={}, current={}); rebuild the blob with this cuda-cccl",
+      h.cccl_version,
+      CCCL_C_PARALLEL_VERSION));
     return CUDA_ERROR_INVALID_VALUE;
   }
 
@@ -122,8 +123,9 @@ try
       const int blob_major = static_cast<int>(h.cc) / 10;
       if (blob_major != major)
       {
-        set_aot_error(std::format(
-          "AoT blob targets sm_{} but the current device is sm_{}{}; a CUBIN payload is not compatible across "
+        set_serialization_error(std::format(
+          "serialization blob targets sm_{} but the current device is sm_{}{}; a CUBIN payload is not compatible "
+          "across "
           "compute-capability majors. Rebuild for this architecture (or ship one blob per target arch).",
           h.cc,
           major,
@@ -137,6 +139,6 @@ try
 }
 catch (const std::exception& exc)
 {
-  set_aot_error(std::string("AoT blob validation failed: ") + exc.what());
+  set_serialization_error(std::string("serialization blob validation failed: ") + exc.what());
   return CUDA_ERROR_UNKNOWN;
 }

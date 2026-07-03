@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """Serialization of CCCL invocation *descriptors* (iterators, ops, values) for
-ahead-of-time (AoT) reuse.
+serialization reuse.
 
 The C ``build_result`` blob produced by ``Device<Algo>BuildResult.serialize()``
 contains only the compiled kernels + tuning policy + kernel names. It does NOT
@@ -31,7 +31,7 @@ from .._bindings import Iterator, IteratorKind, Op, OpKind, TypeEnum, TypeInfo, 
 from .._device_code import DeviceCode
 
 # Bump when the descriptor wire format changes incompatibly.
-_MAGIC = b"CCAOTPY1"
+_MAGIC = b"CCCLPYS1"
 _VERSION = 2
 
 
@@ -71,7 +71,7 @@ class Reader:
     def _take(self, n: int) -> memoryview:
         end = self.pos + n
         if end > len(self._data):
-            raise ValueError("AoT descriptor blob truncated")
+            raise ValueError("serialization descriptor blob truncated")
         out = self._data[self.pos : end]
         self.pos = end
         return out
@@ -112,16 +112,18 @@ def open(blob: bytes, expected_algo: int) -> Reader:
     """Validate the header and return a reader positioned at the first field."""
     r = Reader(blob)
     if bytes(r._take(len(_MAGIC))) != _MAGIC:
-        raise ValueError("AoT blob: bad magic (not a cuda.compute AoT blob)")
+        raise ValueError(
+            "serialization blob: bad magic (not a cuda.compute serialization blob)"
+        )
     version = r.u32()
     if version != _VERSION:
         raise ValueError(
-            f"AoT blob: unsupported descriptor version (blob={version}, current={_VERSION})"
+            f"serialization blob: unsupported descriptor version (blob={version}, current={_VERSION})"
         )
     algo = r.u32()
     if algo != expected_algo:
         raise ValueError(
-            f"AoT blob: wrong algorithm (blob tag={algo}, expected={expected_algo})"
+            f"serialization blob: wrong algorithm (blob tag={algo}, expected={expected_algo})"
         )
     return r
 
@@ -134,11 +136,13 @@ def peek_algo(blob: bytes) -> int:
     """
     r = Reader(blob)
     if bytes(r._take(len(_MAGIC))) != _MAGIC:
-        raise ValueError("AoT blob: bad magic (not a cuda.compute AoT blob)")
+        raise ValueError(
+            "serialization blob: bad magic (not a cuda.compute serialization blob)"
+        )
     version = r.u32()
     if version != _VERSION:
         raise ValueError(
-            f"AoT blob: unsupported descriptor version (blob={version}, current={_VERSION})"
+            f"serialization blob: unsupported descriptor version (blob={version}, current={_VERSION})"
         )
     return r.u32()
 

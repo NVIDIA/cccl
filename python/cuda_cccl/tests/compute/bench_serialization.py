@@ -2,20 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""First-call latency benchmark: JIT vs AoT deserialize.
+"""First-call latency benchmark: JIT vs serialization deserialize.
 
-Mirrors c/parallel/test/test_bench_aot.cpp at the Python user level.
+Mirrors c/parallel/test/test_bench_serialization.cpp at the Python user level.
 
 For each algorithm, measures wall-clock time for the complete first execution:
     JIT = make_<algo>(...) + execute() + sync()
-    AoT = deserialize(blob) + execute() + sync()
+    serialization = deserialize(blob) + execute() + sync()
 
-The AoT blob is built once up front (untimed, simulating build-server work).
+The serialization blob is built once up front (untimed, simulating build-server work).
 The in-memory algorithm cache is cleared between the two timed paths so each
 measures a true cold start within the process.
 
 Run:
-    python tests/compute/bench_aot.py
+    python tests/compute/bench_serialization.py
 """
 
 from __future__ import annotations
@@ -43,8 +43,8 @@ def _sync() -> None:
     cp.cuda.runtime.deviceSynchronize()
 
 
-def _bench(jit_setup, aot_setup) -> tuple[float, float]:
-    """Run JIT cold-start and AoT cold-start, return (jit_ms, aot_ms)."""
+def _bench(jit_setup, serialization_setup) -> tuple[float, float]:
+    """Run JIT cold-start and serialization cold-start, return (jit_ms, serialization_ms)."""
     clear_all_caches()
     _sync()
     t0 = time.perf_counter()
@@ -55,10 +55,10 @@ def _bench(jit_setup, aot_setup) -> tuple[float, float]:
     clear_all_caches()
     _sync()
     t0 = time.perf_counter()
-    aot_setup()
+    serialization_setup()
     _sync()
-    aot_ms = (time.perf_counter() - t0) * 1000.0
-    return jit_ms, aot_ms
+    serialization_ms = (time.perf_counter() - t0) * 1000.0
+    return jit_ms, serialization_ms
 
 
 def bench_reduce() -> tuple[float, float]:
@@ -66,7 +66,7 @@ def bench_reduce() -> tuple[float, float]:
     d_out = cp.zeros(1, dtype=cp.int32)
     h_init = np.array([0], dtype=np.int32)
 
-    # Pre-build the AoT blob (untimed).
+    # Pre-build the serialization blob (untimed).
     blob = serialize(
         make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init)
     )
@@ -93,7 +93,7 @@ def bench_reduce() -> tuple[float, float]:
             h_init=h_init,
         )
 
-    def aot():
+    def serialization():
         reducer = deserialize(blob)
         nbytes = reducer(
             temp_storage=None,
@@ -113,7 +113,7 @@ def bench_reduce() -> tuple[float, float]:
             h_init=h_init,
         )
 
-    return _bench(jit, aot)
+    return _bench(jit, serialization)
 
 
 def bench_exclusive_scan() -> tuple[float, float]:
@@ -153,10 +153,10 @@ def bench_exclusive_scan() -> tuple[float, float]:
             )
         )
 
-    def aot():
+    def serialization():
         _execute(deserialize(blob))
 
-    return _bench(jit, aot)
+    return _bench(jit, serialization)
 
 
 def bench_merge_sort() -> tuple[float, float]:
@@ -206,16 +206,18 @@ def bench_merge_sort() -> tuple[float, float]:
             )
         )
 
-    def aot():
+    def serialization():
         _execute(deserialize(blob))
 
-    return _bench(jit, aot)
+    return _bench(jit, serialization)
 
 
 def main() -> None:
     cc_major, cc_minor = cp.cuda.Device().compute_capability
-    print(f"\n--- AoT vs JIT first-call latency  (SM {cc_major}{cc_minor}, N={N})  ---")
-    print(f"  {'algorithm':<25}  {'JIT':>10}     {'AoT':>20}")
+    print(
+        f"\n--- serialization vs JIT first-call latency  (SM {cc_major}{cc_minor}, N={N})  ---"
+    )
+    print(f"  {'algorithm':<25}  {'JIT':>10}     {'serialization':>20}")
     print("  " + "-" * 64)
 
     bench_fns = [
@@ -224,10 +226,10 @@ def main() -> None:
         ("merge_sort (int32, keys)", bench_merge_sort),
     ]
     for name, fn in bench_fns:
-        jit_ms, aot_ms = fn()
-        speedup = jit_ms / aot_ms if aot_ms > 0 else float("inf")
+        jit_ms, serialization_ms = fn()
+        speedup = jit_ms / serialization_ms if serialization_ms > 0 else float("inf")
         print(
-            f"  {name:<25}  {jit_ms:>7.1f} ms     {aot_ms:>7.3f} ms ({speedup:>5.0f}×)"
+            f"  {name:<25}  {jit_ms:>7.1f} ms     {serialization_ms:>7.3f} ms ({speedup:>5.0f}×)"
         )
     print()
 

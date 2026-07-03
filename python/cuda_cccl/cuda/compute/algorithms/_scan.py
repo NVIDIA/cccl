@@ -11,7 +11,14 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._aot import (
+from .._caching import cache_with_registered_key_functions
+from .._cccl_interop import (
+    call_build,
+    get_value_type,
+    set_cccl_iterator_state,
+    to_cccl_value_state,
+)
+from .._serialization import (
     BOOL,
     BUILD_RESULT,
     CONDITIONAL,
@@ -21,13 +28,6 @@ from .._aot import (
     VALUE,
     AlgoTag,
     Serializable,
-)
-from .._caching import cache_with_registered_key_functions
-from .._cccl_interop import (
-    call_build,
-    get_value_type,
-    set_cccl_iterator_state,
-    to_cccl_value_state,
 )
 from .._utils.protocols import (
     get_data_pointer,
@@ -52,7 +52,7 @@ def get_init_kind(
 
 
 class _Scan(Serializable):
-    _serde_tag = AlgoTag.SCAN
+    _serialization_tag = AlgoTag.SCAN
     __slots__ = [
         "build_result",
         "d_in_cccl",
@@ -63,7 +63,7 @@ class _Scan(Serializable):
         "force_inclusive",
     ]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("init_kind", ENUM(_bindings.InitKind)),
         ("force_inclusive", BOOL),
         ("d_in_cccl", ITER),

@@ -4,7 +4,7 @@
 
 """Round-trip test for select serialize/deserialize.
 
-select is a composite: it wraps a three_way_partition, so its AoT blob nests
+select is a composite: it wraps a three_way_partition, so its serialization blob nests
 the partitioner's blob. deserialize takes only the blob — no objects.
 """
 
@@ -21,7 +21,7 @@ except ImportError:
     USING_V2 = False
 
 pytestmark = pytest.mark.skipif(
-    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
 )
 
 

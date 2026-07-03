@@ -11,7 +11,6 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._aot import BUILD_RESULT, ITER, OP, VALUE, AlgoTag, Serializable
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
     call_build,
@@ -19,6 +18,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._serialization import BUILD_RESULT, ITER, OP, VALUE, AlgoTag, Serializable
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
@@ -34,7 +34,7 @@ from ..typing import (
 
 
 class _Reduce(Serializable):
-    _serde_tag = AlgoTag.REDUCE
+    _serialization_tag = AlgoTag.REDUCE
     __slots__ = [
         "d_in_cccl",
         "d_out_cccl",
@@ -43,7 +43,7 @@ class _Reduce(Serializable):
         "build_result",
     ]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("d_in_cccl", ITER),
         ("d_out_cccl", ITER),
         ("op_cccl", OP),

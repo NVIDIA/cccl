@@ -371,7 +371,7 @@ cdef class Op:
 
     @property
     def operator_type(self):
-        """Return the op kind (stateless/stateful) for AoT serialization."""
+        """Return the op kind (stateless/stateful) for serialization."""
         return OpKind(<int>self.op_data.type)
 
     @property
@@ -872,7 +872,7 @@ cdef class Iterator:
 
     @property
     def alignment(self):
-        """Return the iterator state alignment for AoT serialization."""
+        """Return the iterator state alignment for serialization."""
         return self.iter_data.alignment
 
     def is_kind_pointer(self):
@@ -1141,11 +1141,11 @@ cdef class DeviceReduceBuildResult:
         return <int>self.build_data.determinism
 
     def serialize(DeviceReduceBuildResult self):
-        return _aot_reduce_serialize(self)
+        return _serialization_reduce_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_reduce_deserialize(blob)
+        return _serialization_reduce_deserialize(blob)
 
 # ------------
 #   DeviceScan
@@ -1460,11 +1460,11 @@ cdef class DeviceScanBuildResult:
         )
 
     def serialize(DeviceScanBuildResult self):
-        return _aot_scan_serialize(self)
+        return _serialization_scan_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_scan_deserialize(blob)
+        return _serialization_scan_deserialize(blob)
 
 # -----------------------
 #   DeviceSegmentedReduce
@@ -1603,11 +1603,11 @@ cdef class DeviceSegmentedReduceBuildResult:
         )
 
     def serialize(DeviceSegmentedReduceBuildResult self):
-        return _aot_segmented_reduce_serialize(self)
+        return _serialization_segmented_reduce_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_segmented_reduce_deserialize(blob)
+        return _serialization_segmented_reduce_deserialize(blob)
 
 # -----------------
 #   DeviceMergeSort
@@ -1740,11 +1740,11 @@ cdef class DeviceMergeSortBuildResult:
         )
 
     def serialize(DeviceMergeSortBuildResult self):
-        return _aot_merge_sort_serialize(self)
+        return _serialization_merge_sort_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_merge_sort_deserialize(blob)
+        return _serialization_merge_sort_deserialize(blob)
 
 
 # -------------------
@@ -1885,11 +1885,11 @@ cdef class DeviceUniqueByKeyBuildResult:
         )
 
     def serialize(DeviceUniqueByKeyBuildResult self):
-        return _aot_unique_by_key_serialize(self)
+        return _serialization_unique_by_key_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_unique_by_key_deserialize(blob)
+        return _serialization_unique_by_key_deserialize(blob)
 
 # -----------------
 # DeviceRadixSort
@@ -2036,11 +2036,11 @@ cdef class DeviceRadixSortBuildResult:
         )
 
     def serialize(DeviceRadixSortBuildResult self):
-        return _aot_radix_sort_serialize(self)
+        return _serialization_radix_sort_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_radix_sort_deserialize(blob)
+        return _serialization_radix_sort_deserialize(blob)
 
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
@@ -2163,11 +2163,11 @@ cdef class DeviceUnaryTransform:
         )
 
     def serialize(DeviceUnaryTransform self):
-        return _aot_unary_transform_serialize(self)
+        return _serialization_unary_transform_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_unary_transform_deserialize(blob)
+        return _serialization_unary_transform_deserialize(blob)
 
 
 cdef class DeviceBinaryTransform:
@@ -2247,11 +2247,11 @@ cdef class DeviceBinaryTransform:
         )
 
     def serialize(DeviceBinaryTransform self):
-        return _aot_binary_transform_serialize(self)
+        return _serialization_binary_transform_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_binary_transform_deserialize(blob)
+        return _serialization_binary_transform_deserialize(blob)
 
 
 # -----------------
@@ -2403,11 +2403,11 @@ cdef class DeviceHistogramBuildResult:
         )
 
     def serialize(DeviceHistogramBuildResult self):
-        return _aot_histogram_serialize(self)
+        return _serialization_histogram_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_histogram_deserialize(blob)
+        return _serialization_histogram_deserialize(blob)
 
 
 # -------------------
@@ -2527,11 +2527,11 @@ cdef class DeviceBinarySearchBuildResult:
         return _binary_search_cubin_bytes(&self.build_data)
 
     def serialize(DeviceBinarySearchBuildResult self):
-        return _aot_binary_search_serialize(self)
+        return _serialization_binary_search_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_binary_search_deserialize(blob)
+        return _serialization_binary_search_deserialize(blob)
 
 
 # ----------------------------------
@@ -2676,11 +2676,11 @@ cdef class DeviceThreeWayPartitionBuildResult:
         )
 
     def serialize(DeviceThreeWayPartitionBuildResult self):
-        return _aot_three_way_partition_serialize(self)
+        return _serialization_three_way_partition_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_three_way_partition_deserialize(blob)
+        return _serialization_three_way_partition_deserialize(blob)
 
 
 # -------------------
@@ -2827,10 +2827,10 @@ cdef class DeviceSegmentedSortBuildResult:
         )
 
     def serialize(DeviceSegmentedSortBuildResult self):
-        return _aot_segmented_sort_serialize(self)
+        return _serialization_segmented_sort_serialize(self)
 
     @staticmethod
     def deserialize(blob):
-        return _aot_segmented_sort_deserialize(blob)
+        return _serialization_segmented_sort_deserialize(blob)
 
-include "_bindings_aot.pxi"
+include "_bindings_serialization.pxi"

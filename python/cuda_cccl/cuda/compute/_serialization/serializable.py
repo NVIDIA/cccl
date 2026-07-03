@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Schema-driven AoT (de)serialization base for cuda.compute algorithms.
+"""Schema-driven serialization (de)serialization base for cuda.compute algorithms.
 
 A built-algorithm class declares a ``tag`` (stable wire id) and a
-``__serde_schema__`` listing its serialized members as ``(attr_name, kind)``
+``__serialization_schema__`` listing its serialized members as ``(attr_name, kind)``
 pairs — including its ``build_result`` as a ``BUILD_RESULT(<type>)`` member.
 ``Serializable`` then provides generic ``serialize``/``deserialize`` that walk
 the schema, so subclasses need no hand-written codec and the two directions
@@ -27,13 +27,13 @@ from __future__ import annotations
 import enum
 from typing import Any, Callable, TypeVar
 
-from . import serde
+from . import codec
 
 
 class AlgoTag(enum.IntEnum):
-    """Stable wire ids for AoT blobs, stamped into each blob header.
+    """Stable wire ids for serialization blobs, stamped into each blob header.
 
-    Values 1-11 mirror the C ``cccl_aot_algo_t``; 12 is reserved for the C
+    Values 1-11 mirror the C ``cccl_serialization_algo_t``; 12 is reserved for the C
     ``FOR`` (not exposed in Python); 13 is Python-only (transform splits into
     unary/binary, which the single C ``TRANSFORM`` tag can't distinguish).
     Never renumber or reuse a value — old blobs encode it.
@@ -64,15 +64,15 @@ class _Kind:
 
     __slots__ = ()
 
-    def write(self, w: serde.Writer, value: Any, obj: Any) -> None:
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
         raise NotImplementedError
 
-    def read(self, r: serde.Reader, obj: Any) -> Any:
+    def read(self, r: codec.Reader, obj: Any) -> Any:
         raise NotImplementedError
 
 
 class _Descriptor(_Kind):
-    """Iterator / Op / Value descriptor, delegating to the serde codec."""
+    """Iterator / Op / Value descriptor, delegating to the codec codec."""
 
     __slots__ = ("_write", "_read")
 
@@ -80,16 +80,16 @@ class _Descriptor(_Kind):
         self._write = writer
         self._read = reader
 
-    def write(self, w: serde.Writer, value: Any, obj: Any) -> None:
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
         self._write(w, value)
 
-    def read(self, r: serde.Reader, obj: Any) -> Any:
+    def read(self, r: codec.Reader, obj: Any) -> Any:
         return self._read(r)
 
 
-ITER = _Descriptor(serde.write_iterator, serde.read_iterator)
-OP = _Descriptor(serde.write_op, serde.read_op)
-VALUE = _Descriptor(serde.write_value, serde.read_value)
+ITER = _Descriptor(codec.write_iterator, codec.read_iterator)
+OP = _Descriptor(codec.write_op, codec.read_op)
+VALUE = _Descriptor(codec.write_value, codec.read_value)
 
 
 class _Scalar(_Kind):
@@ -100,10 +100,10 @@ class _Scalar(_Kind):
     def __init__(self, width: int) -> None:
         self.width = width
 
-    def write(self, w: serde.Writer, value: Any, obj: Any) -> None:
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
         {1: w.u8, 4: w.u32, 8: w.u64}[self.width](int(value))
 
-    def read(self, r: serde.Reader, obj: Any) -> int:
+    def read(self, r: codec.Reader, obj: Any) -> int:
         return {1: r.u8, 4: r.u32, 8: r.u64}[self.width]()
 
 
@@ -115,10 +115,10 @@ class _Bool(_Kind):
 
     __slots__ = ()
 
-    def write(self, w: serde.Writer, value: Any, obj: Any) -> None:
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
         w.u8(1 if value else 0)
 
-    def read(self, r: serde.Reader, obj: Any) -> bool:
+    def read(self, r: codec.Reader, obj: Any) -> bool:
         return bool(r.u8())
 
 
@@ -133,10 +133,10 @@ class _Enum(_Kind):
     def __init__(self, enum_cls: Any) -> None:
         self.enum_cls = enum_cls
 
-    def write(self, w: serde.Writer, value: Any, obj: Any) -> None:
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
         w.u8(int(value))
 
-    def read(self, r: serde.Reader, obj: Any) -> Any:
+    def read(self, r: codec.Reader, obj: Any) -> Any:
         return self.enum_cls(r.u8())
 
 
@@ -155,10 +155,10 @@ class _SubObject(_Kind):
     def __init__(self, cls: Any) -> None:
         self.cls = cls
 
-    def write(self, w: serde.Writer, value: Any, obj: Any) -> None:
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
         w.blob(value.serialize())
 
-    def read(self, r: serde.Reader, obj: Any) -> Any:
+    def read(self, r: codec.Reader, obj: Any) -> Any:
         return self.cls.deserialize(r.blob())
 
 
@@ -189,12 +189,12 @@ class _Conditional(_Kind):
     def _kind(self, obj: Any) -> "_Kind | None":
         return self.branches[getattr(obj, self.selector)]
 
-    def write(self, w: serde.Writer, value: Any, obj: Any) -> None:
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
         kind = self._kind(obj)
         if kind is not None:
             kind.write(w, value, obj)
 
-    def read(self, r: serde.Reader, obj: Any) -> Any:
+    def read(self, r: codec.Reader, obj: Any) -> Any:
         kind = self._kind(obj)
         return None if kind is None else kind.read(r, obj)
 
@@ -208,28 +208,28 @@ _S = TypeVar("_S", bound="Serializable")
 
 
 class Serializable:
-    """Mixin providing schema-driven AoT serialize/deserialize + registration."""
+    """Mixin providing schema-driven serialize/deserialize + registration."""
 
     __slots__ = ()
 
     # tag -> subclass, populated as algorithm modules are imported.
     _registry: dict[int, type[Serializable]] = {}
 
-    # Subclasses set both as class attributes: `_serde_tag = AlgoTag.<X>` and
-    # `__serde_schema__ = (...)`.
-    __serde_schema__: tuple = ()
-    _serde_tag: AlgoTag
+    # Subclasses set both as class attributes: `_serialization_tag = AlgoTag.<X>` and
+    # `__serialization_schema__ = (...)`.
+    __serialization_schema__: tuple = ()
+    _serialization_tag: AlgoTag
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        tag = cls.__dict__.get("_serde_tag")
+        tag = cls.__dict__.get("_serialization_tag")
         if tag is not None:
             Serializable._registry[tag] = cls
 
     def serialize(self) -> bytes:
-        """Serialize this built algorithm to a self-contained AoT blob."""
-        w = serde.begin(self._serde_tag)
-        for attr, kind in self.__serde_schema__:
+        """Serialize this built algorithm to a self-contained serialization blob."""
+        w = codec.begin(self._serialization_tag)
+        for attr, kind in self.__serialization_schema__:
             kind.write(w, getattr(self, attr), self)
         return w.getvalue()
 
@@ -240,8 +240,8 @@ class Serializable:
         Members are read in schema order and set on the instance as they are
         read, so a ``CONDITIONAL`` member can consult a selector read earlier.
         """
-        r = serde.open(blob, cls._serde_tag)
+        r = codec.open(blob, cls._serialization_tag)
         obj = cls.__new__(cls)
-        for attr, kind in cls.__serde_schema__:
+        for attr, kind in cls.__serialization_schema__:
             setattr(obj, attr, kind.read(r, obj))
         return obj

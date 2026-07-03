@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Tests for the ahead-of-time serialize/deserialize reduce Python API.
+"""Tests for the serialize/deserialize reduce Python API.
 
 ``deserialize`` takes only the blob: the iterators, operator, and init value are
 rebuilt from the descriptor sidecar embedded in it. Live device pointers and
@@ -30,7 +30,7 @@ except ImportError:
     USING_V2 = False
 
 pytestmark = pytest.mark.skipif(
-    USING_V2, reason="AoT not supported on v2 (HostJIT) backend"
+    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
 )
 
 
@@ -181,4 +181,4 @@ def test_serialize_deserialize_preserves_determinism():
 
 def test_deserialize_garbage_raises():
     with pytest.raises((ValueError, RuntimeError)):
-        deserialize(b"not a real aot blob" + b"\0" * 64)
+        deserialize(b"not a real serialization blob" + b"\0" * 64)

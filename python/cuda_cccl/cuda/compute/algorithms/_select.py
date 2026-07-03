@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from functools import cache
 
-from .._aot import NESTED, AlgoTag, Serializable
 from .._caching import cache_with_registered_key_functions
 from .._cpp_compile import compile_cpp_op_code
+from .._serialization import NESTED, AlgoTag, Serializable
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators import DiscardIterator
 from ..op import OpAdapter, RawOp, make_op_adapter
@@ -29,7 +29,7 @@ extern "C" __device__ void always_false(void*, void* result) {{
 
 
 class _Select(Serializable):
-    _serde_tag = AlgoTag.SELECT
+    _serialization_tag = AlgoTag.SELECT
     __slots__ = ["partitioner"]
 
     # select is three_way_partition with an always-false second predicate and
@@ -37,7 +37,7 @@ class _Select(Serializable):
     # d_out (a DiscardIterator matching its type) and a cached constant op, so
     # they're rebuilt where needed rather than stored — the partitioner is the
     # only state, which lets _Select serialize via its (nested) schema.
-    __serde_schema__ = (("partitioner", NESTED(_ThreeWayPartition)),)
+    __serialization_schema__ = (("partitioner", NESTED(_ThreeWayPartition)),)
 
     def __init__(
         self,

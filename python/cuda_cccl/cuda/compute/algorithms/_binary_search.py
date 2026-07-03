@@ -9,7 +9,9 @@ import numpy as np
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
-from .._aot import (
+from .._caching import cache_with_registered_key_functions
+from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._serialization import (
     BUILD_RESULT,
     ENUM,
     ITER,
@@ -17,15 +19,13 @@ from .._aot import (
     AlgoTag,
     Serializable,
 )
-from .._caching import cache_with_registered_key_functions
-from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _BinarySearch(Serializable):
-    _serde_tag = AlgoTag.BINARY_SEARCH
+    _serialization_tag = AlgoTag.BINARY_SEARCH
     __slots__ = [
         "build_result",
         "d_data_cccl",
@@ -37,7 +37,7 @@ class _BinarySearch(Serializable):
         "mode",
     ]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("mode", ENUM(_bindings.BinarySearchMode)),
         ("d_data_cccl", ITER),
         ("d_values_cccl", ITER),
@@ -309,7 +309,7 @@ def _load_binary_search(
             _bindings.BinarySearchMode.UPPER_BOUND: "upper_bound",
         }
         raise ValueError(
-            f"AoT blob mode mismatch: blob was saved as {names[searcher.mode]!r}, "
+            f"serialization blob mode mismatch: blob was saved as {names[searcher.mode]!r}, "
             f"but loaded through {names[expected_mode]!r}."
         )
     return searcher

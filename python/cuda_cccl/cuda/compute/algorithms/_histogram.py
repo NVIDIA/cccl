@@ -12,16 +12,16 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._aot import BUILD_RESULT, ITER, U64, VALUE, AlgoTag, Serializable
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._serialization import BUILD_RESULT, ITER, U64, VALUE, AlgoTag, Serializable
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..typing import DeviceArrayLike, IteratorT
 
 
 class _Histogram(Serializable):
-    _serde_tag = AlgoTag.HISTOGRAM
+    _serialization_tag = AlgoTag.HISTOGRAM
     __slots__ = [
         "num_rows",
         "d_samples_cccl",
@@ -32,7 +32,7 @@ class _Histogram(Serializable):
         "build_result",
     ]
 
-    __serde_schema__ = (
+    __serialization_schema__ = (
         ("num_rows", U64),
         ("d_samples_cccl", ITER),
         ("d_histogram_cccl", ITER),
