@@ -317,6 +317,12 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer env wi
 
 #if _CCCL_STD_VER >= 2020
 
+// nvcc turns the `.member = value,` C++ syntax into GNU's `member: value,` when clang (14 - 21) is used
+_CCCL_DIAG_PUSH
+#  if _CCCL_COMPILER(CLANG)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-designator")
+#  endif // _CCCL_COMPILER(CLANG)
+
 // example-begin segmented-radix-sort-policy-selector
 struct SegmentedRadixSortPolicySelector
 {
@@ -343,6 +349,8 @@ struct SegmentedRadixSortPolicySelector
   }
 };
 // example-end segmented-radix-sort-policy-selector
+
+_CCCL_DIAG_POP
 
 C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env-based API with tuning", "[segmented_radix_sort][env]")
 {
