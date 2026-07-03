@@ -32,11 +32,11 @@ __global__ void test_kernel(Lhs lhs, Rhs rhs)
   }
 }
 
+TEST_GLOBAL_VARIABLE int lhs[8]{1, 2, 3, 4, 5, 6, 7, 8};
+TEST_GLOBAL_VARIABLE int rhs[8]{8, 7, 6, 5, 4, 3, 2, 1};
+
 void test_host()
 {
-  constexpr int lhs[]{1, 2, 3, 4, 5, 6, 7, 8};
-  constexpr int rhs[]{8, 7, 6, 5, 4, 3, 2, 1};
-
   test_kernel<<<1, 1>>>(cuda::std::__cw<lhs>, cuda::std::__cw<rhs>);
   assert(cudaDeviceSynchronize() == cudaSuccess);
 }
