@@ -110,6 +110,15 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
+  // Reject an unrecognized payload_kind here too, mirroring read_and_validate_header
+  // (used by every *_deserialize). Otherwise a corrupted payload_kind would pass this
+  // pre-check and only fail later inside the deserialize call with a less-descriptive error.
+  if (h.payload_kind != CCCL_PAYLOAD_LTOIR && h.payload_kind != CCCL_PAYLOAD_CUBIN)
+  {
+    set_serialization_error("serialization blob: unknown payload kind");
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   // A CUBIN payload is final SASS, tied to the compute-capability major it was
   // built for; it is never binary-compatible across majors. Reject that up front
   // rather than failing deep inside cuLibraryLoadData with an opaque code. (A
