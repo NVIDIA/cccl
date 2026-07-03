@@ -61,6 +61,7 @@ struct MergeSortPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
 
+  //! Whether to unroll the loops inside the block merge sort and serial merge implementation
   // RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
 #if defined(CCCL_AVOID_SORT_UNROLL)
   bool unroll = false;
