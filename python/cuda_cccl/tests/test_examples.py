@@ -8,9 +8,6 @@ Test runner for CCCL examples.
 
 This module automatically discovers and runs all example scripts from both
 coop and compute directories to ensure they execute without errors.
-
-CUDASTF examples live in the separate cuda-stf package
-(python/cuda_stf/tests/test_examples.py).
 """
 
 import importlib
