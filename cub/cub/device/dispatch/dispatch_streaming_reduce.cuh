@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/device/dispatch/dispatch_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
 #include <thrust/iterator/iterator_adaptor.h>
@@ -180,7 +181,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, output_extremum_t>, PerPartitionOffsetT, ReductionOpT>;
   using default_policy_t = decltype(default_policy_selector_t{}(::cuda::compute_capability{}));
   using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, reduce_policy, default_policy_selector_t>;
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
 
 #  if _CCCL_HAS_CONCEPTS()
   static_assert(reduce_policy_selector<policy_selector_t>);
