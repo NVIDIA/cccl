@@ -118,6 +118,7 @@ void test_device_vmm_allocation()
 
   // Initialize on device
   init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  cuda_try(cudaGetLastError());
 
   // Allocate result flag for checking
   int* d_result;
@@ -126,6 +127,7 @@ void test_device_vmm_allocation()
 
   // Check on device
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  cuda_try(cudaGetLastError());
 
   // Copy result back
   int h_result = 0;
@@ -267,12 +269,14 @@ void test_multi_segment_vmm()
 
   // Initialize the entire contiguous range
   init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  cuda_try(cudaGetLastError());
 
   // Check the entire range
   int* d_result;
   cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
   cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  cuda_try(cudaGetLastError());
 
   int h_result = 0;
   cuda_try(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
@@ -338,11 +342,13 @@ void test_green_ctx_vmm_allocation()
   cuda_try(cudaStreamCreate(&stream));
 
   init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  cuda_try(cudaGetLastError());
 
   int* d_result;
   cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
   cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  cuda_try(cudaGetLastError());
 
   int h_result = 0;
   cuda_try(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
