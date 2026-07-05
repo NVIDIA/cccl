@@ -20,6 +20,7 @@
 #include <cub/agent/agent_batched_topk_cluster.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_device.cuh> // max_portable_cluster_blocks (CDP static-cluster kernel)
 
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
@@ -443,6 +444,94 @@ __launch_bounds__(
     return;
   }
 }
+
+#ifdef CUB_RDC_ENABLED
+// CDP-only static-cluster kernel: compile-time `__cluster_dims__` so a device-side (CDP) triple-chevron launch needs no
+// `cudaFuncSetAttribute` (device-side launches cannot opt into dynamic cluster dimensions the way the host
+// `device_batched_topk_kernel` does). It mirrors that kernel's cluster arm with a fixed cluster dim, and is consumed by
+// the CDP arm of `launch_cluster_arm` (see `CUB_TOPK_CLUSTER_DEVICE_LAUNCH` in dispatch_batched_topk.cuh).
+template <int ThreadsPerBlock,
+          int HistogramItemsPerThread,
+          int PipelineStages,
+          int ChunkBytes,
+          int LoadAlignBytes,
+          int BitsPerPass,
+          int TieBreakItemsPerThread,
+          int SingleBlockMaxSegSize,
+          int MinChunksPerBlock,
+          int CopyItemsPerThread,
+          ::cuda::execution::determinism::__determinism_t Determinism,
+          ::cuda::execution::tie_break::__tie_break_t TieBreak,
+          typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParameterT,
+          typename KParameterT,
+          typename SelectDirectionParameterT,
+          typename NumSegmentsParameterT>
+__launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks, 1, 1)
+  _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_cluster_kernel_static(
+    KeyInputItItT d_key_segments_it,
+    KeyOutputItItT d_key_segments_out_it,
+    ValueInputItItT d_value_segments_it,
+    ValueOutputItItT d_value_segments_out_it,
+    SegmentSizeParameterT segment_sizes,
+    KParameterT k_param,
+    SelectDirectionParameterT select_directions,
+    NumSegmentsParameterT num_segments,
+    ::cuda::std::uint32_t block_tile_capacity)
+{
+  using agent_t = batched_topk_cluster::agent_batched_topk_cluster<
+    ThreadsPerBlock,
+    HistogramItemsPerThread,
+    PipelineStages,
+    ChunkBytes,
+    LoadAlignBytes,
+    BitsPerPass,
+    TieBreakItemsPerThread,
+    SingleBlockMaxSegSize,
+    MinChunksPerBlock,
+    CopyItemsPerThread,
+    Determinism,
+    TieBreak,
+    KeyInputItItT,
+    KeyOutputItItT,
+    ValueInputItItT,
+    ValueOutputItItT,
+    SegmentSizeParameterT,
+    KParameterT,
+    SelectDirectionParameterT,
+    NumSegmentsParameterT>;
+
+  __shared__ typename agent_t::TempStorage temp_storage;
+  extern __shared__ char topk_cluster_smem[];
+  char* key_slots = topk_cluster_smem;
+  // Align the base up to `slot_alignment` (>= load_align) so every bulk-copy destination gets the same `load_align`
+  // alignment the gmem sources have (peak TMA throughput on Hopper). The layout reserves `base_padding_bytes` for this.
+  {
+    ::cuda::std::uint32_t smem32 = __cvta_generic_to_shared(key_slots);
+    smem32 = ::cuda::round_up(smem32, static_cast<::cuda::std::uint32_t>(agent_t::slot_alignment));
+    asm("" : "+r"(smem32));
+    key_slots = static_cast<char*>(__cvta_shared_to_generic(smem32));
+  }
+
+  agent_t agent(
+    temp_storage,
+    d_key_segments_it,
+    d_key_segments_out_it,
+    d_value_segments_it,
+    d_value_segments_out_it,
+    segment_sizes,
+    k_param,
+    select_directions,
+    num_segments,
+    key_slots,
+    block_tile_capacity);
+
+  agent.Process();
+}
+#endif // CUB_RDC_ENABLED
 } // namespace detail::batched_topk
 
 CUB_NAMESPACE_END
