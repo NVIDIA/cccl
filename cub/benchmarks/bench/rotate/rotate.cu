@@ -5,13 +5,22 @@
 
 #include <nvbench_helper.cuh>
 
-template <typename T>
+template <bool AsPercentage, typename T>
 void rotate_benchmark(nvbench::state& state, nvbench::type_list<T>)
 {
-  const auto num_bytes           = static_cast<size_t>(state.get_int64("Bytes{io}"));
-  const auto num_elements        = num_bytes / sizeof(T);
-  const auto rot_pct             = state.get_float64("RotatePercentage");
-  const size_t rot_dist          = rot_pct == 0.0 ? size_t{1} : static_cast<size_t>(rot_pct * num_elements);
+  const auto num_bytes    = static_cast<size_t>(state.get_int64("Bytes{io}"));
+  const auto num_elements = num_bytes / sizeof(T);
+
+  size_t rot_dist;
+  if constexpr (AsPercentage)
+  {
+    const auto rot_pct = state.get_float64("RotatePercentage");
+    rot_dist           = rot_pct == 0.0 ? size_t{1} : static_cast<size_t>(rot_pct * num_elements);
+  }
+  else
+  {
+    rot_dist = cuda::ceil_div(static_cast<size_t>(state.get_int64("RotateDistanceBytes")), sizeof(T));
+  }
   const auto num_unaligned_elems = static_cast<int>(state.get_int64("NumUnalignedElems"));
 
   if (rot_dist >= num_elements)
@@ -58,10 +67,34 @@ void rotate_benchmark(nvbench::state& state, nvbench::type_list<T>)
   });
 }
 
+// NVBENCH_BENCH_TYPES instantiates its callable from the type axis alone, so wrap each distance
+// mode in a single-type-parameter entry point that pins the `AsPercentage` template argument.
+template <typename T>
+void rotate_benchmark_distance(nvbench::state& state, nvbench::type_list<T> types)
+{
+  rotate_benchmark<false, T>(state, types);
+}
+
+template <typename T>
+void rotate_benchmark_percentage(nvbench::state& state, nvbench::type_list<T> types)
+{
+  rotate_benchmark<true, T>(state, types);
+}
+
 using TypeList = nvbench::type_list<uint8_t, uint16_t, uint32_t, uint64_t>;
 
-NVBENCH_BENCH_TYPES(rotate_benchmark, NVBENCH_TYPE_AXES(TypeList))
+// Short kernel: absolute rotate distances that stay within the short-path tile threshold.
+NVBENCH_BENCH_TYPES(rotate_benchmark_distance, NVBENCH_TYPE_AXES(TypeList))
+  .set_name("rotate_short")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Bytes{io}", nvbench::range(16, 32, 4))
-  .add_float64_axis("RotatePercentage", {0.0, 0.01, 0.3, 0.6, 0.9})
+  .add_int64_power_of_two_axis("Bytes{io}", nvbench::range(26, 32, 2))
+  .add_int64_axis("RotateDistanceBytes", {1, 100, 500, 5000, 10000, 20000, 30000, 32700})
+  .add_int64_axis("NumUnalignedElems", {0LL, 1LL});
+
+// Long/naive algorithm: rotate distance as a fraction of the array size.
+NVBENCH_BENCH_TYPES(rotate_benchmark_percentage, NVBENCH_TYPE_AXES(TypeList))
+  .set_name("rotate_long")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Bytes{io}", nvbench::range(26, 32, 2))
+  .add_float64_axis("RotatePercentage", {0.01, 0.3, 0.6, 0.9})
   .add_int64_axis("NumUnalignedElems", {0LL, 1LL});
