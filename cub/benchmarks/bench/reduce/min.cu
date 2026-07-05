@@ -16,7 +16,17 @@
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
 
-// TODO(bgruber): let's add __half and __nv_bfloat16 eventually when they compile, since we have fast paths for them.
-using value_types = fundamental_types;
-using op_t        = ::cuda::minimum<>;
+// __half and __nv_bfloat16 are appended for full (non-tuning) runs; CUB has fast paths for them (see #9587).
+using value_types =
+  push_back_t<fundamental_types
+#if !defined(TUNE_T) && _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+              ,
+              __half
+#endif
+#if !defined(TUNE_T) && _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+              ,
+              __nv_bfloat16
+#endif
+              >;
+using op_t = ::cuda::minimum<>;
 #include "base.cuh"

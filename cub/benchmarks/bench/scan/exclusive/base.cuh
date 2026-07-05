@@ -65,7 +65,7 @@ catch (const std::bad_alloc&)
   state.skip("Skipping: out of memory.");
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, scan_offset_types))
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(value_types, scan_offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
