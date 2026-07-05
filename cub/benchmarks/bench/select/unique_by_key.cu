@@ -29,15 +29,14 @@
 
 struct bench_unique_by_key_policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::unique_by_key::unique_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::UniqueByKeyPolicy
   {
     return {TUNE_THREADS,
             TUNE_ITEMS,
             TUNE_LOAD_ALGORITHM,
             TUNE_LOAD_MODIFIER,
             cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+            lookback_delay_policy};
   }
 };
 #endif // !TUNE_BASE

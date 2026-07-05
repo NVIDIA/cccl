@@ -15,20 +15,30 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
+#include <cstdlib>
+#include <cstring>
 #include <exception> // std::exception
 #include <format> // std::format
+#include <mutex>
 #include <string> // std::string
 #include <string_view> // std::string_view
 #include <type_traits> // std::is_same_v
+#include <unordered_map>
+#include <vector>
 
 #include "jit_templates/templates/input_iterator.h"
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
+#include "util/aot_serialize.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/nvjitlink.h"
 #include "util/types.h"
+#include <cccl/c/aot.h>
 #include <cccl/c/segmented_sort.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
@@ -220,18 +230,51 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
       ->add_program(nvrtc_translation_unit{code.c_str(), selector_op_name})
       ->compile_program({compile_args, num_compile_args})
       ->get_program_ltoir();
-  selector_op.code      = lto_buf.release();
+  char* code_copy = static_cast<char*>(std::malloc(lto_size));
+  if (!code_copy)
+  {
+    throw std::bad_alloc();
+  }
+  std::memcpy(code_copy, lto_buf.get(), lto_size);
+  selector_op.code      = code_copy;
   selector_op.code_size = lto_size;
   selector_op.code_type = CCCL_OP_LTOIR;
   selector_op.size      = sizeof(selector_state_t);
   selector_op.alignment = alignof(selector_state_t);
-  selector_op.state     = selector_op_state.get();
 
   selector_op_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
-  selector_op_state.release();
+  auto* state_copy = static_cast<selector_state_t*>(std::malloc(sizeof(selector_state_t)));
+  if (!state_copy)
+  {
+    throw std::bad_alloc();
+  }
+  std::memcpy(state_copy, selector_op_state.get(), sizeof(selector_state_t));
+  selector_op.state = state_copy;
 
   return selector_op;
 }
+
+struct owned_selector_op
+{
+  cccl_op_t op{};
+  owned_selector_op() = default;
+  explicit owned_selector_op(cccl_op_t o)
+      : op(o)
+  {}
+  ~owned_selector_op()
+  {
+    std::free(op.state);
+    std::free(const_cast<char*>(op.code));
+  }
+  owned_selector_op(const owned_selector_op&)            = delete;
+  owned_selector_op& operator=(const owned_selector_op&) = delete;
+  cccl_op_t release()
+  {
+    cccl_op_t r = op;
+    op          = {};
+    return r;
+  }
+};
 
 struct segmented_sort_kernel_source
 {
@@ -357,7 +400,7 @@ struct segmented_sort_end_offset_iterator_tag;
 struct segmented_sort_large_selector_tag;
 struct segmented_sort_small_selector_tag;
 
-CUresult cccl_device_segmented_sort_build_ex(
+CUresult cccl_device_segmented_sort_compile(
   cccl_device_segmented_sort_build_result_t* build_ptr,
   cccl_sort_order_t sort_order,
   cccl_iterator_t keys_in_it,
@@ -443,7 +486,7 @@ try
   // We do this because we need to pass the selector ops to
   // DispatchThreeWayPartition eventually. This causes increased compilation
   // times, which might be avoidable.
-  cccl_op_t large_selector_op = segmented_sort::make_segments_selector_op(
+  segmented_sort::owned_selector_op large_selector_op{segmented_sort::make_segments_selector_op(
     0,
     start_offset_it,
     end_offset_it,
@@ -452,8 +495,8 @@ try
     selector_compilation_args.data(),
     selector_compilation_args.size(),
     lopts,
-    num_lto_args);
-  cccl_op_t small_selector_op = segmented_sort::make_segments_selector_op(
+    num_lto_args)};
+  segmented_sort::owned_selector_op small_selector_op{segmented_sort::make_segments_selector_op(
     0,
     start_offset_it,
     end_offset_it,
@@ -462,7 +505,7 @@ try
     selector_compilation_args.data(),
     selector_compilation_args.size(),
     lopts,
-    num_lto_args);
+    num_lto_args)};
 
   cccl_type_info selector_result_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
   cccl_type_info selector_input_t{
@@ -471,10 +514,10 @@ try
     cccl_type_enum::CCCL_UINT32};
 
   const auto [large_selector_name, large_selector_src] = get_specialization<segmented_sort_large_selector_tag>(
-    template_id<unary_user_operation_traits>(), large_selector_op, selector_result_t, selector_input_t);
+    template_id<unary_user_operation_traits>(), large_selector_op.op, selector_result_t, selector_input_t);
 
   const auto [small_selector_name, small_selector_src] = get_specialization<segmented_sort_small_selector_tag>(
-    template_id<unary_user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
+    template_id<unary_user_operation_traits>(), small_selector_op.op, selector_result_t, selector_input_t);
 
   const auto policy_sel = cub::detail::segmented_sort::policy_selector{
     static_cast<int>(keys_in_it.value_type.size),
@@ -610,8 +653,8 @@ static_assert(
   appender.add_iterator_definition(start_offset_it);
   appender.add_iterator_definition(end_offset_it);
 
-  appender.append_operation(large_selector_op);
-  appender.append_operation(small_selector_op);
+  appender.append_operation(large_selector_op.op);
+  appender.append_operation(small_selector_op.op);
 
   nvrtc_link_result result =
     begin_linking_nvrtc_program(num_lto_args, lopts)
@@ -631,41 +674,162 @@ static_assert(
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  // populate build struct members
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->segmented_sort_fallback_kernel,
-                           build_ptr->library,
-                           segmented_sort_fallback_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(
-    &build_ptr->segmented_sort_kernel_small, build_ptr->library, segmented_sort_kernel_small_lowered_name.c_str()));
-  check(cuLibraryGetKernel(
-    &build_ptr->segmented_sort_kernel_large, build_ptr->library, segmented_sort_kernel_large_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->three_way_partition_init_kernel,
-                           build_ptr->library,
-                           three_way_partition_init_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(
-    &build_ptr->three_way_partition_kernel, build_ptr->library, three_way_partition_kernel_lowered_name.c_str()));
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::segmented_sort::policy_selector>);
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::three_way_partition::policy_selector>);
+  const size_t sort_policy_size      = sizeof(policy_sel);
+  const size_t partition_policy_size = sizeof(partition_policy_sel);
+  std::unique_ptr<void, free_deleter> sort_policy_ptr(std::malloc(sort_policy_size));
+  if (!sort_policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  std::unique_ptr<void, free_deleter> partition_policy_ptr(std::malloc(partition_policy_size));
+  if (!partition_policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  std::memcpy(sort_policy_ptr.get(), &policy_sel, sizeof(policy_sel));
+  std::memcpy(partition_policy_ptr.get(), &partition_policy_sel, sizeof(partition_policy_sel));
+  auto fallback_name   = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_fallback_kernel_lowered_name));
+  auto small_name      = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_kernel_small_lowered_name));
+  auto large_name      = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_kernel_large_lowered_name));
+  auto twp_init_name   = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_init_kernel_lowered_name));
+  auto twp_kernel_name = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_kernel_lowered_name));
 
-  build_ptr->cc                         = cc_major * 10 + cc_minor;
-  build_ptr->large_segments_selector_op = large_selector_op;
-  build_ptr->small_segments_selector_op = small_selector_op;
-  build_ptr->cubin                      = (void*) result.data.release();
-  build_ptr->cubin_size                 = result.size;
-  build_ptr->key_type                   = keys_in_it.value_type;
-  build_ptr->offset_type                = cccl_type_info{sizeof(OffsetT), alignof(OffsetT), cccl_type_enum::CCCL_INT64};
-  build_ptr->runtime_policy             = new cub::detail::segmented_sort::policy_selector{policy_sel};
-  build_ptr->partition_runtime_policy   = new cub::detail::three_way_partition::policy_selector{partition_policy_sel};
-  build_ptr->order                      = sort_order;
+  build_ptr->cc          = cc_major * 10 + cc_minor;
+  build_ptr->key_type    = keys_in_it.value_type;
+  build_ptr->offset_type = cccl_type_info{sizeof(OffsetT), alignof(OffsetT), cccl_type_enum::CCCL_INT64};
+  build_ptr->order       = sort_order;
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library                         = nullptr;
+  build_ptr->segmented_sort_fallback_kernel  = nullptr;
+  build_ptr->segmented_sort_kernel_small     = nullptr;
+  build_ptr->segmented_sort_kernel_large     = nullptr;
+  build_ptr->three_way_partition_init_kernel = nullptr;
+  build_ptr->three_way_partition_kernel      = nullptr;
+
+  build_ptr->large_segments_selector_op = large_selector_op.release();
+  build_ptr->small_segments_selector_op = small_selector_op.release();
+  build_ptr->payload                    = (void*) result.data.release();
+  build_ptr->payload_size               = result.size;
+  build_ptr->payload_kind               = CCCL_PAYLOAD_CUBIN;
+
+  build_ptr->runtime_policy                               = sort_policy_ptr.release();
+  build_ptr->runtime_policy_size                          = sort_policy_size;
+  build_ptr->partition_runtime_policy                     = partition_policy_ptr.release();
+  build_ptr->partition_runtime_policy_size                = partition_policy_size;
+  build_ptr->segmented_sort_fallback_kernel_lowered_name  = fallback_name.release();
+  build_ptr->segmented_sort_kernel_small_lowered_name     = small_name.release();
+  build_ptr->segmented_sort_kernel_large_lowered_name     = large_name.release();
+  build_ptr->three_way_partition_init_kernel_lowered_name = twp_init_name.release();
+  build_ptr->three_way_partition_kernel_lowered_name      = twp_kernel_name.release();
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_segmented_sort_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_segmented_sort_compile(): %s\n", exc.what());
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_load(cccl_device_segmented_sort_build_result_t* build)
+try
+{
+  auto invalid_name = [](const char* n) {
+    return n == nullptr || n[0] == '\0';
+  };
+  if (build == nullptr || build->payload == nullptr || build->payload_size == 0
+      || build->payload_kind != CCCL_PAYLOAD_CUBIN || invalid_name(build->segmented_sort_fallback_kernel_lowered_name)
+      || invalid_name(build->segmented_sort_kernel_small_lowered_name)
+      || invalid_name(build->segmented_sort_kernel_large_lowered_name)
+      || invalid_name(build->three_way_partition_init_kernel_lowered_name)
+      || invalid_name(build->three_way_partition_kernel_lowered_name))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  CUresult status = cuLibraryLoadData(&build->library, build->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    return status;
+  }
+  try
+  {
+    check(cuLibraryGetKernel(
+      &build->segmented_sort_fallback_kernel, build->library, build->segmented_sort_fallback_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->segmented_sort_kernel_small, build->library, build->segmented_sort_kernel_small_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->segmented_sort_kernel_large, build->library, build->segmented_sort_kernel_large_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->three_way_partition_init_kernel, build->library, build->three_way_partition_init_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->three_way_partition_kernel, build->library, build->three_way_partition_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build->library);
+    build->library = nullptr;
+    throw;
+  }
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_sort_load(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_build_ex(
+  cccl_device_segmented_sort_build_result_t* build_ptr,
+  cccl_sort_order_t sort_order,
+  cccl_iterator_t keys_in_it,
+  cccl_iterator_t values_in_it,
+  cccl_iterator_t start_offset_it,
+  cccl_iterator_t end_offset_it,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  CUresult result = cccl_device_segmented_sort_compile(
+    build_ptr,
+    sort_order,
+    keys_in_it,
+    values_in_it,
+    start_offset_it,
+    end_offset_it,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (result != CUDA_SUCCESS)
+  {
+    return result;
+  }
+  CUresult load_r = cccl_device_segmented_sort_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_segmented_sort_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_segmented_sort_build(
@@ -829,25 +993,30 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  // allocation behind cubin is owned by unique_ptr with delete[] deleter now
-  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
 
-  // Clean up the selector op states
-  std::unique_ptr<segmented_sort::selector_state_t> large_state(
-    static_cast<segmented_sort::selector_state_t*>(build_ptr->large_segments_selector_op.state));
-  std::unique_ptr<segmented_sort::selector_state_t> small_state(
-    static_cast<segmented_sort::selector_state_t*>(build_ptr->small_segments_selector_op.state));
-
-  // Clean up the selector op code buffers
-  std::unique_ptr<char[]> large_code(const_cast<char*>(build_ptr->large_segments_selector_op.code));
-  std::unique_ptr<char[]> small_code(const_cast<char*>(build_ptr->small_segments_selector_op.code));
+  // Clean up the selector op states and code buffers (malloc-allocated, so use std::free)
+  std::free(build_ptr->large_segments_selector_op.state);
+  std::free(build_ptr->small_segments_selector_op.state);
+  std::free(const_cast<char*>(build_ptr->large_segments_selector_op.code));
+  std::free(const_cast<char*>(build_ptr->small_segments_selector_op.code));
 
   // Clean up the runtime policies
-  std::unique_ptr<cub::detail::segmented_sort::policy_selector> rtp(
-    static_cast<cub::detail::segmented_sort::policy_selector*>(build_ptr->runtime_policy));
-  std::unique_ptr<cub::detail::three_way_partition::policy_selector> prtp(
-    static_cast<cub::detail::three_way_partition::policy_selector*>(build_ptr->partition_runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  std::free(build_ptr->runtime_policy);
+  std::free(build_ptr->partition_runtime_policy);
+  for (char* p :
+       {build_ptr->segmented_sort_fallback_kernel_lowered_name,
+        build_ptr->segmented_sort_kernel_small_lowered_name,
+        build_ptr->segmented_sort_kernel_large_lowered_name,
+        build_ptr->three_way_partition_init_kernel_lowered_name,
+        build_ptr->three_way_partition_kernel_lowered_name})
+  {
+    delete[] p;
+  }
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }
@@ -857,5 +1026,297 @@ catch (const std::exception& exc)
   printf("\nEXCEPTION in cccl_device_segmented_sort_cleanup(): %s\n", exc.what());
   fflush(stdout);
 
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_link_ltoir(
+  cccl_device_segmented_sort_build_result_t* build_ptr,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_LTOIR)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  all_blobs.push_back(build_ptr->payload);
+  all_sizes.push_back(build_ptr->payload_size);
+  if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    if (input_blobs[i] == nullptr || input_sizes[i] == 0)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = (void*) cubin.release();
+  build_ptr->payload_size = cubin_size;
+  build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_segmented_sort_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+namespace segmented_sort_aot
+{
+// Selector op names are compile-time constants (set in make_segments_selector_op).
+// Deserialize simply points back at these literals — cleanup never frees op.name.
+inline constexpr const char* kLargeSegmentsName = "cccl_large_segments_selector_op";
+inline constexpr const char* kSmallSegmentsName = "cccl_small_segments_selector_op";
+
+inline void serialize_selector_op(cccl::aot::buffer_writer& w, const cccl_op_t& op)
+{
+  w.write_pod<uint32_t>(static_cast<uint32_t>(op.type));
+  w.write_pod<uint32_t>(static_cast<uint32_t>(op.code_type));
+  w.write_blob(op.code, op.code_size);
+  // op.size/op.alignment/op.state are intentionally not serialized: the selector
+  // state is runtime-specific and fully reconstructed by deserialize_selector_op.
+}
+
+inline cccl_op_t deserialize_selector_op(cccl::aot::buffer_reader& r, const char* fixed_name)
+{
+  cccl_op_t op{};
+  const auto type_v = r.read_pod<uint32_t>();
+  if (type_v > static_cast<uint32_t>(CCCL_MAXIMUM))
+  {
+    throw std::runtime_error(std::format("aot blob: invalid selector op kind ({})", type_v));
+  }
+  op.type = static_cast<cccl_op_kind_t>(type_v);
+
+  const auto code_type_v = r.read_pod<uint32_t>();
+  if (code_type_v > static_cast<uint32_t>(CCCL_OP_CPP_SOURCE))
+  {
+    throw std::runtime_error(std::format("aot blob: invalid selector op code type ({})", code_type_v));
+  }
+  op.code_type = static_cast<cccl_op_code_type>(code_type_v);
+
+  // code blob — hold in RAII until commit so a throw during read_bytes doesn't leak
+  uint64_t code_n = r.read_pod<uint64_t>();
+  std::unique_ptr<void, decltype(&std::free)> code_owner(nullptr, std::free);
+  if (code_n > 0)
+  {
+    code_owner.reset(std::malloc(static_cast<size_t>(code_n)));
+    if (!code_owner)
+    {
+      throw std::bad_alloc{};
+    }
+    r.read_bytes(code_owner.get(), static_cast<size_t>(code_n));
+  }
+
+  // The selector state is runtime-specific (device pointers, segment offsets) and is
+  // fully overwritten by selector_state_t::initialize() before each launch, so it is
+  // not part of the blob. Reconstruct a fresh, zero-initialized state of the correct
+  // size/alignment here; a malformed blob can no longer dictate the state size.
+  using segmented_sort::selector_state_t;
+  std::unique_ptr<void, decltype(&std::free)> state_owner(std::calloc(1, sizeof(selector_state_t)), std::free);
+  if (!state_owner)
+  {
+    throw std::bad_alloc{};
+  }
+
+  // commit — no throws past this point
+  op.size      = sizeof(selector_state_t);
+  op.alignment = alignof(selector_state_t);
+  op.code      = static_cast<const char*>(code_owner.release());
+  op.code_size = static_cast<size_t>(code_n);
+  op.state     = state_owner.release();
+  // op.name is not freed by cleanup; safe to point at a string literal.
+  op.name = fixed_name;
+  // Selector ops never carry extra ltoirs in this codepath.
+  op.extra_ltoirs      = nullptr;
+  op.extra_ltoir_sizes = nullptr;
+  op.num_extra_ltoirs  = 0;
+  return op;
+}
+} // namespace segmented_sort_aot
+
+CUresult cccl_device_segmented_sort_serialize(
+  const cccl_device_segmented_sort_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0 || build_ptr->runtime_policy == nullptr
+      || build_ptr->runtime_policy_size == 0 || build_ptr->partition_runtime_policy == nullptr
+      || build_ptr->partition_runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_writer w;
+  write_header(w, CCCL_AOT_ALGO_SEGMENTED_SORT, build_ptr->payload_kind, build_ptr->cc);
+  write_type_info(w, build_ptr->key_type);
+  write_type_info(w, build_ptr->offset_type);
+  w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->order));
+  segmented_sort_aot::serialize_selector_op(w, build_ptr->large_segments_selector_op);
+  segmented_sort_aot::serialize_selector_op(w, build_ptr->small_segments_selector_op);
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_blob(build_ptr->partition_runtime_policy, build_ptr->partition_runtime_policy_size);
+  w.write_cstring(build_ptr->segmented_sort_fallback_kernel_lowered_name);
+  w.write_cstring(build_ptr->segmented_sort_kernel_small_lowered_name);
+  w.write_cstring(build_ptr->segmented_sort_kernel_large_lowered_name);
+  w.write_cstring(build_ptr->three_way_partition_init_kernel_lowered_name);
+  w.write_cstring(build_ptr->three_way_partition_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_sort_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_deserialize(
+  cccl_device_segmented_sort_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::aot;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SEGMENTED_SORT);
+
+  const auto key_t    = read_type_info(r);
+  const auto offset_t = read_type_info(r);
+  const auto order    = static_cast<cccl_sort_order_t>(r.read_pod<uint32_t>());
+  if (order != CCCL_ASCENDING && order != CCCL_DESCENDING)
+  {
+    throw std::runtime_error(std::format("aot blob: invalid sort order ({})", static_cast<uint32_t>(order)));
+  }
+
+  // selector ops are partial-cleanup-friendly: code+state are malloc'd. If a
+  // later step throws, segmented_sort_cleanup will std::free both; the unique
+  // ownership cleanup happens via memset+full_cleanup in the catch handler.
+  cccl_op_t large_op = segmented_sort_aot::deserialize_selector_op(r, segmented_sort_aot::kLargeSegmentsName);
+  cccl_op_t small_op{};
+  try
+  {
+    small_op = segmented_sort_aot::deserialize_selector_op(r, segmented_sort_aot::kSmallSegmentsName);
+  }
+  catch (...)
+  {
+    std::free(large_op.state);
+    std::free(const_cast<char*>(large_op.code));
+    throw;
+  }
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  try
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  catch (...)
+  {
+    std::free(large_op.state);
+    std::free(const_cast<char*>(large_op.code));
+    std::free(small_op.state);
+    std::free(const_cast<char*>(small_op.code));
+    throw;
+  }
+  if (payload_size == 0)
+  {
+    std::free(large_op.state);
+    std::free(const_cast<char*>(large_op.code));
+    std::free(small_op.state);
+    std::free(const_cast<char*>(small_op.code));
+    throw std::runtime_error("aot blob: empty payload");
+  }
+
+  std::unique_ptr<cub::detail::segmented_sort::policy_selector, decltype(&std::free)> sort_policy(nullptr, std::free);
+  std::unique_ptr<cub::detail::three_way_partition::policy_selector, decltype(&std::free)> partition_policy(
+    nullptr, std::free);
+  std::unique_ptr<char[]> n_fb;
+  std::unique_ptr<char[]> n_small;
+  std::unique_ptr<char[]> n_large;
+  std::unique_ptr<char[]> n_init;
+  std::unique_ptr<char[]> n_part;
+  try
+  {
+    sort_policy.reset(static_cast<cub::detail::segmented_sort::policy_selector*>(
+      std::malloc(sizeof(cub::detail::segmented_sort::policy_selector))));
+    if (!sort_policy)
+    {
+      throw std::bad_alloc{};
+    }
+    r.read_into(sort_policy.get(), sizeof(cub::detail::segmented_sort::policy_selector));
+    partition_policy.reset(static_cast<cub::detail::three_way_partition::policy_selector*>(
+      std::malloc(sizeof(cub::detail::three_way_partition::policy_selector))));
+    if (!partition_policy)
+    {
+      throw std::bad_alloc{};
+    }
+    r.read_into(partition_policy.get(), sizeof(cub::detail::three_way_partition::policy_selector));
+    n_fb.reset(r.read_cstring_dup());
+    n_small.reset(r.read_cstring_dup());
+    n_large.reset(r.read_cstring_dup());
+    n_init.reset(r.read_cstring_dup());
+    n_part.reset(r.read_cstring_dup());
+  }
+  catch (...)
+  {
+    std::free(large_op.state);
+    std::free(const_cast<char*>(large_op.code));
+    std::free(small_op.state);
+    std::free(const_cast<char*>(small_op.code));
+    throw;
+  }
+
+  cccl_device_segmented_sort_build_result_t result{};
+  result.cc                                           = static_cast<int>(h.cc);
+  result.payload_kind                                 = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.key_type                                     = key_t;
+  result.offset_type                                  = offset_t;
+  result.order                                        = order;
+  result.large_segments_selector_op                   = large_op;
+  result.small_segments_selector_op                   = small_op;
+  result.payload                                      = payload_owner.release();
+  result.payload_size                                 = payload_size;
+  result.runtime_policy                               = sort_policy.release();
+  result.runtime_policy_size                          = sizeof(cub::detail::segmented_sort::policy_selector);
+  result.partition_runtime_policy                     = partition_policy.release();
+  result.partition_runtime_policy_size                = sizeof(cub::detail::three_way_partition::policy_selector);
+  result.segmented_sort_fallback_kernel_lowered_name  = n_fb.release();
+  result.segmented_sort_kernel_small_lowered_name     = n_small.release();
+  result.segmented_sort_kernel_large_lowered_name     = n_large.release();
+  result.three_way_partition_init_kernel_lowered_name = n_init.release();
+  result.three_way_partition_kernel_lowered_name      = n_part.release();
+  *build_ptr                                          = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_sort_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }

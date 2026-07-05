@@ -26,6 +26,8 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -51,21 +53,49 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] constexpr const char* to_string(RadixSortStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case RADIX_SORT_STORE_DIRECT:
-      return os << "RADIX_SORT_STORE_DIRECT";
+      return "RADIX_SORT_STORE_DIRECT";
     case RADIX_SORT_STORE_ALIGNED:
-      return os << "RADIX_SORT_STORE_ALIGNED";
+      return "RADIX_SORT_STORE_ALIGNED";
     default:
-      return os << "<unknown RadixSortStoreAlgorithm: " << static_cast<int>(algo) << ">";
+      return "<unknown RadixSortStoreAlgorithm>";
   }
+}
+} // namespace detail
+#endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::RadixSortStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::RadixSortStoreAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
@@ -79,7 +109,7 @@ template <int NominalThreadsPerBlock4B,
           RadixSortStoreAlgorithm StoreAlgorithm,
           int RadixBits,
           typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentRadixSortOnesweepPolicy : ScalingType
+struct agent_radix_sort_onesweep_policy : ScalingType
 {
   static constexpr int RANK_NUM_PARTS                      = RankNumParts;
   static constexpr int RADIX_BITS                          = RadixBits;
@@ -87,6 +117,28 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = ScanAlgorithm;
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
+} // namespace detail
+
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int RankNumParts,
+          RadixRankAlgorithm RankAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          RadixSortStoreAlgorithm StoreAlgorithm,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentRadixSortOnesweepPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") = detail::agent_radix_sort_onesweep_policy<
+    NominalThreadsPerBlock4B,
+    NominalItemsPerThread4B,
+    ComputeT,
+    RankNumParts,
+    RankAlgorithm,
+    ScanAlgorithm,
+    StoreAlgorithm,
+    RadixBits,
+    ScalingType>;
 
 namespace detail::radix_sort
 {
@@ -241,6 +293,9 @@ struct AgentRadixSortOnesweep
       {
         bins[u] = other_bins[u];
       }
+
+      // Wait for lookback init
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       agent.LookbackPartial(bins);
 
       agent.TryShortCircuit(keys, bins);
@@ -282,6 +337,7 @@ struct AgentRadixSortOnesweep
         s.global_offsets[bin] += inc_sum - bins[u];
       }
     }
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
@@ -667,8 +723,8 @@ struct AgentRadixSortOnesweep
       , num_items(num_items)
       , current_bit(current_bit)
       , num_bits(num_bits)
-      , warp(threadIdx.x / WARP_THREADS)
-      , lane(::cuda::ptx::get_sreg_laneid())
+      , warp(static_cast<int>(threadIdx.x / WARP_THREADS))
+      , lane(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , decomposer(decomposer)
   {
     // initialization

@@ -368,8 +368,7 @@ struct segmented_reduce_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
     -> cub::detail::segmented_reduce::segmented_reduce_policy
   {
-    auto rp = cub::detail::reduce::agent_reduce_policy{
-      ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    auto rp = cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     // need the repetition of the return type for GCC9
     return cub::detail::segmented_reduce::segmented_reduce_policy{
       rp,

@@ -13,6 +13,7 @@
 
 #include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 
 #include <sstream>
 
@@ -135,6 +136,7 @@ try
 catch (const std::bad_alloc&)
 {
   // allocation failure is not a test failure, so we can run tests on smaller GPUs
+  SUCCEED("allocation failure is not a test failure");
 }
 
 template <int Alignment>
@@ -145,7 +147,7 @@ struct overaligned_addable_and_equal_comparable_policy
   {
     __host__ __device__ static void check(const CustomType& obj)
     {
-      _CCCL_VERIFY(reinterpret_cast<uintptr_t>(&obj) % Alignment == 0,
+      _CCCL_VERIFY(cuda::std::is_sufficiently_aligned<Alignment>(&obj),
                    "overaligned_addable_policy_t<Alignment> is not sufficiently aligned");
     }
 
@@ -323,7 +325,8 @@ struct sum_five
   __host__ __device__ auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const
     -> double
   {
-    return a + b + c + d + e;
+    return static_cast<double>(a) + static_cast<double>(b) + static_cast<double>(c) + static_cast<double>(d)
+         + static_cast<double>(e);
   }
 };
 

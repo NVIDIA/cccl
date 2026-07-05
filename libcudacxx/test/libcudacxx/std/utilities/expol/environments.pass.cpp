@@ -19,6 +19,8 @@
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
+
 struct SomeValue
 {
   int value;

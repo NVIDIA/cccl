@@ -8,6 +8,8 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/random>
+
 #include <algorithm>
 #include <limits>
 #include <map>
@@ -105,6 +107,35 @@ void TestShuffleCopySimpleIterator()
 }
 DECLARE_VECTOR_UNITTEST(TestShuffleCopySimple);
 DECLARE_VECTOR_UNITTEST(TestShuffleCopySimpleIterator);
+
+template <typename Vector>
+void TestShuffleCudaStdPhilox()
+{
+  Vector data{0, 1, 2, 3, 4};
+  Vector shuffled(data.begin(), data.end());
+  cuda::std::philox4x32 g(2);
+  thrust::shuffle(shuffled.begin(), shuffled.end(), g);
+  thrust::sort(shuffled.begin(), shuffled.end());
+
+  ASSERT_EQUAL(shuffled, data);
+}
+DECLARE_VECTOR_UNITTEST(TestShuffleCudaStdPhilox);
+
+template <typename Vector>
+void TestShuffleCopyCudaStdPhilox()
+{
+  Vector data{0, 1, 2, 3, 4};
+  Vector shuffled(5);
+  Vector in_place(data.begin(), data.end());
+  cuda::std::philox4x32 g(2);
+
+  thrust::shuffle_copy(data.begin(), data.end(), shuffled.begin(), g);
+  g.seed(2);
+  thrust::shuffle(in_place.begin(), in_place.end(), g);
+
+  ASSERT_EQUAL(shuffled, in_place);
+}
+DECLARE_VECTOR_UNITTEST(TestShuffleCopyCudaStdPhilox);
 
 template <typename ShuffleFunc, typename T>
 void TestHostDeviceIdenticalBase(size_t m)
@@ -351,7 +382,7 @@ void TestShuffleUniformPermutationBase()
   ASSERT_EQUAL(permutation_counts.size(), total_permutations);
 
   double chi_squared    = 0.0;
-  double expected_count = static_cast<double>(num_samples) / total_permutations;
+  double expected_count = static_cast<double>(num_samples) / static_cast<double>(total_permutations);
   for (const auto& kv : permutation_counts)
   {
     chi_squared += std::pow(expected_count - kv.second, 2) / expected_count;

@@ -1,0 +1,64 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDAX___CUCO_DETAIL_UTILITY_STRONG_TYPE_CUH
+#define _CUDAX___CUCO_DETAIL_UTILITY_STRONG_TYPE_CUH
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__cccl/prologue.h>
+
+namespace cuda::experimental::cuco
+{
+//! @brief A strong type wrapper.
+//!
+//! @tparam _Tp Type of the underlying value
+template <class _Tp>
+struct __strong_type
+{
+  //! @brief Constructs a strong type.
+  //!
+  //! @param __v Value to be wrapped as a strong type
+  _CCCL_HOST_DEVICE_API explicit constexpr __strong_type(_Tp __v)
+      : __value{__v}
+  {}
+
+  //! @brief Implicit conversion operator to the underlying value.
+  //!
+  //! @return The underlying value
+  _CCCL_HOST_DEVICE_API constexpr operator _Tp() const noexcept
+  {
+    return __value;
+  }
+
+  _Tp __value; //!< Underlying data value
+};
+} // namespace cuda::experimental::cuco
+
+//! Convenience wrapper for defining a strong type
+#define CUDAX_CUCO_DEFINE_STRONG_TYPE(Name, Type)               \
+  struct Name : __strong_type<Type>                             \
+  {                                                             \
+    _CCCL_HOST_DEVICE_API explicit constexpr Name(Type __value) \
+        : __strong_type<Type>(__value)                          \
+    {}                                                          \
+  };
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDAX___CUCO_DETAIL_UTILITY_STRONG_TYPE_CUH

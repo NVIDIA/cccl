@@ -31,8 +31,7 @@ namespace stdexec = cuda::std::execution;
 template <int ThreadsPerBlock>
 struct rle_encode_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::reduce_by_key::reduce_by_key_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleEncodePolicy
   {
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}};
   }
@@ -41,8 +40,7 @@ struct rle_encode_tuning
 template <int ThreadsPerBlock>
 struct rle_non_trivial_runs_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleNonTrivialRunsPolicy
   {
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::BLOCK_SCAN_WARP_SCANS, {}};
   }
@@ -302,3 +300,74 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("RleEncodePolicy", "[run_length_encode][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RleEncodePolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleEncodePolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::RleEncodePolicy{
+    128,
+    7,
+    cub::BLOCK_LOAD_DIRECT,
+    cub::LOAD_DEFAULT,
+    cub::BLOCK_SCAN_WARP_SCANS,
+    {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::RleEncodePolicy{
+    .threads_per_block = 128,
+    .items_per_thread  = 7,
+    .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+    .load_modifier     = cub::LOAD_DEFAULT,
+    .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+    .lookback_delay    = cub::LookbackDelayPolicy{
+         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("RleNonTrivialRunsPolicy", "[run_length_encode][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RleNonTrivialRunsPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleNonTrivialRunsPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::RleNonTrivialRunsPolicy{
+    128,
+    7,
+    cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+    cub::CacheLoadModifier::LOAD_LDG,
+    false,
+    cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+    {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::RleNonTrivialRunsPolicy{
+    .threads_per_block       = 128,
+    .items_per_thread        = 7,
+    .load_algorithm          = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+    .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
+    .store_with_time_slicing = false,
+    .scan_algorithm          = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
+    .lookback_delay = {.kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

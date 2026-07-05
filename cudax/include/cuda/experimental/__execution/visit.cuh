@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -40,13 +40,8 @@
 #  define _CCCL_BUILTIN_STRUCTURED_BINDING_SIZE(...) __builtin_structured_binding_size(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_structured_binding_size)
 
-#if __cpp_structured_bindings >= 202411L
-#  define _CCCL_STRUCTURED_BINDING_CAN_INTRODUCE_A_PACK
-#endif // __cpp_structured_bindings >= 202411L
-
 #if _CCCL_CUDA_COMPILER(NVCC)
 #  undef _CCCL_BUILTIN_STRUCTURED_BINDING_SIZE
-#  undef _CCCL_STRUCTURED_BINDING_CAN_INTRODUCE_A_PACK
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
 namespace cuda::experimental::execution
@@ -122,7 +117,7 @@ inline constexpr int structured_binding_size<_Sndr const&> = structured_binding_
 
 // If structured bindings can be used to introduce a pack, then `visit` has a very simple
 // implementation.
-#if defined(_CCCL_STRUCTURED_BINDING_CAN_INTRODUCE_A_PACK)
+#if _CCCL_HAS_STRUCTURED_BINDINGS_PACK()
 
 // C++26, structured binding can introduce a pack.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t

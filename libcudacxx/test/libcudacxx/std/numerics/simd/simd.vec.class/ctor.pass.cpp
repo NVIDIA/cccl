@@ -304,13 +304,31 @@ TEST_FUNC constexpr void test_broadcast_constexpr_wrapper()
 // broadcast constructor explicit/implicit boundary for arithmetic types
 // [simd.ctor] p4: implicit iff convertible_to and value-preserving
 
+// NVRTC C++17 cuda::std::is_convertible_v<T, Vec> fails for half/bfloat16
+template <typename T>
+inline constexpr bool nvrtc_cpp17_implicit_broadcast_is_unavailable = false;
+
+#if TEST_COMPILER(NVRTC) && TEST_STD_VER == 2017 && _LIBCUDACXX_HAS_NVFP16()
+template <>
+inline constexpr bool nvrtc_cpp17_implicit_broadcast_is_unavailable<__half> = true;
+#endif // TEST_COMPILER(NVRTC) && TEST_STD_VER == 2017 && _LIBCUDACXX_HAS_NVFP16()
+
+#if TEST_COMPILER(NVRTC) && TEST_STD_VER == 2017 && _LIBCUDACXX_HAS_NVBF16()
+template <>
+inline constexpr bool nvrtc_cpp17_implicit_broadcast_is_unavailable<__nv_bfloat16> = true;
+#endif // TEST_COMPILER(NVRTC) && TEST_STD_VER == 2017 && _LIBCUDACXX_HAS_NVBF16()
+
 template <typename T, int N>
 TEST_FUNC constexpr void test_broadcast_explicit_implicit()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
 
   // (1) same type is implicit
-  static_assert(cuda::std::is_convertible_v<T, Vec>);
+  // NVRTC C++17 reports false for half/bfloat16 here, although the constructor itself is valid.
+  if constexpr (!nvrtc_cpp17_implicit_broadcast_is_unavailable<T>)
+  {
+    static_assert(cuda::std::is_convertible_v<T, Vec>);
+  }
 
   // (2) value-preserving and wider type is implicit
   if constexpr (cuda::std::is_same_v<T, int>)

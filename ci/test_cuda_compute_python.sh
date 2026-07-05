@@ -25,7 +25,15 @@ fi
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
 
-# Run tests for compute module
+# Run tests for compute module.
+# On the v2 (HostJIT) backend, abort on first failure — the suite is still
+# stabilizing and a single early failure is enough signal to investigate
+# without scrolling through hundreds of subsequent passes.
+pytest_extra=()
+if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  pytest_extra+=(-x)
+fi
+
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest -n 6 -v compute/ -m "not large"
-python -m pytest -n 0 -v compute/ -m "large"
+python -m pytest "${pytest_extra[@]}" -n 6 -v compute/ -m "not large"
+python -m pytest "${pytest_extra[@]}" -n 0 -v compute/ -m "large"

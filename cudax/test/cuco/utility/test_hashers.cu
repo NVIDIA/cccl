@@ -224,12 +224,10 @@ TEST_CASE("Test Hasher's on host and device", "")
     test_xxhash32{}();
     test_xxhash64{}();
     test_murmurhash3_32{}();
-
-    // nvcc 12.0 crashes for int128 tests when using gcc as the host compiler
-#if _CCCL_HAS_INT128() && !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC))
+#if _CCCL_HAS_INT128()
     test_murmurhash3_x86_128{}();
     test_murmurhash3_x64_128{}();
-#endif // _CCCL_HAS_INT128() && !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC))
+#endif // _CCCL_HAS_INT128()
   }
 
   SECTION("device-generated hash values match the reference implementation.")
@@ -237,11 +235,9 @@ TEST_CASE("Test Hasher's on host and device", "")
     test_hasher_on_device(test_xxhash32{});
     test_hasher_on_device(test_xxhash64{});
     test_hasher_on_device(test_murmurhash3_32{});
-
-    // nvcc 12.0 crashes for int128 tests when using gcc as the host compiler
-#if _CCCL_HAS_INT128() && !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC))
+#if _CCCL_HAS_INT128()
     test_hasher_on_device(test_murmurhash3_x86_128{});
     test_hasher_on_device(test_murmurhash3_x64_128{});
-#endif // _CCCL_HAS_INT128() && !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC))
+#endif // _CCCL_HAS_INT128()
   }
 }

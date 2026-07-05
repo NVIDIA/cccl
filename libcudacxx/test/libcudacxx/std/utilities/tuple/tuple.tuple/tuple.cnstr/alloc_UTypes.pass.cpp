@@ -13,6 +13,7 @@
 // template <class Alloc, class... UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, UTypes&&...);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -75,13 +76,10 @@ struct Explicit
 
 int main(int, char**)
 {
-  // cuda::std::allocator not supported
-  /*
   {
-      cuda::std::tuple<Explicit> t{cuda::std::allocator_arg, cuda::std::allocator<void>{}, 42};
-      assert(cuda::std::get<0>(t).value == 42);
+    cuda::std::tuple<Explicit> t{cuda::std::allocator_arg, cuda::std::allocator<void>{}, 42};
+    assert(cuda::std::get<0>(t).value == 42);
   }
-  */
   {
     cuda::std::tuple<MoveOnly> t(cuda::std::allocator_arg, A1<int>(), MoveOnly(0));
     assert(cuda::std::get<0>(t) == 0);

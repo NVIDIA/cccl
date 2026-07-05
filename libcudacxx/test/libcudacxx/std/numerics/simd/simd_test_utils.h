@@ -14,6 +14,7 @@
 #include <cuda/std/__simd_>
 #include <cuda/std/array>
 #include <cuda/std/complex>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
@@ -151,13 +152,13 @@ TEST_FUNC constexpr void is_fp_close(const T& a, const T& b)
 //----------------------------------------------------------------------------------------------------------------------
 // vec utilities
 
-template <typename T, int _Offset = 1>
+template <typename T, int Offset = 1>
 struct iota_generator
 {
   template <typename I>
   TEST_FUNC constexpr T operator()(I i) const noexcept
   {
-    return static_cast<T>(i + _Offset);
+    return static_cast<T>(i + Offset);
   }
 };
 
@@ -202,22 +203,45 @@ struct complex_diverse_generator
   }
 };
 
-template <typename T, int N>
-TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array(int __offset = 1)
+template <typename T, int N, int Offset = 1>
+TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array()
 {
   cuda::std::array<T, N> arr{};
   for (int i = 0; i < N; ++i)
   {
-    arr[i] = static_cast<T>(i + __offset);
+    arr[i] = static_cast<T>(i + Offset);
   }
   return arr;
 }
 
+template <typename T, int N>
+TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array(int offset)
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(i + offset);
+  }
+  return arr;
+}
+
+template <typename T, int N, int Offset = 0>
+TEST_FUNC constexpr cuda::std::array<T, N> make_reverse_iota_array()
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(N - 1 - i + Offset);
+  }
+  return arr;
+}
+
+// Elementwise comparison of a basic_vec against a cuda::std::array
 template <typename T, typename Abi, typename U, size_t N>
 TEST_FUNC constexpr bool operator==(const simd::basic_vec<T, Abi>& vec, const cuda::std::array<U, N>& arr)
 {
   static_assert(simd::basic_vec<T, Abi>::size() == static_cast<int>(N));
-  for (int i = 0; i < static_cast<int>(N); ++i)
+  for (size_t i = 0; i < N; ++i)
   {
     if (vec[i] != arr[i])
     {
@@ -237,6 +261,69 @@ TEST_FUNC constexpr simd::basic_vec<T, simd::fixed_size<N>> make_iota_vec()
   }
   return simd::basic_vec<T, simd::fixed_size<N>>(arr);
 }
+
+template <typename T, int N>
+TEST_FUNC constexpr simd::basic_vec<T, simd::fixed_size<N>> make_iota_reverse_vec()
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(N - 1 - i);
+  }
+  return simd::basic_vec<T, simd::fixed_size<N>>(arr);
+}
+//----------------------------------------------------------------------------------------------------------------------
+// bit utilities
+
+template <typename T>
+struct bit_values
+{
+  template <typename I>
+  TEST_FUNC constexpr T operator()(I) const noexcept
+  {
+    return static_cast<T>((I::value + 1) * 3);
+  }
+};
+
+// Each simd.bit test file must define test_constraints() and a test functor template
+// clang-format off
+#define _SIMD_BIT_TEST_SIGNED_TYPES(_Test)                         \
+  _Test<int8_t, 1>{}();                                            \
+  _Test<int8_t, 4>{}();                                            \
+  _Test<int16_t, 1>{}();                                           \
+  _Test<int16_t, 4>{}();                                           \
+  _Test<int32_t, 1>{}();                                           \
+  _Test<int32_t, 4>{}();                                           \
+  _Test<int64_t, 1>{}();                                           \
+  _Test<int64_t, 4>{}();
+
+#define _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                       \
+  _Test<uint8_t, 1>{}();                                           \
+  _Test<uint8_t, 4>{}();                                           \
+  _Test<uint16_t, 1>{}();                                          \
+  _Test<uint16_t, 4>{}();                                          \
+  _Test<uint32_t, 1>{}();                                          \
+  _Test<uint32_t, 4>{}();                                          \
+  _Test<uint64_t, 1>{}();                                          \
+  _Test<uint64_t, 4>{}();
+
+#define DEFINE_SIMD_BIT_INTEGRAL_TEST(_Test)                      \
+  TEST_FUNC constexpr bool test()                                 \
+  {                                                               \
+    _SIMD_BIT_TEST_SIGNED_TYPES(_Test)                            \
+    _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                          \
+    test_constraints();                                           \
+    return true;                                                  \
+  }
+
+#define DEFINE_SIMD_BIT_UNSIGNED_TEST(_Test)                      \
+  TEST_FUNC constexpr bool test()                                 \
+  {                                                               \
+    _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                          \
+    test_constraints();                                           \
+    return true;                                                  \
+  }
+// clang-format on
 
 // Each vec test file must define test_type<T, N>() and then define test() using this macro.
 // clang-format off

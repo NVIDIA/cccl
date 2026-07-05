@@ -67,7 +67,7 @@ static_assert(::cuda::mr::resource<test_resource>);
 template <class Policy>
 void test(Policy pol)
 {
-  auto old_stream        = cuda::__call_or(::cuda::get_stream, cuda::stream_ref{cudaStreamPerThread}, pol);
+  auto old_stream        = cuda::__call_or(::cuda::get_stream, cuda::stream_ref{::cudaStream_t{}}, pol);
   auto fallback_resource = ::cuda::device_default_memory_pool(cuda::device_ref{0});
   { // Ensure that the plain policy is not callable with get_memory_resource
     assert(cuda::__call_or(::cuda::mr::get_memory_resource, fallback_resource, pol) == fallback_resource);
@@ -77,7 +77,7 @@ void test(Policy pol)
     test_resource resource{42};
     auto pol_with_resource = pol.with(cuda::mr::get_memory_resource, resource);
     assert(cuda::mr::get_memory_resource(pol_with_resource) == resource);
-    assert(cuda::__call_or(::cuda::get_stream, cuda::stream_ref{cudaStreamPerThread}, pol_with_resource) == old_stream);
+    assert(cuda::__call_or(::cuda::get_stream, cuda::stream_ref{::cudaStream_t{}}, pol_with_resource) == old_stream);
 
     using policy_t = decltype(pol_with_resource);
     static_assert(cuda::std::is_execution_policy_v<policy_t>);
@@ -87,7 +87,7 @@ void test(Policy pol)
     test_resource resource{42};
     auto pol_with_resource = pol.with(cuda::mr::get_memory_resource, resource);
     assert(cuda::mr::get_memory_resource(pol_with_resource) == resource);
-    assert(cuda::__call_or(::cuda::get_stream, cuda::stream_ref{cudaStreamPerThread}, pol_with_resource) == old_stream);
+    assert(cuda::__call_or(::cuda::get_stream, cuda::stream_ref{::cudaStream_t{}}, pol_with_resource) == old_stream);
 
     test_resource other_resource{1337};
     decltype(auto) pol_with_other_resource = pol_with_resource.with(cuda::mr::get_memory_resource, other_resource);
@@ -95,7 +95,7 @@ void test(Policy pol)
     // The original resource is unchanged
     assert(cuda::mr::get_memory_resource(pol_with_resource) == resource);
     assert(cuda::mr::get_memory_resource(pol_with_other_resource) == other_resource);
-    assert(cuda::__call_or(::cuda::get_stream, cuda::stream_ref{cudaStreamPerThread}, pol_with_resource) == old_stream);
+    assert(cuda::__call_or(::cuda::get_stream, cuda::stream_ref{::cudaStream_t{}}, pol_with_resource) == old_stream);
   }
 }
 

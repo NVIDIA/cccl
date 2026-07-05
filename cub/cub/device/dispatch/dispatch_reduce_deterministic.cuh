@@ -21,7 +21,7 @@
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce_deterministic.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -42,12 +42,15 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rfa
 {
+using cuda::execution::determinism::__determinism_t;
+using reduce::policy_selector_from_types;
+
 template <typename Invocable, typename InputT>
 using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
 
-template <typename InitT, typename InputIteratorT, typename TransformOpT>
-using accum_t =
-  ::cuda::std::__accumulator_t<::cuda::std::plus<>, InitT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
+template <typename InitValueT, typename InputIteratorT, typename TransformOpT>
+using accum_t = ::cuda::std::
+  __accumulator_t<::cuda::std::plus<>, InitValueT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
 
 template <typename FloatType = float, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
@@ -83,7 +86,7 @@ template <typename PolicySelector,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename DeterministicAccumT,
           typename TransformOpT,
           typename KernelLauncherFactory>
@@ -94,10 +97,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   OutputIteratorT d_out,
   OffsetT num_items,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
-  rfa_policy active_policy,
+  ReducePolicy active_policy,
   KernelLauncherFactory launcher_factory)
 {
   // Return if the caller is simply requesting the size of the storage allocation
@@ -124,7 +127,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                   InputIteratorT,
                   OutputIteratorT,
                   ReductionOpT,
-                  InitT,
+                  InitValueT,
                   DeterministicAccumT,
                   TransformOpT>,
                 d_in,
@@ -152,7 +155,7 @@ template <typename PolicySelector,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename DeterministicAccumT,
           typename TransformOpT,
           typename KernelLauncherFactory>
@@ -163,10 +166,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   OutputIteratorT d_out,
   OffsetT num_items,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
-  rfa_policy active_policy,
+  ReducePolicy active_policy,
   KernelLauncherFactory launcher_factory)
 {
   int sm_count;
@@ -179,7 +182,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   if (const auto error = CubDebug(reduce_config.__init(
         detail::reduce::
           DeterministicDeviceReduceKernel<PolicySelector, InputIteratorT, ReductionOpT, DeterministicAccumT, TransformOpT>,
-        active_policy.reduce)))
+        active_policy.multi_tile)))
   {
     return error;
   }
@@ -238,14 +241,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
             "per thread, %d SM occupancy\n",
             current_grid_size,
-            active_policy.reduce.threads_per_block,
+            active_policy.multi_tile.threads_per_block,
             (long long) stream,
-            active_policy.reduce.items_per_thread,
+            active_policy.multi_tile.items_per_thread,
             reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
-          launcher_factory(current_grid_size, active_policy.reduce.threads_per_block, 0, stream)
+          launcher_factory(current_grid_size, active_policy.multi_tile.threads_per_block, 0, stream)
             .doit(detail::reduce::DeterministicDeviceReduceKernel<PolicySelector,
                                                                   InputIteratorT,
                                                                   ReductionOpT,
@@ -297,7 +300,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                   DeterministicAccumT*,
                   OutputIteratorT,
                   ReductionOpT,
-                  InitT,
+                  InitValueT,
                   DeterministicAccumT>,
                 d_block_reductions,
                 d_out,
@@ -322,10 +325,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename InitT,
-          typename TransformOpT          = ::cuda::std::identity,
-          typename AccumT                = accum_t<InitT, InputIteratorT, TransformOpT>,
-          typename PolicySelector        = policy_selector_from_types<AccumT>,
+          typename InitValueT,
+          typename TransformOpT = ::cuda::std::identity,
+          typename AccumT       = accum_t<InitValueT, InputIteratorT, TransformOpT>,
+          typename PolicySelector =
+            policy_selector_from_types<AccumT, OffsetT, deterministic_sum_t<AccumT>, __determinism_t::__gpu_to_gpu>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
@@ -333,7 +337,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   OffsetT num_items,
-  InitT init                             = {},
+  InitValueT init                        = {},
   cudaStream_t stream                    = {},
   TransformOpT transform_op              = {},
   PolicySelector policy_selector         = {},
@@ -346,7 +350,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const rfa_policy active_policy = policy_selector(cc);
+  const ReducePolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
@@ -374,7 +378,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                               OutputIteratorT,
                               OffsetT,
                               deterministic_add_t,
-                              InitT,
+                              InitValueT,
                               typename deterministic_add_t::DeterministicAcc,
                               TransformOpT>(
       d_temp_storage,
@@ -395,7 +399,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                        OutputIteratorT,
                        OffsetT,
                        deterministic_add_t,
-                       InitT,
+                       InitValueT,
                        typename deterministic_add_t::DeterministicAcc,
                        TransformOpT>(
     d_temp_storage,

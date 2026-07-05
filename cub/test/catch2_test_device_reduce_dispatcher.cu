@@ -4,6 +4,9 @@
 // TODO(bgruber): Drop this entire test in CCCL 4.0 when we drop all CUB dispatchers
 // This file tests calling cub::DispatchReduce directly
 
+// disable deprecation warnings for DispatchReduce and AgentReducePolicy
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_reduce.cuh>
@@ -41,11 +44,11 @@ struct policy_hub_t
 
 C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][device]", value_types)
 {
-  using T        = c2h::get<0, TestType>;
-  using offset_t = int32_t;
-  using init_t   = T;
-  using op_t     = cuda::std::plus<>;
-  using accum_t  = cuda::std::__accumulator_t<op_t, T, T>;
+  using T            = c2h::get<0, TestType>;
+  using offset_t     = int32_t;
+  using init_value_t = T;
+  using op_t         = cuda::std::plus<>;
+  using accum_t      = cuda::std::__accumulator_t<op_t, T, T>;
 
   const int num_items = 12'345;
 
@@ -62,17 +65,17 @@ C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][devic
                         decltype(d_out_it),
                         offset_t,
                         op_t,
-                        init_t,
+                        init_value_t,
                         accum_t,
                         ::cuda::std::identity,
                         policy_hub_t<accum_t>>;
 
   size_t temp_storage_bytes = 0;
-  dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, nullptr);
+  dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_value_t{}, nullptr);
 
   c2h::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
   dispatch_t::Dispatch(
-    temp_storage.data().get(), temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, nullptr);
+    temp_storage.data().get(), temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_value_t{}, nullptr);
 
   // Verify result
   const T expected_result = static_cast<T>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));

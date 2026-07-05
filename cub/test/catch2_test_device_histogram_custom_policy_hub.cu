@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the histogram dispatcher
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_histogram.cuh>
@@ -14,8 +17,6 @@
 
 using namespace cub;
 
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the histogram dispatcher after publishing the tuning API
-
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct my_policy_hub
 {
@@ -23,23 +24,23 @@ struct my_policy_hub
   struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
   {
     using AgentHistogramPolicyT = AgentHistogramPolicy<384, 16, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
-    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
+    static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
 };
 
 C2H_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][device]")
 {
-  using sample_t                    = cuda::std::uint8_t;
-  using counter_t                   = int;
-  using level_t                     = int;
-  using offset_t                    = int;
-  constexpr int num_channels        = 1;
-  constexpr int num_active_channels = 1;
-  constexpr int num_bins            = 16;
-  const offset_t num_row_pixels     = 256;
-  const offset_t num_rows           = 1;
-  const offset_t row_stride_samples = num_row_pixels * num_channels;
-  const int num_output_levels       = num_bins + 1;
+  using sample_t                                     = cuda::std::uint8_t;
+  using counter_t                                    = int;
+  using level_t                                      = int;
+  using offset_t                                     = int;
+  constexpr int num_channels                         = 1;
+  [[maybe_unused]] constexpr int num_active_channels = 1; // msvc warns, only used in nttp
+  constexpr int num_bins                             = 16;
+  const offset_t num_row_pixels                      = 256;
+  const offset_t num_rows                            = 1;
+  const offset_t row_stride_samples                  = num_row_pixels * num_channels;
+  const int num_output_levels                        = num_bins + 1;
 
   c2h::host_vector<sample_t> h_samples(num_row_pixels);
   for (offset_t i = 0; i < num_row_pixels; ++i)

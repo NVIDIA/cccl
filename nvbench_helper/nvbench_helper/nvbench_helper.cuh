@@ -90,7 +90,7 @@ using integral_types    = nvbench::type_list<TUNE_T>;
 using fundamental_types = nvbench::type_list<TUNE_T>;
 using all_types         = nvbench::type_list<TUNE_T>;
 #else
-// keep those lists in sync with the documentation in tuning.rst
+// keep those lists in sync with the documentation in tuning_infra.rst
 using integral_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;
 
 using fundamental_types =
@@ -598,7 +598,7 @@ struct caching_allocator_t
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   void* allocate_sync(size_t num_bytes, size_t)
   {
-    return allocate(num_bytes);
+    return allocate(static_cast<std::ptrdiff_t>(num_bytes));
   }
 
   void deallocate_sync(void* ptr, size_t num_bytes, size_t)
@@ -618,7 +618,7 @@ struct caching_allocator_t
     }
 
     value_type* result{};
-    auto free_block = free_blocks.find(num_bytes);
+    auto free_block = free_blocks.find(static_cast<std::ptrdiff_t>(num_bytes));
 
     if (free_block != free_blocks.end())
     {

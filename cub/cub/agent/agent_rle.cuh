@@ -41,33 +41,8 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-/**
- * Parameterizable tuning policy type for AgentRle
- *
- * @tparam ThreadsPerBlock
- *   Threads per thread block
- *
- * @tparam ItemsPerThread
- *   Items per thread (per tile of input)
- *
- * @tparam LoadAlgorithm
- *   The BlockLoad algorithm to use
- *
- * @tparam LoadModifier
- *   Cache load modifier for reading input elements
- *
- * @tparam StoreWarpTimeSlicing
- *   Whether or not only one warp's worth of shared memory should be allocated and time-sliced among
- *   block-warps during any store-related data transpositions
- *   (versus each warp having its own storage)
- *
- * @tparam ScanAlgorithm
- *   The BlockScan algorithm to use
- *
- * @tparam DelayConstructorT
- *   Implementation detail, do not specify directly, requirements on the
- *   content of this type are subject to breaking change.
- */
+namespace detail
+{
 template <int ThreadsPerBlock,
           int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
@@ -75,26 +50,13 @@ template <int ThreadsPerBlock,
           bool StoreWarpTimeSlicing,
           BlockScanAlgorithm ScanAlgorithm,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentRlePolicy
+struct agent_rle_policy
 {
-  /// Threads per thread block
-  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
-
-  /// Items per thread (per tile of input)
-  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-
-  /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
-  /// among block-warps during any store-related data transpositions (versus each warp having its
-  /// own storage)
-  static constexpr bool STORE_WARP_TIME_SLICING = StoreWarpTimeSlicing;
-
-  /// The BlockLoad algorithm to use
+  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
+  static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
+  static constexpr bool STORE_WARP_TIME_SLICING      = StoreWarpTimeSlicing;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
-
-  /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
-
-  /// The BlockScan algorithm to use
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
@@ -102,6 +64,24 @@ struct AgentRlePolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          bool StoreWarpTimeSlicing,
+          BlockScanAlgorithm ScanAlgorithm,
+          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+using AgentRlePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRunLengthEncode") =
+  detail::agent_rle_policy<ThreadsPerBlock,
+                           ItemsPerThread,
+                           LoadAlgorithm,
+                           LoadModifier,
+                           StoreWarpTimeSlicing,
+                           ScanAlgorithm,
+                           DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -453,7 +433,7 @@ struct AgentRle
   {
     // Perform warpscans
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = ::cuda::ptx::get_sreg_laneid();
+    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     LengthOffsetPair identity;
     identity.key   = 0;
@@ -538,7 +518,7 @@ struct AgentRle
     ::cuda::std::true_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = ::cuda::ptx::get_sreg_laneid();
+    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     // Locally compact items within the warp (first warp)
     if (warp_id == 0)
@@ -608,7 +588,7 @@ struct AgentRle
     ::cuda::std::false_type is_warp_time_slice)
   {
     unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = ::cuda::ptx::get_sreg_laneid();
+    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     // Unzip
     OffsetT run_offsets[ITEMS_PER_THREAD];
@@ -1032,7 +1012,7 @@ struct AgentRle
   ConsumeRange(int num_tiles, ScanTileStateT& tile_status, NumRunsIteratorT d_num_runs_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
-    int tile_idx          = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    int tile_idx          = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
     OffsetT tile_offset   = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
     OffsetT num_remaining = num_items - tile_offset; // Remaining items (including this tile)
 

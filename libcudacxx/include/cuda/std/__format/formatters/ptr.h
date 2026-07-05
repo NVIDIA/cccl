@@ -3,12 +3,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD__FORMAT_FORMATERS_PTR_H
-#define _CUDA_STD__FORMAT_FORMATERS_PTR_H
+#ifndef _CUDA_STD___FORMAT_FORMATERS_PTR_H
+#define _CUDA_STD___FORMAT_FORMATERS_PTR_H
 
 #include <cuda/std/detail/__config>
 
@@ -68,10 +68,9 @@ struct __fmt_formatter_ptr
         ? __fmt_spec_type::__hexadecimal_upper_case
         : __fmt_spec_type::__hexadecimal_lower_case;
 
-    return ::cuda::std::__fmt_format_int(reinterpret_cast<uintptr_t>(__value), __ctx, __specs);
+    return ::cuda::std::__fmt_format_int(reinterpret_cast<uintptr_t>(__value), __ctx.out(), __specs);
   }
 
-private:
   __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.
 };
 

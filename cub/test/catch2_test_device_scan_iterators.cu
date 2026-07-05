@@ -142,11 +142,11 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    c2h::device_vector<init_t> d_initial_value(1);
-    d_initial_value[0]     = static_cast<init_t>(init_value);
-    auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    c2h::device_vector<init_value_t> d_initial_value(1);
+    d_initial_value[0]     = static_cast<init_value_t>(init_value);
+    auto future_init_value = cub::FutureValue<init_value_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(in_it, d_out_it, op_t{}, future_init_value, num_items);
 
     // Verify result

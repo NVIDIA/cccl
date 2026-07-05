@@ -32,25 +32,27 @@ namespace detail::merge
 inline constexpr int fallback_BLOCK_THREADS    = 64;
 inline constexpr int fallback_ITEMS_PER_THREAD = 1;
 
-// TODO(bgruber): we should choose the merge_policy rather than the agent, but before C++20 this is more verbose
+// TODO(bgruber): we should choose the MergePolicy rather than the agent, but before C++20 this is more verbose
 template <typename PolicyGetter, class... Args>
 class choose_merge_agent
 {
-  static constexpr merge_policy active_policy = PolicyGetter{}();
+  static constexpr MergePolicy active_policy = PolicyGetter{}();
 
   using default_load2sh_agent_t =
     agent_t<active_policy.threads_per_block,
             active_policy.items_per_thread,
             active_policy.load_modifier,
             active_policy.store_algorithm,
-            active_policy.use_block_load_to_shared,
+            active_policy.use_bulk_copy_for_keys,
+            active_policy.use_bulk_copy_for_values,
             Args...>;
   using default_noload2sh_agent_t =
     agent_t<active_policy.threads_per_block,
             active_policy.items_per_thread,
             active_policy.load_modifier,
             active_policy.store_algorithm,
-            /* UseBlockLoadToShared */ false,
+            /* UseBl2ShForKeys */ false,
+            /* UseBl2ShForItems */ false,
             Args...>;
 
   using fallback_agent_t =
@@ -58,7 +60,8 @@ class choose_merge_agent
             fallback_ITEMS_PER_THREAD,
             active_policy.load_modifier,
             active_policy.store_algorithm,
-            /* UseBlockLoadToShared */ false,
+            /* UseBl2ShForKeys */ false,
+            /* UseBl2ShForItems */ false,
             Args...>;
 
   static constexpr bool use_default_load2sh =
@@ -189,7 +192,7 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyIt1>, it_value_t<ValueIt1>, Offset>,
+          typename PolicySelector        = policy_selector_from_types<KeyIt1, ValueIt1, KeyIt2, ValueIt2, Offset>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires merge_policy_selector<PolicySelector>

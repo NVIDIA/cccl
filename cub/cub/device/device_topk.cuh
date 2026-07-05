@@ -69,11 +69,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   using requested_determinism_t =
     ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                 ::cuda::execution::determinism::__get_determinism_t,
-                                                ::cuda::execution::determinism::run_to_run_t>;
+                                                ::cuda::execution::determinism::gpu_to_gpu_t>;
   using requested_order_t =
     ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                 ::cuda::execution::output_ordering::__get_output_ordering_t,
-                                                ::cuda::execution::output_ordering::sorted_t>;
+                                                ::cuda::execution::output_ordering::stable_sorted_t>;
   constexpr auto is_determinism_not_guaranteed =
     ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
   constexpr auto is_output_order_unsorted =
@@ -83,6 +83,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   static_assert(is_determinism_not_guaranteed && is_output_order_unsorted,
                 "cub::DeviceTopK only supports the case where determinism is not guaranteed and output order is "
                 "unsorted.");
+
+  // TODO (elstehle): align requirement validation with cub::DeviceBatchedTopK in CCCL 4.0. cub::DeviceTopK does not
+  // yet inspect cuda::execution::tie_break, so it still accepts requirement combinations that cub::DeviceBatchedTopK
+  // rejects. It should enforce that determinism and tie_break are requested together (or both omitted to take the
+  // default) and that an explicit tie_break requires cuda::execution::determinism::gpu_to_gpu.
 
   // Query relevant properties from the environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
@@ -161,13 +166,28 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 //! well as CUDA's `__half`  and `__nv_bfloat16` 16-bit floating-point types. User-defined types are supported as long
 //! as a decomposer object is provided.
 //!
-//! Determinism
-//! ++++++++++++++++++++++++++
+//! Determinism, tie-breaking, and output ordering
+//! +++++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! DeviceTopK currently only supports unordered output, which may be non-deterministic for certain inputs.
-//! That is, if there are multiple items across the k-th position that compare equal, the subset of tied elements that
-//! ends up in the returned top‑k is not uniquely defined and may vary between runs. This behavior has to be explicitly
-//! acknowledged by the user by passing `cuda::execution::determinism::not_guaranteed`.
+//! The result of ``DeviceTopK`` is governed by two orthogonal execution requirements: *which* items are selected
+//! (``cuda::execution::determinism``, optionally refined by ``cuda::execution::tie_break``) and the order in which
+//! they are written (``cuda::execution::output_ordering``). When the caller does not opt out, the committed default
+//! is the most reproducible behavior: deterministic results (``cuda::execution::determinism::gpu_to_gpu``), ties
+//! resolved toward the smaller (lower) source index (``cuda::execution::tie_break::prefer_smaller_index``), and
+//! stable-sorted output (``cuda::execution::output_ordering::stable_sorted``). Callers opt *out* of these guarantees
+//! to obtain faster implementations.
+//!
+//! See :ref:`cub-topk-requirements` for the full requirement model, worked examples, and guidance on choosing
+//! requirements.
+//!
+//! .. note::
+//!
+//!    **Current support.** This release only implements the fully opted-out configuration, which must be requested
+//!    explicitly: ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
+//!    cuda::execution::output_ordering::unsorted)``. Any other combination (including an empty, no-requirement
+//!    environment) is rejected at compile time. In this configuration the output is unordered and may be
+//!    non-deterministic: if multiple items tie at the K-th position, the subset of tied elements returned is not
+//!    uniquely defined and may vary between runs.
 //!
 //! Usage Considerations
 //! ++++++++++++++++++++++++++
@@ -229,8 +249,7 @@ struct DeviceTopK
   //!  The integral type of variable k
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
-  //!   `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -468,8 +487,7 @@ struct DeviceTopK
   //!   constituent arithmetic types.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
-  //!   `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -709,8 +727,7 @@ struct DeviceTopK
   //!  The integral type of variable k
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -948,8 +965,7 @@ struct DeviceTopK
   //!   constituent arithmetic types.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1183,8 +1199,7 @@ struct DeviceTopK
   //!  The integral type of variable k
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1384,8 +1399,7 @@ struct DeviceTopK
   //!   constituent arithmetic types.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1600,8 +1614,7 @@ struct DeviceTopK
   //!  The integral type of variable k
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1801,8 +1814,7 @@ struct DeviceTopK
   //!   constituent arithmetic types.
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

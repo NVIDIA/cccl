@@ -45,6 +45,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -63,24 +64,24 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
   [[nodiscard]] _CCCL_HOST_API static _InputIterator __par_impl(
     const _Policy& __policy, _InputIterator __first, iter_difference_t<_InputIterator> __count, _UnaryPredicate __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType = iter_difference_t<_InputIterator>;
     _OffsetType __ret;
 
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
-
     // Determine temporary device storage requirements
-    void* __temp_storage = nullptr;
-    size_t __num_bytes   = 0;
+    size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceSelect::If,
       "__pstl_cuda_select_if: determination of device storage for cub::DeviceSelect::If failed",
-      __temp_storage,
+      static_cast<void*>(nullptr),
       __num_bytes,
       __first,
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
@@ -92,17 +93,17 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_select_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
         __stream.get());

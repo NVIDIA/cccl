@@ -29,7 +29,7 @@ struct policy_selector
       cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD, accum_size)
         .items_per_thread;
 
-    const auto rp = cub::agent_reduce_policy{
+    const auto rp = cub::ReducePassPolicy{
       l_threads, l_items, TUNE_ITEMS_PER_VEC_LOAD, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
     return {
       rp,
@@ -44,9 +44,9 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
   static constexpr bool is_argmin = std::is_same_v<op_t, cub::detail::arg_min>;
 
-  using output_t = cuda::std::conditional_t<is_argmin, cuda::std::pair<int, T>, T>;
-  using accum_t  = output_t;
-  using init_t   = cuda::std::conditional_t<is_argmin, cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
+  using output_t     = cuda::std::conditional_t<is_argmin, cuda::std::pair<int, T>, T>;
+  using accum_t      = output_t;
+  using init_value_t = cuda::std::conditional_t<is_argmin, cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
 
   // Retrieve axis parameters
   const size_t num_elements = static_cast<size_t>(state.get_int64("Elements{io}"));
@@ -96,7 +96,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
         static_cast<::cuda::std::int64_t>(num_segments),
         static_cast<int>(segment_size),
         op_t{},
-        init_t{},
+        init_value_t{},
         env);
     }
   });

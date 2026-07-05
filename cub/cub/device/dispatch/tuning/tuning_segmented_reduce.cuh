@@ -24,25 +24,25 @@ namespace detail::segmented_reduce
 struct warp_reduce_policy
 {
   int threads_per_block;
-  int warp_threads;
+  int threads_per_warp;
   int items_per_thread;
   int vec_size;
   CacheLoadModifier load_modifier;
 
   _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
   {
-    return warp_threads * items_per_thread;
+    return threads_per_warp * items_per_thread;
   }
 
   _CCCL_HOST_DEVICE_API constexpr int segments_per_block() const
   {
-    return threads_per_block / warp_threads;
+    return threads_per_block / threads_per_warp;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const warp_reduce_policy& lhs, const warp_reduce_policy& rhs)
   {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.warp_threads == rhs.warp_threads
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.threads_per_warp == rhs.threads_per_warp
         && lhs.items_per_thread == rhs.items_per_thread && lhs.vec_size == rhs.vec_size
         && lhs.load_modifier == rhs.load_modifier;
   }
@@ -57,7 +57,7 @@ struct warp_reduce_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const warp_reduce_policy& p)
   {
     return os << "warp_reduce_policy { .threads_per_block = " << p.threads_per_block
-              << ", .warp_threads = " << p.warp_threads << ", .items_per_thread = " << p.items_per_thread
+              << ", .threads_per_warp = " << p.threads_per_warp << ", .items_per_thread = " << p.items_per_thread
               << ", .vec_size = " << p.vec_size << ", .load_modifier = " << p.load_modifier << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -65,7 +65,7 @@ struct warp_reduce_policy
 
 struct segmented_reduce_policy
 {
-  reduce::agent_reduce_policy large_reduce;
+  ReducePassPolicy large_reduce;
   warp_reduce_policy small_reduce;
   warp_reduce_policy medium_reduce;
 
@@ -109,7 +109,7 @@ struct policy_selector
     constexpr int small_threads_per_warp  = 1;
     constexpr int medium_threads_per_warp = 32;
 
-    const auto rp = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(cc).reduce;
+    const auto rp = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(cc).multi_tile;
 
     return segmented_reduce_policy{
       rp,
@@ -156,12 +156,12 @@ struct policy_hub
 
   public:
     using ReducePolicy =
-      cub::AgentReducePolicy<nominal_4b_large_threads_per_block,
-                             nominal_4b_large_items_per_thread,
-                             AccumT,
-                             items_per_vec_load,
-                             cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-                             cub::LOAD_LDG>;
+      agent_reduce_policy<nominal_4b_large_threads_per_block,
+                          nominal_4b_large_items_per_thread,
+                          AccumT,
+                          items_per_vec_load,
+                          cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+                          cub::LOAD_LDG>;
 
     using SmallReducePolicy =
       cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,

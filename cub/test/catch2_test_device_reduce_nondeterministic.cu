@@ -3,7 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
+#include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
@@ -32,10 +32,9 @@ using float_type_list =
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
-    -> cub::detail::reduce::reduce_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::ReducePolicy
   {
-    const auto rp = cub::detail::reduce::agent_reduce_policy{
+    const auto rp = cub::ReducePassPolicy{
       BlockSize,
       ItemsPerThread,
       4,
@@ -217,27 +216,35 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   auto* raw_ptr = thrust::raw_pointer_cast(d_output.data());
 
-  using output_it_t = decltype(raw_ptr);
-  using init_t      = type;
-  using accum_t     = type;
-  using transform_t = square_t<type>;
+  using output_it_t  = decltype(raw_ptr);
+  using init_value_t = type;
+  using accum_t      = type;
+  using transform_t  = square_t<type>;
 
   std::size_t temp_storage_bytes{};
 
-  auto error = cub::detail::reduce_nondeterministic::dispatch(
-    nullptr, temp_storage_bytes, input, raw_ptr, num_items, cuda::std::plus<type>{}, init_t{}, nullptr, transform_t{});
+  auto error = cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
+    nullptr,
+    temp_storage_bytes,
+    input,
+    raw_ptr,
+    num_items,
+    cuda::std::plus<type>{},
+    init_value_t{},
+    nullptr,
+    transform_t{});
   REQUIRE(error == cudaSuccess);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  error = cub::detail::reduce_nondeterministic::dispatch(
+  error = cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input,
     raw_ptr,
     num_items,
     cuda::std::plus<type>{},
-    init_t{},
+    init_value_t{},
     nullptr,
     transform_t{});
   REQUIRE(error == cudaSuccess);
