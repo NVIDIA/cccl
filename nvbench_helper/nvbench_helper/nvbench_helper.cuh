@@ -5,6 +5,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/std/__floating_point/cuda_fp_types.h> // __half, __nv_bfloat16
 #include <cuda/std/cmath>
 #include <cuda/std/complex>
 #include <cuda/std/functional>
