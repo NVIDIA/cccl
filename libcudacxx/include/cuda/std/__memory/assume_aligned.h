@@ -24,6 +24,7 @@
 
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/cstdint> // uintptr_t
 
@@ -41,7 +42,7 @@ template <size_t _Align, class _Tp>
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #  if !_CCCL_COMPILER(MSVC) // MSVC checks within the builtin
-    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
+    _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<_Align>(__ptr), "Alignment assumption is violated");
 #  endif // !_CCCL_COMPILER(MSVC) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
 #  if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, _Align));

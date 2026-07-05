@@ -24,13 +24,16 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+// TODO(bgruber): drop in CCCL 4.0
 template <int ThreadsPerBlock,
           int WarpThreadsArg,
           int ItemsPerThreadArg,
           cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifierArg    = cub::LOAD_LDG,
           cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
-struct AgentSubWarpMergeSortPolicy
+struct agent_sub_warp_merge_sort_policy
 {
   static constexpr int BLOCK_THREADS      = ThreadsPerBlock;
   static constexpr int WARP_THREADS       = WarpThreadsArg;
@@ -42,6 +45,23 @@ struct AgentSubWarpMergeSortPolicy
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LoadModifierArg;
   static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = StoreAlgorithmArg;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int WarpThreadsArg,
+          int ItemsPerThreadArg,
+          cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifierArg    = cub::LOAD_LDG,
+          cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
+using AgentSubWarpMergeSortPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") = detail::agent_sub_warp_merge_sort_policy<
+    ThreadsPerBlock,
+    WarpThreadsArg,
+    ItemsPerThreadArg,
+    LoadAlgorithmArg,
+    LoadModifierArg,
+    StoreAlgorithmArg>;
 
 namespace detail::sub_warp_merge_sort
 {
