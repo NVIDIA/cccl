@@ -54,6 +54,7 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__execution/determinism.h>
@@ -177,22 +178,20 @@ inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred_sequence<_Arg, 
 // the single-CTA tuning threshold. Occupancy- and head-alignment-independent, so the host fast path and the device
 // collapse decision agree exactly. 64-bit math for wide segment-size types / loose bounds.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr bool single_cta_eligible(
-  ::cuda::std::uint64_t segment_size,
-  ::cuda::std::uint64_t block_tile_capacity,
-  int single_cta_max_segment_size) noexcept
+  ::cuda::std::uint64_t segment_size, ::cuda::std::uint64_t block_tile_capacity, int single_block_max_seg_size) noexcept
 {
   return segment_size <= block_tile_capacity
-      && segment_size <= static_cast<::cuda::std::uint64_t>(single_cta_max_segment_size);
+      && segment_size <= static_cast<::cuda::std::uint64_t>(single_block_max_seg_size);
 }
 
 // Effective cluster blocks implied by a chunk count: a CTA joins the effective cluster iff it would own at least
-// `min_chunks_per_cta` chunks, clamped to `[1, cluster_blocks_cap]`. Identical arithmetic on both sides; only the cap
-// differs (the live cluster size on the device, max launchable blocks on the host). `min_chunks_per_cta` is
+// `min_chunks_per_block` chunks, clamped to `[1, cluster_blocks_cap]`. Identical arithmetic on both sides; only the cap
+// differs (the live cluster size on the device, max launchable blocks on the host). `min_chunks_per_block` is
 // `static_assert`ed positive, so the divide is well-defined. 64-bit math.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr unsigned int effective_cluster_blocks_from_chunks(
-  ::cuda::std::uint64_t chunks, int min_chunks_per_cta, unsigned int cluster_blocks_cap) noexcept
+  ::cuda::std::uint64_t chunks, int min_chunks_per_block, unsigned int cluster_blocks_cap) noexcept
 {
-  const auto blocks = chunks / static_cast<::cuda::std::uint64_t>(min_chunks_per_cta);
+  const auto blocks = chunks / static_cast<::cuda::std::uint64_t>(min_chunks_per_block);
   return static_cast<unsigned int>(
     (::cuda::std::clamp) (blocks, ::cuda::std::uint64_t{1}, static_cast<::cuda::std::uint64_t>(cluster_blocks_cap)));
 }
@@ -214,8 +213,8 @@ template <int ThreadsPerBlock,
           int LoadAlignBytes,
           int BitsPerPass,
           int TieBreakItemsPerThread,
-          int SingleCtaMaxSegmentSize,
-          int MinChunksPerCta,
+          int SingleBlockMaxSegSize,
+          int MinChunksPerBlock,
           int CopyItemsPerThread,
           ::cuda::execution::determinism::__determinism_t Determinism,
           ::cuda::execution::tie_break::__tie_break_t TieBreak,
@@ -269,13 +268,13 @@ struct agent_batched_topk_cluster
 
   // Segments at or below this size that also fit resident in one CTA take the single-CTA fast path (see
   // `process_impl`).
-  static constexpr int single_cta_max_segment_size = SingleCtaMaxSegmentSize;
+  static constexpr int single_block_max_seg_size = SingleBlockMaxSegSize;
 
   // A CTA joins a segment's effective cluster only if it would own at least this many chunks (see `run`). At 1 the
   // effective cluster is just the CTAs that receive any chunk. Must be positive: it is the divisor in
   // `effective_cluster_blocks_from_chunks` and a zero-chunk CTA has no work.
-  static constexpr int min_chunks_per_cta = MinChunksPerCta;
-  static_assert(min_chunks_per_cta >= 1, "min_chunks_per_cta must be positive");
+  static constexpr int min_chunks_per_block = MinChunksPerBlock;
+  static_assert(min_chunks_per_block >= 1, "min_chunks_per_block must be positive");
 
   // Enable the per-segment effective-single-CTA runtime path only when the host could not size the launch to each
   // segment's exact size: any per-segment sequence (`!is_single_value`) or a `deferred` single value. For host-exact
@@ -300,7 +299,7 @@ struct agent_batched_topk_cluster
   // bound to trim predication/registers on sub-tile segments. Larger/unbounded types keep the full unroll (codegen
   // unchanged); the guard also keeps the rounds arithmetic in `int` range.
   static constexpr bool clamp_items_to_segment =
-    static_max_segment_size > 0 && static_max_segment_size < single_cta_max_segment_size;
+    static_max_segment_size > 0 && static_max_segment_size < single_block_max_seg_size;
   static constexpr int segment_rounds_ceil =
     clamp_items_to_segment
       ? static_cast<int>(
@@ -361,8 +360,10 @@ struct agent_batched_topk_cluster
   static_assert(LoadAlignBytes > 0);
   static_assert(ChunkBytes % LoadAlignBytes == 0, "ChunkBytes must be a multiple of LoadAlignBytes");
   // The hybrid load relies on the aligned bulk-copy path being exact (no scalar guard), which requires the load
-  // alignment to be at least the bulk-copy minimum alignment.
+  // alignment to be a power of two and at least the bulk-copy minimum alignment. Mirrors `is_valid_cluster_policy`
+  // (checked by the dispatch on the whole policy); repeated here to also guard direct agent instantiations.
   static_assert(LoadAlignBytes >= detail::bulk_copy_min_align, "LoadAlignBytes must be >= bulk_copy_min_align");
+  static_assert(::cuda::is_power_of_two(LoadAlignBytes), "LoadAlignBytes must be a power of two");
   static_assert(chunk_items > 0);
 
   using decomposer_t = detail::identity_decomposer_t;
@@ -1810,7 +1811,7 @@ private:
     // depends on the multiset of keys covered by the cluster.
     const offset_t chunks = num_chunks(segment_size_u32, head_items);
 
-    // Effective cluster blocks: the CTAs that actually receive chunks (at least `min_chunks_per_cta` each), <= the
+    // Effective cluster blocks: the CTAs that actually receive chunks (at least `min_chunks_per_block` each), <= the
     // launched `cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, fold nothing, and never lead --
     // but stay resident and still arrive at every cluster barrier (a returned CTA would hang the barrier; see the
     // TODOs at the barrier sites). Derived from this CTA's head-aligned `chunks` so it matches the partition exactly.
@@ -1821,7 +1822,7 @@ private:
       if (!single_cta)
       {
         eff_cluster_blocks = effective_cluster_blocks_from_chunks(
-          static_cast<::cuda::std::uint64_t>(chunks), min_chunks_per_cta, cluster_blocks);
+          static_cast<::cuda::std::uint64_t>(chunks), min_chunks_per_block, cluster_blocks);
       }
     }
     const bool is_idle_rank = cluster_rank >= eff_cluster_blocks;
@@ -2667,11 +2668,14 @@ private:
     }
 
     const auto segment_size = static_cast<segment_size_val_t>(detail::params::get_param(segment_sizes, segment_id));
-    const auto k_requested  = static_cast<out_offset_t>(detail::params::get_param(k_param, segment_id));
-    const auto k =
-      static_cast<out_offset_t>((::cuda::std::min) (static_cast<segment_size_val_t>(k_requested), segment_size));
+    // Clamp the requested `k` to the segment size in a 64-bit width holding both operands, *before* narrowing to
+    // `out_offset_t`. Clamping in a narrower type first would let a large "select all" `k` wrap to a small value and
+    // silently truncate the output (or wrap to 0 and skip the segment).
+    const auto k_clamped =
+      (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(detail::params::get_param(k_param, segment_id)),
+                          static_cast<::cuda::std::uint64_t>(segment_size));
 
-    if (k == 0)
+    if (k_clamped == 0)
     {
       return;
     }
@@ -2689,6 +2693,9 @@ private:
       _CCCL_ASSERT(false, "Segment exceeds the 32-bit offset range supported by cluster top-k");
       return;
     }
+
+    // `k_clamped <= segment_size`, which now fits `out_offset_t`, so this narrowing is safe.
+    const auto k = static_cast<out_offset_t>(k_clamped);
 
     // Select-all fast path: when `k` reaches the full segment, every element wins, so we skip the radix passes,
     // histogram, and output-ordering and just copy. Runs on the full launched cluster (before the effective-cluster
@@ -2711,7 +2718,7 @@ private:
       const bool fits_single_cta = single_cta_eligible(
         static_cast<::cuda::std::uint64_t>(segment_size),
         static_cast<::cuda::std::uint64_t>(block_tile_capacity),
-        single_cta_max_segment_size);
+        single_block_max_seg_size);
       if (fits_single_cta)
       {
         if (cluster_rank != 0u)

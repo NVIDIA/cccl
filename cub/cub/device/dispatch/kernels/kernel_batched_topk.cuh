@@ -17,21 +17,28 @@
 #endif // no system header
 
 #include <cub/agent/agent_batched_topk.cuh>
+#include <cub/agent/agent_batched_topk_cluster.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/argument>
+#include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
-// Given a policy_selector and a segment-size parameter, resolves the agent type to be instantiated by the kernel.
-// Selects the smallest policy whose tile size still covers the upper bound on segment size AND whose instantiated
-// agent's shared memory usage fits within the static shared memory limit (max_smem_per_block).
+// Assert-free search shared by `find_smallest_covering_policy` and the backend coverage predicate. Returns the
+// index of the smallest worker policy whose tile size still covers the upper bound on segment size AND whose
+// instantiated agent's shared memory usage fits within the static shared memory limit (max_smem_per_block), or -1 if
+// none does. Kept separate from `find_smallest_covering_policy` so callers can query coverage as a bool without
+// tripping that trait's hard `static_assert`.
 template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
-struct find_smallest_covering_policy
+struct find_covering_policy_index
 {
 private:
   struct policy_t
@@ -40,7 +47,7 @@ private:
     multi_worker_policy multi_worker_per_segment_policy;
   };
   static constexpr ::cuda::std::int64_t max_segment_size = ::cuda::args::__traits<SegmentSizeParameterT>::highest;
-  static constexpr batched_topk_policy active_policy     = current_policy<PolicySelector>();
+  static constexpr baseline_topk_policy active_policy    = current_policy<PolicySelector>();
 
   template <int Index>
   [[nodiscard]] static constexpr int find_index()
@@ -77,15 +84,38 @@ private:
     }
   }
 
-  static constexpr int selected_index = find_index<0>();
+public:
+  static constexpr int value = find_index<0>();
+};
+
+// True iff some one-worker-per-segment policy covers the statically-known maximum segment size within the shared-memory
+// limit. Used by the backend selector to decide whether the baseline backend is viable at all (an oversize
+// bound must route to the cluster backend instead of tripping the `static_assert` below).
+template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
+inline constexpr bool baseline_can_cover_v =
+  find_covering_policy_index<PolicySelector, SegmentSizeParameterT, AgentParamsT...>::value >= 0;
+
+// Resolves the agent type the kernel instantiates via the same covering-policy search as `find_covering_policy_index`,
+// adding a hard `static_assert` when no policy covers the segment size within the shared-memory limit.
+template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
+struct find_smallest_covering_policy
+{
+private:
+  struct policy_t
+  {
+    worker_policy worker_per_segment_policy;
+    multi_worker_policy multi_worker_per_segment_policy;
+  };
+  static constexpr baseline_topk_policy active_policy = current_policy<PolicySelector>();
+  static constexpr int selected_index =
+    find_covering_policy_index<PolicySelector, SegmentSizeParameterT, AgentParamsT...>::value;
 
 public:
   // TODO (elstehle): extend support for variable-size segments
   static_assert(selected_index >= 0,
-                "cub::DeviceBatchedTopK currently supports only segments small enough to be processed by a single "
-                "thread block (one worker per segment). No policy could cover the statically-known maximum segment "
-                "size within the shared-memory limit. Reduce the maximum segment size encoded in the segment-size "
-                "argument annotation.");
+                "cub::DeviceBatchedTopK: no baseline worker policy covers the statically-known maximum segment size "
+                "within the shared-memory limit. Reduce the maximum segment size encoded in the segment-size argument "
+                "annotation (larger segments are served by the SM 9.0+ cluster backend).");
   static constexpr policy_t policy = {
     active_policy.worker_per_segment_policies[selected_index], active_policy.multi_worker_per_segment_policy};
 
@@ -113,7 +143,7 @@ template <typename PolicySelector,
           typename NumSegmentsParameterT,
           typename LargeSegmentTileOffsetT>
 #if _CCCL_HAS_CONCEPTS()
-  requires batched_topk_policy_selector<PolicySelector>
+  requires baseline_topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(
   find_smallest_covering_policy<
@@ -180,6 +210,238 @@ __launch_bounds__(int(
 
   // Process segments
   agent.Process();
+}
+
+// -----------------------------------------------------------------------------
+// Single kernel symbol hosting both backends
+// -----------------------------------------------------------------------------
+// There is exactly one kernel symbol per instantiation. Its body selects the active backend device-side via
+// `current_policy<PolicySelector>()` (evaluated per `__CUDA_ARCH__` pass), so each target architecture compiles only
+// the backend the selector picks for it -- honoring CUB's "one kernel per arch/problem" rule while still supporting a
+// multi-architecture fatbin whose per-arch choice differs. The host still branches its launch configuration (grid,
+// shared memory, cluster dimensions) per backend, but both host arms launch this same symbol.
+
+// Backend-specific kernel arguments. The unused struct is passed default-constructed (all-null / zero) to the arm the
+// selector does not pick; passing it costs nothing (a few grid-constant scalars) and keeps a single kernel signature.
+template <class NumSegmentsValueT, class LargeSegmentTileOffsetT>
+struct baseline_kernel_args
+{
+  batched_topk_counters<NumSegmentsValueT>* d_counters   = nullptr;
+  NumSegmentsValueT* d_large_segments_ids                = nullptr;
+  LargeSegmentTileOffsetT* d_large_segments_tile_offsets = nullptr;
+};
+
+struct cluster_kernel_args
+{
+  ::cuda::std::uint32_t block_tile_capacity = 0;
+};
+
+// -----------------------------------------------------------------------------
+// Launch-bounds helpers
+// -----------------------------------------------------------------------------
+// The two backends use different `__launch_bounds__` shapes (baseline: just threads_per_block; cluster: threads plus a
+// min-blocks-per-SM). We resolve both per architecture from the selected policy. `find_smallest_covering_policy` (which
+// carries a hard `static_assert`) is only ever touched inside the `backend == baseline` branch, so an oversize bound
+// routed to the cluster/unsupported backend never trips it.
+_CCCL_EXEC_CHECK_DISABLE
+template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_threads_per_block_helper() noexcept
+{
+  constexpr auto policy = current_policy<PolicySelector>();
+  if constexpr (policy.backend == topk_backend::baseline)
+  {
+    return find_smallest_covering_policy<baseline_policy_selector_adaptor<PolicySelector>,
+                                         SegmentSizeParameterT,
+                                         AgentParamsT...>::policy.worker_per_segment_policy.threads_per_block;
+  }
+  else if constexpr (policy.backend == topk_backend::cluster)
+  {
+    return policy.cluster.threads_per_block;
+  }
+  else
+  {
+    // unsupported: harmless positive default; the host never launches this arm.
+    return 128;
+  }
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_min_blocks_per_sm_helper() noexcept
+{
+  constexpr auto policy = current_policy<PolicySelector>();
+  if constexpr (policy.backend == topk_backend::cluster)
+  {
+    return policy.cluster.min_blocks_per_sm;
+  }
+  else
+  {
+    // baseline / unsupported: no minimum-blocks constraint.
+    return 0;
+  }
+}
+
+// Variable templates force constant evaluation of the helpers, otherwise nvcc reports a "bad attribute argument
+// substitution" error on the `__launch_bounds__` below (same pattern as `transform_kernel`).
+template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
+inline constexpr int topk_threads_per_block =
+  topk_threads_per_block_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
+
+template <class PolicySelector, class SegmentSizeParameterT, class... AgentParamsT>
+inline constexpr int topk_min_blocks_per_sm =
+  topk_min_blocks_per_sm_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
+
+// -----------------------------------------------------------------------------
+// Global kernel entry point (single symbol for both backends)
+// -----------------------------------------------------------------------------
+template <typename PolicySelector,
+          typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParameterT,
+          typename KParameterT,
+          typename SelectDirectionParameterT,
+          typename NumSegmentsParameterT,
+          typename LargeSegmentTileOffsetT>
+__launch_bounds__(
+  topk_threads_per_block<
+    PolicySelector,
+    SegmentSizeParameterT,
+    KeyInputItItT,
+    KeyOutputItItT,
+    ValueInputItItT,
+    ValueOutputItItT,
+    SegmentSizeParameterT,
+    KParameterT,
+    SelectDirectionParameterT,
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>,
+  topk_min_blocks_per_sm<
+    PolicySelector,
+    SegmentSizeParameterT,
+    KeyInputItItT,
+    KeyOutputItItT,
+    ValueInputItItT,
+    ValueOutputItItT,
+    SegmentSizeParameterT,
+    KParameterT,
+    SelectDirectionParameterT,
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>)
+  _CCCL_KERNEL_ATTRIBUTES void device_batched_topk_kernel(
+    KeyInputItItT d_key_segments_it,
+    KeyOutputItItT d_key_segments_out_it,
+    ValueInputItItT d_value_segments_it,
+    ValueOutputItItT d_value_segments_out_it,
+    SegmentSizeParameterT segment_sizes,
+    KParameterT k,
+    SelectDirectionParameterT select_directions,
+    NumSegmentsParameterT num_segments,
+    baseline_kernel_args<typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type, LargeSegmentTileOffsetT>
+      base_args,
+    [[maybe_unused]] cluster_kernel_args clus_args)
+{
+  constexpr auto policy = current_policy<PolicySelector>();
+
+  if constexpr (policy.backend == topk_backend::baseline)
+  {
+    using agent_t = typename find_smallest_covering_policy<
+      baseline_policy_selector_adaptor<PolicySelector>,
+      SegmentSizeParameterT,
+      KeyInputItItT,
+      KeyOutputItItT,
+      ValueInputItItT,
+      ValueOutputItItT,
+      SegmentSizeParameterT,
+      KParameterT,
+      SelectDirectionParameterT,
+      NumSegmentsParameterT,
+      LargeSegmentTileOffsetT>::agent_t;
+
+    // Static assertions (constraints).
+    static_assert(agent_t::tile_size >= ::cuda::args::__traits<SegmentSizeParameterT>::highest,
+                  "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
+    static_assert(sizeof(typename agent_t::TempStorage) <= max_smem_per_block,
+                  "Static shared memory per block must not exceed 48KB limit.");
+
+    __shared__ typename agent_t::TempStorage temp_storage;
+
+    agent_t agent(
+      temp_storage,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      d_value_segments_it,
+      d_value_segments_out_it,
+      segment_sizes,
+      k,
+      select_directions,
+      num_segments,
+      base_args.d_counters,
+      base_args.d_large_segments_ids,
+      base_args.d_large_segments_tile_offsets);
+
+    agent.Process();
+  }
+  else if constexpr (policy.backend == topk_backend::cluster)
+  {
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_90,
+      (using agent_t = batched_topk_cluster::agent_batched_topk_cluster<
+         policy.cluster.threads_per_block,
+         policy.cluster.histogram_items_per_thread,
+         policy.cluster.pipeline_stages,
+         policy.cluster.chunk_bytes,
+         policy.cluster.load_align_bytes,
+         policy.cluster.bits_per_pass,
+         policy.cluster.tie_break_items_per_thread,
+         policy.cluster.single_block_max_seg_size,
+         policy.cluster.min_chunks_per_block,
+         policy.cluster.copy_items_per_thread,
+         PolicySelector::determinism,
+         PolicySelector::tie_break,
+         KeyInputItItT,
+         KeyOutputItItT,
+         ValueInputItItT,
+         ValueOutputItItT,
+         SegmentSizeParameterT,
+         KParameterT,
+         SelectDirectionParameterT,
+         NumSegmentsParameterT>;
+
+       __shared__ typename agent_t::TempStorage temp_storage;
+       extern __shared__ char topk_cluster_smem[];
+       char* key_slots = topk_cluster_smem;
+       // Align the base up to `slot_alignment` (>= load_align) so every bulk-copy destination gets the same
+       // `load_align` alignment the gmem sources have (peak TMA throughput on Hopper). The layout reserves
+       // `base_padding_bytes` for this.
+       {
+         ::cuda::std::uint32_t smem32 = __cvta_generic_to_shared(key_slots);
+         smem32 = ::cuda::round_up(smem32, static_cast<::cuda::std::uint32_t>(agent_t::slot_alignment));
+         asm("" : "+r"(smem32));
+         key_slots = static_cast<char*>(__cvta_shared_to_generic(smem32));
+       }
+
+       agent_t agent(
+         temp_storage,
+         d_key_segments_it,
+         d_key_segments_out_it,
+         d_value_segments_it,
+         d_value_segments_out_it,
+         segment_sizes,
+         k,
+         select_directions,
+         num_segments,
+         key_slots,
+         clus_args.block_tile_capacity);
+
+       agent.Process();));
+  }
+  else
+  {
+    // topk_backend::unsupported: the host arm returns cudaErrorNotSupported before launching, so this never runs.
+    return;
+  }
 }
 } // namespace detail::batched_topk
 
