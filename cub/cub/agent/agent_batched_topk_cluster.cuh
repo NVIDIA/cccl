@@ -1652,20 +1652,20 @@ private:
 
     // Overflow chunks. On the block-load path each landed slot folds through `process_tiles` (reusing the TMA
     // pipeline); the generic fallback reads gmem chunk by chunk. `run_pass`'s `should_continue` breaks the stream once
-    // the top-k is fully placed. Only the straddling CTA needs scan order, so it forces `forward == !tie_reversed` and
-    // reuses the resident turn-around chunks only when the natural direction already matches; every other CTA is
-    // order-independent and keeps the natural direction, reusing the slots and skipping the re-prime copies.
+    // the top-k is fully placed. The streaming direction is already correct on entry (preselected in `run`), and the
+    // slots are already primed -- the histogram's first streaming pass primed the same persistent streamer, so
+    // `streamer.primed` carries in as `true` and this pass reuses the resident turn-around chunks with no re-prime (the
+    // generic fallback re-reads gmem each pass regardless).
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_overflow()
     {
-      if (tie_active && !all_below_cta)
-      {
-        streamer.primed  = (streamer.forward == (!tie_reversed));
-        streamer.forward = !tie_reversed;
-      }
-      else
-      {
-        streamer.primed = true;
-      }
+      // Guards the straddling CTA (the only rank needing scan order): `run` preselected the direction so it enters at
+      // `forward == !tie_reversed` after the full `num_passes`. The escape disjuncts are the cases where the streaming
+      // direction is moot: no overflow (`overflow_chunks == 0`); a CTA entirely at/below the boundary (`all_below_cta`,
+      // arrival-order atomics); or one with no back scan (`!tie_active`). Early stop is subsumed -- it makes every CTA
+      // `all_below_cta`, so the shorter (possibly mis-parity) pass count never reaches a straddler.
+      _CCCL_ASSERT(streamer.overflow_chunks == 0 || all_below_cta || !tie_active || streamer.forward == (!tie_reversed),
+                   "preselected ping-pong parity mismatch: the straddling CTA entered the deterministic filter with "
+                   "the wrong streaming direction");
 
       streamer.run_pass(
         // Block-load: fold the chunk for overflow visit `o`, resident in streaming slot `stage`, straight from SMEM.
@@ -1920,6 +1920,17 @@ private:
       static_cast<int>(stream_slots),
       my_chunks);
 
+    // Preselect the streamer's initial ping-pong direction. A streaming rank flips direction once per histogram pass,
+    // so the leftover after the compile-time `num_passes` passes is `initial ^ (num_passes & 1)`; choosing `initial =
+    // (!tie_reversed) ^ (num_passes & 1)` makes that leftover `== !tie_reversed` -- exactly what the deterministic
+    // filter's straddling CTA needs to reuse its resident turn-around chunks with no re-prime (see
+    // `det_final_filter::process_overflow`; early exit runs fewer passes but then has no straddler, so direction is
+    // moot). Non-deterministic filtering is order-independent, so leave its historical `forward` start untouched.
+    if constexpr (deterministic)
+    {
+      streamer.forward = (!tie_reversed) ^ ((num_passes & 1) != 0);
+    }
+
     ::cuda::std::span<key_t> resident_keys;
     // 32-bit shared-window address of `resident_keys.data()`. The resident span is read once per radix pass and in
     // the final filter; a 64-bit generic pointer kept live across that loop spills and reloads as a *generic*
@@ -2089,9 +2100,10 @@ private:
         }
       }
 
-      // Fold the overflow chunks into the first-pass histogram. Forward direction; primes the streaming slots. The
-      // streamer reuses the resident load's stage mbarriers (all front-loaded at `run` entry); `wait_stage` provides
-      // the producer/consumer sync.
+      // Fold the overflow chunks into the first-pass histogram, priming the streaming slots in the streamer's initial
+      // direction (preselected above; the histogram is order-independent, so the direction only sets up the leftover
+      // parity for the final filter). The streamer reuses the resident load's stage mbarriers (all front-loaded at
+      // `run` entry); `wait_stage` provides the producer/consumer sync.
       streamer.process_pass<histogram_items_per_thread_clamped>(add_first_pass);
 
       const int resident_count = span_size(resident_keys);

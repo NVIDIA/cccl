@@ -911,6 +911,213 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
   REQUIRE(ref == h_values_out);
 }
 
+// The streaming tie-break regressions below need both `num_passes` parities so they exercise both ping-pong toggle
+// counts. Enforce that the two widths actually straddle the parity against the real cluster `bits_per_pass` (rather
+// than hard-coding "uint32 -> odd, uint64 -> even"): if tuning ever makes both widths share a parity, this fails to
+// compile.
+using streaming_tie_pair_key_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
+template <typename KeyT>
+inline constexpr int cluster_num_passes =
+  cub::detail::topk::calc_num_passes<KeyT>(cub::detail::batched_topk::make_cluster_policy().bits_per_pass);
+static_assert(cluster_num_passes<cuda::std::uint32_t> % 2 != cluster_num_passes<cuda::std::uint64_t> % 2,
+              "streaming_tie_pair_key_types must cover both num_passes parities");
+
+// Deterministic tie-break *while streaming*: the value-observable (index-set) test for the preselected ping-pong
+// direction. Heavy ties (keys in [0, 7]) straddle the k-th bucket while a 1 Mi segment (>> resident cluster coverage)
+// forces the straddling CTA onto the overflow-streaming path, so a wrong preselected direction picks the wrong tied
+// indices -- observable here (unlike keys-only, where all tied keys are equal) via the value payload checked against
+// the host index reference. Two key widths cover both `num_passes` parities; `tie_break_pref_list` both tie-break
+// directions.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the index-ordered top-k",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         streaming_tie_pair_key_types,
+         tie_break_pref_list)
+{
+  using key_t           = c2h::get<0, TestType>;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr auto direction     = cub::detail::topk::select::max;
+  constexpr auto tie_break     = c2h::get<1, TestType>::value;
+  constexpr auto determinism   = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  constexpr bool prefer_larger = tie_break == cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
+
+  constexpr segment_size_t static_max_segment_size = 1024 * 1024;
+  constexpr segment_size_t static_max_k            = 512 * 1024;
+  constexpr segment_index_t num_segments           = 2;
+  // Deterministic and oversize: this configuration always routes to the SM90+ cluster backend.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
+
+  const segment_size_t segment_size = static_max_segment_size - 31; // unaligned -> streaming + peeled tail edge
+  // With 8 near-uniform values each bucket holds ~segment_size/8 (~128 Ki) keys: k == 1 / 50 Ki straddle the top bucket
+  // (empty front), k == 300 Ki spans full buckets plus a mid-bucket straddle (non-empty front).
+  const segment_size_t k =
+    GENERATE_COPY(values({segment_size_t{1}, segment_size_t{50 * 1024}, segment_size_t{300 * 1024}}));
+
+  CAPTURE(c2h::type_name<key_t>(), static_max_segment_size, static_max_k, segment_size, k, num_segments, prefer_larger);
+
+  // Few distinct key values -> many tied candidates in the k-th bucket. Contiguous -> BlockLoadToShared (streaming, as
+  // the 1 Mi segment exceeds resident coverage).
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer, key_t{0}, key_t{7});
+
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  // Values = global flattened index, so each selected value points back into the flattened input.
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  batched_topk_pairs<direction, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments});
+
+  // Values still belong to their keys, and no source index is selected twice.
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  // The deterministic path must return *exactly* the index-ordered top-k. Compare per-segment selected index sets.
+  c2h::host_vector<key_t> h_keys = keys_in_buffer;
+  const c2h::host_vector<val_t> ref =
+    reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
+
+  c2h::host_vector<val_t> h_values_out = values_out_buffer;
+  for (segment_index_t seg = 0; seg < num_segments; ++seg)
+  {
+    const auto seg_begin = h_values_out.begin() + static_cast<std::ptrdiff_t>(seg * k);
+    std::sort(seg_begin, seg_begin + k);
+  }
+
+  REQUIRE(ref == h_values_out);
+}
+
+// Maps a flattened element index to one of 8 values (host/device consistent), so a large segment has many duplicates
+// and the k-th bucket holds a large tied set. Same twiddle as the keys test's heavy-tie op.
+template <typename KeyT>
+struct heavy_tie_key_op
+{
+  template <typename IndexT>
+  __host__ __device__ KeyT operator()(IndexT i) const
+  {
+    const unsigned h = static_cast<unsigned>(static_cast<cuda::std::uint64_t>(i) * 2654435761u);
+    return static_cast<KeyT>(static_cast<int>((h >> 13) & 7u));
+  }
+};
+
+// Non-contiguous per-segment key iterator (like `counting_segment_keys_op`, but heavy-tie instead of identity): the
+// transform iterator makes `use_block_load_to_shared` false, forcing the generic streaming path, while the heavy-tie
+// op on the global index injects the boundary straddle. Segment `seg` -> keys at [seg*segment_size, ...).
+template <typename KeyT, typename SegmentSizeT>
+struct heavy_tie_segment_keys_op
+{
+  SegmentSizeT segment_size;
+
+  template <typename IndexT>
+  __host__ __device__ auto operator()(IndexT seg) const
+  {
+    return cuda::make_transform_iterator(
+      cuda::make_counting_iterator(static_cast<SegmentSizeT>(seg) * segment_size), heavy_tie_key_op<KeyT>{});
+  }
+};
+
+// Generic-path counterpart of the deterministic streaming tie-break test above: a non-contiguous key iterator forces
+// the agent's generic overflow-streaming path (not BlockLoadToShared) while still straddling the k-th bucket, so it
+// covers the preselected ping-pong direction on the generic streamer for both `num_passes` parities and both tie-break
+// directions. Value-observable: the value payload (global index) is checked against the host index reference.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the index-ordered top-k (generic path)",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         streaming_tie_pair_key_types,
+         tie_break_pref_list)
+{
+  using key_t           = c2h::get<0, TestType>;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr auto direction     = cub::detail::topk::select::max;
+  constexpr auto tie_break     = c2h::get<1, TestType>::value;
+  constexpr auto determinism   = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  constexpr bool prefer_larger = tie_break == cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
+
+  constexpr segment_size_t static_max_segment_size = 1024 * 1024;
+  constexpr segment_size_t static_max_k            = 512 * 1024;
+  constexpr segment_index_t num_segments           = 2;
+  // Deterministic and oversize: this configuration always routes to the SM90+ cluster backend.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
+
+  // Non-round size -> streaming (the generic fallback reads any trailing items straight from gmem; it never peels).
+  const segment_size_t segment_size = static_max_segment_size - 31;
+  const segment_size_t k =
+    GENERATE_COPY(values({segment_size_t{1}, segment_size_t{50 * 1024}, segment_size_t{300 * 1024}}));
+  const segment_size_t num_items = num_segments * segment_size;
+
+  CAPTURE(c2h::type_name<key_t>(), static_max_segment_size, static_max_k, segment_size, k, num_segments, prefer_larger);
+
+  // Non-contiguous key input (transform iterator) -> generic streaming path; heavy-tie values straddle the k-th bucket.
+  auto d_keys_in = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), heavy_tie_segment_keys_op<key_t, segment_size_t>{segment_size});
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  // Values = global flattened index, so each selected value points back into the flattened input.
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  batched_topk_pairs<direction, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::immediate{num_segments});
+
+  // Materialize the (non-contiguous) key input for verification: same heavy-tie function of the global index.
+  c2h::host_vector<key_t> h_keys(static_cast<std::size_t>(num_items));
+  heavy_tie_key_op<key_t> key_op{};
+  for (segment_size_t idx = 0; idx < num_items; ++idx)
+  {
+    h_keys[static_cast<std::size_t>(idx)] = key_op(idx);
+  }
+  const c2h::device_vector<key_t> keys_materialized = h_keys;
+
+  // Values still belong to their keys, and no source index is selected twice.
+  REQUIRE(verify_pairs_consistency(keys_materialized, keys_out_buffer, values_out_buffer) == true);
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  // The deterministic path must return *exactly* the index-ordered top-k. Compare per-segment selected index sets.
+  const c2h::host_vector<val_t> ref =
+    reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
+
+  c2h::host_vector<val_t> h_values_out = values_out_buffer;
+  for (segment_index_t seg = 0; seg < num_segments; ++seg)
+  {
+    const auto seg_begin = h_values_out.begin() + static_cast<std::ptrdiff_t>(seg * k);
+    std::sort(seg_begin, seg_begin + k);
+  }
+
+  REQUIRE(ref == h_values_out);
+}
+
 // Whole-`topk_policy` tuning overrides for the reproducibility test, threaded through the public API's single tuning
 // query (`cuda::execution::tune`). Both force the cluster backend (which alone honors a deterministic request).
 // `default_cluster_selector` uses the default cluster tuning; `alt_cluster_selector` starts from it and overrides the
