@@ -1,10 +1,15 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// Defer the unsupported-architecture diagnosis to the dispatch's runtime check (not a compile-time static_assert)
+// so this test compiles across all target architectures, including pre-SM90, for the full configuration space. See
+// _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in cub/device/dispatch/dispatch_batched_topk.cuh. Precedes CUB includes.
+#define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_batched_topk.cuh>
-#include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk.cuh> // topk_policy / make_baseline_policy (cross-tuning test)
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
@@ -16,6 +21,7 @@
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/iterator>
 
 #include <algorithm>
@@ -58,16 +64,9 @@ struct flag_intra_segment_duplicates
 template <typename ItemItT, typename SegIdItT>
 flag_intra_segment_duplicates(ItemItT, SegIdItT) -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
 
-enum class topk_backend
-{
-  baseline,
-  cluster,
-};
-
-inline constexpr topk_backend selected_backend = topk_backend::cluster;
-
-// Routes the key-value (pairs) top-k to the baseline or cluster backend. `Determinism`/`TieBreak` are forwarded to the
-// cluster dispatch to request the deterministic tie-break path; they default to the nondeterministic behavior.
+// Routes the key-value (pairs) top-k through the public `cub::DeviceBatchedTopK` API, threading the requested
+// determinism/tie-break into the environment via `require`. The dispatch selects the backend from the architecture and
+// the statically-known maximum segment size (a deterministic request routes to the cluster backend on SM90+).
 template <cub::detail::topk::select SelectDirection,
           cuda::execution::determinism::__determinism_t Determinism =
             cuda::execution::determinism::__determinism_t::__not_guaranteed,
@@ -91,9 +90,14 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
   NumSegmentsParameterT num_segments,
   cudaStream_t stream = nullptr)
 {
-  if constexpr (selected_backend == topk_backend::cluster)
+  auto env = cuda::std::execution::env{
+    cuda::stream_ref{stream},
+    cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<Determinism>{},
+                             cuda::execution::tie_break::__tie_break_holder_t<TieBreak>{},
+                             cuda::execution::output_ordering::unsorted)};
+  if constexpr (SelectDirection == cub::detail::topk::select::max)
   {
-    return cub::detail::batched_topk_cluster::dispatch<Determinism, TieBreak>(
+    return cub::DeviceBatchedTopK::MaxPairs(
       d_temp_storage,
       temp_storage_bytes,
       d_key_segments_it,
@@ -102,48 +106,22 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
       d_value_segments_out_it,
       segment_sizes,
       k,
-      cuda::args::constant<SelectDirection>{},
       num_segments,
-      stream);
+      env);
   }
   else
   {
-    // Baseline backend routes through the public API; the cluster backend keeps using the lower-level dispatch above.
-    // The public API takes no total-items guarantee and always runs nondeterministic (the determinism-aware tests skip
-    // the deterministic combos for non-cluster backends).
-    auto env = cuda::std::execution::env{
-      cuda::stream_ref{stream},
-      cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-                               cuda::execution::tie_break::unspecified,
-                               cuda::execution::output_ordering::unsorted)};
-    if constexpr (SelectDirection == cub::detail::topk::select::max)
-    {
-      return cub::DeviceBatchedTopK::MaxPairs(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_key_segments_it,
-        d_key_segments_out_it,
-        d_value_segments_it,
-        d_value_segments_out_it,
-        segment_sizes,
-        k,
-        num_segments,
-        env);
-    }
-    else
-    {
-      return cub::DeviceBatchedTopK::MinPairs(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_key_segments_it,
-        d_key_segments_out_it,
-        d_value_segments_it,
-        d_value_segments_out_it,
-        segment_sizes,
-        k,
-        num_segments,
-        env);
-    }
+    return cub::DeviceBatchedTopK::MinPairs(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      d_value_segments_it,
+      d_value_segments_out_it,
+      segment_sizes,
+      k,
+      num_segments,
+      env);
   }
 }
 
@@ -467,16 +445,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs handle a segment-size type narrower 
   using combo                = c2h::get<1, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-  constexpr auto direction   = cub::detail::topk::select::max;
-
-  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
-  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
+  // Baseline-coverable segment sizes (statically bounded to 127 below): only the deterministic / tie-break requirements
+  // route to the SM90+ cluster backend.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(/*static_max_segment_size=*/127);
+  constexpr auto direction = cub::detail::topk::select::max;
   // Sizes fit both 8-bit types but sit far below the 512 threads a block launches; `127` probes the signed type's max.
   const seg_size_t segment_size = static_cast<seg_size_t>(GENERATE(values({3, 100, 127})));
   const seg_size_t k            = static_cast<seg_size_t>(
@@ -594,6 +566,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-
   constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments           = 3;
+  // Oversize segments always route to the SM90+ cluster backend.
+  skip_if_batched_topk_backend_unavailable(static_max_segment_size);
 
   const segment_size_t segment_size =
     GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, segment_size_t{128 * 1024}}));
@@ -665,6 +639,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned
   constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments           = 3;
+  // Oversize segments always route to the SM90+ cluster backend.
+  skip_if_batched_topk_backend_unavailable(static_max_segment_size);
 
   const int pad = GENERATE(0, 1, 3, 7);
   // The `+ 1` / `- 4095` sizes make the global-last chunk a single item, i.e. a pure-suffix tail with an empty aligned
@@ -743,15 +719,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments with a signed 
   constexpr auto tie_break   = combo::tie_break;
   constexpr auto direction   = cub::detail::topk::select::max;
 
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
   constexpr seg_size_t static_max_segment_size = 1024 * 1024;
   constexpr seg_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments       = 2;
+  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   const int pad                   = GENERATE(0, 7);
   const seg_size_t segment_size   = static_max_segment_size - 31; // unaligned -> forces streaming + unaligned tail edge
@@ -869,12 +841,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
          select_direction_list,
          tie_break_pref_list)
 {
-  // Only the cluster backend provides the deterministic tie-break; the strict index-set check is meaningless elsewhere.
-  if constexpr (selected_backend != topk_backend::cluster)
-  {
-    SKIP("Deterministic tie-break is only provided by the cluster backend");
-  }
-
   using key_t           = cuda::std::uint32_t;
   using val_t           = cuda::std::int32_t;
   using segment_size_t  = cuda::std::int64_t;
@@ -888,6 +854,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
   constexpr segment_size_t static_max_segment_size = 64 * 1024;
   constexpr segment_size_t static_max_k            = 64 * 1024;
   constexpr segment_index_t num_segments           = 2;
+  // Deterministic and oversize: this configuration always routes to the SM90+ cluster backend.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   const segment_size_t segment_size = GENERATE_COPY(values({segment_size_t{4096}, segment_size_t{64 * 1024}}));
   const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
@@ -943,19 +911,35 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
   REQUIRE(ref == h_values_out);
 }
 
-// A second valid cluster tuning for the gpu_to_gpu determinism test: starts from the default policy (for its valid
-// launch configs) and overrides the shape knobs (block size, items-per-thread, pipeline depth, tie-break granularity).
-struct alt_cluster_tuning
+// Whole-`topk_policy` tuning overrides for the reproducibility test, threaded through the public API's single tuning
+// query (`cuda::execution::tune`). Both force the cluster backend (which alone honors a deterministic request).
+// `default_cluster_selector` uses the default cluster tuning; `alt_cluster_selector` starts from it and overrides the
+// shape knobs (block size, items-per-thread, pipeline depth, tie-break granularity) to a second *valid* tuning, so the
+// gpu_to_gpu config-independence check can compare two different launch configs.
+struct default_cluster_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> cub::detail::batched_topk_cluster::cluster_topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::batched_topk::topk_policy
   {
-    auto policy                       = cub::detail::batched_topk_cluster::policy_selector{}(cc);
-    policy.threads_per_block          = 256;
-    policy.histogram_items_per_thread = 2;
-    policy.pipeline_stages            = 2;
-    policy.tie_break_items_per_thread = 2;
-    return policy;
+    return cub::detail::batched_topk::topk_policy{
+      cub::detail::batched_topk::topk_backend::cluster,
+      cub::detail::batched_topk::make_baseline_policy(),
+      cub::detail::batched_topk::make_cluster_policy()};
+  }
+};
+
+struct alt_cluster_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::batched_topk::topk_policy
+  {
+    auto cluster                       = cub::detail::batched_topk::make_cluster_policy();
+    cluster.threads_per_block          = 256;
+    cluster.histogram_items_per_thread = 2;
+    cluster.pipeline_stages            = 2;
+    cluster.tie_break_items_per_thread = 2;
+    return cub::detail::batched_topk::topk_policy{
+      cub::detail::batched_topk::topk_backend::cluster, cub::detail::batched_topk::make_baseline_policy(), cluster};
   }
 };
 
@@ -969,12 +953,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
          select_direction_list,
          determinism_list)
 {
-  // Only the cluster backend honors determinism; the cross-tuning check is meaningless elsewhere.
-  if constexpr (selected_backend != topk_backend::cluster)
-  {
-    SKIP("Determinism is only provided by the cluster backend");
-  }
-
   using key_t           = cuda::std::uint32_t;
   using val_t           = cuda::std::int32_t;
   using segment_size_t  = cuda::std::int64_t;
@@ -987,6 +965,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   constexpr segment_size_t static_max_segment_size = 64 * 1024;
   constexpr segment_size_t static_max_k            = 64 * 1024;
   constexpr segment_index_t num_segments           = 2;
+  // Deterministic and oversize: this configuration always routes to the SM90+ cluster backend.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   const segment_size_t segment_size = GENERATE_COPY(values({segment_size_t{4096}, segment_size_t{64 * 1024}}));
   const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
@@ -1011,29 +991,56 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   c2h::device_vector<val_t> values_out_a(num_segments * k, thrust::no_init);
   c2h::device_vector<val_t> values_out_b(num_segments * k, thrust::no_init);
 
-  // Calls the dispatch directly (the launch wrapper does not thread a policy selector) so each run picks a tuning.
+  // Runs the same problem through the public `cub::DeviceBatchedTopK` API, tuning the whole `topk_policy` via
+  // `cuda::execution::tune` so each run can pick a different valid cluster tuning (the override forces the cluster
+  // backend). Drives the two-phase temp-storage protocol manually so both runs share this call site.
   const auto run_with_tuning =
-    [&](auto policy_selector, c2h::device_vector<key_t>& keys_out, c2h::device_vector<val_t>& values_out) {
+    [&](auto selector, c2h::device_vector<key_t>& keys_out, c2h::device_vector<val_t>& values_out) {
       auto d_keys_out =
         cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
       auto d_values_out =
         cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(values_out.data())), k);
 
+      auto env = cuda::std::execution::env{
+        cuda::stream_ref{cudaStream_t{0}},
+        cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<determinism>{},
+                                 cuda::execution::tie_break::__tie_break_holder_t<tie_break>{},
+                                 cuda::execution::output_ordering::unsorted),
+        cuda::execution::tune(selector)};
+
       size_t temp_bytes = 0;
       const auto invoke = [&](void* d_temp) {
-        return cub::detail::batched_topk_cluster::dispatch<determinism, tie_break>(
-          d_temp,
-          temp_bytes,
-          d_keys_in,
-          d_keys_out,
-          d_values_in,
-          d_values_out,
-          cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
-          cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
-          cuda::args::constant<direction>{},
-          cuda::args::immediate{num_segments},
-          cudaStream_t{0},
-          policy_selector);
+        auto seg_sizes =
+          cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
+        auto k_param = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()};
+        if constexpr (direction == cub::detail::topk::select::max)
+        {
+          return cub::DeviceBatchedTopK::MaxPairs(
+            d_temp,
+            temp_bytes,
+            d_keys_in,
+            d_keys_out,
+            d_values_in,
+            d_values_out,
+            seg_sizes,
+            k_param,
+            cuda::args::immediate{num_segments},
+            env);
+        }
+        else
+        {
+          return cub::DeviceBatchedTopK::MinPairs(
+            d_temp,
+            temp_bytes,
+            d_keys_in,
+            d_keys_out,
+            d_values_in,
+            d_values_out,
+            seg_sizes,
+            k_param,
+            cuda::args::immediate{num_segments},
+            env);
+        }
       };
       REQUIRE(invoke(nullptr) == cudaSuccess);
       c2h::device_vector<std::uint8_t> temp_storage(temp_bytes, thrust::no_init);
@@ -1041,15 +1048,15 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
       REQUIRE(cudaSuccess == cudaDeviceSynchronize());
     };
 
-  run_with_tuning(cub::detail::batched_topk_cluster::policy_selector{}, keys_out_a, values_out_a);
-  // run_to_run: same tuning twice. gpu_to_gpu: a different tuning for the stronger config-independent check.
+  run_with_tuning(default_cluster_selector{}, keys_out_a, values_out_a);
+  // run_to_run: same tuning twice. gpu_to_gpu: a different valid tuning for the stronger config-independent check.
   if constexpr (determinism == cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
   {
-    run_with_tuning(alt_cluster_tuning{}, keys_out_b, values_out_b);
+    run_with_tuning(alt_cluster_selector{}, keys_out_b, values_out_b);
   }
   else
   {
-    run_with_tuning(cub::detail::batched_topk_cluster::policy_selector{}, keys_out_b, values_out_b);
+    run_with_tuning(default_cluster_selector{}, keys_out_b, values_out_b);
   }
 
   // Sanity: values still belong to their keys and no source index repeats within a segment.
@@ -1088,17 +1095,12 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with mixed effective-width vari
   using combo                = c2h::get<0, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
   // The bound far exceeds the actual segments, so the launch picks a wide cluster while the segments stay small.
   constexpr segment_size_t static_max_segment_size = 1100 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
   constexpr auto direction                         = cub::detail::topk::select::max;
+  // Oversize bound always routes to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
   const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, static_max_k / 2, static_max_k}));
 
   constexpr segment_size_t full_segment_size = 96 * 1024 + 17; // enough chunks to fill the launched cluster (no idle)

@@ -1,10 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// Defer the unsupported-architecture diagnosis to the dispatch's runtime check (not a compile-time static_assert)
+// so this test compiles across all target architectures, including pre-SM90, for the full configuration space. See
+// _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in cub/device/dispatch/dispatch_batched_topk.cuh. Precedes CUB includes.
+#define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_batched_topk.cuh>
-#include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/copy.h>
@@ -49,14 +53,9 @@ struct heavy_tie_key_op
   }
 };
 
-enum class topk_backend
-{
-  baseline,
-  cluster,
-};
-
-inline constexpr topk_backend selected_backend = topk_backend::cluster;
-
+// All tests drive the algorithm through the public `cub::DeviceBatchedTopK` API, threading the requested
+// determinism/tie-break into the environment via `require`. The dispatch selects the backend from the architecture and
+// the statically-known maximum segment size (a deterministic request routes to the cluster backend on SM90+).
 template <cub::detail::topk::select SelectDirection,
           cuda::execution::determinism::__determinism_t Determinism =
             cuda::execution::determinism::__determinism_t::__not_guaranteed,
@@ -76,55 +75,20 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   NumSegmentsParameterT num_segments,
   cudaStream_t stream = nullptr)
 {
-  if constexpr (selected_backend == topk_backend::cluster)
+  auto env = cuda::std::execution::env{
+    cuda::stream_ref{stream},
+    cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<Determinism>{},
+                             cuda::execution::tie_break::__tie_break_holder_t<TieBreak>{},
+                             cuda::execution::output_ordering::unsorted)};
+  if constexpr (SelectDirection == cub::detail::topk::select::max)
   {
-    return cub::detail::batched_topk_cluster::dispatch<Determinism, TieBreak>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      static_cast<cub::NullType**>(nullptr),
-      static_cast<cub::NullType**>(nullptr),
-      segment_sizes,
-      k,
-      cuda::args::constant<SelectDirection>{},
-      num_segments,
-      stream);
+    return cub::DeviceBatchedTopK::MaxKeys(
+      d_temp_storage, temp_storage_bytes, d_key_segments_it, d_key_segments_out_it, segment_sizes, k, num_segments, env);
   }
   else
   {
-    // Baseline backend routes through the public API; the cluster backend keeps using the lower-level dispatch above.
-    // The public API takes no total-items guarantee and always runs nondeterministic (the determinism-aware tests skip
-    // the deterministic combos for non-cluster backends).
-    auto env = cuda::std::execution::env{
-      cuda::stream_ref{stream},
-      cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-                               cuda::execution::tie_break::unspecified,
-                               cuda::execution::output_ordering::unsorted)};
-    if constexpr (SelectDirection == cub::detail::topk::select::max)
-    {
-      return cub::DeviceBatchedTopK::MaxKeys(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_key_segments_it,
-        d_key_segments_out_it,
-        segment_sizes,
-        k,
-        num_segments,
-        env);
-    }
-    else
-    {
-      return cub::DeviceBatchedTopK::MinKeys(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_key_segments_it,
-        d_key_segments_out_it,
-        segment_sizes,
-        k,
-        num_segments,
-        env);
-    }
+    return cub::DeviceBatchedTopK::MinKeys(
+      d_temp_storage, temp_storage_bytes, d_key_segments_it, d_key_segments_out_it, segment_sizes, k, num_segments, env);
   }
 }
 
@@ -423,16 +387,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle a segment-size type narrower t
   using combo                = c2h::get<1, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-  constexpr auto direction   = cub::detail::topk::select::max;
-
-  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
-  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
+  // Baseline-coverable segment sizes (statically bounded to 127 below): only the deterministic / tie-break requirements
+  // route to the SM90+ cluster backend.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(/*static_max_segment_size=*/127);
+  constexpr auto direction = cub::detail::topk::select::max;
   // Sizes fit both 8-bit types but sit far below the 512 threads a block launches; `127` probes the signed type's max.
   const seg_size_t segment_size = static_cast<seg_size_t>(GENERATE(values({3, 100, 127})));
   const seg_size_t k            = static_cast<seg_size_t>(
@@ -472,6 +430,68 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle a segment-size type narrower t
 
   // Extract the in-range output for the standard top-k comparison.
   c2h::device_vector<key_t> keys_out_buffer(keys_out_storage.begin() + guard, keys_out_storage.end() - guard);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Automatic size-based backend crossover. The segment size is at the cluster crossover threshold
+// (`cluster_beneficial_min_segment_size` == 8 Ki) yet still baseline-coverable (baseline top tile is 256*64 == 16 Ki),
+// so on SM 10.0+ the automatic selector prefers the cluster backend purely on size, under a *non-deterministic* request
+// -- a branch no other test hits (deterministic tests force cluster via the requirement, oversize tests via
+// non-coverage). Below SM 10.0 the crossover does not apply, so the case is skipped. Checked vs a sorted reference.
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys route a large baseline-coverable segment to the cluster backend on SM10+",
+         "[keys][segmented][topk][device][cluster]",
+         select_direction_list)
+{
+  // Gate on the compiled/JIT compute capability the dispatch resolves (cub::PtxVersion), not the physical device
+  // (cub::SmVersion): the size-based crossover fires from the selector evaluated at the resolved target, so a build
+  // whose highest applicable target is below SM 10.0 stays on the baseline backend even on an SM 10.0+ device.
+  int ptx_version = 0;
+  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version));
+  constexpr int cluster_beneficial_min_ptx_version = 1000; // SM 10.0
+  if (ptx_version < cluster_beneficial_min_ptx_version)
+  {
+    SKIP(
+      "The size-based baseline->cluster crossover only applies on SM 10.0+; below it the automatic selector stays on "
+      "the baseline backend (already covered by the small-segment tests).");
+  }
+
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+  using key_t           = cuda::std::uint8_t; // small key so the baseline backend can cover the 8 Ki segment
+
+  constexpr auto direction = c2h::get<0, TestType>::value;
+
+  constexpr segment_size_t static_max_segment_size = 8 * 1024; // == cluster_beneficial_min_segment_size
+  const segment_size_t segment_size                = static_max_segment_size;
+  const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, segment_size_t{257}, static_max_segment_size}));
+  const segment_index_t num_segments = GENERATE_COPY(values({segment_index_t{1}, segment_index_t{5}}));
+
+  CAPTURE(static_max_segment_size, segment_size, k, num_segments, direction);
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  // Defaulted determinism/tie-break (not_guaranteed / unspecified): the statically-known maximum segment size, not the
+  // requirement, is what routes this to the cluster backend.
+  batched_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()},
+    cuda::args::immediate{num_segments});
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -549,15 +569,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
   using combo                = c2h::get<0, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-
-  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
-  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
   // `static_max_segment_size` is chosen to exceed the largest all-resident cluster coverage (~16 blocks worth of
   // resident SMEM), so the 1 Mi-element segments force the agent's gmem-streaming overflow path (including an
   // unaligned overflow tail via `- 31`), while the 128 Ki-element segment still runs fully resident under the same
@@ -568,6 +579,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
   constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments           = 3;
+  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   constexpr auto direction          = cub::detail::topk::select::max;
   const int pad                     = GENERATE(0, 1, 3, 7);
@@ -625,15 +638,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 3
   constexpr auto tie_break   = combo::tie_break;
   constexpr auto direction   = cub::detail::topk::select::max;
 
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
   constexpr seg_size_t static_max_segment_size = 1024 * 1024;
   constexpr seg_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments       = 2;
+  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   const int pad                 = GENERATE(0, 7);
   const seg_size_t segment_size = static_max_segment_size - 31; // unaligned -> forces streaming + unaligned tail edge
@@ -708,15 +717,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-c
   using combo                = c2h::get<0, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-
-  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
-  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
   // The counting-iterator key source is non-contiguous, so the agent uses its generic overflow-streaming path rather
   // than BlockLoadToShared. `static_max_segment_size` exceeds the largest all-resident cluster coverage, so the 1 Mi
   // -element segments stream (incl. an unaligned `- 31` tail), while the 128 Ki-element segment validates the generic
@@ -725,6 +725,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-c
   constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments           = 3;
+  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   constexpr auto direction = cub::detail::topk::select::max;
   const segment_size_t segment_size =
@@ -876,15 +878,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
   using combo                = c2h::get<0, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-
-  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
-  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
   // `static_max_segment_size` exceeds the largest all-resident cluster coverage, so a single per-segment launch sizes a
   // wide (16-CTA) cluster and mixes every effective-width regime: streaming segments (the 1 Mi-element ones, one with
   // an unaligned `- 31` overflow tail), a fully-resident multi-CTA segment (96 Ki + 17), two *medium* segments that
@@ -892,6 +885,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
   // effective-cluster-width path), and a tiny segment that collapses onto a single CTA (257 elements).
   constexpr segment_size_t static_max_segment_size = 1100 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
+  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   constexpr auto direction = cub::detail::topk::select::max;
   const int pad            = GENERATE(1, 3, 7);
@@ -1173,21 +1168,14 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys handle heavy ties at the k-th boundar
   using combo                = c2h::get<1, TestType>;
   constexpr auto determinism = combo::determinism;
   constexpr auto tie_break   = combo::tie_break;
-
-  // Only the cluster backend honors determinism; elsewhere the deterministic combinations just rerun the
-  // nondeterministic path, so skip them (the base nondeterministic combo still runs).
-  if constexpr (selected_backend != topk_backend::cluster
-                && determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed)
-  {
-    SKIP("Determinism requirements are only provided by the cluster backend");
-  }
-
-  using segment_size_t  = cuda::std::int64_t;
-  using segment_index_t = cuda::std::int64_t;
+  using segment_size_t       = cuda::std::int64_t;
+  using segment_index_t      = cuda::std::int64_t;
 
   constexpr segment_size_t static_max_segment_size = 64 * 1024;
   constexpr segment_size_t static_max_k            = 64 * 1024;
   constexpr segment_index_t num_segments           = 3;
+  // Oversize segments always route to the SM90+ cluster backend, regardless of the determinism / tie-break requirement.
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
 
   const segment_size_t segment_size =
     GENERATE_COPY(values({segment_size_t{257}, segment_size_t{4096}, segment_size_t{64 * 1024}}));

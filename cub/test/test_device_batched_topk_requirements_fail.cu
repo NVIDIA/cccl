@@ -3,6 +3,12 @@
 
 // %PARAM% TEST_ERR err 0:1:2:3:4:5
 
+// Defer the unsupported-architecture diagnosis to the dispatch's runtime check (not a compile-time static_assert)
+// so only the requirement static_asserts under test fire, regardless of the target architecture (this test compiles for
+// the preset's default archs, which include pre-SM90). See _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in
+// cub/device/dispatch/dispatch_batched_topk.cuh. Precedes the CUB include below.
+#define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
+
 #include <cub/device/device_batched_topk.cuh>
 
 #include <cuda/__execution/determinism.h>
