@@ -116,6 +116,8 @@ struct DeviceRadixSortKernelSource
 /**
  * Utility class for dispatching the appropriately-tuned kernels for device-wide radix sort
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam SortOrder
  *   Whether to sort in ascending or descending order
  *

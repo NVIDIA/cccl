@@ -118,6 +118,7 @@ enum class ReadOption
 };
 
 // TODO(bgruber): remove in CCL 4.0
+//! Deprecated [Since 3.5]
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename DifferenceOpT,

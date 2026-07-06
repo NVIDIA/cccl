@@ -79,6 +79,8 @@ struct DeviceUniqueByKeyKernelSource
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for DeviceSelect
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam KeyInputIteratorT
  *   Random-access input iterator type for keys
  *

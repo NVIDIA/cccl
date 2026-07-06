@@ -92,7 +92,8 @@ struct DeviceMergeSortKernelSource
  * Policy
  ******************************************************************************/
 
-// TODO(bgruber): deprecate this when we make the tuning API public and remove in CCCL 4.0
+// TODO(bgruber): remove in CCCL 4.0
+//! Deprecated [Since 3.5]
 template <typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,

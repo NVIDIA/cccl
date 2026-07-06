@@ -1169,9 +1169,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
  * Dispatch
  ******************************************************************************/
 
-// TODO(bgruber): deprecate once we make the tuning API public and remove in CCCL 4.0
+// TODO(bgruber): remove in CCCL 4.0
 /**
  * Utility class for dispatching the appropriately-tuned kernels for DeviceHistogram
+ *
+ * Deprecated [Since 3.5]
  *
  * @tparam NUM_CHANNELS
  *   Number of channels interleaved in the input data (may be greater than the number of channels

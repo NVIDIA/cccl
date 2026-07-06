@@ -191,6 +191,8 @@ struct policy_selector_from_hub
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        DeviceScan
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading scan inputs @iterator
  *

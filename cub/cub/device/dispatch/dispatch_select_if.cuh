@@ -412,6 +412,8 @@ struct policy_selector_from_hub
 /**
  * Utility class for dispatching the appropriately-tuned kernels for DeviceSelect and DevicePartition
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items
  *
