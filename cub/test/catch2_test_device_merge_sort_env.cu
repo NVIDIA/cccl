@@ -578,7 +578,7 @@ TEST_CASE("DeviceMergeSort::SortKeys works with unroll disabled", "[merge_sort][
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
+C2H_TEST("Test MergeSortPolicy properties", "[merge_sort][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::MergeSortPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::MergeSortPolicy>);

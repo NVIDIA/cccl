@@ -381,7 +381,7 @@ TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("MergePolicy", "[merge][device]")
+C2H_TEST("Test MergePolicy properties", "[merge][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::MergePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::MergePolicy>);

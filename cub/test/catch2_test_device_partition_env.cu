@@ -388,7 +388,7 @@ C2H_TEST("DevicePartition::If three-way can be tuned", "[partition][device]", bl
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("ThreeWayPartitionPolicy", "[partition][device]")
+C2H_TEST("Test ThreeWayPartitionPolicy properties", "[partition][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ThreeWayPartitionPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ThreeWayPartitionPolicy>);
@@ -420,7 +420,7 @@ C2H_TEST("ThreeWayPartitionPolicy", "[partition][device]")
   STATIC_REQUIRE_FALSE(p1 != p2);
 }
 
-C2H_TEST("PartitionPolicy", "[partition][device]")
+C2H_TEST("Test PartitionPolicy properties", "[partition][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::PartitionPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::PartitionPolicy>);

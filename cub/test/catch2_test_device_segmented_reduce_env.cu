@@ -636,7 +636,7 @@ C2H_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_re
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("SegmentedReduceWarpReducePolicy", "[segmented_reduce][device]")
+C2H_TEST("Test SegmentedReduceWarpReducePolicy properties", "[segmented_reduce][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedReduceWarpReducePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedReduceWarpReducePolicy>);
@@ -661,7 +661,7 @@ C2H_TEST("SegmentedReduceWarpReducePolicy", "[segmented_reduce][device]")
   STATIC_REQUIRE_FALSE(p1 != p2);
 }
 
-C2H_TEST("SegmentedReducePolicy", "[segmented_reduce][device]")
+C2H_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedReducePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedReducePolicy>);

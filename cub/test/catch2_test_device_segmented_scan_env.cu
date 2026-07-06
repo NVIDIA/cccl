@@ -663,7 +663,7 @@ C2H_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
+C2H_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanPolicy>);

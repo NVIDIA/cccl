@@ -600,7 +600,7 @@ C2H_TEST("DeviceSegmentedSort::StableSortKeysDescending can be tuned", "[segment
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("SegmentedSortPolicy structs", "[segmented_sort][device]")
+C2H_TEST("Test SegmentedSortPolicy properties", "[segmented_sort][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedSortPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedSortPolicy>);

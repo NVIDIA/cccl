@@ -539,7 +539,7 @@ C2H_TEST("Device FindIf can be tuned", "[find][device]", block_sizes)
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("FindIfPolicy", "[find][device]")
+C2H_TEST("Test FindIfPolicy properties", "[find][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::FindIfPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindIfPolicy>);

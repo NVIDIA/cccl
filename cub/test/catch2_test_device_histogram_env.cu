@@ -1733,7 +1733,7 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][devic
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("HistogramPolicy", "[histogram][device]")
+C2H_TEST("Test HistogramPolicy properties", "[histogram][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::HistogramPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::HistogramPolicy>);

@@ -181,7 +181,7 @@ C2H_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", block_sizes)
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("BatchedCopyPolicy", "[memcpy][device]")
+C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::BatchedCopyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::BatchedCopyPolicy>);

@@ -242,7 +242,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("AdjacentDifferencePolicy", "[adjacent_difference][device]")
+C2H_TEST("Test AdjacentDifferencePolicy properties", "[adjacent_difference][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::AdjacentDifferencePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::AdjacentDifferencePolicy>);

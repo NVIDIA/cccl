@@ -1085,7 +1085,7 @@ C2H_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("ReducePassPolicy", "[reduce][device]")
+C2H_TEST("Test ReducePassPolicy properties", "[reduce][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ReducePassPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReducePassPolicy>);
@@ -1111,7 +1111,7 @@ C2H_TEST("ReducePassPolicy", "[reduce][device]")
   STATIC_REQUIRE_FALSE(p1 != p2);
 }
 
-C2H_TEST("ReducePolicy", "[reduce][device]")
+C2H_TEST("Test ReducePolicy properties", "[reduce][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ReducePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReducePolicy>);
@@ -1143,7 +1143,7 @@ C2H_TEST("ReducePolicy", "[reduce][device]")
   STATIC_REQUIRE_FALSE(p1 != p2);
 }
 
-C2H_TEST("ReduceByKeyPolicy", "[reduce][device]")
+C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ReduceByKeyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReduceByKeyPolicy>);

@@ -1274,7 +1274,7 @@ C2H_TEST("DeviceSelect::UniqueByKey can be tuned", "[select][device]", block_siz
 }
 
 #  if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("UniqueByKeyPolicy new API is equivalent to existing API", "[select_unique_by_key][device]")
+C2H_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::UniqueByKeyPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::UniqueByKeyPolicy>);
@@ -1310,7 +1310,7 @@ C2H_TEST("UniqueByKeyPolicy new API is equivalent to existing API", "[select_uni
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("SelectPolicy", "[select][device]")
+C2H_TEST("Test SelectPolicy properties", "[select][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SelectPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SelectPolicy>);

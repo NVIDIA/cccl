@@ -293,7 +293,7 @@ C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce]
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("TransformPolicy", "[transform][device]")
+C2H_TEST("Test TransformPolicy properties", "[transform][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformPolicy>);
