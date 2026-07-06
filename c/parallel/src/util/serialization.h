@@ -30,9 +30,9 @@ namespace cccl::serialization
 inline constexpr char k_blob_magic[8] = {'C', 'C', 'C', 'L', 'S', 'E', 'R', '1'};
 
 // Fixed-layout header at the start of every blob. Packed POD; layout is
-// part of the on-disk format, do not reorder. Blob compatibility across
-// releases is gated by the cuda-cccl package version stamped by the Python
-// layer that wraps this blob, so no version field is carried here.
+// part of the on-disk format, do not reorder. No version field is carried
+// here: blob compatibility is not handled at this layer and must be managed
+// by the caller.
 struct blob_header
 {
   char magic[8]; // k_blob_magic
