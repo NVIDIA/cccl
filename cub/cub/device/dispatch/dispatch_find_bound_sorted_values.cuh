@@ -49,8 +49,8 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
   _CCCL_GRID_CONSTANT Offset* const range_beg_offsets,
   PartitionCompOp partition_comp)
 {
-  constexpr find_bound_sorted_values_policy policy = current_policy<PolicySelector>();
-  constexpr int tile_size                          = policy.threads_per_block * policy.items_per_thread;
+  constexpr FindBoundSortedValuesPolicy policy = current_policy<PolicySelector>();
+  constexpr int tile_size                      = policy.threads_per_block * policy.items_per_thread;
 
   const Offset diagonal_idx = static_cast<Offset>(blockDim.x) * blockIdx.x + threadIdx.x;
   if (diagonal_idx < num_diagonals)
@@ -78,7 +78,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT Offset* const range_beg_offsets,
     CompareOp comp)
 {
-  constexpr find_bound_sorted_values_policy policy = current_policy<PolicySelector>();
+  constexpr FindBoundSortedValuesPolicy policy = current_policy<PolicySelector>();
   using AgentT =
     agent_t<policy.threads_per_block,
             policy.items_per_thread,
