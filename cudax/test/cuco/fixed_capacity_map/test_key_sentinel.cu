@@ -17,7 +17,9 @@
 #include <thrust/logical.h>
 
 #include <cuda/iterator>
+#include <cuda/memory_pool>
 #include <cuda/std/cstddef>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
@@ -51,14 +53,20 @@ C2H_TEST("fixed_capacity_map — empty and erased key sentinels", "[sentinel]")
     cudax::cuco::make_valid_capacity<probing, bucket>(static_cast<::cuda::std::size_t>(num_keys * 2));
   using map_type = cudax::cuco::fixed_capacity_map<int, int, capacity>;
 
-  map_type map{
-    cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}, cudax::cuco::erased_key{erased_sentinel}};
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  map_type map{stream,
+               mr,
+               cudax::cuco::empty_key{empty_key},
+               cudax::cuco::empty_value{empty_value},
+               cudax::cuco::erased_key{erased_sentinel}};
 
   auto __pairs = cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<::cuda::std::pair<int, int>>{});
-  map.insert(__pairs, __pairs + num_keys);
+  map.insert(stream, __pairs, __pairs + num_keys);
 
   ::thrust::device_vector<int> found(num_keys, 0);
-  map.contains(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
+  map.contains(stream, cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
   REQUIRE(::thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
     return v != 0;

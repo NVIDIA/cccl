@@ -18,7 +18,9 @@
 
 #include <cuda/iterator>
 #include <cuda/memory>
+#include <cuda/memory_pool>
 #include <cuda/std/cstddef>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
@@ -71,12 +73,15 @@ C2H_TEST("fixed_capacity_map static extent — shared memory sizing via capacity
 {
   constexpr int num_keys = 64;
 
-  fixed_capacity_map_512_type map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  fixed_capacity_map_512_type map{stream, mr, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
   const int block_size = 128;
   const int grid_size  = (num_keys + block_size - 1) / block_size;
 
-  insert_shmem_kernel<<<grid_size, block_size>>>(
+  insert_shmem_kernel<<<grid_size, block_size, 0, stream.get()>>>(
     map.ref(),
     cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<fixed_capacity_map_512_type::value_type>{}),
     num_keys);
@@ -84,7 +89,7 @@ C2H_TEST("fixed_capacity_map static extent — shared memory sizing via capacity
 
   // Verify the insertions actually landed in the global map
   ::thrust::device_vector<int> found(num_keys, 0);
-  map.contains(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
+  map.contains(stream, cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
   REQUIRE(::thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
     return v != 0;

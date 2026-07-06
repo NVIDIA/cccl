@@ -19,9 +19,11 @@
 #include <thrust/logical.h>
 
 #include <cuda/iterator>
+#include <cuda/memory_pool>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
@@ -71,16 +73,22 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
 
   constexpr int num_keys = 400;
 
-  map_type map{static_cast<::cuda::std::size_t>(num_keys * 2),
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
+
+  map_type map{stream,
+               mr,
+               static_cast<::cuda::std::size_t>(num_keys * 2),
                cudax::cuco::empty_key{key_type{-1}},
                cudax::cuco::empty_value{key_type{-1}}};
 
   auto __pairs = cuda::transform_iterator(cuda::counting_iterator<key_type>{0}, iota_pair<value_type>{});
-  map.insert(__pairs, __pairs + num_keys);
+  map.insert(stream, __pairs, __pairs + num_keys);
 
   // Query present keys [0, num_keys) and absent keys [num_keys, 2 * num_keys)
   ::thrust::device_vector<int> found(2 * num_keys, 0);
-  map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
+  map.contains(
+    stream, cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
   ::thrust::host_vector<int> h_found(found);
@@ -93,9 +101,9 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
   REQUIRE(mismatches == 0);
 
   // After clear the map is empty, so none of the previously inserted keys are found
-  map.clear();
+  map.clear(stream);
   ::thrust::fill(found.begin(), found.end(), 1);
-  map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{num_keys}, found.begin());
+  map.contains(stream, cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
   REQUIRE(::thrust::none_of(found.begin(), found.begin() + num_keys, [] __device__(int v) {
     return v != 0;
