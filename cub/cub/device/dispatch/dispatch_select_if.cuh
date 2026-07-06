@@ -456,7 +456,7 @@ template <
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
     detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
     SelectionOpt>>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") DispatchSelectIf
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartition") DispatchSelectIf
 {
   /******************************************************************************
    * Types and constants

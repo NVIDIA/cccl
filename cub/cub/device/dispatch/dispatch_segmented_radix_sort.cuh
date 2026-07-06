@@ -165,7 +165,7 @@ template <SortOrder Order,
             SegmentSizeT,
             DecomposerT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSegmentedRadixSort") DispatchSegmentedRadixSort
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort") DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------
   // Constants
