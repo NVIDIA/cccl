@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import numpy as np
 
 from .. import _bindings, types
@@ -13,7 +15,6 @@ from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._serialization import (
     BUILD_RESULT,
-    ENUM,
     ITER,
     OP,
     Serializable,
@@ -23,7 +24,14 @@ from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _BinarySearch(Serializable):
+class _BinarySearch:
+    # Shared implementation for the lower/upper bound searchers. Not a
+    # Serializable itself, so it is never registered as an algorithm tag; the
+    # concrete _LowerBound / _UpperBound subclasses mix in Serializable and set
+    # _MODE, encoding the search mode in the class identity (and thus the
+    # serialization tag) rather than a serialized field.
+    _MODE: ClassVar[_bindings.BinarySearchMode]
+
     __slots__ = [
         "build_result",
         "d_data_cccl",
@@ -32,11 +40,9 @@ class _BinarySearch(Serializable):
         "op_cccl",
         "data_ptr",
         "out_ptr",
-        "mode",
     ]
 
     __serialization_schema__ = (
-        ("mode", ENUM(_bindings.BinarySearchMode)),
         ("d_data_cccl", ITER),
         ("d_values_cccl", ITER),
         ("d_out_cccl", ITER),
@@ -50,7 +56,6 @@ class _BinarySearch(Serializable):
         d_values: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike,
         comp: OpAdapter,
-        mode: _bindings.BinarySearchMode,
     ):
         if not protocols.is_device_array(d_data):
             raise ValueError("d_data must be a device array for index outputs.")
@@ -67,7 +72,6 @@ class _BinarySearch(Serializable):
 
         self.data_ptr = protocols.get_data_pointer(d_data)
         self.out_ptr = protocols.get_data_pointer(d_out)
-        self.mode = mode
 
         self.d_data_cccl = cccl.to_cccl_input_iter(d_data)
         self.d_values_cccl = cccl.to_cccl_input_iter(d_values)
@@ -78,7 +82,7 @@ class _BinarySearch(Serializable):
 
         self.build_result = call_build(
             _bindings.DeviceBinarySearchBuildResult,
-            mode,
+            self._MODE,
             self.d_data_cccl,
             self.d_values_cccl,
             self.d_out_cccl,
@@ -116,6 +120,16 @@ class _BinarySearch(Serializable):
         )
 
 
+class _LowerBound(_BinarySearch, Serializable):
+    __slots__ = ()
+    _MODE = _bindings.BinarySearchMode.LOWER_BOUND
+
+
+class _UpperBound(_BinarySearch, Serializable):
+    __slots__ = ()
+    _MODE = _bindings.BinarySearchMode.UPPER_BOUND
+
+
 @cache_with_registered_key_functions
 def _make_binary_search(
     d_data: DeviceArrayLike,
@@ -126,8 +140,11 @@ def _make_binary_search(
     data_ptr: int,
     out_ptr: int,
 ):
-    """Cached factory for _BinarySearch."""
-    return _BinarySearch(d_data, d_values, d_out, comp, mode)
+    """Cached factory for the binary_search searchers."""
+    cls = (
+        _LowerBound if mode == _bindings.BinarySearchMode.LOWER_BOUND else _UpperBound
+    )
+    return cls(d_data, d_values, d_out, comp)
 
 
 def make_lower_bound(
@@ -290,54 +307,3 @@ def upper_bound(
         comp=comp,
         stream=stream,
     )
-
-
-def _load_binary_search(
-    blob: bytes, expected_mode: _bindings.BinarySearchMode
-) -> _BinarySearch:
-    """Deserialize a binary_search blob and reject the opposite search mode.
-
-    The generic ``deserialize`` rebuilds the searcher (mode included); the mode
-    check is enforced here rather than in the codec so the schema stays flat.
-    """
-    searcher = _BinarySearch.deserialize(blob)
-    if searcher.mode != expected_mode:
-        names = {
-            _bindings.BinarySearchMode.LOWER_BOUND: "lower_bound",
-            _bindings.BinarySearchMode.UPPER_BOUND: "upper_bound",
-        }
-        raise ValueError(
-            f"serialization blob mode mismatch: blob was saved as {names[searcher.mode]!r}, "
-            f"but loaded through {names[expected_mode]!r}."
-        )
-    return searcher
-
-
-def load_lower_bound(blob: bytes):
-    """Reconstruct a lower_bound searcher from a blob produced by ``searcher.serialize()``.
-
-    Takes only the blob; no objects required. Raises ``ValueError`` if the blob
-    was produced by an upper_bound searcher.
-
-    Args:
-        blob: Bytes blob produced by a lower_bound searcher's ``serialize()`` method.
-
-    Returns:
-        A callable lower_bound searcher.
-    """
-    return _load_binary_search(blob, _bindings.BinarySearchMode.LOWER_BOUND)
-
-
-def load_upper_bound(blob: bytes):
-    """Reconstruct an upper_bound searcher from a blob produced by ``searcher.serialize()``.
-
-    Takes only the blob; no objects required. Raises ``ValueError`` if the blob
-    was produced by a lower_bound searcher.
-
-    Args:
-        blob: Bytes blob produced by an upper_bound searcher's ``serialize()`` method.
-
-    Returns:
-        A callable upper_bound searcher.
-    """
-    return _load_binary_search(blob, _bindings.BinarySearchMode.UPPER_BOUND)

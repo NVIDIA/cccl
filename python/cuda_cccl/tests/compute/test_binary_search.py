@@ -8,11 +8,11 @@ import pytest
 import cuda.compute
 from cuda.compute import (
     OpKind,
+    deserialize,
     make_lower_bound,
     make_upper_bound,
     serialize,
 )
-from cuda.compute.algorithms import load_lower_bound, load_upper_bound
 
 DTYPE_LIST = [
     np.int32,
@@ -243,7 +243,7 @@ def test_serialize_deserialize_lower_bound_round_trip():
     blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = load_lower_bound(blob)
+    loaded = deserialize(blob)
     loaded(
         d_data=d_data,
         num_items=len(d_data),
@@ -269,7 +269,7 @@ def test_serialize_deserialize_upper_bound_round_trip():
     blob = serialize(builder)
     assert len(blob) > 0
 
-    loaded = load_upper_bound(blob)
+    loaded = deserialize(blob)
     loaded(
         d_data=d_data,
         num_items=len(d_data),

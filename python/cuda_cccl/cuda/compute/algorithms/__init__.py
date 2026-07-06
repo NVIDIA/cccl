@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from .._serialization import deserialize as deserialize
 from .._serialization import serialize as serialize
-from ._binary_search import load_lower_bound as load_lower_bound
-from ._binary_search import load_upper_bound as load_upper_bound
 from ._binary_search import lower_bound as lower_bound
 from ._binary_search import make_lower_bound as make_lower_bound
 from ._binary_search import make_upper_bound as make_upper_bound
@@ -46,10 +44,8 @@ __all__ = [
     "reduce_into",
     "make_reduce_into",
     "lower_bound",
-    "load_lower_bound",
     "make_lower_bound",
     "upper_bound",
-    "load_upper_bound",
     "make_upper_bound",
     "inclusive_scan",
     "make_inclusive_scan",
