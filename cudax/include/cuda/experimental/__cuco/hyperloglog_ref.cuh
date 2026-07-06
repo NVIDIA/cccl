@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/span>
-#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/detail/hyperloglog/hyperloglog_impl.cuh>
 #include <cuda/experimental/__cuco/hll_policies.cuh>
@@ -108,11 +108,11 @@ public:
   //! @tparam _CG CUDA Cooperative Group type
   //!
   //! @param __group CUDA Cooperative group this operation is executed in
-  template <class _CG>
-  _CCCL_DEVICE_API constexpr ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>>
-  clear(_CG __group) noexcept
+  _CCCL_TEMPLATE(class _CG)
+  _CCCL_REQUIRES((!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>) )
+  _CCCL_DEVICE_API constexpr void clear(_CG __group) noexcept
   {
-    // The enable_if above is to work around an incompatibility between host and device
+    // The constraint above is to work around an incompatibility between host and device
     // overload preference for clang and NVCC. See
     // https://llvm.org/docs/CompileCudaWithLLVM.html#overloading-based-on-host-and-device-attributes
     // for further reading, but the bottom line is when:
@@ -213,11 +213,11 @@ public:
   //!
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
-  template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE_API constexpr ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>>
-  merge(_CG __group, const hyperloglog_ref<_Tp, _OtherScope, _Policy>& __other)
+  _CCCL_TEMPLATE(class _CG, ::cuda::thread_scope _OtherScope)
+  _CCCL_REQUIRES((!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>) )
+  _CCCL_DEVICE_API constexpr void merge(_CG __group, const hyperloglog_ref<_Tp, _OtherScope, _Policy>& __other)
   {
-    // The enable_if above works around the same host/device overload preference issue as
+    // The constraint above works around the same host/device overload preference issue as
     // documented in `clear(_CG)`: `merge(_CG, ...)` would otherwise conflict with
     // `merge(::cuda::stream_ref, ...)` when called from `hyperloglog::merge(::cuda::stream_ref, ...)`.
     __impl.__merge(__group, __other.__impl);
