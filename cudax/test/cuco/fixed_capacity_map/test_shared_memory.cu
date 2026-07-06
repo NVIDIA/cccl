@@ -85,7 +85,7 @@ C2H_TEST("fixed_capacity_map static extent — shared memory sizing via capacity
     map.ref(),
     cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<fixed_capacity_map_512_type::value_type>{}),
     num_keys);
-  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  stream.sync();
 
   // Verify the insertions actually landed in the global map
   ::thrust::device_vector<int> found(num_keys, 0);
