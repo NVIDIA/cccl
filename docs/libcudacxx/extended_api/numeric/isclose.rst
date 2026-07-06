@@ -11,11 +11,11 @@ Defined in ``<cuda/numeric>`` header.
 
    template <class T>
    [[nodiscard]] __host__ __device__ __tile__ constexpr
-    bool isclose(T lhs, T rhs) noexcept;
+   bool isclose(T lhs, T rhs) noexcept;
 
    template <class T>
    [[nodiscard]] __host__ __device__ __tile__ constexpr
-    bool isclose(T lhs, T rhs, float relative_tol) noexcept;
+   bool isclose(T lhs, T rhs, float relative_tol) noexcept;
 
    template <class T>
    [[nodiscard]] __host__ __device__ __tile__ constexpr
@@ -55,7 +55,7 @@ Defined in ``<cuda/numeric>`` header.
 
 **Precision**
 
-- ``relative_tol``:Must be in the range [0.0, 1.0].
+- ``relative_tol``: Must be in the range ``[0.0, 1.0]``.
 - ``absolute_tol``: Must be finite and non-negative.
 
 **Return value**
