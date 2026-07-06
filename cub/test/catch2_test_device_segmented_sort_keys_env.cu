@@ -614,9 +614,9 @@ C2H_TEST("SegmentedSortPolicy structs", "[segmented_sort][device]")
     cub::SegmentedSortRadixSortPolicy{
       256, 16, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_RAKING_MEMOIZE, 6},
     cub::SegmentedSortSubWarpMergeSortPolicy{
-      256, 4, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
-    cub::SegmentedSortSubWarpMergeSortPolicy{
       256, 32, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+    cub::SegmentedSortSubWarpMergeSortPolicy{
+      256, 4, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
     300};
 
 #  if _CCCL_STD_VER >= 2020
@@ -631,18 +631,18 @@ C2H_TEST("SegmentedSortPolicy structs", "[segmented_sort][device]")
         .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
         .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
         .radix_bits        = 6},
-    .small_segment =
-      cub::SegmentedSortSubWarpMergeSortPolicy{
-        .threads_per_block = 256,
-        .threads_per_warp  = 4,
-        .items_per_thread  = 7,
-        .load_algorithm    = cub::WARP_LOAD_DIRECT,
-        .load_modifier     = cub::LOAD_DEFAULT,
-        .store_algorithm   = cub::WARP_STORE_DIRECT},
     .medium_segment =
       cub::SegmentedSortSubWarpMergeSortPolicy{
         .threads_per_block = 256,
         .threads_per_warp  = 32,
+        .items_per_thread  = 7,
+        .load_algorithm    = cub::WARP_LOAD_DIRECT,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .store_algorithm   = cub::WARP_STORE_DIRECT},
+    .small_segment =
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        .threads_per_block = 256,
+        .threads_per_warp  = 4,
         .items_per_thread  = 7,
         .load_algorithm    = cub::WARP_LOAD_DIRECT,
         .load_modifier     = cub::LOAD_DEFAULT,
