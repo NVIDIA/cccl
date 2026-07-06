@@ -57,18 +57,22 @@ void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
-// __half and __nv_bfloat16 are appended for full (non-tuning) runs; CUB radix sort supports them (see #9587).
+// __half and __nv_bfloat16 are added for full (non-tuning) runs; CUB radix sort supports them (see #9587).
+#ifdef TUNE_T
+using key_types = nvbench::type_list<TUNE_T>;
+#else
 using key_types =
   push_back_t<fundamental_types
-#if !defined(TUNE_T) && _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+#  if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
               ,
               __half
-#endif
-#if !defined(TUNE_T) && _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+#  endif
+#  if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
               ,
               __nv_bfloat16
-#endif
+#  endif
               >;
+#endif
 
 NVBENCH_BENCH_TYPES(radix_sort_keys, NVBENCH_TYPE_AXES(key_types, offset_types))
   .set_name("base")

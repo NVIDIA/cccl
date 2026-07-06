@@ -65,6 +65,23 @@ catch (const std::bad_alloc&)
   state.skip("Skipping: out of memory.");
 }
 
+// __half and __nv_bfloat16 are added for full (non-tuning) runs; CUB has fast paths for them (see #9587).
+#ifdef TUNE_T
+using value_types = nvbench::type_list<TUNE_T>;
+#else
+using value_types =
+  push_back_t<all_types
+#  if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+              ,
+              __half
+#  endif
+#  if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+              ,
+              __nv_bfloat16
+#  endif
+              >;
+#endif
+
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(value_types, scan_offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})

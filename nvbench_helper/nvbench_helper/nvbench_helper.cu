@@ -16,6 +16,7 @@
 
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/__floating_point/cuda_fp_types.h> // __half, __nv_bfloat16
 #include <cuda/std/bit>
 #include <cuda/type_traits>
 

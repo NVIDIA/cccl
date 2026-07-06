@@ -17,18 +17,6 @@
 // %RANGE% TUNE_LOAD ld 0:1:1
 
 #define USES_LOOKAHEAD() 0
-using op_t = ::cuda::std::plus<>;
-// __half and __nv_bfloat16 are appended for full (non-tuning) runs; CUB has fast paths for them (see #9587).
-using value_types =
-  push_back_t<all_types
-#if !defined(TUNE_T) && _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
-              ,
-              __half
-#endif
-#if !defined(TUNE_T) && _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
-              ,
-              __nv_bfloat16
-#endif
-              >;
+using op_t              = ::cuda::std::plus<>;
 using scan_offset_types = offset_types;
 #include "base.cuh"

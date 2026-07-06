@@ -11,6 +11,5 @@
 
 #define USES_LOOKAHEAD() 0
 using op_t              = max_t;
-using value_types       = all_types;
 using scan_offset_types = offset_types;
 #include "base.cuh"

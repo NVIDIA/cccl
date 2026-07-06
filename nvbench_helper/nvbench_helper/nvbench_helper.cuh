@@ -5,7 +5,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
-#include <cuda/std/__floating_point/cuda_fp_types.h> // __half, __nv_bfloat16
 #include <cuda/std/cmath>
 #include <cuda/std/complex>
 #include <cuda/std/functional>
@@ -515,6 +514,20 @@ struct max_t
     less_t less{};
     return less(lhs, rhs) ? rhs : lhs;
   }
+
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __half operator()(__half lhs, __half rhs) const
+  {
+    return static_cast<float>(lhs) < static_cast<float>(rhs) ? rhs : lhs;
+  }
+#endif // _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __nv_bfloat16 operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const
+  {
+    return static_cast<float>(lhs) < static_cast<float>(rhs) ? rhs : lhs;
+  }
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 };
 
 template <class T>
