@@ -19,6 +19,8 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
 #include <cuda/__cmath/round_up.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -64,15 +66,81 @@ struct SegmentedScanBlockPolicy
 #endif // _CCCL_HOSTED()
 };
 
+struct SegmentedScanWarpPolicy
+{
+  int threads_per_block;
+  int items_per_thread;
+  WarpLoadAlgorithm load_algorithm;
+  CacheLoadModifier load_modifier;
+  WarpStoreAlgorithm store_algorithm;
+  int max_segments;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const SegmentedScanWarpPolicy& lhs, const SegmentedScanWarpPolicy& rhs)
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.max_segments == rhs.max_segments;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const SegmentedScanWarpPolicy& lhs, const SegmentedScanWarpPolicy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanWarpPolicy& policy)
+  {
+    return os
+        << "SegmentedScanWarpPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
+        << ", .load_modifier = " << policy.load_modifier << ", .store_algorithm = " << policy.store_algorithm
+        << ", .max_segments_per_warp = " << policy.max_segments << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+struct SegmentedScanThreadPolicy
+{
+  int threads_per_block;
+  int items_per_thread;
+  CacheLoadModifier load_modifier;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const SegmentedScanThreadPolicy& lhs, const SegmentedScanThreadPolicy& rhs)
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_modifier == rhs.load_modifier;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const SegmentedScanThreadPolicy& lhs, const SegmentedScanThreadPolicy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanThreadPolicy& policy)
+  {
+    return os
+        << "SegmentedScanThreadPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .items_per_thread = " << policy.items_per_thread << ", .load_modifier = " << policy.load_modifier << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 //! The tuning policy for all algorithms in @ref DeviceSegmentedScan.
 struct SegmentedScanPolicy
 {
   SegmentedScanBlockPolicy block; //!< Policy for the block-level segmented scan kernel
+  SegmentedScanWarpPolicy warp;
+  SegmentedScanThreadPolicy thread;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const SegmentedScanPolicy& lhs, const SegmentedScanPolicy& rhs) noexcept
   {
-    return lhs.block == rhs.block;
+    return lhs.block == rhs.block && lhs.warp == rhs.warp && lhs.thread == rhs.thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -84,7 +152,8 @@ struct SegmentedScanPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
   {
-    return os << "SegmentedScanPolicy { .block = " << policy.block << " }";
+    return os << "SegmentedScanPolicy { .block = " << policy.block << ", .warp = " << policy.warp
+              << ", .thread = " << policy.thread << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -107,18 +176,26 @@ struct policy_selector
     constexpr int nominal_threads_per_block = 128;
     constexpr int nominal_items_per_thread  = 9;
     constexpr int max_segments_per_block    = 512;
+    // Per-warp tuning knob. This is intentionally not scaled by the number of
+    // warps in the CTA: the warp agent's temporary storage and work assignment
+    // are defined per warp, and total CTA storage scales with the selected warp
+    // count. A value of 1 selects the smaller single-segment warp kernel.
+    constexpr int max_segments_per_warp = 128;
 
     _CCCL_ASSERT(accum_size > 0, "Accumulator size must be positive");
     _CCCL_ASSERT(accum_align > 0, "Accumulator alignment must be positive");
     _CCCL_ASSERT((accum_size % accum_align) == 0, "Size and alignment are not consistent");
 
-    // multi-segment block- granularity agents use tuple<AccumT, bool>, single segment use AccumT
+    // multi-segment block- and warp- granularity agents use tuple<AccumT, bool>, single segment use AccumT
     // deduce its size here.
     const int augmented_size_block =
       ::cuda::round_up(accum_size + ((max_segments_per_block == 1) ? 0 : 1), accum_align);
+    const int augmented_size_warp = ::cuda::round_up(accum_size + ((max_segments_per_warp == 1) ? 0 : 1), accum_align);
 
     const auto block_scaled =
       scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, augmented_size_block);
+    const auto warp_scaled = scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, augmented_size_warp);
+    const auto thread_scaled = scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, accum_size);
 
     const bool large_values = augmented_size_block > 128;
     const auto scan_transposed_blockload =
@@ -126,14 +203,23 @@ struct policy_selector
     const auto scan_transposed_blockstore =
       large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-    return SegmentedScanPolicy{SegmentedScanBlockPolicy{
-      block_scaled.threads_per_block,
-      block_scaled.items_per_thread,
-      scan_transposed_blockload,
-      LOAD_DEFAULT,
-      scan_transposed_blockstore,
-      BLOCK_SCAN_WARP_SCANS,
-      max_segments_per_block}};
+    return SegmentedScanPolicy{
+      SegmentedScanBlockPolicy{
+        block_scaled.threads_per_block,
+        block_scaled.items_per_thread,
+        scan_transposed_blockload,
+        LOAD_DEFAULT,
+        scan_transposed_blockstore,
+        BLOCK_SCAN_WARP_SCANS,
+        max_segments_per_block},
+      SegmentedScanWarpPolicy{
+        warp_scaled.threads_per_block,
+        warp_scaled.items_per_thread,
+        WARP_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        WARP_STORE_TRANSPOSE,
+        max_segments_per_warp},
+      SegmentedScanThreadPolicy{thread_scaled.threads_per_block, thread_scaled.items_per_thread, LOAD_DEFAULT}};
   }
 };
 
