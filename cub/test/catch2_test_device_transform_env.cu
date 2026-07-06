@@ -298,35 +298,58 @@ C2H_TEST("TransformPolicy", "[transform][device]")
   STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformPolicy>);
 
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformPrefetchPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformPrefetchPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformVectorizedPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformVectorizedPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformAsyncCopyPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformAsyncCopyPolicy>);
+
   // aggregate init
-  constexpr auto p1 = cub::TransformPolicy{
-    64 * 1024,
-    cub::TransformAlgorithm::prefetch,
-    cub::TransformPrefetchPolicy{256, 2, 1, 32, 128, 0},
-    cub::TransformVectorizedPolicy{256, 8, 4},
-    cub::TransformAsyncCopyPolicy{256, 1, 32, 1}};
+  constexpr auto p1_prefetch   = cub::TransformPrefetchPolicy{256, 2, 1, 32, 128, 0};
+  constexpr auto p1_vectorized = cub::TransformVectorizedPolicy{256, 8, 4};
+  constexpr auto p1_async_copy = cub::TransformAsyncCopyPolicy{256, 1, 32, 1};
+  constexpr auto p1 =
+    cub::TransformPolicy{64 * 1024, cub::TransformAlgorithm::prefetch, p1_prefetch, p1_vectorized, p1_async_copy};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
+  constexpr auto p2_prefetch = cub::TransformPrefetchPolicy{
+    .threads_per_block         = 256,
+    .items_per_thread_no_input = 2,
+    .min_items_per_thread      = 1,
+    .max_items_per_thread      = 32,
+    .prefetch_byte_stride      = 128,
+    .unroll_factor             = 0};
+  constexpr auto p2_vectorized =
+    cub::TransformVectorizedPolicy{.threads_per_block = 256, .items_per_thread = 8, .vec_size = 4};
+  constexpr auto p2_async_copy = cub::TransformAsyncCopyPolicy{
+    .threads_per_block = 256, .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1};
   constexpr auto p2 = cub::TransformPolicy{
     .min_bytes_in_flight = 64 * 1024,
     .algorithm           = cub::TransformAlgorithm::prefetch,
-    .prefetch =
-      cub::TransformPrefetchPolicy{
-        .threads_per_block         = 256,
-        .items_per_thread_no_input = 2,
-        .min_items_per_thread      = 1,
-        .max_items_per_thread      = 32,
-        .prefetch_byte_stride      = 128,
-        .unroll_factor             = 0},
-    .vectorized = cub::TransformVectorizedPolicy{.threads_per_block = 256, .items_per_thread = 8, .vec_size = 4},
-    .async_copy = cub::TransformAsyncCopyPolicy{
-      .threads_per_block = 256, .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1}};
+    .prefetch            = p2_prefetch,
+    .vectorized          = p2_vectorized,
+    .async_copy          = p2_async_copy};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
+  constexpr auto p2_prefetch   = p1_prefetch;
+  constexpr auto p2_vectorized = p1_vectorized;
+  constexpr auto p2_async_copy = p1_async_copy;
+  constexpr auto p2            = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
+  STATIC_REQUIRE(p1_prefetch == p2_prefetch);
+  STATIC_REQUIRE_FALSE(p1_prefetch != p2_prefetch);
+
+  STATIC_REQUIRE(p1_vectorized == p2_vectorized);
+  STATIC_REQUIRE_FALSE(p1_vectorized != p2_vectorized);
+
+  STATIC_REQUIRE(p1_async_copy == p2_async_copy);
+  STATIC_REQUIRE_FALSE(p1_async_copy != p2_async_copy);
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 }

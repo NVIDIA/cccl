@@ -693,10 +693,14 @@ C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
     .max_segments      = 512};
   constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
+  constexpr auto block2 = block1;
+  constexpr auto p2     = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
+  STATIC_REQUIRE(block1 == block2);
+  STATIC_REQUIRE_FALSE(block1 != block2);
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 }

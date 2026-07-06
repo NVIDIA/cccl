@@ -1544,85 +1544,157 @@ C2H_TEST("RadixSortPolicy", "[radix_sort][device]")
   STATIC_REQUIRE(::cuda::std::semiregular<cub::RadixSortPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RadixSortPolicy>);
 
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RadixSortHistogramPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RadixSortHistogramPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RadixSortExclusiveSumPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RadixSortExclusiveSumPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RadixSortOnesweepPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RadixSortOnesweepPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RadixSortDownsweepPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RadixSortDownsweepPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::RadixSortUpsweepPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RadixSortUpsweepPolicy>);
+
   // aggregate init
+  constexpr auto p1_histogram     = cub::RadixSortHistogramPolicy{256, 8, 1, 8};
+  constexpr auto p1_exclusive_sum = cub::RadixSortExclusiveSumPolicy{256, 8};
+  constexpr auto p1_onesweep      = cub::RadixSortOnesweepPolicy{
+    256, 21, cub::RADIX_SORT_STORE_DIRECT, cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY, cub::BLOCK_SCAN_WARP_SCANS, 1, 8};
+  constexpr auto p1_scan = cub::ScanPolicy{
+    cub::ScanAlgorithm::lookback,
+    cub::ScanLookbackPolicy{
+      512,
+      23,
+      cub::BLOCK_LOAD_WARP_TRANSPOSE,
+      cub::LOAD_DEFAULT,
+      cub::BLOCK_STORE_WARP_TRANSPOSE,
+      cub::BLOCK_SCAN_RAKING_MEMOIZE,
+      cub::LookbackDelayPolicy{}},
+    {}};
+  constexpr auto p1_downsweep = cub::RadixSortDownsweepPolicy{
+    256, 25, cub::BLOCK_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::RADIX_RANK_MATCH, cub::BLOCK_SCAN_WARP_SCANS, 7};
+  constexpr auto p1_alt_downsweep = cub::RadixSortDownsweepPolicy{
+    192, 39, cub::BLOCK_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 6};
+  constexpr auto p1_upsweep     = cub::RadixSortUpsweepPolicy{256, 25, cub::LOAD_DEFAULT, 7};
+  constexpr auto p1_alt_upsweep = cub::RadixSortUpsweepPolicy{192, 39, cub::LOAD_DEFAULT, 6};
+  constexpr auto p1_single_tile = cub::RadixSortDownsweepPolicy{
+    256, 19, cub::BLOCK_LOAD_DIRECT, cub::LOAD_LDG, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 6};
   constexpr auto p1 = cub::RadixSortPolicy{
     cub::RadixSortAlgorithm::onesweep,
-    cub::RadixSortHistogramPolicy{256, 8, 1, 8},
-    cub::RadixSortExclusiveSumPolicy{256, 8},
-    cub::RadixSortOnesweepPolicy{
-      256, 21, cub::RADIX_SORT_STORE_DIRECT, cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY, cub::BLOCK_SCAN_WARP_SCANS, 1, 8},
-    cub::ScanPolicy{
-      cub::ScanAlgorithm::lookback,
-      cub::ScanLookbackPolicy{
-        512,
-        23,
-        cub::BLOCK_LOAD_WARP_TRANSPOSE,
-        cub::LOAD_DEFAULT,
-        cub::BLOCK_STORE_WARP_TRANSPOSE,
-        cub::BLOCK_SCAN_RAKING_MEMOIZE,
-        cub::LookbackDelayPolicy{}},
-      {}},
-    cub::RadixSortDownsweepPolicy{
-      256, 25, cub::BLOCK_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::RADIX_RANK_MATCH, cub::BLOCK_SCAN_WARP_SCANS, 7},
-    cub::RadixSortDownsweepPolicy{
-      192, 39, cub::BLOCK_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 6},
-    cub::RadixSortUpsweepPolicy{256, 25, cub::LOAD_DEFAULT, 7},
-    cub::RadixSortUpsweepPolicy{192, 39, cub::LOAD_DEFAULT, 6},
-    cub::RadixSortDownsweepPolicy{
-      256, 19, cub::BLOCK_LOAD_DIRECT, cub::LOAD_LDG, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 6}};
+    p1_histogram,
+    p1_exclusive_sum,
+    p1_onesweep,
+    p1_scan,
+    p1_downsweep,
+    p1_alt_downsweep,
+    p1_upsweep,
+    p1_alt_upsweep,
+    p1_single_tile};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
+  constexpr auto p2_histogram = cub::RadixSortHistogramPolicy{
+    .threads_per_block = 256, .items_per_thread = 8, .private_partitions = 1, .radix_bits = 8};
+  constexpr auto p2_exclusive_sum = cub::RadixSortExclusiveSumPolicy{.threads_per_block = 256, .radix_bits = 8};
+  constexpr auto p2_onesweep      = cub::RadixSortOnesweepPolicy{
+         .threads_per_block       = 256,
+         .items_per_thread        = 21,
+         .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
+         .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+         .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+         .rank_private_partitions = 1,
+         .radix_bits              = 8};
+  constexpr auto p2_scan = cub::ScanPolicy{
+    .algorithm = cub::ScanAlgorithm::lookback,
+    .lookback  = {.threads_per_block = 512,
+                  .items_per_thread  = 23,
+                  .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                  .load_modifier     = cub::LOAD_DEFAULT,
+                  .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+                  .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
+                  .lookback_delay    = {}},
+    .lookahead = {}};
+  constexpr auto p2_downsweep = cub::RadixSortDownsweepPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 25,
+    .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+    .load_modifier     = cub::LOAD_DEFAULT,
+    .rank_algorithm    = cub::RADIX_RANK_MATCH,
+    .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+    .radix_bits        = 7};
+  constexpr auto p2_alt_downsweep = cub::RadixSortDownsweepPolicy{
+    .threads_per_block = 192,
+    .items_per_thread  = 39,
+    .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+    .load_modifier     = cub::LOAD_DEFAULT,
+    .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+    .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+    .radix_bits        = 6};
+  constexpr auto p2_upsweep = cub::RadixSortUpsweepPolicy{
+    .threads_per_block = 256, .items_per_thread = 25, .load_modifier = cub::LOAD_DEFAULT, .radix_bits = 7};
+  constexpr auto p2_alt_upsweep = cub::RadixSortUpsweepPolicy{
+    .threads_per_block = 192, .items_per_thread = 39, .load_modifier = cub::LOAD_DEFAULT, .radix_bits = 6};
+  constexpr auto p2_single_tile = cub::RadixSortDownsweepPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 19,
+    .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+    .load_modifier     = cub::LOAD_LDG,
+    .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+    .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+    .radix_bits        = 6};
   constexpr auto p2 = cub::RadixSortPolicy{
     .algorithm     = cub::RadixSortAlgorithm::onesweep,
-    .histogram     = {.threads_per_block = 256, .items_per_thread = 8, .private_partitions = 1, .radix_bits = 8},
-    .exclusive_sum = {.threads_per_block = 256, .radix_bits = 8},
-    .onesweep      = {.threads_per_block       = 256,
-                      .items_per_thread        = 21,
-                      .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
-                      .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-                      .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
-                      .rank_private_partitions = 1,
-                      .radix_bits              = 8},
-    .scan          = {.algorithm = cub::ScanAlgorithm::lookback,
-                      .lookback  = {.threads_per_block = 512,
-                                    .items_per_thread  = 23,
-                                    .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                                    .load_modifier     = cub::LOAD_DEFAULT,
-                                    .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
-                                    .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
-                                    .lookback_delay    = {}},
-                      .lookahead = {}},
-    .downsweep     = {.threads_per_block = 256,
-                      .items_per_thread  = 25,
-                      .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
-                      .load_modifier     = cub::LOAD_DEFAULT,
-                      .rank_algorithm    = cub::RADIX_RANK_MATCH,
-                      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-                      .radix_bits        = 7},
-    .alt_downsweep = {.threads_per_block = 192,
-                      .items_per_thread  = 39,
-                      .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
-                      .load_modifier     = cub::LOAD_DEFAULT,
-                      .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
-                      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-                      .radix_bits        = 6},
-    .upsweep = {.threads_per_block = 256, .items_per_thread = 25, .load_modifier = cub::LOAD_DEFAULT, .radix_bits = 7},
-    .alt_upsweep =
-      {.threads_per_block = 192, .items_per_thread = 39, .load_modifier = cub::LOAD_DEFAULT, .radix_bits = 6},
-    .single_tile = {
-      .threads_per_block = 256,
-      .items_per_thread  = 19,
-      .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-      .load_modifier     = cub::LOAD_LDG,
-      .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
-      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-      .radix_bits        = 6}};
+    .histogram     = p2_histogram,
+    .exclusive_sum = p2_exclusive_sum,
+    .onesweep      = p2_onesweep,
+    .scan          = p2_scan,
+    .downsweep     = p2_downsweep,
+    .alt_downsweep = p2_alt_downsweep,
+    .upsweep       = p2_upsweep,
+    .alt_upsweep   = p2_alt_upsweep,
+    .single_tile   = p2_single_tile};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
+  constexpr auto p2_histogram     = p1_histogram;
+  constexpr auto p2_exclusive_sum = p1_exclusive_sum;
+  constexpr auto p2_onesweep      = p1_onesweep;
+  constexpr auto p2_scan          = p1_scan;
+  constexpr auto p2_downsweep     = p1_downsweep;
+  constexpr auto p2_alt_downsweep = p1_alt_downsweep;
+  constexpr auto p2_upsweep       = p1_upsweep;
+  constexpr auto p2_alt_upsweep   = p1_alt_upsweep;
+  constexpr auto p2_single_tile   = p1_single_tile;
+  constexpr auto p2               = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
+  STATIC_REQUIRE(p1_histogram == p2_histogram);
+  STATIC_REQUIRE_FALSE(p1_histogram != p2_histogram);
+
+  STATIC_REQUIRE(p1_exclusive_sum == p2_exclusive_sum);
+  STATIC_REQUIRE_FALSE(p1_exclusive_sum != p2_exclusive_sum);
+
+  STATIC_REQUIRE(p1_onesweep == p2_onesweep);
+  STATIC_REQUIRE_FALSE(p1_onesweep != p2_onesweep);
+
+  STATIC_REQUIRE(p1_downsweep == p2_downsweep);
+  STATIC_REQUIRE_FALSE(p1_downsweep != p2_downsweep);
+
+  STATIC_REQUIRE(p1_alt_downsweep == p2_alt_downsweep);
+  STATIC_REQUIRE_FALSE(p1_alt_downsweep != p2_alt_downsweep);
+
+  STATIC_REQUIRE(p1_upsweep == p2_upsweep);
+  STATIC_REQUIRE_FALSE(p1_upsweep != p2_upsweep);
+
+  STATIC_REQUIRE(p1_alt_upsweep == p2_alt_upsweep);
+  STATIC_REQUIRE_FALSE(p1_alt_upsweep != p2_alt_upsweep);
+
+  STATIC_REQUIRE(p1_single_tile == p2_single_tile);
+  STATIC_REQUIRE_FALSE(p1_single_tile != p2_single_tile);
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 }
