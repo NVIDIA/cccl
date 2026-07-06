@@ -27,7 +27,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
-//! @brief Parameterizable tuning policy type for AgentTopK
+//! @brief Parameterizable tuning policy type for agent_topk
 //!
 //! @tparam ThreadsPerBlock
 //!   Threads per thread block
@@ -49,7 +49,7 @@ template <int ThreadsPerBlock,
           int BitsPerPass,
           BlockLoadAlgorithm LoadAlgorithm,
           BlockScanAlgorithm ScanAlgorithm>
-struct AgentTopKPolicy
+struct agent_topk_policy
 {
   static constexpr int threads_per_block             = ThreadsPerBlock;
   static constexpr int items_per_thread              = ItemsPerThread;
@@ -200,7 +200,7 @@ enum class candidate_class
 //! device-wide topK
 //!
 //! @tparam AgentTopKPolicyT
-//!   Parameterized AgentTopKPolicy tuning policy type
+//!   Parameterized agent_topk_policy tuning policy type
 //!
 //! @tparam KeyInputIteratorT
 //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
