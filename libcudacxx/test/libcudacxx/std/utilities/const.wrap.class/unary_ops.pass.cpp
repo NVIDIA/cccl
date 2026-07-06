@@ -7,13 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
-
-// nvcc 12.0 segfaults.
-// UNSUPPORTED: nvcc-12.0
-
 // todo(dabayer): Find a way to make this work for nvrtc.
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
@@ -49,6 +42,11 @@
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
+
+// gcc < 14 warns about comparing &value == &value (which is always true).
+#if TEST_COMPILER(GCC, <, 14)
+TEST_DIAG_SUPPRESS_GCC("-Wtautological-compare")
+#endif // TEST_COMPILER(GCC, <, 14)
 
 struct WithOps
 {
@@ -243,12 +241,8 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<cuda::std::__constant_wrapper<!42>> decltype(auto) result4 = !cw42;
     static_assert(result4 == !42);
 
-    // gcc < 13 fails this test with error:
-    //  the address of ‘cuda::std::__4::__cw_fixed_value<int>{42}’ is not a valid template argument
-#if !_CCCL_COMPILER(GCC, <, 13)
     cuda::std::same_as<cuda::std::__constant_wrapper<&cw42.value>> decltype(auto) result5 = &cw42;
     static_assert(result5 == &cw42.value);
-#endif // !_CCCL_COMPILER(GCC, <, 13)
   }
 
   {

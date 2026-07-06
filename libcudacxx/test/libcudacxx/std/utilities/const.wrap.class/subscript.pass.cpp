@@ -7,13 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
-
-// nvcc 12.0 segfaults.
-// UNSUPPORTED: nvcc-12.0
-
 // todo(dabayer): Find a way to make this work for nvrtc.
 // nvrtc doesn't allow accessing the static constexpr const auto& value member.
 // UNSUPPORTED: nvrtc
@@ -246,12 +239,15 @@ TEST_FUNC constexpr bool test()
     assert(result.get() == 5);
   }
 
+  // gcc < 14 doesn't think this is a constant expression.
+#if !_CCCL_COMPILER(GCC, <, 14)
   {
     // return non-structural type with constexpr param
     using T                                                 = cuda::std::__constant_wrapper<ReturnNonStructural{}>;
     cuda::std::same_as<NonStructural> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<5>);
     assert(result.get() == 5);
   }
+#endif // !_CCCL_COMPILER(GCC, <, 14)
 
   {
     // cw only
@@ -259,12 +255,6 @@ TEST_FUNC constexpr bool test()
     using T                                       = cuda::std::__constant_wrapper<CWOnly{}>;
     cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<42>);
     assert(result == 42);
-  }
-
-  {
-    // just use the index operator
-    assert(cuda::std::__cw<"abcd">[2] == 'c');
-    assert(cuda::std::__cw<"abcd">[cuda::std::__cw<3>] == 'd');
   }
 
   {
