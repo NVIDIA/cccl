@@ -712,7 +712,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
       int cluster_blocks   = 0;
       int dynamic_smem_sel = 0;
 
-      if (batched_topk_cluster::single_cta_eligible(
+      if (batched_topk_cluster::is_single_cta_eligible(
             seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity), SingleBlockMaxSegSize))
       {
         // Single-CTA fast path: the segment fits resident in one CTA and is small enough that the agent's

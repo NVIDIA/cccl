@@ -624,7 +624,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments through a non-
 // block-load path with an unaligned head edge, and the 1 Mi-element segments stream, so the value payloads exercise
 // the boundary-edge value writes that the small and non-contiguous pair tests above do not. An unaligned tail suffix
 // is always peeled into `edge_keys` (like the head prefix), so every launch config that owns such a tail exercises the
-// head edge plus the persistent `tail_edge_len`/`process_tail_edge` value writes.
+// head edge plus the persistent `tail_edge_len_items`/`process_tail_edge` value writes.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned segments",
          "[pairs][segmented][topk][device][cluster]",
          select_direction_list)
