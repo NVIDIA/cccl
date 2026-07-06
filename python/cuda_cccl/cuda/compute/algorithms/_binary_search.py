@@ -137,9 +137,7 @@ def _make_binary_search(
     out_ptr: int,
 ):
     """Cached factory for the binary_search searchers."""
-    cls = (
-        _LowerBound if mode == _bindings.BinarySearchMode.LOWER_BOUND else _UpperBound
-    )
+    cls = _LowerBound if mode == _bindings.BinarySearchMode.LOWER_BOUND else _UpperBound
     return cls(d_data, d_values, d_out, comp)
 
 

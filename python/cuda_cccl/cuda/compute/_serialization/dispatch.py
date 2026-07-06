@@ -2,8 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Public, free-standing serialize/deserialize entry points.
-"""
+"""Public, free-standing serialize/deserialize entry points."""
 
 from __future__ import annotations
 

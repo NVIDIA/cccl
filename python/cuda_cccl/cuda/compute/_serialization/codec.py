@@ -2,8 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Byte serialization of CCCL descriptors (``cccl_op_t``, ``cccl_iterator_t``, etc.).
-"""
+"""Byte serialization of CCCL descriptors (``cccl_op_t``, ``cccl_iterator_t``, etc.)."""
 
 from __future__ import annotations
 

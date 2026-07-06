@@ -2,8 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Serialization for cuda.compute algorithms.
-"""
+"""Serialization for cuda.compute algorithms."""
 
 from __future__ import annotations
 
