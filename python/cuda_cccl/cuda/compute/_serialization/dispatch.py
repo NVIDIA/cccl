@@ -27,7 +27,7 @@ def serialize(algorithm: Any) -> bytes:
 
     Returns:
         A versioned, self-describing byte blob. Reconstruct it with
-        :func:`deserialize` — no objects required at load time.
+        :func:`deserialize`; no objects required at load time.
     """
     # Gate on the method's presence rather than catching AttributeError from the
     # call, so a genuine AttributeError raised *inside* a valid serialize() isn't

@@ -77,7 +77,7 @@ class Reader:
         return self.blob().decode("utf-8")
 
     def remaining(self) -> bytes:
-        """Bytes after the descriptor region — i.e. the C build_result blob."""
+        """Bytes after the descriptor region: the C build_result blob."""
         return bytes(self._data[self.pos :])
 
 
@@ -152,16 +152,15 @@ def read_type_info(r: Reader) -> TypeInfo:
 
 
 def write_op(w: Writer, op: Op) -> None:
-    # The operator's device code is serialized in full (this is exactly what a
-    # normal __call__ passes to execute), so reconstruction needs no JIT. Only
-    # per-call op state is omitted.
+    # Serialize the operator's device code in full so reconstruction needs no
+    # JIT; only per-call op state is omitted.
     w.u32(int(op.operator_type))
     w.text(op.name)
     w.blob(op.ltoir)
     w.text(op.code.kind)
     w.u32(op.state_alignment)
-    # State *bytes* are per-call, but the state *size* is structural and fixes
-    # op_data.size at construction (the per-call state setter does not update it).
+    # State size is structural: it fixes op_data.size at construction. The state
+    # bytes themselves are bound per-call.
     w.u64(len(op.state))
     extras = op.extra_code
     w.u32(len(extras))

@@ -26,8 +26,7 @@
 
 namespace cccl::serialization
 {
-// 8-byte magic identifying a CCCL serialization blob. Bumping the trailing digit
-// signals a hard format break (older blobs become unloadable).
+// Opaque 8-byte marker identifying a CCCL serialization blob.
 inline constexpr char k_blob_magic[8] = {'C', 'C', 'C', 'L', 'S', 'E', 'R', '1'};
 
 // Fixed-layout header at the start of every blob. Packed POD; layout is

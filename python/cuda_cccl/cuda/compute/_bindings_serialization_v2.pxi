@@ -1,4 +1,4 @@
-# v2 (HostJIT) backend — serialize/deserialize/load not supported.
+# v2 (HostJIT) backend: serialize/deserialize/load not supported.
 # Included at the end of _bindings_impl.pyx; provides stub functions so that
 # the class methods exist but raise a clear error if called.
 

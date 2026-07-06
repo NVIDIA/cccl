@@ -13,8 +13,8 @@ never reach into a submodule. The submodules are internal implementation:
     dispatch     -- the public free-standing ``serialize`` / ``deserialize``.
 
 Importing ``dispatch`` at package init is safe: it depends only on ``codec`` and
-``serializable`` (not on the algorithm modules), so there is no import cycle —
-each algorithm registers itself with the ``Serializable`` registry as it is
+``serializable`` (not on the algorithm modules), so there is no import cycle.
+Each algorithm registers itself with the ``Serializable`` registry as it is
 imported, and ``deserialize`` consults that registry at call time.
 """
 

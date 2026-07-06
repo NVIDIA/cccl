@@ -4,12 +4,11 @@
 
 """Tests for serialization deserialize diagnostics.
 
-Before these checks, every C-side deserialize/load failure surfaced in Python as
-an opaque ``error code: <n>`` with the real reason printed only to stdout. The C
-layer now validates the blob header magic and — for CUBIN payloads — the target
-compute-capability major against the current device, *before* the opaque
-``cuLibraryLoadData`` failure, and propagates a descriptive message via
-``cccl_serialization_last_error()``.
+A deserialize/load failure should carry an actionable message, not an opaque
+``error code: <n>``. The C layer validates the blob header magic and, for CUBIN
+payloads, the target compute-capability major against the current device before
+the opaque ``cuLibraryLoadData`` failure, and propagates a descriptive message
+via ``cccl_serialization_last_error()``.
 
 The compute-capability case is exercised single-GPU by patching the ``cc`` field
 of a real blob (a true cross-GPU load is the same code path but needs a second

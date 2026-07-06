@@ -316,7 +316,7 @@ def _load_binary_search(
 def load_lower_bound(blob: bytes):
     """Reconstruct a lower_bound searcher from a blob produced by ``searcher.serialize()``.
 
-    Takes only the blob — no objects required. Raises ``ValueError`` if the blob
+    Takes only the blob; no objects required. Raises ``ValueError`` if the blob
     was produced by an upper_bound searcher.
 
     Args:
@@ -331,7 +331,7 @@ def load_lower_bound(blob: bytes):
 def load_upper_bound(blob: bytes):
     """Reconstruct an upper_bound searcher from a blob produced by ``searcher.serialize()``.
 
-    Takes only the blob — no objects required. Raises ``ValueError`` if the blob
+    Takes only the blob; no objects required. Raises ``ValueError`` if the blob
     was produced by a lower_bound searcher.
 
     Args:

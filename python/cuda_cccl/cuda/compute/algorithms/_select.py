@@ -34,8 +34,8 @@ class _Select(Serializable):
     # select is three_way_partition with an always-false second predicate and
     # the second/unselected outputs discarded. Those helpers are derived from
     # d_out (a DiscardIterator matching its type) and a cached constant op, so
-    # they're rebuilt where needed rather than stored — the partitioner is the
-    # only state, which lets _Select serialize via its (nested) schema.
+    # they are rebuilt where needed rather than stored. The partitioner is the
+    # only stored state, so _Select serializes via its nested schema.
     __serialization_schema__ = (("partitioner", NESTED(_ThreeWayPartition)),)
 
     def __init__(

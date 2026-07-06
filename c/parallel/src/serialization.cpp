@@ -43,7 +43,7 @@ void set_serialization_error(std::string msg)
 // Compute capability of the device the blob will most likely load on, or false
 // if it cannot be determined. Prefers the current context's device; if there is
 // no current context yet (a bare deserialize before any GPU work), falls back to
-// the default device (0) — cuInit is idempotent and creates no context, so this
+// the default device (0). cuInit is idempotent and creates no context, so this
 // has no side effects. On failure, cc validation is skipped and any
 // incompatibility falls through to the driver at load time.
 bool current_compute_capability(int& major, int& minor)

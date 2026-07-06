@@ -2,23 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Schema-driven serialization (de)serialization base for cuda.compute algorithms.
+"""Schema-driven serialize/deserialize base for cuda.compute algorithms.
 
 A built-algorithm class declares a ``__serialization_schema__`` listing its
-serialized members as ``(attr_name, kind)`` pairs — including its ``build_result``
-as a ``BUILD_RESULT(<type>)`` member. ``Serializable`` then provides generic
+serialized members as ``(attr_name, kind)`` pairs, including its ``build_result``
+as a ``BUILD_RESULT(<type>)`` member. ``Serializable`` provides generic
 ``serialize``/``deserialize`` that walk the schema, so subclasses need no
-hand-written codec and the two directions share one field order (they can't
-drift). Subclasses auto-register by their ``__qualname__`` — the class name is
-the wire tag — for the free-function ``deserialize`` dispatcher.
+hand-written codec and both directions share one field order. Subclasses
+auto-register by their ``__qualname__`` (the wire tag) for the free-function
+``deserialize`` dispatcher.
 
-Derived state (e.g. a compute-fn chosen from ``build_result``) is *not* in the
-schema — express it as a ``@property`` that recomputes on access, so a
-reconstructed instance needs nothing set beyond its schema members. Fields used
-only while building the algorithm (never when it is invoked) are simply omitted.
+Derived state (e.g. a compute-fn chosen from ``build_result``) is not stored in
+the schema; express it as a ``@property`` that recomputes on access, so a
+reconstructed instance needs nothing beyond its schema members. Fields used only
+while building the algorithm are omitted.
 
-Irregular algorithms (a member whose kind depends on another member's value)
-still subclass ``Serializable`` for the tag/registry/header framing but override
+Irregular algorithms, whose member kind depends on another member's value,
+subclass ``Serializable`` for the tag/registry/header framing but override
 ``serialize``/``deserialize``.
 """
 
@@ -208,7 +208,7 @@ class Serializable:
 
     @classmethod
     def deserialize(cls: type[_S], blob: bytes) -> _S:
-        """Reconstruct a built algorithm from a blob — no objects required.
+        """Reconstruct a built algorithm from a blob; no objects required.
 
         Members are read in schema order and set on the instance as they are
         read, so a ``CONDITIONAL`` member can consult a selector read earlier.
