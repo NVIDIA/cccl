@@ -464,7 +464,7 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   using HistogramPolicyT = detail::agent_radix_sort_histogram_policy<
     policy.threads_per_block,
     policy.items_per_thread,
-    policy.num_private_partitions,
+    policy.private_partitions,
     void,
     policy.radix_bits>;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
@@ -527,7 +527,7 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
                               0,
                               0,
                               void,
-                              policy.rank_num_private_partitions,
+                              policy.rank_private_partitions,
                               policy.rank_algorithm,
                               policy.scan_algorithm,
                               policy.store_algorithm,
