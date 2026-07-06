@@ -229,6 +229,8 @@ struct DeviceScanByKeyKernelSource
  * @brief Utility class for dispatching the appropriately-tuned kernels
  *        for DeviceScan
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam KeysInputIteratorT
  *   Random-access input iterator type
  *
@@ -251,7 +253,7 @@ struct DeviceScanByKeyKernelSource
  *   Unsigned integer type for global offsets
  *
  */
-// TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
+// TODO(griwes): remove in CCCL 4.0
 template <
   typename KeysInputIteratorT,
   typename ValuesInputIteratorT,
@@ -279,7 +281,7 @@ template <
       OffsetT,
       AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchScanByKey
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScanByKey
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
                 "DispatchScanByKey only supports unsigned offset types of at least 4-bytes");
@@ -376,7 +378,6 @@ struct DispatchScanByKey
    * @param[in] max_policy
    *   Struct encoding chain of algorithm tuning policies
    */
-  // TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -579,7 +580,6 @@ struct DispatchScanByKey
    * @param[in] stream
    *   CUDA stream to launch kernels within.
    */
-  // TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -737,6 +737,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
                 "scan_by_key::dispatch only supports unsigned offset types of at least 4-bytes");
 
+  using KeyT = cub::detail::it_value_t<KeysInputIteratorT>;
+
+  static constexpr int INIT_KERNEL_THREADS = 128;
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
@@ -754,39 +758,136 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  struct fake_policy
-  {
-    using MaxPolicy = void;
-  };
-
   const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-  return DispatchScanByKey<KeysInputIteratorT,
-                           ValuesInputIteratorT,
-                           ValuesOutputIteratorT,
-                           EqualityOp,
-                           ScanOpT,
-                           InitValueT,
-                           OffsetT,
-                           AccumT,
-                           fake_policy,
-                           PolicySelector,
-                           KernelSource,
-                           KernelLauncherFactory>{
-    d_temp_storage,
-    temp_storage_bytes,
-    d_keys_in,
-    d_values_in,
-    d_values_out,
-    equality_op,
-    scan_op,
-    init_value,
-    num_items,
-    stream,
-    -1,
-    kernel_source,
-    launcher_factory}
-    .__invoke(active_policy);
+  // Get device ordinal
+  int device_ordinal;
+  if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
+  {
+    return error;
+  }
+
+  // Number of input tiles
+  const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
+  const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+
+  auto tile_state = kernel_source.TileState();
+
+  // Specify temporary storage allocation requirements
+  size_t allocation_sizes[2];
+  if (const auto error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0])))
+  {
+    return error; // bytes needed for tile status descriptors
+  }
+
+  allocation_sizes[1] = sizeof(KeyT) * (num_tiles + 1);
+
+  // Compute allocation pointers into the single storage blob (or compute
+  // the necessary size of the blob)
+  void* allocations[2] = {};
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  // Return if the caller is simply requesting the size of the storage allocation, or the problem is empty
+  if (d_temp_storage == nullptr || num_items == 0)
+  {
+    return cudaSuccess;
+  }
+
+  KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]);
+
+  // Construct the tile status interface
+  if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
+  {
+    return error;
+  }
+
+  // Log init_kernel configuration
+  const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
+#ifdef CUB_DEBUG_LOG
+  _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
+#endif // CUB_DEBUG_LOG
+
+  // Invoke init_kernel to initialize tile descriptors
+  if (const auto error = CubDebug(
+        launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+          .doit(kernel_source.InitKernel(),
+                tile_state,
+                d_keys_in,
+                d_keys_prev_in,
+                static_cast<OffsetT>(tile_size),
+                num_tiles)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  // Sync the stream if specified to flush runtime errors
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  {
+    return error;
+  }
+
+  // Get max x-dimension of grid
+  int max_dim_x;
+  if (const auto error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+  {
+    return error;
+  }
+
+  // Run grids in epochs (in case number of tiles exceeds max x-dimension
+  const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+  for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
+  {
+    // Log scan_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
+            "per thread\n",
+            start_tile,
+            scan_grid_size,
+            active_policy.threads_per_block,
+            (long long) stream,
+            active_policy.items_per_thread);
+#endif // CUB_DEBUG_LOG
+
+    // Invoke scan_kernel
+    if (const auto error = CubDebug(
+          launcher_factory(scan_grid_size, active_policy.threads_per_block, 0, stream)
+            .doit(kernel_source.ScanKernel(),
+                  d_keys_in,
+                  d_keys_prev_in,
+                  d_values_in,
+                  d_values_out,
+                  tile_state,
+                  start_tile,
+                  equality_op,
+                  scan_op,
+                  init_value,
+                  num_items)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+  }
+
+  return cudaSuccess;
 }
 } // namespace detail::scan_by_key
 
