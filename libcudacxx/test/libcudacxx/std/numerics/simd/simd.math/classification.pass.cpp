@@ -52,7 +52,9 @@ TEST_FUNC constexpr void test_type()
   Mask inf       = cuda::std::simd::isinf(vec);
   Mask nan       = cuda::std::simd::isnan(vec);
   Mask normal    = cuda::std::simd::isnormal(vec);
-  Mask signs     = cuda::std::simd::signbit(vec);
+#if !TEST_COMPILER(GCC, <, 8) // GCC 7 does not support constexpr bit_cast used by signbit
+  Mask signs = cuda::std::simd::signbit(vec);
+#endif // !TEST_COMPILER(GCC, <, 8)
   for (int i = 0; i < N; ++i)
   {
     assert(classes[i] == cuda::std::fpclassify(vec[i]));
@@ -60,7 +62,9 @@ TEST_FUNC constexpr void test_type()
     assert(inf[i] == cuda::std::isinf(vec[i]));
     assert(nan[i] == cuda::std::isnan(vec[i]));
     assert(normal[i] == cuda::std::isnormal(vec[i]));
+#if !TEST_COMPILER(GCC, <, 8)
     assert(signs[i] == cuda::std::signbit(vec[i]));
+#endif // !TEST_COMPILER(GCC, <, 8)
   }
 }
 
