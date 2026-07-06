@@ -145,7 +145,9 @@ inline constexpr bool __can_use_radix_sort =
 //!
 //! @linear_performance{radix sort}
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceRadixSort that accept an environment can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns a @ref RadixSortPolicy, as shown in the
 //! example below:

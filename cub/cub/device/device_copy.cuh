@@ -31,8 +31,11 @@ CUB_NAMESPACE_BEGIN
 
 //! @brief cub::DeviceCopy provides device-wide, parallel operations for copying data.
 //!
-//! @par Tuning
 //! @rst
+//!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! The Batched algorithms in DeviceCopy that accept an environment can be tuned by passing a custom :ref:`policy
 //! selector <cub-policy-selectors>` that returns a @ref BatchedCopyPolicy, as shown in the example below:
 //!
