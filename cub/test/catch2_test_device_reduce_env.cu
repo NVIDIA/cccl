@@ -1123,7 +1123,17 @@ C2H_TEST("ReducePolicy", "[reduce][device]")
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
-  constexpr auto p2 = cub::ReducePolicy{.multi_tile = pass, .single_tile = pass};
+  constexpr auto p2 = cub::ReducePolicy{
+    .multi_tile  = {.threads_per_block = 256,
+                    .items_per_thread  = 16,
+                    .vec_size          = 4,
+                    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
+                    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG},
+    .single_tile = {.threads_per_block = 256,
+                    .items_per_thread  = 16,
+                    .vec_size          = 4,
+                    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
+                    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
