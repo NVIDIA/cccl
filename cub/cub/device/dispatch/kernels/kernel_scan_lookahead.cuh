@@ -734,16 +734,19 @@ struct lookahead_scan_closure
 
     // Start with the tile indicated by blockIdx.x for sm100, but for sm90+, we use an atomic counter to determine the
     // first tile
-    int idxTile;
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (idxTile = specialRegisters.blockIdxX;), ({
-                        __shared__ int s_first_tile;
-                        if (specialRegisters.threadIdxX == 0)
-                        {
-                          s_first_tile = static_cast<int>(::atomicAdd(params.atomicCounter, 1u));
-                        }
-                        __syncthreads();
-                        idxTile = s_first_tile;
-                      }));
+    int idxTile = [&] {
+      int first_tile;
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (first_tile = specialRegisters.blockIdxX;), ({
+                          __shared__ int s_first_tile;
+                          if (specialRegisters.threadIdxX == 0)
+                          {
+                            s_first_tile = static_cast<int>(::atomicAdd(params.atomicCounter, 1u));
+                          }
+                          __syncthreads();
+                          first_tile = s_first_tile;
+                        }));
+      return first_tile;
+    }();
 
 #  pragma unroll 1
     while (idxTile < numTiles)
