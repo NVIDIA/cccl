@@ -40,6 +40,7 @@ class _Reduce(Serializable):
         "h_init_cccl",
         "op_cccl",
         "build_result",
+        "_device_reduce_fn",
     ]
 
     __serialization_schema__ = (
@@ -78,11 +79,22 @@ class _Reduce(Serializable):
 
     @property
     def device_reduce_fn(self):
-        # Recomputed from build_result (which is serialized) on each access, so a
-        # reducer reconstructed by deserialize() needs nothing extra set.
-        if Determinism(self.build_result.determinism) is Determinism.NOT_GUARANTEED:
-            return self.build_result.compute_nondeterministic
-        return self.build_result.compute
+        # Derived from build_result (which is serialized) and cached on first
+        # access: a reducer rebuilt by deserialize() needs nothing extra set, and
+        # repeated calls do not recompute. Settable so callers can override the
+        # compute entry point.
+        try:
+            return self._device_reduce_fn
+        except AttributeError:
+            if Determinism(self.build_result.determinism) is Determinism.NOT_GUARANTEED:
+                self._device_reduce_fn = self.build_result.compute_nondeterministic
+            else:
+                self._device_reduce_fn = self.build_result.compute
+            return self._device_reduce_fn
+
+    @device_reduce_fn.setter
+    def device_reduce_fn(self, fn):
+        self._device_reduce_fn = fn
 
     def __call__(
         self,
