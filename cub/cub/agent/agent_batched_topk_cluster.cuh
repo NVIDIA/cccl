@@ -1044,10 +1044,10 @@ private:
 
     // Shared driver for one overflow pass. `block_apply(stage, o)` folds the chunk for visit `o` resident in streaming
     // slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from gmem
-    // (fallback). The two entry points (`process_pass` / `process_pass_indexed`) differ only in whether the callable
-    // also gets the segment-local index, so share this loop. `mid()` runs once on a full pass -- after the first reload
-    // wave (`p_eff` visits) is issued but before it is waited on, overlapping the caller's resident-chunk work with
-    // those in-flight copies (skipped if phase 1 stops early); it must be block-uniform with no unmatched barrier.
+    // (fallback). Both entry points delegate to `process_pass_dispatch`, which differs only in whether the callable
+    // also gets the segment-local index, so they share this loop. `mid()` runs once on a full pass -- after the first
+    // reload wave (`p_eff` visits) is issued but before it is waited on, overlapping the caller's resident-chunk work
+    // with those in-flight copies (skipped if phase 1 stops early); it must be block-uniform with no unmatched barrier.
     // `should_continue()` is polled once after each consumed chunk (before its refill copy is issued); returning false
     // breaks the stream so the final filter bails once the top-k is placed. It must be block-uniform and is evaluated
     // uniformly by every lane, so it may contain a barrier (the deterministic filter's does, to read its placement
@@ -1177,15 +1177,26 @@ private:
       }
     }
 
-    // Apply `f(key)` to every overflow key once, in the current ping-pong direction. See `run_pass` for the overlap
-    // semantics of `mid`. `UnrollFactor` partially unrolls the generic (gmem fallback) fold loop; callers pass their
-    // clamped items-per-thread.
-    template <int UnrollFactor, typename F, typename Mid>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
+    // Fold every overflow key once in the current ping-pong direction. `Indexed` selects the callable shape: keys-only
+    // (`Indexed == false`) applies `f(key)`; the pair filter (`Indexed == true`) applies `f(key, seg_idx)` with each
+    // key's segment-local index, needed to fetch its value payload from gmem while still reusing the streamed overflow
+    // keys. The index math lives entirely inside the `if constexpr (Indexed)` arms, so it is elided in the keys-only
+    // instantiation. See `run_pass` for the overlap semantics of `mid`; `UnrollFactor` partially unrolls the generic
+    // (gmem fallback) fold loop.
+    template <int UnrollFactor, bool Indexed, typename F, typename Mid>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_dispatch(F&& f, Mid&& mid)
     {
       run_pass(
         [&](int stage, offset_t o) {
-          agent.template for_each_chunk_key<UnrollFactor>(stage_span(stage, o), f);
+          if constexpr (Indexed)
+          {
+            const offset_t base_off = agent.get_chunk(chunk_index_of(o), segment_size, head_items).offset;
+            agent.template for_each_chunk_key_indexed<UnrollFactor>(stage_span(stage, o), base_off, f);
+          }
+          else
+          {
+            agent.template for_each_chunk_key<UnrollFactor>(stage_span(stage, o), f);
+          }
         },
         [&](const auto& chunk) {
           const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
@@ -1195,7 +1206,15 @@ private:
             const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
             if (local < chunk.count)
             {
-              f(block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))]);
+              if constexpr (Indexed)
+              {
+                const offset_t seg_idx = chunk.offset + static_cast<offset_t>(local);
+                f(block_keys_in[static_cast<segment_size_val_t>(seg_idx)], seg_idx);
+              }
+              else
+              {
+                f(block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))]);
+              }
             }
           }
         },
@@ -1203,6 +1222,14 @@ private:
         [] {
           return true;
         });
+    }
+
+    // `f(key)` over every overflow key. `UnrollFactor` partially unrolls the generic (gmem fallback) fold loop; callers
+    // pass their clamped items-per-thread.
+    template <int UnrollFactor, typename F, typename Mid>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
+    {
+      process_pass_dispatch<UnrollFactor, /*Indexed=*/false>(static_cast<F&&>(f), static_cast<Mid&&>(mid));
     }
 
     // Overload with no interleaved work, for the fused first pass where the resident keys are still being streamed in
@@ -1213,34 +1240,11 @@ private:
       process_pass<UnrollFactor>(static_cast<F&&>(f), [] {});
     }
 
-    // Like `process_pass`, but applies `f(key, seg_idx)` where `seg_idx` is the key's segment-local index. The pair
-    // final filter needs that index to fetch each selected key's value payload from gmem, while still reusing the
-    // overflow keys from the streaming SMEM pipeline (block-load path) instead of re-reading them from gmem.
+    // Like `process_pass`, but applies `f(key, seg_idx)` where `seg_idx` is the key's segment-local index.
     template <int UnrollFactor, typename F, typename Mid>
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_indexed(F&& f, Mid&& mid)
     {
-      run_pass(
-        [&](int stage, offset_t o) {
-          const offset_t base_off = agent.get_chunk(chunk_index_of(o), segment_size, head_items).offset;
-          agent.template for_each_chunk_key_indexed<UnrollFactor>(stage_span(stage, o), base_off, f);
-        },
-        [&](const auto& chunk) {
-          const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
-          _CCCL_PRAGMA_UNROLL(UnrollFactor)
-          for (int j = 0; j < iterations; ++j)
-          {
-            const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
-            if (local < chunk.count)
-            {
-              const offset_t seg_idx = chunk.offset + static_cast<offset_t>(local);
-              f(block_keys_in[static_cast<segment_size_val_t>(seg_idx)], seg_idx);
-            }
-          }
-        },
-        static_cast<Mid&&>(mid),
-        [] {
-          return true;
-        });
+      process_pass_dispatch<UnrollFactor, /*Indexed=*/true>(static_cast<F&&>(f), static_cast<Mid&&>(mid));
     }
   };
 
@@ -2365,24 +2369,42 @@ private:
       const offset_t sel_prefix      = static_cast<offset_t>(pp >> 32);
       const offset_t cand_prefix     = static_cast<offset_t>(pp & 0xffffffffu);
 
-      if constexpr (is_keys_only)
-      {
-        auto write_selected = [&](const key_t& key) {
-          const auto res = identify_op(key);
-          if (res == detail::topk::candidate_class::selected)
+      // Placement sink shared by both value modes: strictly-selected keys go to the front (`sel_prefix` + a block-local
+      // atomic), the first `num_kth` candidates (arrival order) to the back; output order is not preserved. In pair
+      // mode each written key additionally pulls its value from gmem at `seg_idx`. Keys-only elides that write via the
+      // `if constexpr` below and drives the sink from index-free traversals, passing a dummy `seg_idx` that goes
+      // unread.
+      const auto sink = [&](const key_t& key, [[maybe_unused]] offset_t seg_idx) {
+        const auto res = identify_op(key);
+        if (res == detail::topk::candidate_class::selected)
+        {
+          const out_offset_t pos = static_cast<out_offset_t>(sel_prefix + front_local_inc());
+          block_keys_out[pos]    = key;
+          if constexpr (!is_keys_only)
           {
-            const out_offset_t pos = static_cast<out_offset_t>(sel_prefix + front_local_inc());
-            block_keys_out[pos]    = key;
+            write_value(pos, seg_idx);
           }
-          else if (res == detail::topk::candidate_class::candidate)
+        }
+        else if (res == detail::topk::candidate_class::candidate)
+        {
+          const out_offset_t back_pos = static_cast<out_offset_t>(cand_prefix + back_local_inc());
+          if (back_pos < num_kth)
           {
-            const out_offset_t back_pos = static_cast<out_offset_t>(cand_prefix + back_local_inc());
-            if (back_pos < num_kth)
+            const out_offset_t pos = k - 1 - back_pos;
+            block_keys_out[pos]    = key;
+            if constexpr (!is_keys_only)
             {
-              const out_offset_t pos = k - 1 - back_pos;
-              block_keys_out[pos]    = key;
+              write_value(pos, seg_idx);
             }
           }
+        }
+      };
+
+      if constexpr (is_keys_only)
+      {
+        // Keys-only: no value payload, so drive the sink through the index-free traversal with a dummy `seg_idx`.
+        const auto write_selected = [&](const key_t& key) {
+          sink(key, offset_t{0});
         };
         // Fold the resident keys as the streamer's `mid` work so they overlap the first overflow reloads. Writes are
         // order-independent atomics, and resident SMEM slots are disjoint from streaming slots, so `mid` never races.
@@ -2411,35 +2433,15 @@ private:
       }
       else
       {
-        // Pair (key + value) path. Same block-local SMEM-atomic placement (`sel_prefix`/`cand_prefix`) and key reuse as
-        // the keys-only path; for each written key we additionally load its value from gmem at the segment-local index
-        // `seg_idx` and store it at the same slot (values are never streamed). Output order is not preserved, as the
-        // non-deterministic path permits.
-        auto write_selected_idx = [&](const key_t& key, offset_t seg_idx) {
-          const auto res = identify_op(key);
-          if (res == detail::topk::candidate_class::selected)
-          {
-            const out_offset_t pos = static_cast<out_offset_t>(sel_prefix + front_local_inc());
-            block_keys_out[pos]    = key;
-            write_value(pos, seg_idx);
-          }
-          else if (res == detail::topk::candidate_class::candidate)
-          {
-            const out_offset_t back_pos = static_cast<out_offset_t>(cand_prefix + back_local_inc());
-            if (back_pos < num_kth)
-            {
-              const out_offset_t pos = k - 1 - back_pos;
-              block_keys_out[pos]    = key;
-              write_value(pos, seg_idx);
-            }
-          }
-        };
+        // Pair (key + value) path: the shared `sink` above additionally stores each written key's value (fetched from
+        // gmem at its `seg_idx`). Unlike keys-only, the traversal must recover each key's segment-local index, so it
+        // folds resident/edge keys through `write_run` (below) and overflow keys through `process_pass_indexed`.
 
         // Iterate a contiguous run of `count` keys staged in SMEM at `smem`, whose element `local` has segment-local
         // index `base_off + local`. Every source folded here is SMEM (resident slots and the persistent boundary
         // edges); overflow chunks fold through the streamer's own indexed callback below. Materialize the key into a
-        // register first: `write_selected_idx` binds it by `const&` and reads it several times, so passing
-        // `smem[local]` directly would re-issue a narrow `LDS` per use instead of reusing the loaded value.
+        // register first: `sink` binds it by `const&` and reads it several times, so passing `smem[local]` directly
+        // would re-issue a narrow `LDS` per use instead of reusing the loaded value.
         auto write_run = [&](const key_t* smem, offset_t base_off, int count) {
           const int iterations = ::cuda::ceil_div(count, threads_per_block);
           _CCCL_PRAGMA_UNROLL(tie_break_items_per_thread_clamped)
@@ -2449,7 +2451,7 @@ private:
             if (local < count)
             {
               const key_t key = smem[local];
-              write_selected_idx(key, base_off + static_cast<offset_t>(local));
+              sink(key, base_off + static_cast<offset_t>(local));
             }
           }
         };
@@ -2501,7 +2503,7 @@ private:
 
         // Overflow chunks: reuse the streamed keys (the generic fallback re-reads from gmem) and fetch each selected
         // key's value at index `seg_idx`. The resident keys above fold in as the streamer's `mid` work.
-        streamer.process_pass_indexed<tie_break_items_per_thread_floor_clamped>(write_selected_idx, fold_resident);
+        streamer.process_pass_indexed<tie_break_items_per_thread_floor_clamped>(sink, fold_resident);
       }
     }
 
