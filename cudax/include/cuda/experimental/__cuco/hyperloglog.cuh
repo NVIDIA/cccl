@@ -100,112 +100,58 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
+  //! @param __stream CUDA stream used to initialize the object
   //! @param __memory_resource A memory resource used for allocating device storage
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __policy The policy used to hash items and finalize the estimate
-  //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If sketch size implies precision outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
-  constexpr hyperloglog(_MemoryResource_&& __memory_resource,
+  constexpr hyperloglog(::cuda::stream_ref __stream,
+                        _MemoryResource_&& __memory_resource,
                         sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
-                        const _Policy& __policy         = {},
-                        ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : hyperloglog{::cuda::std::forward<_MemoryResource_>(__memory_resource),
+                        const _Policy& __policy         = {})
+      : hyperloglog{__stream,
+                    ::cuda::std::forward<_MemoryResource_>(__memory_resource),
                     __to_precision(__sketch_size_kb),
-                    __policy,
-                    __stream}
+                    __policy}
   {}
 
   //! @brief Constructs a `hyperloglog` host object.
   //!
   //! @note This function synchronizes the given stream.
   //!
-  //! @param __sketch_size_kb Maximum sketch size in KB
-  //! @param __policy The policy used to hash items and finalize the estimate
   //! @param __stream CUDA stream used to initialize the object
-  //!
-  //! @throw If sketch size implies precision outside [4, 18].
-  constexpr hyperloglog(sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
-                        const _Policy& __policy         = {},
-                        ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : hyperloglog{__to_precision(__sketch_size_kb), __policy, __stream}
-  {}
-
-  //! @brief Constructs a `hyperloglog` host object.
-  //!
-  //! @note This function synchronizes the given stream.
-  //!
   //! @param __memory_resource A memory resource used for allocating device storage
   //! @param __sd Desired standard deviation for the approximation error
   //! @param __policy The policy used to hash items and finalize the estimate
-  //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If standard deviation implies precision outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
-  constexpr hyperloglog(_MemoryResource_&& __memory_resource,
+  constexpr hyperloglog(::cuda::stream_ref __stream,
+                        _MemoryResource_&& __memory_resource,
                         standard_deviation __sd,
-                        const _Policy& __policy     = {},
-                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : hyperloglog{::cuda::std::forward<_MemoryResource_>(__memory_resource), __to_precision(__sd), __policy, __stream}
+                        const _Policy& __policy = {})
+      : hyperloglog{__stream, ::cuda::std::forward<_MemoryResource_>(__memory_resource), __to_precision(__sd), __policy}
   {}
 
   //! @brief Constructs a `hyperloglog` host object.
   //!
   //! @note This function synchronizes the given stream.
   //!
+  //! @param __stream CUDA stream used to initialize the object
   //! @param __memory_resource A memory resource used for allocating device storage
   //! @param __precision HyperLogLog precision parameter (determines number of registers as 2^precision)
   //! @param __policy The policy used to hash items and finalize the estimate
-  //! @param __stream CUDA stream used to initialize the object
   //!
   //! @throw If precision is outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
-  constexpr hyperloglog(_MemoryResource_&& __memory_resource,
+  constexpr hyperloglog(::cuda::stream_ref __stream,
+                        _MemoryResource_&& __memory_resource,
                         precision __precision,
-                        const _Policy& __policy     = {},
-                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+                        const _Policy& __policy = {})
       : __sketch_buffer{__stream,
                         ::cuda::std::forward<_MemoryResource_>(__memory_resource),
-                        ref_type<>::sketch_bytes(
-                          __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
-                          / sizeof(register_type),
-                        ::cuda::no_init}
-      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}),
-              __policy}
-  {
-    clear_async(__stream);
-  }
-
-  //! @brief Constructs a `hyperloglog` host object.
-  //!
-  //! @note This function synchronizes the given stream.
-  //!
-  //! @param __sd Desired standard deviation for the approximation error
-  //! @param __policy The policy used to hash items and finalize the estimate
-  //! @param __stream CUDA stream used to initialize the object
-  //!
-  //! @throw If standard deviation implies precision outside [4, 18].
-  constexpr hyperloglog(standard_deviation __sd,
-                        const _Policy& __policy     = {},
-                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : hyperloglog{__to_precision(__sd), __policy, __stream}
-  {}
-
-  //! @brief Constructs a `hyperloglog` host object.
-  //!
-  //! @note This function synchronizes the given stream.
-  //!
-  //! @param __precision HyperLogLog precision parameter (determines number of registers as 2^precision)
-  //! @param __policy The policy used to hash items and finalize the estimate
-  //! @param __stream CUDA stream used to initialize the object
-  //!
-  //! @throw If precision is outside [4, 18].
-  constexpr hyperloglog(precision __precision,
-                        const _Policy& __policy     = {},
-                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __sketch_buffer{__stream,
-                        ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
                         ref_type<>::sketch_bytes(
                           __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
                           / sizeof(register_type),
@@ -230,7 +176,7 @@ public:
   //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  constexpr void clear_async(::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}}) noexcept
+  constexpr void clear_async(::cuda::stream_ref __stream) noexcept
   {
     __ref.clear_async(__stream);
   }
@@ -241,7 +187,7 @@ public:
   //! `clear_async`.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  constexpr void clear(::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr void clear(::cuda::stream_ref __stream)
   {
     __ref.clear(__stream);
   }
@@ -252,14 +198,13 @@ public:
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
   //! _Tp></tt> is `true`
   //!
+  //! @param __stream CUDA stream this operation is executed in
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
-  //! @param __stream CUDA stream this operation is executed in
   template <class _InputIt>
-  constexpr void
-  add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr void add_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
-    __ref.add_async(__first, __last, __stream);
+    __ref.add_async(__stream, __first, __last);
   }
 
   //! @brief Adds to be counted items to the estimator.
@@ -271,14 +216,13 @@ public:
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
   //! _Tp></tt> is `true`
   //!
+  //! @param __stream CUDA stream this operation is executed in
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
-  //! @param __stream CUDA stream this operation is executed in
   template <class _InputIt>
-  constexpr void
-  add(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr void add(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
-    __ref.add(__first, __last, __stream);
+    __ref.add(__stream, __first, __last);
   }
 
   //! @brief Asynchronously merges the result of `other` estimator into `*this` estimator.
@@ -288,13 +232,13 @@ public:
   //! @tparam _OtherScope Thread scope of `other` estimator
   //! @tparam _OtherMemoryResource Memory resource type of `other` estimator
   //!
-  //! @param __other Other estimator to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
+  //! @param __other Other estimator to be merged into `*this`
   template <::cuda::thread_scope _OtherScope, class _OtherMemoryResource>
-  constexpr void merge_async(const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Policy>& __other,
-                             ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr void merge_async(::cuda::stream_ref __stream,
+                             const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Policy>& __other)
   {
-    __ref.merge_async(__other.__ref, __stream);
+    __ref.merge_async(__stream, __other.__ref);
   }
 
   //! @brief Merges the result of `other` estimator into `*this` estimator.
@@ -307,13 +251,13 @@ public:
   //! @tparam _OtherScope Thread scope of `other` estimator
   //! @tparam _OtherMemoryResource Memory resource type of `other` estimator
   //!
-  //! @param __other Other estimator to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
+  //! @param __other Other estimator to be merged into `*this`
   template <::cuda::thread_scope _OtherScope, class _OtherMemoryResource>
-  constexpr void merge(const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Policy>& __other,
-                       ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr void merge(::cuda::stream_ref __stream,
+                       const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Policy>& __other)
   {
-    __ref.merge(__other.__ref, __stream);
+    __ref.merge(__stream, __other.__ref);
   }
 
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this` estimator.
@@ -322,13 +266,12 @@ public:
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
-  //! @param __other_ref Other estimator reference to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
+  //! @param __other_ref Other estimator reference to be merged into `*this`
   template <::cuda::thread_scope _OtherScope>
-  constexpr void merge_async(const ref_type<_OtherScope>& __other_ref,
-                             ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr void merge_async(::cuda::stream_ref __stream, const ref_type<_OtherScope>& __other_ref)
   {
-    __ref.merge_async(__other_ref, __stream);
+    __ref.merge_async(__stream, __other_ref);
   }
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator.
@@ -340,13 +283,12 @@ public:
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
-  //! @param __other_ref Other estimator reference to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
+  //! @param __other_ref Other estimator reference to be merged into `*this`
   template <::cuda::thread_scope _OtherScope>
-  constexpr void merge(const ref_type<_OtherScope>& __other_ref,
-                       ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr void merge(::cuda::stream_ref __stream, const ref_type<_OtherScope>& __other_ref)
   {
-    __ref.merge(__other_ref, __stream);
+    __ref.merge(__stream, __other_ref);
   }
 
   //! @brief Compute the estimated distinct items count.
@@ -356,15 +298,15 @@ public:
   //! @tparam _MemoryResource Host memory resource used for allocating the host buffer required to
   //! compute the final estimate by copying the sketch from device to host
   //!
-  //! @param __host_mr Host memory resource used for copying the sketch
   //! @param __stream CUDA stream this operation is executed in
+  //! @param __host_mr Host memory resource used for copying the sketch
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource = ::cuda::mr::legacy_pinned_memory_resource>
-  [[nodiscard]] constexpr ::cuda::std::size_t estimate(
-    _HostMemoryResource __host_mr = {}, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}}) const
+  [[nodiscard]] constexpr ::cuda::std::size_t
+  estimate(::cuda::stream_ref __stream, _HostMemoryResource __host_mr = {}) const
   {
-    return __ref.estimate(__host_mr, __stream);
+    return __ref.estimate(__stream, __host_mr);
   }
 
   //! @brief Get device ref.
