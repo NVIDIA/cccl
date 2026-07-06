@@ -191,10 +191,8 @@ __launch_bounds__(int(
   static_assert(sizeof(typename agent_t::TempStorage) <= max_smem_per_block,
                 "Static shared memory per block must not exceed 48KB limit.");
 
-  // Temporary storage allocation
   __shared__ typename agent_t::TempStorage temp_storage;
 
-  // Instantiate agent
   agent_t agent(
     temp_storage,
     d_key_segments_it,
@@ -209,7 +207,6 @@ __launch_bounds__(int(
     d_large_segments_ids,
     d_large_segments_tile_offsets);
 
-  // Process segments
   agent.Process();
 }
 

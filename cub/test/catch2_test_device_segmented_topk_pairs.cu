@@ -338,14 +338,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
     cuda::args::immediate{num_segments});
 
-  // Verification:
-  // - We verify correct top-k selection through the keys
-  // - We verify that values were permuted along correctly by making sure values remain associated with their keys and
-  // making sure we do not duplicate values Verify values remain associated with their corresponding keys
+  // Verify values stayed associated with their keys.
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
 
-  // Verify values don't appear more than once in the returned results
-  // This catches the case where we just returned a valid value multiple times
+  // Verify no value appears more than once (catches returning a valid value multiple times).
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
   // Verify keys are returned correctly

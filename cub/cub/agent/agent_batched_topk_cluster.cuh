@@ -100,9 +100,7 @@ struct alignas(16) cluster_topk_state
   // change it).
   ::cuda::std::uint64_t result_pair;
 
-  // Decoders that operate on an already-loaded `result_pair`. The hot pass loop reads the leader's word once through
-  // DSMEM and decodes both halves from that single value, so the splitter fold and the early-stop check never issue a
-  // second remote load. `set_result` packs the same layout, keeping the bit layout defined in one place.
+  // Decode/encode an already-loaded `result_pair`, keeping the bit layout (see above) defined in one place.
   [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static ::cuda::std::uint32_t
   kth_bucket_of(::cuda::std::uint64_t packed)
   {
@@ -898,10 +896,8 @@ private:
   // merge before invoking this.
   _CCCL_DEVICE _CCCL_FORCEINLINE void leader_identify_kth_bucket()
   {
-    // Capture `state.k` before the scan: this is the only legal window where
-    // every thread is guaranteed to read the previous pass's value. The
-    // owning thread overwrites `state.k` in the if-block below, so any read
-    // after that point would race with that write.
+    // Capture `state.k` before the scan: the owning thread overwrites it in the loop below, so any later read would
+    // race with that write.
     const out_offset_t target_k = temp_storage.state.k;
 
     offset_t hist_vals[buckets_per_thread];
@@ -928,11 +924,8 @@ private:
         const offset_t new_len   = hist_vals[j];
         temp_storage.state.len   = new_len;
         temp_storage.state.k     = new_k;
-        // Publish the splitter bucket and the early-stop flag (set when the bucket holds exactly the remaining `k`, so
-        // every candidate is part of the top-k and subsequent radix passes only redistribute the same items across
-        // finer buckets without changing the result); see `result_pair`. Every block pulls this packed word from the
-        // leader at the end of the pass and folds the bucket into its own `kth_key_bits_local`, so the full splitter
-        // key is never broadcast.
+        // Publish the splitter bucket and the early-stop flag (set when the bucket holds exactly the remaining `k`);
+        // see `result_pair`.
         temp_storage.state.set_result(
           static_cast<::cuda::std::uint32_t>(bucket), static_cast<out_offset_t>(new_len) == new_k);
       }
@@ -942,20 +935,14 @@ private:
   // ---------------------------------------------------------------------------
   // Overflow streamer
   // ---------------------------------------------------------------------------
-  // Re-streams the per-rank "overflow" chunks (those that do not fit in the
-  // resident SMEM region) from gmem through a small, fixed, round-robin set of
-  // `eff_stages` (<= `PipelineStages`) streaming slots. The same object is reused for
-  // every radix pass and the final filter. It ping-pongs the iteration order
-  // across calls so the `eff_stages` turn-around chunks that one pass leaves resident
-  // in the streaming slots are reused by the next pass with no reload; the
-  // remaining `overflow_chunks - eff_stages` chunks are reloaded from gmem on each pass.
-  // The caller right-sizes the reservation to `eff_stages = min(PipelineStages, excess)`
-  // (where `excess = my_chunks - full_slots`), so a streaming rank always has
-  // `overflow_chunks = excess + eff_stages` and reloads exactly `excess` chunks per
-  // pass - the reserved slots only ever buy reuse of those `eff_stages` turn-around
-  // chunks, never a reload-free pass. The resident region is unaffected: it lives in the
-  // slots `[0, resident_slots)`, the streaming region in `[stream_slot_base,
-  // stream_slot_base + eff_stages)`.
+  // Re-streams a rank's "overflow" chunks (those that do not fit its resident SMEM region) from gmem through a fixed,
+  // round-robin set of `eff_stages` (<= `PipelineStages`) streaming slots, reused across every radix pass and the final
+  // filter. It ping-pongs the iteration order across calls so the `eff_stages` turn-around chunks that one pass leaves
+  // resident in the streaming slots are reused by the next with no reload; the remaining `overflow_chunks - eff_stages`
+  // are reloaded from gmem each pass. The caller sizes the reservation to `eff_stages = min(PipelineStages, excess)`
+  // (`excess = my_chunks - full_slots`), so a streaming rank reloads exactly `excess` chunks per pass -- the reserved
+  // slots only ever buy reuse of the turn-around chunks, never a reload-free pass. The resident region occupies slots
+  // `[0, resident_slots)`, the streaming region `[stream_slot_base, stream_slot_base + eff_stages)`.
   struct overflow_streamer
   {
     agent_batched_topk_cluster& agent;
@@ -1048,17 +1035,15 @@ private:
 
     // Shared driver for one overflow pass. `block_apply(stage, overflow_idx)` folds the chunk `overflow_idx` resident
     // in streaming slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from
-    // gmem (fallback). Both entry points delegate to `process_pass_dispatch`, which differs only in whether the
-    // callable also gets the segment-local index, so they share this loop. `mid()` runs once on a full pass -- after
-    // the first reload wave (`eff_stages` visits) is issued but before it is waited on, overlapping the caller's
-    // resident-chunk work with those in-flight copies (skipped if phase 1 stops early); it must be block-uniform with
-    // no unmatched barrier. `should_continue()` is polled once after each consumed chunk (before its refill copy is
-    // issued); returning false breaks the stream so the final filter bails once the top-k is placed. It must be
-    // block-uniform and is evaluated uniformly by every lane, so it may contain a barrier (the deterministic filter's
-    // does, to read its placement counters block-wide). The histogram and non-deterministic filter pass an always-true
-    // predicate (folding back to the unconditional loop). An early break can leave prefetches in flight, so the pass
-    // drains the remaining stages before returning (a full pass ends with an empty `inflight_mask`, so the drain is a
-    // no-op).
+    // gmem (fallback). `mid()` runs once on a full pass -- after the first reload wave (`eff_stages` visits) is issued
+    // but before it is waited on, overlapping the caller's resident-chunk work with those in-flight copies (skipped if
+    // phase 1 stops early); it must be block-uniform with no unmatched barrier. `should_continue()` is polled once
+    // after each consumed chunk (before its refill copy is issued); returning false breaks the stream so the final
+    // filter bails once the top-k is placed. Its result must be block-uniform (all lanes break together, else the
+    // post-break barrier deadlocks) and it is evaluated by every lane, so it may contain a barrier (the deterministic
+    // filter's does, to read its placement counters block-wide); the histogram and non-deterministic filter pass an
+    // always-true predicate. An early break can leave prefetches in flight, so the pass drains the
+    // remaining stages before returning (a full pass ends with an empty `inflight_mask`, so the drain is a no-op).
     template <typename BlockApply, typename GenericApply, typename Mid, typename Continue>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     run_pass(BlockApply&& block_apply, GenericApply&& generic_apply, Mid&& mid, Continue&& should_continue)
@@ -1606,9 +1591,8 @@ private:
       // `is_forward == !is_tie_reversed` after the full `num_passes`. The escape disjuncts are the cases where the
       // streaming direction is moot: no overflow (`overflow_chunks == 0`); a CTA entirely at/below the boundary
       // (`is_select_all_cand_cta`, arrival-order atomics); or one with no back scan (`!is_tie_active`). Early stop is
-      // subsumed
-      // -- it makes every CTA `is_select_all_cand_cta`, so the shorter (possibly mis-parity) pass count never reaches a
-      // straddler.
+      // subsumed -- it makes every CTA `is_select_all_cand_cta`, so the shorter (possibly mis-parity) pass count never
+      // reaches a straddler.
       _CCCL_ASSERT(streamer.overflow_chunks == 0 || is_select_all_cand_cta || !is_tie_active
                      || streamer.is_forward == (!is_tie_reversed),
                    "preselected ping-pong parity mismatch: the straddling CTA entered the deterministic filter with "
@@ -2032,8 +2016,7 @@ private:
       // Stage the persistent boundary edges into `edge_keys` and fold them into the first pass in the same sweep (see
       // `stage_and_fold_edge`: each thread folds keys it just wrote, so no barrier is needed here). The head prefix
       // (rank 0) precedes chunk 0; the peeled tail suffix (tail owner, always when unaligned) trails the last chunk.
-      // The
-      // `__syncthreads()` below publishes `edge_keys` for the later passes and the final filter (which read it via
+      // The `__syncthreads()` below publishes `edge_keys` for the later passes and the final filter (which read it via
       // `fold_edges` after a barrier).
       if constexpr (use_block_load_to_shared)
       {
@@ -2237,13 +2220,11 @@ private:
     auto block_keys_out        = d_key_segments_out_it[segment_id];
     const out_offset_t num_kth = leader_state->k; // remaining k after the radix passes
 
-    // For each key written to `block_keys_out[pos]`, the associated input value at the key's segment-local index
-    // `seg_idx` is loaded naively from gmem and written to `block_vals_out[pos]`. `seg_idx` is recomputed per region in
-    // the sweeps below. The per-segment value iterators are derived *inside* the `is_keys_only` guard: in keys-only
-    // builds the value iterators-of-iterators are `cub::NullType**` (null), so indexing them with `segment_id` here
-    // would dereference a null pointer; `segment_id` is loop-invariant, so the compiler hoists these out of the writes.
-    // The deterministic path folds this logic into `det_final_filter::write_value`; this lambda now serves only the
-    // non-deterministic branch below, so it is unused (but still instantiated) in deterministic builds.
+    // Store the value for a key written to `block_keys_out[pos]`, fetched from gmem at its segment-local index
+    // `seg_idx`. Deriving the per-segment value iterators *inside* the `is_keys_only` guard avoids indexing the null
+    // `cub::NullType**` value-iterators-of-iterators in keys-only builds; `segment_id` is loop-invariant, so they hoist
+    // out of the writes. Serves only the non-deterministic branch below (the deterministic path uses
+    // `det_final_filter::write_value`), so it is unused but still instantiated in deterministic builds.
     [[maybe_unused]] const auto write_value = [&](out_offset_t pos, offset_t seg_idx) {
       if constexpr (!is_keys_only)
       {
@@ -2289,11 +2270,10 @@ private:
       const offset_t cand_prefix = static_cast<offset_t>(packed_prefix & 0xffffffffu);
       // This block's own candidate count: non-leaders hold it in `my_cand`; the leader is last in scan order, so
       // `cand_prefix` already sums every other block's candidates and `total_candidates - cand_prefix` is its own. A
-      // CTA is `is_select_all_cand_cta` when all of its candidates sit at or below the K-boundary (`cand_prefix +
-      // my_cand_count
-      // <= num_back`): every one wins, so the back places them with arrival-order SMEM atomics and skips the
-      // index-ordered scan. While `is_tie_active`, a non-`is_select_all_cand_cta` CTA is the single boundary-crossing
-      // (straddling) CTA cluster-wide.
+      // CTA is `is_select_all_cand_cta` when all of its candidates sit at or below the K-boundary
+      // (`cand_prefix + my_cand_count <= num_back`): every one wins, so the back places them with arrival-order SMEM
+      // atomics and skips the index-ordered scan. While `is_tie_active`, a non-`is_select_all_cand_cta` CTA is the
+      // single boundary-crossing (straddling) CTA cluster-wide.
       const offset_t my_cand_count      = (cluster_rank == leader_rank) ? (total_candidates - cand_prefix) : my_cand;
       const bool is_select_all_cand_cta = (cand_prefix + my_cand_count) <= static_cast<offset_t>(num_back);
       // Mirror image: a CTA selects none of its candidates when the tie region is empty (`num_back == 0`) or all of its
