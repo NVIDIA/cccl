@@ -352,7 +352,7 @@ struct SegmentedRadixSortPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env-based API with tuning", "[segmented_radix_sort][env]")
+C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys accepts a custom policy selector", "[segmented_radix_sort][env]")
 {
   // example-begin segmented-radix-sort-keys-tuning
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
