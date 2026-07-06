@@ -686,9 +686,8 @@ C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
     512};
   constexpr auto warp1 =
     cub::SegmentedScanWarpPolicy{128, 7, cub::WARP_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::WARP_STORE_TRANSPOSE, 64};
-  constexpr auto thread1 =
-    cub::SegmentedScanThreadPolicy{128, 5, cub::LOAD_DEFAULT};
-  constexpr auto p1 = cub::SegmentedScanPolicy{block1, warp1, thread1};
+  constexpr auto thread1 = cub::SegmentedScanThreadPolicy{128, 5, cub::LOAD_DEFAULT};
+  constexpr auto p1      = cub::SegmentedScanPolicy{block1, warp1, thread1};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -707,11 +706,8 @@ C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
     .load_modifier     = cub::LOAD_DEFAULT,
     .store_algorithm   = cub::WARP_STORE_TRANSPOSE,
     .max_segments      = 64};
-  constexpr auto thread2 = cub::SegmentedScanThreadPolicy{
-    .threads_per_block = 128,
-    .items_per_thread  = 5,
-    .load_modifier     = cub::LOAD_DEFAULT
-  };
+  constexpr auto thread2 =
+    cub::SegmentedScanThreadPolicy{.threads_per_block = 128, .items_per_thread = 5, .load_modifier = cub::LOAD_DEFAULT};
   constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2, .warp = warp2, .thread = thread2};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;

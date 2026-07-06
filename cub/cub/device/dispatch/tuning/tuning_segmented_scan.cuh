@@ -130,7 +130,6 @@ struct SegmentedScanThreadPolicy
 #endif // _CCCL_HOSTED()
 };
 
-
 //! The tuning policy for all algorithms in @ref DeviceSegmentedScan.
 struct SegmentedScanPolicy
 {
@@ -153,8 +152,8 @@ struct SegmentedScanPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
   {
-    return os << "SegmentedScanPolicy { .block = " << policy.block << ", .warp = " << policy.warp 
-	      << ", .thread = " << policy.thread << " }";
+    return os << "SegmentedScanPolicy { .block = " << policy.block << ", .warp = " << policy.warp
+              << ", .thread = " << policy.thread << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -220,10 +219,7 @@ struct policy_selector
         LOAD_DEFAULT,
         WARP_STORE_TRANSPOSE,
         max_segments_per_warp},
-      SegmentedScanThreadPolicy{
-	thread_scaled.threads_per_block,
-	thread_scaled.items_per_thread,
-	LOAD_DEFAULT}};
+      SegmentedScanThreadPolicy{thread_scaled.threads_per_block, thread_scaled.items_per_thread, LOAD_DEFAULT}};
   }
 };
 

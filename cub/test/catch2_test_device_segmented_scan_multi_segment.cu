@@ -112,10 +112,7 @@ struct policy_selector_t
         cub::LOAD_DEFAULT,
         cub::WARP_STORE_TRANSPOSE,
         MaxSegmentsPerWarp},
-      cub::SegmentedScanThreadPolicy{
-	ThreadsPerBlock,
-	ItemsPerThread,
-	cub::LOAD_DEFAULT}};
+      cub::SegmentedScanThreadPolicy{ThreadsPerBlock, ItemsPerThread, cub::LOAD_DEFAULT}};
   }
 };
 
