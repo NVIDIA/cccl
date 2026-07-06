@@ -14,12 +14,13 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._serialization import BUILD_RESULT, ITER, U64, VALUE, Serializable
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..typing import DeviceArrayLike, IteratorT
 
 
-class _Histogram:
+class _Histogram(Serializable):
     __slots__ = [
         "num_rows",
         "d_samples_cccl",
@@ -29,6 +30,16 @@ class _Histogram:
         "h_upper_level_cccl",
         "build_result",
     ]
+
+    __serialization_schema__ = (
+        ("num_rows", U64),
+        ("d_samples_cccl", ITER),
+        ("d_histogram_cccl", ITER),
+        ("h_num_output_levels_cccl", VALUE),
+        ("h_lower_level_cccl", VALUE),
+        ("h_upper_level_cccl", VALUE),
+        ("build_result", BUILD_RESULT(_bindings.DeviceHistogramBuildResult)),
+    )
 
     def __init__(
         self,
