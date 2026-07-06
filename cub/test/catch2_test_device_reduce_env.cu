@@ -31,6 +31,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 
+#include <sstream>
+
 #include <c2h/catch2_test_helper.h>
 
 namespace stdexec = cuda::std::execution;
@@ -1130,6 +1132,16 @@ C2H_TEST("Test ReducePolicy properties", "[reduce][device]")
 
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  // just verify operator<< produces a non-empty string; we don't care about the content
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(!to_string(p1_multi).empty());
+  REQUIRE(!to_string(p1_single).empty());
+  REQUIRE(!to_string(p1).empty());
 }
 
 C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
@@ -1163,5 +1175,13 @@ C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  // just verify operator<< produces a non-empty string; we don't care about the content
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(!to_string(p1).empty());
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -17,6 +17,8 @@ struct stream_registry_factory_t;
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/iterator>
 
+#include <sstream>
+
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_env_launch_helper.h"
 
@@ -1304,6 +1306,14 @@ C2H_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  // just verify operator<< produces a non-empty string; we don't care about the content
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(!to_string(p1).empty());
 }
 #  endif // _CCCL_COMPILER(GCC, >=, 8)
 
@@ -1340,5 +1350,13 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  // just verify operator<< produces a non-empty string; we don't care about the content
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(!to_string(p1).empty());
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

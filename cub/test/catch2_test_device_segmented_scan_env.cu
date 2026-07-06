@@ -12,6 +12,8 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_segmented_exclusive_sum);
@@ -703,5 +705,14 @@ C2H_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]")
 
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  // just verify operator<< produces a non-empty string; we don't care about the content
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(!to_string(block1).empty());
+  REQUIRE(!to_string(p1).empty());
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
