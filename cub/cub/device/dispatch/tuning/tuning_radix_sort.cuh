@@ -87,14 +87,14 @@ struct RadixSortHistogramPolicy
 
   //! The number of private histogram partitions in shared memory each histogram is split during counting to reduce the
   //! contention of atomic operations
-  int num_private_partitions;
+  int private_partitions;
   int radix_bits; //!< Number of bits per radix digit
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const RadixSortHistogramPolicy& lhs, const RadixSortHistogramPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.num_private_partitions == rhs.num_private_partitions && lhs.radix_bits == rhs.radix_bits;
+        && lhs.private_partitions == rhs.private_partitions && lhs.radix_bits == rhs.radix_bits;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -106,10 +106,9 @@ struct RadixSortHistogramPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortHistogramPolicy& p)
   {
-    return os
-        << "RadixSortHistogramPolicy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .num_private_partitions = " << p.num_private_partitions
-        << ", .radix_bits = " << p.radix_bits << " }";
+    return os << "RadixSortHistogramPolicy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << ", .private_partitions = " << p.private_partitions
+              << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -153,7 +152,7 @@ struct RadixSortOnesweepPolicy
   //! The number of private histogram partitions in shared memory each histogram is split during the ranking phase to
   //! reduce the contention of atomic operations. Ignored if @p rank_algorithm is not one of
   //! RADIX_RANK_MATCH_EARLY_COUNTS_*
-  int rank_num_private_partitions;
+  int rank_private_partitions;
 
   int radix_bits; //!< Number of bits per radix digit
 
@@ -162,8 +161,8 @@ struct RadixSortOnesweepPolicy
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.store_algorithm == rhs.store_algorithm && lhs.rank_algorithm == rhs.rank_algorithm
-        && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.rank_num_private_partitions == rhs.rank_num_private_partitions && lhs.radix_bits == rhs.radix_bits;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.rank_private_partitions == rhs.rank_private_partitions
+        && lhs.radix_bits == rhs.radix_bits;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -179,8 +178,7 @@ struct RadixSortOnesweepPolicy
         << "RadixSortOnesweepPolicy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .store_algorithm = " << p.store_algorithm
         << ", .rank_algorithm = " << p.rank_algorithm << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .rank_num_private_partitions = " << p.rank_num_private_partitions << ", .radix_bits = " << p.radix_bits
-        << " }";
+        << ", .rank_private_partitions = " << p.rank_private_partitions << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -306,7 +304,7 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
   RadixSortStoreAlgorithm store_algorithm,
   RadixRankAlgorithm rank_algorithm,
   BlockScanAlgorithm scan_algorithm,
-  int rank_num_private_partitions,
+  int rank_private_partitions,
   int radix_bits) -> RadixSortOnesweepPolicy
 {
   const auto scaled = scale_reg_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
@@ -316,7 +314,7 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
     store_algorithm,
     rank_algorithm,
     scan_algorithm,
-    rank_num_private_partitions,
+    rank_private_partitions,
     radix_bits};
 }
 

@@ -98,20 +98,20 @@ struct DeviceSegmentedRadixSortKernelSource
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> segmented_radix_sort_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> SegmentedRadixSortPolicy
 {
   using active_policy = LegacyActivePolicy;
 
-  const auto segmented     = radix_sort::convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
-  const auto alt_segmented = radix_sort::convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
-  return segmented_radix_sort_policy{segmented, alt_segmented};
+  const auto regular_pass   = radix_sort::convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
+  const auto alternate_pass = radix_sort::convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
+  return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> segmented_radix_sort_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> SegmentedRadixSortPolicy
   {
     return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
@@ -144,7 +144,7 @@ struct policy_selector_from_hub
  * @tparam SegmentSizeT
  *   Integer type to index items within a segment
  */
-// TODO(bgruber): deprecate when we make the tuning API public, and remove in CCCL 4.0
+// TODO(bgruber): drop in CCCL 4.0
 template <SortOrder Order,
           typename KeyT,
           typename ValueT,
@@ -163,7 +163,7 @@ template <SortOrder Order,
             SegmentSizeT,
             DecomposerT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchSegmentedRadixSort
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSegmentedRadixSort") DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------
   // Constants
@@ -687,7 +687,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   bool is_overwrite_okay,
   cudaStream_t stream,
   DecomposerT decomposer,
-  segmented_radix_sort_policy active_policy,
+  SegmentedRadixSortPolicy active_policy,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
@@ -697,12 +697,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   auto alt_segmented_kernel = kernel_source.AltSegmentedRadixSortKernel();
 
   KernelConfig seg_config, alt_seg_config;
-  if (const auto error = CubDebug(seg_config.__init(segmented_kernel, active_policy.segmented, launcher_factory)))
+  if (const auto error = CubDebug(seg_config.__init(segmented_kernel, active_policy.regular_pass, launcher_factory)))
   {
     return error;
   }
   if (const auto error =
-        CubDebug(alt_seg_config.__init(alt_segmented_kernel, active_policy.alt_segmented, launcher_factory)))
+        CubDebug(alt_seg_config.__init(alt_segmented_kernel, active_policy.alternate_pass, launcher_factory)))
   {
     return error;
   }
@@ -728,8 +728,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
     return cudaSuccess;
   }
 
-  const int radix_bits         = active_policy.segmented.radix_bits;
-  const int alt_radix_bits     = active_policy.alt_segmented.radix_bits;
+  const int radix_bits         = active_policy.regular_pass.radix_bits;
+  const int alt_radix_bits     = active_policy.alternate_pass.radix_bits;
   const int num_bits           = end_bit - begin_bit;
   const int num_passes         = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1);
   const bool is_num_passes_odd = num_passes & 1;
@@ -909,7 +909,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 {
   using default_policy_selector_t = policy_selector_from_types<KeyT, ValueT, SegmentSizeT>;
   using policy_selector_t         = ::cuda::std::decay_t<
-            ::cuda::std::execution::__query_result_or_t<TuningEnvT, segmented_radix_sort_policy, default_policy_selector_t>>;
+            ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedRadixSortPolicy, default_policy_selector_t>>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(segmented_radix_sort_policy_selector<policy_selector_t>);
 #endif // _CCCL_HAS_CONCEPTS()
@@ -939,7 +939,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     return error;
   }
-  const segmented_radix_sort_policy active_policy = policy_selector_t{}(cc);
+  const SegmentedRadixSortPolicy active_policy = policy_selector_t{}(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
