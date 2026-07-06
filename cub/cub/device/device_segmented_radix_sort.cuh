@@ -56,7 +56,9 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceSegmentedRadixSort}
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceSegmentedRadixSort that accept an environment can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns a @ref SegmentedRadixSortPolicy, as shown in the
 //! example below:
