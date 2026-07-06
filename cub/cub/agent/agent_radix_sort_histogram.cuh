@@ -76,10 +76,12 @@ struct agent_radix_sort_exclusive_sum_policy
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
 using AgentRadixSortHistogramPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
   detail::agent_radix_sort_histogram_policy<ThreadsPerBlock, ItemsPerThread, NOMINAL_4B_NUM_PARTS, ComputeT, RadixBits>;
 
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock, int RadixBits>
 using AgentRadixSortExclusiveSumPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
   detail::agent_radix_sort_exclusive_sum_policy<ThreadsPerBlock, RadixBits>;
