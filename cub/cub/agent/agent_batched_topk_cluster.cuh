@@ -1393,6 +1393,21 @@ private:
       return Reversed ? (count - 1 - pos) : pos;
     }
 
+    // Emit one back/tie candidate: if its `global_rank` (arrival- or scan-ordered by the caller) is a winner it lands
+    // in the top-k output at slot `k-1-global_rank`, with its value pulled from segment-local index `seg_idx`; ranks at
+    // or past `num_back` are losers and dropped (a no-op). Forced-inline with explicit args (no capture) so it folds
+    // into the hot back-placement loops with no extra live ranges; the caller keeps any counter side effects (e.g.
+    // `back_local_inc`) in the `global_rank` argument so they still run for every candidate.
+    _CCCL_DEVICE _CCCL_FORCEINLINE void emit_back_one(offset_t global_rank, const key_t& key, offset_t seg_idx)
+    {
+      if (global_rank < static_cast<offset_t>(num_back))
+      {
+        const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+        block_keys_out[out]    = key;
+        write_value(out, seg_idx);
+      }
+    }
+
     // Process a flat span of `count` keys in scan order, tiled by `threads_per_block * Items`. `FromSmem` selects the
     // key source: the SMEM buffer `smem_src` (indexed by the folded in-region position) or gmem `block_keys_in`
     // (indexed by the segment-local index `seg_base + folded`). `Reversed` walks the span high-to-low. Strictly-
@@ -1469,14 +1484,10 @@ private:
             {
               if (valid[i] && flags[i] != offset_t{0})
               {
-                const offset_t global_rank = cand_prefix + agent.back_local_inc();
-                if (global_rank < static_cast<offset_t>(num_back))
-                {
-                  const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
-                  const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-                  block_keys_out[out]    = keys[i];
-                  write_value(out, seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
-                }
+                const int pos = tile_base + static_cast<int>(threadIdx.x) * items + i;
+                emit_back_one(cand_prefix + agent.back_local_inc(),
+                              keys[i],
+                              seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
               }
             }
           }
@@ -1490,14 +1501,9 @@ private:
             {
               if (valid[i] && flags[i] != offset_t{0})
               {
-                const offset_t global_rank = running + excl[i];
-                if (global_rank < static_cast<offset_t>(num_back))
-                {
-                  const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
-                  const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-                  block_keys_out[out]    = keys[i];
-                  write_value(out, seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
-                }
+                const int pos = tile_base + static_cast<int>(threadIdx.x) * items + i;
+                emit_back_one(
+                  running + excl[i], keys[i], seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
               }
             }
             running += tile_total;
@@ -1510,14 +1516,10 @@ private:
             {
               if (valid[i] && flags[i] != offset_t{0})
               {
-                const offset_t global_rank = cand_prefix + agent.back_local_inc();
-                if (global_rank < static_cast<offset_t>(num_back))
-                {
-                  const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
-                  const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-                  block_keys_out[out]    = keys[i];
-                  write_value(out, seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
-                }
+                const int pos = tile_base + static_cast<int>(threadIdx.x) * items + i;
+                emit_back_one(cand_prefix + agent.back_local_inc(),
+                              keys[i],
+                              seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
               }
             }
             // B1: order the arrival global writes ahead of the index-order overwrite (same boundary slots) and make
@@ -1536,14 +1538,9 @@ private:
               {
                 if (valid[i] && flags[i] != offset_t{0})
                 {
-                  const offset_t global_rank = running + excl[i];
-                  if (global_rank < static_cast<offset_t>(num_back))
-                  {
-                    const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
-                    const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-                    block_keys_out[out]    = keys[i];
-                    write_value(out, seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
-                  }
+                  const int pos = tile_base + static_cast<int>(threadIdx.x) * items + i;
+                  emit_back_one(
+                    running + excl[i], keys[i], seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
                 }
               }
             }
