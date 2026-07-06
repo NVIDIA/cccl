@@ -319,6 +319,67 @@ TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]")
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
+struct no_unroll_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::MergePolicy
+  {
+    return {256, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false, false, false};
+  }
+};
+
+TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]")
+{
+  auto keys1  = c2h::device_vector<int>{0, 2, 5};
+  auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
+  auto result = c2h::device_vector<int>(7);
+  auto env    = cuda::execution::tune(no_unroll_tuning{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergeKeys(
+      keys1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      static_cast<int>(keys2.size()),
+      result.begin(),
+      cuda::std::less<>{},
+      env));
+
+  c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  REQUIRE(result == expected);
+}
+
+TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]")
+{
+  auto keys1   = c2h::device_vector<int>{0, 2, 5};
+  auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
+  auto keys2   = c2h::device_vector<int>{0, 3, 3, 4};
+  auto values2 = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
+
+  auto result_keys   = c2h::device_vector<int>(7);
+  auto result_values = c2h::device_vector<char>(7);
+  auto env           = cuda::execution::tune(no_unroll_tuning{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergePairs(
+      keys1.begin(),
+      values1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      values2.begin(),
+      static_cast<int>(keys2.size()),
+      result_keys.begin(),
+      result_values.begin(),
+      cuda::std::less<>{},
+      env));
+
+  c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  REQUIRE(result_keys == expected_keys);
+  REQUIRE(result_values == expected_values);
+}
+
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 C2H_TEST("MergePolicy", "[merge][device]")
 {
@@ -327,7 +388,7 @@ C2H_TEST("MergePolicy", "[merge][device]")
 
   // aggregate init
   constexpr auto p1 = cub::MergePolicy{
-    128, 7, cub::CacheLoadModifier::LOAD_LDG, cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE, true, false};
+    128, 7, cub::CacheLoadModifier::LOAD_LDG, cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE, true, false, false};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -337,7 +398,8 @@ C2H_TEST("MergePolicy", "[merge][device]")
     .load_modifier            = cub::CacheLoadModifier::LOAD_LDG,
     .store_algorithm          = cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
     .use_bulk_copy_for_keys   = true,
-    .use_bulk_copy_for_values = false};
+    .use_bulk_copy_for_values = false,
+    .unroll                   = false};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

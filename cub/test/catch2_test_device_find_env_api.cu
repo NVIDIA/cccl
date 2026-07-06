@@ -118,7 +118,7 @@ C2H_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]")
 // example-begin find-if-policy-selector
 struct FindPolicySelector
 {
-  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::FindPolicy
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::FindIfPolicy
   {
     return {.threads_per_block = 128,
             .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 7,

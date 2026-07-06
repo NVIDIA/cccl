@@ -741,15 +741,14 @@ C2H_TEST("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses e
 template <int BlockThreads>
 struct segmented_sort_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::segmented_sort::segmented_sort_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedSortPolicy
   {
     return {
-      cub::detail::segmented_sort::segmented_radix_sort_policy{
+      cub::SegmentedSortRadixSortPolicy{
         BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_BASIC, cub::BLOCK_SCAN_WARP_SCANS, 4},
-      cub::detail::segmented_sort::sub_warp_merge_sort_policy{
+      cub::SegmentedSortSubWarpMergeSortPolicy{
         BlockThreads, 4, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
-      cub::detail::segmented_sort::sub_warp_merge_sort_policy{
+      cub::SegmentedSortSubWarpMergeSortPolicy{
         BlockThreads, 32, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
       1000000};
   }

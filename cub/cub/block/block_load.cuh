@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__new/device_new.h>
 
 CUB_NAMESPACE_BEGIN
@@ -203,7 +204,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
   // Add the alignment check to ensure the vectorized loading can proceed.
-  if (reinterpret_cast<uintptr_t>(block_src_ptr) % (alignof(vector_t)) == 0)
+  if (::cuda::std::is_sufficiently_aligned<alignof(vector_t)>(block_src_ptr))
   {
     vector_t vec_items[vectors_per_thread];
     // Load into an array of vectors in thread-blocked order
