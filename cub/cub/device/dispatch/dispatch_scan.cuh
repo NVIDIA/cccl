@@ -213,7 +213,7 @@ struct policy_selector_from_hub
  *   Enum flag to specify whether to enforce inclusive scan.
  *
  */
-// TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
+// TODO(griwes): Remove in CCCL 4.0
 template <
   typename InputIteratorT,
   typename OutputIteratorT,
@@ -316,7 +316,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
    * @param[in] launcher_factory
    *   Object to execute implementation kernels on the given stream
    */
-  // TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(griwes): Remove in CCCL 4.0
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -863,7 +863,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
    * @param[in] max_policy
    *   Struct encoding chain of algorithm tuning policies
    */
-  // TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
+  // TODO(griwes): Remove in CCCL 4.0
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
