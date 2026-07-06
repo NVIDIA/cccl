@@ -91,7 +91,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
     _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
 {
   static constexpr BatchedCopyLargeBufferPolicy policy = current_policy<PolicySelector>().large_buffer;
-  using StatusWord                                     = typename TileT::StatusWord;
   using BufferSizeT                                    = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
   using AliasT = typename ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy,
@@ -225,8 +224,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
     _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
 {
   static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
-  // Internal type used for storing a buffer's size
-  using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 
   // TODO(bgruber): refactor this in C++20, when we can pass policy as NTTP
   using AgentBatchMemcpyPolicyT = agent_batch_memcpy_policy<
