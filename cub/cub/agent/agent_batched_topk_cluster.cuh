@@ -102,7 +102,7 @@ struct alignas(16) cluster_topk_state
 
   // Decoders that operate on an already-loaded `result_pair`. The hot pass loop reads the leader's word once through
   // DSMEM and decodes both halves from that single value, so the splitter fold and the early-stop check never issue a
-  // second remote load. The instance accessors below delegate here, keeping the bit layout defined in one place.
+  // second remote load. `set_result` packs the same layout, keeping the bit layout defined in one place.
   [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static ::cuda::std::uint32_t
   kth_bucket_of(::cuda::std::uint64_t packed)
   {
@@ -111,14 +111,6 @@ struct alignas(16) cluster_topk_state
   [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static bool early_stop_of(::cuda::std::uint64_t packed)
   {
     return (packed >> 32) != ::cuda::std::uint64_t{0};
-  }
-  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t kth_bucket() const
-  {
-    return kth_bucket_of(result_pair);
-  }
-  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool early_stop() const
-  {
-    return early_stop_of(result_pair);
   }
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void set_result(::cuda::std::uint32_t bucket, bool stop)
   {
@@ -308,27 +300,23 @@ struct agent_batched_topk_cluster
   static constexpr int segment_rounds_floor =
     clamp_items_to_segment ? static_cast<int>(static_max_segment_size / threads_per_block) : 0;
 
+  // Clamp a per-thread unroll down to the segment's bounded round count (only when `clamp_items_to_segment`);
+  // larger/unbounded segments keep the full tuning width, and the guard keeps the rounds arithmetic in `int`.
+  [[nodiscard]] static constexpr int clamp_unroll(int rounds, int tuning)
+  {
+    return clamp_items_to_segment ? ::cuda::std::clamp(rounds, 1, tuning) : tuning;
+  }
+
   // Two clamp flavors. The `floor` clamp pairs with an unpredicated main loop over full tiles plus a single
   // non-unrolled remainder loop (the chunk helper `for_each_chunk_key_impl` and the copy fast path); the `ceil` clamp
-  // keeps the whole resident segment inside one tile for fully-predicated loops (the deterministic filter). Each unroll
-  // is capped at its tuning value; non-clamped (large/unbounded) segments keep the full width, and the guard keeps the
-  // rounds arithmetic in `int`.
+  // keeps the whole resident segment inside one tile for fully-predicated loops (the deterministic filter).
   static constexpr int histogram_items_per_thread_clamped =
-    clamp_items_to_segment
-      ? ::cuda::std::clamp(segment_rounds_floor, 1, histogram_items_per_thread)
-      : histogram_items_per_thread;
-  // `ceil`-clamped for the deterministic filter's fully-predicated loops; `floor`-clamped for the non-deterministic
-  // path, which reuses the chunk helper.
+    clamp_unroll(segment_rounds_floor, histogram_items_per_thread);
   static constexpr int tie_break_items_per_thread_clamped =
-    clamp_items_to_segment
-      ? ::cuda::std::clamp(segment_rounds_ceil, 1, tie_break_items_per_thread)
-      : tie_break_items_per_thread;
+    clamp_unroll(segment_rounds_ceil, tie_break_items_per_thread);
   static constexpr int tie_break_items_per_thread_floor_clamped =
-    clamp_items_to_segment
-      ? ::cuda::std::clamp(segment_rounds_floor, 1, tie_break_items_per_thread)
-      : tie_break_items_per_thread;
-  static constexpr int copy_items_per_thread_clamped =
-    clamp_items_to_segment ? ::cuda::std::clamp(segment_rounds_floor, 1, copy_items_per_thread) : copy_items_per_thread;
+    clamp_unroll(segment_rounds_floor, tie_break_items_per_thread);
+  static constexpr int copy_items_per_thread_clamped = clamp_unroll(segment_rounds_floor, copy_items_per_thread);
   static_assert(histogram_items_per_thread_clamped >= 1, "histogram_items_per_thread_clamped must be positive");
   static_assert(tie_break_items_per_thread_clamped >= 1, "tie_break_items_per_thread_clamped must be positive");
   static_assert(tie_break_items_per_thread_floor_clamped >= 1,
@@ -429,51 +417,9 @@ struct agent_batched_topk_cluster
   // Split point of `edge_keys`: head edge in `[0, head_edge_cap)`, tail edge in `[head_edge_cap, 2 * head_edge_cap)`.
   static constexpr int head_edge_cap = load_align_items;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char> block_tile_buffer() const
-  {
-    const int slots = static_cast<int>(block_tile_capacity / chunk_items);
-    return {key_slots, static_cast<::cuda::std::size_t>(slots * ChunkBytes)};
-  }
-
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE key_t* slot_keys_unpadded(int slot) const
   {
     return reinterpret_cast<key_t*>(key_slots + slot * ChunkBytes);
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char>
-  available_block_tile_buffer(char* buffer_begin) const
-  {
-    const auto buffer = block_tile_buffer();
-    char* const end   = ::cuda::std::data(buffer) + static_cast<int>(::cuda::std::size(buffer));
-    _CCCL_ASSERT(buffer_begin >= ::cuda::std::data(buffer) && buffer_begin <= end, "Invalid block_tile buffer cursor");
-    _CCCL_ASSERT(::cuda::is_aligned(buffer_begin, detail::LoadToSharedBufferAlignBytes<key_t>()),
-                 "block_tile buffer cursor must satisfy BlockLoadToShared's shared-memory alignment");
-    return {buffer_begin, static_cast<::cuda::std::size_t>(end - buffer_begin)};
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  append_contiguous_span(::cuda::std::span<key_t>& merged, ::cuda::std::span<key_t> next) const
-  {
-    const int next_count = static_cast<int>(::cuda::std::size(next));
-    _CCCL_ASSERT(static_cast<::cuda::std::size_t>(next_count) == ::cuda::std::size(next),
-                 "Resident key span length must fit in int");
-    if (next_count == 0)
-    {
-      return;
-    }
-
-    const int merged_count = static_cast<int>(::cuda::std::size(merged));
-    _CCCL_ASSERT(static_cast<::cuda::std::size_t>(merged_count) == ::cuda::std::size(merged),
-                 "Resident key span length must fit in int");
-    if (merged_count == 0)
-    {
-      merged = next;
-      return;
-    }
-
-    _CCCL_ASSERT(::cuda::std::data(merged) + merged_count == ::cuda::std::data(next),
-                 "BlockLoadToShared returned non-contiguous resident key spans");
-    merged = {::cuda::std::data(merged), static_cast<::cuda::std::size_t>(merged_count + next_count)};
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int span_size(::cuda::std::span<key_t> keys) const
@@ -553,13 +499,6 @@ struct agent_batched_topk_cluster
     const offset_t prefix = static_cast<offset_t>((aligned_begin - begin) / sizeof(key_t));
     const offset_t bulk   = static_cast<offset_t>((aligned_end - aligned_begin) / sizeof(key_t));
     return {prefix, bulk, static_cast<offset_t>(chunk.count) - prefix - bulk};
-  }
-
-  template <typename PtrT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_chunk(PtrT base, const chunk_desc chunk) const
-  {
-    const auto s = split_chunk(base, chunk);
-    return s.prefix == 0 && s.suffix == 0;
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
@@ -1694,74 +1633,74 @@ private:
         });
     }
 
-    // Head prefix edge (rank 0): the segment's lowest indices `[0, head_edge_len)`, staged in `edge_keys`. In global-
-    // index order it is the leading region (ascending) / trailing region (descending). `head_edge_len == 0` is a no-op,
-    // so non-head ranks skip it.
+    // Fold one persistent boundary edge (head prefix or peeled tail suffix), both staged in `edge_keys`. A no-op on the
+    // generic fallback (which reads boundary items straight from gmem) and for a zero-length edge.
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_edge(const key_t* keys, offset_t seg_base, int count, bool terminal)
+    {
+      if constexpr (use_block_load_to_shared)
+      {
+        process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/tie_reversed>(
+          keys, seg_base, count, terminal);
+      }
+    }
+
+    // Head prefix edge (rank 0): the segment's lowest indices `[0, head_edge_len)`, staged at `edge_keys` (base 0). In
+    // global-index order it is the leading region (ascending) / trailing region (descending); a non-head rank or empty
+    // prefix is a no-op.
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_head_edge()
     {
-      if constexpr (use_block_load_to_shared)
-      {
-        // Head prefix `[0, head_edge_len)` staged at `edge_keys`, so its segment-local base is 0.
-        process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/tie_reversed>(
-          agent.temp_storage.edge_keys, offset_t{0}, head_edge_len, head_edge_terminal);
-      }
+      process_edge(agent.temp_storage.edge_keys, offset_t{0}, head_edge_len, head_edge_terminal);
     }
 
-    // Peeled tail suffix edge (tail owner): the segment's highest indices, staged in `edge_keys`. In global-index order
-    // it is the trailing region (ascending) / leading region (descending). `tail_edge_len == 0` (aligned tail or not
-    // owned here) makes it a no-op.
+    // Peeled tail suffix edge (tail owner): the segment's highest indices, staged at `edge_keys + head_edge_cap` (base
+    // `segment_size - tail_edge_len`). In global-index order it is the trailing region (ascending) / leading region
+    // (descending); an aligned or non-owned tail is a no-op.
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_tail_edge()
     {
-      if constexpr (use_block_load_to_shared)
-      {
-        // Peeled tail suffix staged at `edge_keys + head_edge_cap`; its segment-local base is the last `tail_edge_len`
-        // indices of the segment.
-        const int tc             = tail_edge_len;
-        const offset_t tail_base = segment_size_u32 - static_cast<offset_t>(tc);
-        process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/tie_reversed>(
-          agent.temp_storage.edge_keys + head_edge_cap, tail_base, tc, tail_edge_terminal);
-      }
+      process_edge(agent.temp_storage.edge_keys + head_edge_cap,
+                   segment_size_u32 - static_cast<offset_t>(tail_edge_len),
+                   tail_edge_len,
+                   tail_edge_terminal);
     }
 
-    // Drive the regions in global-index order (ascending, or descending under `tie_reversed`), bailing between regions
-    // once `should_stop` reports the whole top-k placed.
+    // Drive the four regions in global-index order (ascending, or descending under `tie_reversed`), bailing between
+    // regions once `should_stop` reports the whole top-k placed. The two orders share the resident->overflow middle and
+    // only swap which boundary edge leads: ascending is head, resident, overflow, tail; descending reverses the edges.
+    // Both visit resident before overflow, so `should_stop` can skip re-streaming the overflow once the top-k is
+    // placed; `reverse_residency` keeps the first-visited (high-index) chunks resident in the descending order so this
+    // holds.
     _CCCL_DEVICE _CCCL_FORCEINLINE void run_filter()
     {
+      const auto step = [&](auto&& region) {
+        if (!should_stop())
+        {
+          region();
+        }
+      };
       if constexpr (tie_reversed)
       {
-        // Descending global-index order: peeled suffix tail, resident high-index chunks, streamed low-index overflow,
-        // peeled head prefix. With resident visited before overflow (`reverse_residency`), `should_stop` can skip the
-        // overflow re-stream -- mirroring the ascending path.
         process_tail_edge();
-        if (!should_stop())
-        {
-          process_resident();
-        }
-        if (!should_stop())
-        {
-          process_overflow();
-        }
-        if (!should_stop())
-        {
-          process_head_edge();
-        }
       }
       else
       {
         process_head_edge();
-        if (!should_stop())
+      }
+      step([&] {
+        process_resident();
+      });
+      step([&] {
+        process_overflow();
+      });
+      step([&] {
+        if constexpr (tie_reversed)
         {
-          process_resident();
+          process_head_edge();
         }
-        if (!should_stop())
-        {
-          process_overflow();
-        }
-        if (!should_stop())
+        else
         {
           process_tail_edge();
         }
-      }
+      });
     }
   };
 
