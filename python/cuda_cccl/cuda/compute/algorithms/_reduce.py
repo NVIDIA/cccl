@@ -40,7 +40,7 @@ class _Reduce(Serializable):
         "h_init_cccl",
         "op_cccl",
         "build_result",
-        "_device_reduce_fn",
+        "device_reduce_fn",
     ]
 
     __serialization_schema__ = (
@@ -76,25 +76,19 @@ class _Reduce(Serializable):
             self.h_init_cccl,
             determinism,
         )
+        self._bind_device_reduce_fn()
 
-    @property
-    def device_reduce_fn(self):
-        # Derived from build_result (which is serialized) and cached on first
-        # access: a reducer rebuilt by deserialize() needs nothing extra set, and
-        # repeated calls do not recompute. Settable so callers can override the
-        # compute entry point.
-        try:
-            return self._device_reduce_fn
-        except AttributeError:
-            if Determinism(self.build_result.determinism) is Determinism.NOT_GUARANTEED:
-                self._device_reduce_fn = self.build_result.compute_nondeterministic
-            else:
-                self._device_reduce_fn = self.build_result.compute
-            return self._device_reduce_fn
+    def _after_deserialize(self) -> None:
+        self._bind_device_reduce_fn()
 
-    @device_reduce_fn.setter
-    def device_reduce_fn(self, fn):
-        self._device_reduce_fn = fn
+    def _bind_device_reduce_fn(self) -> None:
+        # device_reduce_fn is derived from build_result (not serialized). Bind it
+        # as a plain slot on both construction paths (__init__ and deserialize) so
+        # each call reads a slot directly, with no per-call recompute.
+        if Determinism(self.build_result.determinism) is Determinism.NOT_GUARANTEED:
+            self.device_reduce_fn = self.build_result.compute_nondeterministic
+        else:
+            self.device_reduce_fn = self.build_result.compute
 
     def __call__(
         self,

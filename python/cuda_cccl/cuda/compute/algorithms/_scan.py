@@ -59,7 +59,7 @@ class _Scan(Serializable):
         "op_cccl",
         "init_kind",
         "force_inclusive",
-        "_device_scan_fn",
+        "device_scan_fn",
     ]
 
     __serialization_schema__ = (
@@ -131,35 +131,29 @@ class _Scan(Serializable):
             force_inclusive,
             self.init_kind,
         )
+        self._bind_device_scan_fn()
 
-    @property
-    def device_scan_fn(self):
-        # Derived from force_inclusive + init_kind (both serialized) and cached on
-        # first access: a scan rebuilt by deserialize() needs nothing extra set, and
-        # repeated calls do not recompute. Settable so callers can override the
-        # compute entry point.
-        try:
-            return self._device_scan_fn
-        except AttributeError:
-            pass
+    def _after_deserialize(self) -> None:
+        self._bind_device_scan_fn()
+
+    def _bind_device_scan_fn(self) -> None:
+        # device_scan_fn is derived from force_inclusive + init_kind (not
+        # serialized directly as a function). Bind it as a plain slot on both
+        # construction paths (__init__ and deserialize) so each call reads a slot
+        # directly, with no per-call recompute.
         match (self.force_inclusive, self.init_kind):
             case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
-                self._device_scan_fn = self.build_result.compute_inclusive_future_value
+                self.device_scan_fn = self.build_result.compute_inclusive_future_value
             case (True, _bindings.InitKind.VALUE_INIT):
-                self._device_scan_fn = self.build_result.compute_inclusive
+                self.device_scan_fn = self.build_result.compute_inclusive
             case (True, _bindings.InitKind.NO_INIT):
-                self._device_scan_fn = self.build_result.compute_inclusive_no_init
+                self.device_scan_fn = self.build_result.compute_inclusive_no_init
             case (False, _bindings.InitKind.FUTURE_VALUE_INIT):
-                self._device_scan_fn = self.build_result.compute_exclusive_future_value
+                self.device_scan_fn = self.build_result.compute_exclusive_future_value
             case (False, _bindings.InitKind.VALUE_INIT):
-                self._device_scan_fn = self.build_result.compute_exclusive
+                self.device_scan_fn = self.build_result.compute_exclusive
             case (False, _bindings.InitKind.NO_INIT):
                 raise ValueError("Exclusive scan with No init value is not supported")
-        return self._device_scan_fn
-
-    @device_scan_fn.setter
-    def device_scan_fn(self, fn):
-        self._device_scan_fn = fn
 
     def __call__(
         self,

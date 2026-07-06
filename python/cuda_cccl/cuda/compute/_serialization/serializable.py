@@ -187,6 +187,14 @@ class Serializable:
         super().__init_subclass__(**kwargs)
         Serializable._registry[cls.__qualname__] = cls
 
+    def _after_deserialize(self) -> None:
+        """Hook to bind derived, non-serialized state after schema members are read.
+
+        Called once at the end of ``deserialize``. Subclasses that keep a cached
+        attribute derived from serialized members (and set it in ``__init__``)
+        override this to rebind it; the default is a no-op.
+        """
+
     def serialize(self) -> bytes:
         """Serialize this built algorithm to a self-contained serialization blob."""
         w = codec.begin(type(self).__qualname__)
@@ -205,4 +213,5 @@ class Serializable:
         obj = cls.__new__(cls)
         for attr, kind in cls.__serialization_schema__:
             setattr(obj, attr, kind.read(r, obj))
+        obj._after_deserialize()
         return obj

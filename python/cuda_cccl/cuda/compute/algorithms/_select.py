@@ -29,7 +29,7 @@ extern "C" __device__ void always_false(void*, void* result) {{
 
 
 class _Select(Serializable):
-    __slots__ = ["partitioner"]
+    __slots__ = ["partitioner", "always_false_op"]
 
     # select is three_way_partition with an always-false second predicate and
     # the second/unselected outputs discarded. Those helpers are derived from
@@ -45,6 +45,7 @@ class _Select(Serializable):
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
     ):
+        self.always_false_op = _always_false_op()
         self.partitioner = make_three_way_partition(
             d_in=d_in,
             d_first_part_out=d_out,
@@ -52,8 +53,13 @@ class _Select(Serializable):
             d_unselected_out=DiscardIterator(d_out),
             d_num_selected_out=d_num_selected_out,
             select_first_part_op=cond,
-            select_second_part_op=_always_false_op(),
+            select_second_part_op=self.always_false_op,
         )
+
+    def _after_deserialize(self) -> None:
+        # always_false_op (the always-false second predicate) is not serialized;
+        # rebind it as a plain slot so each call reads a slot directly.
+        self.always_false_op = _always_false_op()
 
     def __call__(
         self,
@@ -74,7 +80,7 @@ class _Select(Serializable):
             d_unselected_out=DiscardIterator(d_out),
             d_num_selected_out=d_num_selected_out,
             select_first_part_op=make_op_adapter(cond),
-            select_second_part_op=_always_false_op(),
+            select_second_part_op=self.always_false_op,
             num_items=num_items,
             stream=stream,
         )
