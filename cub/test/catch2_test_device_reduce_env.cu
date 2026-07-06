@@ -1085,60 +1085,49 @@ C2H_TEST("cub::DeviceReduce::Reduce allows no_init in env overloads", "[reduce][
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test ReducePassPolicy properties", "[reduce][device]")
-{
-  STATIC_REQUIRE(::cuda::std::semiregular<cub::ReducePassPolicy>);
-  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReducePassPolicy>);
-
-  // aggregate init
-  constexpr auto p1 = cub::ReducePassPolicy{
-    256, 16, 4, cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS, cub::CacheLoadModifier::LOAD_LDG};
-
-#  if _CCCL_STD_VER >= 2020
-  // designated init
-  constexpr auto p2 = cub::ReducePassPolicy{
-    .threads_per_block = 256,
-    .items_per_thread  = 16,
-    .vec_size          = 4,
-    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
-    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG};
-#  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
-#  endif // _CCCL_STD_VER >= 2020
-
-  // comparison
-  STATIC_REQUIRE(p1 == p2);
-  STATIC_REQUIRE_FALSE(p1 != p2);
-}
-
 C2H_TEST("Test ReducePolicy properties", "[reduce][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::ReducePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReducePolicy>);
 
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ReducePassPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ReducePassPolicy>);
+
   // aggregate init
-  constexpr auto pass = cub::ReducePassPolicy{
+  constexpr auto p1_multi = cub::ReducePassPolicy{
     256, 16, 4, cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS, cub::CacheLoadModifier::LOAD_LDG};
-  constexpr auto p1 = cub::ReducePolicy{pass, pass};
+  constexpr auto p1_single = cub::ReducePassPolicy{
+    128, 8, 2, cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, cub::CacheLoadModifier::LOAD_DEFAULT};
+  constexpr auto p1 = cub::ReducePolicy{p1_multi, p1_single};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
-  constexpr auto p2 = cub::ReducePolicy{
-    .multi_tile  = {.threads_per_block = 256,
-                    .items_per_thread  = 16,
-                    .vec_size          = 4,
-                    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
-                    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG},
-    .single_tile = {.threads_per_block = 256,
-                    .items_per_thread  = 16,
-                    .vec_size          = 4,
-                    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
-                    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG}};
+  constexpr auto p2_multi = cub::ReducePassPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 16,
+    .vec_size          = 4,
+    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG};
+  constexpr auto p2_single = cub::ReducePassPolicy{
+    .threads_per_block = 128,
+    .items_per_thread  = 8,
+    .vec_size          = 2,
+    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT};
+  constexpr auto p2 = cub::ReducePolicy{.multi_tile = p2_multi, .single_tile = p2_single};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
+  constexpr auto p2_multi  = p1_multi;
+  constexpr auto p2_single = p1_single;
+  constexpr auto p2        = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
+  STATIC_REQUIRE(p1_multi == p2_multi);
+  STATIC_REQUIRE_FALSE(p1_multi != p2_multi);
+
+  STATIC_REQUIRE(p1_single == p2_single);
+  STATIC_REQUIRE_FALSE(p1_single != p2_single);
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 }
