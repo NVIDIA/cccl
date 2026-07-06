@@ -98,13 +98,15 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> SegmentedReducePolicy
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (const int ptx_version = cc.get() * 10; SegmentedReducePolicy policy{};
-       extract_policy_dispatch_t dispatch{policy};
-       PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-       return policy;),
-      (return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();));
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        const int ptx_version = cc.get() * 10;
+                        SegmentedReducePolicy policy{};
+                        extract_policy_dispatch_t dispatch{policy};
+                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+                        return policy;
+                      }),
+                      (return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();));
   }
 };
 } // namespace detail::segmented_reduce
