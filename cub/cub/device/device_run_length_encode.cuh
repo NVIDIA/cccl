@@ -59,7 +59,10 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! The NonTrivialRuns algorithm that accepts an environment can be tuned by passing a custom
+//! The ``Encode`` algorithm that accepts an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns an @ref RleEncodePolicy.
+//!
+//! The ``NonTrivialRuns`` algorithm that accepts an environment can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns an @ref RleNonTrivialRunsPolicy, as shown in the
 //! example below:
 //!
