@@ -25,11 +25,7 @@ from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _BinarySearch:
-    # Shared implementation for the lower/upper bound searchers. Not a
-    # Serializable itself, so it is never registered as an algorithm tag; the
-    # concrete _LowerBound / _UpperBound subclasses mix in Serializable and set
-    # _MODE, encoding the search mode in the class identity (and thus the
-    # serialization tag) rather than a serialized field.
+    # Shared implementation for the lower/upper bound searchers.
     _MODE: ClassVar[_bindings.BinarySearchMode]
 
     __slots__ = [
