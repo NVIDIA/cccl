@@ -37,9 +37,8 @@ CCCL_C_API const char* cccl_serialization_last_error(void);
 
 // Validates that a serialization blob (a build_result blob, i.e. what is passed to
 // cccl_device_<algo>_deserialize) can be loaded on the current device, *before*
-// the opaque cuLibraryLoadData failure. Checks the blob magic, format version,
-// CCCL C parallel ABI version, and — for CUBIN payloads — that the target
-// compute-capability major matches the current device.
+// the opaque cuLibraryLoadData failure. Checks the blob magic and — for CUBIN
+// payloads — that the target compute-capability major matches the current device.
 //
 // Returns CUDA_SUCCESS if the blob looks loadable, or an error code with a
 // message retrievable via cccl_serialization_last_error(). This never executes device

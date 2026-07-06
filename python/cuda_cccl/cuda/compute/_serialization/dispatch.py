@@ -55,5 +55,5 @@ def deserialize(blob: bytes):
     try:
         cls = Serializable._registry[tag]
     except KeyError:
-        raise ValueError(f"serialization blob: unknown algorithm tag {tag}") from None
+        raise ValueError(f"serialization blob: unknown algorithm tag {tag!r}") from None
     return cls.deserialize(blob)

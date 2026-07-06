@@ -93,22 +93,6 @@ try
     set_serialization_error("serialization blob: bad magic (not a CCCL serialization blob)");
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (h.format_version != k_format_version)
-  {
-    set_serialization_error(std::format(
-      "serialization blob: unsupported format version (blob={}, current={}); rebuild the blob with this cuda-cccl",
-      h.format_version,
-      k_format_version));
-    return CUDA_ERROR_INVALID_VALUE;
-  }
-  if (h.cccl_version != static_cast<uint64_t>(CCCL_C_PARALLEL_VERSION))
-  {
-    set_serialization_error(std::format(
-      "serialization blob: CCCL C parallel ABI mismatch (blob={}, current={}); rebuild the blob with this cuda-cccl",
-      h.cccl_version,
-      CCCL_C_PARALLEL_VERSION));
-    return CUDA_ERROR_INVALID_VALUE;
-  }
 
   // Reject an unrecognized payload_kind here too, mirroring read_and_validate_header
   // (used by every *_deserialize). Otherwise a corrupted payload_kind would pass this

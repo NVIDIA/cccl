@@ -16,7 +16,6 @@ from .._serialization import (
     ENUM,
     ITER,
     OP,
-    AlgoTag,
     Serializable,
 )
 from .._utils import protocols
@@ -25,7 +24,6 @@ from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _BinarySearch(Serializable):
-    _serialization_tag = AlgoTag.BINARY_SEARCH
     __slots__ = [
         "build_result",
         "d_data_cccl",

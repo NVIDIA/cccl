@@ -26,7 +26,6 @@ from .._serialization import (
     ITER,
     OP,
     VALUE,
-    AlgoTag,
     Serializable,
 )
 from .._utils.protocols import (
@@ -52,7 +51,6 @@ def get_init_kind(
 
 
 class _Scan(Serializable):
-    _serialization_tag = AlgoTag.SCAN
     __slots__ = [
         "build_result",
         "d_in_cccl",

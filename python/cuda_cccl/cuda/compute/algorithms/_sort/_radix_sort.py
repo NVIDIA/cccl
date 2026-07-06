@@ -9,7 +9,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
-from ..._serialization import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
+from ..._serialization import BUILD_RESULT, ITER, OP, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     get_dtype,
@@ -21,7 +21,6 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
 class _RadixSort(Serializable):
-    _serialization_tag = AlgoTag.RADIX_SORT
     __slots__ = [
         "d_in_keys_cccl",
         "d_out_keys_cccl",

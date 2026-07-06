@@ -2,23 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Serialization of CCCL invocation *descriptors* (iterators, ops, values) for
-serialization reuse.
-
-The C ``build_result`` blob produced by ``Device<Algo>BuildResult.serialize()``
-contains only the compiled kernels + tuning policy + kernel names. It does NOT
-contain the ``cccl_iterator_t`` / ``cccl_op_t`` / ``cccl_value_t`` descriptors
-that the *execute* call needs — those are owned by the Python algorithm wrapper.
-
-This module serializes the *static* fields of those descriptors (kind,
-alignment, value type, and operator device code) so a wrapper can be fully
-reconstructed from bytes alone, with no live objects supplied to ``deserialize``.
-Only the per-call ``state`` (device pointers, iterator-state bytes, operator /
-init-value bytes) is left out — it is bound at ``__call__`` time as usual.
-
-Layout is little-endian, length-prefixed, and versioned. The C ``build_result``
-blob is carried as one length-prefixed member of the descriptor schema (see
-``serializable.Serializable``), so a whole blob is self-delimiting.
+"""Byte serialization of CCCL descriptors (``cccl_op_t``, ``cccl_iterator_t``, etc.).
 """
 
 from __future__ import annotations
@@ -27,12 +11,13 @@ import struct
 
 import numpy as np
 
+from cuda.cccl import __version__ as _PKG_VERSION
+
 from .._bindings import Iterator, IteratorKind, Op, OpKind, TypeEnum, TypeInfo, Value
 from .._device_code import DeviceCode
 
-# Bump when the descriptor wire format changes incompatibly.
+# An opaque 8-byte marker identifying a cuda.compute serialization blob.
 _MAGIC = b"CCCLPYS1"
-_VERSION = 2
 
 
 class Writer:
@@ -99,52 +84,55 @@ class Reader:
 # --- framing -----------------------------------------------------------------
 
 
-def begin(algo_tag: int) -> Writer:
-    """Start a descriptor sidecar with the magic/version/algo header."""
-    w = Writer()
-    w.buf += _MAGIC
-    w.u32(_VERSION)
-    w.u32(algo_tag)
-    return w
-
-
-def open(blob: bytes, expected_algo: int) -> Reader:
-    """Validate the header and return a reader positioned at the first field."""
-    r = Reader(blob)
+def _check_header(r: Reader) -> None:
+    """Validate the magic and package-version stamp at the start of a blob."""
     if bytes(r._take(len(_MAGIC))) != _MAGIC:
         raise ValueError(
             "serialization blob: bad magic (not a cuda.compute serialization blob)"
         )
-    version = r.u32()
-    if version != _VERSION:
+    version = r.text()
+    if version != _PKG_VERSION:
         raise ValueError(
-            f"serialization blob: unsupported descriptor version (blob={version}, current={_VERSION})"
+            "serialization blob: cuda-cccl version mismatch "
+            f"(blob={version!r}, current={_PKG_VERSION!r}); "
+            "re-serialize with this version of cuda-cccl"
         )
-    algo = r.u32()
+
+
+def begin(algo_tag: str) -> Writer:
+    """Start a descriptor sidecar with the magic/version/algo header.
+
+    ``algo_tag`` is the algorithm class's ``__qualname__`` (e.g. ``"_Reduce"``).
+    """
+    w = Writer()
+    w.buf += _MAGIC
+    w.text(_PKG_VERSION)
+    w.text(algo_tag)
+    return w
+
+
+def open(blob: bytes, expected_algo: str) -> Reader:
+    """Validate the header and return a reader positioned at the first field."""
+    r = Reader(blob)
+    _check_header(r)
+    algo = r.text()
     if algo != expected_algo:
         raise ValueError(
-            f"serialization blob: wrong algorithm (blob tag={algo}, expected={expected_algo})"
+            f"serialization blob: wrong algorithm (blob tag={algo!r}, expected={expected_algo!r})"
         )
     return r
 
 
-def peek_algo(blob: bytes) -> int:
-    """Return the algorithm tag from a blob header without consuming the blob.
+def peek_algo(blob: bytes) -> str:
+    """Return the algorithm tag (class ``__qualname__``) from a blob header
+    without consuming the blob.
 
     Validates magic + version. Used by the generic ``deserialize`` dispatcher to
     pick the right algorithm reconstructor.
     """
     r = Reader(blob)
-    if bytes(r._take(len(_MAGIC))) != _MAGIC:
-        raise ValueError(
-            "serialization blob: bad magic (not a cuda.compute serialization blob)"
-        )
-    version = r.u32()
-    if version != _VERSION:
-        raise ValueError(
-            f"serialization blob: unsupported descriptor version (blob={version}, current={_VERSION})"
-        )
-    return r.u32()
+    _check_header(r)
+    return r.text()
 
 
 # --- descriptor (de)serialization --------------------------------------------

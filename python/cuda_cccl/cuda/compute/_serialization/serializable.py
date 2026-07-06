@@ -4,13 +4,13 @@
 
 """Schema-driven serialization (de)serialization base for cuda.compute algorithms.
 
-A built-algorithm class declares a ``tag`` (stable wire id) and a
-``__serialization_schema__`` listing its serialized members as ``(attr_name, kind)``
-pairs — including its ``build_result`` as a ``BUILD_RESULT(<type>)`` member.
-``Serializable`` then provides generic ``serialize``/``deserialize`` that walk
-the schema, so subclasses need no hand-written codec and the two directions
-share one field order (they can't drift). Subclasses auto-register by ``tag``
-for the free-function ``deserialize`` dispatcher.
+A built-algorithm class declares a ``__serialization_schema__`` listing its
+serialized members as ``(attr_name, kind)`` pairs — including its ``build_result``
+as a ``BUILD_RESULT(<type>)`` member. ``Serializable`` then provides generic
+``serialize``/``deserialize`` that walk the schema, so subclasses need no
+hand-written codec and the two directions share one field order (they can't
+drift). Subclasses auto-register by their ``__qualname__`` — the class name is
+the wire tag — for the free-function ``deserialize`` dispatcher.
 
 Derived state (e.g. a compute-fn chosen from ``build_result``) is *not* in the
 schema — express it as a ``@property`` that recomputes on access, so a
@@ -24,35 +24,9 @@ still subclass ``Serializable`` for the tag/registry/header framing but override
 
 from __future__ import annotations
 
-import enum
 from typing import Any, Callable, TypeVar
 
 from . import codec
-
-
-class AlgoTag(enum.IntEnum):
-    """Stable wire ids for serialization blobs, stamped into each blob header.
-
-    Values 1-11 mirror the C ``cccl_serialization_algo_t``; 12 is reserved for the C
-    ``FOR`` (not exposed in Python); 13 is Python-only (transform splits into
-    unary/binary, which the single C ``TRANSFORM`` tag can't distinguish).
-    Never renumber or reuse a value — old blobs encode it.
-    """
-
-    REDUCE = 1
-    SCAN = 2
-    SEGMENTED_REDUCE = 3
-    UNARY_TRANSFORM = 4
-    BINARY_SEARCH = 5
-    MERGE_SORT = 6
-    RADIX_SORT = 7
-    SEGMENTED_SORT = 8
-    THREE_WAY_PARTITION = 9
-    UNIQUE_BY_KEY = 10
-    HISTOGRAM = 11
-    # 12 reserved for the C FOR algorithm (no Python wrapper)
-    BINARY_TRANSFORM = 13
-    SELECT = 14
 
 
 class _Kind:
@@ -212,23 +186,22 @@ class Serializable:
 
     __slots__ = ()
 
-    # tag -> subclass, populated as algorithm modules are imported.
-    _registry: dict[int, type[Serializable]] = {}
+    # __qualname__ -> subclass, populated as algorithm modules are imported.
+    # A subclass's own qualified name is its wire tag, stamped into the blob
+    # header. Blobs are gated to the exact cuda-cccl version that wrote them
+    # (see codec), so the class name is a stable within-version identifier.
+    _registry: dict[str, type[Serializable]] = {}
 
-    # Subclasses set both as class attributes: `_serialization_tag = AlgoTag.<X>` and
-    # `__serialization_schema__ = (...)`.
+    # Subclasses declare their serialized members here.
     __serialization_schema__: tuple = ()
-    _serialization_tag: AlgoTag
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        tag = cls.__dict__.get("_serialization_tag")
-        if tag is not None:
-            Serializable._registry[tag] = cls
+        Serializable._registry[cls.__qualname__] = cls
 
     def serialize(self) -> bytes:
         """Serialize this built algorithm to a self-contained serialization blob."""
-        w = codec.begin(self._serialization_tag)
+        w = codec.begin(type(self).__qualname__)
         for attr, kind in self.__serialization_schema__:
             kind.write(w, getattr(self, attr), self)
         return w.getvalue()
@@ -240,7 +213,7 @@ class Serializable:
         Members are read in schema order and set on the instance as they are
         read, so a ``CONDITIONAL`` member can consult a selector read earlier.
         """
-        r = codec.open(blob, cls._serialization_tag)
+        r = codec.open(blob, cls.__qualname__)
         obj = cls.__new__(cls)
         for attr, kind in cls.__serialization_schema__:
             setattr(obj, attr, kind.read(r, obj))

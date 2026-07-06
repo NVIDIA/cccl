@@ -30,22 +30,18 @@ namespace cccl::serialization
 // signals a hard format break (older blobs become unloadable).
 inline constexpr char k_blob_magic[8] = {'C', 'C', 'C', 'L', 'S', 'E', 'R', '1'};
 
-// Per-algorithm format version. Bump when the layout *for that algorithm*
-// changes (e.g. a new field added to its build_result_t).
-inline constexpr uint32_t k_format_version = 1;
-
 // Fixed-layout header at the start of every blob. Packed POD; layout is
-// part of the on-disk format, do not reorder.
+// part of the on-disk format, do not reorder. Blob compatibility across
+// releases is gated by the cuda-cccl package version stamped by the Python
+// layer that wraps this blob, so no version field is carried here.
 struct blob_header
 {
   char magic[8]; // k_blob_magic
   uint32_t algo_tag; // cccl_serialization_algo_t
-  uint32_t format_version; // k_format_version at write time
-  uint64_t cccl_version; // CCCL_C_PARALLEL_VERSION at serialize time; mismatched → reject
   uint32_t payload_kind; // cccl_payload_kind_t
   uint32_t cc; // cc_major*10 + cc_minor
 };
-static_assert(sizeof(blob_header) == 32, "blob_header layout must be stable");
+static_assert(sizeof(blob_header) == 20, "blob_header layout must be stable");
 
 // Append-only byte buffer used by *_serialize implementations.
 // Owns a std::vector<char> internally; release() hands back a heap buffer
@@ -218,17 +214,14 @@ inline void write_header(buffer_writer& w, cccl_serialization_algo_t algo_tag, c
 {
   blob_header h{};
   std::memcpy(h.magic, k_blob_magic, sizeof(k_blob_magic));
-  h.algo_tag       = static_cast<uint32_t>(algo_tag);
-  h.format_version = k_format_version;
-  h.cccl_version   = static_cast<uint64_t>(CCCL_C_PARALLEL_VERSION);
-  h.payload_kind   = static_cast<uint32_t>(kind);
-  h.cc             = static_cast<uint32_t>(cc);
+  h.algo_tag     = static_cast<uint32_t>(algo_tag);
+  h.payload_kind = static_cast<uint32_t>(kind);
+  h.cc           = static_cast<uint32_t>(cc);
   w.write_pod(h);
 }
 
-// Reads + validates a blob header. Throws on magic / algo_tag / format_version /
-// cccl_version mismatch. Returns the parsed header for the caller to use
-// (payload_kind, cc).
+// Reads + validates a blob header. Throws on magic / algo_tag mismatch.
+// Returns the parsed header for the caller to use (payload_kind, cc).
 inline blob_header read_and_validate_header(buffer_reader& r, cccl_serialization_algo_t expected_algo)
 {
   const auto h = r.read_pod<blob_header>();
@@ -239,17 +232,6 @@ inline blob_header read_and_validate_header(buffer_reader& r, cccl_serialization
   if (h.algo_tag != static_cast<uint32_t>(expected_algo))
   {
     throw std::runtime_error("serialization blob: wrong algorithm");
-  }
-  if (h.format_version != k_format_version)
-  {
-    throw std::runtime_error("serialization blob: unsupported format version");
-  }
-  if (h.cccl_version != static_cast<uint64_t>(CCCL_C_PARALLEL_VERSION))
-  {
-    throw std::runtime_error(
-      std::format("serialization blob: CCCL C parallel version mismatch (blob={}, current={})",
-                  h.cccl_version,
-                  CCCL_C_PARALLEL_VERSION));
   }
   if (h.payload_kind != CCCL_PAYLOAD_LTOIR && h.payload_kind != CCCL_PAYLOAD_CUBIN)
   {

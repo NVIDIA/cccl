@@ -18,7 +18,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._serialization import BUILD_RESULT, ITER, OP, VALUE, AlgoTag, Serializable
+from .._serialization import BUILD_RESULT, ITER, OP, VALUE, Serializable
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -29,7 +29,6 @@ from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
 class _SegmentedReduce(Serializable):
-    _serialization_tag = AlgoTag.SEGMENTED_REDUCE
     __slots__ = [
         "build_result",
         "d_in_cccl",

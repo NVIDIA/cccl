@@ -11,7 +11,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
-from ..._serialization import BUILD_RESULT, ITER, AlgoTag, Serializable
+from ..._serialization import BUILD_RESULT, ITER, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -22,7 +22,6 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
 class _SegmentedSort(Serializable):
-    _serialization_tag = AlgoTag.SEGMENTED_SORT
     __slots__ = [
         "build_result",
         "d_in_keys_cccl",

@@ -41,11 +41,6 @@ typedef enum cccl_serialization_algo_t
   CCCL_SERIALIZATION_ALGO_FOR                 = 12,
 } cccl_serialization_algo_t;
 
-// Version of the CCCL C parallel serialization blob format. Increment whenever a
-// breaking change is made to the C parallel layer (build_result layouts,
-// serialization wire format, etc.) independently of CCCL_VERSION.
-#define CCCL_C_PARALLEL_VERSION 1
-
 // Frees a buffer returned by any cccl_device_<algo>_serialize call.
 // Required because allocations cross the cccl.c.parallel shared-library
 // boundary; callers must not free returned buffers themselves.

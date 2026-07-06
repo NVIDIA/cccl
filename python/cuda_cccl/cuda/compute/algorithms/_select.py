@@ -9,7 +9,7 @@ from functools import cache
 
 from .._caching import cache_with_registered_key_functions
 from .._cpp_compile import compile_cpp_op_code
-from .._serialization import NESTED, AlgoTag, Serializable
+from .._serialization import NESTED, Serializable
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators import DiscardIterator
 from ..op import OpAdapter, RawOp, make_op_adapter
@@ -29,7 +29,6 @@ extern "C" __device__ void always_false(void*, void* result) {{
 
 
 class _Select(Serializable):
-    _serialization_tag = AlgoTag.SELECT
     __slots__ = ["partitioner"]
 
     # select is three_way_partition with an always-false second predicate and

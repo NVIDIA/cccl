@@ -6,10 +6,10 @@
 
 Before these checks, every C-side deserialize/load failure surfaced in Python as
 an opaque ``error code: <n>`` with the real reason printed only to stdout. The C
-layer now validates the blob header (magic / format / ABI version) and — for
-CUBIN payloads — the target compute-capability major against the current device,
-*before* the opaque ``cuLibraryLoadData`` failure, and propagates a descriptive
-message via ``cccl_serialization_last_error()``.
+layer now validates the blob header magic and — for CUBIN payloads — the target
+compute-capability major against the current device, *before* the opaque
+``cuLibraryLoadData`` failure, and propagates a descriptive message via
+``cccl_serialization_last_error()``.
 
 The compute-capability case is exercised single-GPU by patching the ``cc`` field
 of a real blob (a true cross-GPU load is the same code path but needs a second
@@ -35,9 +35,8 @@ pytestmark = pytest.mark.skipif(
 
 _C_MAGIC = b"CCCLSER1"
 # Field offsets within the C build_result header, past the 8-byte magic:
-#   algo_tag u32 | format_version u32 | cccl_version u64 | payload_kind u32 | cc u32
-_OFF_CCCL_VERSION = 4 + 4
-_OFF_CC = 4 + 4 + 8 + 4
+#   algo_tag u32 | payload_kind u32 | cc u32
+_OFF_CC = 4 + 4
 
 
 def _reduce_blob():
@@ -52,19 +51,6 @@ def _patch_u32(blob, field_off, value):
     i = b.find(_C_MAGIC)
     struct.pack_into("<I", b, i + len(_C_MAGIC) + field_off, value)
     return bytes(b)
-
-
-def _patch_u64(blob, field_off, value):
-    b = bytearray(blob)
-    i = b.find(_C_MAGIC)
-    struct.pack_into("<Q", b, i + len(_C_MAGIC) + field_off, value)
-    return bytes(b)
-
-
-def test_abi_mismatch_reports_clear_message():
-    bad = _patch_u64(_reduce_blob(), _OFF_CCCL_VERSION, 999)
-    with pytest.raises(RuntimeError, match="ABI mismatch"):
-        deserialize(bad)
 
 
 def test_wrong_cc_major_reports_clear_message():

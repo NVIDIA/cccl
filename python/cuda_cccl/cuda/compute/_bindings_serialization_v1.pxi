@@ -10,7 +10,7 @@ cdef extern from "cccl/c/serialization_diagnostics.h":
 
 
 cdef _serialization_check_loadable(const void* buf, size_t size):
-    # Validate the blob header (magic / format / ABI version) and, for CUBIN
+    # Validate the blob header magic and, for CUBIN
     # payloads, that the target compute-capability major matches this device,
     # BEFORE the opaque cuLibraryLoadData failure. On mismatch, raise with the
     # C layer's descriptive message instead of a bare CUDA error code.

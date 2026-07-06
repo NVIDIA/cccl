@@ -11,7 +11,7 @@ from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
-from .._serialization import BUILD_RESULT, ITER, OP, AlgoTag, Serializable
+from .._serialization import BUILD_RESULT, ITER, OP, Serializable
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..op import OpAdapter, make_op_adapter
@@ -19,7 +19,6 @@ from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _ThreeWayPartition(Serializable):
-    _serialization_tag = AlgoTag.THREE_WAY_PARTITION
     __slots__ = [
         "build_result",
         "d_in_cccl",

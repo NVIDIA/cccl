@@ -18,7 +18,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._serialization import BUILD_RESULT, ITER, OP, VALUE, AlgoTag, Serializable
+from .._serialization import BUILD_RESULT, ITER, OP, VALUE, Serializable
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
@@ -34,7 +34,6 @@ from ..typing import (
 
 
 class _Reduce(Serializable):
-    _serialization_tag = AlgoTag.REDUCE
     __slots__ = [
         "d_in_cccl",
         "d_out_cccl",
