@@ -103,10 +103,11 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  // A CUBIN payload is final SASS, tied to the compute-capability major it was
-  // built for; it is never binary-compatible across majors. Reject that up front
-  // rather than failing deep inside cuLibraryLoadData with an opaque code. (A
-  // differing minor is left to the driver, which is forward-compatible.)
+  // A CUBIN payload is final SASS, tied to the compute capability it was built
+  // for. SASS is binary-compatible only within the same major version, and only
+  // forward across minors: a cubin built for sm_XY runs on a device sm_XZ iff
+  // Z >= Y. Reject a different major, or the same major with a lower device minor,
+  // up front rather than failing deep inside cuLibraryLoadData with an opaque code.
   if (h.payload_kind == CCCL_PAYLOAD_CUBIN)
   {
     int major = 0;
@@ -114,12 +115,13 @@ try
     if (current_compute_capability(major, minor))
     {
       const int blob_major = static_cast<int>(h.cc) / 10;
-      if (blob_major != major)
+      const int blob_minor = static_cast<int>(h.cc) % 10;
+      if (blob_major != major || minor < blob_minor)
       {
         set_serialization_error(std::format(
-          "serialization blob targets sm_{} but the current device is sm_{}{}; a CUBIN payload is not compatible "
-          "across "
-          "compute-capability majors. Rebuild for this architecture (or ship one blob per target arch).",
+          "serialization blob targets sm_{} but the current device is sm_{}{}; a CUBIN payload requires the same "
+          "compute-capability major and a device minor >= the target minor. Rebuild for this architecture "
+          "(or ship one blob per target arch).",
           h.cc,
           major,
           minor));

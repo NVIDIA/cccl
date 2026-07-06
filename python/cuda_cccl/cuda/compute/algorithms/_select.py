@@ -29,13 +29,8 @@ extern "C" __device__ void always_false(void*, void* result) {{
 
 
 class _Select(Serializable):
-    __slots__ = ["partitioner", "always_false_op"]
+    __slots__ = ["partitioner", "always_false_op", "_discards"]
 
-    # select is three_way_partition with an always-false second predicate and
-    # the second/unselected outputs discarded. Those helpers are derived from
-    # d_out (a DiscardIterator matching its type) and a cached constant op, so
-    # they are rebuilt where needed rather than stored. The partitioner is the
-    # only stored state, so _Select serializes via its nested schema.
     __serialization_schema__ = (("partitioner", NESTED(_ThreeWayPartition)),)
 
     def __init__(
@@ -46,15 +41,27 @@ class _Select(Serializable):
         cond: OpAdapter,
     ):
         self.always_false_op = _always_false_op()
+        d_second, d_unselected = self._discard_iterators(d_out)
         self.partitioner = make_three_way_partition(
             d_in=d_in,
             d_first_part_out=d_out,
-            d_second_part_out=DiscardIterator(d_out),
-            d_unselected_out=DiscardIterator(d_out),
+            d_second_part_out=d_second,
+            d_unselected_out=d_unselected,
             d_num_selected_out=d_num_selected_out,
             select_first_part_op=cond,
             select_second_part_op=self.always_false_op,
         )
+
+    def _discard_iterators(self, d_out):
+        # The second/unselected outputs are discarded; their iterators depend
+        # only on d_out's type, so build the pair once and cache it. Bound
+        # lazily (on first construction or first call) so a deserialized
+        # _Select, which has no construction d_out, builds them on first use.
+        try:
+            return self._discards
+        except AttributeError:
+            self._discards = (DiscardIterator(d_out), DiscardIterator(d_out))
+            return self._discards
 
     def _after_deserialize(self) -> None:
         # always_false_op (the always-false second predicate) is not serialized;
@@ -72,12 +79,13 @@ class _Select(Serializable):
         num_items: int,
         stream=None,
     ):
+        d_second, d_unselected = self._discard_iterators(d_out)
         return self.partitioner(
             temp_storage=temp_storage,
             d_in=d_in,
             d_first_part_out=d_out,
-            d_second_part_out=DiscardIterator(d_out),
-            d_unselected_out=DiscardIterator(d_out),
+            d_second_part_out=d_second,
+            d_unselected_out=d_unselected,
             d_num_selected_out=d_num_selected_out,
             select_first_part_op=make_op_adapter(cond),
             select_second_part_op=self.always_false_op,

@@ -60,6 +60,19 @@ def test_wrong_cc_major_reports_clear_message():
         deserialize(bad)
 
 
+def test_wrong_cc_minor_reports_clear_message():
+    # A CUBIN built for a higher minor than the device is not backward-compatible
+    # (SASS is only forward-compatible across minors within a major), so a blob
+    # targeting the same major but a higher minor must be rejected.
+    cc = cp.cuda.Device().compute_capability  # e.g. "75"
+    maj, minr = int(cc[0]), int(cc[1])
+    if minr >= 9:
+        pytest.skip("device minor is already the maximum within its major")
+    bad = _patch_u32(_reduce_blob(), _OFF_CC, maj * 10 + (minr + 1))
+    with pytest.raises(RuntimeError, match="device minor"):
+        deserialize(bad)
+
+
 def test_bad_magic_reports_clear_message():
     b = bytearray(_reduce_blob())
     i = b.find(_C_MAGIC)
