@@ -11,7 +11,7 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: mixed-line-ending
@@ -40,7 +40,7 @@ repos:
           )
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v20.1.7
+    rev: v22.1.5
     hooks:
       - id: clang-format
         types_or: [file]
@@ -62,7 +62,7 @@ repos:
   # TODO/REMINDER: add the Ruff vscode extension to the devcontainers
   # Ruff, the Python auto-correcting linter/formatter written in Rust
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.2
+    rev: v0.15.20
     hooks:
     - id: ruff  # linter
     - id: ruff-format  # formatter
@@ -74,7 +74,7 @@ repos:
     - id: gersemi
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         additional_dependencies: [tomli]
@@ -86,7 +86,7 @@ repos:
           )
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.16.1'
+    rev: 'v2.1.0'
     hooks:
       - id: mypy
         # numpy is intentionally not installed here: numpy>=2.3 ships PEP 695
