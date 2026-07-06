@@ -9,17 +9,8 @@ serialized members as ``(attr_name, kind)`` pairs, including its ``build_result`
 as a ``BUILD_RESULT(<type>)`` member. ``Serializable`` provides generic
 ``serialize``/``deserialize`` that walk the schema, so subclasses need no
 hand-written codec and both directions share one field order. Subclasses
-auto-register by their ``__qualname__`` (the wire tag) for the free-function
+auto-register by their ``__qualname__`` for the free-function
 ``deserialize`` dispatcher.
-
-Derived state (e.g. a compute-fn chosen from ``build_result``) is not stored in
-the schema; express it as a ``@property`` that recomputes on access, so a
-reconstructed instance needs nothing beyond its schema members. Fields used only
-while building the algorithm are omitted.
-
-Irregular algorithms, whose member kind depends on another member's value,
-subclass ``Serializable`` for the tag/registry/header framing but override
-``serialize``/``deserialize``.
 """
 
 from __future__ import annotations
@@ -187,9 +178,6 @@ class Serializable:
     __slots__ = ()
 
     # __qualname__ -> subclass, populated as algorithm modules are imported.
-    # A subclass's own qualified name is its wire tag, stamped into the blob
-    # header. Blobs are gated to the exact cuda-cccl version that wrote them
-    # (see codec), so the class name is a stable within-version identifier.
     _registry: dict[str, type[Serializable]] = {}
 
     # Subclasses declare their serialized members here.
