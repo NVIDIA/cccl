@@ -19,19 +19,19 @@ void recursive_check_device_setter(int id)
 {
   int cudart_id;
   cuda::__ensure_current_context setter(cuda::device_ref{id});
-  CCCLRT_REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
+  REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
   auto ctx = driver::__ctxGetCurrent();
-  CUDART(cudaGetDevice(&cudart_id));
-  CCCLRT_REQUIRE(cudart_id == id);
+  REQUIRE_CUDART(cudaGetDevice(&cudart_id));
+  REQUIRE(cudart_id == id);
 
   if (id != 0)
   {
     recursive_check_device_setter(id - 1);
 
-    CCCLRT_REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
-    CCCLRT_REQUIRE(ctx == driver::__ctxGetCurrent());
-    CUDART(cudaGetDevice(&cudart_id));
-    CCCLRT_REQUIRE(cudart_id == id);
+    REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
+    REQUIRE(ctx == driver::__ctxGetCurrent());
+    REQUIRE_CUDART(cudaGetDevice(&cudart_id));
+    REQUIRE(cudart_id == id);
   }
 }
 
@@ -45,6 +45,6 @@ C2H_TEST("ensure current context", "[device]")
   {
     recursive_check_device_setter(target_device);
 
-    CCCLRT_REQUIRE(test::count_driver_stack() == 0);
+    REQUIRE(test::count_driver_stack() == 0);
   }
 }

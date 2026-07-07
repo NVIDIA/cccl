@@ -99,8 +99,8 @@ C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
     cuda::copy_bytes(_stream, host_buffer, vec);
     _stream.sync();
 
-    CCCLRT_REQUIRE(vec[0] == get_expected_value(fill_byte));
-    CCCLRT_REQUIRE(vec[1] == 0xbeef);
+    REQUIRE(vec[0] == get_expected_value(fill_byte));
+    REQUIRE(vec[1] == 0xbeef);
   }
 }
 
@@ -153,7 +153,7 @@ C2H_CCCLRT_TEST("copy_bytes uses the stream device when current device differs",
   }
   stream.sync();
 
-  CCCLRT_REQUIRE(result == expected);
+  REQUIRE(result == expected);
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 
@@ -186,7 +186,7 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
   cuda::device_memory_pool source_pool{source_device};
   cuda::device_memory_pool destination_pool{destination_device};
   source_pool.enable_access_from(destination_device);
-  CCCLRT_REQUIRE(source_pool.is_accessible_from(destination_device));
+  REQUIRE(source_pool.is_accessible_from(destination_device));
   auto source_resource      = source_pool.as_ref();
   auto destination_resource = destination_pool.as_ref();
 
@@ -223,7 +223,7 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
   source_stream.sync();
   destination_stream.sync();
 
-  CCCLRT_REQUIRE(result == expected);
+  REQUIRE(result == expected);
 }
 
 template <typename SrcLayout = cuda::std::layout_right,
@@ -259,7 +259,7 @@ void test_mdspan_copy_bytes(
 
   for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)
   {
-    CCCLRT_REQUIRE(dst(0, i) == i);
+    REQUIRE(dst(0, i) == i);
   }
 }
 

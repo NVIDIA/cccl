@@ -56,7 +56,7 @@ void check_result_and_erase(cuda::stream_ref stream, Result&& result, uint8_t pa
   stream.sync();
   for (int& i : result)
   {
-    CCCLRT_REQUIRE(i == expected);
+    REQUIRE(i == expected);
     i = 0;
   }
 }
