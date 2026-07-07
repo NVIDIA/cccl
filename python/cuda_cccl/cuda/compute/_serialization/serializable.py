@@ -132,6 +132,50 @@ def BUILD_RESULT(cls: type) -> _SubObject:
     return _SubObject(cls)
 
 
+class _BuildResults(_Kind):
+    """A ``{cc: Device<Algo>BuildResult}`` mapping — one compiled build result per
+    target compute capability.
+
+    Wire form: ``u32`` count, then for each entry a ``u32`` cc key
+    (``cc_major * 10 + cc_minor``) followed by the length-prefixed build_result
+    blob. Entries are written in sorted-key order so the encoding is
+    deterministic. On read, each build_result is deserialized *without* loading
+    (``load=False``); the matching build result is loaded lazily on first call, so a
+    multi-arch artifact stays portable across GPUs and needs no live device to
+    deserialize.
+    """
+
+    __slots__ = ("cls",)
+
+    def __init__(self, cls: Any) -> None:
+        self.cls = cls
+
+    def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
+        items = sorted(value.items())
+        w.u32(len(items))
+        for cc, build_result in items:
+            w.u32(int(cc))
+            w.blob(build_result.serialize())
+
+    def read(self, r: codec.Reader, obj: Any) -> Any:
+        count = r.u32()
+        # A single-target blob must match this device, so validate its cc-major
+        # eagerly (clear error at deserialize). A multi-arch blob legitimately
+        # carries build results for other archs, so defer the cc check — resolve_build_result
+        # picks the matching one at call time. Kernel load stays lazy either way.
+        check_cc = count == 1
+        entries = [(r.u32(), r.blob()) for _ in range(count)]
+        return {
+            cc: self.cls.deserialize(blob, load=False, check_cc=check_cc)
+            for cc, blob in entries
+        }
+
+
+def BUILD_RESULTS(cls: type) -> _BuildResults:
+    """Schema kind for a ``{cc: Device<Algo>BuildResult}`` build result mapping."""
+    return _BuildResults(cls)
+
+
 def NESTED(cls: type) -> _SubObject:
     """Schema kind for a nested ``Serializable`` member (its blob is embedded)."""
     return _SubObject(cls)

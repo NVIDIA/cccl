@@ -9,8 +9,8 @@ from __future__ import annotations
 from ... import _bindings, types
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
-from ..._cccl_interop import call_build, set_cccl_iterator_state
-from ..._serialization import BUILD_RESULT, ITER, OP, Serializable
+from ..._cccl_interop import set_cccl_iterator_state
+from ..._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -28,7 +28,8 @@ class _MergeSort(Serializable):
         "d_out_values_cccl",
         "op_adapter",
         "op_cccl",
-        "build_result",
+        "build_results",
+        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -37,7 +38,7 @@ class _MergeSort(Serializable):
         ("d_out_keys_cccl", ITER),
         ("d_out_values_cccl", ITER),
         ("op_cccl", OP),
-        ("build_result", BUILD_RESULT(_bindings.DeviceMergeSortBuildResult)),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceMergeSortBuildResult)),
     )
 
     def __init__(
@@ -47,6 +48,7 @@ class _MergeSort(Serializable):
         d_out_keys: DeviceArrayLike,
         d_out_values: DeviceArrayLike | None,
         op: OpAdapter,
+        compute_capability=None,
     ):
         present_in_values = d_in_values is not None
         present_out_values = d_out_values is not None
@@ -62,13 +64,15 @@ class _MergeSort(Serializable):
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.int8)
 
-        self.build_result = call_build(
+        # Active build result, bound at __call__ from build_results (see resolve_build_result).
+        self.build_results = cccl.build_for_ccs(
             _bindings.DeviceMergeSortBuildResult,
             self.d_in_keys_cccl,
             self.d_in_values_cccl,
             self.d_out_keys_cccl,
             self.d_out_values_cccl,
             self.op_cccl,
+            compute_capability=compute_capability,
         )
 
     def __call__(
@@ -83,6 +87,9 @@ class _MergeSort(Serializable):
         op: Operator,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         present_in_values = d_in_values is not None
         present_out_values = d_out_values is not None
         assert present_in_values == present_out_values
@@ -107,7 +114,7 @@ class _MergeSort(Serializable):
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -130,6 +137,7 @@ def make_merge_sort(
     d_out_keys: DeviceArrayLike,
     d_out_values: DeviceArrayLike | None = None,
     op: Operator,
+    compute_capability=None,
 ):
     """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
 
@@ -159,7 +167,14 @@ def make_merge_sort(
       follow the required semantics can lead to incorrect results, silent memory corruption, or crashes.
     """
     op_adapter = make_op_adapter(op)
-    return _MergeSort(d_in_keys, d_in_values, d_out_keys, d_out_values, op_adapter)
+    return _MergeSort(
+        d_in_keys,
+        d_in_values,
+        d_out_keys,
+        d_out_values,
+        op_adapter,
+        compute_capability=compute_capability,
+    )
 
 
 def merge_sort(

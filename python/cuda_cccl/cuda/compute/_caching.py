@@ -117,11 +117,34 @@ class _CacheWithRegisteredKeyFunctions:
 
         @functools.wraps(func)
         def inner(*args, **kwargs):
-            cc = Device().compute_capability
             user_cache_key = _make_cache_key_from_args(*args, **kwargs)
-            cache_key = (user_cache_key, tuple(cc))
+            # When the caller targets explicit compute capabilities, that value
+            # is already part of user_cache_key (it arrives as a kwarg) and we
+            # must NOT query a device — the whole point is to build without a
+            # GPU. Otherwise, salt the key with the current device's cc so a
+            # build cached on one device isn't reused on another.
+            if kwargs.get("compute_capability") is None:
+                try:
+                    cc = tuple(Device().compute_capability)
+                except Exception as e:
+                    raise RuntimeError(
+                        "make_<algo> was called without compute_capability and no "
+                        "CUDA device is available to target. Pass "
+                        "compute_capability=<cc or list of ccs> to compile without "
+                        "a GPU (e.g. with ProxyArray / ProxyValue)."
+                    ) from e
+            else:
+                cc = None
+            cache_key = (user_cache_key, cc)
             if cache_key not in cache:
-                result = func(*args, **kwargs)
+                # Shared device code (operators, iterators) is compiled to LTO-IR
+                # once and linked into every per-arch build result, so it must target
+                # the lowest requested cc (nvJitLink requires final SM >= each
+                # linked input's arch). Set that target around the build.
+                from ._target_cc import target_cc
+
+                with target_cc(kwargs.get("compute_capability")):
+                    result = func(*args, **kwargs)
                 cache[cache_key] = result
             return cache[cache_key]
 
@@ -254,3 +277,20 @@ cache_with_registered_key_functions.register(
     types.FunctionType, lambda fn: CachableFunction(fn)
 )
 cache_with_registered_key_functions.register(_Struct, lambda v: (_type_fqn(v), v.dtype))
+
+
+def _register_proxy_types():
+    # Registered lazily to avoid importing _proxy (and numpy-dtype construction)
+    # at module import time; the keys are dtype-only so equal-dtype proxies share
+    # a cache entry.
+    from ._proxy import ProxyArray, ProxyValue
+
+    cache_with_registered_key_functions.register(
+        ProxyArray, lambda v: ("ProxyArray", v.dtype)
+    )
+    cache_with_registered_key_functions.register(
+        ProxyValue, lambda v: ("ProxyValue", v.dtype)
+    )
+
+
+_register_proxy_types()

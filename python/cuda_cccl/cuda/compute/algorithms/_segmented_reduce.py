@@ -13,12 +13,11 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
-    call_build,
     get_value_type,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._serialization import BUILD_RESULT, ITER, OP, VALUE, Serializable
+from .._serialization import BUILD_RESULTS, ITER, OP, VALUE, Serializable
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -30,7 +29,8 @@ from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 class _SegmentedReduce(Serializable):
     __slots__ = [
-        "build_result",
+        "build_results",
+        "loaded_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "start_offsets_in_cccl",
@@ -46,7 +46,7 @@ class _SegmentedReduce(Serializable):
         ("end_offsets_in_cccl", ITER),
         ("h_init_cccl", VALUE),
         ("op_cccl", OP),
-        ("build_result", BUILD_RESULT(_bindings.DeviceSegmentedReduceBuildResult)),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceSegmentedReduceBuildResult)),
     )
 
     def __init__(
@@ -57,6 +57,7 @@ class _SegmentedReduce(Serializable):
         end_offsets_in: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
+        compute_capability=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -69,7 +70,8 @@ class _SegmentedReduce(Serializable):
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self.build_result = call_build(
+        # Active build result, bound at __call__ from build_results (see resolve_build_result).
+        self.build_results = cccl.build_for_ccs(
             _bindings.DeviceSegmentedReduceBuildResult,
             self.d_in_cccl,
             self.d_out_cccl,
@@ -77,6 +79,7 @@ class _SegmentedReduce(Serializable):
             self.end_offsets_in_cccl,
             self.op_cccl,
             self.h_init_cccl,
+            compute_capability=compute_capability,
         )
 
     def __call__(
@@ -93,6 +96,9 @@ class _SegmentedReduce(Serializable):
         max_segment_size: int | None = None,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         if num_segments > np.iinfo(np.int32).max:
             raise RuntimeError(
                 "Segmented sort does not currently support more than 2^31-1 segments."
@@ -133,7 +139,7 @@ class _SegmentedReduce(Serializable):
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -158,6 +164,7 @@ def make_segmented_reduce(
     end_offsets_in: DeviceArrayLike | IteratorT,
     op: Operator,
     h_init: np.ndarray | GpuStruct,
+    compute_capability=None,
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
@@ -184,7 +191,13 @@ def make_segmented_reduce(
     """
     op_adapter = make_op_adapter(op)
     return _SegmentedReduce(
-        d_in, d_out, start_offsets_in, end_offsets_in, op_adapter, h_init
+        d_in,
+        d_out,
+        start_offsets_in,
+        end_offsets_in,
+        op_adapter,
+        h_init,
+        compute_capability=compute_capability,
     )
 
 

@@ -13,8 +13,8 @@ import numpy as np
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
-from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
-from .._serialization import BUILD_RESULT, ITER, U64, VALUE, Serializable
+from .._cccl_interop import set_cccl_iterator_state, to_cccl_value_state
+from .._serialization import BUILD_RESULTS, ITER, U64, VALUE, Serializable
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..typing import DeviceArrayLike, IteratorT
@@ -28,7 +28,8 @@ class _Histogram(Serializable):
         "h_num_output_levels_cccl",
         "h_lower_level_cccl",
         "h_upper_level_cccl",
-        "build_result",
+        "build_results",
+        "loaded_build_result",
     ]
 
     __serialization_schema__ = (
@@ -38,7 +39,7 @@ class _Histogram(Serializable):
         ("h_num_output_levels_cccl", VALUE),
         ("h_lower_level_cccl", VALUE),
         ("h_upper_level_cccl", VALUE),
-        ("build_result", BUILD_RESULT(_bindings.DeviceHistogramBuildResult)),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceHistogramBuildResult)),
     )
 
     def __init__(
@@ -49,6 +50,7 @@ class _Histogram(Serializable):
         h_lower_level: np.ndarray,
         h_upper_level: np.ndarray,
         num_samples: int,
+        compute_capability=None,
     ):
         num_channels = 1
         num_active_channels = 1
@@ -63,7 +65,8 @@ class _Histogram(Serializable):
         self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
         self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
 
-        self.build_result = call_build(
+        # Active build result, bound at __call__ from build_results (see resolve_build_result).
+        self.build_results = cccl.build_for_ccs(
             _bindings.DeviceHistogramBuildResult,
             num_channels,
             num_active_channels,
@@ -74,6 +77,7 @@ class _Histogram(Serializable):
             self.num_rows,
             row_stride_samples,
             is_evenly_segmented,
+            compute_capability=compute_capability,
         )
 
     def __call__(
@@ -88,6 +92,9 @@ class _Histogram(Serializable):
         num_samples: int,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         set_cccl_iterator_state(self.d_samples_cccl, d_samples)
         set_cccl_iterator_state(self.d_histogram_cccl, d_histogram)
         self.h_num_output_levels_cccl.state = to_cccl_value_state(h_num_output_levels)
@@ -104,7 +111,7 @@ class _Histogram(Serializable):
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute_even(
+        temp_storage_bytes = self.loaded_build_result.compute_even(
             d_temp_storage,
             temp_storage_bytes,
             self.d_samples_cccl,
@@ -129,6 +136,7 @@ def _make_histogram_even_impl(
     level_dtype,
     uses_64bit_offset: bool,
     uses_privatized_smem: bool,
+    compute_capability=None,
 ):
     """Internal cached implementation of make_histogram_even.
 
@@ -161,6 +169,7 @@ def _make_histogram_even_impl(
         h_lower_level,
         h_upper_level,
         build_num_samples,
+        compute_capability=compute_capability,
     )
 
 
@@ -172,6 +181,7 @@ def make_histogram_even(
     h_lower_level: np.ndarray,
     h_upper_level: np.ndarray,
     num_samples: int,
+    compute_capability=None,
 ):
     """Implements a device-wide histogram that places ``d_samples`` into evenly-spaced bins.
 
@@ -228,6 +238,7 @@ def make_histogram_even(
         level_dtype,
         uses_64bit_offset,
         uses_privatized_smem,
+        compute_capability=compute_capability,
     )
 
 

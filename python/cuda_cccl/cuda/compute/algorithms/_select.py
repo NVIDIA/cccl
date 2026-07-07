@@ -39,6 +39,7 @@ class _Select(Serializable):
         d_out: DeviceArrayLike | IteratorT,
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
+        compute_capability=None,
     ):
         self.always_false_op = _always_false_op()
         d_second, d_unselected = self._discard_iterators(d_out)
@@ -50,6 +51,7 @@ class _Select(Serializable):
             d_num_selected_out=d_num_selected_out,
             select_first_part_op=cond,
             select_second_part_op=self.always_false_op,
+            compute_capability=compute_capability,
         )
 
     def _discard_iterators(self, d_out):
@@ -101,6 +103,7 @@ def make_select(
     d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
     cond: Operator,
+    compute_capability=None,
 ):
     """
     Create a select object that can be called to select elements matching a condition.
@@ -131,7 +134,13 @@ def make_select(
     # Note: _Select internally calls make_three_way_partition which will
     # normalize the cond. But we've already normalized it, so the Op
     # will be passed through make_op unchanged.
-    return _Select(d_in, d_out, d_num_selected_out, cond_adapter)
+    return _Select(
+        d_in,
+        d_out,
+        d_num_selected_out,
+        cond_adapter,
+        compute_capability=compute_capability,
+    )
 
 
 def select(

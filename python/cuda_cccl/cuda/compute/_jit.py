@@ -549,13 +549,16 @@ def _infer_return_type(py_func, input_types):
 
 
 @functools.lru_cache(maxsize=256)
-def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type):
+def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None):
     """Cached implementation of op compilation.
 
     Args:
         cachable_op: CachableFunction wrapper around the operator
         input_types_tuple: Tuple of input TypeDescriptors
         output_type: Output TypeDescriptor
+        cc: Target compute capability ``(major, minor)`` for the LTO-IR, or None
+            for the current device. Part of the cache key so the same operator
+            compiled for different arches does not collide.
     """
     from ._bindings import Op, OpKind
     from ._odr_helpers import create_op_void_ptr_wrapper
@@ -587,7 +590,9 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type):
             kind="llvm_ir",
         )
     else:
-        ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+        ltoir, _ = numba.cuda.compile(
+            wrapped_op, sig=wrapper_sig, output="ltoir", cc=cc
+        )
         code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
     return Op(
@@ -609,7 +614,11 @@ def compile_op(op, input_types, output_type=None):
     from ._caching import CachableFunction
 
     cachable_op = CachableFunction(op)
-    return _compile_op_impl(cachable_op, tuple(input_types), output_type)
+    from ._target_cc import get_target_cc
+
+    return _compile_op_impl(
+        cachable_op, tuple(input_types), output_type, get_target_cc()
+    )
 
 
 class _StatelessOp(OpAdapter):
@@ -926,7 +935,11 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
             kind="llvm_ir",
         )
     else:
-        ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+        from ._target_cc import get_target_cc
+
+        ltoir, _ = numba.cuda.compile(
+            wrapped_op, sig=wrapper_sig, output="ltoir", cc=get_target_cc()
+        )
         code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
     # Pack all data pointers as bytes (sequentially)

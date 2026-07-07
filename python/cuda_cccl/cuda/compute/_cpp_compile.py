@@ -23,10 +23,18 @@ except ImportError:
 
 
 def _get_arch_string() -> str:
-    """Get the compute capability string for the current device."""
+    """Target arch string for iterator LTO-IR compilation.
 
-    device = Device()
-    cc_major, cc_minor = device.compute_capability
+    Honors the build's target compute capability (set for multi-arch / no-GPU
+    builds) so iterator device code is compiled for the lowest target arch and
+    links into every build result; falls back to the current device otherwise.
+    """
+    from ._target_cc import get_target_cc
+
+    cc = get_target_cc()
+    if cc is None:
+        cc = Device().compute_capability
+    cc_major, cc_minor = cc
     return f"sm_{cc_major}{cc_minor}"
 
 
