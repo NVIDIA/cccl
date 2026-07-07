@@ -225,7 +225,7 @@ public:
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
-    _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
+    [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
     {
       return ::cuda::std::apply(
         [&](const auto&... __iters) -> decltype(auto) {
@@ -254,7 +254,7 @@ public:
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
-    _CCCL_API friend constexpr auto operator<=>(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator<=>(const __iterator& __x, const __iterator& __y)
     {
       return __x.__inner_ <=> __y.__inner_;
     }
@@ -262,28 +262,28 @@ public:
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
-    _CCCL_API friend constexpr __iterator operator+(const __iterator& __i, difference_type __n)
+    [[nodiscard]] _CCCL_API friend constexpr __iterator operator+(const __iterator& __i, difference_type __n)
     {
       return __iterator{*__i.__parent_, __i.__inner_ + __n};
     }
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
-    _CCCL_API friend constexpr __iterator operator+(difference_type __n, const __iterator& __i)
+    [[nodiscard]] _CCCL_API friend constexpr __iterator operator+(difference_type __n, const __iterator& __i)
     {
       return __iterator{*__i.__parent_, __i.__inner_ + __n};
     }
 
     _CCCL_TEMPLATE(class _Base2 = _Base)
     _CCCL_REQUIRES(random_access_range<_Base2>)
-    _CCCL_API friend constexpr __iterator operator-(const __iterator& __i, difference_type __n)
+    [[nodiscard]] _CCCL_API friend constexpr __iterator operator-(const __iterator& __i, difference_type __n)
     {
       return __iterator{*__i.__parent_, __i.__inner_ - __n};
     }
 
     _CCCL_TEMPLATE(bool _Const2 = _Const)
     _CCCL_REQUIRES(sized_sentinel_for<__ziperator<_Const2>, __ziperator<_Const2>>)
-    _CCCL_API friend constexpr difference_type operator-(const __iterator& __x, const __iterator& __y)
+    [[nodiscard]] _CCCL_API friend constexpr difference_type operator-(const __iterator& __x, const __iterator& __y)
     {
       return __x.__inner_ - __y.__inner_;
     }
