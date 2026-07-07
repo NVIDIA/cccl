@@ -321,7 +321,11 @@ def call_compile(build_impl_cls: Callable, *args, cc, **kwargs):
 def build_for_ccs(build_impl_cls: Callable, *args, compute_capability=None, **kwargs):
     """Build the ``{cc_key: build_result}`` map for an algorithm.
 
-    With ``compute_capability=None`` (the default), this
+    With ``compute_capability=None`` (the default), this performs a fused
+    build+load for the current device and returns a single-entry map whose
+    result is already loaded. Otherwise it compiles (without loading) for each
+    requested compute capability and returns ``{cc_key: build_result}``, with
+    each result loaded lazily on first use by ``resolve_build_result``.
     """
     ccs = normalize_compute_capabilities(compute_capability)
     if ccs is None:

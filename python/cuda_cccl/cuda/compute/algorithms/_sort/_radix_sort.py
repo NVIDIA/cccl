@@ -181,6 +181,11 @@ def make_radix_sort(
         d_in_values: Optional Device array or DoubleBuffer containing the input keys to be sorted
         d_out_values: Device array to store the sorted values
         op: Callable representing the comparison operator
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the radix sort

@@ -247,6 +247,11 @@ def make_exclusive_scan(
             The signature is ``(T, T) -> T``, where ``T`` is the data type of
             the initial value ``init_value``.
         init_value: Numpy array, device array, or GPU struct storing initial value of the scan
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the scan
@@ -344,6 +349,11 @@ def make_inclusive_scan(
             The signature is ``(T, T) -> T``, where ``T`` is the data type of
             the initial value ``init_value``.
         init_value: Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the scan

@@ -557,8 +557,9 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None
         input_types_tuple: Tuple of input TypeDescriptors
         output_type: Output TypeDescriptor
         cc: Target compute capability ``(major, minor)`` for the LTO-IR, or None
-            for the current device. Part of the cache key so the same operator
-            compiled for different arches does not collide.
+            to use Numba's configured default PTX compute capability
+            (``config.CUDA_DEFAULT_PTX_CC``). Part of the cache key so the same
+            operator compiled for different arches does not collide.
     """
     from ._bindings import Op, OpKind
     from ._odr_helpers import create_op_void_ptr_wrapper

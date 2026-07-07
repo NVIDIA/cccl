@@ -170,6 +170,11 @@ def make_three_way_partition(
             The signature is ``(T) -> uint8``, where ``T`` is the input data type.
             Returns 1 (selected) or 0 (not selected).
             Can reference device arrays as globals/closures - they will be automatically captured.
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the three-way partition

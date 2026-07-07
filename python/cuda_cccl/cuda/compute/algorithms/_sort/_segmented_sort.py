@@ -66,7 +66,6 @@ class _SegmentedSort(Serializable):
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
         # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.loaded_build_result = None
         self.build_results = cccl.build_for_ccs(
             _bindings.DeviceSegmentedSortBuildResult,
             _bindings.SortOrder.ASCENDING
@@ -182,6 +181,11 @@ def make_segmented_sort(
         start_offsets_in: Device array or iterator containing the sequence of beginning offsets
         end_offsets_in: Device array or iterator containing the sequence of ending offsets
         order: SortOrder specifying the order of the sort
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the segmented sort
