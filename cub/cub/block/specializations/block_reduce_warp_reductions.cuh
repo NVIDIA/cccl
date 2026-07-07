@@ -180,7 +180,8 @@ struct BlockReduceWarpReductions
     // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
     constexpr int small_block_warp_threshold = is_warp_redux_op_supported<ReductionOp, T> ? 2 : 4;
     constexpr bool use_parallel_reduction =
-      (warps >= small_block_warp_threshold) && (threads_per_block >= warp_threads);
+      (warps >= small_block_warp_threshold) && (threads_per_block >= warp_threads)
+      && ::cuda::has_identity_element_v<ReductionOp, T>;
 
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
     if constexpr (!use_parallel_reduction)
