@@ -74,6 +74,7 @@ C2H_TEST("DeviceTransform::Transform vectorized store widening from uint8",
   REQUIRE(reference_h == result);
 }
 
+#if TEST_LAUNCH == 0
 struct ublkcp_store_vec_size_2_selector
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::TransformPolicy
@@ -109,3 +110,4 @@ C2H_TEST("DeviceTransform::Transform tunable narrower store_vec_size", "[device]
   std::transform(in_h.begin(), in_h.end(), reference_h.begin(), cast_to<out_t>{});
   REQUIRE(reference_h == result);
 }
+#endif // TEST_LAUNCH == 0
