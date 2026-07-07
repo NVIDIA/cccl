@@ -45,7 +45,9 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceHistogram}
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceHistogram that accept an environment can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns a @ref HistogramPolicy, as shown in the
 //! example below:
