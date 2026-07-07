@@ -28,6 +28,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__type_traits/common_type.h>
@@ -373,25 +374,6 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_To>)
   }
   return __result;
 }
-
-// ------------------------------------------------------------------
-// ------------ __mul_overflow --------------------------------------
-// ------------------------------------------------------------------
-
-// Multiplies two values and detects overflow. Returns true if overflow occurred.
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __mul_overflow(_Tp __x, _Tp __y, _Tp* __res) noexcept
-{
-  *__res = __x * __y;
-  return __x && ((*__res / __x) != __y);
-}
-
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __mul_overflow(_Tp __x, _Tp __y) noexcept
-{
-  const auto __res = __x * __y;
-  return __x && ((__res / __x) != __y);
-}
 } // namespace __mdspan_detail
 
 // ------------------------------------------------------------------
@@ -654,7 +636,6 @@ namespace __mdspan_detail
 template <class _Extents>
 [[nodiscard]] _CCCL_API constexpr bool __required_span_size_is_representable(const _Extents& __ext) noexcept
 {
-  using ::cuda::std::__mdspan_detail::__mul_overflow;
   bool __result = true;
   if constexpr (_Extents::rank() != 0)
   {
@@ -663,7 +644,7 @@ template <class _Extents>
     __index_type __prod = __ext.extent(0);
     for (__rank_type __r = 1; __r < _Extents::rank(); __r++)
     {
-      if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
+      if (::cuda::mul_overflow(__prod, __ext.extent(__r), __prod))
       {
         __result = false;
         break;
