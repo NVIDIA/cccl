@@ -91,7 +91,7 @@ struct FindBoundSortedValuesPolicySelector
 };
 // example-end lower-bound-sorted-values-policy-selector
 
-C2H_TEST("cub::DeviceFind::LowerBoundSortedValues env-based API with tuning", "[find][env][binary-search]")
+C2H_TEST("cub::DeviceFind::LowerBoundSortedValues accepts a custom policy selector", "[find][env][binary-search]")
 {
   // example-begin lower-bound-sorted-values-tuning
   thrust::device_vector<int> d_range  = {0, 2, 4, 6, 8};

@@ -29,7 +29,9 @@
 CUB_NAMESPACE_BEGIN
 
 //! @rst
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! The FindIf algorithms that accept an environment can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns a @ref FindIfPolicy, as shown in the
 //! example below:

@@ -974,8 +974,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
     {
       const bool single_tile_problem =
-        offset_num_items <= static_cast<offset_t>(
-          active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
+        offset_num_items <= (static_cast<offset_t>(active_policy.single_tile.threads_per_block)
+                             * active_policy.single_tile.items_per_thread);
 
       // if the problem is small enough to fit into a single tile, just handle it and return early
       if (single_tile_problem)
