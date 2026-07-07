@@ -216,15 +216,7 @@ private:
         return detail::dispatch_with_env_and_tuning<default_policy_selector>(
           env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
             return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
-              storage,
-              bytes,
-              d_in,
-              d_out,
-              resolve_num_items(num_items),
-              init,
-              stream,
-              transform_op,
-              policy_selector);
+              storage, bytes, d_in, d_out, resolve_num_items(num_items), init, stream, transform_op, policy_selector);
           });
       }
     }
@@ -506,14 +498,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
     return detail::reduce::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      resolve_num_items(num_items),
-      reduction_op,
-      init,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_in, d_out, resolve_num_items(num_items), reduction_op, init, stream);
   }
 
   //! @rst
