@@ -646,8 +646,8 @@ template <typename OffsetT>
     static_assert(
       ::cuda::std::is_integral_v<element_t> && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<element_t>, bool>,
       "the num_items element type must be integral, but not bool");
-    static_assert(sizeof(element_t) == 4 || sizeof(element_t) == 8,
-                  "a deferred num_items element must be a 32- or 64-bit integer");
+    static_assert(
+      sizeof(element_t) == sizeof(::cuda::std::int32_t) || sizeof(element_t) == sizeof(::cuda::std::int64_t));
   }
 
   return CUB_NS_QUALIFIER::detail::normalize_parameter<num_items_offset_t<OffsetT>>(num_items);
@@ -939,7 +939,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   // TODO: Remove this workaround once nvcc versions older than 12.4 are no longer supported.
   // Older nvcc versions eagerly instantiate discarded statements in generic lambdas, so perform this conversion here.
-  offset_t offset_num_items{};
+  // Both suppressions are needed for "never referenced" and "set but never used" diagnostics across supported nvcc
+  // and MSVC combinations.
+  [[maybe_unused]] offset_t offset_num_items{};
   if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
   {
     offset_num_items = static_cast<offset_t>(num_items);

@@ -320,8 +320,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   static constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t = detail::agent_reduce_policy<
-    0,
-    0,
+    /* NominalThreadsPerBlock4B = */ 0,
+    /* NominalItemsPerThread4B = */ 0,
     AccumT,
     policy.vec_size,
     policy.reduce_algorithm,
@@ -378,7 +378,7 @@ template <typename PolicySelector,
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(current_policy<PolicySelector>().single_tile.threads_per_block),
+  int{current_policy<PolicySelector>().single_tile.threads_per_block},
   1) void DeviceReduceDeferredSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
                                                OutputIteratorT d_out,
                                                _CCCL_GRID_CONSTANT const NormalizedNumItemsT normalized_num_items,
@@ -398,8 +398,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
 
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t = detail::agent_reduce_policy<
-    0,
-    0,
+    /* NominalThreadsPerBlock4B = */ 0,
+    /* NominalItemsPerThread4B = */ 0,
     AccumT,
     policy.vec_size,
     policy.reduce_algorithm,
