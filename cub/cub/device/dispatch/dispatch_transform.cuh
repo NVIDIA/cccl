@@ -28,7 +28,6 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__cmath/pow2.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
@@ -314,7 +313,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   }
 
   auto [launcher, kernel, items_per_thread] = *ret;
-
   return launcher.doit(
     kernel,
     num_items,
