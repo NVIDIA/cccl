@@ -381,8 +381,8 @@ C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[l
   int* device_value{};
   {
     cuda::__ensure_current_context guard(explicit_device);
-    CUDART(cudaMalloc(reinterpret_cast<void**>(&device_value), sizeof(int)));
-    CUDART(cudaMemsetAsync(device_value, 0, sizeof(int), stream.get()));
+    REQUIRE_CUDART(cudaMalloc(reinterpret_cast<void**>(&device_value), sizeof(int)));
+    REQUIRE_CUDART(cudaMemsetAsync(device_value, 0, sizeof(int), stream.get()));
   }
 
   {
@@ -396,8 +396,8 @@ C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[l
   int value{};
   {
     cuda::__ensure_current_context guard(explicit_device);
-    CUDART(cudaMemcpy(&value, device_value, sizeof(int), cudaMemcpyDeviceToHost));
-    CUDART(cudaFree(device_value));
+    REQUIRE_CUDART(cudaMemcpy(&value, device_value, sizeof(int), cudaMemcpyDeviceToHost));
+    REQUIRE_CUDART(cudaFree(device_value));
   }
 
   CHECK(value == 42);
