@@ -109,7 +109,7 @@ struct segment_size_to_tile_count_op
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
   {
     return static_cast<TotalNumItemsValueType>(
-      ::cuda::ceil_div(params::get_param(segment_sizes, segment_id), large_segment_agent_tile_size));
+      ::cuda::ceil_div(params::get_segment_size(segment_sizes, segment_id), large_segment_agent_tile_size));
   }
 };
 
@@ -559,8 +559,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
     return cudaSuccess;
   }
 
-  // A zero bound would drive `clusterDim.x = 0`, which the runtime rejects.
-  if (max_seg_size == 0)
+  // No work to launch when the tightest known upper bound on any segment size (static or runtime) is non-positive:
+  // every segment is empty (e.g. a uniform negative size, which the kernel would clamp to 0). Also avoids
+  // `clusterDim.x = 0` and a negative maximum feeding the unsigned sizing math below.
+  if (max_seg_size <= 0)
   {
     return cudaSuccess;
   }
@@ -704,10 +706,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
       const auto c_lo = ::cuda::ceil_div(seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity));
       // Cluster blocks the max segment actually needs (shared with the device so the launch is never wider than
       // necessary). At `min_chunks_per_block == 1` this equals `c_full`; a larger knob shrinks it.
-      const int desired_cluster_blocks = static_cast<int>(batched_topk_cluster::effective_cluster_blocks_from_chunks(
-        ::cuda::ceil_div(seg, chunk_items_u64),
-        MinChunksPerBlock,
-        static_cast<unsigned int>(max_supported_cluster_blocks)));
+      const int desired_cluster_blocks = batched_topk_cluster::effective_cluster_blocks_from_chunks(
+        ::cuda::ceil_div(seg, chunk_items_u64), MinChunksPerBlock, max_supported_cluster_blocks);
 
       int cluster_blocks   = 0;
       int dynamic_smem_sel = 0;
@@ -1009,6 +1009,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_baseline_arm(
       return cudaSuccess;
     }
 
+    // No work to launch when the tightest known upper bound on any segment size is non-positive (mirrors the cluster
+    // arm): every segment is empty (e.g. a uniform host-known negative size, which the agent clamps to 0 device-side).
+    if (runtime_max_segment_size(segment_sizes) <= 0)
+    {
+      return cudaSuccess;
+    }
+
     static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value,
                   "Only a uniform number of segments is currently supported.");
 
@@ -1194,6 +1201,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     "unsupported architecture(s), relax the request, or define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT to defer the "
     "diagnosis to runtime (cudaErrorNotSupported).");
 #endif // strict unsupported-arch check
+
+  // The supported maximum segment size (2^21) is enforced at compile time at the public entry; a statically negative
+  // lower bound is allowed and negative runtime sizes are clamped to 0 (see detail::params::get_segment_size). A
+  // per-segment value outside its declared bound is a caller error (asserted for host-known values, otherwise UB).
 
   detail::TripleChevronFactory launcher_factory{};
   ::cuda::compute_capability cc{};

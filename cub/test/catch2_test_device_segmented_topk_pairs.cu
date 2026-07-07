@@ -698,9 +698,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned
 }
 
 // Streaming counterpart of the narrow-segment-size regression (pairs). Streaming needs segments larger than the
-// resident cluster coverage (>128 Ki), which 8/16-bit types can't represent, so we use signed 32-bit -- same width as
-// the (unsigned) internal `offset_t` but signed -- to exercise the streaming path's index arithmetic (including the
-// value gather) across det/non-det.
+// resident cluster coverage (>128 Ki), which 8/16-bit types can't represent, so we use the same signed 32-bit type as
+// the internal `offset_t` to exercise the streaming path's index arithmetic (including the value gather) across
+// det/non-det.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs stream large segments with a signed 32-bit segment-size type",
          "[pairs][segmented][topk][device][cluster][determinism]",
          det_tie_pair_combos)

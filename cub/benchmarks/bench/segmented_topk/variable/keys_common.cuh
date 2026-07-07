@@ -241,12 +241,12 @@ void decode_style_variable_topk_keys(
     return;
   }
 
-  const auto num_segments                                         = static_cast<int>(state.get_int64("NumSegments"));
-  const thrust::device_vector<cuda::std::int64_t> d_segment_sizes = generate(
+  const auto num_segments                                     = static_cast<int>(state.get_int64("NumSegments"));
+  const thrust::device_vector<segment_size_t> d_segment_sizes = generate(
     static_cast<std::size_t>(num_segments),
     bit_entropy::_1_000,
-    static_cast<cuda::std::int64_t>(K),
-    static_cast<cuda::std::int64_t>(MaxSegmentSize));
+    static_cast<segment_size_t>(K),
+    static_cast<segment_size_t>(MaxSegmentSize));
   const auto input_elements  = thrust::reduce(d_segment_sizes.begin(), d_segment_sizes.end());
   const auto output_elements = static_cast<std::size_t>(num_segments) * K;
 
@@ -268,11 +268,11 @@ void decode_style_variable_topk_keys(
 
   state.add_element_count(input_elements, "NumElements");
   state.add_global_memory_reads<KeyT>(input_elements, "InputKeys");
-  state.add_global_memory_reads<cuda::std::int64_t>(num_segments, "SegmentSizes");
+  state.add_global_memory_reads<segment_size_t>(num_segments, "SegmentSizes");
   state.add_global_memory_writes<KeyT>(output_elements, "OutputKeys");
 
   // Host copy of segment sizes — consumed only by the per-segment device backend.
-  std::vector<cuda::std::int64_t> h_segment_sizes(static_cast<std::size_t>(num_segments));
+  std::vector<segment_size_t> h_segment_sizes(static_cast<std::size_t>(num_segments));
   thrust::copy(d_segment_sizes.begin(), d_segment_sizes.end(), h_segment_sizes.begin());
 
   caching_allocator_t alloc;

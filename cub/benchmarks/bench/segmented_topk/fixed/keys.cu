@@ -227,8 +227,8 @@ void fixed_seg_size_topk_keys(
   state.add_global_memory_writes<KeyT>(selected_elements * num_segments, "OutputKeys");
 
   // Host copy of segment sizes — all entries equal MaxSegmentSize for fixed-size segments. Consumed only by the
-  // per-segment device backend.
-  std::vector<cuda::std::int64_t> h_segment_sizes(num_segments, static_cast<cuda::std::int64_t>(MaxSegmentSize));
+  // per-segment device backend. Segment sizes fit in a signed 32-bit integer (the library caps them at 2^21).
+  std::vector<cuda::std::int32_t> h_segment_sizes(num_segments, static_cast<cuda::std::int32_t>(MaxSegmentSize));
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {

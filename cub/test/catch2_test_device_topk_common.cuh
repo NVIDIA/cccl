@@ -50,7 +50,8 @@ inline void skip_if_batched_topk_cluster_unavailable(bool needs_cluster)
 // the cluster backend if it is deterministic / has a concrete tie-break, or if `static_max_segment_size` exceeds the
 // baseline backend's coverage; skips if that backend is unavailable. Deriving the size decision here (rather than a
 // precomputed `oversize` bool) keeps the threshold in one place. Pass the same maximum segment size the test hands to
-// the dispatch (its `cuda::args::bounds<...>` upper bound, or the type's maximum when unbounded). Note that `oversize`
+// the dispatch: its `cuda::args::bounds<...>` upper bound (or, for an un-annotated narrow type, that type's maximum;
+// a type whose maximum exceeds 2^21 no longer compiles without a bound). Note that `oversize`
 // uses only the tile-size bound `baseline_max_covered_segment_size`; the dispatch's `baseline_can_cover_v` additionally
 // checks the agent's shared-memory fit, so a borderline size the bound deems baseline-coverable could still route to
 // the cluster backend (such a case would fail rather than skip if the cluster backend is unavailable).

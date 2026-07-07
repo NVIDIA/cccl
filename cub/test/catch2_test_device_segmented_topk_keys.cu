@@ -14,8 +14,10 @@
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
+#include <thrust/sort.h>
 #include <thrust/tabulate.h>
 
 #include <cuda/__execution/determinism.h>
@@ -25,6 +27,8 @@
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/signbit.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
@@ -137,38 +141,6 @@ using key_types =
 using select_direction_list =
   c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
 
-// Segment-size argument form for the single-value (uniform) fixed-size tests. The host-value forms (`immediate` and an
-// un-annotated raw scalar, which auto-wraps as an `immediate` with loose bounds) are distributed across the TEST_TYPES
-// variants so each variant compiles only one extra dispatch instantiation (balancing build time). The un-annotated form
-// reports a `numeric_limits<T>::max()` upper bound, so the types_2 variant also exercises the loose-bound
-// oversize/streaming fallback (and its int-narrowing overflow guard) on the cluster backend. The remaining public forms
-// get their own dedicated tests below (`constant` needs a compile-time size; `deferred` needs a device-accessible
-// handle), and `deferred_sequence` is covered by the variable-size tests.
-enum class seg_size_arg
-{
-  immediate_form,
-  unannotated_form,
-};
-
-template <seg_size_arg Form, auto Lo, auto Hi, typename SizeT>
-auto make_segment_size_arg(SizeT segment_size)
-{
-  if constexpr (Form == seg_size_arg::immediate_form)
-  {
-    return cuda::args::immediate{segment_size, cuda::args::bounds<Lo, Hi>()};
-  }
-  else
-  {
-    return segment_size; // un-annotated: auto-wrapped as an immediate with loose bounds
-  }
-}
-
-#if TEST_TYPES == 2
-inline constexpr seg_size_arg fixed_seg_size_arg = seg_size_arg::unannotated_form;
-#else
-inline constexpr seg_size_arg fixed_seg_size_arg = seg_size_arg::immediate_form;
-#endif
-
 // A (determinism, tie-break) requirement pair, used as a single compile-time test axis. Not a full cross product: a
 // tie-break preference is only meaningful with a deterministic requirement and is `gpu_to_gpu` by definition.
 template <cuda::execution::determinism::__determinism_t Determinism, cuda::execution::tie_break::__tie_break_t TieBreak>
@@ -256,12 +228,10 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   // Copy input for verification
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
-  // Run the top-k algorithm. The segment-size argument form (immediate / un-annotated) is selected per TEST_TYPES so
-  // the suite covers each form without any single variant compiling all of them.
   batched_topk_keys<direction>(
     d_keys_in,
     d_keys_out,
-    make_segment_size_arg<fixed_seg_size_arg, segment_size_t{1}, max_segment_size>(segment_size),
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, max_segment_size>()},
     cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
     cuda::args::immediate{num_segments});
   // Prepare expected results
@@ -623,8 +593,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
 }
 
 // Streaming counterpart of the narrow-segment-size regression. Streaming needs segments larger than the resident
-// cluster coverage (>128 Ki), which 8/16-bit types can't represent, so we use signed 32-bit -- same width as the
-// (unsigned) internal `offset_t` but signed -- to exercise the streaming path's index arithmetic across det/non-det.
+// cluster coverage (>128 Ki), which 8/16-bit types can't represent, so we use signed 32-bit -- the same signed
+// `int32_t` as the internal `offset_t` -- to exercise the streaming path's index arithmetic across det/non-det.
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 32-bit segment-size type",
          "[keys][segmented][topk][device][cluster][determinism]",
          det_tie_combos)
@@ -1298,3 +1268,241 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys accept unwrapped (plain integral) k a
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
+
+// The following tests exercise public-API behavior that is independent of key type and launch mechanism, so they call
+// the API directly (not through the templated launch wrapper) and are compiled once for the whole param matrix.
+#if TEST_TYPES == 0 && TEST_LAUNCH == 0
+// The temporary storage size requirement must not assume a particular base-pointer alignment (the public contract
+// states that no special alignment is required). Over-allocate by one byte and offset the base pointer.
+C2H_TEST("DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage pointer", "[keys][segmented][topk][device]")
+{
+  constexpr int num_segments = 2;
+  constexpr int segment_size = 8;
+  constexpr int k            = 3;
+
+  auto keys_in  = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
+  auto keys_out = thrust::device_vector<int>(num_segments * k, thrust::no_init);
+
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), segment_size);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  constexpr auto segment_sizes = cuda::args::constant<segment_size>{};
+  constexpr auto k_arg         = cuda::args::constant<k>{};
+  auto num_segs                = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env                     = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
+
+  size_t temp_storage_bytes = 0;
+  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
+  REQUIRE(error == cudaSuccess);
+
+  // Allocate one extra byte and offset the base pointer by one to misalign it.
+  thrust::device_vector<char> temp_storage(temp_storage_bytes + 1, thrust::no_init);
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()) + 1,
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
+}
+
+// The supported maximum segment size (2^21, about 2 million) is enforced at compile time from the statically-known
+// maximum. An un-annotated segment size is accepted only when its element type's maximum already fits: a narrow type
+// (e.g. uint16, [0, 65535]) qualifies with no cuda::args::bounds, while a type whose max exceeds 2^21 (int32, uint32,
+// int64) needs one. Verify the un-annotated narrow path compiles and runs end-to-end.
+C2H_TEST("DeviceBatchedTopK::MaxKeys accepts an un-annotated narrow-unsigned segment size",
+         "[keys][segmented][topk][device]")
+{
+  constexpr int num_segments = 2;
+  constexpr int segment_size = 8;
+  constexpr int k            = 3;
+
+  auto keys_in  = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
+  auto keys_out = thrust::device_vector<int>(num_segments * k, thrust::no_init);
+
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), segment_size);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  // Un-annotated narrow-unsigned segment size: a bare integral value (no cuda::args wrapper), taken as a uniform
+  // immediate. With no wrapper/bounds the static maximum is the type maximum (uint16 -> 65535), which must itself fall
+  // not exceed 2^21 to be accepted; the static_assert below pins that exposed bound. Any narrow-unsigned type
+  // qualifies the same way (e.g. uint8, [0, 255]); uint16 is representative.
+  auto segment_sizes = cuda::std::uint16_t{segment_size};
+  static_assert(cuda::args::__traits<decltype(segment_sizes)>::highest == 65535,
+                "expected the un-annotated uint16 segment size to expose its full type range as the static bound");
+  constexpr auto k_arg = cuda::args::constant<k>{};
+  auto num_segs        = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env             = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
+
+  size_t temp_storage_bytes = 0;
+  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
+}
+
+// A negative statically-known lower bound (here an explicit `bounds<-8, ...>`, matching e.g. a bare `int16_t`) is
+// accepted: the kernel clamps a negative runtime segment size up to 0, so that segment is treated as empty (skipped,
+// no output) instead of indexing with a negative count. A non-negative lower bound is instead trusted (no clamp).
+// Exercise the clamp with a mixed batch -- segment 0 declares a negative size, segment 1 a normal one. Small size +
+// no determinism requirement keeps this on the baseline backend (the cluster backend is covered separately below).
+C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty segment (baseline backend)",
+         "[keys][segmented][topk][device]")
+{
+  using seg_size_t           = cuda::std::int16_t; // negative-capable lower bound -> clamp path
+  constexpr int num_segments = 2;
+  constexpr int k            = 3;
+  constexpr int stride       = 8;
+  constexpr int sentinel     = -12345;
+
+  // Segment 0: declared size -1 -> clamped to 0 -> skipped. Segment 1: 8 real keys, top-3 max = {9, 8, 7}.
+  auto d_segment_sizes = thrust::device_vector<seg_size_t>{seg_size_t{-1}, seg_size_t{stride}};
+  auto keys_in         = thrust::device_vector<int>{0, 0, 0, 0, 0, 0, 0, 0, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
+  auto keys_out        = thrust::device_vector<int>(num_segments * k, sentinel);
+
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), stride);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  auto segment_sizes =
+    cuda::args::deferred_sequence{thrust::raw_pointer_cast(d_segment_sizes.data()), cuda::args::bounds<-8, 100>()};
+  constexpr auto k_arg = cuda::args::constant<k>{};
+  auto num_segs        = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env             = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
+
+  size_t temp_storage_bytes = 0;
+  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
+  REQUIRE(error == cudaSuccess);
+
+  // Segment 0's output slots are left untouched (still the sentinel); segment 1 holds its top-3.
+  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  REQUIRE(keys_out == thrust::device_vector<int>{sentinel, sentinel, sentinel, 9, 8, 7});
+}
+
+// Cluster-backend counterpart of the clamp test above: a deterministic requirement forces the SM90+ cluster backend
+// even for small segments, so this pins the cluster agent's own empty-segment early-out on a clamped negative size.
+C2H_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty segment (cluster backend)",
+         "[keys][segmented][topk][device][cluster][determinism]")
+{
+  using seg_size_t           = cuda::std::int16_t;
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+  constexpr int num_segments = 2;
+  constexpr int k            = 3;
+  constexpr int stride       = 8;
+  constexpr int sentinel     = -12345;
+  constexpr cuda::std::int64_t static_max_segment_size = 100;
+
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
+
+  // Segment 0: declared size -1 -> clamped to 0 -> skipped. Segment 1: 8 real keys, top-3 max = {9, 8, 7}.
+  auto d_segment_sizes = thrust::device_vector<seg_size_t>{seg_size_t{-1}, seg_size_t{stride}};
+  auto keys_in         = thrust::device_vector<int>{0, 0, 0, 0, 0, 0, 0, 0, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
+  auto keys_out        = thrust::device_vector<int>(num_segments * k, sentinel);
+
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), stride);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  auto segment_sizes =
+    cuda::args::deferred_sequence{thrust::raw_pointer_cast(d_segment_sizes.data()), cuda::args::bounds<-8, 100>()};
+
+  batched_topk_keys<cub::detail::topk::select::max, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    cuda::args::constant<k>{},
+    cuda::args::immediate{cuda::std::int64_t{num_segments}});
+
+  // Segment 0's output slots are left untouched (still the sentinel); segment 1 holds its top-3.
+  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  REQUIRE(keys_out == thrust::device_vector<int>{sentinel, sentinel, sentinel, 9, 8, 7});
+}
+
+// A uniform (host-known) negative segment size means every segment is empty. Routed to the cluster dispatch by a
+// deterministic requirement, this must be recognized on the host from the non-positive upper bound and skipped without
+// launching (the `max_seg_size <= 0` guard), leaving the output untouched -- rather than casting the negative maximum
+// to unsigned and sizing an enormous launch.
+C2H_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as no work (cluster backend)",
+         "[keys][segmented][topk][device][cluster][determinism]")
+{
+  using seg_size_t           = cuda::std::int16_t;
+  constexpr auto determinism = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  constexpr auto tie_break   = cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index;
+  constexpr int num_segments = 2;
+  constexpr int k            = 3;
+  constexpr int stride       = 8;
+  constexpr int sentinel     = -12345;
+  constexpr cuda::std::int64_t static_max_segment_size = 100;
+
+  skip_if_batched_topk_backend_unavailable<determinism, tie_break>(static_max_segment_size);
+
+  auto keys_in  = thrust::device_vector<int>{0, 9, 3, 2, 1, 8, 7, 4, /**/ 5, 6, 1, 0, 3, 2, 8, 7};
+  auto keys_out = thrust::device_vector<int>(num_segments * k, sentinel);
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), stride);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  batched_topk_keys<cub::detail::topk::select::max, determinism, tie_break>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{seg_size_t{-1}, cuda::args::bounds<-8, 100>()},
+    cuda::args::constant<k>{},
+    cuda::args::immediate{cuda::std::int64_t{num_segments}});
+
+  // No segment had any items, so the whole output is left untouched.
+  REQUIRE(keys_out == thrust::device_vector<int>(num_segments * k, sentinel));
+}
+#endif // TEST_TYPES == 0 && TEST_LAUNCH == 0

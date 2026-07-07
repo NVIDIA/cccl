@@ -200,10 +200,12 @@ struct agent_batched_topk_worker_per_segment
                                && ::cuda::args::__traits<SegmentSizeParameterT>::lowest == tile_size;
 
     // Resolve Segment Parameters
-    const auto segment_size = params::get_param(segment_sizes, segment_id);
+    const auto segment_size = params::get_segment_size(segment_sizes, segment_id);
     if (!only_small_segments && segment_size > tile_size)
     {
       // Enqueue large segment
+      // TODO(topk): once the large-segment worker is wired up, skip enqueue when the effective k is 0 (nothing to
+      // select) so an empty/zero-k large segment does not schedule pointless work.
       if (threadIdx.x == 0u)
       {
         // Add to large segment queue
@@ -216,8 +218,14 @@ struct agent_batched_topk_worker_per_segment
     else
     {
       // Process small segment
-      const auto k         = (::cuda::std::min) (params::get_param(k_param, segment_id),
+      const auto k = (::cuda::std::min) (params::get_param(k_param, segment_id),
                                          static_cast<decltype(params::get_param(k_param, segment_id))>(segment_size));
+      // Nothing to select for an empty segment (including a negative size clamped to 0) or a zero k: skip it, leaving
+      // its output untouched. Also keeps the block primitive's `valid_items in [1, tile_items]` precondition.
+      if (k == 0)
+      {
+        return;
+      }
       const auto direction = select_directions.get_param(segment_id);
 
       // Determine padding key based on direction
