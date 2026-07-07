@@ -115,7 +115,6 @@ runs:
       run: |
         set -eo pipefail
 
-        { set -x; } 2>/dev/null
         # Create a swapfile
         DISK_SIZE="$(df --output=size / | tail -n1 | tr -d 'K' | awk '{ print $1 * 1024 }')"
         MEM_BYTES="$(free -b | head -n 2 | tail -n 1 | tr -s [:blank:] | cut -d' ' -f2)"
@@ -125,10 +124,9 @@ runs:
           sudo fallocate -l "$((SWAP_SIZE / 1024 / 1024 / 1024))G" /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
+          sudo swapon /swapfile
         fi
-        sudo swapon /swapfile
         sudo sysctl vm.swappiness=10
-        { set +x; } 2>/dev/null
 
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
