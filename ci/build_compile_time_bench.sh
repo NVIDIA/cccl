@@ -83,8 +83,11 @@ Event summary args:
   Arguments after '--' are forwarded to ci/compile_time/summarize_events.py
   after the raw trace directory. If omitted, the default summary is:
     -f file-processing -e -n 15
+  Pass --slices <json-file> after '--' to emit multiple event report slices
+  and an event_reports/summary.json manifest.
   With -baseline-ref, comparison-only options such as --threshold <seconds>
-  may also be passed after '--'.
+  may also be passed after '--'. Baseline raw traces are preserved under
+  <preset-build-dir>/compile_time/baseline_raw_traces.
 
 Examples:
   ci/build_compile_time_bench.sh
@@ -269,6 +272,7 @@ fi
 
 report_root="${preset_build_dir}/compile_time"
 trace_dir="${report_root}/raw_traces"
+baseline_artifact_trace_dir="${report_root}/baseline_raw_traces"
 event_output_dir="${report_root}/event_reports"
 tu_csv="${tu_csv:-${report_root}/tu_summary.csv}"
 perfetto_output_dir="${perfetto_output_dir:-${report_root}/perfetto_traces}"
@@ -305,6 +309,11 @@ if [[ -n "${baseline_ref}" ]]; then
   baseline_trace_paths=("${baseline_trace_dir}"/**/*.json)
   (( ${#baseline_trace_paths[@]} > 0 )) \
     || { echo "error: no device-time-trace JSON files found under ${baseline_trace_dir}" >&2; exit 1; }
+
+  status "Copying baseline raw traces to ${baseline_artifact_trace_dir}..."
+  rm -rf "${baseline_artifact_trace_dir}"
+  mkdir -p "${baseline_artifact_trace_dir}"
+  cp -a "${baseline_trace_dir}/." "${baseline_artifact_trace_dir}/"
 fi
 
 if (( prepare_perfetto )); then

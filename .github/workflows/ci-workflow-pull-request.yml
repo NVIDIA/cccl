@@ -44,6 +44,8 @@ jobs:
       matrix_enabled: ${{ steps.export-flags.outputs.matrix_enabled }}
       bench_enabled: ${{ steps.build-bench-matrix.outputs.bench_enabled }}
       bench_matrix: ${{ steps.build-bench-matrix.outputs.bench_matrix }}
+      compile_time_enabled: ${{ steps.build-compile-time-matrix.outputs.compile_time_enabled }}
+      compile_time_matrix: ${{ steps.build-compile-time-matrix.outputs.compile_time_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
@@ -95,6 +97,19 @@ jobs:
           {
             echo "bench_enabled=true"
             echo "bench_matrix=${bench_matrix_json}"
+          } >> "${GITHUB_OUTPUT}"
+      - name: Build compile-time benchmark dispatch matrix
+        id: build-compile-time-matrix
+        run: |
+          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          compile_time_enabled="$(
+            jq -r 'if (.include // []) == [] then "false" else "true" end' \
+              <<< "${compile_time_matrix_json}"
+          )"
+
+          {
+            echo "compile_time_enabled=${compile_time_enabled}"
+            echo "compile_time_matrix=${compile_time_matrix_json}"
           } >> "${GITHUB_OUTPUT}"
       - name: Detect .branch_notes changes
         id: branch-notes-dirt
@@ -420,6 +435,42 @@ jobs:
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
+
+  dispatch-compile-time-bench:
+    name: Compile-time Bench (${{ matrix.id }})
+    # Compile-time benchmarks are informational PR telemetry. They are launched
+    # by this CI workflow, but intentionally omitted from the aggregate `ci`
+    # branch-protection job so benchmark regressions or script failures do not
+    # block merging a PR.
+    if: >-
+      ${{
+        needs.build-workflow.outputs.compile_time_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.compile_time_matrix).include) != '[]'
+      }}
+    needs: build-workflow
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.build-workflow.outputs.compile_time_matrix) }}
+    uses: ./.github/workflows/compile-time-bench.yml
+    with:
+      id: ${{ matrix.id }}
+      name: ${{ matrix.name }}
+      gpu: ${{ matrix.gpu }}
+      launch_args: ${{ matrix.launch_args }}
+      baseline_ref: ${{ matrix.baseline_ref }}
+      preset: ${{ matrix.preset }}
+      targets_json: ${{ matrix.targets_json }}
+      args: ${{ matrix.args }}
+      slices_json: ${{ matrix.slices_json }}
+      comment: ${{ matrix.comment }}
+      comment_header: ${{ matrix.comment_header }}
+      artifact_retention_days: ${{ matrix.artifact_retention_days }}
+      pr_number: ${{ needs.build-workflow.outputs.pr_number }}
 
   bench-results:
     name: Post benchmark results

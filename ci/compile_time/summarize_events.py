@@ -8,7 +8,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 DEFAULT_SCOPE_FILTER = r"(^|[^A-Za-z0-9_:])(?:::)?(?:cuda|thrust|cub|cccl)::"
 SYMBOL_SCOPE_EVENT_NAMES = {
@@ -31,6 +31,8 @@ class FilterSpec:
 
 @dataclass(frozen=True)
 class ReportConfig:
+    slice_id: str
+    title: str
     spec: FilterSpec
     timing: str
     exclusive_scope: str
@@ -88,13 +90,23 @@ class ComparisonStats:
 @dataclass(frozen=True)
 class ComparisonRow:
     stats: ComparisonStats
+    baseline_impact_us: float
+    current_impact_us: float
     baseline_metric_us: float
     current_metric_us: float
-    magnitude_us: float
+    impact_magnitude_us: float
 
     @property
-    def delta_us(self) -> float:
+    def impact_delta_us(self) -> float:
+        return self.current_impact_us - self.baseline_impact_us
+
+    @property
+    def selected_delta_us(self) -> float:
         return self.current_metric_us - self.baseline_metric_us
+
+    @property
+    def selected_magnitude_us(self) -> float:
+        return abs(self.selected_delta_us)
 
 
 @dataclass(frozen=True)
@@ -119,6 +131,13 @@ class ReportSide:
     trace_paths: list[Path]
     repo_root: Path
     output_dir: Path
+
+
+@dataclass(frozen=True)
+class SliceRequest:
+    config: ReportConfig
+    filter_name: str
+    children: tuple["SliceRequest", ...] = ()
 
 
 def merged_interval_duration(intervals: list[tuple[int, int]]) -> int:
@@ -994,18 +1013,36 @@ def write_csv(
             writer.writerow(event_stats_csv_row(rank, row, timing))
 
 
-def write_report_csv(
-    output_dir: Path,
-    stats: dict[tuple[str, str], EventStats],
-    config: ReportConfig,
-) -> Path:
-    output_csv = default_output_path(output_dir, config)
-    write_csv(
-        output_csv,
-        sorted_rows(stats, config),
-        config.timing,
-    )
-    return output_csv
+def comparison_row_dict(
+    rank: int, row: ComparisonRow, timing: str
+) -> dict[str, object]:
+    stats = row.stats
+    return {
+        "rank": rank,
+        "event_name": stats.event_name,
+        "event_key": stats.event_key,
+        "baseline_impact_s": seconds(row.baseline_impact_us),
+        "current_impact_s": seconds(row.current_impact_us),
+        "impact_delta_s": seconds(row.impact_delta_us),
+        "impact_magnitude_s": seconds(row.impact_magnitude_us),
+        "baseline_selected_s": seconds(row.baseline_metric_us),
+        "current_selected_s": seconds(row.current_metric_us),
+        "selected_delta_s": seconds(row.selected_delta_us),
+        "selected_magnitude_s": seconds(row.selected_magnitude_us),
+        "baseline_total_inclusive_s": seconds(stats.baseline.total_inclusive_us),
+        "current_total_inclusive_s": seconds(stats.current.total_inclusive_us),
+        "baseline_total_exclusive_s": seconds(stats.baseline.total_exclusive_us),
+        "current_total_exclusive_s": seconds(stats.current.total_exclusive_us),
+        "baseline_event_count": stats.baseline.event_count,
+        "current_event_count": stats.current.event_count,
+        "matched_trace_count": len(stats.matched_trace_paths),
+    }
+
+
+def write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
 
 
 def report_side(
@@ -1028,15 +1065,12 @@ def report_side(
 def write_side_report(
     side: ReportSide,
     config: ReportConfig,
-    filter_name: str,
-) -> Path:
+) -> tuple[Path, int]:
     stats = collect_stats(side.trace_paths, side.repo_root, config)
-    if not stats:
-        raise SystemExit(
-            f"no {side.name} events matched filter '{filter_name}' "
-            f"in {len(side.trace_paths)} trace(s)"
-        )
-    return write_report_csv(side.output_dir, stats, config)
+    rows = sorted_rows(stats, config) if stats else []
+    output_csv = default_output_path(side.output_dir, config)
+    write_csv(output_csv, rows, config.timing)
+    return output_csv, len(rows)
 
 
 def comparison_rows(
@@ -1053,19 +1087,23 @@ def comparison_rows(
 
     rows: list[ComparisonRow] = []
     for comparison in stats.values():
+        baseline_impact = float(selected_total_us(comparison.baseline, config.timing))
+        current_impact = float(selected_total_us(comparison.current, config.timing))
         baseline_metric = selected_metric_us(
             comparison.baseline, config.timing, config.sort_by
         )
         current_metric = selected_metric_us(
             comparison.current, config.timing, config.sort_by
         )
-        delta = current_metric - baseline_metric
+        delta = current_impact - baseline_impact
         magnitude = multiplier * delta
         if magnitude <= config.threshold_us:
             continue
         rows.append(
             ComparisonRow(
                 comparison,
+                baseline_impact,
+                current_impact,
                 baseline_metric,
                 current_metric,
                 magnitude,
@@ -1073,12 +1111,17 @@ def comparison_rows(
         )
 
     # Python has heapq.nsmallest rather than a C++-style partial_sort. The
-    # change magnitude is negated here so "smallest" means "largest requested
-    # change", while the string tie-breakers keep their natural ascending order.
+    # total-impact change is negated here so "smallest" means "largest
+    # requested aggregate movement across matched traces", while the string
+    # tie-breakers keep their natural ascending order.
     return heapq.nsmallest(
         config.top_n,
         rows,
-        key=lambda row: (-row.magnitude_us, row.stats.event_name, row.stats.event_key),
+        key=lambda row: (
+            -row.impact_magnitude_us,
+            row.stats.event_name,
+            row.stats.event_key,
+        ),
     )
 
 
@@ -1095,10 +1138,14 @@ def write_comparison_csv(
                 "rank",
                 "event_name",
                 "event_key",
+                "baseline_impact_s",
+                "current_impact_s",
+                "impact_delta_s",
+                "impact_magnitude_s",
                 "baseline_selected_s",
                 "current_selected_s",
-                "delta_s",
-                "magnitude_s",
+                "selected_delta_s",
+                "selected_magnitude_s",
                 "baseline_total_inclusive_s",
                 "current_total_inclusive_s",
                 "baseline_total_exclusive_s",
@@ -1110,38 +1157,339 @@ def write_comparison_csv(
         )
         writer.writeheader()
         for rank, row in enumerate(rows, start=1):
-            stats = row.stats
-            writer.writerow(
-                {
-                    "rank": rank,
-                    "event_name": stats.event_name,
-                    "event_key": stats.event_key,
-                    "baseline_selected_s": seconds(row.baseline_metric_us),
-                    "current_selected_s": seconds(row.current_metric_us),
-                    "delta_s": seconds(row.delta_us),
-                    "magnitude_s": seconds(row.magnitude_us),
-                    "baseline_total_inclusive_s": seconds(
-                        stats.baseline.total_inclusive_us
-                    ),
-                    "current_total_inclusive_s": seconds(
-                        stats.current.total_inclusive_us
-                    ),
-                    "baseline_total_exclusive_s": seconds(
-                        stats.baseline.total_exclusive_us
-                    ),
-                    "current_total_exclusive_s": seconds(
-                        stats.current.total_exclusive_us
-                    ),
-                    "baseline_event_count": stats.baseline.event_count,
-                    "current_event_count": stats.current.event_count,
-                    "matched_trace_count": len(stats.matched_trace_paths),
-                }
-            )
+            writer.writerow(comparison_row_dict(rank, row, timing))
 
 
 def print_filters() -> None:
     for name, spec in sorted(builtin_filters().items()):
         print(f"{name:32} {spec.description}")
+
+
+def compile_scope_filter(
+    pattern: str, parser: argparse.ArgumentParser
+) -> re.Pattern[str] | None:
+    if not pattern:
+        return None
+    try:
+        return re.compile(pattern)
+    except re.error as e:
+        parser.error(f"invalid --scope-filter regex: {e}")
+
+
+def report_config(
+    *,
+    slice_id: str,
+    title: str,
+    filter_name: str,
+    timing: str,
+    exclusive_scope: str,
+    sort_by: str,
+    top_n: int,
+    tag: str | None,
+    threshold_s: float,
+    scope_filter: re.Pattern[str] | None,
+) -> ReportConfig:
+    spec = resolve_filter(filter_name)
+    resolved_exclusive_scope = (
+        spec.default_exclusive_scope if exclusive_scope == "auto" else exclusive_scope
+    )
+    return ReportConfig(
+        slice_id=slice_id,
+        title=title,
+        spec=spec,
+        timing=timing,
+        exclusive_scope=resolved_exclusive_scope,
+        sort_by=sort_by,
+        top_n=top_n,
+        tag=tag,
+        threshold_us=threshold_s * 1_000_000.0,
+        scope_filter=scope_filter,
+    )
+
+
+def single_slice_request(
+    args: argparse.Namespace, parser: argparse.ArgumentParser
+) -> SliceRequest:
+    config = report_config(
+        slice_id=slugify(args.tag or args.filter),
+        title=args.tag or resolve_filter(args.filter).description,
+        filter_name=args.filter,
+        timing=args.timing,
+        exclusive_scope=args.exclusive_scope,
+        sort_by=args.sort,
+        top_n=args.top,
+        tag=args.tag,
+        threshold_s=args.threshold,
+        scope_filter=compile_scope_filter(args.scope_filter, parser),
+    )
+    return SliceRequest(config=config, filter_name=args.filter)
+
+
+def require_slice_field(slice_data: dict[str, Any], field_name: str, path: str) -> Any:
+    if field_name not in slice_data:
+        raise ValueError(f"{path}: missing required field '{field_name}'")
+    return slice_data[field_name]
+
+
+def validate_slice_id(value: Any, path: str) -> str:
+    if not isinstance(value, str) or not re.fullmatch(r"[a-z0-9][a-z0-9_.-]*", value):
+        raise ValueError(f"{path}: id must match ^[a-z0-9][a-z0-9_.-]*$")
+    return value
+
+
+def slice_request_from_json(
+    slice_data: dict[str, Any],
+    parser: argparse.ArgumentParser,
+    *,
+    path: str,
+    seen_ids: set[str],
+) -> SliceRequest:
+    if not isinstance(slice_data, dict):
+        raise ValueError(f"{path}: slice entry must be an object")
+
+    slice_id = validate_slice_id(require_slice_field(slice_data, "id", path), path)
+    if slice_id in seen_ids:
+        raise ValueError(f"{path}: duplicate slice id '{slice_id}'")
+    seen_ids.add(slice_id)
+
+    title = require_slice_field(slice_data, "title", path)
+    filter_name = require_slice_field(slice_data, "filter", path)
+    timing = require_slice_field(slice_data, "timing", path)
+    sort_by = require_slice_field(slice_data, "sort", path)
+    top_n = require_slice_field(slice_data, "top", path)
+    threshold = require_slice_field(slice_data, "threshold", path)
+    exclusive_scope = slice_data.get("exclusive_scope", "auto")
+    scope_filter_pattern = slice_data.get("scope_filter", DEFAULT_SCOPE_FILTER)
+
+    if not isinstance(title, str) or not title:
+        raise ValueError(f"{path}: title must be a non-empty string")
+    if not isinstance(filter_name, str) or not filter_name:
+        raise ValueError(f"{path}: filter must be a non-empty string")
+    if timing not in ("inclusive", "exclusive"):
+        raise ValueError(f"{path}: timing must be 'inclusive' or 'exclusive'")
+    if sort_by not in ("total", "avg", "avg-root-tu", "max"):
+        raise ValueError(f"{path}: unsupported sort '{sort_by}'")
+    if exclusive_scope not in ("auto", "all", "same-filter"):
+        raise ValueError(f"{path}: unsupported exclusive_scope '{exclusive_scope}'")
+    if not isinstance(top_n, int) or top_n <= 0:
+        raise ValueError(f"{path}: top must be a positive integer")
+    if not isinstance(threshold, (int, float)) or threshold < 0:
+        raise ValueError(f"{path}: threshold must be a non-negative number")
+    if not isinstance(scope_filter_pattern, str):
+        raise ValueError(f"{path}: scope_filter must be a string")
+
+    children_data = slice_data.get("children", [])
+    if not isinstance(children_data, list):
+        raise ValueError(f"{path}: children must be a list")
+
+    config = report_config(
+        slice_id=slice_id,
+        title=title,
+        filter_name=filter_name,
+        timing=timing,
+        exclusive_scope=exclusive_scope,
+        sort_by=sort_by,
+        top_n=top_n,
+        tag=None,
+        threshold_s=float(threshold),
+        scope_filter=compile_scope_filter(scope_filter_pattern, parser),
+    )
+    children = tuple(
+        slice_request_from_json(
+            child,
+            parser,
+            path=f"{path}.children[{index}]",
+            seen_ids=seen_ids,
+        )
+        for index, child in enumerate(children_data)
+    )
+    return SliceRequest(config=config, filter_name=filter_name, children=children)
+
+
+def read_slice_requests(
+    slices_path: Path, parser: argparse.ArgumentParser
+) -> list[SliceRequest]:
+    try:
+        with slices_path.open(encoding="utf-8") as f:
+            payload = json.load(f)
+    except OSError as e:
+        parser.error(f"failed to read --slices file: {e}")
+    except json.JSONDecodeError as e:
+        parser.error(f"failed to parse --slices JSON: {e}")
+
+    slices_data = payload.get("slices") if isinstance(payload, dict) else payload
+    if not isinstance(slices_data, list) or not slices_data:
+        parser.error(
+            "--slices JSON must be a non-empty list or an object with a non-empty 'slices' list"
+        )
+
+    seen_ids: set[str] = set()
+    try:
+        return [
+            slice_request_from_json(
+                slice_data,
+                parser,
+                path=f"slices[{index}]",
+                seen_ids=seen_ids,
+            )
+            for index, slice_data in enumerate(slices_data)
+        ]
+    except ValueError as e:
+        parser.error(str(e))
+
+
+def run_slice_report(
+    request: SliceRequest,
+    *,
+    trace_dir: Path,
+    baseline_dir: Path | None,
+    repo_root: Path,
+    baseline_repo_root: Path,
+    output_dir: Path,
+    output_csv: Path | None,
+    allow_empty: bool,
+) -> dict[str, Any]:
+    config = request.config
+    slice_output_dir = output_dir
+    manifest: dict[str, Any] = {
+        "id": config.slice_id,
+        "title": config.title,
+        "filter": request.filter_name,
+        "filter_label": config.spec.label,
+        "timing": config.timing,
+        "exclusive_scope": config.exclusive_scope,
+        "sort": config.sort_by,
+        "top": config.top_n,
+        "threshold_s": config.threshold_us / 1_000_000.0,
+        "output_dir": slice_output_dir.as_posix(),
+        "children": [],
+    }
+
+    if baseline_dir is not None:
+        comparison_output_dir = slice_output_dir / "comparison"
+        report_sides = (
+            report_side(
+                "baseline",
+                baseline_dir,
+                baseline_repo_root,
+                slice_output_dir / "baseline",
+            ),
+            report_side("current", trace_dir, repo_root, slice_output_dir / "current"),
+        )
+        report_csvs: dict[str, tuple[Path, int]] = {}
+        for side in report_sides:
+            report_csvs[side.name] = write_side_report(side, config)
+
+        comparison_stats, matched_trace_count = collect_comparison_stats(
+            baseline_dir,
+            trace_dir,
+            baseline_repo_root,
+            repo_root,
+            config,
+        )
+        warnings: list[str] = []
+        for side_name, (_, row_count) in report_csvs.items():
+            if row_count == 0:
+                warnings.append(
+                    f"{side_name} report matched no events for this slice; "
+                    f"check filter '{request.filter_name}', scope filtering, "
+                    "and trace format"
+                )
+        if matched_trace_count == 0:
+            warnings.append(
+                "baseline and current trace directories have no matching trace files"
+            )
+        elif not comparison_stats:
+            warnings.append(
+                "baseline and current traces have no comparable event keys for this slice"
+            )
+
+        comparison_manifest: dict[str, Any] = {
+            "matched_trace_count": matched_trace_count,
+        }
+        wrote: list[tuple[Path, int]] = []
+        for direction in ("worse", "better"):
+            rows = comparison_rows(comparison_stats, config, direction)
+            comparison_csv = comparison_output_path(
+                comparison_output_dir,
+                config,
+                direction,
+            )
+            write_comparison_csv(comparison_csv, rows, config.timing)
+            row_dicts = [
+                comparison_row_dict(rank, row, config.timing)
+                for rank, row in enumerate(rows, start=1)
+            ]
+            comparison_manifest[direction] = {
+                "csv": comparison_csv.as_posix(),
+                "row_count": len(rows),
+                "rows": row_dicts,
+            }
+            wrote.append((comparison_csv, len(rows)))
+
+        manifest["reports"] = {
+            side: {"csv": path.as_posix(), "row_count": row_count}
+            for side, (path, row_count) in report_csvs.items()
+        }
+        manifest["comparison"] = comparison_manifest
+        if warnings:
+            manifest["warnings"] = warnings
+        trace_counts = ", ".join(
+            f"{len(side.trace_paths)} {side.name} trace(s)" for side in report_sides
+        )
+        print(
+            f"wrote slice '{config.slice_id}' baseline/current reports and "
+            f"comparison reports from {trace_counts}, "
+            f"{matched_trace_count} matched trace file(s):"
+        )
+        for side_name, (path, _) in report_csvs.items():
+            print(f"  {side_name}: {path}")
+        for path, row_count in wrote:
+            print(f"  comparison ({row_count} row(s)): {path}")
+        for warning in warnings:
+            print(f"  warning: {warning}")
+    else:
+        side = report_side("current", trace_dir, repo_root, slice_output_dir)
+        stats = collect_stats(side.trace_paths, side.repo_root, config)
+        if not stats and not allow_empty:
+            raise SystemExit(
+                f"no events matched filter '{request.filter_name}' "
+                f"in {len(side.trace_paths)} trace(s)"
+            )
+
+        rows = sorted_rows(stats, config) if stats else []
+        report_csv = (
+            output_csv
+            if output_csv is not None
+            else default_output_path(slice_output_dir, config)
+        )
+        write_csv(report_csv, rows, config.timing)
+        manifest["reports"] = {
+            "current": {"csv": report_csv.as_posix(), "row_count": len(rows)}
+        }
+        if not rows:
+            manifest["warnings"] = [
+                f"current report matched no events for filter '{request.filter_name}'"
+            ]
+        print(
+            f"wrote slice '{config.slice_id}' {len(rows)} row(s) "
+            f"from {len(side.trace_paths)} trace(s) to {report_csv}"
+        )
+
+    manifest["children"] = [
+        run_slice_report(
+            child,
+            trace_dir=trace_dir,
+            baseline_dir=baseline_dir,
+            repo_root=repo_root,
+            baseline_repo_root=baseline_repo_root,
+            output_dir=output_dir / child.config.slice_id,
+            output_csv=None,
+            allow_empty=allow_empty,
+        )
+        for child in request.children
+    ]
+    return manifest
 
 
 def main() -> None:
@@ -1220,7 +1568,7 @@ def main() -> None:
         type=float,
         default=0.0,
         help=(
-            "comparison-only minimum selected-metric change, in seconds, "
+            "comparison-only minimum total-impact change, in seconds, "
             "required for worse/better rows (default: 0)"
         ),
     )
@@ -1228,6 +1576,14 @@ def main() -> None:
         "--output-csv",
         type=Path,
         help="exact output CSV path; overrides generated file name inside --output-dir",
+    )
+    parser.add_argument(
+        "--slices",
+        type=Path,
+        help=(
+            "JSON file describing multiple report slices; writes each slice under "
+            "--output-dir/<slice-id> and emits --output-dir/summary.json"
+        ),
     )
     parser.add_argument(
         "--exclusive-scope",
@@ -1276,6 +1632,8 @@ def main() -> None:
         parser.error("--threshold can only be used together with --baseline-dir")
     if args.baseline_dir is not None and args.output_csv is not None:
         parser.error("--output-csv cannot be used together with --baseline-dir")
+    if args.slices is not None and args.output_csv is not None:
+        parser.error("--output-csv cannot be used together with --slices")
 
     trace_dir = args.trace_dir.resolve(strict=False)
     baseline_dir = (
@@ -1287,103 +1645,49 @@ def main() -> None:
         if args.baseline_repo_root
         else repo_root
     )
-    spec = resolve_filter(args.filter)
-    exclusive_scope = (
-        spec.default_exclusive_scope
-        if args.exclusive_scope == "auto"
-        else args.exclusive_scope
-    )
-    try:
-        scope_filter = re.compile(args.scope_filter) if args.scope_filter else None
-    except re.error as e:
-        parser.error(f"invalid --scope-filter regex: {e}")
-    config = ReportConfig(
-        spec=spec,
-        timing=args.timing,
-        exclusive_scope=exclusive_scope,
-        sort_by=args.sort,
-        top_n=args.top,
-        tag=args.tag,
-        threshold_us=args.threshold * 1_000_000.0,
-        scope_filter=scope_filter,
-    )
     output_dir = (
         args.output_dir.resolve(strict=False)
         if args.output_dir
         else trace_dir / "event_reports"
     )
-    output_csv = (
-        args.output_csv.resolve(strict=False)
-        if args.output_csv
-        else default_output_path(output_dir, config)
+    output_csv = args.output_csv.resolve(strict=False) if args.output_csv else None
+    multi_slice = args.slices is not None
+    requests = (
+        read_slice_requests(args.slices.resolve(strict=False), parser)
+        if args.slices is not None
+        else [single_slice_request(args, parser)]
     )
 
-    if baseline_dir is not None:
-        comparison_output_dir = output_dir / "comparison"
-        report_sides = (
-            report_side(
-                "baseline",
-                baseline_dir,
-                baseline_repo_root,
-                output_dir / "baseline",
-            ),
-            report_side(
-                "current",
-                trace_dir,
-                repo_root,
-                output_dir / "current",
-            ),
-        )
-        report_csvs = {
-            side.name: write_side_report(side, config, args.filter)
-            for side in report_sides
-        }
+    manifest = {
+        "schema_version": 1,
+        "mode": "comparison" if baseline_dir is not None else "single",
+        "trace_dir": trace_dir.as_posix(),
+        "baseline_dir": baseline_dir.as_posix() if baseline_dir else None,
+        "repo_root": repo_root.as_posix(),
+        "baseline_repo_root": baseline_repo_root.as_posix(),
+        "slices": [],
+    }
 
-        comparison_stats, matched_trace_count = collect_comparison_stats(
-            baseline_dir,
-            trace_dir,
-            baseline_repo_root,
-            repo_root,
-            config,
+    for request in requests:
+        slice_output_dir = (
+            output_dir / request.config.slice_id if multi_slice else output_dir
         )
-
-        wrote = []
-        for direction in ("worse", "better"):
-            comparison_csv = comparison_output_path(
-                comparison_output_dir,
-                config,
-                direction,
+        manifest["slices"].append(
+            run_slice_report(
+                request,
+                trace_dir=trace_dir,
+                baseline_dir=baseline_dir,
+                repo_root=repo_root,
+                baseline_repo_root=baseline_repo_root,
+                output_dir=slice_output_dir,
+                output_csv=output_csv,
+                allow_empty=multi_slice,
             )
-            rows = comparison_rows(comparison_stats, config, direction)
-            write_comparison_csv(comparison_csv, rows, config.timing)
-            wrote.append((comparison_csv, len(rows)))
-
-        trace_counts = ", ".join(
-            f"{len(side.trace_paths)} {side.name} trace(s)" for side in report_sides
-        )
-        print(
-            "wrote baseline/current reports and comparison reports "
-            f"from {trace_counts}, "
-            f"{matched_trace_count} matched trace file(s):"
-        )
-        for side in report_sides:
-            print(f"  {side.name}: {report_csvs[side.name]}")
-        for path, row_count in wrote:
-            print(f"  comparison ({row_count} row(s)): {path}")
-        return
-
-    side = report_side("current", trace_dir, repo_root, output_dir)
-    stats = collect_stats(side.trace_paths, side.repo_root, config)
-    if not stats:
-        raise SystemExit(
-            f"no events matched filter '{args.filter}' in {len(side.trace_paths)} trace(s)"
         )
 
-    rows = sorted_rows(stats, config)
-    write_csv(output_csv, rows, config.timing)
-    print(
-        f"wrote {len(rows)} row(s) from {len(side.trace_paths)} trace(s) to {output_csv}"
-    )
+    summary_json = output_dir / "summary.json"
+    write_json(summary_json, manifest)
+    print(f"wrote summary manifest: {summary_json}")
 
 
 if __name__ == "__main__":

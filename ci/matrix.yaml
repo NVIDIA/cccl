@@ -1,3 +1,46 @@
+compile_time:
+  pull_request:
+    - id: public-headers-gcc13
+      name: Public headers compile-time bench
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host gcc13"
+      baseline_ref: origin/main
+      preset: all-dev
+      targets:
+        - cub.headers.base
+        - thrust.cpp.cuda.headers.base
+        - libcudacxx.test.public_headers
+      args: "-arch native"
+      slices:
+        - id: total-compilation
+          title: TU total compilation
+          filter: total-compilation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0.001
+        - id: file-processing
+          title: Direct file processing
+          filter: file-processing
+          timing: exclusive
+          sort: total
+          top: 15
+          threshold: 0.001
+        - id: function-bodies
+          title: Function-body parsing
+          filter: scanning-function-body
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0.001
+        - id: template-instantiation
+          title: Template instantiation
+          filter: template-instantiation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0.001
+
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.

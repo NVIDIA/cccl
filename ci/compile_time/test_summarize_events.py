@@ -15,6 +15,8 @@ from ci.compile_time import summarize_tus
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SUMMARY_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "summarize_events.py"
 PREPARE_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "prepare_traces.py"
+PARSE_MATRIX_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "parse_matrix.py"
+RENDER_COMMENT_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "render_pr_comment.py"
 WRAPPER_SCRIPT = REPO_ROOT / "ci" / "build_compile_time_bench.sh"
 
 
@@ -233,12 +235,12 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         parent_row = next(row for row in worse if row["event_name"] == "Parent")
         self.assertEqual(parent_row["baseline_selected_s"], "0.000070")
         self.assertEqual(parent_row["current_selected_s"], "0.000110")
-        self.assertEqual(parent_row["magnitude_s"], "0.000040")
+        self.assertEqual(parent_row["impact_magnitude_s"], "0.000040")
 
         better_row = next(row for row in better_rows if row["event_name"] == "Better")
         self.assertEqual(better_row["baseline_selected_s"], "0.000070")
         self.assertEqual(better_row["current_selected_s"], "0.000040")
-        self.assertEqual(better_row["magnitude_s"], "0.000030")
+        self.assertEqual(better_row["impact_magnitude_s"], "0.000030")
 
         all_comparison_keys = {row["event_key"] for row in worse + better_rows}
         self.assertFalse(any("only_baseline" in key for key in all_comparison_keys))
@@ -292,7 +294,65 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         )
         self.assertEqual(len(worse), 1)
         self.assertTrue(worse[0]["event_key"].endswith("large.h"))
-        self.assertEqual(worse[0]["magnitude_s"], "0.000010")
+        self.assertEqual(worse[0]["impact_magnitude_s"], "0.000010")
+
+    def test_comparison_ranks_by_total_impact_not_selected_metric(self) -> None:
+        baseline = self.work / "baseline"
+        current = self.work / "current"
+        output = self.work / "reports"
+
+        repeated = self.traces.project_detail("libcudacxx/include/cuda/std/repeated.h")
+        one_trace = self.traces.project_detail(
+            "libcudacxx/include/cuda/std/one_trace.h"
+        )
+        self.traces.write_trace(
+            baseline / "target" / "first.json",
+            [
+                self.traces.event("Same", repeated, 0, 10),
+                self.traces.event("Same", one_trace, 100, 10),
+            ],
+            "first",
+        )
+        self.traces.write_trace(
+            current / "target" / "first.json",
+            [
+                self.traces.event("Same", repeated, 0, 16),
+                self.traces.event("Same", one_trace, 100, 20),
+            ],
+            "first",
+        )
+        self.traces.write_trace(
+            baseline / "target" / "second.json",
+            [self.traces.event("Same", repeated, 0, 10)],
+            "second",
+        )
+        self.traces.write_trace(
+            current / "target" / "second.json",
+            [self.traces.event("Same", repeated, 0, 16)],
+            "second",
+        )
+
+        self.run_summary(
+            current,
+            baseline,
+            output,
+            "-f",
+            "all",
+            "-i",
+            "--sort",
+            "max",
+            "-n",
+            "10",
+            "--tag",
+            "impact",
+        )
+
+        worse = csv_rows(
+            self.comparison_csv(output, "top-10-all-inclusive-by-max-worse-impact.csv")
+        )
+        self.assertTrue(worse[0]["event_key"].endswith("repeated.h"))
+        self.assertEqual(worse[0]["impact_magnitude_s"], "0.000012")
+        self.assertEqual(worse[0]["selected_magnitude_s"], "0.000006")
 
     def test_threshold_requires_comparison_mode(self) -> None:
         traces = self.work / "traces"
@@ -468,6 +528,12 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         self.assert_empty_csv(
             self.comparison_csv(output, "top-5-all-inclusive-by-total-better-empty.csv")
         )
+        with (output / "summary.json").open(encoding="utf-8") as f:
+            manifest = json.load(f)
+        self.assertIn(
+            "no comparable event keys",
+            " ".join(manifest["slices"][0]["warnings"]),
+        )
 
     def test_wrapper_forwarding_writes_current_report(self) -> None:
         current = self.wrapper_trace_dir()
@@ -535,7 +601,7 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             self.comparison_csv(output, "top-5-all-inclusive-by-total-worse.csv")
         )
         self.assertEqual(worse[0]["event_key"], "libcudacxx/include/cuda/std/same.h")
-        self.assertEqual(worse[0]["magnitude_s"], "0.000002")
+        self.assertEqual(worse[0]["impact_magnitude_s"], "0.000002")
 
     def test_wrapper_uses_computed_event_output_dir(self) -> None:
         current = self.wrapper_trace_dir()
@@ -1009,6 +1075,369 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         )
         self.assert_empty_csv(
             self.comparison_csv(output, "top-5-all-inclusive-by-max-better-same.csv")
+        )
+
+    def test_multi_slice_writes_manifest_and_allows_empty_slice(self) -> None:
+        traces = self.work / "traces"
+        output = self.work / "reports"
+        slices = self.work / "slices.json"
+        same = self.traces.project_detail("libcudacxx/include/cuda/std/same.h")
+        self.traces.write_trace(
+            traces / "target" / "same.json",
+            [self.traces.event("Same", same, 0, 10)],
+            "same",
+        )
+        slices.write_text(
+            json.dumps(
+                {
+                    "slices": [
+                        {
+                            "id": "all-events",
+                            "title": "All events",
+                            "filter": "all",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                        },
+                        {
+                            "id": "empty-events",
+                            "title": "Empty events",
+                            "filter": "does-not-match",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                        },
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-o",
+                output.as_posix(),
+                "--slices",
+                slices.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        with (output / "summary.json").open(encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        self.assertEqual(
+            [item["id"] for item in manifest["slices"]], ["all-events", "empty-events"]
+        )
+        self.assertEqual(manifest["slices"][0]["reports"]["current"]["row_count"], 1)
+        self.assertEqual(manifest["slices"][1]["reports"]["current"]["row_count"], 0)
+        self.assertTrue(
+            (
+                output
+                / "empty-events"
+                / "top-5-regex-does-not-match-inclusive-by-total.csv"
+            ).exists()
+        )
+
+
+class CompileTimeMatrixAndCommentTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.work = Path(self.tempdir.name)
+
+    def tearDown(self) -> None:
+        self.tempdir.cleanup()
+
+    def test_parse_matrix_disabled_when_section_missing(self) -> None:
+        matrix = self.work / "matrix.yaml"
+        matrix.write_text("workflows: {}\n", encoding="utf-8")
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                PARSE_MATRIX_SCRIPT.as_posix(),
+                matrix.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertEqual(json.loads(completed.stdout), {"include": []})
+
+    def test_parse_matrix_valid_config(self) -> None:
+        matrix = self.work / "matrix.yaml"
+        matrix.write_text(
+            """
+compile_time:
+  pull_request:
+    - id: public-headers
+      name: Public headers
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host gcc13"
+      baseline_ref: origin/main
+      preset: all-dev
+      targets: [cub.headers.base]
+      args: "-arch native"
+      slices:
+        - id: total-compilation
+          title: TU total compilation
+          filter: total-compilation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0.001
+""",
+            encoding="utf-8",
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                PARSE_MATRIX_SCRIPT.as_posix(),
+                matrix.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        include = json.loads(completed.stdout)["include"]
+        self.assertEqual(len(include), 1)
+        self.assertEqual(
+            include[0]["comment_header"], "compile-time-bench-public-headers"
+        )
+        self.assertEqual(json.loads(include[0]["targets_json"]), ["cub.headers.base"])
+        self.assertEqual(
+            json.loads(include[0]["slices_json"])["slices"][0]["id"],
+            "total-compilation",
+        )
+
+    def test_parse_matrix_rejects_duplicate_slice_ids(self) -> None:
+        matrix = self.work / "matrix.yaml"
+        matrix.write_text(
+            """
+compile_time:
+  pull_request:
+    - id: public-headers
+      name: Public headers
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host gcc13"
+      baseline_ref: origin/main
+      preset: all-dev
+      targets: [cub.headers.base]
+      slices:
+        - id: repeated
+          title: First
+          filter: all
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0
+        - id: repeated
+          title: Second
+          filter: all
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0
+""",
+            encoding="utf-8",
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                PARSE_MATRIX_SCRIPT.as_posix(),
+                matrix.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("duplicate slice id", completed.stderr)
+
+    def test_render_comment_omits_empty_sections_and_splits_directions(self) -> None:
+        summary = self.work / "summary.json"
+        config = self.work / "config.json"
+        output = self.work / "comment.md"
+        summary.write_text(
+            json.dumps(
+                {
+                    "slices": [
+                        {
+                            "id": "nonempty",
+                            "title": "Nonempty",
+                            "filter": "all",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "comparison": {
+                                "worse": {
+                                    "rows": [
+                                        {
+                                            "rank": 1,
+                                            "event_name": "Same",
+                                            "event_key": "cuda/std/same",
+                                            "baseline_selected_s": "0.000001",
+                                            "current_selected_s": "0.000003",
+                                            "impact_magnitude_s": "0.000010",
+                                            "selected_delta_s": "0.000002",
+                                            "matched_trace_count": 1,
+                                        }
+                                    ]
+                                },
+                                "better": {"rows": []},
+                            },
+                            "children": [
+                                {
+                                    "id": "empty-child",
+                                    "title": "Empty child",
+                                    "filter": "all",
+                                    "timing": "inclusive",
+                                    "sort": "total",
+                                    "comparison": {
+                                        "worse": {"rows": []},
+                                        "better": {"rows": []},
+                                    },
+                                    "children": [],
+                                }
+                            ],
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        config.write_text(
+            json.dumps(
+                {
+                    "id": "public-headers",
+                    "name": "Public headers",
+                    "baseline_ref": "origin/main",
+                    "preset": "all-dev",
+                    "targets": ["cub.headers.base"],
+                    "gpu": "rtx2080",
+                    "launch_args": "--cuda 13.3 --host gcc13",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                RENDER_COMMENT_SCRIPT.as_posix(),
+                "--summary",
+                summary.as_posix(),
+                "--config",
+                config.as_posix(),
+                "--artifacts-url",
+                "https://example.test/artifacts",
+                "-o",
+                output.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rendered = output.read_text(encoding="utf-8")
+        self.assertIn("<!-- cccl-compile-time-bench: public-headers -->", rendered)
+        self.assertIn("Regressions", rendered)
+        self.assertIn("Regression impact", rendered)
+        self.assertIn("0.000010", rendered)
+        self.assertNotIn("Improvements</strong>", rendered)
+        self.assertNotIn("Empty child", rendered)
+        self.assertIn("https://example.test/artifacts", rendered)
+
+    def test_render_comment_reports_empty_slice_warnings(self) -> None:
+        summary = self.work / "summary.json"
+        config = self.work / "config.json"
+        output = self.work / "comment.md"
+        summary.write_text(
+            json.dumps(
+                {
+                    "slices": [
+                        {
+                            "id": "empty",
+                            "title": "Empty slice",
+                            "filter": "typo-filter",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "warnings": [
+                                "baseline report matched no events for this slice"
+                            ],
+                            "comparison": {
+                                "worse": {"rows": []},
+                                "better": {"rows": []},
+                            },
+                            "children": [],
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        config.write_text(
+            json.dumps(
+                {
+                    "id": "public-headers",
+                    "name": "Public headers",
+                    "baseline_ref": "origin/main",
+                    "preset": "all-dev",
+                    "targets": ["cub.headers.base"],
+                    "gpu": "rtx2080",
+                    "launch_args": "--cuda 13.3 --host gcc13",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                RENDER_COMMENT_SCRIPT.as_posix(),
+                "--summary",
+                summary.as_posix(),
+                "--config",
+                config.as_posix(),
+                "--artifacts-url",
+                "https://example.test/artifacts",
+                "-o",
+                output.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rendered = output.read_text(encoding="utf-8")
+        self.assertIn("1 warning(s)", rendered)
+        self.assertIn("Empty slice — Warnings", rendered)
+        self.assertIn("baseline report matched no events", rendered)
+        self.assertNotIn(
+            "No compile-time benchmark changes exceeded the configured thresholds.",
+            rendered,
         )
 
 

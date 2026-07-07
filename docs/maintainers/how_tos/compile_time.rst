@@ -15,7 +15,7 @@ The top-level entry point is:
 The wrapper configures a caller-selected CMake preset with compile-time
 instrumentation, builds the selected target or targets, prepares
 Perfetto-friendly trace copies, writes a generated-TU summary CSV, and emits one
-event summary CSV.
+or more event summary CSVs.
 
 Generated outputs
 -----------------
@@ -29,6 +29,11 @@ By default, outputs are written under:
 Raw NVCC traces are generated under:
 
 - ``build/<infix>/<preset>/compile_time/raw_traces/``
+
+When ``-baseline-ref`` is used, baseline raw traces are copied out of the
+temporary baseline worktree before cleanup and preserved under:
+
+- ``build/<infix>/<preset>/compile_time/baseline_raw_traces/``
 
 Build controls
 --------------
@@ -75,6 +80,25 @@ If no event-summary arguments are provided, the wrapper runs:
 
   -f file-processing -e -n 15
 
+For CI-style multi-slice reports, pass a JSON slice file to
+``summarize_events.py``:
+
+.. code-block:: bash
+
+  ci/build_compile_time_bench.sh -baseline-ref origin/main -- \
+    --slices /path/to/slices.json
+
+The slice file contains a ``slices`` array. Each slice has a stable ``id``,
+display ``title``, ``filter``, ``timing`` (``inclusive`` or ``exclusive``),
+``sort``, ``top``, and ``threshold`` in seconds. Multi-slice mode writes each
+slice under ``event_reports/<slice-id>/`` and writes a normalized
+``event_reports/summary.json`` manifest for PR comment rendering. Empty slices
+are represented in the manifest and CSVs. Slices that match no events, have no
+matching trace files, or have no comparable event keys record warnings so they
+are visible in PR comments instead of looking like ordinary no-change results.
+Empty slices with no warnings are omitted recursively by the PR comment
+renderer.
+
 Examples:
 
 After traces have been generated, re-run only the event summary step with
@@ -110,6 +134,9 @@ Comparison mode writes three subdirectories under
 - ``comparison/``: ``worse`` and ``better`` CSVs for the requested filter,
   timing, exclusivity, sort, and top-N slice
 
+In multi-slice comparison mode, the same layout appears under each
+``event_reports/<slice-id>/`` directory.
+
 Trace files are matched by relative path. Delta CSVs only compare event keys
 that appear in both sides of the same matched trace file. Unmatched child events
 are still counted in their matched parent event's exclusive cost, so disappearing
@@ -117,13 +144,43 @@ or newly appearing nested work remains visible as a parent cost change instead
 of being subtracted away. If there are no comparable event keys, the comparison
 CSVs are still written with headers and no rows. Pass
 ``--threshold <seconds>`` after the wrapper's ``--`` separator in comparison
-mode to omit ``worse`` / ``better`` rows whose selected-metric change is not
-greater than that threshold.
+mode to omit ``worse`` / ``better`` rows whose total impact change is not
+greater than that threshold. Baseline/current reports use ``--sort`` for their
+own top-N ordering, but comparison reports are ranked by total impact across all
+matched traces so repeated small movements outrank a larger movement in only one
+trace.
 
 When ``-baseline-ref`` is used, the wrapper treats the invocation as an event
 comparison and skips the generated-TU CSV unless ``-tu-csv`` is provided
 explicitly. To compare arbitrary trace directories outside the wrapper layout,
 run ``ci/compile_time/summarize_events.py`` directly.
+
+Pull-request reporting
+----------------------
+
+Compile-time PR reporting is configured in ``ci/matrix.yaml`` under
+``compile_time.pull_request``. Each config selects the GPU runner, devcontainer
+launch arguments, baseline ref, preset, targets, wrapper arguments, and report
+slices. ``ci/compile_time/parse_matrix.py`` validates that section and emits the
+GitHub Actions matrix for the reusable compile-time benchmark workflow.
+
+The reusable workflow uploads:
+
+- event report CSVs and ``summary.json``
+- current raw traces
+- baseline raw traces
+- Perfetto-friendly traces
+- the rendered PR comment body
+
+``ci/compile_time/render_pr_comment.py`` renders the comment from
+``summary.json``. Regressions and improvements are rendered in separate
+``<details>`` sections and are never mixed in one table. Slice warnings are
+rendered separately. Empty sections with no warnings are omitted recursively.
+Sticky comments are keyed by ``compile-time-bench-<config-id>``; previous
+comments for the same config are archived as outdated when a new one is posted.
+
+This reporting is informational and is not part of the aggregate branch
+protection ``CI`` job.
 
 Built-in filter names include:
 
@@ -228,6 +285,12 @@ metrics, including:
 - ``event_count``
 - ``trace_count``
 - ``root_tu_count``
+
+Comparison CSVs additionally include total-impact columns
+(``baseline_impact_s``, ``current_impact_s``, ``impact_delta_s``,
+``impact_magnitude_s``) plus selected-metric columns
+(``baseline_selected_s``, ``current_selected_s``, ``selected_delta_s``,
+``selected_magnitude_s``).
 
 Notebook workflow
 -----------------

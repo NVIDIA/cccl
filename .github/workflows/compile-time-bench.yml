@@ -1,0 +1,356 @@
+name: Compile-time Benchmark
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      id:
+        description: "Stable compile-time benchmark config id."
+        required: true
+        type: string
+      name:
+        description: "Display name."
+        required: true
+        type: string
+      gpu:
+        description: "GPU selector."
+        required: true
+        type: string
+      launch_args:
+        description: "'.devcontainer/launch.sh -d' additional args."
+        required: true
+        type: string
+      baseline_ref:
+        description: "Baseline ref passed to ci/build_compile_time_bench.sh."
+        required: true
+        type: string
+      preset:
+        description: "CMake preset passed to ci/build_compile_time_bench.sh."
+        required: true
+        type: string
+      targets_json:
+        description: "JSON array of build targets."
+        required: true
+        type: string
+      args:
+        description: "Extra quoted wrapper args before '--'."
+        required: false
+        default: ""
+        type: string
+      slices_json:
+        description: "JSON object with a 'slices' array for summarize_events.py."
+        required: true
+        type: string
+      comment:
+        description: "Whether to post a sticky PR comment."
+        required: false
+        default: "true"
+        type: string
+      comment_header:
+        description: "Sticky comment header."
+        required: true
+        type: string
+      artifact_retention_days:
+        description: "Artifact retention in days."
+        required: false
+        default: 14
+        type: number
+      pr_number:
+        description: "Pull request number for sticky comments."
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  run:
+    name: "Compile-time: ${{ inputs.name }}"
+    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours
+
+      - name: Prepare AWS config for devcontainer
+        run: |
+          # The devcontainer mounts this path to /home/coder/.aws.
+          aws_dir="${{ github.workspace }}/.aws"
+          mkdir -p "${aws_dir}"
+          cat > "${aws_dir}/config" <<EOF
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+          cat > "${aws_dir}/credentials" <<EOF
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+          EOF
+          chmod 0600 "${aws_dir}/credentials"
+          chmod 0664 "${aws_dir}/config"
+
+      - name: Write compile-time inputs
+        id: inputs
+        env:
+          CONFIG_ID: ${{ inputs.id }}
+          CONFIG_NAME: ${{ inputs.name }}
+          GPU: ${{ inputs.gpu }}
+          LAUNCH_ARGS: ${{ inputs.launch_args }}
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+          PRESET: ${{ inputs.preset }}
+          TARGETS_JSON: ${{ inputs.targets_json }}
+          SLICES_JSON: ${{ inputs.slices_json }}
+        run: |
+          input_dir="${RUNNER_TEMP}/compile-time-inputs-${CONFIG_ID}"
+          mkdir -p "${input_dir}"
+          jq -e . <<< "${TARGETS_JSON}" > "${input_dir}/targets.json"
+          jq -e . <<< "${SLICES_JSON}" > "${input_dir}/slices.json"
+          jq -n \
+            --arg id "${CONFIG_ID}" \
+            --arg name "${CONFIG_NAME}" \
+            --arg gpu "${GPU}" \
+            --arg launch_args "${LAUNCH_ARGS}" \
+            --arg baseline_ref "${BASELINE_REF}" \
+            --arg preset "${PRESET}" \
+            --argjson targets "${TARGETS_JSON}" \
+            '{
+              id: $id,
+              name: $name,
+              gpu: $gpu,
+              launch_args: $launch_args,
+              baseline_ref: $baseline_ref,
+              preset: $preset,
+              targets: $targets
+            }' > "${input_dir}/config.json"
+          {
+            echo "input_dir=${input_dir}"
+            echo "targets=${input_dir}/targets.json"
+            echo "slices=${input_dir}/slices.json"
+            echo "config=${input_dir}/config.json"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Run compile-time benchmark
+        id: run-bench
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+          CONFIG_ID: ${{ inputs.id }}
+          GPU_NAME: ${{ inputs.gpu }}
+          LAUNCH_ARGS: ${{ inputs.launch_args }}
+          PRESET: ${{ inputs.preset }}
+          WRAPPER_ARGS: ${{ inputs.args }}
+        run: |
+          ci_script="${RUNNER_TEMP}/compile-time-ci-${CONFIG_ID}.sh"
+          artifact_root="compile-time-artifacts/${CONFIG_ID}"
+          build_infix="compile-time-${CONFIG_ID}"
+          report_root="build/${build_infix}/${PRESET}/compile_time"
+          mkdir -p "${artifact_root}"
+
+          cat <<"EOF" > "${ci_script}"
+          #! /usr/bin/env bash
+          set -euo pipefail
+
+          parse_quoted_args() {
+            local quoted_args="$1"
+            if [[ -z "${quoted_args}" || "${quoted_args}" =~ ^[[:space:]]*$ ]]; then
+              return 0
+            fi
+            printf '%s' "${quoted_args}" | xargs printf '%s\0'
+          }
+
+          mapfile -t targets < <(jq -r '.[]' /compile-time-targets.json)
+          declare -a wrapper_extra_args=()
+          if [[ -n "${WRAPPER_ARGS}" ]]; then
+            wrapper_extra_args_file="$(mktemp)"
+            parse_quoted_args "${WRAPPER_ARGS}" > "${wrapper_extra_args_file}"
+            mapfile -d '' -t wrapper_extra_args < "${wrapper_extra_args_file}"
+            rm -f "${wrapper_extra_args_file}"
+          fi
+
+          declare -a bench_args=(
+            -baseline-ref "${BASELINE_REF}"
+            -preset "${PRESET}"
+          )
+          for target in "${targets[@]}"; do
+            bench_args+=(-target "${target}")
+          done
+          bench_args+=("${wrapper_extra_args[@]}")
+          bench_args+=(-- --slices /compile-time-slices.json)
+
+          CCCL_BUILD_INFIX="${CCCL_BUILD_INFIX}" ./ci/build_compile_time_bench.sh "${bench_args[@]}"
+          EOF
+          chmod +x "${ci_script}"
+
+          GPU_ARGS=""
+          if [[ ! "${LAUNCH_ARGS}" =~ "--gpus" ]]; then
+            GPU_ARGS="--gpus all"
+          fi
+
+          {
+            echo "artifact_root=${artifact_root}"
+            echo "report_root=${report_root}"
+            echo "build_infix=${build_infix}"
+          } >> "${GITHUB_OUTPUT}"
+
+          rc=0
+          .devcontainer/launch.sh \
+            -d ${LAUNCH_ARGS} ${GPU_ARGS} \
+            --env "AWS_ROLE_ARN=" \
+            --env "AWS_REGION=${AWS_REGION:-}" \
+            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
+            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
+            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
+            --env "BASELINE_REF=${BASELINE_REF}" \
+            --env "CCCL_BUILD_INFIX=${build_infix}" \
+            --env "PRESET=${PRESET}" \
+            --env "SCCACHE_REGION=${AWS_REGION:-}" \
+            --env "WRAPPER_ARGS=${WRAPPER_ARGS}" \
+            --volume "${ci_script}:/compile-time-ci.sh" \
+            --volume "${{ steps.inputs.outputs.targets }}:/compile-time-targets.json" \
+            --volume "${{ steps.inputs.outputs.slices }}:/compile-time-slices.json" \
+            -- /compile-time-ci.sh \
+            || rc=$?
+
+          if [[ -d "${report_root}/event_reports" ]]; then
+            cp -a "${report_root}/event_reports" "${artifact_root}/reports"
+          fi
+          if [[ -d "${report_root}/raw_traces" ]]; then
+            cp -a "${report_root}/raw_traces" "${artifact_root}/traces-current"
+          fi
+          if [[ -d "${report_root}/baseline_raw_traces" ]]; then
+            cp -a "${report_root}/baseline_raw_traces" "${artifact_root}/traces-baseline"
+          fi
+          if [[ -d "${report_root}/perfetto_traces" ]]; then
+            cp -a "${report_root}/perfetto_traces" "${artifact_root}/perfetto"
+          fi
+
+          exit "${rc}"
+
+      - name: Render compile-time comment
+        if: ${{ always() }}
+        id: render-comment
+        env:
+          CONFIG_ID: ${{ inputs.id }}
+          CONFIG_NAME: ${{ inputs.name }}
+          ARTIFACTS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
+        run: |
+          artifact_root="${{ steps.run-bench.outputs.artifact_root }}"
+          if [[ -z "${artifact_root}" ]]; then
+            artifact_root="compile-time-artifacts/${CONFIG_ID}"
+          fi
+          summary_json="${artifact_root}/reports/summary.json"
+          comment_md="${artifact_root}/comment.md"
+          mkdir -p "${artifact_root}"
+          if [[ -f "${summary_json}" ]]; then
+            ci/compile_time/render_pr_comment.py \
+              --summary "${summary_json}" \
+              --config "${{ steps.inputs.outputs.config }}" \
+              --artifacts-url "${ARTIFACTS_URL}" \
+              -o "${comment_md}"
+          else
+            cat > "${comment_md}" <<EOF
+          <!-- cccl-compile-time-bench: ${CONFIG_ID} -->
+          ## ⚠️ CCCL compile-time benchmark comparison: ${CONFIG_NAME}
+
+          Compile-time benchmark reporting did not produce a summary manifest.
+
+          **Artifacts:** [reports and traces](${ARTIFACTS_URL})
+          EOF
+          fi
+          echo "comment=${comment_md}" >> "${GITHUB_OUTPUT}"
+
+      - name: Append compile-time summary
+        if: ${{ always() && steps.render-comment.outputs.comment != '' }}
+        run: |
+          cat "${{ steps.render-comment.outputs.comment }}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload compile-time report artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-time-${{ inputs.id }}-reports
+          path: compile-time-artifacts/${{ inputs.id }}/reports
+          if-no-files-found: warn
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: Upload current trace artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-time-${{ inputs.id }}-traces-current
+          path: compile-time-artifacts/${{ inputs.id }}/traces-current
+          if-no-files-found: warn
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: Upload baseline trace artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-time-${{ inputs.id }}-traces-baseline
+          path: compile-time-artifacts/${{ inputs.id }}/traces-baseline
+          if-no-files-found: warn
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: Upload Perfetto trace artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-time-${{ inputs.id }}-perfetto
+          path: compile-time-artifacts/${{ inputs.id }}/perfetto
+          if-no-files-found: warn
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: Upload compile-time comment artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-time-${{ inputs.id }}-comment
+          path: compile-time-artifacts/${{ inputs.id }}/comment.md
+          if-no-files-found: warn
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+  comment:
+    name: "Compile-time comment: ${{ inputs.name }}"
+    needs: run
+    if: ${{ always() && inputs.comment == 'true' && inputs.pr_number != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Download compile-time comment artifact
+        id: download-comment
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: compile-time-${{ inputs.id }}-comment
+          path: compile-time-comment
+
+      - name: Comment on PR
+        if: ${{ steps.download-comment.outcome == 'success' && hashFiles('compile-time-comment/comment.md') != '' }}
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+        with:
+          github_token: ${{ github.token }}
+          header: ${{ inputs.comment_header }}
+          number: ${{ inputs.pr_number }}
+          path: compile-time-comment/comment.md
+          hide_and_recreate: true
+          hide_classify: "OUTDATED"
