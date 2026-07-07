@@ -226,7 +226,7 @@ TEST_CASE("copy d2d contiguous kernel remainder", "[copy][d2d][contiguous][remai
   {
     for (int j = 0; j < N; ++j)
     {
-      h_expected[i * Ld + j] = h_src[i * Ld + j];
+      h_expected[static_cast<std::size_t>(i) * Ld + j] = h_src[static_cast<std::size_t>(i) * Ld + j];
     }
   }
 

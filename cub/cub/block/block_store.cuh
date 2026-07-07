@@ -62,7 +62,7 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
-  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread);
+  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread); // NOLINT(bugprone-misplaced-widening-cast)
 
   // Store directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -107,7 +107,7 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
-  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread);
+  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread); // NOLINT(bugprone-misplaced-widening-cast)
 
   // Store directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -349,7 +349,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
+    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -405,7 +405,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
   {
     if (warp_offset + tid + (ITEM * detail::warp_threads) < valid_items)
     {
-      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
+      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM]; // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 }

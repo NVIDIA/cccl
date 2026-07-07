@@ -28,7 +28,9 @@ CUB_NAMESPACE_BEGIN
 //! less-than), which has to establish a `strict weak ordering
 //! <https://en.cppreference.com/w/cpp/concepts/strict_weak_order>`_.
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceMerge that accept an environment can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns a @ref MergePolicy, as shown in the
 //! example below:

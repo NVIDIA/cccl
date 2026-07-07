@@ -193,7 +193,7 @@ C2H_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", integr
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("BinarySearch build result has AoT metadata populated", "[binary_search][aot]")
+C2H_TEST("BinarySearch build result has serialization metadata populated", "[binary_search][serialization]")
 {
   using T = int32_t;
 
@@ -231,7 +231,7 @@ C2H_TEST("BinarySearch build result has AoT metadata populated", "[binary_search
   REQUIRE(CUDA_SUCCESS == cccl_device_binary_search_cleanup(&build));
 }
 
-C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][aot]")
+C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][serialization]")
 {
   using T = int32_t;
 
@@ -294,7 +294,7 @@ C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_binary_search_cleanup(&build));
 }
 
-C2H_TEST("BinarySearch compile rejects kernel-only comparator op", "[binary_search][aot]")
+C2H_TEST("BinarySearch compile rejects kernel-only comparator op", "[binary_search][serialization]")
 {
   using T                 = int32_t;
   constexpr int device_id = 0;

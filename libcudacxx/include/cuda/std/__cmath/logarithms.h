@@ -261,7 +261,8 @@ template <class _Tp>
   }
 }
 
-template <class _Tp>
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API inline constexpr int ilogb(_Tp __x) noexcept
 {
   if constexpr (is_integral_v<_Tp>)

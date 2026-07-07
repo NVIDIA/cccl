@@ -11,13 +11,21 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
+from .._serialization import BUILD_RESULT, ITER, OP, Serializable
 from .._utils import protocols
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _UnaryTransform:
+class _UnaryTransform(Serializable):
     __slots__ = ["d_in_cccl", "d_out_cccl", "op_cccl", "build_result"]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceUnaryTransform)),
+    )
 
     def __init__(
         self,
@@ -66,7 +74,7 @@ class _UnaryTransform:
         return None
 
 
-class _BinaryTransform:
+class _BinaryTransform(Serializable):
     __slots__ = [
         "d_in1_cccl",
         "d_in2_cccl",
@@ -74,6 +82,14 @@ class _BinaryTransform:
         "op_cccl",
         "build_result",
     ]
+
+    __serialization_schema__ = (
+        ("d_in1_cccl", ITER),
+        ("d_in2_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceBinaryTransform)),
+    )
 
     def __init__(
         self,

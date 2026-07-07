@@ -5,18 +5,29 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import numpy as np
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._serialization import (
+    BUILD_RESULT,
+    ITER,
+    OP,
+    Serializable,
+)
 from .._utils import protocols
 from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _BinarySearch:
+    # Shared implementation for the lower/upper bound searchers.
+    _MODE: ClassVar[_bindings.BinarySearchMode]
+
     __slots__ = [
         "build_result",
         "d_data_cccl",
@@ -27,13 +38,20 @@ class _BinarySearch:
         "out_ptr",
     ]
 
+    __serialization_schema__ = (
+        ("d_data_cccl", ITER),
+        ("d_values_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceBinarySearchBuildResult)),
+    )
+
     def __init__(
         self,
         d_data: DeviceArrayLike,
         d_values: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike,
         comp: OpAdapter,
-        mode: _bindings.BinarySearchMode,
     ):
         if not protocols.is_device_array(d_data):
             raise ValueError("d_data must be a device array for index outputs.")
@@ -60,7 +78,7 @@ class _BinarySearch:
 
         self.build_result = call_build(
             _bindings.DeviceBinarySearchBuildResult,
-            mode,
+            self._MODE,
             self.d_data_cccl,
             self.d_values_cccl,
             self.d_out_cccl,
@@ -98,6 +116,16 @@ class _BinarySearch:
         )
 
 
+class _LowerBound(_BinarySearch, Serializable):
+    __slots__ = ()
+    _MODE = _bindings.BinarySearchMode.LOWER_BOUND
+
+
+class _UpperBound(_BinarySearch, Serializable):
+    __slots__ = ()
+    _MODE = _bindings.BinarySearchMode.UPPER_BOUND
+
+
 @cache_with_registered_key_functions
 def _make_binary_search(
     d_data: DeviceArrayLike,
@@ -108,8 +136,9 @@ def _make_binary_search(
     data_ptr: int,
     out_ptr: int,
 ):
-    """Cached factory for _BinarySearch."""
-    return _BinarySearch(d_data, d_values, d_out, comp, mode)
+    """Cached factory for the binary_search searchers."""
+    cls = _LowerBound if mode == _bindings.BinarySearchMode.LOWER_BOUND else _UpperBound
+    return cls(d_data, d_values, d_out, comp)
 
 
 def make_lower_bound(
