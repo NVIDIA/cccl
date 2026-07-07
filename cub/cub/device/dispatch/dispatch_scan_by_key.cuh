@@ -219,41 +219,7 @@ struct DeviceScanByKeyKernelSource
     return {};
   }
 };
-} // namespace detail::scan_by_key
 
-/******************************************************************************
- * Dispatch
- ******************************************************************************/
-
-/**
- * @brief Utility class for dispatching the appropriately-tuned kernels
- *        for DeviceScan
- *
- * Deprecated [Since 3.5]
- *
- * @tparam KeysInputIteratorT
- *   Random-access input iterator type
- *
- * @tparam ValuesInputIteratorT
- *   Random-access input iterator type
- *
- * @tparam ValuesOutputIteratorT
- *   Random-access output iterator type
- *
- * @tparam EqualityOp
- *   Equality functor type
- *
- * @tparam ScanOpT
- *   Scan functor type
- *
- * @tparam InitValueT
- *   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
- *
- * @tparam OffsetT
- *   Unsigned integer type for global offsets
- *
- */
-// TODO(griwes): remove in CCCL 4.0
 template <
   typename KeysInputIteratorT,
   typename ValuesInputIteratorT,
@@ -267,10 +233,9 @@ template <
     cub::detail::it_value_t<ValuesInputIteratorT>,
     ::cuda::std::
       _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
-  typename PolicyHub =
-    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>,
-  typename PolicySelector = detail::scan_by_key::policy_selector_from_hub<PolicyHub>,
-  typename KernelSource   = detail::scan_by_key::DeviceScanByKeyKernelSource<
+  typename PolicyHub = policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>,
+  typename PolicySelector = policy_selector_from_hub<PolicyHub>,
+  typename KernelSource   = DeviceScanByKeyKernelSource<
       PolicySelector,
       KeysInputIteratorT,
       ValuesInputIteratorT,
@@ -281,10 +246,10 @@ template <
       OffsetT,
       AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScanByKey
+struct dispatch_scan_by_key
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
-                "DispatchScanByKey only supports unsigned offset types of at least 4-bytes");
+                "dispatch_scan_by_key only supports unsigned offset types of at least 4-bytes");
 
   //---------------------------------------------------------------------
   // Constants and Types
@@ -378,7 +343,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
    * @param[in] max_policy
    *   Struct encoding chain of algorithm tuning policies
    */
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScanByKey(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE dispatch_scan_by_key(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeysInputIteratorT d_keys_in,
@@ -600,7 +565,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       return error;
     }
 
-    DispatchScanByKey dispatch(
+    dispatch_scan_by_key dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -653,19 +618,19 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
-    return DispatchScanByKey<KeysInputIteratorT,
-                             ValuesInputIteratorT,
-                             ValuesOutputIteratorT,
-                             EqualityOp,
-                             ScanOpT,
-                             InitValueT,
-                             OffsetT,
-                             AccumT,
-                             PolicyHub,
-                             PolicySelectorT,
-                             KernelSourceT,
-                             KernelLauncherFactory>(
+    return dispatch_scan_by_key<
+             KeysInputIteratorT,
+             ValuesInputIteratorT,
+             ValuesOutputIteratorT,
+             EqualityOp,
+             ScanOpT,
+             InitValueT,
+             OffsetT,
+             AccumT,
+             PolicyHub,
+             PolicySelectorT,
+             KernelSourceT,
+             KernelLauncherFactory>(
              d_temp_storage,
              temp_storage_bytes,
              d_keys_in,
@@ -680,12 +645,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
              kernel_source,
              launcher_factory)
       .__invoke(active_policy);
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 };
 
-namespace detail::scan_by_key
-{
 template <
   typename OverrideAccumT = use_default,
   typename KeysInputIteratorT,
@@ -892,6 +854,49 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   return cudaSuccess;
 }
 } // namespace detail::scan_by_key
+
+// TODO(griwes): remove in CCCL 4.0
+template <
+  typename KeysInputIteratorT,
+  typename ValuesInputIteratorT,
+  typename ValuesOutputIteratorT,
+  typename EqualityOp,
+  typename ScanOpT,
+  typename InitValueT,
+  typename OffsetT,
+  typename AccumT = ::cuda::std::__accumulator_t<
+    ScanOpT,
+    cub::detail::it_value_t<ValuesInputIteratorT>,
+    ::cuda::std::
+      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
+  typename PolicyHub =
+    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>,
+  typename PolicySelector = detail::scan_by_key::policy_selector_from_hub<PolicyHub>,
+  typename KernelSource   = detail::scan_by_key::DeviceScanByKeyKernelSource<
+      PolicySelector,
+      KeysInputIteratorT,
+      ValuesInputIteratorT,
+      ValuesOutputIteratorT,
+      EqualityOp,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      AccumT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+using DispatchScanByKey
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") = detail::scan_by_key::dispatch_scan_by_key<
+    KeysInputIteratorT,
+    ValuesInputIteratorT,
+    ValuesOutputIteratorT,
+    EqualityOp,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    PolicyHub,
+    PolicySelector,
+    KernelSource,
+    KernelLauncherFactory>;
 
 CUB_NAMESPACE_END
 
