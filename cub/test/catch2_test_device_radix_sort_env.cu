@@ -1682,6 +1682,9 @@ C2H_TEST("Test RadixSortPolicy properties", "[radix_sort][device]")
   STATIC_REQUIRE(p1_onesweep == p2_onesweep);
   STATIC_REQUIRE_FALSE(p1_onesweep != p2_onesweep);
 
+  STATIC_REQUIRE(p1_scan == p2_scan);
+  STATIC_REQUIRE_FALSE(p1_scan != p2_scan);
+
   STATIC_REQUIRE(p1_downsweep == p2_downsweep);
   STATIC_REQUIRE_FALSE(p1_downsweep != p2_downsweep);
 
