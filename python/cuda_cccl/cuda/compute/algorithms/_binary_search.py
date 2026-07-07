@@ -24,6 +24,15 @@ from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
+def _data_pointer_or_none(array) -> int | None:
+    # A ProxyArray is a build-time placeholder with no GPU allocation and thus no
+    # data pointer; return None for it (these pointers are only cache-key
+    # discriminators) so binary_search can be built without a GPU.
+    from .._proxy import is_proxy
+
+    return None if is_proxy(array) else protocols.get_data_pointer(array)
+
+
 class _BinarySearch:
     # Shared implementation for the lower/upper bound searchers.
     _MODE: ClassVar[_bindings.BinarySearchMode]
@@ -68,8 +77,8 @@ class _BinarySearch:
                 "d_out must use a pointer-sized unsigned integer dtype (np.uintp)."
             )
 
-        self.data_ptr = protocols.get_data_pointer(d_data)
-        self.out_ptr = protocols.get_data_pointer(d_out)
+        self.data_ptr = _data_pointer_or_none(d_data)
+        self.out_ptr = _data_pointer_or_none(d_out)
 
         self.d_data_cccl = cccl.to_cccl_input_iter(d_data)
         self.d_values_cccl = cccl.to_cccl_input_iter(d_values)
@@ -189,8 +198,8 @@ def make_lower_bound(
         d_out,
         comp_adapter,
         _bindings.BinarySearchMode.LOWER_BOUND,
-        protocols.get_data_pointer(d_data),
-        protocols.get_data_pointer(d_out),
+        _data_pointer_or_none(d_data),
+        _data_pointer_or_none(d_out),
         compute_capability=compute_capability,
     )
 
@@ -235,8 +244,8 @@ def make_upper_bound(
         d_out,
         comp_adapter,
         _bindings.BinarySearchMode.UPPER_BOUND,
-        protocols.get_data_pointer(d_data),
-        protocols.get_data_pointer(d_out),
+        _data_pointer_or_none(d_data),
+        _data_pointer_or_none(d_out),
         compute_capability=compute_capability,
     )
 
