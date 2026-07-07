@@ -15,6 +15,10 @@
 #
 #     [bench-only]
 #
+# To skip compile-time benchmark telemetry on unrelated changes, use:
+#
+#     [skip-compile-time-bench]
+#
 # ## Quick start:
 #
 # 1. Add one or more benchmark regexes under benchmarks.filters.cub and/or

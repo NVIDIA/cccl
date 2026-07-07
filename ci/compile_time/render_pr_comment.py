@@ -25,6 +25,30 @@ def md_escape(value: object) -> str:
     )
 
 
+def md_code_span(value: object) -> str:
+    text = str(value).replace("\n", " ")
+    max_backtick_run = 0
+    current_backtick_run = 0
+    for char in text:
+        if char == "`":
+            current_backtick_run += 1
+            max_backtick_run = max(max_backtick_run, current_backtick_run)
+        else:
+            current_backtick_run = 0
+    delimiter = "`" * (max_backtick_run + 1)
+    if text.startswith("`") or text.endswith("`"):
+        text = f" {text} "
+    return f"{delimiter}{text}{delimiter}"
+
+
+def render_event_name(row: dict[str, Any]) -> str:
+    event_name = row.get("event_name", "")
+    event_key = row.get("event_key", "")
+    if event_key:
+        return f"{md_escape(event_name)}: {md_code_span(event_key)}"
+    return md_escape(event_name)
+
+
 def render_rows(rows: list[dict[str, Any]], *, direction: str) -> str:
     delta_heading = (
         "Regression impact" if direction == "worse" else "Improvement impact"
@@ -41,9 +65,7 @@ def render_rows(rows: list[dict[str, Any]], *, direction: str) -> str:
                 selected_delta=md_escape(row.get("selected_delta_s", "")),
                 baseline=md_escape(row.get("baseline_selected_s", "")),
                 current=md_escape(row.get("current_selected_s", "")),
-                event=md_escape(
-                    f"{row.get('event_name', '')}: {row.get('event_key', '')}"
-                ),
+                event=render_event_name(row),
                 traces=md_escape(row.get("matched_trace_count", "")),
             )
         )
@@ -180,17 +202,17 @@ def render_comment(
         "",
         "| Run | Value |",
         "| --- | --- |",
-        f"| Config | `{md_escape(config_id)}` |",
-        f"| Baseline | `{md_escape(config.get('baseline_ref', ''))}` |",
-        f"| Preset | `{md_escape(config.get('preset', ''))}` |",
-        f"| Targets | `{md_escape(', '.join(config.get('targets', [])))}` |",
-        f"| GPU / launch args | `{md_escape(config.get('gpu', ''))}` / `{md_escape(config.get('launch_args', ''))}` |",
+        f"| Config | {md_code_span(config_id)} |",
+        f"| Baseline | {md_code_span(config.get('baseline_ref', ''))} |",
+        f"| Preset | {md_code_span(config.get('preset', ''))} |",
+        f"| Targets | {md_code_span(', '.join(config.get('targets', [])))} |",
+        f"| GPU / launch args | {md_code_span(config.get('gpu', ''))} / {md_code_span(config.get('launch_args', ''))} |",
         "",
         f"**Artifacts:** [reports and traces]({artifacts_url})",
         "",
     ]
     if sections:
-        lines.extend(sections)
+        lines.extend(join_sections(sections))
     else:
         lines.append(
             "No compile-time benchmark changes exceeded the configured thresholds."

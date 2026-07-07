@@ -69,7 +69,7 @@ def require_bool(value: Any, where: str) -> bool:
 
 
 def require_positive_int(value: Any, where: str) -> int:
-    if not isinstance(value, int) or value <= 0:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         die(f"{where} must be a positive integer")
     return value
 
@@ -98,10 +98,14 @@ def validate_slice(
         die(f"{where}.sort must be one of {sorted(SORTS)}")
 
     top = require_field(data, "top", where)
-    if not isinstance(top, int) or top <= 0:
+    if isinstance(top, bool) or not isinstance(top, int) or top <= 0:
         die(f"{where}.top must be a positive integer")
     threshold = require_field(data, "threshold", where)
-    if not isinstance(threshold, (int, float)) or threshold < 0:
+    if (
+        isinstance(threshold, bool)
+        or not isinstance(threshold, (int, float))
+        or threshold < 0
+    ):
         die(f"{where}.threshold must be a non-negative number")
 
     result: dict[str, Any] = {

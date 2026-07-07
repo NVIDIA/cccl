@@ -113,6 +113,8 @@ def iter_input_traces(input_path: Path) -> list[Path]:
 
 def output_path_for(input_trace: Path, input_root: Path, output_path: Path) -> Path:
     if input_root.is_file():
+        if output_path.is_dir() or not output_path.suffix:
+            return output_path / f"{input_trace.stem}.perfetto.json"
         return output_path
 
     rel = input_trace.relative_to(input_root)

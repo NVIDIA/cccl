@@ -156,6 +156,8 @@ jobs:
           GPU_NAME: ${{ inputs.gpu }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           PRESET: ${{ inputs.preset }}
+          SLICES_PATH: ${{ steps.inputs.outputs.slices }}
+          TARGETS_PATH: ${{ steps.inputs.outputs.targets }}
           WRAPPER_ARGS: ${{ inputs.args }}
         run: |
           ci_script="${RUNNER_TEMP}/compile-time-ci-${CONFIG_ID}.sh"
@@ -224,8 +226,8 @@ jobs:
             --env "SCCACHE_REGION=${AWS_REGION:-}" \
             --env "WRAPPER_ARGS=${WRAPPER_ARGS}" \
             --volume "${ci_script}:/compile-time-ci.sh" \
-            --volume "${{ steps.inputs.outputs.targets }}:/compile-time-targets.json" \
-            --volume "${{ steps.inputs.outputs.slices }}:/compile-time-slices.json" \
+            --volume "${TARGETS_PATH}:/compile-time-targets.json" \
+            --volume "${SLICES_PATH}:/compile-time-slices.json" \
             -- /compile-time-ci.sh \
             || rc=$?
 
@@ -251,8 +253,10 @@ jobs:
           CONFIG_ID: ${{ inputs.id }}
           CONFIG_NAME: ${{ inputs.name }}
           ARTIFACTS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
+          CONFIG_PATH: ${{ steps.inputs.outputs.config }}
+          RUN_ARTIFACT_ROOT: ${{ steps.run-bench.outputs.artifact_root }}
         run: |
-          artifact_root="${{ steps.run-bench.outputs.artifact_root }}"
+          artifact_root="${RUN_ARTIFACT_ROOT}"
           if [[ -z "${artifact_root}" ]]; then
             artifact_root="compile-time-artifacts/${CONFIG_ID}"
           fi
@@ -262,7 +266,7 @@ jobs:
           if [[ -f "${summary_json}" ]]; then
             ci/compile_time/render_pr_comment.py \
               --summary "${summary_json}" \
-              --config "${{ steps.inputs.outputs.config }}" \
+              --config "${CONFIG_PATH}" \
               --artifacts-url "${ARTIFACTS_URL}" \
               -o "${comment_md}"
           else
@@ -279,8 +283,10 @@ jobs:
 
       - name: Append compile-time summary
         if: ${{ always() && steps.render-comment.outputs.comment != '' }}
+        env:
+          COMMENT_PATH: ${{ steps.render-comment.outputs.comment }}
         run: |
-          cat "${{ steps.render-comment.outputs.comment }}" >> "${GITHUB_STEP_SUMMARY}"
+          cat "${COMMENT_PATH}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Upload compile-time report artifacts
         if: ${{ always() }}

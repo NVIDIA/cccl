@@ -18,28 +18,28 @@ compile_time:
           timing: inclusive
           sort: total
           top: 15
-          threshold: 0.001
+          threshold: 3.0
         - id: file-processing
           title: Direct file processing
           filter: file-processing
           timing: exclusive
           sort: total
           top: 15
-          threshold: 0.001
+          threshold: 0.2
         - id: function-bodies
           title: Function-body parsing
           filter: scanning-function-body
           timing: inclusive
           sort: total
           top: 15
-          threshold: 0.001
+          threshold: 0.25
         - id: template-instantiation
           title: Template instantiation
           filter: template-instantiation
           timing: inclusive
           sort: total
           top: 15
-          threshold: 0.001
+          threshold: 0.2
 
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.

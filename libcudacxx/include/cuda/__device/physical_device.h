@@ -42,6 +42,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 struct __physical_devices_view
 {
+  // This deliberately stays much smaller than `span<__physical_device>`. The physical-device cache is included by many
+  // public entrypoints, and instantiating `span` here makes the trivial `__physical_devices()` accessor expensive to
+  // parse in every TU. This internal view only provides the operations needed below.
   __physical_device* __data_;
   ::cuda::std::size_t __size_;
 
@@ -53,7 +56,7 @@ struct __physical_devices_view
   [[nodiscard]] _CCCL_HOST_API __physical_device& operator[](::cuda::std::size_t __idx) const noexcept;
 };
 
-[[nodiscard]] inline __physical_devices_view __physical_devices();
+[[nodiscard]] _CCCL_HOST_API inline __physical_devices_view __physical_devices();
 
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
@@ -202,13 +205,13 @@ __make_physical_devices(::cuda::std::size_t __device_count)
   return __devices;
 }
 
-[[nodiscard]] inline ::cuda::std::size_t __physical_devices_count()
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __physical_devices_count()
 {
   static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
   return __device_count;
 }
 
-[[nodiscard]] inline __physical_devices_view __physical_devices()
+[[nodiscard]] _CCCL_HOST_API inline __physical_devices_view __physical_devices()
 {
   static const auto __device_count = __physical_devices_count();
   static const auto __devices      = ::cuda::__make_physical_devices(__device_count);

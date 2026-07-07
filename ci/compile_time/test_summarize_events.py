@@ -18,6 +18,9 @@ PREPARE_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "prepare_traces.py"
 PARSE_MATRIX_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "parse_matrix.py"
 RENDER_COMMENT_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "render_pr_comment.py"
 WRAPPER_SCRIPT = REPO_ROOT / "ci" / "build_compile_time_bench.sh"
+PULL_REQUEST_WORKFLOW = (
+    REPO_ROOT / ".github" / "workflows" / "ci-workflow-pull-request.yml"
+)
 
 
 def csv_rows(path: Path) -> list[dict[str, str]]:
@@ -1273,6 +1276,54 @@ compile_time:
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn("duplicate slice id", completed.stderr)
 
+    def test_parse_matrix_rejects_bool_numeric_fields(self) -> None:
+        matrix = self.work / "matrix.yaml"
+        matrix.write_text(
+            """
+compile_time:
+  pull_request:
+    - id: public-headers
+      name: Public headers
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host gcc13"
+      baseline_ref: origin/main
+      preset: all-dev
+      targets: [cub.headers.base]
+      artifact_retention_days: true
+      slices:
+        - id: total-compilation
+          title: TU total compilation
+          filter: total-compilation
+          timing: inclusive
+          sort: total
+          top: true
+          threshold: false
+""",
+            encoding="utf-8",
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                PARSE_MATRIX_SCRIPT.as_posix(),
+                matrix.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("positive integer", completed.stderr)
+
+    def test_pull_request_workflow_supports_compile_time_bench_skip_tag(self) -> None:
+        workflow = PULL_REQUEST_WORKFLOW.read_text(encoding="utf-8")
+
+        self.assertIn("[skip-compile-time-bench]", workflow)
+        self.assertIn("compile_time_enabled=false", workflow)
+        self.assertIn('compile_time_matrix={"include":[]}', workflow)
+
     def test_render_comment_omits_empty_sections_and_splits_directions(self) -> None:
         summary = self.work / "summary.json"
         config = self.work / "config.json"
@@ -1292,8 +1343,8 @@ compile_time:
                                     "rows": [
                                         {
                                             "rank": 1,
-                                            "event_name": "Same",
-                                            "event_key": "cuda/std/same",
+                                            "event_name": "Scanning Function Body",
+                                            "event_key": "cuda::std::__4::same<char>(int)",
                                             "baseline_selected_s": "0.000001",
                                             "current_selected_s": "0.000003",
                                             "impact_magnitude_s": "0.000010",
@@ -1363,6 +1414,10 @@ compile_time:
         self.assertIn("<!-- cccl-compile-time-bench: public-headers -->", rendered)
         self.assertIn("Regressions", rendered)
         self.assertIn("Regression impact", rendered)
+        self.assertIn(
+            "Scanning Function Body: `cuda::std::__4::same<char>(int)`",
+            rendered,
+        )
         self.assertIn("0.000010", rendered)
         self.assertNotIn("Improvements</strong>", rendered)
         self.assertNotIn("Empty child", rendered)
@@ -1440,6 +1495,92 @@ compile_time:
             rendered,
         )
 
+    def test_render_comment_separates_top_level_slice_sections(self) -> None:
+        summary = self.work / "summary.json"
+        config = self.work / "config.json"
+        output = self.work / "comment.md"
+        row = {
+            "rank": 1,
+            "event_name": "Same",
+            "event_key": "cuda/std/same",
+            "baseline_selected_s": "0.000001",
+            "current_selected_s": "0.000003",
+            "impact_magnitude_s": "0.000010",
+            "selected_delta_s": "0.000002",
+            "matched_trace_count": 1,
+        }
+        summary.write_text(
+            json.dumps(
+                {
+                    "slices": [
+                        {
+                            "id": "first",
+                            "title": "First",
+                            "filter": "all",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "comparison": {
+                                "worse": {"rows": [row]},
+                                "better": {"rows": []},
+                            },
+                            "children": [],
+                        },
+                        {
+                            "id": "second",
+                            "title": "Second",
+                            "filter": "all",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "comparison": {
+                                "worse": {"rows": [row]},
+                                "better": {"rows": []},
+                            },
+                            "children": [],
+                        },
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        config.write_text(
+            json.dumps(
+                {
+                    "id": "public-headers",
+                    "name": "Public headers",
+                    "baseline_ref": "origin/main",
+                    "preset": "all-dev",
+                    "targets": ["cub.headers.base"],
+                    "gpu": "rtx2080",
+                    "launch_args": "--cuda 13.3 --host gcc13",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                RENDER_COMMENT_SCRIPT.as_posix(),
+                "--summary",
+                summary.as_posix(),
+                "--config",
+                config.as_posix(),
+                "--artifacts-url",
+                "https://example.test/artifacts",
+                "-o",
+                output.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rendered = output.read_text(encoding="utf-8")
+        self.assertIn("</details>\n\n### Second", rendered)
+        self.assertNotIn("</details>\n### Second", rendered)
+
 
 class PrepareTracesTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -1507,6 +1648,44 @@ class PrepareTracesTest(unittest.TestCase):
         self.assertEqual(events[0]["args"]["original_name"], "Processing Header File")
         self.assertEqual(events[1]["name"], "Other Event")
 
+    def test_single_file_input_accepts_output_directory(self) -> None:
+        input_trace = self.work / "trace.json"
+        output_dir = self.work / "perfetto"
+        input_trace.write_text(
+            json.dumps(
+                {
+                    "traceEvents": [
+                        {
+                            "ph": "X",
+                            "name": "Processing Header File",
+                            "args": {"detail": "cuda/std/string_view"},
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                PREPARE_SCRIPT.as_posix(),
+                "--input",
+                input_trace.as_posix(),
+                "--output",
+                output_dir.as_posix(),
+                "--repo-root",
+                REPO_ROOT.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertTrue((output_dir / "trace.perfetto.json").exists())
+
 
 class SummarizeTusTest(unittest.TestCase):
     def test_generated_tu_input(self) -> None:
@@ -1523,6 +1702,29 @@ class SummarizeTusTest(unittest.TestCase):
             summarize_tus.generated_tu_input(pp_path.with_name("string_view.cpp")),
             "cuda/std/string_view",
         )
+
+    def test_finds_nvcc_and_clang_preprocessed_tus(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            build_dir = Path(tmp)
+            header_dir = build_dir / "target" / "headers" / "generated"
+            header_dir.mkdir(parents=True)
+            nvcc_tu = header_dir / "cuda_std_span.cpp4.ii"
+            clang_tu = header_dir / "cuda_std_string_view.ii"
+            nvcc_tu.write_text("", encoding="utf-8")
+            clang_tu.write_text("", encoding="utf-8")
+
+            self.assertEqual(
+                summarize_tus.find_preprocessed_tus(build_dir),
+                [nvcc_tu, clang_tu],
+            )
+            self.assertEqual(
+                summarize_tus.tu_source_for_preprocessed_tu(nvcc_tu),
+                header_dir / "cuda_std_span",
+            )
+            self.assertEqual(
+                summarize_tus.tu_source_for_preprocessed_tu(clang_tu),
+                header_dir / "cuda_std_string_view",
+            )
 
 
 if __name__ == "__main__":

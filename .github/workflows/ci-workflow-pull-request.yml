@@ -101,6 +101,15 @@ jobs:
       - name: Build compile-time benchmark dispatch matrix
         id: build-compile-time-matrix
         run: |
+          if [[ "${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') }}" == "true" ]]; then
+            echo "Commit message contains [skip-compile-time-bench]; skipping compile-time benchmark dispatch."
+            {
+              echo "compile_time_enabled=false"
+              echo 'compile_time_matrix={"include":[]}'
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
           compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
           compile_time_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \

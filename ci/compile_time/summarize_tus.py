@@ -8,6 +8,7 @@ from pathlib import Path
 GENERATED_TU_MARKER = "/headers/"
 GENERATED_TU_SOURCE_SUFFIXES = (".cu", ".cpp", ".cxx", ".cc", ".c")
 PREPROCESSED_TU_SUFFIX = ".cpp4.ii"
+PREPROCESSED_TU_SUFFIXES = (".cpp4.ii", ".ii")
 
 
 def strip_generated_tu_suffix(path_text: str) -> str:
@@ -30,13 +31,20 @@ def generated_tu_input(tu: Path) -> str:
 
 
 def find_preprocessed_tus(build_dir: Path) -> list[Path]:
-    return sorted(build_dir.glob("**/headers/**/*.cpp4.ii"))
+    return sorted(
+        {
+            path
+            for suffix in PREPROCESSED_TU_SUFFIXES
+            for path in build_dir.glob(f"**/headers/**/*{suffix}")
+        }
+    )
 
 
 def tu_source_for_preprocessed_tu(pp_path: Path) -> Path:
     pp_text = pp_path.as_posix()
-    if pp_text.endswith(PREPROCESSED_TU_SUFFIX):
-        return Path(pp_text[: -len(PREPROCESSED_TU_SUFFIX)])
+    for suffix in PREPROCESSED_TU_SUFFIXES:
+        if pp_text.endswith(suffix):
+            return Path(pp_text[: -len(suffix)])
     return pp_path.with_suffix("")
 
 

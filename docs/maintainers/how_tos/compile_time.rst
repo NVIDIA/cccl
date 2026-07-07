@@ -1,299 +1,115 @@
-Compile-time benchmark
-======================
+Run compile-time benchmarks
+===========================
 
-This workflow builds generated one-include CUDA translation units (TUs) and
-summarizes NVCC ``--fdevice-time-trace`` output. It is a compile-time
-benchmark, even when the current input set comes from generated public include
-checks.
+Use the compile-time benchmark when you want to compare how a change affects
+CUDA TU compile time. The common workflow compares the current tree against
+``origin/main`` and reports the most important movements in generated public
+include-check TUs.
 
-The top-level entry point is:
+For the full option, CSV, filter, and CI contract reference, see
+:doc:`../references/compile_time`.
 
-.. code-block:: bash
+Run the common comparison
+-------------------------
 
-  ci/build_compile_time_bench.sh
-
-The wrapper configures a caller-selected CMake preset with compile-time
-instrumentation, builds the selected target or targets, prepares
-Perfetto-friendly trace copies, writes a generated-TU summary CSV, and emits one
-or more event summary CSVs.
-
-Generated outputs
------------------
-
-By default, outputs are written under:
-
-- ``build/<infix>/<preset>/compile_time/tu_summary.csv``
-- ``build/<infix>/<preset>/compile_time/event_reports/``
-- ``build/<infix>/<preset>/compile_time/perfetto_traces/``
-
-Raw NVCC traces are generated under:
-
-- ``build/<infix>/<preset>/compile_time/raw_traces/``
-
-When ``-baseline-ref`` is used, baseline raw traces are copied out of the
-temporary baseline worktree before cleanup and preserved under:
-
-- ``build/<infix>/<preset>/compile_time/baseline_raw_traces/``
-
-Build controls
---------------
-
-The wrapper accepts build-shape parameters so it behaves like other
-``ci/build*.sh`` entry points:
-
-.. code-block:: bash
-
-  PARALLEL_LEVEL=16 ci/build_compile_time_bench.sh \
-    -preset all-dev \
-    -target libcudacxx.test.public_headers \
-    -cmake-options "-DCMAKE_CUDA_ARCHITECTURES=native"
-
-Useful build options include:
-
-- ``-preset <name>``
-- ``-cmake-options <args>``
-- ``-target <name>`` (repeatable; replaces the default public include-check target set)
-- ``-baseline-ref <commit-ish>`` (build a temporary baseline worktree for comparison)
-- ``-skip-configure``
-- ``-skip-build``
-
-The default target set is the current public include-check target set:
-
-- ``cub.headers.base``
-- ``thrust.cpp.cuda.headers.base``
-- ``libcudacxx.test.public_headers``
-
-The one-include source TUs are created by those CMake targets themselves. The
-benchmark wrapper only enables extra compile options on generated CUDA TUs:
-``CCCL_COMPILE_TIME_GENERATE_DEVICE_TIME_TRACES`` writes NVCC device-time trace
-JSON, and ``CCCL_COMPILE_TIME_SAVE_PREPROCESSED_TUS`` preserves compiler
-preprocessed/temporary TU artifacts for the TU summary.
-
-Event summaries
----------------
-
-Arguments after ``--`` are forwarded to
-``ci/compile_time/summarize_events.py`` after the raw trace directory.
-If no event-summary arguments are provided, the wrapper runs:
-
-.. code-block:: bash
-
-  -f file-processing -e -n 15
-
-For CI-style multi-slice reports, pass a JSON slice file to
-``summarize_events.py``:
-
-.. code-block:: bash
-
-  ci/build_compile_time_bench.sh -baseline-ref origin/main -- \
-    --slices /path/to/slices.json
-
-The slice file contains a ``slices`` array. Each slice has a stable ``id``,
-display ``title``, ``filter``, ``timing`` (``inclusive`` or ``exclusive``),
-``sort``, ``top``, and ``threshold`` in seconds. Multi-slice mode writes each
-slice under ``event_reports/<slice-id>/`` and writes a normalized
-``event_reports/summary.json`` manifest for PR comment rendering. Empty slices
-are represented in the manifest and CSVs. Slices that match no events, have no
-matching trace files, or have no comparable event keys record warnings so they
-are visible in PR comments instead of looking like ordinary no-change results.
-Empty slices with no warnings are omitted recursively by the PR comment
-renderer.
-
-Examples:
-
-After traces have been generated, re-run only the event summary step with
-different slices:
-
-.. code-block:: bash
-
-  ci/build_compile_time_bench.sh -skip-build -- -f scanning-function-body -i -n 20
-  ci/build_compile_time_bench.sh -skip-build -- -f template-instantiation -e -n 15 --tag templates
-  ci/build_compile_time_bench.sh -skip-build -- -f 'Scanning|Instantiating' -i -n 25
-  ci/build_compile_time_bench.sh -skip-build -- -f code-generation -i --scope-filter ""
-
-Baseline comparisons
---------------------
-
-Pass ``-baseline-ref <commit-ish>`` to compare the current tree state against a
-baseline commit. The wrapper creates a temporary detached worktree for the
-baseline, builds both the current tree and the baseline with the same preset,
-targets, and common build options, then runs the requested event slice as a
-baseline/current comparison:
+From the repository root, run:
 
 .. code-block:: bash
 
   ci/build_compile_time_bench.sh \
     -baseline-ref origin/main \
-    -- -f file-processing -e --sort total -n 25 --threshold 0.001
+    -- --slices /path/to/slices.json
 
-Comparison mode writes three subdirectories under
-``<preset-build-dir>/compile_time/event_reports/``:
+The CI slices live in ``ci/matrix.yaml`` under
+``compile_time.pull_request[].slices``. To reproduce the PR shape locally, copy
+those slice definitions to a JSON file shaped as:
 
-- ``baseline/``: the normal report for the baseline traces
-- ``current/``: the normal report for the current traces
-- ``comparison/``: ``worse`` and ``better`` CSVs for the requested filter,
-  timing, exclusivity, sort, and top-N slice
+.. code-block:: json
 
-In multi-slice comparison mode, the same layout appears under each
-``event_reports/<slice-id>/`` directory.
+  {
+    "slices": [
+      {
+        "id": "file-processing",
+        "title": "Direct file processing",
+        "filter": "file-processing",
+        "timing": "exclusive",
+        "sort": "total",
+        "top": 15,
+        "threshold": 0.2
+      }
+    ]
+  }
 
-Trace files are matched by relative path. Delta CSVs only compare event keys
-that appear in both sides of the same matched trace file. Unmatched child events
-are still counted in their matched parent event's exclusive cost, so disappearing
-or newly appearing nested work remains visible as a parent cost change instead
-of being subtracted away. If there are no comparable event keys, the comparison
-CSVs are still written with headers and no rows. Pass
-``--threshold <seconds>`` after the wrapper's ``--`` separator in comparison
-mode to omit ``worse`` / ``better`` rows whose total impact change is not
-greater than that threshold. Baseline/current reports use ``--sort`` for their
-own top-N ordering, but comparison reports are ranked by total impact across all
-matched traces so repeated small movements outrank a larger movement in only one
-trace.
+The wrapper builds both the current tree and the baseline commit with the same
+preset, target set, architecture, and other build arguments. It then writes
+baseline reports, current reports, comparison CSVs, a ``summary.json`` manifest,
+raw traces, and Perfetto-friendly traces under the preset build directory:
 
-When ``-baseline-ref`` is used, the wrapper treats the invocation as an event
-comparison and skips the generated-TU CSV unless ``-tu-csv`` is provided
-explicitly. To compare arbitrary trace directories outside the wrapper layout,
-run ``ci/compile_time/summarize_events.py`` directly.
+.. code-block:: text
 
-Pull-request reporting
-----------------------
+  build/<infix>/<preset>/compile_time/
 
-Compile-time PR reporting is configured in ``ci/matrix.yaml`` under
-``compile_time.pull_request``. Each config selects the GPU runner, devcontainer
-launch arguments, baseline ref, preset, targets, wrapper arguments, and report
-slices. ``ci/compile_time/parse_matrix.py`` validates that section and emits the
-GitHub Actions matrix for the reusable compile-time benchmark workflow.
+Run a quick single-slice report
+-------------------------------
 
-The reusable workflow uploads:
-
-- event report CSVs and ``summary.json``
-- current raw traces
-- baseline raw traces
-- Perfetto-friendly traces
-- the rendered PR comment body
-
-``ci/compile_time/render_pr_comment.py`` renders the comment from
-``summary.json``. Regressions and improvements are rendered in separate
-``<details>`` sections and are never mixed in one table. Slice warnings are
-rendered separately. Empty sections with no warnings are omitted recursively.
-Sticky comments are keyed by ``compile-time-bench-<config-id>``; previous
-comments for the same config are archived as outdated when a new one is posted.
-
-This reporting is informational and is not part of the aggregate branch
-protection ``CI`` job.
-
-Built-in filter names include:
-
-- ``file-processing``
-- ``scanning-function-body``
-- ``template-instantiation``
-- ``template-class-instantiation``
-- ``template-function-instantiation``
-- ``pending-instantiations``
-- ``frontend``
-- ``host-compiler``
-- ``code-generation``
-- ``optimizer``
-- ``total-compilation``
-- ``all``
-
-Unknown filters are interpreted as case-insensitive regular expressions over
-event names and event details.
-
-Symbol-scope filtering
-----------------------
-
-Symbol-like events, such as function parsing, template instantiation, function
-IR generation, and optimizer-function events, are scope-filtered by default to
-top-level CCCL-owned namespaces:
-
-- ``cuda::``
-- ``thrust::``
-- ``cub::``
-- ``cccl::``
-
-This keeps reports focused on CCCL symbols instead of system library symbols
-pulled into the same generated TU. The filter applies to demangled trace details
-and to decoded namespace prefixes from Itanium-mangled symbols in trace details.
-It does not filter path/phase events such as file processing, host compiler
-phases, or total compilation time.
-
-Pass ``--scope-filter <regex>`` after the wrapper's ``--`` separator to choose
-a different case-sensitive symbol-scope regex. Pass an empty string to disable
-symbol-scope filtering:
+For iteration after traces already exist, skip the build and regenerate only an
+event report:
 
 .. code-block:: bash
 
   ci/build_compile_time_bench.sh -skip-build -- \
-    -f template-instantiation -i --scope-filter ""
+    -f file-processing -e --sort total -n 25
 
-``host-compiler`` matches the host compiler preprocessing / compiling events
-that appear in the device-time-trace output. ``total-compilation`` is a
-synthetic per-trace event whose inclusive time is the wall-clock span from the
-first timed trace event to the last timed trace event. This includes host
-compiler, cudafe, NVVM, fatbinary, and gaps visible inside the trace timeline,
-but it is not a separate external wall-clock measurement of untraced driver,
-Ninja, or process-launch overhead. Compared to Ninja log timings this generally
-undercounts each TU by a small, consistent amount because the trace span starts
-at the first timed event and ends at the last timed event rather than at process
-launch/exit. That makes ``total-compilation`` a good relative-comparison and
-ranking metric, but not an exact replacement for external wall-clock command
-duration.
+Other useful built-in filters include:
 
-Use ``--sort`` to choose the selected ranking metric:
+- ``total-compilation``
+- ``file-processing``
+- ``scanning-function-body``
+- ``template-instantiation``
+- ``host-compiler``
+- ``code-generation``
+- ``all``
 
-- ``total``
-- ``avg``
-- ``avg-root-tu``
-- ``max``
+Interpret the PR comment
+------------------------
 
-Perfetto trace preparation
+The PR comment contains one section per configured slice. Within each slice,
+regressions and improvements are intentionally separated. Rows are ranked by
+total impact across matched traces, not just by the largest single-TU movement.
+
+Important columns:
+
+- ``Regression impact`` / ``Improvement impact``: absolute total-impact change
+  across matched traces, in seconds.
+- ``Selected Δ``: signed movement in the selected metric for the event.
+- ``Baseline`` / ``Current``: selected metric values on each side.
+- ``Matched traces``: number of generated TUs where the event key was comparable.
+
+Small movements are filtered by per-slice thresholds from ``ci/matrix.yaml``.
+Those thresholds are intentionally non-zero to hide ordinary run-to-run noise.
+
+Inspect traces in Perfetto
 --------------------------
 
-The wrapper prepares Perfetto-friendly trace copies by default. To prepare an
-existing trace directory manually:
+The wrapper prepares trace copies whose event names include the useful file or
+symbol detail. Open files under:
 
-.. code-block:: bash
+.. code-block:: text
 
-  ci/compile_time/prepare_traces.py \
-    --input build/<infix>/<preset>/compile_time/raw_traces \
-    --output /tmp/compile_time_perfetto
+  build/<infix>/<preset>/compile_time/perfetto_traces/
 
-CSV output
-----------
+in Perfetto or another Chrome-trace-compatible viewer.
 
-``summarize_tus.py`` writes:
+Skip compile-time benchmark telemetry
+-------------------------------------
 
-- ``tu_input``
-- ``transitive_loc``
-- ``tu_source``
-- ``preprocessed_tu``
+Compile-time benchmark jobs are informational and do not gate the aggregate PR
+``CI`` job. For early iterations where the compile-time benchmark is unrelated,
+append this case-sensitive tag to the commit message:
 
-This CSV is a generated-TU input/LOC summary. Use the
-``total-compilation`` event filter when you need per-TU compile-time rankings
-from trace data.
+.. code-block:: text
 
-``summarize_events.py`` writes stable event keys and both inclusive and exclusive
-metrics, including:
+  [skip-compile-time-bench]
 
-- ``event_name``
-- ``event_key`` (repo-root-relative path for project file-processing events)
-- ``selected_total_s``
-- ``selected_avg_per_event_s``
-- ``selected_avg_per_root_tu_s``
-- ``total_inclusive_s`` / ``total_exclusive_s``
-- ``event_count``
-- ``trace_count``
-- ``root_tu_count``
-
-Comparison CSVs additionally include total-impact columns
-(``baseline_impact_s``, ``current_impact_s``, ``impact_delta_s``,
-``impact_magnitude_s``) plus selected-metric columns
-(``baseline_selected_s``, ``current_selected_s``, ``selected_delta_s``,
-``selected_magnitude_s``).
-
-Notebook workflow
------------------
-
-For exploratory analysis, use
-``ci/compile_time/analytics.ipynb``.
+Remove the tag before requesting final review if the compile-time benchmark
+scripts, workflow, or configuration changed.

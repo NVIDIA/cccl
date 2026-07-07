@@ -1271,9 +1271,13 @@ def slice_request_from_json(
         raise ValueError(f"{path}: unsupported sort '{sort_by}'")
     if exclusive_scope not in ("auto", "all", "same-filter"):
         raise ValueError(f"{path}: unsupported exclusive_scope '{exclusive_scope}'")
-    if not isinstance(top_n, int) or top_n <= 0:
+    if isinstance(top_n, bool) or not isinstance(top_n, int) or top_n <= 0:
         raise ValueError(f"{path}: top must be a positive integer")
-    if not isinstance(threshold, (int, float)) or threshold < 0:
+    if (
+        isinstance(threshold, bool)
+        or not isinstance(threshold, (int, float))
+        or threshold < 0
+    ):
         raise ValueError(f"{path}: threshold must be a non-negative number")
     if not isinstance(scope_filter_pattern, str):
         raise ValueError(f"{path}: scope_filter must be a string")
@@ -1628,6 +1632,26 @@ def main() -> None:
         parser.error("--top must be positive")
     if args.threshold < 0:
         parser.error("--threshold must be non-negative")
+    if args.slices is not None:
+        ignored_slice_options = (
+            (args.filter != parser.get_default("filter"), "--filter"),
+            (args.timing != parser.get_default("timing"), "--inclusive/--exclusive"),
+            (args.top != parser.get_default("top"), "--top"),
+            (args.sort != parser.get_default("sort"), "--sort"),
+            (args.threshold != parser.get_default("threshold"), "--threshold"),
+            (
+                args.exclusive_scope != parser.get_default("exclusive_scope"),
+                "--exclusive-scope",
+            ),
+            (args.scope_filter != parser.get_default("scope_filter"), "--scope-filter"),
+            (args.tag is not None, "--tag"),
+        )
+        ignored_names = [name for changed, name in ignored_slice_options if changed]
+        if ignored_names:
+            parser.error(
+                "--slices cannot be combined with single-slice option(s): "
+                + ", ".join(ignored_names)
+            )
     if args.baseline_dir is None and args.threshold != 0:
         parser.error("--threshold can only be used together with --baseline-dir")
     if args.baseline_dir is not None and args.output_csv is not None:
