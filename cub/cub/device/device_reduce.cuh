@@ -138,7 +138,7 @@ inline constexpr bool is_non_deterministic_v =
 //! Deferred reductions are CUDA Graph capturable. The pointed-to count may change between graph replays without
 //! updating or recapturing the graph. Compile-time and runtime bounds are accepted as caller preconditions, but do not
 //! currently change temporary storage, grid dimensions, or pass selection. With ``gpu_to_gpu`` determinism, the
-//! element of a deferred problem size must currently be a signed 32-bit integer.
+//! element of a deferred problem size must currently be a signed 32- or 64-bit integer.
 //!
 //! Determinism
 //! ====================================

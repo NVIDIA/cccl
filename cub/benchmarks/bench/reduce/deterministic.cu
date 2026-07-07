@@ -26,12 +26,12 @@ struct policy_selector_t
 };
 #endif // !TUNE_BASE
 
-template <class T>
-void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
+template <class T, class OffsetT>
+void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using init_value_t = T;
 
-  const auto elements = static_cast<int>(state.get_int64("Elements{io}"));
+  const auto elements = static_cast<OffsetT>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
@@ -59,7 +59,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
 }
 
 using types = nvbench::type_list<float, double>;
-NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types))
+NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("base")
-  .set_type_axes_names({"T{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

@@ -18,15 +18,37 @@
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
+//! Type a normalized problem size resolves to on device: an immediate problem size keeps its integral type, a
+//! deferred source resolves to a signed integer wide enough for its element.
+template <typename NormalizedNumItemsT, bool = ::cuda::std::is_integral_v<NormalizedNumItemsT>>
+struct deterministic_num_items
+{
+  using type = NormalizedNumItemsT;
+};
+
+template <typename NormalizedNumItemsT>
+struct deterministic_num_items<NormalizedNumItemsT, false>
+{
+  using type = ::cuda::std::conditional_t<sizeof(it_value_t<NormalizedNumItemsT>) == 4, int, ::cuda::std::int64_t>;
+};
+
+template <typename NormalizedNumItemsT>
+using deterministic_num_items_t = typename deterministic_num_items<NormalizedNumItemsT>::type;
+
 /**
  * @brief Deterministically Reduce region kernel entry point (multi-block). Computes privatized
  *        reductions, one per thread block in deterministic fashion
@@ -77,7 +99,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
   constexpr int items_per_thread    = policy.items_per_thread;
   constexpr int threads_per_block   = policy.threads_per_block;
-  const int num_items               = CUB_NS_QUALIFIER::detail::resolve_parameter<int>(normalized_num_items);
+
+  // A 64-bit deferred problem size is consumed in a single launch instead of host-side chunks, so the index
+  // computations must be 64-bit as well.
+  using num_items_t = deterministic_num_items_t<NormalizedNumItemsT>;
+  using index_t     = ::cuda::std::make_unsigned_t<num_items_t>;
+
+  const num_items_t num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<num_items_t>(normalized_num_items);
 
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.reduce_algorithm>;
 
@@ -104,13 +132,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   int n_threads = reduce_grid_size * threads_per_block;
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (unsigned i = tid; i < static_cast<unsigned>(num_items); i += (n_threads * items_per_thread))
+  for (index_t i = tid; i < static_cast<index_t>(num_items); i += (n_threads * items_per_thread))
   {
     ftype items[items_per_thread] = {};
     for (int j = 0; j < items_per_thread; j++)
     {
-      const unsigned idx = i + j * n_threads;
-      if (idx < static_cast<unsigned>(num_items))
+      const index_t idx = i + j * n_threads;
+      if (idx < static_cast<index_t>(num_items))
       {
         items[j] = transform_op(d_in[idx]);
       }
@@ -282,8 +310,10 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                             InitValueT init,
                                                             TransformOpT transform_op)
 {
-  const int actual_num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<int>(normalized_num_items);
-  const int num_items        = first_pass_grid_size;
+  using actual_num_items_t = deterministic_num_items_t<NormalizedNumItemsT>;
+  const actual_num_items_t actual_num_items =
+    CUB_NS_QUALIFIER::detail::resolve_parameter<actual_num_items_t>(normalized_num_items);
+  const int num_items = first_pass_grid_size;
 
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
   constexpr int threads_per_block   = policy.threads_per_block;

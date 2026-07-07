@@ -11,8 +11,6 @@
 #include <cuda/execution.require.h>
 #include <cuda/std/functional>
 
-#include <cstdint>
-
 #include <nvbench_helper.cuh>
 
 #include <nvbench/range.cuh>
@@ -33,18 +31,16 @@ struct policy_selector_t
 };
 #endif // !TUNE_BASE
 
-template <class T>
-void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
+template <class T, class OffsetT>
+void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using init_value_t = T;
-  // Only a signed 32-bit problem-size element is supported with gpu_to_gpu determinism.
-  using count_t = std::int32_t;
 
-  const auto elements = static_cast<count_t>(state.get_int64("Elements{io}"));
+  const auto elements = static_cast<OffsetT>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1, thrust::no_init);
-  thrust::device_vector<count_t> device_num_items(1, elements);
+  thrust::device_vector<OffsetT> device_num_items(1, elements);
 
   auto d_in        = thrust::raw_pointer_cast(in.data());
   auto d_out       = thrust::raw_pointer_cast(out.data());
@@ -79,7 +75,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
 }
 
 using types = nvbench::type_list<float, double>;
-NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types))
+NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("base")
-  .set_type_axes_names({"T{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

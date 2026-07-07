@@ -628,12 +628,15 @@ C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed d
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
 }
 
+using gpu_to_gpu_count_types = c2h::type_list<std::int32_t, std::int64_t>;
+
 C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate result bitwise with gpu_to_gpu "
          "determinism",
-         "[device][reduce][deferred][gpu_to_gpu]")
+         "[device][reduce][deferred][gpu_to_gpu]",
+         gpu_to_gpu_count_types)
 {
   using value_t = float;
-  using count_t = std::int32_t;
+  using count_t = typename c2h::get<0, TestType>;
 
   constexpr count_t capacity = 100'000;
   const count_t num_items    = GENERATE_COPY(count_t{0}, count_t{1}, count_t{1'000}, capacity);
@@ -653,6 +656,34 @@ C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate res
     cudaSuccess
     == cub::DeviceReduce::Reduce(
       input.begin(), output.begin(), cuda::args::deferred{device_num_items.begin()}, cuda::std::plus<>{}, init, env));
+  REQUIRE_THAT(detail::to_vec(reference), detail::BitwiseEqualsRange(detail::to_vec(output)));
+}
+
+C2H_TEST("DeviceReduce::Reduce with a large deferred num_items matches the immediate result bitwise with gpu_to_gpu "
+         "determinism",
+         "[device][reduce][deferred][gpu_to_gpu]")
+{
+  using value_t = float;
+  using count_t = std::int64_t;
+
+  // Exceeds INT32_MAX, so the immediate reference reduces two host-side chunks while the deferred reduction consumes
+  // the whole problem in a single launch with 64-bit indexing; RFA results are partition independent, so the results
+  // must match bitwise.
+  const count_t num_items = (count_t{1} << 31) + GENERATE_COPY(count_t{0}, count_t{12'345});
+  constexpr value_t init  = 3.0f;
+
+  const auto input = cuda::constant_iterator<value_t>{value_t{1}};
+  const c2h::device_vector<count_t> device_num_items(1, num_items);
+  c2h::device_vector<value_t> reference(1, thrust::no_init);
+  c2h::device_vector<value_t> output(1, thrust::no_init);
+
+  const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceReduce::Reduce(input, reference.begin(), num_items, cuda::std::plus<>{}, init, env));
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::Reduce(
+            input, output.begin(), cuda::args::deferred{device_num_items.begin()}, cuda::std::plus<>{}, init, env));
   REQUIRE_THAT(detail::to_vec(reference), detail::BitwiseEqualsRange(detail::to_vec(output)));
 }
 #endif // TEST_LAUNCH == 0

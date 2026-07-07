@@ -204,9 +204,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
   const int num_items_per_chunk = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
 
-  // A deferred problem size cannot be read on the host, so these defaults stand: a single chunk (a signed 32-bit
-  // problem size occupies at most one chunk) is launched with the worst-case grid, and surplus blocks write empty
-  // accumulators.
+  // A deferred problem size cannot be read on the host, so these defaults stand: the kernel consumes the whole
+  // problem in a single launch with the worst-case grid, and surplus blocks write empty accumulators.
   int num_chunks           = 1;
   int chunk_grid_size      = max_blocks;
   int partial_chunk_size   = 0;
@@ -409,12 +408,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 {
   if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
   {
-    // The deterministic implementation indexes the input with 32-bit arithmetic and chunks larger problems on the
-    // host, which requires reading the problem size. A signed 32-bit element is guaranteed to fit a single chunk.
+    // A deferred problem size cannot be chunked on the host, so the reduction kernel consumes it in a single launch:
+    // a 32-bit element keeps the 32-bit index arithmetic of the chunked path, a 64-bit element switches the kernel to
+    // 64-bit indexing.
     using element_t = typename ::cuda::args::__traits<OffsetT>::element_type;
-    static_assert(
-      ::cuda::std::is_integral_v<element_t> && ::cuda::std::is_signed_v<element_t> && sizeof(element_t) == 4,
-      "a deferred num_items element must be a signed 32-bit integer with gpu_to_gpu determinism");
+    static_assert(::cuda::std::is_integral_v<element_t> && ::cuda::std::is_signed_v<element_t>
+                    && (sizeof(element_t) == 4 || sizeof(element_t) == 8),
+                  "a deferred num_items element must be a signed 32- or 64-bit integer with gpu_to_gpu determinism");
   }
 
   // Get CC
