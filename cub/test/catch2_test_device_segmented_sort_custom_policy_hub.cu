@@ -3,7 +3,7 @@
 
 // TODO(bgruber): drop this test with CCCL 4.0 when we drop the segmented sort dispatcher
 
-// disable deprecation warnings for radix sort agent policies
+// disable deprecation warnings for radix sort and sub-warp merge sort agent policies
 #define CCCL_IGNORE_DEPRECATED_API
 
 #include "insert_nested_NVTX_range_guard.h"

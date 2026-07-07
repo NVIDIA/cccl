@@ -289,6 +289,7 @@ public:
     return __t;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void reset(pointer __p = pointer()) noexcept
   {
     pointer __tmp  = __ptr_.first();

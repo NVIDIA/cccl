@@ -58,6 +58,7 @@ else:
         DoubleBuffer,
         SortOrder,
         binary_transform,
+        deserialize,
         exclusive_scan,
         histogram_even,
         inclusive_scan,
@@ -83,6 +84,7 @@ else:
         segmented_reduce,
         segmented_sort,
         select,
+        serialize,
         three_way_partition,
         unary_transform,
         unique_by_key,
@@ -106,6 +108,8 @@ else:
 
     __all__ = [
         "_BINDINGS_AVAILABLE",
+        "serialize",
+        "deserialize",
         "binary_transform",
         "clear_all_caches",
         "CacheModifiedInputIterator",

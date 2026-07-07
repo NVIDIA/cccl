@@ -122,7 +122,8 @@ struct AdjacentDifferencePolicySelector
 };
 // example-end subtract-left-copy-policy-selector
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy env-based API with tuning", "[adjacent_difference][env]")
+C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts a custom policy selector",
+         "[adjacent_difference][env]")
 {
   // example-begin subtract-left-copy-tuning
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};

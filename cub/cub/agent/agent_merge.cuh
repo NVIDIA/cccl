@@ -39,7 +39,9 @@ template <int ThreadsPerBlock,
           int ItemsPerThread,
           CacheLoadModifier LoadModifier,
           BlockStoreAlgorithm StoreAlgorithm,
-          bool UseBlockLoadToShared,
+          bool UseBl2ShForKeys,
+          bool UseBl2ShForItems,
+          bool Unroll,
           typename KeysIt1,
           typename ItemsIt1,
           typename KeysIt2,
@@ -61,24 +63,13 @@ struct agent_t
   using block_store_keys     = BlockStore<key_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;
   using block_store_items    = BlockStore<item_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;
 
-  template <typename ValueT, typename Iter1, typename Iter2>
-  static constexpr bool use_block_load_to_shared =
-    UseBlockLoadToShared && (sizeof(ValueT) == alignof(ValueT))
-    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<ValueT> //
-    && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iter1> //
-    && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iter2>
-    && ::cuda::std::is_same_v<ValueT, cub::detail::it_value_t<Iter1>>
-    && ::cuda::std::is_same_v<ValueT, cub::detail::it_value_t<Iter2>>;
-
-  static constexpr bool keys_use_bl2sh     = use_block_load_to_shared<key_type, KeysIt1, KeysIt2>;
-  static constexpr bool items_use_bl2sh    = use_block_load_to_shared<item_type, ItemsIt1, ItemsIt2>;
   static constexpr int bl2sh_minimum_align = cub::detail::LoadToSharedBufferAlignBytes<char>();
 
   template <typename ValueT>
   struct alignas(cub::detail::LoadToSharedBufferAlignBytes<ValueT>()) buffer_t
   {
     // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
-    static constexpr int bytes_needed = cub::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1)
+    static constexpr int bytes_needed = cub::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1ULL)
                                       + (alignof(ValueT) < bl2sh_minimum_align ? 2 * bl2sh_minimum_align : 0);
 
     char c_array[bytes_needed];
@@ -86,8 +77,8 @@ struct agent_t
 
   struct temp_storages_without_bl2sh
   {
-    using keys_smem  = ::cuda::std::conditional_t<keys_use_bl2sh, buffer_t<key_type>, key_type[items_per_tile + 1]>;
-    using items_smem = ::cuda::std::conditional_t<items_use_bl2sh, buffer_t<item_type>, item_type[items_per_tile + 1]>;
+    using keys_smem  = ::cuda::std::conditional_t<UseBl2ShForKeys, buffer_t<key_type>, key_type[items_per_tile + 1]>;
+    using items_smem = ::cuda::std::conditional_t<UseBl2ShForItems, buffer_t<item_type>, item_type[items_per_tile + 1]>;
     union
     {
       typename block_store_keys::TempStorage store_keys;
@@ -103,8 +94,8 @@ struct agent_t
     typename block_load_to_shared::TempStorage load2sh;
   };
 
-  using temp_storages =
-    ::cuda::std::conditional_t<keys_use_bl2sh || items_use_bl2sh, temp_storages_with_bl2sh, temp_storages_without_bl2sh>;
+  using temp_storages = ::cuda::std::
+    conditional_t<UseBl2ShForKeys || UseBl2ShForItems, temp_storages_with_bl2sh, temp_storages_without_bl2sh>;
 
   using TempStorage = Uninitialized<temp_storages>;
 
@@ -154,7 +145,7 @@ struct agent_t
     }
 
     [[maybe_unused]] auto load2sh = [&] {
-      if constexpr (keys_use_bl2sh || items_use_bl2sh)
+      if constexpr (UseBl2ShForKeys || UseBl2ShForItems)
       {
         return block_load_to_shared{storage.load2sh};
       }
@@ -168,7 +159,7 @@ struct agent_t
     key_type* keys1_shared;
     key_type* keys2_shared;
     int keys2_offset;
-    if constexpr (keys_use_bl2sh)
+    if constexpr (UseBl2ShForKeys)
     {
       ::cuda::std::span keys1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(keys1_in + keys1_beg),
                                   static_cast<::cuda::std::size_t>(keys1_count_tile)};
@@ -222,7 +213,7 @@ struct agent_t
 
     // perform serial merge
     int indices[ItemsPerThread];
-    cub::SerialMerge(
+    cub::detail::serial_merge<Unroll>(
       keys1_shared,
       keys1_beg_thread,
       keys2_offset + keys2_beg_thread,
@@ -265,7 +256,7 @@ struct agent_t
 
       item_type items_loc[ItemsPerThread];
       item_type* items1_shared;
-      if constexpr (items_use_bl2sh)
+      if constexpr (UseBl2ShForItems)
       {
         ::cuda::std::span items1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items1_in + keys1_beg),
                                      static_cast<::cuda::std::size_t>(keys1_count_tile)};
@@ -294,7 +285,7 @@ struct agent_t
             items_loc, items1_in_cm + keys1_beg, items2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
           __syncthreads(); // block_store_keys above uses SMEM, so make sure all threads are done before we write to it
           items1_shared = &storage.items_shared[0];
-          if constexpr (keys_use_bl2sh)
+          if constexpr (UseBl2ShForKeys)
           {
             const int items2_offset = keys1_count_tile;
             translate_indices(items2_offset);
