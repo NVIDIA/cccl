@@ -101,16 +101,19 @@ template <move_constructible _Fn, input_range... _Views>
        && is_object_v<_Fn> && regular_invocable<_Fn&, range_reference_t<_Views>...>
        && __can_reference<invoke_result_t<_Fn&, range_reference_t<_Views>...>>
 #else
-template <class _Fn,
-          class... _Views,
-          class = enable_if_t<move_constructible<_Fn>>,
-          class = enable_if_t<(input_range<_Views> && ...)>,
-          class = enable_if_t<is_object_v<_Fn>>,
-          class = enable_if_t<regular_invocable<_Fn&, range_reference_t<_Views>...>>,
-          class = enable_if_t<__can_reference<invoke_result_t<_Fn&, range_reference_t<_Views>...>>>>
+template <class _Fn, class... _Views>
 #endif
 class zip_transform_view : public view_interface<zip_transform_view<_Fn, _Views...>>
 {
+#if _CCCL_STD_VER <= 2017
+  static_assert(sizeof...(_Views) > 0);
+  static_assert(move_constructible<_Fn>);
+  static_assert((input_range<_Views> && ...));
+  static_assert(is_object_v<_Fn>);
+  static_assert(regular_invocable<_Fn&, range_reference_t<_Views>...>);
+  static_assert(__can_reference<invoke_result_t<_Fn&, range_reference_t<_Views>...>>);
+#endif // _CCCL_STD_VER <= 2017
+
   zip_view<_Views...> __zip_;
   __movable_box<_Fn> __fun_;
 
