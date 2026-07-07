@@ -38,7 +38,6 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__ranges/zip_view.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/invoke.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_referenceable.h>
@@ -67,7 +66,7 @@ private:
   template <class _View>
   using __tag _CCCL_NODEBUG = typename iterator_traits<iterator_t<__maybe_const<_Const, _View>>>::iterator_category;
 
-  static consteval auto __get_iterator_category()
+  static _CCCL_CONSTEVAL auto __get_iterator_category()
   {
     if constexpr (!is_reference_v<
                     invoke_result_t<__maybe_const<_Const, _Fn>&, range_reference_t<__maybe_const<_Const, _Views>>...>>)
@@ -163,10 +162,10 @@ public:
         , __inner_{::cuda::std::move(__i.__inner_)}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const noexcept(
-      noexcept(::cuda::std::apply(__get_deref_and_invoke(), __zip_view_iterator_access::__get_underlying(__inner_))))
+    [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
+      noexcept(noexcept(::cuda::std::apply(__get_deref_and_invoke(), __inner_.__iterators())))
     {
-      return ::cuda::std::apply(__get_deref_and_invoke(), __zip_view_iterator_access::__get_underlying(__inner_));
+      return ::cuda::std::apply(__get_deref_and_invoke(), __inner_.__iterators());
     }
 
     _CCCL_API constexpr __iterator& operator++()
@@ -229,10 +228,11 @@ public:
     _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
     {
       return ::cuda::std::apply(
-        [&]<class... _Is>(const _Is&... __iters) -> decltype(auto) {
-          return ::cuda::std::invoke(*__parent_->__fun_, __iters[iter_difference_t<_Is>(__n)]...);
+        [&](const auto&... __iters) -> decltype(auto) {
+          return ::cuda::std::invoke(
+            *__parent_->__fun_, __iters[iter_difference_t<::cuda::std::remove_cvref_t<decltype(__iters)>>(__n)]...);
         },
-        __zip_view_iterator_access::__get_underlying(__inner_));
+        __inner_.__iterators());
     }
 
     _CCCL_TEMPLATE(class _Const2 = _Const)
