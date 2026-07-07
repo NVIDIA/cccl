@@ -37,6 +37,7 @@
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
+#include <cuda/std/__tuple_dir/tuple.h> // needed for actual tuple_element specialization
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
