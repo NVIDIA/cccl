@@ -165,10 +165,14 @@ class _BuildResults(_Kind):
         # picks the matching one at call time. Kernel load stays lazy either way.
         check_cc = count == 1
         entries = [(r.u32(), r.blob()) for _ in range(count)]
-        return {
-            cc: self.cls.deserialize(blob, load=False, check_cc=check_cc)
-            for cc, blob in entries
-        }
+        result: dict[int, Any] = {}
+        for cc, blob in entries:
+            if cc in result:
+                raise ValueError(
+                    f"duplicate compute-capability key {cc} in build_results blob"
+                )
+            result[cc] = self.cls.deserialize(blob, load=False, check_cc=check_cc)
+        return result
 
 
 def BUILD_RESULTS(cls: type) -> _BuildResults:

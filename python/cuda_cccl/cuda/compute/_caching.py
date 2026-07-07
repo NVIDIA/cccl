@@ -16,6 +16,11 @@ try:
 except ImportError:
     from cuda.core.experimental import Device
 
+try:
+    from cuda.core._utils.cuda_utils import CUDAError
+except ImportError:
+    from cuda.core.experimental._utils.cuda_utils import CUDAError
+
 from ._utils.protocols import get_dtype, get_shape, is_device_array
 from .struct import _Struct
 
@@ -124,12 +129,19 @@ class _CacheWithRegisteredKeyFunctions:
             # GPU. Otherwise, salt the key with the current device's cc so a
             # build cached on one device isn't reused on another.
             if kwargs.get("compute_capability") is None:
+                # Only device-availability failures should be reinterpreted as
+                # "pass compute_capability": no driver / no device raises
+                # CUDAError, and querying device 0 on a machine with zero
+                # devices raises ValueError. Anything else (a real bug) must
+                # propagate untouched. The original error is chained and echoed
+                # so a genuine driver/permission failure isn't hidden behind a
+                # misleading "no device" message.
                 try:
                     cc = tuple(Device().compute_capability)
-                except Exception as e:
+                except (CUDAError, ValueError) as e:
                     raise RuntimeError(
-                        "make_<algo> was called without compute_capability and no "
-                        "CUDA device is available to target. Pass "
+                        "make_<algo> was called without compute_capability and the "
+                        f"current CUDA device could not be queried ({e}). Pass "
                         "compute_capability=<cc or list of ccs> to compile without "
                         "a GPU (e.g. with ProxyArray / ProxyValue)."
                     ) from e

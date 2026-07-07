@@ -25,7 +25,24 @@ from cpython.pycapsule cimport (
 )
 
 import ctypes
+import threading
 from enum import IntEnum
+
+# Serializes the one-time transition of a build result to "loaded". The backend
+# loader runs under `with nogil` (releasing the GIL), so without this lock two
+# concurrent first-time __call__s on the same build result could both pass the
+# `_loaded` guard and load the same handle twice.
+_LOAD_LOCK = threading.Lock()
+
+
+def _load_once(build_result, loader):
+    with _LOAD_LOCK:
+        if build_result._loaded:
+            return
+        loader(build_result)
+        build_result._loaded = True
+
+
 cdef extern from "<cuda.h>":
     cdef struct OpaqueCUstream_st
     cdef struct OpaqueCUkernel_st
@@ -1162,8 +1179,7 @@ cdef class DeviceReduceBuildResult:
         # already-loaded result.
         if self._loaded:
             return
-        _reduce_load(self)
-        self._loaded = True
+        _load_once(self, _reduce_load)
 
 # ------------
 #   DeviceScan
@@ -1493,8 +1509,7 @@ cdef class DeviceScanBuildResult:
     def load(self):
         if self._loaded:
             return
-        _scan_load(self)
-        self._loaded = True
+        _load_once(self, _scan_load)
 
 # -----------------------
 #   DeviceSegmentedReduce
@@ -1648,8 +1663,7 @@ cdef class DeviceSegmentedReduceBuildResult:
     def load(self):
         if self._loaded:
             return
-        _segmented_reduce_load(self)
-        self._loaded = True
+        _load_once(self, _segmented_reduce_load)
 
 # -----------------
 #   DeviceMergeSort
@@ -1797,8 +1811,7 @@ cdef class DeviceMergeSortBuildResult:
     def load(self):
         if self._loaded:
             return
-        _merge_sort_load(self)
-        self._loaded = True
+        _load_once(self, _merge_sort_load)
 
 
 # -------------------
@@ -1954,8 +1967,7 @@ cdef class DeviceUniqueByKeyBuildResult:
     def load(self):
         if self._loaded:
             return
-        _unique_by_key_load(self)
-        self._loaded = True
+        _load_once(self, _unique_by_key_load)
 
 # -----------------
 # DeviceRadixSort
@@ -2117,8 +2129,7 @@ cdef class DeviceRadixSortBuildResult:
     def load(self):
         if self._loaded:
             return
-        _radix_sort_load(self)
-        self._loaded = True
+        _load_once(self, _radix_sort_load)
 
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
@@ -2256,8 +2267,7 @@ cdef class DeviceUnaryTransform:
     def load(self):
         if self._loaded:
             return
-        _unary_transform_load(self)
-        self._loaded = True
+        _load_once(self, _unary_transform_load)
 
 
 cdef class DeviceBinaryTransform:
@@ -2352,8 +2362,7 @@ cdef class DeviceBinaryTransform:
     def load(self):
         if self._loaded:
             return
-        _binary_transform_load(self)
-        self._loaded = True
+        _load_once(self, _binary_transform_load)
 
 
 # -----------------
@@ -2520,8 +2529,7 @@ cdef class DeviceHistogramBuildResult:
     def load(self):
         if self._loaded:
             return
-        _histogram_load(self)
-        self._loaded = True
+        _load_once(self, _histogram_load)
 
 
 # -------------------
@@ -2656,8 +2664,7 @@ cdef class DeviceBinarySearchBuildResult:
     def load(self):
         if self._loaded:
             return
-        _binary_search_load(self)
-        self._loaded = True
+        _load_once(self, _binary_search_load)
 
 
 # ----------------------------------
@@ -2817,8 +2824,7 @@ cdef class DeviceThreeWayPartitionBuildResult:
     def load(self):
         if self._loaded:
             return
-        _three_way_partition_load(self)
-        self._loaded = True
+        _load_once(self, _three_way_partition_load)
 
 
 # -------------------
@@ -2980,7 +2986,6 @@ cdef class DeviceSegmentedSortBuildResult:
     def load(self):
         if self._loaded:
             return
-        _segmented_sort_load(self)
-        self._loaded = True
+        _load_once(self, _segmented_sort_load)
 
 include "_bindings_serialization.pxi"

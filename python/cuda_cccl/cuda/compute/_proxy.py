@@ -37,6 +37,14 @@ class _ProxyCAI(dict):
             raise RuntimeError(_PROXY_DATA_ERROR)
         raise KeyError(key)
 
+    def get(self, key, default=None):
+        # dict.get() bypasses __missing__, so guard it too: a consumer that
+        # defensively does cai.get("data") must still hit the loud failure
+        # rather than silently receiving a null pointer.
+        if key == "data":
+            raise RuntimeError(_PROXY_DATA_ERROR)
+        return super().get(key, default)
+
 
 class ProxyArray:
     """Dtype-only placeholder for a device array.
