@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -36,6 +37,9 @@ namespace detail::reduce
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
+ * @tparam NormalizedNumItemsT
+ *   Integral problem size or a deferred problem-size descriptor
+ *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
  *   `auto operator()(const T &a, const U &b)`
@@ -49,18 +53,23 @@ namespace detail::reduce
  * @param[out] d_out
  *   Pointer to the output aggregate
  *
- * @param[in] num_items
- *   Total number of input data items
+ * @param[in] normalized_num_items
+ *   Immediate problem size or a deferred problem-size descriptor
  *
  * @param[in] reduction_op
  *   Binary reduction functor
  */
-template <typename PolicySelector, typename InputIteratorT, typename ReductionOpT, typename AccumT, typename TransformOpT>
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename NormalizedNumItemsT,
+          typename ReductionOpT,
+          typename AccumT,
+          typename TransformOpT>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_block)) void DeterministicDeviceReduceKernel(
   InputIteratorT d_in,
   AccumT* d_out,
-  int num_items,
+  const NormalizedNumItemsT normalized_num_items,
   ReductionOpT reduction_op,
   TransformOpT transform_op,
   const int reduce_grid_size)
@@ -68,6 +77,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
   constexpr int items_per_thread    = policy.items_per_thread;
   constexpr int threads_per_block   = policy.threads_per_block;
+  const int num_items               = CUB_NS_QUALIFIER::detail::resolve_parameter<int>(normalized_num_items);
 
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.reduce_algorithm>;
 
@@ -205,8 +215,90 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;
 
+  // TODO(NaderAlAwar): This code is intentionally duplicated in DeterministicDeviceReduceDeferredSingleTileKernel
+  // because extracting it into a device function changes the SASS of this kernel. Changes here must also be applied to
+  // the copy below.
+
   // Check if empty problem
   if (num_items == 0)
+  {
+    if (threadIdx.x == 0)
+    {
+      *d_out = init;
+    }
+    return;
+  }
+
+  using float_type         = typename AccumT::ftype;
+  constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
+
+  float_type* shared_bins = detail::rfa::get_shared_bin_array<float_type, bin_length>();
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int index = static_cast<int>(threadIdx.x); index < bin_length; index += threads_per_block)
+  {
+    shared_bins[index] = AccumT::initialize_bin(index);
+  }
+
+  __syncthreads();
+
+  AccumT thread_aggregate{};
+
+  // Consume block aggregates of previous kernel
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = static_cast<int>(threadIdx.x); i < num_items; i += threads_per_block)
+  {
+    thread_aggregate += transform_op(d_in[i]);
+  }
+
+  AccumT block_aggregate = block_reduce_t(temp_storage).Reduce(thread_aggregate, reduction_op, num_items);
+
+  // Output result
+  if (threadIdx.x == 0)
+  {
+    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate.conv_to_fp());
+  }
+}
+
+//! Single-tile entry point that consumes all first-pass partials of a reduction with a deferred problem size. The
+//! first pass launches a worst-case grid whose surplus blocks write empty accumulators, which are exact identities
+//! under binned accumulation, so every partial can be consumed. The deferred problem size is read only to detect an
+//! empty problem, which must store `init` unmodified.
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename NormalizedNumItemsT,
+          typename ReductionOpT,
+          typename InitValueT,
+          typename AccumT,
+          typename TransformOpT = ::cuda::std::identity>
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
+  int(current_policy<PolicySelector>().single_tile.threads_per_block),
+  1) void DeterministicDeviceReduceDeferredSingleTileKernel(InputIteratorT d_in,
+                                                            OutputIteratorT d_out,
+                                                            const NormalizedNumItemsT normalized_num_items,
+                                                            const int first_pass_grid_size,
+                                                            ReductionOpT reduction_op,
+                                                            InitValueT init,
+                                                            TransformOpT transform_op)
+{
+  const int actual_num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<int>(normalized_num_items);
+  const int num_items        = first_pass_grid_size;
+
+  constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
+  constexpr int threads_per_block   = policy.threads_per_block;
+
+  using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.reduce_algorithm>;
+
+  // Shared memory storage
+  __shared__ typename block_reduce_t::TempStorage temp_storage;
+
+  // TODO(NaderAlAwar): This code is intentionally duplicated in DeterministicDeviceReduceSingleTileKernel because
+  // extracting it into a device function changes the SASS of that kernel. Changes here must also be applied to the
+  // copy above.
+
+  // Check if empty problem
+  if (actual_num_items == 0)
   {
     if (threadIdx.x == 0)
     {

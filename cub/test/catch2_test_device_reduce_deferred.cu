@@ -6,6 +6,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_device.cuh>
 
@@ -107,6 +108,41 @@ struct fixed_grid_reduce_t
       cuda::std::identity{},
       fixed_reduce_policy_selector_t{},
       {},
+      fixed_grid_factory_t{});
+  }
+};
+
+struct fixed_deterministic_reduce_policy_selector_t
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
+  {
+    const auto policy = cub::ReducePassPolicy{32, 1, 1, cub::BLOCK_REDUCE_RAKING, cub::LOAD_DEFAULT};
+    return {policy, policy};
+  }
+};
+
+struct fixed_grid_deterministic_reduce_t
+{
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT, typename InitT>
+  CUB_RUNTIME_FUNCTION cudaError_t operator()(
+    std::uint8_t* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    InitT init,
+    cudaStream_t stream = nullptr) const
+  {
+    return cub::detail::rfa::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_items,
+      init,
+      stream,
+      cuda::std::identity{},
+      fixed_deterministic_reduce_policy_selector_t{},
       fixed_grid_factory_t{});
   }
 };
@@ -305,6 +341,35 @@ C2H_TEST("DeviceReduce atomic dispatch handles deferred grid boundaries", "[devi
          d_output,
          cuda::args::deferred{d_num_items},
          cuda::std::plus<>{},
+         init);
+
+  REQUIRE(output[0] == init + static_cast<value_t>(num_items));
+}
+
+C2H_TEST("DeviceReduce deterministic dispatch handles deferred grid boundaries",
+         "[device][reduce][deferred][gpu_to_gpu]")
+{
+  using value_t = float;
+  using count_t = std::int32_t;
+
+  // The deterministic dispatch derives its occupancy without consulting the launcher factory, so the worst-case grid
+  // size is not fixed here; large_num_items exceeds the capacity of any single-pass grid of 32-thread tiles.
+  constexpr count_t tile_size       = 32;
+  constexpr count_t large_num_items = 100'000;
+  const count_t num_items =
+    GENERATE_COPY(count_t{0}, count_t{1}, tile_size - 1, tile_size, tile_size + 1, large_num_items);
+  constexpr value_t init = 7.0f;
+
+  const c2h::device_vector<count_t> device_num_items(1, num_items);
+  c2h::device_vector<value_t> output(1, value_t{-1});
+
+  const auto d_num_items = thrust::raw_pointer_cast(device_num_items.data());
+  const auto d_output    = thrust::raw_pointer_cast(output.data());
+
+  launch(fixed_grid_deterministic_reduce_t{},
+         cuda::constant_iterator<value_t>{value_t{1}},
+         d_output,
+         cuda::args::deferred{d_num_items},
          init);
 
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
@@ -562,6 +627,34 @@ C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed d
       input.begin(), output.begin(), cuda::args::deferred{device_num_items.begin()}, cuda::std::plus<>{}, init, env));
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
 }
+
+C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate result bitwise with gpu_to_gpu "
+         "determinism",
+         "[device][reduce][deferred][gpu_to_gpu]")
+{
+  using value_t = float;
+  using count_t = std::int32_t;
+
+  constexpr count_t capacity = 100'000;
+  const count_t num_items    = GENERATE_COPY(count_t{0}, count_t{1}, count_t{1'000}, capacity);
+  constexpr value_t init     = 3.0f;
+
+  c2h::device_vector<value_t> input(capacity, thrust::no_init);
+  c2h::gen(C2H_SEED(1), input, value_t{-100}, value_t{100});
+  const c2h::device_vector<count_t> device_num_items(1, num_items);
+  c2h::device_vector<value_t> reference(1, thrust::no_init);
+  c2h::device_vector<value_t> output(1, thrust::no_init);
+
+  const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::Reduce(input.begin(), reference.begin(), num_items, cuda::std::plus<>{}, init, env));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::Reduce(
+      input.begin(), output.begin(), cuda::args::deferred{device_num_items.begin()}, cuda::std::plus<>{}, init, env));
+  REQUIRE_THAT(detail::to_vec(reference), detail::BitwiseEqualsRange(detail::to_vec(output)));
+}
 #endif // TEST_LAUNCH == 0
 
 #if TEST_LAUNCH == 2
@@ -597,6 +690,55 @@ C2H_TEST("captured DeviceReduce atomic dispatch replays with zero and nonzero de
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
   REQUIRE(cudaSuccess
           == reduce(d_temp_storage, temp_storage_bytes, input, d_output, count, cuda::std::plus<>{}, init, stream));
+  REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
+
+  cudaGraphExec_t executable{};
+  REQUIRE(cudaSuccess == cudaGraphInstantiate(&executable, graph, nullptr, nullptr, 0));
+
+  for (const count_t num_items : {capacity, count_t{0}, capacity})
+  {
+    REQUIRE(cudaSuccess == cudaMemcpyAsync(d_num_items, &num_items, sizeof(num_items), cudaMemcpyHostToDevice, stream));
+    REQUIRE(cudaSuccess == cudaMemcpyAsync(d_output, &poison, sizeof(poison), cudaMemcpyHostToDevice, stream));
+    REQUIRE(cudaSuccess == cudaGraphLaunch(executable, stream));
+    REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
+    REQUIRE(output[0] == init + static_cast<value_t>(num_items));
+  }
+
+  REQUIRE(cudaSuccess == cudaGraphExecDestroy(executable));
+  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
+  REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
+}
+
+C2H_TEST("captured DeviceReduce deterministic dispatch replays with zero and nonzero deferred counts",
+         "[device][reduce][deferred][gpu_to_gpu]")
+{
+  using value_t = float;
+  using count_t = std::int32_t;
+
+  constexpr count_t capacity = 100'000;
+  constexpr value_t init     = 3.0f;
+  constexpr value_t poison   = -1234.0f;
+
+  c2h::device_vector<count_t> device_num_items(1, count_t{-1});
+  c2h::device_vector<value_t> output(1, poison);
+
+  const auto d_num_items = thrust::raw_pointer_cast(device_num_items.data());
+  const auto d_output    = thrust::raw_pointer_cast(output.data());
+  const auto count       = cuda::args::deferred{d_num_items};
+  const auto input       = cuda::constant_iterator<value_t>{value_t{1}};
+
+  cudaStream_t stream{};
+  REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
+
+  const fixed_grid_deterministic_reduce_t reduce;
+  std::size_t temp_storage_bytes{};
+  REQUIRE(cudaSuccess == reduce(nullptr, temp_storage_bytes, input, d_output, count, init, stream));
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  const auto d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  cudaGraph_t graph{};
+  REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
+  REQUIRE(cudaSuccess == reduce(d_temp_storage, temp_storage_bytes, input, d_output, count, init, stream));
   REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
 
   cudaGraphExec_t executable{};

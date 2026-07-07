@@ -137,8 +137,8 @@ inline constexpr bool is_non_deterministic_v =
 //!
 //! Deferred reductions are CUDA Graph capturable. The pointed-to count may change between graph replays without
 //! updating or recapturing the graph. Compile-time and runtime bounds are accepted as caller preconditions, but do not
-//! currently change temporary storage, grid dimensions, or pass selection. Deferred problem sizes are not currently
-//! supported with ``gpu_to_gpu`` determinism.
+//! currently change temporary storage, grid dimensions, or pass selection. With ``gpu_to_gpu`` determinism, the
+//! element of a deferred problem size must currently be a signed 32-bit integer.
 //!
 //! Determinism
 //! ====================================
@@ -218,23 +218,16 @@ private:
 
     if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
     {
-      if constexpr (args_traits_t::is_deferred)
-      {
-        static_assert(!args_traits_t::is_deferred, "cuda::args::deferred is not supported with gpu_to_gpu determinism");
-        return cudaErrorNotSupported;
-      }
-      else
-      {
-        // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
-        (void) reduction_op;
-        using default_policy_selector = detail::reduce::
-          policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
-        return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-          env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-            return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
+      // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
+      (void) reduction_op;
+      using default_policy_selector = detail::reduce::
+        policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
+      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+          return detail::rfa::
+            dispatch<InputIteratorT, OutputIteratorT, decltype(resolve_num_items(num_items)), T, TransformOpT, accum_t>(
               storage, bytes, d_in, d_out, resolve_num_items(num_items), init, stream, transform_op, policy_selector);
-          });
-      }
+        });
     }
     else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
     {

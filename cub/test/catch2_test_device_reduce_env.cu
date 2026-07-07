@@ -446,7 +446,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
-        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>;
+        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), int, reduction_op_t, deterministic_accum_t, transform_t>;
       auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
         deterministic_accum_t*,
@@ -586,7 +586,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
-        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>;
+        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), int, reduction_op_t, deterministic_accum_t, transform_t>;
       auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
         deterministic_accum_t*,
