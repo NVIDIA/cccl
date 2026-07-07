@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__coop/any_of.cuh>
 #include <cuda/experimental/__coop/reduce.cuh>
 #include <cuda/experimental/__coop/shuffle.cuh>
 #include <cuda/experimental/__coop/shuffle_down.cuh>

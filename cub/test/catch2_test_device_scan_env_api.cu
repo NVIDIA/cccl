@@ -441,7 +441,7 @@ struct ScanPolicySelector
 };
 // example-end exclusive-sum-policy-selector
 
-C2H_TEST("cub::DeviceScan::ExclusiveSum env-based API with tuning", "[scan][env]")
+C2H_TEST("cub::DeviceScan::ExclusiveSum accepts a custom policy selector", "[scan][env]")
 {
   // example-begin exclusive-sum-tuning
   auto input  = thrust::device_vector<int>{1, 2, 3, 4};

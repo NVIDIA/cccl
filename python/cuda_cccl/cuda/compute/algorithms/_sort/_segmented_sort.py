@@ -11,6 +11,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._serialization import BUILD_RESULT, ITER, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -20,7 +21,7 @@ from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
-class _SegmentedSort:
+class _SegmentedSort(Serializable):
     __slots__ = [
         "build_result",
         "d_in_keys_cccl",
@@ -30,6 +31,16 @@ class _SegmentedSort:
         "start_offsets_in_cccl",
         "end_offsets_in_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_in_values_cccl", ITER),
+        ("d_out_values_cccl", ITER),
+        ("start_offsets_in_cccl", ITER),
+        ("end_offsets_in_cccl", ITER),
+        ("build_result", BUILD_RESULT(_bindings.DeviceSegmentedSortBuildResult)),
+    )
 
     def __init__(
         self,

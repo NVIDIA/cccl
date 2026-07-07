@@ -38,6 +38,7 @@ struct MergePolicy
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   bool use_bulk_copy_for_keys; //!< Whether to use bulk copy (cp.async.bulk) for loading keys into shared memory
   bool use_bulk_copy_for_values; //!< Whether to use bulk copy (cp.async.bulk) for loading values into shared memory
+  bool unroll = true; //<! Whether to unroll the loops inside the serial merge implementation
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const MergePolicy& lhs, const MergePolicy& rhs) noexcept
@@ -45,7 +46,7 @@ struct MergePolicy
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm
         && lhs.use_bulk_copy_for_keys == rhs.use_bulk_copy_for_keys
-        && lhs.use_bulk_copy_for_values == rhs.use_bulk_copy_for_values;
+        && lhs.use_bulk_copy_for_values == rhs.use_bulk_copy_for_values && lhs.unroll == rhs.unroll;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -61,7 +62,7 @@ struct MergePolicy
         << "MergePolicy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier
         << ", .store_algorithm = " << p.store_algorithm << ", .use_bulk_copy_for_keys = " << p.use_bulk_copy_for_keys
-        << ", .use_bulk_copy_for_values = " << p.use_bulk_copy_for_values << " }";
+        << ", .use_bulk_copy_for_values = " << p.use_bulk_copy_for_values << ", .unroll = " << p.unroll << " }";
   }
 #endif // _CCCL_HOSTED()
 };

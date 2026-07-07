@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -61,7 +62,7 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
-  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread);
+  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread); // NOLINT(bugprone-misplaced-widening-cast)
 
   // Store directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -106,7 +107,7 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
-  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread);
+  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread); // NOLINT(bugprone-misplaced-widening-cast)
 
   // Store directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -171,7 +172,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   using Vector = typename CubVector<T, VEC_SIZE>::Type;
 
   // Add the alignment check to ensure the vectorized storing can proceed.
-  if (reinterpret_cast<uintptr_t>(block_ptr) % (alignof(Vector)) == 0)
+  if (::cuda::std::is_sufficiently_aligned<alignof(Vector)>(block_ptr))
   {
     // Alias global pointer
     Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
@@ -348,7 +349,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
+    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -404,7 +405,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
   {
     if (warp_offset + tid + (ITEM * detail::warp_threads) < valid_items)
     {
-      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
+      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM]; // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 }

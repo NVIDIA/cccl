@@ -87,8 +87,10 @@ public:
   {
     if (last_partition)
     {
-      user_num_selected_out_it[0] = num_previously_selected_first() + num_selected_first;
-      user_num_selected_out_it[1] = num_previously_selected_second() + num_selected_second;
+      user_num_selected_out_it[0] =
+        num_previously_selected_first() + num_selected_first; // NOLINT(bugprone-misplaced-widening-cast)
+      user_num_selected_out_it[1] =
+        num_previously_selected_second() + num_selected_second; // NOLINT(bugprone-misplaced-widening-cast)
     }
     else
     {

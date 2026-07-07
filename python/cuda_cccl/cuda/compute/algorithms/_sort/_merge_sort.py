@@ -10,6 +10,7 @@ from ... import _bindings, types
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._serialization import BUILD_RESULT, ITER, OP, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -19,7 +20,7 @@ from ...op import OpAdapter, make_op_adapter
 from ...typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _MergeSort:
+class _MergeSort(Serializable):
     __slots__ = [
         "d_in_keys_cccl",
         "d_in_values_cccl",
@@ -29,6 +30,15 @@ class _MergeSort:
         "op_cccl",
         "build_result",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_in_values_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_out_values_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceMergeSortBuildResult)),
+    )
 
     def __init__(
         self,
