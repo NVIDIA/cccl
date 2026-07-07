@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-License-Identifier: BSD-3-Clause
 
 #include <cub/device/device_reduce.cuh>
 

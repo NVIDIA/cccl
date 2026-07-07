@@ -47,7 +47,7 @@ using normalized_parameter_t = decltype(normalize_parameter<TargetT>(::cuda::std
 
 //! Resolves a normalized parameter to TargetT, reading element zero when the parameter is a deferred source.
 template <typename TargetT, typename ParameterT>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TargetT resolve_parameter(ParameterT parameter)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TargetT resolve_parameter(ParameterT parameter) noexcept
 {
   if constexpr (::cuda::std::is_same_v<ParameterT, TargetT>)
   {
