@@ -465,7 +465,7 @@ def generate_dispatch_job_runner(matrix_job, job_type):
 
     job_info = get_job_type_info(job_type)
     if not job_info["gpu"]:
-        return f"{runner_os}-{cpu}-cpu16"
+        return f"{runner_os}-{cpu}-cpu16m"
 
     gpu = get_gpu(matrix_job["gpu"])
     suffix = "-testing" if gpu["testing"] else ""
