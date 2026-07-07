@@ -933,8 +933,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       const int num_vecs = valid_items / store_vec_size;
       for (int v = threadIdx.x; v < num_vecs; v += threads_per_block)
       {
-        char* smem      = smem_base;
-        auto load_chunk = [&](auto aligned_ptr) {
+        char* smem       = smem_base;
+        auto load_in_vec = [&](auto aligned_ptr) {
           using T = typename decltype(aligned_ptr)::value_type;
           // head_padding = in_ptr % bulk_copy_alignment, and in_ptr is a valid T*, so it's aligned to
           // alignof(T), i.e. in_ptr % alignof(T) == 0. Both alignof(T) and bulk_copy_alignment are powers of two.
@@ -958,48 +958,47 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           // we take the maximal alignment out of alignof(T) and 16 bytes. This is because compiler assume
           // natural alignment on bigger types (e.g. 32 bytes). If input is narrower, we will waste a few (0-16)
           // registers
-          constexpr ::cuda::std::size_t chunk_align = (::cuda::std::max) (alignof(T), alignof(int4));
-          ::cuda::__uninitialized_array<T, store_vec_size, chunk_align> elems;
-          constexpr int chunk_bytes = int{sizeof(T)} * store_vec_size;
-          // since store_vec_size is pow2, sizeof(T) is pow2, chunk_bytes must be pow2
-          // if chunk_bytes is a multiple of 16, we do vectorised load from smem into reg
-          if constexpr (chunk_bytes % int{sizeof(int4)} == 0)
+          constexpr ::cuda::std::size_t in_vec_align = (::cuda::std::max) (alignof(T), alignof(int4));
+          ::cuda::__uninitialized_array<T, store_vec_size, in_vec_align> in_vec;
+          constexpr int in_vec_bytes = int{sizeof(T)} * store_vec_size;
+          // since store_vec_size is pow2, sizeof(T) is pow2, in_vec_bytes must be pow2
+          // if in_vec_bytes is a multiple of 16, we do vectorised load from smem into reg
+          if constexpr (in_vec_bytes % int{sizeof(int4)} == 0)
           {
-            constexpr int n = chunk_bytes / int{sizeof(int4)};
+            constexpr int n = in_vec_bytes / int{sizeof(int4)};
             const int4* s   = reinterpret_cast<const int4*>(base) + v * n;
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int i = 0; i < n; ++i)
             {
-              reinterpret_cast<int4*>(elems.data())[i] = s[i];
+              reinterpret_cast<int4*>(in_vec.data())[i] = s[i];
             }
           }
-          // if chunk_bytes is not a multiple of 16, since it is pow2, chunk_bytes < 16.
-          // this ensures load_store_type<chunk_bytes> never fail
+          // if in_vec_bytes is not a multiple of 16, since it is pow2, in_vec_bytes < 16.
+          // this ensures load_store_type<in_vec_bytes> never fail
           else
           {
-            using sub_t                             = decltype(load_store_type<chunk_bytes>());
-            *reinterpret_cast<sub_t*>(elems.data()) = reinterpret_cast<const sub_t*>(base)[v];
+            using sub_t                              = decltype(load_store_type<in_vec_bytes>());
+            *reinterpret_cast<sub_t*>(in_vec.data()) = reinterpret_cast<const sub_t*>(base)[v];
           }
-          return elems;
+          return in_vec;
         };
-        auto chunks = ::cuda::std::tuple{load_chunk(aligned_ptrs)...};
+        auto in_vecs = ::cuda::std::tuple{load_in_vec(aligned_ptrs)...};
 
         // must fully unroll to make sure register index is static
-        // (otherwise it will be on local memory & perf regress by half)
         ::cuda::__uninitialized_array<output_t, store_vec_size, sizeof(output_t) * store_vec_size> res;
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int k = 0; k < store_vec_size; ++k)
         {
           res[k] = ::cuda::std::apply(
-            [&](auto&... c) {
-              return f(c[k]...);
+            [&](auto&... in_vec) {
+              return f(in_vec[k]...);
             },
-            chunks);
+            in_vecs);
         }
         out_vec[v] = *reinterpret_cast<const store_t*>(res.data());
       }
 
-      // we can scalar store tail when element count is not a multiple of store_vec_size
+      // use scalar stores for the tail when element count is not a multiple of store_vec_size
       // implies an always_true predicate, so we store unconditionally.
       for (int idx = num_vecs * store_vec_size + threadIdx.x; idx < valid_items; idx += threads_per_block)
       {
