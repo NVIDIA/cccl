@@ -255,45 +255,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   }
 }
 
-template <typename AgentReduceT,
-          typename AccumT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitValueT,
-          typename TransformOpT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void reduce_single_tile(
-  typename AgentReduceT::TempStorage& temp_storage,
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  OffsetT num_items,
-  ReductionOpT reduction_op,
-  InitValueT init,
-  TransformOpT transform_op)
-{
-  // Check if empty problem
-  if (num_items == 0)
-  {
-    if (threadIdx.x == 0)
-    {
-      detail::reduce::handle_empty_problem(d_out, init);
-    }
-
-    return;
-  }
-
-  // Consume input tiles
-  AccumT block_aggregate =
-    AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(OffsetT{0}, num_items);
-
-  // Output result
-  if (threadIdx.x == 0)
-  {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
-  }
-}
-
 /**
  * @brief Reduce a single tile kernel entry point (single-block). Can be used
  *        to aggregate privatized thread block reductions from a previous
@@ -377,7 +338,30 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
 
-  reduce_single_tile<AgentReduceT, AccumT>(temp_storage, d_in, d_out, num_items, reduction_op, init, transform_op);
+  // TODO(NaderAlAwar): This code is intentionally duplicated in DeviceReduceDeferredSingleTileKernel because
+  // extracting it into a device function changes the SASS of this kernel. Changes here must also be applied to the
+  // copy below.
+
+  // Check if empty problem
+  if (num_items == 0)
+  {
+    if (threadIdx.x == 0)
+    {
+      detail::reduce::handle_empty_problem(d_out, init);
+    }
+
+    return;
+  }
+
+  // Consume input tiles
+  AccumT block_aggregate =
+    AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(OffsetT(0), num_items);
+
+  // Output result
+  if (threadIdx.x == 0)
+  {
+    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+  }
 }
 
 //! Single-tile entry point that derives the number of first-pass partials from a deferred problem size.
@@ -404,9 +388,10 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                _CCCL_GRID_CONSTANT const InitValueT init,
                                                TransformOpT transform_op)
 {
-  const OffsetT num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
+  const OffsetT actual_num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
   GridEvenShare<OffsetT> even_share;
-  even_share.DispatchInit(num_items, first_pass_grid_size, first_pass_tile_size);
+  even_share.DispatchInit(actual_num_items, first_pass_grid_size, first_pass_tile_size);
+  const int num_items = even_share.grid_size;
 
   static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
 
@@ -430,8 +415,28 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
 
-  reduce_single_tile<AgentReduceT, AccumT>(
-    temp_storage, d_in, d_out, even_share.grid_size, reduction_op, init, transform_op);
+  // TODO(NaderAlAwar): This code is intentionally duplicated in DeviceReduceSingleTileKernel because extracting it
+  // into a device function changes the SASS of that kernel. Changes here must also be applied to the copy above.
+
+  // Check if empty problem
+  if (num_items == 0)
+  {
+    if (threadIdx.x == 0)
+    {
+      detail::reduce::handle_empty_problem(d_out, init);
+    }
+
+    return;
+  }
+
+  // Consume input tiles
+  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(int(0), num_items);
+
+  // Output result
+  if (threadIdx.x == 0)
+  {
+    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+  }
 }
 } // namespace detail::reduce
 

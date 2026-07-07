@@ -19,6 +19,7 @@
 #include <cuda/iterator>
 #include <cuda/std/functional>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cstddef>
@@ -36,6 +37,10 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
+
+static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<std::int32_t>, std::int32_t>);
+using deferred_count_t = decltype(cuda::args::deferred{static_cast<std::int32_t*>(nullptr)});
+static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<deferred_count_t>, std::uint32_t>);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -536,7 +541,6 @@ C2H_TEST("DeviceReduce environment entry points accept deferred num_items", "[de
             input.begin(), output.begin(), count, cuda::std::plus<>{}, thrust::square<value_t>{}, value_t{}));
   REQUIRE(output[0] == value_t{4} * num_items);
 }
-
 
 C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed determinism",
          "[device][reduce][deferred]")

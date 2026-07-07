@@ -624,15 +624,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE void* get_device_ptr(void* ptr)
   return *reinterpret_cast<void**>(ptr);
 }
 
-template <typename NumItemsT>
-using num_items_offset_t = detail::choose_offset_t<typename ::cuda::args::__traits<NumItemsT>::element_type>;
+//! Preserve caller-selected immediate offset types; select a concrete offset type for deferred arguments.
+template <typename OffsetT>
+using num_items_offset_t =
+  ::cuda::std::conditional_t<::cuda::args::__traits<OffsetT>::is_deferred,
+                             detail::choose_offset_t<typename ::cuda::args::__traits<OffsetT>::element_type>,
+                             typename ::cuda::args::__traits<OffsetT>::element_type>;
 
 //! Normalizes an immediate or deferred problem size without reading a deferred source.
 //! Immediate values are cast to the selected offset type; deferred arguments are stripped to their source.
-template <typename OffsetT, typename NumItemsT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto normalize_num_items(NumItemsT num_items) noexcept
+template <typename OffsetT>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto normalize_num_items(OffsetT num_items) noexcept
 {
-  using args_traits_t = ::cuda::args::__traits<NumItemsT>;
+  using args_traits_t = ::cuda::args::__traits<OffsetT>;
   using element_t     = typename args_traits_t::element_type;
 
   if constexpr (args_traits_t::is_deferred)
@@ -645,15 +649,14 @@ template <typename OffsetT, typename NumItemsT>
                   "a deferred num_items element must be a 32- or 64-bit integer");
   }
 
-  return CUB_NS_QUALIFIER::detail::normalize_parameter<OffsetT>(num_items);
+  return CUB_NS_QUALIFIER::detail::normalize_parameter<num_items_offset_t<OffsetT>>(num_items);
 }
 
 template <bool StableReductionOrder,
           typename AccumT,
-          typename OffsetT,
           typename InputIteratorT,
           typename OutputIteratorT,
-          typename NumItemsT,
+          typename OffsetT,
           typename ReductionOpT,
           typename InitValueT,
           typename TransformOpT,
@@ -664,7 +667,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
   OutputIteratorT d_out,
-  NumItemsT num_items,
+  OffsetT num_items,
   ReductionOpT reduction_op,
   InitValueT init,
   cudaStream_t stream,
@@ -673,7 +676,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
-  const auto normalized_num_items = normalize_num_items<OffsetT>(num_items);
+  using offset_t = num_items_offset_t<OffsetT>;
+
+  const auto normalized_num_items = normalize_num_items(num_items);
 
   // Get SM count
   int sm_count = 0;
@@ -729,14 +734,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     d_block_reductions = static_cast<AccumT*>(allocations[0]);
   }
 
-  GridEvenShare<OffsetT> even_share;
-  if constexpr (!::cuda::args::__traits<NumItemsT>::is_deferred)
+  GridEvenShare<offset_t> even_share;
+  if constexpr (!::cuda::args::__traits<OffsetT>::is_deferred)
   {
     even_share.DispatchInit(normalized_num_items, max_blocks, tile_size);
   }
 
   const int reduce_grid_size = [&] {
-    if constexpr (::cuda::args::__traits<NumItemsT>::is_deferred)
+    if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
     {
       return max_blocks;
     }
@@ -813,7 +818,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
 
     // Invoke DeviceReduceSingleTileKernel/DeviceReduceDeferredSingleTileKernel
     const auto second_pass_error = [&] {
-      if constexpr (::cuda::args::__traits<NumItemsT>::is_deferred)
+      if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
         return launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
           .doit(kernel_source.DeferredSingleTileSecondKernel(),
@@ -884,24 +889,23 @@ template <
   bool StableReductionOrder = true,
   typename InputIteratorT,
   typename OutputIteratorT,
-  typename NumItemsT,
+  typename OffsetT,
   typename ReductionOpT,
   typename InitValueT     = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
   typename TransformOpT   = ::cuda::std::identity,
-  typename OffsetT        = num_items_offset_t<NumItemsT>,
   typename AccumT         = decltype(select_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
     static_cast<OverrideAccumT*>(nullptr))),
   typename PolicySelector = policy_selector_from_types<
     AccumT,
-    OffsetT,
+    num_items_offset_t<OffsetT>,
     ReductionOpT,
     StableReductionOrder ? __determinism_t::__run_to_run : __determinism_t::__not_guaranteed>,
   typename KernelSource = DeviceReduceKernelSource<
     PolicySelector,
     InputIteratorT,
     OutputIteratorT,
-    OffsetT,
-    CUB_NS_QUALIFIER::detail::normalized_parameter_t<OffsetT, NumItemsT>,
+    num_items_offset_t<OffsetT>,
+    CUB_NS_QUALIFIER::detail::normalized_parameter_t<num_items_offset_t<OffsetT>, OffsetT>,
     ReductionOpT,
     InitValueT,
     AccumT,
@@ -916,7 +920,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
   OutputIteratorT d_out,
-  NumItemsT num_items,
+  OffsetT num_items,
   ReductionOpT reduction_op,
   InitValueT init,
   cudaStream_t stream,
@@ -925,6 +929,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using offset_t = num_items_offset_t<OffsetT>;
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
@@ -957,11 +963,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    if constexpr (StableReductionOrder && !::cuda::args::__traits<NumItemsT>::is_deferred)
+    if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
     {
-      const OffsetT offset_num_items = static_cast<OffsetT>(num_items);
+      const offset_t offset_num_items = static_cast<offset_t>(num_items);
       const bool single_tile_problem =
-        offset_num_items <= static_cast<OffsetT>(
+        offset_num_items <= static_cast<offset_t>(
           active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
 
       // if the problem is small enough to fit into a single tile, just handle it and return early
@@ -1017,7 +1023,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Regular size
-    return invoke_regular_size_reduce<StableReductionOrder, AccumT, OffsetT>(
+    return invoke_regular_size_reduce<StableReductionOrder, AccumT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,

@@ -160,6 +160,23 @@ inline constexpr bool is_non_deterministic_v =
 struct DeviceReduce
 {
 private:
+  //! Preserve deferred arguments for dispatch and canonicalize immediate values to CUB's offset type.
+  template <typename NumItemsT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static constexpr auto resolve_num_items(NumItemsT num_items) noexcept
+  {
+    using args_traits_t = ::cuda::args::__traits<NumItemsT>;
+
+    if constexpr (args_traits_t::is_deferred)
+    {
+      return num_items;
+    }
+    else
+    {
+      using offset_t = detail::choose_offset_t<typename args_traits_t::element_type>;
+      return static_cast<offset_t>(::cuda::args::__unwrap(num_items));
+    }
+  }
+
   template <typename EnvT,
             typename InputIteratorT,
             typename OutputIteratorT,
@@ -196,11 +213,19 @@ private:
         (void) reduction_op;
         using default_policy_selector = detail::reduce::
           policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
-        return detail::dispatch_with_env_and_tuning<
-          default_policy_selector>(env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-          return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
-            storage, bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op, policy_selector);
-        });
+        return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+          env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+            return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
+              storage,
+              bytes,
+              d_in,
+              d_out,
+              resolve_num_items(num_items),
+              init,
+              stream,
+              transform_op,
+              policy_selector);
+          });
       }
     }
     else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
@@ -214,7 +239,7 @@ private:
             bytes,
             d_in,
             THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
-            num_items,
+            resolve_num_items(num_items),
             reduction_op,
             init,
             stream,
@@ -229,7 +254,16 @@ private:
       return detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::reduce::dispatch<accum_t>(
-            storage, bytes, d_in, d_out, num_items, reduction_op, init, stream, transform_op, policy_selector);
+            storage,
+            bytes,
+            d_in,
+            d_out,
+            resolve_num_items(num_items),
+            reduction_op,
+            init,
+            stream,
+            transform_op,
+            policy_selector);
         });
     }
   }
@@ -472,7 +506,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
     return detail::reduce::dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      resolve_num_items(num_items),
+      reduction_op,
+      init,
+      stream);
   }
 
   //! @rst
@@ -738,7 +779,7 @@ public:
       temp_storage_bytes,
       d_in,
       d_out,
-      num_items,
+      resolve_num_items(num_items),
       ::cuda::std::plus<>{},
       init_value_t{}, // zero-initialize
       stream);
@@ -845,7 +886,14 @@ public:
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
     return detail::reduce::dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, limits_t::max(), stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      resolve_num_items(num_items),
+      ::cuda::minimum<>{},
+      limits_t::max(),
+      stream);
   }
 
   //! @rst
@@ -1505,7 +1553,14 @@ public:
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
     return detail::reduce::dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, ::cuda::maximum<>{}, limits_t::lowest(), stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      resolve_num_items(num_items),
+      ::cuda::maximum<>{},
+      limits_t::lowest(),
+      stream);
   }
 
   //! @rst
@@ -2094,7 +2149,15 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
 
     return detail::reduce::dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream, transform_op);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      resolve_num_items(num_items),
+      reduction_op,
+      init,
+      stream,
+      transform_op);
   }
 
   //! @rst
