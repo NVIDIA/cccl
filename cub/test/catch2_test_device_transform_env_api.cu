@@ -37,7 +37,7 @@ struct TransformPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceTransform::Transform env-based API with tuning", "[transform][env]")
+C2H_TEST("cub::DeviceTransform::Transform accepts a custom policy selector", "[transform][env]")
 {
   // example-begin transform-tuning
   auto d_input  = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7};

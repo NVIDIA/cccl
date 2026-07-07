@@ -17,6 +17,7 @@
 #include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional> // ::cuda::std::identity
+#include <cuda/std/utility>
 #include <cuda/std/variant>
 
 #include <cstdlib>
@@ -31,14 +32,14 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
-#include "util/aot_serialize.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include "util/types.h"
-#include <cccl/c/aot.h>
 #include <cccl/c/reduce.h>
+#include <cccl/c/serialization.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
@@ -50,6 +51,21 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace reduce
 {
+auto convert_determinism(cccl_determinism_t d)
+{
+  using cuda::execution::determinism::__determinism_t;
+  switch (d)
+  {
+    case CCCL_NOT_GUARANTEED:
+      return __determinism_t::__not_guaranteed;
+    case CCCL_RUN_TO_RUN:
+      return __determinism_t::__run_to_run;
+    case CCCL_GPU_TO_GPU:
+      return __determinism_t::__gpu_to_gpu;
+  }
+  throw std::runtime_error("unknown cccl_determinism_t value");
+}
+
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
@@ -207,7 +223,7 @@ try
     const auto operation_t = cccl_op_kind_to_cub_op(op.type);
     const int offset_size  = int{sizeof(OffsetT)};
     return cub::detail::reduce::policy_selector{
-      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size), determinism != CCCL_NOT_GUARANTEED};
+      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size), ::reduce::convert_determinism(determinism)};
   }();
 
   // TODO(bgruber): drop this if tuning policies become formattable
@@ -225,7 +241,8 @@ struct __align__({2}) storage_t {{
 {3}
 {4}
 {5}
-using device_reduce_policy = cub::detail::reduce::policy_selector_from_types<{6}, {7}, {8}, {9}>;
+using device_reduce_policy = cub::detail::reduce::policy_selector_from_types<
+  {6}, {7}, {8}, static_cast<cuda::execution::determinism::__determinism_t>({9})>;
 using namespace cub;
 using namespace cub::detail::reduce;
 static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
@@ -240,7 +257,7 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
     accum_cpp, // 6
     offset_t, // 7
     op_name, // 8
-    determinism != CCCL_NOT_GUARANTEED, // 9
+    cuda::std::to_underlying(reduce::convert_determinism(determinism)), // 9
     policy_sel_str.view()); // 10
 
 #if false // CCCL_DEBUGGING_SWITCH
@@ -676,9 +693,9 @@ try
   *out_buf  = nullptr;
   *out_size = 0;
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_REDUCE, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_REDUCE, build_ptr->payload_kind, build_ptr->cc);
   w.write_pod<uint64_t>(build_ptr->accumulator_size);
   w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->determinism));
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
@@ -705,15 +722,15 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_REDUCE);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_REDUCE);
 
   const uint64_t accum_size = r.read_pod<uint64_t>();
   const auto determinism_v  = r.read_pod<uint32_t>();
   if (determinism_v > static_cast<uint32_t>(CCCL_GPU_TO_GPU))
   {
-    throw std::runtime_error(std::format("aot blob: invalid determinism ({})", determinism_v));
+    throw std::runtime_error(std::format("serialization blob: invalid determinism ({})", determinism_v));
   }
   const auto determinism = static_cast<cccl_determinism_t>(determinism_v);
 
@@ -726,7 +743,7 @@ try
   }
   if (payload_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   constexpr size_t policy_size = sizeof(cub::detail::reduce::policy_selector);
