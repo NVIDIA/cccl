@@ -160,8 +160,22 @@ static constexpr const char* pch_preamble_source =
   "#include <cuda/std/iterator>\n"
   "#include <cuda/std/functional>\n"
   "#include <cuda/functional>\n"
+  "#include <cub/device/device_adjacent_difference.cuh>\n"
+  "#include <cub/device/device_copy.cuh>\n"
+  "#include <cub/device/device_find.cuh>\n"
+  "#include <cub/device/device_for.cuh>\n"
+  "#include <cub/device/device_histogram.cuh>\n"
+  "#include <cub/device/device_merge.cuh>\n"
+  "#include <cub/device/device_merge_sort.cuh>\n"
+  "#include <cub/device/device_partition.cuh>\n"
+  "#include <cub/device/device_radix_sort.cuh>\n"
   "#include <cub/device/device_reduce.cuh>\n"
-  "#include <cub/device/device_adjacent_difference.cuh>\n";
+  "#include <cub/device/device_scan.cuh>\n"
+  "#include <cub/device/device_segmented_radix_sort.cuh>\n"
+  "#include <cub/device/device_segmented_scan.cuh>\n"
+  "#include <cub/device/device_segmented_sort.cuh>\n"
+  "#include <cub/device/device_select.cuh>\n"
+  "#include <cub/device/device_transform.cuh>\n";
 
 class CUDACompiler::Impl
 {
@@ -914,6 +928,9 @@ public:
 #ifdef _WIN32
     arg_strings.push_back("-fms-compatibility");
     arg_strings.push_back("-fms-compatibility-version=19.40");
+    // We do not have access to the windows CRT, but we are only running single threaded anyway
+    // Otherwise we have undefined symbols like _tls_index and _Init_thread_epoch
+    arg_strings.push_back("-fno-threadsafe-statics");
 #else
     arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
@@ -1373,6 +1390,7 @@ public:
        "cudaMemset",
        "cudaMemsetAsync",
        "cudaDeviceSynchronize",
+       "cudaFuncSetAttribute",
        "cudaGetDevice",
        "cudaGetDeviceProperties",
        "cudaGetLastError",

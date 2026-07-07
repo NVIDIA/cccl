@@ -47,6 +47,7 @@ private:
   static void __fun(_Tp&&) = delete; // NOLINT(modernize-use-equals-delete)
 
 public:
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <
     class _Up,
     class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(::cuda::std::declval<_Up>()))>>
@@ -55,6 +56,7 @@ public:
     type& __f = static_cast<_Up&&>(__u);
     __f_      = ::cuda::std::addressof(__f);
   }
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   // access
   _CCCL_API constexpr operator type&() const noexcept

@@ -11,13 +11,14 @@ from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._serialization import BUILD_RESULT, ITER, OP, Serializable
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _ThreeWayPartition:
+class _ThreeWayPartition(Serializable):
     __slots__ = [
         "build_result",
         "d_in_cccl",
@@ -28,6 +29,17 @@ class _ThreeWayPartition:
         "select_first_part_op_cccl",
         "select_second_part_op_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_first_part_out_cccl", ITER),
+        ("d_second_part_out_cccl", ITER),
+        ("d_unselected_out_cccl", ITER),
+        ("d_num_selected_out_cccl", ITER),
+        ("select_first_part_op_cccl", OP),
+        ("select_second_part_op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceThreeWayPartitionBuildResult)),
+    )
 
     def __init__(
         self,

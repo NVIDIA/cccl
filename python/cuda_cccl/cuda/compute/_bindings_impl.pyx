@@ -370,6 +370,11 @@ cdef class Op:
         return self.op_data.alignment
 
     @property
+    def operator_type(self):
+        """Return the op kind (stateless/stateful) for serialization."""
+        return OpKind(<int>self.op_data.type)
+
+    @property
     def code(self):
         """Return a DeviceCode wrapping this op's main code blob + its kind."""
         from cuda.compute._device_code import DeviceCode
@@ -396,7 +401,6 @@ cdef class Op:
         if t == _parse_code_type("llvm_ir"):
             return "llvm_ir"
         return "ltoir"
-
 
 
 cdef class TypeInfo:
@@ -866,6 +870,11 @@ cdef class Iterator:
         cdef cccl_type_info type_info = self.iter_data.value_type
         return TypeInfo(type_info.size, type_info.alignment, type_info.type)
 
+    @property
+    def alignment(self):
+        """Return the iterator state alignment for serialization."""
+        return self.iter_data.alignment
+
     def is_kind_pointer(self):
         cdef cccl_iterator_kind_t it_kind = self.iter_data.type
         return (it_kind == cccl_iterator_kind_t.POINTER)
@@ -957,8 +966,9 @@ cdef class CommonData:
 
 cdef extern from "cccl/c/reduce.h":
     cdef struct cccl_device_reduce_build_result_t 'cccl_device_reduce_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
+        cccl_determinism_t determinism
 
     cdef CUresult cccl_device_reduce_build(
         cccl_device_reduce_build_result_t*,
@@ -1002,7 +1012,13 @@ cdef extern from "cccl/c/reduce.h":
 cdef class DeviceReduceBuildResult:
     cdef cccl_device_reduce_build_result_t build_data
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        # Always zero the C struct so that __dealloc__ + cccl_device_reduce_cleanup
+        # is safe regardless of which initialization path is taken (regular build,
+        # alternate factory like deserialize, or a build that raises mid-way).
+        memset(&self.build_data, 0, sizeof(cccl_device_reduce_build_result_t))
+
+    def __init__(
         DeviceReduceBuildResult self,
         Iterator d_in,
         Iterator d_out,
@@ -1018,7 +1034,6 @@ cdef class DeviceReduceBuildResult:
         cdef const char *thrust_path = common_data.thrust_path_get_c_str()
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
-        memset(&self.build_data, 0, sizeof(cccl_device_reduce_build_result_t))
 
         with nogil:
             status = cccl_device_reduce_build(
@@ -1117,9 +1132,20 @@ cdef class DeviceReduceBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    @property
+    def determinism(DeviceReduceBuildResult self):
+        return <int>self.build_data.determinism
+
+    def serialize(DeviceReduceBuildResult self):
+        return _serialization_reduce_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_reduce_deserialize(blob)
 
 # ------------
 #   DeviceScan
@@ -1130,8 +1156,8 @@ cdef extern from "cccl/c/scan.h":
     ctypedef bint _Bool
 
     cdef struct cccl_device_scan_build_result_t 'cccl_device_scan_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_scan_build(
         cccl_device_scan_build_result_t*,
@@ -1211,7 +1237,10 @@ cdef extern from "cccl/c/scan.h":
 cdef class DeviceScanBuildResult:
     cdef cccl_device_scan_build_result_t build_data
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_scan_build_result_t))
+
+    def __init__(
         DeviceScanBuildResult self,
         Iterator d_in,
         Iterator d_out,
@@ -1228,7 +1257,6 @@ cdef class DeviceScanBuildResult:
         cdef const char *thrust_path = common_data.thrust_path_get_c_str()
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
-        memset(&self.build_data, 0, sizeof(cccl_device_scan_build_result_t))
 
         with nogil:
             status = cccl_device_scan_build(
@@ -1427,9 +1455,16 @@ cdef class DeviceScanBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceScanBuildResult self):
+        return _serialization_scan_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_scan_deserialize(blob)
 
 # -----------------------
 #   DeviceSegmentedReduce
@@ -1438,8 +1473,8 @@ cdef class DeviceScanBuildResult:
 
 cdef extern from "cccl/c/segmented_reduce.h":
     cdef struct cccl_device_segmented_reduce_build_result_t 'cccl_device_segmented_reduce_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_segmented_reduce_build(
         cccl_device_segmented_reduce_build_result_t*,
@@ -1451,6 +1486,11 @@ cdef extern from "cccl/c/segmented_reduce.h":
         cccl_value_t,
         int, int, const char*, const char*, const char*, const char*
     ) nogil
+
+    # `cccl_device_segmented_reduce` (the execute entry point) is declared in the
+    # generated _bindings_segmented_reduce_backend.pxi included below, because its
+    # signature differs between the v1 and v2 backends.
+
 
     cdef CUresult cccl_device_segmented_reduce_cleanup(
         cccl_device_segmented_reduce_build_result_t* bld_ptr
@@ -1467,7 +1507,10 @@ include "_bindings_segmented_reduce_backend.pxi"
 cdef class DeviceSegmentedReduceBuildResult:
     cdef cccl_device_segmented_reduce_build_result_t build_data
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_segmented_reduce_build_result_t))
+
+    def __init__(
         DeviceSegmentedReduceBuildResult self,
         Iterator d_in,
         Iterator d_out,
@@ -1485,7 +1528,6 @@ cdef class DeviceSegmentedReduceBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_segmented_reduce_build_result_t))
         with nogil:
             status = cccl_device_segmented_reduce_build(
                 &self.build_data,
@@ -1556,9 +1598,16 @@ cdef class DeviceSegmentedReduceBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceSegmentedReduceBuildResult self):
+        return _serialization_segmented_reduce_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_segmented_reduce_deserialize(blob)
 
 # -----------------
 #   DeviceMergeSort
@@ -1567,8 +1616,8 @@ cdef class DeviceSegmentedReduceBuildResult:
 
 cdef extern from "cccl/c/merge_sort.h":
     cdef struct cccl_device_merge_sort_build_result_t 'cccl_device_merge_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_merge_sort_build(
         cccl_device_merge_sort_build_result_t *bld_ptr,
@@ -1601,7 +1650,10 @@ cdef extern from "cccl/c/merge_sort.h":
 cdef class DeviceMergeSortBuildResult:
     cdef cccl_device_merge_sort_build_result_t build_data
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_merge_sort_build_result_t))
+
+    def __init__(
         DeviceMergeSortBuildResult self,
         Iterator d_in_keys,
         Iterator d_in_items,
@@ -1618,7 +1670,6 @@ cdef class DeviceMergeSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_merge_sort_build_result_t))
         with nogil:
             status = cccl_device_merge_sort_build(
                 &self.build_data,
@@ -1684,9 +1735,16 @@ cdef class DeviceMergeSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceMergeSortBuildResult self):
+        return _serialization_merge_sort_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_merge_sort_deserialize(blob)
 
 
 # -------------------
@@ -1695,8 +1753,8 @@ cdef class DeviceMergeSortBuildResult:
 
 cdef extern from "cccl/c/unique_by_key.h":
     cdef struct cccl_device_unique_by_key_build_result_t 'cccl_device_unique_by_key_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
 
     cdef CUresult cccl_device_unique_by_key_build(
@@ -1732,7 +1790,10 @@ cdef extern from "cccl/c/unique_by_key.h":
 cdef class DeviceUniqueByKeyBuildResult:
     cdef cccl_device_unique_by_key_build_result_t build_data
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_unique_by_key_build_result_t))
+
+    def __init__(
         DeviceUniqueByKeyBuildResult self,
         Iterator d_keys_in,
         Iterator d_values_in,
@@ -1750,7 +1811,6 @@ cdef class DeviceUniqueByKeyBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_unique_by_key_build_result_t))
         with nogil:
             status = cccl_device_unique_by_key_build(
                 &self.build_data,
@@ -1820,9 +1880,16 @@ cdef class DeviceUniqueByKeyBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceUniqueByKeyBuildResult self):
+        return _serialization_unique_by_key_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_unique_by_key_deserialize(blob)
 
 # -----------------
 # DeviceRadixSort
@@ -1830,8 +1897,8 @@ cdef class DeviceUniqueByKeyBuildResult:
 
 cdef extern from "cccl/c/radix_sort.h":
     cdef struct cccl_device_radix_sort_build_result_t 'cccl_device_radix_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_radix_sort_build(
         cccl_device_radix_sort_build_result_t *build_ptr,
@@ -1868,6 +1935,9 @@ cdef extern from "cccl/c/radix_sort.h":
 cdef class DeviceRadixSortBuildResult:
     cdef cccl_device_radix_sort_build_result_t build_data
 
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_radix_sort_build_result_t))
+
     def __dealloc__(DeviceRadixSortBuildResult self):
         cdef CUresult status = -1
         with nogil:
@@ -1875,7 +1945,7 @@ cdef class DeviceRadixSortBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during radix_sort result cleanup")
 
-    def __cinit__(
+    def __init__(
         DeviceRadixSortBuildResult self,
         cccl_sort_order_t order,
         Iterator d_keys_in,
@@ -1892,7 +1962,6 @@ cdef class DeviceRadixSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_radix_sort_build_result_t))
         with nogil:
             status = cccl_device_radix_sort_build(
                 &self.build_data,
@@ -1962,17 +2031,24 @@ cdef class DeviceRadixSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceRadixSortBuildResult self):
+        return _serialization_radix_sort_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_radix_sort_deserialize(blob)
 
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
 # --------------------------------------------
 cdef extern from "cccl/c/transform.h":
     cdef struct cccl_device_transform_build_result_t:
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_unary_transform_build(
         cccl_device_transform_build_result_t *build_ptr,
@@ -2016,15 +2092,16 @@ cdef extern from "cccl/c/transform.h":
 cdef class DeviceUnaryTransform:
     cdef cccl_device_transform_build_result_t build_data
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
+
+    def __init__(
         self,
         Iterator d_in,
         Iterator d_out,
         Op op,
         CommonData common_data
     ):
-        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
-
         cdef CUresult status = -1
         cdef int cc_major = common_data.get_cc_major()
         cdef int cc_minor = common_data.get_cc_minor()
@@ -2081,15 +2158,25 @@ cdef class DeviceUnaryTransform:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceUnaryTransform self):
+        return _serialization_unary_transform_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_unary_transform_deserialize(blob)
 
 
 cdef class DeviceBinaryTransform:
     cdef cccl_device_transform_build_result_t build_data
 
-    def __cinit__(
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
+
+    def __init__(
         self,
         Iterator d_in1,
         Iterator d_in2,
@@ -2097,8 +2184,6 @@ cdef class DeviceBinaryTransform:
         Op op,
         CommonData common_data
     ):
-        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
-
         cdef CUresult status = -1
         cdef int cc_major = common_data.get_cc_major()
         cdef int cc_minor = common_data.get_cc_minor()
@@ -2157,9 +2242,16 @@ cdef class DeviceBinaryTransform:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceBinaryTransform self):
+        return _serialization_binary_transform_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_binary_transform_deserialize(blob)
 
 
 # -----------------
@@ -2167,8 +2259,8 @@ cdef class DeviceBinaryTransform:
 # -----------------
 cdef extern from "cccl/c/histogram.h":
     cdef struct cccl_device_histogram_build_result_t 'cccl_device_histogram_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_histogram_build(
         cccl_device_histogram_build_result_t *build_ptr,
@@ -2177,7 +2269,7 @@ cdef extern from "cccl/c/histogram.h":
         cccl_iterator_t d_samples,
         int num_output_levels_val,
         cccl_iterator_t d_output_histograms,
-        cccl_value_t h_levels,
+        cccl_type_info level_type,
         int64_t num_rows,
         int64_t row_stride_samples,
         bint is_evenly_segmented,
@@ -2207,6 +2299,9 @@ cdef extern from "cccl/c/histogram.h":
 cdef class DeviceHistogramBuildResult:
     cdef cccl_device_histogram_build_result_t build_data
 
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_histogram_build_result_t))
+
     def __dealloc__(DeviceHistogramBuildResult self):
         cdef CUresult status = -1
         with nogil:
@@ -2215,14 +2310,14 @@ cdef class DeviceHistogramBuildResult:
             print(f"Return code {status} encountered during histogram result cleanup")
 
 
-    def __cinit__(
+    def __init__(
         DeviceHistogramBuildResult self,
         int num_channels,
         int num_active_channels,
         Iterator d_samples,
         int num_levels,
         Iterator d_histogram,
-        Value h_levels,
+        TypeInfo level_type,
         int num_rows,
         int row_stride_samples,
         bint is_evenly_segmented,
@@ -2236,7 +2331,6 @@ cdef class DeviceHistogramBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_histogram_build_result_t))
         with nogil:
             status = cccl_device_histogram_build(
                 &self.build_data,
@@ -2245,7 +2339,7 @@ cdef class DeviceHistogramBuildResult:
                 d_samples.iter_data,
                 num_levels,
                 d_histogram.iter_data,
-                h_levels.value_data,
+                level_type.type_info,
                 num_rows,
                 row_stride_samples,
                 is_evenly_segmented,
@@ -2304,9 +2398,16 @@ cdef class DeviceHistogramBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceHistogramBuildResult self):
+        return _serialization_histogram_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_histogram_deserialize(blob)
 
 
 # -------------------
@@ -2346,6 +2447,9 @@ cdef extern from "cccl/c/binary_search.h":
 cdef class DeviceBinarySearchBuildResult:
     cdef cccl_device_binary_search_build_result_t build_data
 
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_binary_search_build_result_t))
+
     def __dealloc__(DeviceBinarySearchBuildResult self):
         cdef CUresult status = -1
         with nogil:
@@ -2353,7 +2457,7 @@ cdef class DeviceBinarySearchBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during binary_search result cleanup")
 
-    def __cinit__(
+    def __init__(
         DeviceBinarySearchBuildResult self,
         cccl_binary_search_mode_t mode,
         Iterator d_data,
@@ -2370,7 +2474,6 @@ cdef class DeviceBinarySearchBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_binary_search_build_result_t))
         with nogil:
             status = cccl_device_binary_search_build(
                 &self.build_data,
@@ -2423,14 +2526,21 @@ cdef class DeviceBinarySearchBuildResult:
     def _get_cubin(self):
         return _binary_search_cubin_bytes(&self.build_data)
 
+    def serialize(DeviceBinarySearchBuildResult self):
+        return _serialization_binary_search_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_binary_search_deserialize(blob)
+
 
 # ----------------------------------
 # DeviceThreeWayPartitionBuildResult
 # ----------------------------------
 cdef extern from "cccl/c/three_way_partition.h":
     cdef struct cccl_device_three_way_partition_build_result_t 'cccl_device_three_way_partition_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_three_way_partition_build(
         cccl_device_three_way_partition_build_result_t *build_ptr,
@@ -2467,6 +2577,9 @@ cdef extern from "cccl/c/three_way_partition.h":
 cdef class DeviceThreeWayPartitionBuildResult:
     cdef cccl_device_three_way_partition_build_result_t build_data
 
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_three_way_partition_build_result_t))
+
     def __dealloc__(DeviceThreeWayPartitionBuildResult self):
         cdef CUresult status = -1
         with nogil:
@@ -2475,7 +2588,7 @@ cdef class DeviceThreeWayPartitionBuildResult:
             print(f"Return code {status} encountered during three_way_partition result cleanup")
 
 
-    def __cinit__(
+    def __init__(
         DeviceThreeWayPartitionBuildResult self,
         Iterator d_in,
         Iterator d_first_part_out,
@@ -2494,7 +2607,6 @@ cdef class DeviceThreeWayPartitionBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_three_way_partition_build_result_t))
         with nogil:
             status = cccl_device_three_way_partition_build(
                 &self.build_data,
@@ -2559,9 +2671,16 @@ cdef class DeviceThreeWayPartitionBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceThreeWayPartitionBuildResult self):
+        return _serialization_three_way_partition_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_three_way_partition_deserialize(blob)
 
 
 # -------------------
@@ -2570,8 +2689,8 @@ cdef class DeviceThreeWayPartitionBuildResult:
 
 cdef extern from "cccl/c/segmented_sort.h":
     cdef struct cccl_device_segmented_sort_build_result_t 'cccl_device_segmented_sort_build_result_t':
-        const char* cubin
-        size_t cubin_size
+        const char* payload
+        size_t payload_size
 
     cdef CUresult cccl_device_segmented_sort_build(
         cccl_device_segmented_sort_build_result_t *build_ptr,
@@ -2607,6 +2726,9 @@ cdef extern from "cccl/c/segmented_sort.h":
 cdef class DeviceSegmentedSortBuildResult:
     cdef cccl_device_segmented_sort_build_result_t build_data
 
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_segmented_sort_build_result_t))
+
     def __dealloc__(DeviceSegmentedSortBuildResult self):
         cdef CUresult status = -1
         with nogil:
@@ -2614,7 +2736,7 @@ cdef class DeviceSegmentedSortBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during segmented_sort result cleanup")
 
-    def __cinit__(
+    def __init__(
         DeviceSegmentedSortBuildResult self,
         cccl_sort_order_t order,
         Iterator d_keys_in,
@@ -2631,7 +2753,6 @@ cdef class DeviceSegmentedSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
-        memset(&self.build_data, 0, sizeof(cccl_device_segmented_sort_build_result_t))
         with nogil:
             status = cccl_device_segmented_sort_build(
                 &self.build_data,
@@ -2701,6 +2822,15 @@ cdef class DeviceSegmentedSortBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.payload,
+            self.build_data.payload_size
         )
+
+    def serialize(DeviceSegmentedSortBuildResult self):
+        return _serialization_segmented_sort_serialize(self)
+
+    @staticmethod
+    def deserialize(blob):
+        return _serialization_segmented_sort_deserialize(blob)
+
+include "_bindings_serialization.pxi"

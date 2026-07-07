@@ -13,13 +13,19 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional> // ::cuda::std::identity
+#include <cuda/std/utility>
 #include <cuda/std/variant>
 
+#include <cstdlib>
+#include <cstring>
 #include <format>
 #include <memory>
+#include <mutex>
+#include <unordered_map>
 #include <vector>
 
 #include "jit_templates/templates/input_iterator.h"
@@ -29,8 +35,11 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include "util/types.h"
 #include <cccl/c/reduce.h>
+#include <cccl/c/serialization.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
@@ -42,6 +51,21 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace reduce
 {
+auto convert_determinism(cccl_determinism_t d)
+{
+  using cuda::execution::determinism::__determinism_t;
+  switch (d)
+  {
+    case CCCL_NOT_GUARANTEED:
+      return __determinism_t::__not_guaranteed;
+    case CCCL_RUN_TO_RUN:
+      return __determinism_t::__run_to_run;
+    case CCCL_GPU_TO_GPU:
+      return __determinism_t::__gpu_to_gpu;
+  }
+  throw std::runtime_error("unknown cccl_determinism_t value");
+}
+
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
@@ -53,14 +77,12 @@ std::string get_single_tile_kernel_name(
   std::string_view input_iterator_t,
   std::string_view output_iterator_t,
   std::string_view reduction_op_t,
-  cccl_value_t init,
+  std::string_view init_t,
   std::string_view accum_cpp_t,
   bool is_second_kernel)
 {
   std::string chained_policy_t;
   check(cccl_type_name_from_nvrtc<device_reduce_policy>(&chained_policy_t));
-
-  const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
   std::string offset_t;
   if (is_second_kernel)
@@ -87,36 +109,15 @@ std::string get_single_tile_kernel_name(
 }
 
 std::string get_device_reduce_kernel_name(
-  std::string_view reduction_op_t, std::string_view input_iterator_t, std::string_view accum_t)
-{
-  std::string chained_policy_t;
-  check(cccl_type_name_from_nvrtc<device_reduce_policy>(&chained_policy_t));
-
-  std::string offset_t;
-  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
-
-  std::string transform_op_t;
-  check(cccl_type_name_from_nvrtc<cuda::std::identity>(&transform_op_t));
-
-  return std::format(
-    "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
-    chained_policy_t,
-    input_iterator_t,
-    offset_t,
-    reduction_op_t,
-    accum_t,
-    transform_op_t);
-}
-
-std::string get_device_reduce_nondeterministic_kernel_name(
+  std::string_view reduction_op_t,
   std::string_view input_iterator_t,
   std::string_view output_iterator_t,
-  std::string_view reduction_op_t,
   std::string_view accum_t,
-  cccl_value_t init)
+  std::string_view init_t,
+  bool stable_reduction_order)
 {
-  std::string chained_policy_t;
-  check(cccl_type_name_from_nvrtc<device_reduce_nd_policy>(&chained_policy_t));
+  std::string policy_selector_t;
+  check(cccl_type_name_from_nvrtc<device_reduce_policy>(&policy_selector_t));
 
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
@@ -124,13 +125,12 @@ std::string get_device_reduce_nondeterministic_kernel_name(
   std::string transform_op_t;
   check(cccl_type_name_from_nvrtc<cuda::std::identity>(&transform_op_t));
 
-  const std::string init_t = cccl_type_enum_to_name(init.type.type);
-
   return std::format(
-    "cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}>",
-    chained_policy_t,
+    "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    policy_selector_t,
+    stable_reduction_order ? "true" : "false",
     input_iterator_t,
-    output_iterator_t,
+    stable_reduction_order ? std::string(accum_t) + "*" : output_iterator_t,
     offset_t,
     reduction_op_t,
     accum_t,
@@ -158,10 +158,6 @@ struct reduce_kernel_source
   {
     return build.reduction_kernel;
   }
-  CUkernel NondeterministicAtomicKernel() const
-  {
-    return build.nondeterministic_atomic_kernel;
-  }
   size_t InitSize() const
   {
     return build.accumulator_size;
@@ -172,7 +168,7 @@ struct reduce_kernel_source
 struct reduce_iterator_tag;
 struct reduction_operation_tag;
 
-CUresult cccl_device_reduce_build_ex(
+CUresult cccl_device_reduce_compile(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -191,7 +187,7 @@ try
   if (determinism == CCCL_NOT_GUARANTEED && (op.type != CCCL_PLUS || output_it.type != CCCL_POINTER))
   {
     fflush(stderr);
-    printf("\nERROR in cccl_device_reduce_build(): non-deterministic reduce with non-plus operator or non-pointer "
+    printf("\nERROR in cccl_device_reduce_compile(): non-deterministic reduce with non-plus operator or non-pointer "
            "output iterator is not supported\n");
     fflush(stdout);
     return CUDA_ERROR_INVALID_VALUE;
@@ -200,7 +196,7 @@ try
   if (determinism == CCCL_GPU_TO_GPU)
   {
     fflush(stderr);
-    printf("\nERROR in cccl_device_reduce_build(): gpu-to-gpu determinism is not supported\n");
+    printf("\nERROR in cccl_device_reduce_compile(): gpu-to-gpu determinism is not supported\n");
     fflush(stdout);
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -219,33 +215,24 @@ try
     template_id<binary_user_operation_traits>(), op, accum_t, accum_t, accum_t);
 
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
+  const auto init_t   = cccl_type_enum_to_name(init.type.type);
 
   const auto policy_sel = [&] {
     using namespace cub::detail;
     const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
     const auto operation_t = cccl_op_kind_to_cub_op(op.type);
     const int offset_size  = int{sizeof(OffsetT)};
-    return cub::detail::reduce::policy_selector{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
-  }();
-  const auto policy_sel_nd = [&] {
-    using namespace cub::detail;
-    const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
-    const auto operation_t = cccl_op_kind_to_cub_op(op.type);
-    const int offset_size  = int{sizeof(OffsetT)};
-    return reduce_nondeterministic::policy_selector{
-      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
+    return cub::detail::reduce::policy_selector{
+      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size), ::reduce::convert_determinism(determinism)};
   }();
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
   policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
-  std::stringstream policy_sel_nd_str;
-  policy_sel_nd_str << policy_sel_nd(cuda::compute_capability{cc_major, cc_minor});
 
   std::string final_src = std::format(
     R"XXX(
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce_nondeterministic.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 {0}
 struct __align__({2}) storage_t {{
@@ -254,16 +241,12 @@ struct __align__({2}) storage_t {{
 {3}
 {4}
 {5}
-using device_reduce_policy = cub::detail::reduce::policy_selector_from_types<{6}, {7}, {8}>;
+using device_reduce_policy = cub::detail::reduce::policy_selector_from_types<
+  {6}, {7}, {8}, static_cast<cuda::execution::determinism::__determinism_t>({9})>;
 using namespace cub;
 using namespace cub::detail::reduce;
-static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {9},
+static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
               "Host generated and JIT compiled reduce policy mismatch");
-using device_reduce_nd_policy = cub::detail::reduce_nondeterministic::policy_selector_from_types<{6}, {7}, {8}>;
-using namespace cub;
-using namespace cub::detail::reduce_nondeterministic;
-static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
-              "Host generated and JIT compiled reduce nondeterministic policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1
@@ -274,8 +257,8 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
     accum_cpp, // 6
     offset_t, // 7
     op_name, // 8
-    policy_sel_str.view(), // 9
-    policy_sel_nd_str.view()); // 10
+    cuda::std::to_underlying(reduce::convert_determinism(determinism)), // 9
+    policy_sel_str.view()); // 10
 
 #if false // CCCL_DEBUGGING_SWITCH
   fflush(stderr);
@@ -284,23 +267,14 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
 #endif
 
   std::string single_tile_kernel_name =
-    reduce::get_single_tile_kernel_name(input_iterator_name, output_iterator_name, op_name, init, accum_cpp, false);
+    reduce::get_single_tile_kernel_name(input_iterator_name, output_iterator_name, op_name, init_t, accum_cpp, false);
   std::string single_tile_second_kernel_name = reduce::get_single_tile_kernel_name(
-    cccl_type_enum_to_name(accum_t.type, true), output_iterator_name, op_name, init, accum_cpp, true);
-  std::string reduction_kernel_name = reduce::get_device_reduce_kernel_name(op_name, input_iterator_name, accum_cpp);
+    cccl_type_enum_to_name(accum_t.type, true), output_iterator_name, op_name, init_t, accum_cpp, true);
+  std::string reduction_kernel_name = reduce::get_device_reduce_kernel_name(
+    op_name, input_iterator_name, output_iterator_name, accum_cpp, init_t, determinism != CCCL_NOT_GUARANTEED);
   std::string single_tile_kernel_lowered_name;
   std::string single_tile_second_kernel_lowered_name;
   std::string reduction_kernel_lowered_name;
-  std::string nondeterministic_kernel_lowered_name;
-
-  // Only build nondeterministic kernel for CCCL_NOT_GUARANTEED (which requires plus op)
-  const bool build_nondeterministic = (determinism == CCCL_NOT_GUARANTEED);
-  std::string nondeterministic_kernel_name;
-  if (build_nondeterministic)
-  {
-    nondeterministic_kernel_name = reduce::get_device_reduce_nondeterministic_kernel_name(
-      input_iterator_name, output_iterator_name, op_name, accum_cpp, init);
-  }
 
   const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
@@ -322,7 +296,7 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked.
+  // Collect all LTO-IRs to be linked (empty in kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
@@ -330,66 +304,153 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   appender.add_iterator_definition(input_it);
   appender.add_iterator_definition(output_it);
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  // kernel-only mode: extract kernel LTOIR without linking the operator in.
+  const bool kernel_only = is_custom_op(op);
+
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
       ->add_expression({single_tile_kernel_name})
       ->add_expression({single_tile_second_kernel_name})
       ->add_expression({reduction_kernel_name})
-      ->add_expression_if(build_nondeterministic, {nondeterministic_kernel_name})
       ->compile_program({args.data(), args.size()})
       ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
       ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
-      ->get_name({reduction_kernel_name, reduction_kernel_lowered_name})
-      ->get_name_if(build_nondeterministic, {nondeterministic_kernel_name, nondeterministic_kernel_lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+      ->get_name({reduction_kernel_name, reduction_kernel_lowered_name});
 
-  cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(
-    &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
-  if (build_nondeterministic)
-  {
-    check(cuLibraryGetKernel(
-      &build->nondeterministic_atomic_kernel, build->library, nondeterministic_kernel_lowered_name.c_str()));
-  }
-  else
-  {
-    build->nondeterministic_atomic_kernel = nullptr;
-  }
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::reduce::policy_selector>);
+  auto policy_ptr = std::make_unique<cub::detail::reduce::policy_selector>(policy_sel);
+
+  auto single_tile_name        = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
+  auto single_tile_second_name = std::unique_ptr<char[]>(duplicate_c_string(single_tile_second_kernel_lowered_name));
+  auto reduction_name          = std::unique_ptr<char[]>(duplicate_c_string(reduction_kernel_lowered_name));
 
   build->cc               = cc_major * 10 + cc_minor;
-  build->cubin            = (void*) result.data.release();
-  build->cubin_size       = result.size;
   build->accumulator_size = accum_t.size;
   build->determinism      = determinism;
-  if (build_nondeterministic)
+  // Zero-init fields set by _load, not _compile.
+  build->library                   = nullptr;
+  build->single_tile_kernel        = nullptr;
+  build->single_tile_second_kernel = nullptr;
+  build->reduction_kernel          = nullptr;
+
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
+  if (kernel_only)
   {
-    build->runtime_policy = new cub::detail::reduce_nondeterministic::policy_selector{policy_sel_nd};
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build->payload                = ltoir_data.release();
+    build->payload_size           = ltoir_size;
+    build->payload_kind           = CCCL_PAYLOAD_LTOIR;
   }
   else
   {
-    build->runtime_policy = new cub::detail::reduce::policy_selector{policy_sel};
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build->payload           = (void*) result.data.release();
+    build->payload_size      = result.size;
+    build->payload_kind      = CCCL_PAYLOAD_CUBIN;
   }
+
+  build->runtime_policy                         = policy_ptr.release();
+  build->runtime_policy_size                    = sizeof(*policy_ptr);
+  build->single_tile_kernel_lowered_name        = single_tile_name.release();
+  build->single_tile_second_kernel_lowered_name = single_tile_second_name.release();
+  build->reduction_kernel_lowered_name          = reduction_name.release();
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_reduce_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_reduce_compile(): %s\n", exc.what());
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
 }
 
+CUresult cccl_device_reduce_load(cccl_device_reduce_build_result_t* build)
+try
+{
+  // Both nullptr and [0]=='\0' checks needed: non-null empty string is also invalid.
+  if (build == nullptr || build->payload == nullptr || build->payload_size == 0
+      || build->payload_kind != CCCL_PAYLOAD_CUBIN || build->single_tile_kernel_lowered_name == nullptr
+      || build->single_tile_kernel_lowered_name[0] == '\0' || build->single_tile_second_kernel_lowered_name == nullptr
+      || build->single_tile_second_kernel_lowered_name[0] == '\0' || build->reduction_kernel_lowered_name == nullptr
+      || build->reduction_kernel_lowered_name[0] == '\0')
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  CUresult status = cuLibraryLoadData(&build->library, build->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    return status;
+  }
+  try
+  {
+    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, build->single_tile_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->single_tile_second_kernel, build->library, build->single_tile_second_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, build->reduction_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build->library);
+    build->library = nullptr;
+    throw;
+  }
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_reduce_load(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_reduce_build_ex(
+  cccl_device_reduce_build_result_t* build,
+  cccl_iterator_t input_it,
+  cccl_iterator_t output_it,
+  cccl_op_t op,
+  cccl_value_t init,
+  cccl_determinism_t determinism,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  CUresult r = cccl_device_reduce_compile(
+    build,
+    input_it,
+    output_it,
+    op,
+    init,
+    determinism,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  CUresult load_r = cccl_device_reduce_load(build);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_reduce_cleanup(build);
+  }
+  return load_r;
+}
+
 // c.parallel provides two separate reduce functions, one for each determinism
-// level, rather than a single function with a runtime switch. This mirrors CUB's
-// design, which uses distinct dispatch functions because the host-side logic
-// differs between determinism levels. Keeping the functions separate avoids
+// level, rather than a single function with a runtime switch. Keeping the functions separate avoids
 // branching at runtime to select the appropriate one; cuda.compute selects the
 // appropriate function to call at build time.
 
@@ -470,7 +531,7 @@ CUresult cccl_device_reduce_nondeterministic(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::detail::reduce_nondeterministic::dispatch<void>(
+    auto exec_status = cub::detail::reduce::dispatch<void, /* StableReductionOrder */ false>(
       d_temp_storage,
       *temp_storage_bytes,
       indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
@@ -480,7 +541,7 @@ CUresult cccl_device_reduce_nondeterministic(
       indirect_arg_t{init},
       stream,
       ::cuda::std::identity{},
-      *static_cast<cub::detail::reduce_nondeterministic::policy_selector*>(build.runtime_policy),
+      *static_cast<cub::detail::reduce::policy_selector*>(build.runtime_policy),
       reduce::reduce_kernel_source{build},
       cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
@@ -489,7 +550,7 @@ CUresult cccl_device_reduce_nondeterministic(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_reduce_nondeterministic(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
@@ -511,18 +572,19 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<cub::detail::reduce::policy_selector> policy;
-  std::unique_ptr<cub::detail::reduce_nondeterministic::policy_selector> policy_nd;
-  if (build_ptr->determinism == CCCL_NOT_GUARANTEED)
+  std::unique_ptr<char[]> payload(static_cast<char*>(build_ptr->payload));
+  delete static_cast<cub::detail::reduce::policy_selector*>(build_ptr->runtime_policy);
+  if (build_ptr->library != nullptr)
   {
-    policy_nd.reset(static_cast<cub::detail::reduce_nondeterministic::policy_selector*>(build_ptr->runtime_policy));
+    check(cuLibraryUnload(build_ptr->library));
   }
-  else
+
+  for (char* p : {build_ptr->single_tile_kernel_lowered_name,
+                  build_ptr->single_tile_second_kernel_lowered_name,
+                  build_ptr->reduction_kernel_lowered_name})
   {
-    policy.reset(static_cast<cub::detail::reduce::policy_selector*>(build_ptr->runtime_policy));
+    delete[] p;
   }
-  check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;
 }
@@ -564,4 +626,157 @@ CUresult cccl_device_reduce_build(
     libcudacxx_path,
     ctk_path,
     nullptr);
+}
+
+CUresult cccl_device_reduce_link_ltoir(
+  cccl_device_reduce_build_result_t* build_ptr, const void** input_blobs, const size_t* input_sizes, size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_LTOIR)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  all_blobs.push_back(build_ptr->payload);
+  all_sizes.push_back(build_ptr->payload_size);
+  if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    if (input_blobs[i] == nullptr || input_sizes[i] == 0)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = (void*) cubin.release();
+  build_ptr->payload_size = cubin_size;
+  build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_reduce_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult
+cccl_device_reduce_serialize(const cccl_device_reduce_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->runtime_policy == nullptr || build_ptr->runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  *out_buf  = nullptr;
+  *out_size = 0;
+
+  using namespace cccl::serialization;
+  buffer_writer w;
+  write_header(w, CCCL_SERIALIZATION_ALGO_REDUCE, build_ptr->payload_kind, build_ptr->cc);
+  w.write_pod<uint64_t>(build_ptr->accumulator_size);
+  w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->determinism));
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_cstring(build_ptr->single_tile_kernel_lowered_name);
+  w.write_cstring(build_ptr->single_tile_second_kernel_lowered_name);
+  w.write_cstring(build_ptr->reduction_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_reduce_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_reduce_deserialize(cccl_device_reduce_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::serialization;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_REDUCE);
+
+  const uint64_t accum_size = r.read_pod<uint64_t>();
+  const auto determinism_v  = r.read_pod<uint32_t>();
+  if (determinism_v > static_cast<uint32_t>(CCCL_GPU_TO_GPU))
+  {
+    throw std::runtime_error(std::format("serialization blob: invalid determinism ({})", determinism_v));
+  }
+  const auto determinism = static_cast<cccl_determinism_t>(determinism_v);
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  if (payload_size == 0)
+  {
+    throw std::runtime_error("serialization blob: empty payload");
+  }
+
+  constexpr size_t policy_size = sizeof(cub::detail::reduce::policy_selector);
+  std::unique_ptr<void, decltype(&std::free)> policy(std::malloc(policy_size), std::free);
+  if (!policy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  r.read_into(policy.get(), policy_size);
+
+  std::unique_ptr<char[]> n_single_tile{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_single_tile_second{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_reduction{r.read_cstring_dup()};
+
+  cccl_device_reduce_build_result_t result{};
+  result.cc                                     = static_cast<int>(h.cc);
+  result.payload_kind                           = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.accumulator_size                       = accum_size;
+  result.determinism                            = determinism;
+  result.payload                                = payload_owner.release();
+  result.payload_size                           = payload_size;
+  result.runtime_policy                         = policy.release();
+  result.runtime_policy_size                    = policy_size;
+  result.single_tile_kernel_lowered_name        = n_single_tile.release();
+  result.single_tile_second_kernel_lowered_name = n_single_tile_second.release();
+  result.reduction_kernel_lowered_name          = n_reduction.release();
+  *build_ptr                                    = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_reduce_deserialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
 }

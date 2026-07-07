@@ -291,7 +291,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
         with:
           persist-credentials: false
 
@@ -358,7 +358,7 @@ jobs:
     steps:
       - name: Download wheel artifact
         id: download
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
         continue-on-error: true
         with:
           name: wheel-cccl-linux-amd64-py3.14
@@ -377,7 +377,7 @@ jobs:
 
       - name: Set up Python
         if: steps.check-wheel.outputs.skip != 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: '3.14'
 

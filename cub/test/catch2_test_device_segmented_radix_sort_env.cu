@@ -813,13 +813,12 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stream",
 template <typename KeyT, typename ValueT, int ThreadsPerBlock>
 struct segmented_radix_sort_block_size_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const
-    -> cub::detail::segmented_radix_sort::segmented_radix_sort_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedRadixSortPolicy
   {
     using default_selector_t = cub::detail::segmented_radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
     auto policy              = default_selector_t{}(cc);
-    policy.segmented.threads_per_block     = ThreadsPerBlock;
-    policy.alt_segmented.threads_per_block = ThreadsPerBlock;
+    policy.regular_pass.threads_per_block   = ThreadsPerBlock;
+    policy.alternate_pass.threads_per_block = ThreadsPerBlock;
     return policy;
   }
 };
@@ -1060,3 +1059,46 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer can be tuned
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("SegmentedRadixSortPolicy", "[segmented_radix_sort][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedRadixSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedRadixSortPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::SegmentedRadixSortPolicy{
+    cub::RadixSortDownsweepPolicy{
+      192, 15, cub::BLOCK_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 6},
+    cub::RadixSortDownsweepPolicy{
+      384, 11, cub::BLOCK_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 5}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::SegmentedRadixSortPolicy{
+    .regular_pass =
+      cub::RadixSortDownsweepPolicy{
+        .threads_per_block = 192,
+        .items_per_thread  = 15,
+        .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+        .radix_bits        = 6},
+    .alternate_pass = cub::RadixSortDownsweepPolicy{
+      .threads_per_block = 384,
+      .items_per_thread  = 11,
+      .load_algorithm    = cub::BLOCK_LOAD_TRANSPOSE,
+      .load_modifier     = cub::LOAD_DEFAULT,
+      .rank_algorithm    = cub::RADIX_RANK_MEMOIZE,
+      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+      .radix_bits        = 5}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

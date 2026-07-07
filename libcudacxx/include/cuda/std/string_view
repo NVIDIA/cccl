@@ -220,12 +220,14 @@ public:
   {}
 #endif // __cpp_lib_string_view >= 201606L
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__cccl_basic_sv_compatible_range<_Range, _CharT, _Traits>)
   _CCCL_API explicit constexpr basic_string_view(_Range&& __r)
       : __data_{::cuda::std::ranges::__data_cpo{}(__r)}
       , __size_{::cuda::std::ranges::__size_cpo{}(__r)}
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   // msvc has problems with constructing a string view from another string view using the from ranges constructor,
   // so we define the constructor ourselves
@@ -288,9 +290,12 @@ public:
     return __size_;
   }
 
+  // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
+  // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+  template <class _SizeType = size_type>
   [[nodiscard]] _CCCL_API constexpr size_type max_size() const noexcept
   {
-    return numeric_limits<size_type>::max() / sizeof(value_type);
+    return numeric_limits<_SizeType>::max() / sizeof(value_type);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept

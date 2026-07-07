@@ -59,22 +59,26 @@ minimal-sysctk13 = [
 ]
 cu12 = [
   "cuda-cccl[minimal-cu12]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 cu13 = [
   "cuda-cccl[minimal-cu13]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
 ]
 sysctk12 = [
   "cuda-cccl[minimal-sysctk12]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
 ]
 sysctk13 = [
   "cuda-cccl[minimal-sysctk13]",
-  "numba>=0.60.0",
+  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
+  "numba>=0.60.0,<0.66",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 test-cu12 = [
@@ -88,10 +92,30 @@ test-cu12 = [
 test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
 test-sysctk12 = ["cuda-cccl[sysctk12]", "pytest", "pytest-xdist", "cupy-cuda12x"]
 test-sysctk13 = ["cuda-cccl[sysctk13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
-bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]", "cupy-cuda12x"]
-bench-cu13 = ["cuda-cccl[cu13]", "cuda-bench[cu13]", "cupy-cuda13x"]
-bench-sysctk12 = ["cuda-cccl[sysctk12]", "cuda-bench[cu12]", "cupy-cuda12x"]
-bench-sysctk13 = ["cuda-cccl[sysctk13]", "cuda-bench[cu13]", "cupy-cuda13x"]
+bench-cu12 = [
+  "cuda-cccl[cu12]",
+  "cuda-bench[cu12]",
+  "cupy-cuda12x",
+  "pytest-benchmark",
+]
+bench-cu13 = [
+  "cuda-cccl[cu13]",
+  "cuda-bench[cu13]",
+  "cupy-cuda13x",
+  "pytest-benchmark",
+]
+bench-sysctk12 = [
+  "cuda-cccl[sysctk12]",
+  "cuda-bench[cu12]",
+  "cupy-cuda12x",
+  "pytest-benchmark",
+]
+bench-sysctk13 = [
+  "cuda-cccl[sysctk13]",
+  "cuda-bench[cu13]",
+  "cupy-cuda13x",
+  "pytest-benchmark",
+]
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
@@ -130,6 +154,10 @@ python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = [
+  # numpy>=2.3 stubs use PEP 695 syntax that mypy can't parse under
+  # python_version=3.10; skip following its imports to keep the 3.10 target.
+  "numpy",
+  "numpy.*",
   "numba.*",
   "llvmlite.*",
   "cuda.cccl.*",
@@ -157,4 +185,5 @@ markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
   "no_numba: tests that should not import numba or numba.cuda",
+  "serialization: serialize/deserialize tests (skipped on the v2 HostJIT backend)",
 ]

@@ -16,7 +16,10 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
   set(test_sources ${ARGN})
 
   cccl_add_executable(${test_target} SOURCES ${ARGN} ADD_CTEST)
-  target_include_directories(${test_target} PRIVATE "common")
+  target_include_directories(
+    ${test_target}
+    PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/common"
+  )
   target_link_libraries(
     ${test_target}
     PRIVATE #
@@ -116,6 +119,26 @@ if (
   )
 endif()
 
+cudax_add_catch2_test(test_target cuco_fixed_capacity_map_insert_and_contains ${cudax_target}
+    cuco/fixed_capacity_map/test_insert_and_contains.cu
+)
+
+cudax_add_catch2_test(test_target cuco_fixed_capacity_map_capacity ${cudax_target}
+    cuco/fixed_capacity_map/test_capacity.cu
+)
+
+cudax_add_catch2_test(test_target cuco_fixed_capacity_map_shared_memory ${cudax_target}
+    cuco/fixed_capacity_map/test_shared_memory.cu
+)
+
+cudax_add_catch2_test(test_target cuco_fixed_capacity_map_key_sentinel ${cudax_target}
+    cuco/fixed_capacity_map/test_key_sentinel.cu
+)
+
+cudax_add_catch2_test(test_target cuco_capacity ${cudax_target}
+    cuco/utility/test_capacity.cu
+)
+
 cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
 )
@@ -140,6 +163,8 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/fill.cu
     algorithm/copy.cu
 )
+
+add_subdirectory(multi_gpu)
 
 cudax_add_catch2_test(test_target group.mapping.binary_partition
     group/mapping/binary_partition.cu
@@ -179,6 +204,16 @@ cudax_add_catch2_test(test_target group.this_group
 )
 cudax_add_catch2_test(test_target group.invoke_one
     group/invoke_one.cu
+)
+
+cudax_add_catch2_test(test_target coop.any_of.this_thread
+    coop/any_of/this_thread.cu
+)
+cudax_add_catch2_test(test_target coop.any_of.this_warp
+    coop/any_of/this_warp.cu
+)
+cudax_add_catch2_test(test_target coop.any_of.threads_within_warp
+    coop/any_of/threads_within_warp.cu
 )
 
 cudax_add_catch2_test(test_target coop.reduce.this_thread
