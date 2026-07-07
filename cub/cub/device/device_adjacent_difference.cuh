@@ -86,7 +86,9 @@ CUB_NAMESPACE_BEGIN
 //!
 //!    // d_values <-- [1, 1, -1, 1, -1, 1, -1, 1]
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceAdjacentDifference that accept an environment can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns an @ref AdjacentDifferencePolicy, as shown in the
 //! example below:
