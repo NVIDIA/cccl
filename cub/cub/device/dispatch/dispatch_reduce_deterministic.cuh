@@ -27,6 +27,8 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/min.h>
@@ -122,6 +124,25 @@ struct DeterministicDeviceReduceKernelSource
       InitValueT,
       DeterministicAccumT>)
 };
+
+//! Kernel source instantiation matching the default used by `rfa::dispatch` below. Tests use this alias to
+//! reference the exact kernel instantiations the dispatch launches.
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename InitValueT,
+          typename TransformOpT = ::cuda::std::identity,
+          typename AccumT       = accum_t<InitValueT, InputIteratorT, TransformOpT>,
+          typename PolicySelector =
+            policy_selector_from_types<AccumT, OffsetT, deterministic_sum_t<AccumT>, __determinism_t::__gpu_to_gpu>>
+using default_kernel_source_t = DeterministicDeviceReduceKernelSource<
+  PolicySelector,
+  THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+  OutputIteratorT,
+  deterministic_sum_t<AccumT>,
+  InitValueT,
+  typename deterministic_sum_t<AccumT>::DeterministicAcc,
+  TransformOpT>;
 
 template <typename SingleTileKernelT,
           typename InputIteratorT,
@@ -341,23 +362,18 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   return CubDebug(detail::DebugSyncStream(stream));
 }
 
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename InitValueT,
-          typename TransformOpT = ::cuda::std::identity,
-          typename AccumT       = accum_t<InitValueT, InputIteratorT, TransformOpT>,
-          typename PolicySelector =
-            policy_selector_from_types<AccumT, OffsetT, deterministic_sum_t<AccumT>, __determinism_t::__gpu_to_gpu>,
-          typename KernelSource = DeterministicDeviceReduceKernelSource<
-            PolicySelector,
-            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-            OutputIteratorT,
-            deterministic_sum_t<AccumT>,
-            InitValueT,
-            typename deterministic_sum_t<AccumT>::DeterministicAcc,
-            TransformOpT>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename InitValueT,
+  typename TransformOpT = ::cuda::std::identity,
+  typename AccumT       = accum_t<InitValueT, InputIteratorT, TransformOpT>,
+  typename PolicySelector =
+    policy_selector_from_types<AccumT, OffsetT, deterministic_sum_t<AccumT>, __determinism_t::__gpu_to_gpu>,
+  typename KernelSource =
+    default_kernel_source_t<InputIteratorT, OutputIteratorT, OffsetT, InitValueT, TransformOpT, AccumT, PolicySelector>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,

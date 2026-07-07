@@ -333,6 +333,88 @@ using requirements =
                  cuda::execution::determinism::run_to_run_t,
                  cuda::execution::determinism::not_guaranteed_t>;
 
+// Builds the kernel allowlist for the requirements-parametrized tests below and computes the expected temporary
+// storage size. To check if a given algorithm implementation is used, the tests check if the associated kernels are
+// invoked. The allowlists are built from the same kernel source types the dispatch uses, so the expected kernel
+// instantiations cannot drift from the launched ones. This is deliberately a function template instead of a lambda
+// in the tests: with nvcc 13.3 on MSVC, decltype() of a variable captured by reference inside a lambda is
+// misevaluated as a reference type, which would make the allowlist reference (and instantiate) different kernels
+// than the ones the dispatch launches. See: https://github.com/NVIDIA/cccl/issues/9643
+template <typename DeterminismT,
+          typename OffsetT,
+          typename OpT,
+          typename TransformT,
+          typename InputItT,
+          typename OutputItT,
+          typename AccumulatorT,
+          typename InitT,
+          typename NumItemsT,
+          typename RunToRunSizeF>
+static auto expected_reduce_kernels(
+  InputItT d_in,
+  OutputItT d_out,
+  AccumulatorT* d_out_ptr,
+  NumItemsT num_items,
+  InitT init,
+  size_t& expected_bytes_allocated,
+  RunToRunSizeF run_to_run_size)
+{
+  if constexpr (std::is_same_v<DeterminismT, cuda::execution::determinism::run_to_run_t>)
+  {
+    REQUIRE(cudaSuccess == run_to_run_size());
+
+    using policy_t        = cub::detail::reduce::policy_selector_from_types<AccumulatorT, OffsetT, OpT>;
+    using kernel_source_t = cub::detail::reduce::
+      DeviceReduceKernelSource<policy_t, InputItT, OutputItT, OffsetT, OpT, InitT, AccumulatorT, TransformT>;
+    return cuda::std::array<void*, 3>{
+      reinterpret_cast<void*>(kernel_source_t::SingleTileKernel()),
+      reinterpret_cast<void*>(kernel_source_t::ReductionKernel()),
+      reinterpret_cast<void*>(kernel_source_t::SingleTileSecondKernel())};
+  }
+  else if constexpr (cub::detail::is_non_deterministic_v<DeterminismT>)
+  {
+    REQUIRE(
+      cudaSuccess
+      == cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
+        nullptr,
+        expected_bytes_allocated,
+        d_in,
+        d_out_ptr,
+        num_items,
+        OpT{},
+        init,
+        /* stream */ nullptr,
+        TransformT{}));
+
+    using policy_t =
+      cub::detail::reduce::policy_selector_from_types<AccumulatorT, OffsetT, OpT, __determinism_t::__not_guaranteed>;
+    using kernel_source_t = cub::detail::reduce::DeviceReduceKernelSource<
+      policy_t,
+      InputItT,
+      AccumulatorT*,
+      OffsetT,
+      OpT,
+      InitT,
+      AccumulatorT,
+      TransformT,
+      /* StableReductionOrder */ false>;
+    return cuda::std::array<void*, 1>{reinterpret_cast<void*>(kernel_source_t::ReductionKernel())};
+  }
+  else
+  {
+    REQUIRE(cudaSuccess
+            == cub::detail::rfa::dispatch<InputItT, OutputItT, OffsetT, InitT, TransformT, AccumulatorT>(
+              nullptr, expected_bytes_allocated, d_in, d_out, num_items, init));
+
+    using kernel_source_t =
+      cub::detail::rfa::default_kernel_source_t<InputItT, OutputItT, OffsetT, InitT, TransformT, AccumulatorT>;
+    return cuda::std::array<void*, 3>{
+      reinterpret_cast<void*>(kernel_source_t::SingleTileKernel()),
+      reinterpret_cast<void*>(kernel_source_t::ReductionKernel()),
+      reinterpret_cast<void*>(kernel_source_t::SingleTileSecondKernel())};
+  }
+}
+
 C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 {
   using determinism_t = c2h::get<0, TestType>;
@@ -347,98 +429,13 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
-  // Compute the iterator types outside of the allowlist lambda below: with nvcc 13.3 on MSVC, decltype() of a
-  // variable captured by reference inside a lambda is misevaluated as a reference type, making the test reference
-  // (and instantiate) different kernels than the ones the dispatch launches.
-  // See: https://github.com/NVIDIA/cccl/issues/9643
-  using input_it_t  = decltype(d_in);
-  using output_it_t = decltype(d_out.begin());
-
   init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
-  // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
-  auto kernels = [&]() {
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
-    {
-      REQUIRE(
-        cudaSuccess
-        == cub::DeviceReduce::Reduce(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, op_t{}, init));
-
-      // Build the allowlist from the same kernel source type the dispatch uses, so the expected kernel
-      // instantiations cannot drift from the launched ones.
-      using policy_t        = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
-      using kernel_source_t = cub::detail::reduce::
-        DeviceReduceKernelSource<policy_t, input_it_t, output_it_t, offset_t, op_t, init_value_t, accumulator_t, transform_t>;
-      return cuda::std::array<void*, 3>{
-        reinterpret_cast<void*>(kernel_source_t::SingleTileKernel()),
-        reinterpret_cast<void*>(kernel_source_t::ReductionKernel()),
-        reinterpret_cast<void*>(kernel_source_t::SingleTileSecondKernel())};
-    }
-    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
-    {
-      using policy_t =
-        cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t, __determinism_t::__not_guaranteed>;
-      auto* raw_ptr = thrust::raw_pointer_cast(d_out.data());
-
-      REQUIRE(
-        cudaSuccess
-        == cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
-          nullptr,
-          expected_bytes_allocated,
-          d_in,
-          raw_ptr,
-          num_items,
-          op_t{},
-          init,
-          /* stream */ nullptr,
-          transform_t{}));
-
-      // See the run_to_run branch above for why the kernel pointers must come from the kernel source
-      using kernel_source_t = cub::detail::reduce::DeviceReduceKernelSource<
-        policy_t,
-        input_it_t,
-        decltype(raw_ptr),
-        offset_t,
-        op_t,
-        init_value_t,
-        accumulator_t,
-        transform_t,
-        /* StableReductionOrder */ false>;
-      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(kernel_source_t::ReductionKernel())};
-    }
-    else
-    {
-      using deterministic_add_t = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
-      using reduction_op_t      = deterministic_add_t;
-      using policy_t            = cub::detail::reduce::
-        policy_selector_from_types<accumulator_t, offset_t, reduction_op_t, __determinism_t::__gpu_to_gpu>;
-      using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
-
-      REQUIRE(
-        cudaSuccess
-        == cub::detail::rfa::dispatch<input_it_t, output_it_t, offset_t, init_value_t, transform_t, accumulator_t>(
-          nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
-
-      // See the run_to_run branch above for why the kernel pointers must come from the kernel source
-      using kernel_source_t = cub::detail::rfa::DeterministicDeviceReduceKernelSource<
-        policy_t,
-        thrust::try_unwrap_contiguous_iterator_t<input_it_t>,
-        output_it_t,
-        reduction_op_t,
-        init_value_t,
-        deterministic_accum_t,
-        transform_t>;
-      // TODO(bgruber): enable this when we have Catch2 3.13+
-      // UNSCOPED_CAPTURE(c2h::type_name<decltype(kernel_source_t::SingleTileKernel())>(),
-      // c2h::type_name<decltype(kernel_source_t::ReductionKernel())>(),
-      // c2h::type_name<decltype(kernel_source_t::SingleTileSecondKernel())>());
-      return cuda::std::array<void*, 3>{
-        reinterpret_cast<void*>(kernel_source_t::SingleTileKernel()),
-        reinterpret_cast<void*>(kernel_source_t::ReductionKernel()),
-        reinterpret_cast<void*>(kernel_source_t::SingleTileSecondKernel())};
-    }
-  }();
+  auto kernels = expected_reduce_kernels<determinism_t, offset_t, op_t, transform_t>(
+    d_in, d_out.begin(), thrust::raw_pointer_cast(d_out.data()), num_items, init, expected_bytes_allocated, [&]() {
+      return cub::DeviceReduce::Reduce(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, op_t{}, init);
+    });
 
   // Equivalent to `cuexec::require(cuexec::determinism::run_to_run)` and
   //               `cuexec::require(cuexec::determinism::not_guaranteed)`
@@ -465,96 +462,13 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
-  // Compute the iterator types outside of the allowlist lambda below: with nvcc 13.3 on MSVC, decltype() of a
-  // variable captured by reference inside a lambda is misevaluated as a reference type, making the test reference
-  // (and instantiate) different kernels than the ones the dispatch launches.
-  // See: https://github.com/NVIDIA/cccl/issues/9643
-  using input_it_t  = decltype(d_in);
-  using output_it_t = decltype(d_out.begin());
-
-  [[maybe_unused]] init_value_t init = 0;
+  init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
-  // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
-  auto kernels = [&]() {
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
-    {
-      REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
-
-      // Build the allowlist from the same kernel source type the dispatch uses, so the expected kernel
-      // instantiations cannot drift from the launched ones.
-      using policy_t        = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
-      using kernel_source_t = cub::detail::reduce::
-        DeviceReduceKernelSource<policy_t, input_it_t, output_it_t, offset_t, op_t, init_value_t, accumulator_t, transform_t>;
-      return cuda::std::array<void*, 3>{
-        reinterpret_cast<void*>(kernel_source_t::SingleTileKernel()),
-        reinterpret_cast<void*>(kernel_source_t::ReductionKernel()),
-        reinterpret_cast<void*>(kernel_source_t::SingleTileSecondKernel())};
-    }
-    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
-    {
-      using policy_t =
-        cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t, __determinism_t::__not_guaranteed>;
-      auto* raw_ptr = thrust::raw_pointer_cast(d_out.data());
-
-      REQUIRE(
-        cudaSuccess
-        == cub::detail::reduce::dispatch<cub::detail::use_default, /* StableReductionOrder */ false>(
-          nullptr,
-          expected_bytes_allocated,
-          d_in,
-          raw_ptr,
-          num_items,
-          op_t{},
-          init,
-          /* stream */ nullptr,
-          transform_t{}));
-
-      // See the run_to_run branch above for why the kernel pointers must come from the kernel source
-      using kernel_source_t = cub::detail::reduce::DeviceReduceKernelSource<
-        policy_t,
-        input_it_t,
-        decltype(raw_ptr),
-        offset_t,
-        op_t,
-        init_value_t,
-        accumulator_t,
-        transform_t,
-        /* StableReductionOrder */ false>;
-      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(kernel_source_t::ReductionKernel())};
-    }
-    else
-    {
-      using deterministic_add_t = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
-      using reduction_op_t      = deterministic_add_t;
-      using policy_t            = cub::detail::reduce::
-        policy_selector_from_types<accumulator_t, offset_t, reduction_op_t, __determinism_t::__gpu_to_gpu>;
-      using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
-
-      REQUIRE(
-        cudaSuccess
-        == cub::detail::rfa::dispatch<input_it_t, output_it_t, offset_t, init_value_t, transform_t, accumulator_t>(
-          nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
-
-      // See the run_to_run branch above for why the kernel pointers must come from the kernel source
-      using kernel_source_t = cub::detail::rfa::DeterministicDeviceReduceKernelSource<
-        policy_t,
-        thrust::try_unwrap_contiguous_iterator_t<input_it_t>,
-        output_it_t,
-        reduction_op_t,
-        init_value_t,
-        deterministic_accum_t,
-        transform_t>;
-      // TODO(bgruber): enable this when we have Catch2 3.13+
-      // UNSCOPED_CAPTURE(c2h::type_name<decltype(kernel_source_t::SingleTileKernel())>(),
-      // c2h::type_name<decltype(kernel_source_t::ReductionKernel())>(),
-      // c2h::type_name<decltype(kernel_source_t::SingleTileSecondKernel())>());
-      return cuda::std::array<void*, 3>{
-        reinterpret_cast<void*>(kernel_source_t::SingleTileKernel()),
-        reinterpret_cast<void*>(kernel_source_t::ReductionKernel()),
-        reinterpret_cast<void*>(kernel_source_t::SingleTileSecondKernel())};
-    }
-  }();
+  auto kernels = expected_reduce_kernels<determinism_t, offset_t, op_t, transform_t>(
+    d_in, d_out.begin(), thrust::raw_pointer_cast(d_out.data()), num_items, init, expected_bytes_allocated, [&]() {
+      return cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items);
+    });
 
   // Equivalent to `cuexec::require(cuexec::determinism::run_to_run)` and
   //               `cuexec::require(cuexec::determinism::not_guaranteed)`
