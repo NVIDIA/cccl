@@ -145,7 +145,7 @@ public:
     _CCCL_API constexpr auto __get_deref_and_invoke() const noexcept
     {
       return [&__fun = *__parent_->__fun_](const auto&... __iters) noexcept(
-               noexcept(::cuda::std::invoke(__fun, *__iters...))) -> decltype(auto) {
+               noexcept(::cuda::std::invoke(*__parent_->__fun_, *__iters...))) -> decltype(auto) {
         return ::cuda::std::invoke(__fun, *__iters...);
       };
     }
@@ -160,7 +160,7 @@ public:
 
     _CCCL_TEMPLATE(bool _OtherConst)
     _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<__ziperator<false>, __ziperator<_OtherConst>>)
-    _CCCL_API constexpr __iterator(__iterator<!_OtherConst> __i)
+    _CCCL_API constexpr __iterator(__iterator<(!_OtherConst)> __i)
         : __parent_{__i.__parent_}
         , __inner_{::cuda::std::move(__i.__inner_)}
     {}
