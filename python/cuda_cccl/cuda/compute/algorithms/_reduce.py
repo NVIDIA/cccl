@@ -18,6 +18,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._serialization import BUILD_RESULT, ITER, OP, VALUE, Serializable
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
@@ -32,7 +33,7 @@ from ..typing import (
 )
 
 
-class _Reduce:
+class _Reduce(Serializable):
     __slots__ = [
         "d_in_cccl",
         "d_out_cccl",
@@ -41,6 +42,14 @@ class _Reduce:
         "build_result",
         "device_reduce_fn",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("h_init_cccl", VALUE),
+        ("build_result", BUILD_RESULT(_bindings.DeviceReduceBuildResult)),
+    )
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
@@ -67,14 +76,19 @@ class _Reduce:
             self.h_init_cccl,
             determinism,
         )
+        self._bind_device_reduce_fn()
 
-        match determinism:
-            case Determinism.RUN_TO_RUN:
-                self.device_reduce_fn = self.build_result.compute
-            case Determinism.NOT_GUARANTEED:
-                self.device_reduce_fn = self.build_result.compute_nondeterministic
-            case _:
-                raise ValueError(f"Invalid determinism: {determinism}")
+    def _after_deserialize(self) -> None:
+        self._bind_device_reduce_fn()
+
+    def _bind_device_reduce_fn(self) -> None:
+        # device_reduce_fn is derived from build_result (not serialized). Bind it
+        # as a plain slot on both construction paths (__init__ and deserialize) so
+        # each call reads a slot directly, with no per-call recompute.
+        if Determinism(self.build_result.determinism) is Determinism.NOT_GUARANTEED:
+            self.device_reduce_fn = self.build_result.compute_nondeterministic
+        else:
+            self.device_reduce_fn = self.build_result.compute
 
     def __call__(
         self,

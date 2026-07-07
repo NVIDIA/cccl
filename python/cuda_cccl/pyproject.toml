@@ -185,4 +185,5 @@ markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
   "no_numba: tests that should not import numba or numba.cuda",
+  "serialization: serialize/deserialize tests (skipped on the v2 HostJIT backend)",
 ]

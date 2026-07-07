@@ -131,20 +131,20 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   // this is only called in device code, so we can ignore the arch parameter
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> reduce_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> ReducePolicy
   {
     using ap             = typename PolicyHub::MaxPolicy::ActivePolicy;
     using ap_reduce      = typename ap::ReducePolicy;
     using ap_single_tile = typename ap::SingleTilePolicy;
-    return reduce_policy{
-      agent_reduce_policy{
+    return ReducePolicy{
+      ReducePassPolicy{
         ap_reduce::BLOCK_THREADS,
         ap_reduce::ITEMS_PER_THREAD,
         ap_reduce::VECTOR_LOAD_LENGTH,
         ap_reduce::BLOCK_ALGORITHM,
         ap_reduce::LOAD_MODIFIER,
       },
-      agent_reduce_policy{
+      ReducePassPolicy{
         ap_single_tile::BLOCK_THREADS,
         ap_single_tile::ITEMS_PER_THREAD,
         ap_single_tile::VECTOR_LOAD_LENGTH,
@@ -159,7 +159,7 @@ struct policy_selector_from_hub
  * Single-problem dispatch
  *****************************************************************************/
 
-// TODO(bgruber): deprecate once we publish the tuning API
+// TODO(bgruber): drop in CCCL 4.0
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
@@ -200,7 +200,7 @@ template <
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchReduce
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") DispatchReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -552,7 +552,6 @@ struct DispatchReduce
   }
 };
 
-// TODO(bgruber): deprecate once we publish the tuning API and drop in CCCL 4.0
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide transform reduce
@@ -577,6 +576,7 @@ struct DispatchReduce
  * @tparam InitValueT
  *   Initial value type
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <
   typename InputIteratorT,
   typename OutputIteratorT,
@@ -600,7 +600,7 @@ template <
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-using DispatchTransformReduce =
+using DispatchTransformReduce CCCL_DEPRECATED_BECAUSE("Please use DeviceReduce") =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
                  OffsetT,
@@ -611,6 +611,7 @@ using DispatchTransformReduce =
                  PolicyHub,
                  KernelSource,
                  KernelLauncherFactory>;
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace detail::reduce
 {
@@ -672,7 +673,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
-  reduce_policy active_policy,
+  ReducePolicy active_policy,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
@@ -688,10 +689,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   // Init regular kernel configuration
-  const auto tile_size = active_policy.reduce.threads_per_block * active_policy.reduce.items_per_thread;
+  const auto tile_size = active_policy.multi_tile.threads_per_block * active_policy.multi_tile.items_per_thread;
   int sm_occupancy     = 0;
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        sm_occupancy, kernel_source.ReductionKernel(), active_policy.reduce.threads_per_block)))
+        sm_occupancy, kernel_source.ReductionKernel(), active_policy.multi_tile.threads_per_block)))
   {
     return error;
   }
@@ -762,9 +763,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
           "per thread, %d SM occupancy\n",
           (unsigned long) reduce_grid_size,
-          active_policy.reduce.threads_per_block,
+          active_policy.multi_tile.threads_per_block,
           (long long) stream,
-          active_policy.reduce.items_per_thread,
+          active_policy.multi_tile.items_per_thread,
           sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
@@ -780,7 +781,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     }
   }();
   if (const auto error = CubDebug(
-        launcher_factory(reduce_grid_size, active_policy.reduce.threads_per_block, 0, stream)
+        launcher_factory(reduce_grid_size, active_policy.multi_tile.threads_per_block, 0, stream)
           .doit(kernel_source.ReductionKernel(),
                 d_in,
                 reduce_kernel_output,
@@ -938,18 +939,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    CUB_DETAIL_CONSTEXPR_ISH const reduce_policy active_policy = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH const ReducePolicy active_policy = policy_getter();
 
     // known operators for integers are stable, even when using a non-deterministic reduction order
     if constexpr (StableReductionOrder
                   && (!::cuda::std::is_integral_v<AccumT> || !is_cuda_binary_operator<ReductionOpT>) )
     {
       CUB_DETAIL_STATIC_ISH_ASSERT(
-        active_policy.reduce.block_algorithm != BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-        "A run-to-run deterministic reduction must not use a non-deterministic block_algorithm");
+        active_policy.multi_tile.reduce_algorithm != BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+        "A run-to-run deterministic reduction must not use a non-deterministic reduce_algorithm");
       CUB_DETAIL_STATIC_ISH_ASSERT(
-        active_policy.single_tile.block_algorithm != BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-        "A run-to-run deterministic reduction must not use a non-deterministic block_algorithm");
+        active_policy.single_tile.reduce_algorithm != BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+        "A run-to-run deterministic reduction must not use a non-deterministic reduce_algorithm");
     }
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)

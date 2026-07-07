@@ -4,6 +4,9 @@
 // TODO(bgruber): Drop this entire test in CCCL 4.0 when we drop all CUB dispatchers
 // This file tests calling cub::DispatchReduce directly
 
+// disable deprecation warnings for DispatchReduce and AgentReducePolicy
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_reduce.cuh>

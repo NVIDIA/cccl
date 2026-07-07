@@ -1118,18 +1118,18 @@ struct tiny_onesweep_policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::RadixSortPolicy
   {
-    using default_selector_t                = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
-    auto policy                             = default_selector_t{}(cc);
-    policy.algorithm                        = cub::RadixSortAlgorithm::onesweep;
-    policy.onesweep.threads_per_block       = BlockThreads;
-    policy.onesweep.items_per_thread        = 1;
-    policy.single_tile.threads_per_block    = BlockThreads;
-    policy.single_tile.items_per_thread     = 1;
-    policy.downsweep.threads_per_block      = BlockThreads;
-    policy.downsweep.items_per_thread       = 1;
-    policy.alt_downsweep.threads_per_block  = BlockThreads;
-    policy.alt_downsweep.items_per_thread   = 1;
-    policy.histogram.num_private_partitions = 1;
+    using default_selector_t               = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
+    auto policy                            = default_selector_t{}(cc);
+    policy.algorithm                       = cub::RadixSortAlgorithm::onesweep;
+    policy.onesweep.threads_per_block      = BlockThreads;
+    policy.onesweep.items_per_thread       = 1;
+    policy.single_tile.threads_per_block   = BlockThreads;
+    policy.single_tile.items_per_thread    = 1;
+    policy.downsweep.threads_per_block     = BlockThreads;
+    policy.downsweep.items_per_thread      = 1;
+    policy.alt_downsweep.threads_per_block = BlockThreads;
+    policy.alt_downsweep.items_per_thread  = 1;
+    policy.histogram.private_partitions    = 1;
     return policy;
   }
 };
@@ -1575,15 +1575,15 @@ C2H_TEST("RadixSortPolicy", "[radix_sort][device]")
   // designated init
   constexpr auto p2 = cub::RadixSortPolicy{
     .algorithm     = cub::RadixSortAlgorithm::onesweep,
-    .histogram     = {.threads_per_block = 256, .items_per_thread = 8, .num_private_partitions = 1, .radix_bits = 8},
+    .histogram     = {.threads_per_block = 256, .items_per_thread = 8, .private_partitions = 1, .radix_bits = 8},
     .exclusive_sum = {.threads_per_block = 256, .radix_bits = 8},
-    .onesweep      = {.threads_per_block           = 256,
-                      .items_per_thread            = 21,
-                      .store_algorithm             = cub::RADIX_SORT_STORE_DIRECT,
-                      .rank_algorithm              = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-                      .scan_algorithm              = cub::BLOCK_SCAN_WARP_SCANS,
-                      .rank_num_private_partitions = 1,
-                      .radix_bits                  = 8},
+    .onesweep      = {.threads_per_block       = 256,
+                      .items_per_thread        = 21,
+                      .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
+                      .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+                      .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+                      .rank_private_partitions = 1,
+                      .radix_bits              = 8},
     .scan          = {.algorithm = cub::ScanAlgorithm::lookback,
                       .lookback  = {.threads_per_block = 512,
                                     .items_per_thread  = 23,

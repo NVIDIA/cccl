@@ -157,7 +157,7 @@ template <typename PolicySelector,
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)) void DeviceReduceKernel(
+__launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_block)) void DeviceReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   _CCCL_GRID_CONSTANT const NormalizedNumItemsT normalized_num_items,
@@ -166,8 +166,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   [[maybe_unused]] _CCCL_GRID_CONSTANT const InitValueT init,
   TransformOpT transform_op)
 {
-  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
-  const OffsetT num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
+  static constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
+  const OffsetT num_items                  = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
 
   // Early return from surplus blocks for deferred num_items
   if constexpr (!::cuda::std::is_integral_v<NormalizedNumItemsT>)
@@ -211,14 +211,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
   }
 
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
-  using agent_policy_t =
-    AgentReducePolicy<0,
-                      0,
-                      AccumT,
-                      policy.vec_size,
-                      policy.block_algorithm,
-                      policy.load_modifier,
-                      NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
+  using agent_policy_t = detail::agent_reduce_policy<
+    0,
+    0,
+    AccumT,
+    policy.vec_size,
+    policy.reduce_algorithm,
+    policy.load_modifier,
+    NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
 
   // Thread block type for reducing input tiles
   using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
@@ -317,16 +317,16 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        _CCCL_GRID_CONSTANT const InitValueT init,
                                        TransformOpT transform_op)
 {
-  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
+  static constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
-  using agent_policy_t =
-    AgentReducePolicy<0,
-                      0,
-                      AccumT,
-                      policy.vec_size,
-                      policy.block_algorithm,
-                      policy.load_modifier,
-                      NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
+  using agent_policy_t = detail::agent_reduce_policy<
+    0,
+    0,
+    AccumT,
+    policy.vec_size,
+    policy.reduce_algorithm,
+    policy.load_modifier,
+    NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
 
   // Thread block type for reducing input tiles
   using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
@@ -393,17 +393,17 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   even_share.DispatchInit(actual_num_items, first_pass_grid_size, first_pass_tile_size);
   const int num_items = even_share.grid_size;
 
-  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
+  static constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
 
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
-  using agent_policy_t =
-    AgentReducePolicy<0,
-                      0,
-                      AccumT,
-                      policy.vec_size,
-                      policy.block_algorithm,
-                      policy.load_modifier,
-                      NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
+  using agent_policy_t = detail::agent_reduce_policy<
+    0,
+    0,
+    AccumT,
+    policy.vec_size,
+    policy.reduce_algorithm,
+    policy.load_modifier,
+    NoScaling<policy.threads_per_block, policy.items_per_thread, AccumT>>;
 
   // Thread block type for reducing input tiles
   using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT, TransformOpT>;

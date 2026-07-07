@@ -57,10 +57,9 @@ struct select_less_than_device_value_t
 
 struct fixed_reduce_policy_selector_t
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::reduce::reduce_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
-    const auto policy =
-      cub::detail::reduce::agent_reduce_policy{32, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    const auto policy = cub::ReducePassPolicy{32, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy};
   }
 };
@@ -627,8 +626,9 @@ C2H_TEST("captured DeviceSelect::If to DeviceReduce::Reduce pipeline replays wit
   constexpr count_t capacity = 100'000;
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto policy       = cub::detail::reduce::policy_selector_from_types<value_t, offset_t, cuda::std::plus<>>{}(cc);
-  const count_t tile_size = static_cast<count_t>(policy.reduce.threads_per_block * policy.reduce.items_per_thread);
+  const auto policy = cub::detail::reduce::policy_selector_from_types<value_t, offset_t, cuda::std::plus<>>{}(cc);
+  const count_t tile_size =
+    static_cast<count_t>(policy.multi_tile.threads_per_block * policy.multi_tile.items_per_thread);
 
   const auto d_input = cuda::counting_iterator<value_t>{value_t{0}};
   c2h::device_vector<value_t> selected_items(capacity, value_t{capacity + 1});

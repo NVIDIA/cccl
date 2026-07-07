@@ -32,14 +32,14 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
-#include "util/aot_serialize.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include "util/types.h"
-#include <cccl/c/aot.h>
 #include <cccl/c/reduce.h>
+#include <cccl/c/serialization.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
@@ -694,9 +694,9 @@ try
   *out_buf  = nullptr;
   *out_size = 0;
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_REDUCE, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_REDUCE, build_ptr->payload_kind, build_ptr->cc);
   w.write_pod<uint64_t>(build_ptr->accumulator_size);
   w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->determinism));
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
@@ -723,15 +723,15 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_REDUCE);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_REDUCE);
 
   const uint64_t accum_size = r.read_pod<uint64_t>();
   const auto determinism_v  = r.read_pod<uint32_t>();
   if (determinism_v > static_cast<uint32_t>(CCCL_GPU_TO_GPU))
   {
-    throw std::runtime_error(std::format("aot blob: invalid determinism ({})", determinism_v));
+    throw std::runtime_error(std::format("serialization blob: invalid determinism ({})", determinism_v));
   }
   const auto determinism = static_cast<cccl_determinism_t>(determinism_v);
 
@@ -744,7 +744,7 @@ try
   }
   if (payload_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   constexpr size_t policy_size = sizeof(cub::detail::reduce::policy_selector);
