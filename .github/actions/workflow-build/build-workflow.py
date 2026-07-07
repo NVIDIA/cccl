@@ -476,8 +476,8 @@ def generate_dispatch_job_runner(matrix_job, job_type, job_info):
 
     if not job_info["gpu"]:
         if matrix_job.get("use_sccache_dist", False):
-            # Use runners with more memory for build cluster jobs
-            return f"{runner_os}-{cpu}-cpu8m"
+            # Use smaller runners for build cluster jobs
+            return f"{runner_os}-{cpu}-cpu8"
         else:
             return f"{runner_os}-{cpu}-cpu16"
 
