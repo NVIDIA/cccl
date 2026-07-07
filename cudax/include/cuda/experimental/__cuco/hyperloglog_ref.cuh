@@ -228,7 +228,6 @@ public:
   //!
   //! @throw If sketch_bytes() != __other.sketch_bytes()
   //!
-  // Review: For host-side merges, consider validating `__other` is on the same device.
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
   //! @param __stream CUDA stream this operation is executed in

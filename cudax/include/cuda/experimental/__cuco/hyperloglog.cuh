@@ -26,6 +26,7 @@
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/in_range.h>
+#include <cuda/__utility/no_init.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__cstddef/types.h>
@@ -101,7 +102,8 @@ public:
   // TODO enable CTAD
   //! @brief Constructs a `hyperloglog` host object.
   //!
-  //! @note This function synchronizes the given stream.
+  //! @note Construction is stream-ordered: the initial clear is enqueued on `__stream` without
+  //! synchronizing it.
   //!
   //! @param __stream CUDA stream used to initialize the object
   //! @param __memory_resource A memory resource used for allocating device storage
@@ -123,7 +125,8 @@ public:
 
   //! @brief Constructs a `hyperloglog` host object.
   //!
-  //! @note This function synchronizes the given stream.
+  //! @note Construction is stream-ordered: the initial clear is enqueued on `__stream` without
+  //! synchronizing it.
   //!
   //! @param __stream CUDA stream used to initialize the object
   //! @param __memory_resource A memory resource used for allocating device storage
@@ -142,7 +145,8 @@ public:
 
   //! @brief Constructs a `hyperloglog` host object.
   //!
-  //! @note This function synchronizes the given stream.
+  //! @note Construction is stream-ordered: the initial clear is enqueued on `__stream` without
+  //! synchronizing it.
   //!
   //! @param __stream CUDA stream used to initialize the object
   //! @param __memory_resource A memory resource used for allocating device storage
