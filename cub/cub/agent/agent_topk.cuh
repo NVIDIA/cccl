@@ -360,13 +360,14 @@ struct AgentTopK
   {
     key_in_t thread_data[items_per_thread];
 
-    const OffsetT items_per_pass   = tile_items * gridDim.x;
+    const OffsetT items_per_pass =
+      static_cast<OffsetT>(tile_items * gridDim.x); // NOLINT(bugprone-misplaced-widening-cast)
     const OffsetT total_num_blocks = ::cuda::ceil_div(num_items, tile_items);
 
     const OffsetT num_remaining_elements = num_items % tile_items;
     const OffsetT last_block_id          = (total_num_blocks - 1) % gridDim.x;
 
-    OffsetT tile_base = blockIdx.x * tile_items;
+    OffsetT tile_base = static_cast<OffsetT>(blockIdx.x * tile_items); // NOLINT(bugprone-misplaced-widening-cast)
     OffsetT offset    = threadIdx.x * items_per_thread + tile_base;
 
     for (int i_block = static_cast<int>(blockIdx.x); i_block < total_num_blocks - 1;
