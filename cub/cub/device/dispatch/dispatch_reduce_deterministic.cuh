@@ -205,7 +205,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   const int num_items_per_chunk = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
 
   // A deferred problem size cannot be read on the host, so these defaults stand: the kernel consumes the whole
-  // problem in a single launch with the worst-case grid, and surplus blocks write empty accumulators.
+  // problem in a single launch with the worst-case grid, whose surplus blocks exit early.
   int num_chunks           = 1;
   int chunk_grid_size      = max_blocks;
   int partial_chunk_size   = 0;

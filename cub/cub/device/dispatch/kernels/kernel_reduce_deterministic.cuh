@@ -22,7 +22,9 @@
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -48,6 +50,18 @@ struct deterministic_num_items<NormalizedNumItemsT, false>
 
 template <typename NormalizedNumItemsT>
 using deterministic_num_items_t = typename deterministic_num_items<NormalizedNumItemsT>::type;
+
+//! Number of first-pass blocks that produce a partial for a deferred problem size: the worst-case launch is trimmed
+//! to the grid the host would have computed had it been able to read the problem size. Must be used consistently by
+//! both reduction passes.
+template <typename PolicySelector, typename NumItemsT>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size)
+{
+  constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
+  constexpr int tile_size           = policy.threads_per_block * policy.items_per_thread;
+  const NumItemsT num_tiles         = ::cuda::ceil_div(num_items, static_cast<NumItemsT>(tile_size));
+  return static_cast<int>(::cuda::std::min(static_cast<NumItemsT>(launched_grid_size), num_tiles));
+}
 
 /**
  * @brief Deterministically Reduce region kernel entry point (multi-block). Computes privatized
@@ -107,6 +121,27 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
 
   const num_items_t num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<num_items_t>(normalized_num_items);
 
+  // The worst-case grid of a deferred problem size is trimmed to the blocks that receive at least one tile. Both the
+  // early exit and the loop stride must use the trimmed grid so that the remaining blocks cover the whole input.
+  const int active_grid_size = [&] {
+    if constexpr (::cuda::std::is_integral_v<NormalizedNumItemsT>)
+    {
+      return reduce_grid_size;
+    }
+    else
+    {
+      return deferred_reduce_grid_size<PolicySelector>(num_items, reduce_grid_size);
+    }
+  }();
+
+  if constexpr (!::cuda::std::is_integral_v<NormalizedNumItemsT>)
+  {
+    if (static_cast<int>(blockIdx.x) >= active_grid_size)
+    {
+      return;
+    }
+  }
+
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.reduce_algorithm>;
 
   // Shared memory storage
@@ -129,7 +164,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   AccumT thread_aggregate{};
   int count = 0;
 
-  int n_threads = reduce_grid_size * threads_per_block;
+  int n_threads = active_grid_size * threads_per_block;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (index_t i = tid; i < static_cast<index_t>(num_items); i += (n_threads * items_per_thread))
@@ -288,10 +323,9 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   }
 }
 
-//! Single-tile entry point that consumes all first-pass partials of a reduction with a deferred problem size. The
-//! first pass launches a worst-case grid whose surplus blocks write empty accumulators, which are exact identities
-//! under binned accumulation, so every partial can be consumed. The deferred problem size is read only to detect an
-//! empty problem, which must store `init` unmodified.
+//! Single-tile entry point for a reduction with a deferred problem size. Derives on device how many blocks of the
+//! worst-case first-pass grid produced a partial (the surplus blocks exited without writing one) and consumes exactly
+//! those partials. An empty problem stores `init` unmodified.
 template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -313,7 +347,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   using actual_num_items_t = deterministic_num_items_t<NormalizedNumItemsT>;
   const actual_num_items_t actual_num_items =
     CUB_NS_QUALIFIER::detail::resolve_parameter<actual_num_items_t>(normalized_num_items);
-  const int num_items = first_pass_grid_size;
+  const int num_items = deferred_reduce_grid_size<PolicySelector>(actual_num_items, first_pass_grid_size);
 
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
   constexpr int threads_per_block   = policy.threads_per_block;
