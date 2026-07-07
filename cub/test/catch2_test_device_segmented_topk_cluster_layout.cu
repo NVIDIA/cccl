@@ -4,18 +4,13 @@
 #include <cub/agent/agent_batched_topk_cluster.cuh> // smem_block_tile_layout
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // batched_topk::cluster_policy_selector
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/cstdint>
 
 #include <c2h/catch2_test_helper.h>
 
 namespace
 {
-template <typename SizeT>
-[[nodiscard]] constexpr SizeT host_ceil_div(SizeT numerator, SizeT denominator)
-{
-  return (numerator + denominator - 1) / denominator;
-}
-
 template <typename KeyT, int ChunkBytes, int LoadAlignBytes>
 void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
 {
@@ -42,8 +37,8 @@ void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
   const auto max_rank_chunks = [](cuda::std::int64_t segment_size, int head_items, int blocks) {
     using size_t            = cuda::std::int64_t;
     const size_t tail_items = segment_size - head_items;
-    const size_t chunks     = host_ceil_div(tail_items, size_t{layout_t::chunk_items});
-    return host_ceil_div(chunks, static_cast<size_t>(blocks));
+    const size_t chunks     = ::cuda::ceil_div(tail_items, size_t{layout_t::chunk_items});
+    return ::cuda::ceil_div(chunks, static_cast<size_t>(blocks));
   };
 
   const int heads[] = {0, 1, layout_t::chunk_items / 2, layout_t::chunk_items - 1};

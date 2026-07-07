@@ -183,7 +183,7 @@ inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred_sequence<_Arg, 
 {
   const auto blocks = chunks / static_cast<::cuda::std::uint64_t>(min_chunks_per_block);
   return static_cast<unsigned int>(
-    (::cuda::std::clamp) (blocks, ::cuda::std::uint64_t{1}, static_cast<::cuda::std::uint64_t>(cluster_blocks_cap)));
+    ::cuda::std::clamp(blocks, ::cuda::std::uint64_t{1}, static_cast<::cuda::std::uint64_t>(cluster_blocks_cap)));
 }
 
 // Cluster top-k agent
@@ -2343,7 +2343,7 @@ private:
       {
         const offset_t excess      = layout.my_chunks - full_slots;
         const offset_t want_stream = (::cuda::std::min) (static_cast<offset_t>(PipelineStages), excess);
-        stream_slots               = (::cuda::std::max) (offset_t{1}, (::cuda::std::min) (want_stream, full_slots));
+        stream_slots               = ::cuda::std::clamp(want_stream, offset_t{1}, full_slots);
       }
     }
     layout.resident_slots_cap = full_slots - stream_slots;
