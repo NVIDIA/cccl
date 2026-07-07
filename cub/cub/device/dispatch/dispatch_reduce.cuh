@@ -689,8 +689,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   // Init regular kernel configuration
-  const auto tile_size = active_policy.multi_tile.threads_per_block * active_policy.multi_tile.items_per_thread;
-  int sm_occupancy     = 0;
+  int sm_occupancy = 0;
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
         sm_occupancy, kernel_source.ReductionKernel(), active_policy.multi_tile.threads_per_block)))
   {
@@ -738,6 +737,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   GridEvenShare<offset_t> even_share;
   if constexpr (!::cuda::args::__traits<OffsetT>::is_deferred)
   {
+    const auto tile_size = active_policy.multi_tile.threads_per_block * active_policy.multi_tile.items_per_thread;
     even_share.DispatchInit(normalized_num_items, max_blocks, tile_size);
   }
 
@@ -827,7 +827,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
                 d_out,
                 normalized_num_items,
                 reduce_grid_size,
-                tile_size,
                 reduction_op,
                 init,
                 ::cuda::std::identity{});

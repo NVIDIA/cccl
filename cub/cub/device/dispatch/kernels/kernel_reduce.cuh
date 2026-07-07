@@ -383,12 +383,13 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                OutputIteratorT d_out,
                                                _CCCL_GRID_CONSTANT const NormalizedNumItemsT normalized_num_items,
                                                _CCCL_GRID_CONSTANT const int first_pass_grid_size,
-                                               _CCCL_GRID_CONSTANT const int first_pass_tile_size,
                                                ReductionOpT reduction_op,
                                                _CCCL_GRID_CONSTANT const InitValueT init,
                                                TransformOpT transform_op)
 {
   const OffsetT actual_num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
+  static constexpr ReducePassPolicy first_pass_policy = current_policy<PolicySelector>().multi_tile;
+  constexpr int first_pass_tile_size = first_pass_policy.threads_per_block * first_pass_policy.items_per_thread;
   GridEvenShare<OffsetT> even_share;
   even_share.DispatchInit(actual_num_items, first_pass_grid_size, first_pass_tile_size);
   const int num_items = even_share.grid_size;
