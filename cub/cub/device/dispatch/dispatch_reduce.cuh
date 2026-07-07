@@ -938,6 +938,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
+  // TODO: Remove this workaround once nvcc versions older than 12.4 are no longer supported.
+  // Older nvcc versions eagerly instantiate discarded statements in generic lambdas, so perform this conversion here.
+  offset_t offset_num_items{};
+  if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
+  {
+    offset_num_items = static_cast<offset_t>(num_items);
+  }
+
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     CUB_DETAIL_CONSTEXPR_ISH const ReducePolicy active_policy = policy_getter();
 
@@ -966,7 +974,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
     {
-      const offset_t offset_num_items = static_cast<offset_t>(num_items);
       const bool single_tile_problem =
         offset_num_items <= static_cast<offset_t>(
           active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
