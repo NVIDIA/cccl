@@ -144,7 +144,9 @@ struct TransformAsyncCopyPolicy
   int max_items_per_thread = 32; //!< Maximum number of items per thread (inclusive)
   // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
   int unroll_factor = 1; //!< The unroll factor for the transformation loop in the kernel. The value 0 retains the
-                         //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling.
+                         //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling. This
+                         //!< parameter has no effect when store vectorization is enabled (see @p store_vec_size) and
+                         //!< eligible at runtime (buffer alignments are sufficient).
   // Setting store_vec_size smaller narrows the store but also reduces the number of fully-unrolled lambda calls per
   // store, which bounds register pressure for heavy functors (their stores aren't the bottleneck anyway).
   int store_vec_size = 0; //!< Output elements per vectorized store; only used when algorithm == ublkcp. 0 = auto
