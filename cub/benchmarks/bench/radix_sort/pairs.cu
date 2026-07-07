@@ -69,18 +69,7 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
 #ifdef TUNE_KeyT
 using key_types = nvbench::type_list<TUNE_KeyT>;
 #else // !defined(TUNE_KeyT)
-// __half and __nv_bfloat16 are appended for full (non-tuning) runs; CUB radix sort supports them (see #9587).
-using key_types =
-  push_back_t<integral_types
-#  if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
-              ,
-              __half
-#  endif
-#  if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
-              ,
-              __nv_bfloat16
-#  endif
-              >;
+using key_types = integral_types;
 #endif // TUNE_KeyT
 
 #ifdef TUNE_ValueT
