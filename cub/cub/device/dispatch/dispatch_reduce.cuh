@@ -944,6 +944,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   {
     offset_num_items = static_cast<offset_t>(num_items);
   }
+  (void) offset_num_items;
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     CUB_DETAIL_CONSTEXPR_ISH const ReducePolicy active_policy = policy_getter();
