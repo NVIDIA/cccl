@@ -235,7 +235,7 @@ public:
         __inner_.__iterators());
     }
 
-    _CCCL_TEMPLATE(class _Const2 = _Const)
+    _CCCL_TEMPLATE(bool _Const2 = _Const)
     _CCCL_REQUIRES(equality_comparable<__ziperator<_Const2>>)
     [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __iterator& __x, const __iterator& __y)
     {
@@ -243,7 +243,7 @@ public:
     }
 
 #if _CCCL_STD_VER <= 2017
-    _CCCL_TEMPLATE(class _Const2 = _Const)
+    _CCCL_TEMPLATE(bool _Const2 = _Const)
     _CCCL_REQUIRES(equality_comparable<__ziperator<_Const2>>)
     [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __iterator& __x, const __iterator& __y)
     {
@@ -281,7 +281,7 @@ public:
       return __iterator{*__i.__parent_, __i.__inner_ - __n};
     }
 
-    _CCCL_TEMPLATE(class _Const2 = _Const)
+    _CCCL_TEMPLATE(bool _Const2 = _Const)
     _CCCL_REQUIRES(sized_sentinel_for<__ziperator<_Const2>, __ziperator<_Const2>>)
     _CCCL_API friend constexpr difference_type operator-(const __iterator& __x, const __iterator& __y)
     {
