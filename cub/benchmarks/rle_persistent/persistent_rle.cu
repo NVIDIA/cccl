@@ -1,78 +1,209 @@
-// Standalone persistent-block RLE-encode kernel (int keys) for Blackwell (B200).
-// Impl only -- see persistent_rle_bench.cu for the official-nvbench comparison vs cub::DeviceRunLengthEncode.
-// Types are hard-coded to int for now (keys/counts/offsets all int32).
-#pragma once
-
 #include <cuda/atomic>
 #include <cuda/ptx>
+#include <cuda/std/complex>
 #include <cuda/std/cstdint>
 
-#include <algorithm> // std::min (host launcher)
+#include <algorithm>
 
 #include <cuda_runtime_api.h>
 
+namespace rle_impl
+{
 namespace ptx = cuda::ptx;
 using u64     = cuda::std::uint64_t;
 
-constexpr int kIPT           = 32; // FP32s/thread; tile = kNumCompWarps*kIPT*32 = 8192
-constexpr int kNumCompWarps  = 8;
-constexpr int kNumStoreWarps = 16; // store warps; must divide or be a multiple of kNumCompWarps
-constexpr int kStages        = 4; // pipeline depth
-constexpr int kPollMlp       = 4; // how many loads each poll lane keeps in flight
+template <class KeyT, int kIptOverride = 0>
+struct winner_config
+{
+  // IPT should br 32 (32 chunks x 32 lanes)
+  static constexpr int kIPT =
+    (kIptOverride != 0) ? kIptOverride : ((sizeof(KeyT) >= 16) ? 8 : (sizeof(KeyT) == 8 ? 16 : 32));
+  static constexpr int kNumCompWarps = 8;
+  static constexpr int kNumStoreWarps = 8; // store warps; must divide or be a multiple of kNumCompWarps
+  static constexpr int kStages        = 5; // pipeline depth
+  // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
+  // so it can be SHALLOWER than the keys ring and this buys room for more kStages
+  static constexpr int kPosBufStages = 3;
+  static_assert(kPosBufStages >= 2 && kPosBufStages <= kStages, "kPosBufStages should be 2 - kStages");
+  static constexpr int kPollMlp = 4; // how many loads each poll lane keeps in flight
+  // when should compute warps stage?
+  static constexpr int kHeadPosStagingThreshold = 64;
+  // when should be pre calculate in registers?
+  static constexpr int kRegBufMaxRuns      = (sizeof(KeyT) <= 4) ? 256 : (sizeof(KeyT) == 8 ? 128 : 64);
+  static constexpr int kRegBufMinThreshold = 8;
 
-// This is important for position staging on dense cases (16 way bank conflicts)
+  static constexpr int kWarpTileSize = 32 * kIPT;
+  static constexpr int kTileSize     = kNumCompWarps * kWarpTileSize;
+  static_assert(kTileSize <= 0xffff, "per-tile run_count/open_len must fit the 16-bit state-word fields");
+  static constexpr int kNumWarps          = 1 /*load*/ + kNumCompWarps + 1 /*poll*/ + kNumStoreWarps + 1 /*bookkeeper*/;
+  static constexpr int kNumThreads        = kNumWarps * 32;
+  static constexpr int poll_warp_id       = 1 + kNumCompWarps;
+  static constexpr int store_warp_id      = poll_warp_id + 1;
+  static constexpr int bookkeeper_warp_id = store_warp_id + kNumStoreWarps;
+  // for each input tile, we need to store the keys and in-tile positions
+  // for in tile position we can just do unsigned int16 since tile size is never bigger than 2^16
+  // each key slot carries kSlotPad extra leading elements
+  // we overcopy one 16B chunk to the left, so that we get the last tiles boundary element
+  static constexpr int kSlotPad    = 16 / sizeof(KeyT); // elements; 16 bytes = cp_async_bulk quantum
+  static constexpr int kSlotStride = kTileSize + kSlotPad;
+  static constexpr size_t kDynSmem =
+    (size_t) kStages * kSlotStride * sizeof(KeyT) + (size_t) kPosBufStages * kTileSize * sizeof(short);
+};
+
+// This is important for position staging on dense cases (16 way bank conflicts).
 __device__ __forceinline__ int swizzle_xor_stride32(int x)
 {
   return x ^ (x >> 5);
 }
 
 // CLC = 1 => use shiny new blackwell feature (UGETNEXTWORKID)
-// CLC = 0 => use atomics for work stealing
-// no perf difference observed on blackwell
-#ifndef USE_CLC
-#  define USE_CLC 1
-#endif
+// CLC = 0 => use atomics for work stealing. no perf difference observed on blackwell
+// The CLC knob removed since I want to focus on blackwell perf first
+// i.e. we fry one fish at a time :)
 
-constexpr int kWarpTileSize  = 32 * kIPT;
-constexpr int kTileSize      = kNumCompWarps * kWarpTileSize;
-constexpr int kNumWarps      = 1 /*load*/ + kNumCompWarps + 1 /*poll*/ + kNumStoreWarps;
-constexpr int kNumThreads    = kNumWarps * 32;
 constexpr unsigned kFullMask = 0xffffffffu;
-constexpr int poll_warp_id   = 1 + kNumCompWarps;
-constexpr int store_warp_id  = poll_warp_id + 1;
-// for each input tile, we need to store the keys (I32) and in tile position
-// for in tile position we can just do U16 since tile size is never bigger than 2^16.
-constexpr size_t kDynSmem = (size_t) kStages * kTileSize * (sizeof(int) + sizeof(short));
 
-// tile_partial_states is one 64-bit word [open_len:32][run_count:31][valid:1].
-// an aligned 64-bit access is already non-tearing, but this doesn't hurt and has clear semantics
-__device__ __forceinline__ void publish_state(u64* tile_state_arr, int tile_idx, int run_count, int open_len)
+// tile_partial_states: one word per tile
+// Layout: u64 [launch_gen:32][open_len:16][run_count:16]
+// launch_gen is needed to reuse allocations per launch
+// (this is needed to eliminate overhead of allocating the buffer. CRITICAL for perf!)
+// an aligned 64-bit access is already non-tearing, but atomic_ref doesn't hurt and has clear semantics
+// TODO: make this a struct!!!!
+using TilePartialStateT = u64;
+
+__device__ __forceinline__ unsigned extract_launch_gen_from_tile_partial_state(TilePartialStateT w)
 {
-  u64 w = ((u64) (unsigned) open_len << 32) | ((u64) (unsigned) run_count << 1) | 1ull;
-  cuda::atomic_ref<u64, cuda::thread_scope_device> a(tile_state_arr[tile_idx]);
+  return (unsigned) (w >> 32);
+}
+
+__device__ __forceinline__ int extract_run_count_from_tile_partial_state(TilePartialStateT w)
+{
+  return (int) (w & 0xffffu);
+}
+
+__device__ __forceinline__ int extract_open_len_from_tile_partial_state(TilePartialStateT w)
+{
+  return (int) ((w >> 16) & 0xffffu);
+}
+
+__device__ __forceinline__ void
+publish_state(TilePartialStateT* tile_state_arr, int tile_idx, unsigned launch_gen, int run_count, int open_len)
+{
+  TilePartialStateT w = ((u64) launch_gen << 32) | ((u64) (unsigned) open_len << 16) | (u64) (unsigned) run_count;
+  cuda::atomic_ref<TilePartialStateT, cuda::thread_scope_device> a(tile_state_arr[tile_idx]);
   a.store(w, cuda::memory_order_relaxed);
 }
 
-// non-blocking single load of the raw packed word (valid bit may be 0)
-__device__ __forceinline__ u64 load_state(u64* tile_state_arr, int tile_idx)
+// return the state (even if not yet publish for this launch, caller checks it)
+// we do not want to spin here
+__device__ __forceinline__ TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
 {
-  cuda::atomic_ref<u64, cuda::thread_scope_device> a(tile_state_arr[tile_idx]);
+  cuda::atomic_ref<TilePartialStateT, cuda::thread_scope_device> a(tile_state_arr[tile_idx]);
   return a.load(cuda::memory_order_relaxed);
 }
 
-// Computes the exclusive prefix of the tile_id, i.e. the aggregate over tiles [0, tile_id)
-// we do this by keeping the prefixes of the last generation and poll the partial states in
-// [last_seen_tile_id, tile_id) and fold it with the aggregate we held
+// what is going to be the type of the prefix (run_count, open_len)?
+// TODO(templates pass): replace ulonglong2 with a named alignas(16) struct { run_count, open_len }
+// -- keeps the single STS.128/LDS.128 access, kills the meaningless .x/.y members, and the
+// pack/unpack helpers collapse into the struct (same treatment as TilePartialStateT).
+template <class OffT>
+using PrefixT = cuda::std::conditional_t<(sizeof(OffT) > 4), ulonglong2, u64>;
+
+// how do we pack them? if P is 32 bit, we compact them into 1 word. Otherwise, 2 words!
+template <class OffT>
+__device__ __forceinline__ PrefixT<OffT> pack_prefix(OffT run_count, OffT open_len)
+{
+  if constexpr (sizeof(OffT) > 4)
+  {
+    return PrefixT<OffT>{(u64) run_count, (u64) open_len};
+  }
+  else
+  {
+    return ((u64) (unsigned) open_len << 32) | (unsigned) run_count;
+  }
+}
+
+template <class OffT, class P>
+__device__ __forceinline__ OffT prefix_run_count(P p)
+{
+  if constexpr (sizeof(OffT) > 4)
+  {
+    return (OffT) p.x;
+  }
+  else
+  {
+    return (OffT) (unsigned) (p & 0xffffffffull);
+  }
+}
+template <class OffT, class P>
+__device__ __forceinline__ OffT prefix_open_len(P p)
+{
+  if constexpr (sizeof(OffT) > 4)
+  {
+    return (OffT) p.y;
+  }
+  else
+  {
+    return (OffT) (unsigned) (p >> 32);
+  }
+}
+
+// position of the n-th set bit of flag_mask
+// requires popc(flag_mask) > rank.
+// __fns(flag_mask, 0, rank+1) computes the same thing but has NO hardware op on sm_100a and is slower
+__device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
+{
+  // each step: if the wanted bit is not among the low half's set bits, skip that half entirely
+  // this is manually unrolled to reduce the count of generated SASS instructions
+  int bit_position         = 0;
+  int set_bits_in_low_half = __popc(flag_mask & 0xffffu);
+  if (rank >= set_bits_in_low_half)
+  {
+    rank -= set_bits_in_low_half;
+    bit_position += 16;
+    flag_mask >>= 16;
+  }
+  set_bits_in_low_half = __popc(flag_mask & 0xffu);
+  if (rank >= set_bits_in_low_half)
+  {
+    rank -= set_bits_in_low_half;
+    bit_position += 8;
+    flag_mask >>= 8;
+  }
+  set_bits_in_low_half = __popc(flag_mask & 0xfu);
+  if (rank >= set_bits_in_low_half)
+  {
+    rank -= set_bits_in_low_half;
+    bit_position += 4;
+    flag_mask >>= 4;
+  }
+  set_bits_in_low_half = __popc(flag_mask & 0x3u);
+  if (rank >= set_bits_in_low_half)
+  {
+    rank -= set_bits_in_low_half;
+    bit_position += 2;
+    flag_mask >>= 2;
+  }
+  if (rank >= (int) (flag_mask & 1u))
+  {
+    bit_position += 1;
+  }
+  return bit_position;
+}
+
+template <class Config, class OffT>
 __device__ __forceinline__ void poll_and_fold(
-  u64* tile_partial_states,
+  TilePartialStateT* tile_partial_states,
+  unsigned launch_gen,
   int tile_id,
   int& last_seen_tile_id,
-  int& last_seen_prefix_run_count,
-  int& last_seen_prefix_open_length,
+  OffT& last_seen_prefix_run_count,
+  OffT& last_seen_prefix_open_length,
   int lane_id,
-  int& curr_prefix_run_count,
-  int& curr_prefix_open_length)
+  OffT& curr_prefix_run_count,
+  OffT& curr_prefix_open_length)
 {
+  constexpr int kPollMlp = Config::kPollMlp;
   while (last_seen_tile_id < tile_id)
   {
     const int remain = tile_id - last_seen_tile_id;
@@ -81,11 +212,11 @@ __device__ __forceinline__ void poll_and_fold(
     // lane l owns the contiguous tiles
     // [last_seen_tile_id + l*kPollMlp, last_seen_tile_id + l*kPollMlp + kPollMlp)
     // clamped to `chunk`
-    const int lane_base = last_seen_tile_id + lane_id * kPollMlp;
-    int lane_tile_count = chunk - lane_id * kPollMlp;
-    lane_tile_count     = lane_tile_count < 0 ? 0 : (lane_tile_count > kPollMlp ? kPollMlp : lane_tile_count);
-    // MLP: issue all kPollMlp loads up front, then spin until this lane's owned tiles are all published.
-    u64 packed_words[kPollMlp];
+    const int lane_first_tile_id = last_seen_tile_id + lane_id * kPollMlp;
+    int lane_tile_count          = chunk - lane_id * kPollMlp;
+    lane_tile_count              = lane_tile_count < 0 ? 0 : (lane_tile_count > kPollMlp ? kPollMlp : lane_tile_count);
+    // issue all kPollMlp loads up front, then spin until this lane's owned tiles are all published (MLP)
+    TilePartialStateT packed_words[kPollMlp] = {}; // must zero initialize
     bool ready;
     do
     {
@@ -93,10 +224,10 @@ __device__ __forceinline__ void poll_and_fold(
 #pragma unroll
       for (int i = 0; i < kPollMlp; ++i)
       {
-        if (i < lane_tile_count)
+        if (i < lane_tile_count && extract_launch_gen_from_tile_partial_state(packed_words[i]) != launch_gen)
         {
-          packed_words[i] = load_state(tile_partial_states, lane_base + i);
-          if (!(packed_words[i] & 1ull))
+          packed_words[i] = load_state(tile_partial_states, lane_first_tile_id + i);
+          if (extract_launch_gen_from_tile_partial_state(packed_words[i]) != launch_gen)
           {
             ready = false;
           }
@@ -110,37 +241,21 @@ __device__ __forceinline__ void poll_and_fold(
     {
       if (i < lane_tile_count)
       {
-        const int tile_run_count   = (int) ((packed_words[i] >> 1) & 0x7fffffffu);
-        const int tile_open_length = (int) (packed_words[i] >> 32);
+        const int tile_run_count   = extract_run_count_from_tile_partial_state(packed_words[i]);
+        const int tile_open_length = extract_open_len_from_tile_partial_state(packed_words[i]);
         lane_run_count             = lane_run_count + tile_run_count;
         lane_open_length           = (tile_run_count > 0) ? tile_open_length : (lane_open_length + tile_open_length);
       }
     }
     // cross lane fold over 32 lane aggregates
-    int scan_run_count = lane_run_count, scan_open_length = lane_open_length, in_segment = (lane_run_count > 0);
-#pragma unroll
-    for (int offset = 1; offset < 32; offset <<= 1)
-    {
-      const int pred_run_count   = __shfl_up_sync(kFullMask, scan_run_count, offset);
-      const int pred_open_length = __shfl_up_sync(kFullMask, scan_open_length, offset);
-      const int pred_in_segment  = __shfl_up_sync(kFullMask, in_segment, offset);
-      if (lane_id >= offset)
-      {
-        scan_run_count += pred_run_count;
-        if (!in_segment)
-        {
-          scan_open_length += pred_open_length;
-        }
-        in_segment |= pred_in_segment;
-      }
-    }
-    // broadcast the truth from lane31
-    const int chunk_run_count   = __shfl_sync(kFullMask, scan_run_count, 31);
-    const int chunk_open_length = __shfl_sync(kFullMask, scan_open_length, 31);
+    const int chunk_run_count      = __reduce_add_sync(kFullMask, lane_run_count);
+    const unsigned lanes_with_runs = __ballot_sync(kFullMask, lane_run_count > 0);
+    const int last_run_lane        = lanes_with_runs ? (31 - __clz(lanes_with_runs)) : 0;
+    const int chunk_open_length    = __reduce_add_sync(kFullMask, (lane_id >= last_run_lane) ? lane_open_length : 0);
     // combine last_seen_prefix with the chunk aggregate
-    const int new_run_count = last_seen_prefix_run_count + chunk_run_count;
-    const int new_open_length =
-      (chunk_run_count > 0) ? chunk_open_length : (last_seen_prefix_open_length + chunk_open_length);
+    const OffT new_run_count = last_seen_prefix_run_count + chunk_run_count;
+    const OffT new_open_length =
+      (chunk_run_count > 0) ? (OffT) chunk_open_length : (last_seen_prefix_open_length + chunk_open_length);
     last_seen_prefix_run_count   = new_run_count;
     last_seen_prefix_open_length = new_open_length;
     last_seen_tile_id += chunk;
@@ -150,52 +265,85 @@ __device__ __forceinline__ void poll_and_fold(
 }
 
 // we aim for 1 block/SM since it is easier to manage resources: do not need to worry about occupancy anymore
-__launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
-  const int* __restrict__ d_keys,
-  int* __restrict__ d_unique,
-  int* __restrict__ d_counts,
-  int* __restrict__ d_num_runs,
-  u64* __restrict__ tile_partial_states,
-#if !USE_CLC
-  int* __restrict__ global_tile_counter, // global work steal counter when there is no CLC
-#endif
-  int num_items,
+template <class KeyT, class LenT, class NumRunsT, class OffT, class Config>
+__launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
+  const KeyT* __restrict__ d_keys,
+  KeyT* __restrict__ d_unique,
+  LenT* __restrict__ d_counts,
+  NumRunsT* __restrict__ d_num_runs,
+  TilePartialStateT* __restrict__ tile_partial_states,
+  const unsigned* __restrict__ d_launch_gen,
+  OffT num_items,
   int num_tiles)
 {
-  // [kStages][kTileSize] int32 ring (input keys)
+  // KeyT envelope: kSlotPad = 16/sizeof(KeyT) needs the size to DIVIDE the 16B TMA quantum (pow2
+  // <= 16), and the key ring is carved from the 16B-aligned dynamic smem base. Exotic key types
+  // (CUB accepts any trivially-copyable size via its untuned generic policy) must be routed to
+  // stock cub::Encode by the dispatch shell instead of instantiating this kernel.
+  static_assert(16 % sizeof(KeyT) == 0, "KeyT size must be a power of two <= 16");
+  static_assert(alignof(KeyT) <= 16, "Alignment <= 16");
+  constexpr int kIPT                     = Config::kIPT;
+  constexpr int kNumCompWarps            = Config::kNumCompWarps;
+  constexpr int kNumStoreWarps           = Config::kNumStoreWarps;
+  constexpr int kStages                  = Config::kStages;
+  constexpr int kPosBufStages            = Config::kPosBufStages;
+  constexpr int kHeadPosStagingThreshold = Config::kHeadPosStagingThreshold;
+  constexpr int kRegBufMinThreshold      = Config::kRegBufMinThreshold;
+  constexpr int kRegBufMaxRuns           = Config::kRegBufMaxRuns;
+  constexpr int kWarpTileSize            = Config::kWarpTileSize;
+  constexpr int kTileSize                = Config::kTileSize;
+  constexpr int kSlotPad                 = Config::kSlotPad;
+  constexpr int kSlotStride              = Config::kSlotStride;
+  constexpr int poll_warp_id             = Config::poll_warp_id;
+  constexpr int store_warp_id            = Config::store_warp_id;
+  constexpr int bookkeeper_warp_id       = Config::bookkeeper_warp_id;
+  using PrefixT                          = rle_impl::PrefixT<OffT>;
+  // [kStages][kTileSize] input keys
   // [kStages][kTileSize] int16 staged head positions
-  extern __shared__ int tile_buf[];
-  short* const staged_pos = (short*) (tile_buf + (size_t) kStages * kTileSize);
-  __shared__ int tile_seq[kStages]; // which global tile each ring slot holds (LOAD gets it with try_cancel)
-  __shared__ int prev_tile_last_key[kStages]; // last key of the previous tile (to compute head flag for elem 0)
+  extern __shared__ char smem_raw[]; // 16B-aligned; KeyT alignment <= 16 for all supported types
+  KeyT* const tile_buf = (KeyT*) smem_raw;
+  short* const pos_buf = (short*) (tile_buf + (size_t) kStages * kSlotStride);
+  __shared__ int tile_id_buf[kStages]; // which global tile each ring slot holds (LOAD gets it with try_cancel)
   __shared__ int warp_run_counts[kStages][kNumCompWarps]; // per compute warp run counts
+  __shared__ unsigned head_flag_buf[kStages][kNumCompWarps * 32]; // staged head-flag words
   __shared__ int warp_first_heads[kStages][kNumCompWarps]; // per compute warp first head idx (-1 if none)
   __shared__ int warp_last_heads[kStages][kNumCompWarps]; // per compute warp last head idx (-1 if none)
-  // POLL -> STORE handoff
-  __shared__ int run_count_prefix[kStages]; // run count prefix
-  __shared__ int open_len_prefix[kStages]; // open run len prefix
 
-  // barriers (per ring slot):
+  // for POLL to pass STORE packed [open_len_prefix:32][run_count_prefix:32]
+  // we need to double buffer this because STORE will arrive empty immediately after reading the data
+  // i.e. when POLL start to write g+kStage's prefix data, STORE and BOOKKEEPER might still have not read
+  // the prefix data. therefore, we MUST to double buffer this to ensure it is safe.
+  // the proof is as follows: with double buffering, the hazard becomes when POLL for g+2*kStage start to write,
+  // could STORE and BOOKKEEPER still wait on the prefix data of g+kStage? This CANNOT happen, because for us to
+  // start loading g+2*kStage, STORE and BOOKKEEPER must have all arrived empty for g+kStage, which means they have
+  // fully processed the data for g.
+  __shared__ PrefixT prefix_packed[kStages][2];
+
+  // STORE --pos_buf_free--> COMPUTE staging (only when kPosBufStages < kStages; if = then it is mapped 1:1)
+  // all store warps arrive after they no longer need the data in the pos slot; compute waits before re-staging into it
+  __shared__ u64 pos_buf_free[kPosBufStages];
   // LOAD --full--> COMPUTE & POLL
   // COMPUTE(all warps) --computed--> COMPUTE warp0
   // warp0 calculates & publishes this tile's aggregate to the global
   // POLL --prefixed--> STORE
   // STORE --empty--> LOAD & POLL
-  __shared__ u64 full[kStages], computed[kStages], prefixed[kStages], empty[kStages];
-  // COMPUTE --staged--> STORE
-  __shared__ u64 staged[kStages];
+  __shared__ u64 full[kStages];
+  __shared__ u64 computed[kStages], prefixed[kStages], empty[kStages];
+  // COMPUTE warp w --staged_warp_tile[w]--> STORE: we arrive per warp tile handoff
+  // i.e. store warps start working to drain a warp-tile as soon as ITS positions are staged
+  // instead of waiting for all 8 compute warps (warp 0 is always slower!!)
+  // The shared metadata store also needs (run counts, first/last heads, tile_id_buf) is covered by `computed`.
+  __shared__ u64 staged_warp_tile[kStages][kNumCompWarps];
 
-#if USE_CLC
   // try_cancel writes a 16-byte response into clc_resp + completes clc_bar's tx.
   __shared__ __align__(16) uint4 clc_resp;
   __shared__ u64 clc_bar;
-#endif
 
-  const int thr_id  = threadIdx.x;
-  const int warp_id = thr_id >> 5;
-  const int lane_id = thr_id & 31;
-  const int blk_id  = blockIdx.x;
-
+  const int thr_id          = threadIdx.x;
+  const int warp_id         = thr_id >> 5;
+  const int lane_id         = thr_id & 31;
+  const int blk_id          = blockIdx.x;
+  const unsigned launch_gen = __ldg(d_launch_gen);
   if (thr_id == 0)
   {
     for (int slot_id = 0; slot_id < kStages; ++slot_id)
@@ -203,13 +351,18 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
       ptx::mbarrier_init(&full[slot_id], 1);
       ptx::mbarrier_init(&computed[slot_id], kNumCompWarps); // every compute warp arrives
       ptx::mbarrier_init(&prefixed[slot_id], 1);
-      ptx::mbarrier_init(&empty[slot_id], kNumStoreWarps);
-      ptx::mbarrier_init(&staged[slot_id], kNumCompWarps); // every compute warp arrives after its scatter
+      ptx::mbarrier_init(&empty[slot_id], kNumStoreWarps + 1); // store warps + the bookkeeper
+      for (int cw = 0; cw < kNumCompWarps; ++cw)
+      {
+        ptx::mbarrier_init(&staged_warp_tile[slot_id][cw], 1); // that compute warp's lane0, after its scatter
+      }
+    }
+    for (int p = 0; p < kPosBufStages; ++p)
+    {
+      ptx::mbarrier_init(&pos_buf_free[p], kNumStoreWarps);
     }
 
-#if USE_CLC
     ptx::mbarrier_init(&clc_bar, 1); // 1 arrival
-#endif
   }
   // normal smem writes (e.g. mbarrier_init) go through the generic proxy
   // the TMA operations access shared memory through the async proxy. these are separate visibility domains,
@@ -220,7 +373,6 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
   // if you are load
   if (warp_id == 0)
   {
-#if USE_CLC
     // CLC tile assignment: gen0 tile = this CTA's launch id (blockIdx.x)
     int tile_id = blk_id;
     if (lane_id == 0)
@@ -229,30 +381,20 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &clc_bar, 16);
       ptx::clusterlaunchcontrol_try_cancel(&clc_resp, &clc_bar);
     }
-#endif
-    for (int gen = 0;; ++gen)
+    for (int pipeline_gen = 0;; ++pipeline_gen)
     {
-      const int slot_id  = gen % kStages; // which slot is this?
-      const int slot_gen = gen / kStages; // how many times is this slot used?
-      if (gen >= kStages)
+      const int slot_id  = pipeline_gen % kStages; // which slot is this?
+      const int slot_gen = pipeline_gen / kStages; // how many times is this slot used?
+      if (pipeline_gen >= kStages)
       {
         // need to wait for slot to be free
         while (!ptx::mbarrier_try_wait_parity(&empty[slot_id], (unsigned) ((slot_gen - 1) & 1)))
         {
         }
       }
-#if !USE_CLC
-      // work-steal: grab the next global tile via the atomic counter (one tile per atomic)
-      int tile_id = 0;
       if (lane_id == 0)
       {
-        tile_id = atomicAdd(global_tile_counter, 1);
-      }
-      tile_id = __shfl_sync(kFullMask, tile_id, 0);
-#endif
-      if (lane_id == 0)
-      {
-        tile_seq[slot_id] = tile_id;
+        tile_id_buf[slot_id] = tile_id;
       }
       if (tile_id >= num_tiles)
       {
@@ -263,27 +405,43 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
         __syncwarp();
         break;
       }
+      // over-fetch one 16B chunk to the left, so that we get last tiles last key
+      // tile 0 has no predecessor and skips the over-fetch
+      const bool first_tile = (tile_id == 0);
+      const int tile_len    = (int) min((OffT) kTileSize, num_items - (OffT) tile_id * kTileSize);
+      // partial LAST tile: we only BULK COPY to the closest 16B boundary and we LDG load the rest
+      // TODO: unaligned tile0, can we make TMA automatically zero pad?
+      const int tma_elems = (tile_len == kTileSize) ? kTileSize : (tile_len & ~(kSlotPad - 1));
+      if (tile_len != kTileSize)
+      {
+        KeyT* const slot_keys = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
+        for (int e = tma_elems + lane_id; e < tile_len; e += 32)
+        {
+          slot_keys[e] = d_keys[(size_t) tile_id * kTileSize + e];
+        }
+        __syncwarp(); // all epilogue stores done before lane 0's release arrive
+      }
       if (lane_id == 0)
       {
-        // this LDG is blocking but it is ok since we just issued TMA
-        prev_tile_last_key[slot_id] = (tile_id > 0) ? d_keys[(size_t) tile_id * kTileSize - 1] : 0;
-        constexpr unsigned nbytes   = kTileSize * sizeof(int); // 16 KB, fits in 32 bits
+        const unsigned nbytes = (unsigned) (((size_t) tma_elems + (first_tile ? 0 : kSlotPad)) * sizeof(KeyT));
         ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &full[slot_id], nbytes);
-        ptx::cp_async_bulk(
-          ptx::space_shared,
-          ptx::space_global,
-          (tile_buf + (size_t) slot_id * kTileSize),
-          d_keys + (size_t) tile_id * kTileSize,
-          nbytes,
-          &full[slot_id]);
+        if (nbytes != 0)
+        {
+          ptx::cp_async_bulk(
+            ptx::space_shared,
+            ptx::space_global,
+            tile_buf + (size_t) slot_id * kSlotStride + (first_tile ? kSlotPad : 0),
+            d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
+            nbytes,
+            &full[slot_id]);
+        }
       }
       __syncwarp();
-#if USE_CLC
       // consume the prefetched cancel
       // this is ok since it should be fast to get next cancelled id
       if (lane_id == 0)
       {
-        while (!ptx::mbarrier_try_wait_parity(&clc_bar, (unsigned) (gen & 1)))
+        while (!ptx::mbarrier_try_wait_parity(&clc_bar, (unsigned) (pipeline_gen & 1)))
         {
         }
         // try_cancel wrote clc_resp via the async proxy
@@ -299,48 +457,47 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
         tile_id = nxt;
       }
       tile_id = __shfl_sync(kFullMask, tile_id, 0);
-#endif
     }
   }
   // if you are compute
   else if (warp_id <= kNumCompWarps)
   {
-    const int compute_warp_id = warp_id - 1;
-    const int warp_tile_base  = compute_warp_id * kWarpTileSize;
-    for (int gen = 0;; ++gen)
+    const int compute_warp_id  = warp_id - 1;
+    const int warp_tile_offset = compute_warp_id * kWarpTileSize;
+    for (int pipeline_gen = 0;; ++pipeline_gen)
     {
-      const int slot_id  = gen % kStages;
-      const int slot_gen = gen / kStages;
+      const int slot_id  = pipeline_gen % kStages;
+      const int slot_gen = pipeline_gen / kStages;
       while (!ptx::mbarrier_try_wait_parity(&full[slot_id], (unsigned) (slot_gen & 1)))
       {
       }
-      const int tile_id = tile_seq[slot_id];
+      const int tile_id = tile_id_buf[slot_id];
       if (tile_id >= num_tiles)
       {
         if (lane_id == 0)
         {
-          ptx::mbarrier_arrive(&staged[slot_id]);
+          // STORE waits computed + its warp-tile's staged_warp_tile, so arrive both
+          ptx::mbarrier_arrive(&computed[slot_id]);
+          ptx::mbarrier_arrive(&staged_warp_tile[slot_id][compute_warp_id]);
         }
         break;
       }
       // slot is ready!
-      const int* key_buf  = (tile_buf + (size_t) slot_id * kTileSize);
-      const int tile_len  = min(kTileSize, num_items - tile_id * kTileSize);
+      const KeyT* key_buf = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
+      const int tile_len  = (int) min((OffT) kTileSize, num_items - (OffT) tile_id * kTileSize);
       int local_run_count = 0, warp_first_head = -1, warp_last_head = -1;
       static_assert(kIPT <= 32, "one lane per iter requires kIPT<=32");
       // start calculating head_flags:
-      // each iter is 32 consecutive elements (lane L owns loc = warp_tile_base + iter*32 + L)
+      // each iter is 32 consecutive elements (lane L owns loc = warp_tile_offset + iter*32 + L)
       // head = (key != predecessor)
-      // __ballot makes a 32-bit head mask per iter
-      // the lane whose lane_id == iter stashes it, so after the loop lane L holds chunk L's mask
-      short* const pos_dst = staged_pos + (size_t) slot_id * kTileSize;
+      short* const pos_dst = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
       unsigned my_flags    = 0;
 #pragma unroll
       for (int iter = 0; iter < kIPT; ++iter)
       {
-        const int loc             = warp_tile_base + iter * 32 + lane_id;
-        const int key             = (loc < tile_len) ? key_buf[loc] : 0;
-        const int pred            = (loc == 0) ? prev_tile_last_key[slot_id] : key_buf[loc - 1];
+        const int loc             = warp_tile_offset + iter * 32 + lane_id;
+        const KeyT key            = (loc < tile_len) ? key_buf[loc] : KeyT{};
+        const KeyT pred           = key_buf[loc - 1]; // loc==0 reads the over fetched slot[kSlotPad-1]
         const int is_global_first = (tile_id == 0 && loc == 0);
         const int head            = (loc < tile_len) ? (is_global_first ? 1 : (key != pred)) : 0;
         const unsigned flags      = __ballot_sync(kFullMask, head);
@@ -359,8 +516,8 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
         const int last_chunk            = 31 - __clz(nonempty_chunk_mask);
         const unsigned first_chunk_mask = __shfl_sync(kFullMask, my_flags, first_chunk);
         const unsigned last_chunk_mask  = __shfl_sync(kFullMask, my_flags, last_chunk);
-        warp_first_head                 = warp_tile_base + first_chunk * 32 + (__ffs(first_chunk_mask) - 1);
-        warp_last_head                  = warp_tile_base + last_chunk * 32 + 31 - __clz(last_chunk_mask);
+        warp_first_head                 = warp_tile_offset + first_chunk * 32 + (__ffs(first_chunk_mask) - 1);
+        warp_last_head                  = warp_tile_offset + last_chunk * 32 + 31 - __clz(last_chunk_mask);
       }
       // now, we calculate warptile aggregates
       if (lane_id == 0)
@@ -380,7 +537,7 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
         {
           // kNumCompWarps<=32 so one lane/warp fits
           // (in practice we will never have anything close to 32)
-          static_assert(kNumCompWarps <= 32, "insane...");
+          static_assert(kNumCompWarps <= 32, "kNumCompWarps must be less than 32!");
           const bool active        = lane_id < kNumCompWarps;
           const int warp_run_count = active ? warp_run_counts[slot_id][lane_id] : 0;
           const int run_count      = __reduce_add_sync(kFullMask, warp_run_count);
@@ -398,69 +555,94 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
           {
             const int open_len = (run_count > 0) ? (tile_len - last_head_idx) : tile_len;
             // CRITICAL: publish as soon as possible, this is why we calculate head_flags first
-            publish_state(tile_partial_states, tile_id, run_count, open_len);
+            publish_state(tile_partial_states, tile_id, launch_gen, run_count, open_len);
           }
         }
       }
-      // now we start to calculate head positions
+      // now we start to stage head positions per warp tile, if a warptile has enough runs
+      // (it is only worth it when we have more runs by a certain threshold per warp tile)
+      // (otherwise, it is cheaper to recalculate positions from head_flags directly)
+      const bool stage_flags = (local_run_count < kHeadPosStagingThreshold);
+      if (stage_flags)
       {
-        // we store run R at warp_tile_base + (R ^ (R>>5)) to avoid bank conflicts for dense cases
-        // (CRITICAL for MaxSeg=1,2,4)
-        int head_scan = __popc(my_flags); // start: this word's head count
-#pragma unroll
-        for (int offset = 1; offset < 32; offset <<= 1)
-        {
-          const int pred_head_scan = __shfl_up_sync(kFullMask, head_scan, offset);
-          if (lane_id >= offset)
-          {
-            head_scan += pred_head_scan;
-          }
-        }
-        // head_scan is a running sum of run_count, so each lane know each chunk's base
-        const int word_run_base = head_scan - __popc(my_flags);
-        if (lane_id < kIPT)
-        {
-          unsigned pending_heads = my_flags; // this word's head mask; we need to "peel" it headbit by headbit
-          const int word_pos     = warp_tile_base + lane_id * 32; // element position of bit 0 of this word
-          int run_index          = word_run_base; // run-order slot for this word's next head
-          while (pending_heads)
-          {
-            const int head_offset = __ffs(pending_heads) - 1; // offset (0..31) of the next head within the word
-            pos_dst[warp_tile_base + swizzle_xor_stride32(run_index)] = (short) (word_pos + head_offset);
-            ++run_index;
-            pending_heads &= (pending_heads - 1); // clear the lowest set bit
-          }
-        }
+        head_flag_buf[slot_id][compute_warp_id * 32 + lane_id] = my_flags;
       }
+      else
+      {
+        if constexpr (kPosBufStages < kStages)
+        {
+          // the pos slot is shared by pipeline_gens g, g+kPosBufStages, ...
+          // need to wait for it to be cleared by STORE
+          if (pipeline_gen >= kPosBufStages)
+          {
+            while (!ptx::mbarrier_try_wait_parity(
+              &pos_buf_free[pipeline_gen % kPosBufStages], (unsigned) ((pipeline_gen / kPosBufStages - 1) & 1)))
+            {
+            }
+          }
+        }
+        {
+          // we store run R at warp_tile_offset + (R ^ (R>>5)) to avoid bank conflicts for dense cases
+          // (CRITICAL for MaxSeg=1,2,4)
+          int head_scan = __popc(my_flags); // start: this word's head count
+#pragma unroll
+          for (int offset = 1; offset < 32; offset <<= 1)
+          {
+            const int pred_head_scan = __shfl_up_sync(kFullMask, head_scan, offset);
+            if (lane_id >= offset)
+            {
+              head_scan += pred_head_scan;
+            }
+          }
+          // head_scan is a running sum of run_count, so each lane know each chunk's base
+          const int runs_before_word = head_scan - __popc(my_flags);
+          if (lane_id < kIPT)
+          {
+            const int word_pos     = warp_tile_offset + lane_id * 32; // element position of bit 0 of this word
+            unsigned pending_heads = my_flags; // this word's head mask; we need to "peel" it headbit by headbit
+            int run_index          = runs_before_word; // run-order slot for this word's next head
+            while (pending_heads)
+            {
+              const int head_offset = __ffs(pending_heads) - 1; // offset (0..31) of the next head within the word
+              pos_dst[warp_tile_offset + swizzle_xor_stride32(run_index)] = (short) (word_pos + head_offset);
+              ++run_index;
+              pending_heads &= (pending_heads - 1); // clear the lowest set bit
+            }
+          }
+        }
+      } // stage flags
       if (lane_id == 0)
       {
-        ptx::mbarrier_arrive(&staged[slot_id]); // head positions now visible to store (1/2)
+        ptx::mbarrier_arrive(&staged_warp_tile[slot_id][compute_warp_id]); // this warp-tile's positions ready
       }
     }
   }
   // if you are poll
   else if (warp_id == poll_warp_id)
   {
-    int last_seen_tile_id = 0, last_seen_prefix_run_count = 0, last_seen_prefix_open_length = 0;
-    for (int gen = 0;; ++gen)
+    int last_seen_tile_id             = 0;
+    OffT last_seen_prefix_run_count   = 0;
+    OffT last_seen_prefix_open_length = 0;
+    for (int pipeline_gen = 0;; ++pipeline_gen)
     {
-      const int slot_id  = gen % kStages;
-      const int slot_gen = gen / kStages;
+      const int slot_id  = pipeline_gen % kStages;
+      const int slot_gen = pipeline_gen / kStages;
       while (!ptx::mbarrier_try_wait_parity(&full[slot_id], (unsigned) (slot_gen & 1)))
       {
       }
-      const int tile_id = tile_seq[slot_id];
+      const int tile_id = tile_id_buf[slot_id];
       if (tile_id >= num_tiles)
       {
         if (lane_id == 0)
         {
-          ptx::mbarrier_arrive(&prefixed[slot_id]); // drain
+          ptx::mbarrier_arrive(&prefixed[slot_id]);
         }
         break;
       }
-      int curr_prefix_run_count, curr_prefix_open_length;
-      poll_and_fold(
+      OffT curr_prefix_run_count, curr_prefix_open_length;
+      poll_and_fold<Config>(
         tile_partial_states,
+        launch_gen,
         tile_id,
         last_seen_tile_id,
         last_seen_prefix_run_count,
@@ -468,32 +650,27 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
         lane_id,
         curr_prefix_run_count,
         curr_prefix_open_length);
-      if (gen >= kStages) // wait for the prefix slot to drain (store done) before overwriting
-      {
-        while (!ptx::mbarrier_try_wait_parity(&empty[slot_id], (unsigned) ((slot_gen - 1) & 1)))
-        {
-        }
-      }
+      // no wait needed before overwriting the prefix slot since we can prove this is safe with double buffering
+      // (proof see above at barrier initiation)
       if (lane_id == 0)
       {
-        run_count_prefix[slot_id] = curr_prefix_run_count;
-        open_len_prefix[slot_id]  = curr_prefix_open_length;
-        ptx::mbarrier_arrive(&prefixed[slot_id]); // prefix ready, store may proceed! (2/2)
+        prefix_packed[slot_id][slot_gen & 1] = pack_prefix(curr_prefix_run_count, curr_prefix_open_length);
+        ptx::mbarrier_arrive(&prefixed[slot_id]); // prefix ready, store may proceed
       }
     }
   }
   // if you are store
-  else
+  else if (warp_id < bookkeeper_warp_id)
   {
     const int store_warp_idx = warp_id - store_warp_id;
-    for (int gen = 0;; ++gen)
+    for (int pipeline_gen = 0;; ++pipeline_gen)
     {
-      const int slot_id = gen % kStages;
-      // wait for staged (1/2)
-      while (!ptx::mbarrier_try_wait_parity(&staged[slot_id], (unsigned) ((gen / kStages) & 1)))
+      const int slot_id = pipeline_gen % kStages;
+      // wait for computed (1/3): all per-warp-tile metadata (run counts, first/last heads)
+      while (!ptx::mbarrier_try_wait_parity(&computed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1)))
       {
       }
-      const int tile_id = tile_seq[slot_id];
+      const int tile_id = tile_id_buf[slot_id];
       if (tile_id >= num_tiles)
       {
         if (lane_id == 0)
@@ -502,122 +679,371 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
         }
         break;
       }
-      const int tile_len        = min(kTileSize, num_items - tile_id * kTileSize);
-      const bool is_last        = (tile_id == num_tiles - 1);
-      int curr_prefix_run_count = 0, curr_prefix_open_length = 0;
-      // wait for prefixed (2/2)
-      while (!ptx::mbarrier_try_wait_parity(&prefixed[slot_id], (unsigned) ((gen / kStages) & 1)))
-      {
-      }
-      curr_prefix_run_count   = run_count_prefix[slot_id];
-      curr_prefix_open_length = open_len_prefix[slot_id];
       // store warps and compute warps are decoupled
-      // storeW>=cw -> multiple store warps split one compute warp's runs;
-      // storeW<cw -> each store warp drains cw/storeW whole regions. One must divide the other.
-      static_assert(kNumStoreWarps % kNumCompWarps == 0 || kNumCompWarps % kNumStoreWarps == 0,
-                    "They must divide (either direction)");
-      int warp_tile_run_base[kNumCompWarps], run_base_acc = 0; // prefix of per-compute-warp run counts
+      // fewer store warps than compute warps has no winning regime since warp slots are not scarce at 1 block/SM
+      static_assert(kNumStoreWarps >= kNumCompWarps && kNumStoreWarps % kNumCompWarps == 0,
+                    "store warps: a whole multiple of compute warps");
+      // per-warp-tile run bases (lane i owns warp-tile i's count/base) and done BEFORE the wait on prefixed so they
+      // overlap
+      const int lane_warp_tile_run_count = (lane_id < kNumCompWarps) ? warp_run_counts[slot_id][lane_id] : 0;
+      int lane_warp_tile_run_count_scan  = lane_warp_tile_run_count;
 #pragma unroll
-      for (int warp_tile_id = 0; warp_tile_id < kNumCompWarps; ++warp_tile_id)
+      for (int offset = 1; offset < kNumCompWarps; offset <<= 1)
       {
-        warp_tile_run_base[warp_tile_id] = run_base_acc;
-        run_base_acc += warp_run_counts[slot_id][warp_tile_id];
+        const int predecessor_partial = __shfl_up_sync(kFullMask, lane_warp_tile_run_count_scan, offset);
+        if (lane_id >= offset)
+        {
+          lane_warp_tile_run_count_scan += predecessor_partial;
+        }
       }
-      const int* tile_keys = tile_buf + (size_t) slot_id * kTileSize;
+      // lane i: run-count sum over warp-tiles [0, i) = where warp-tile i's runs begin within the tile
+      const int lane_runs_before_warp_tile = lane_warp_tile_run_count_scan - lane_warp_tile_run_count;
+      const KeyT* tile_keys                = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
       // staged positions
-      const short* run_positions = staged_pos + (size_t) slot_id * kTileSize;
-      // Drain runs [run_begin, run_end) of warp-tile `warp_tile_id`'s staged output into the global arrays.
-      // Per run: gather its key from the run's head position -> d_unique, and write its length -> d_counts
-      // (= next run's head pos - this run's head pos).
+      const short* run_positions = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
+      // wait for prefixed (2/3)
+      auto wait_prefixed_and_read = [&]() {
+        while (!ptx::mbarrier_try_wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1)))
+        {
+        }
+        return prefix_run_count<OffT>(prefix_packed[slot_id][(pipeline_gen / kStages) & 1]);
+      };
+      // drain writes [run_begin, run_end) of warp tile (warp_tile_id)'s staged output into the global arrays.
+      // Per run: gather its key from the run's head position -> d_unique,
+      // and write its length -> d_counts (= next run's head pos - this run's head pos).
       // The warp tile's last run spans into the next warp-tile, so its length is fixed up separately.
-      auto drain = [&](int warp_tile_id, int run_begin, int run_end) {
-        const int warp_tile_run_count = warp_run_counts[slot_id][warp_tile_id];
-        // global run index of this warp-tile's run 0 = tile's exclusive prefix + this warp-tile's base within the tile
-        const int global_run_base  = curr_prefix_run_count + warp_tile_run_base[warp_tile_id];
-        const int warp_tile_offset = warp_tile_id * kWarpTileSize; // this warp-tile's base in the staged arrays
+      auto drain = [&](OffT curr_prefix_run_count,
+                       int warp_tile_id,
+                       int runs_before_warp_tile,
+                       int warp_tile_run_count,
+                       int run_begin,
+                       int run_end) {
+        const OffT global_runs_before_warp_tile = curr_prefix_run_count + runs_before_warp_tile;
+        const int warp_tile_offset              = warp_tile_id * kWarpTileSize;
+        // this is a lot of code, but this buys us 2 - 3.5% BWUtil at MaxSegs 64 - 1M
+        if (warp_tile_run_count < kHeadPosStagingThreshold)
+        {
+          // the compute warp judged this warp tile too sparse to be worth the position-staging
+          // and it has decided to write only the 32 head-flag words
+          // one warp tile is 32 chunks x 32 elements so lane i owns word i
+          const unsigned lane_head_flag_word = head_flag_buf[slot_id][warp_tile_id * 32 + lane_id];
+          const int lane_word_run_count      = __popc(lane_head_flag_word);
+          int lane_word_run_count_scan       = lane_word_run_count;
+#pragma unroll
+          for (int offset = 1; offset < 32; offset <<= 1)
+          {
+            const int predecessor_partial = __shfl_up_sync(kFullMask, lane_word_run_count_scan, offset);
+            if (lane_id >= offset)
+            {
+              lane_word_run_count_scan += predecessor_partial;
+            }
+          }
+          // lane i: # of runs starting in head_flag words [0, i), i.e. in elements [0, i*32)
+          const int lane_runs_before_word = lane_word_run_count_scan - lane_word_run_count;
+          // lane i -> first head position in head flag words [i, 32)
+          // if our own run_count is >0, the head is here!
+          // empty should be +infinity, since we use min
+          int lane_first_head_from_word =
+            lane_word_run_count ? (lane_id * 32 + __ffs(lane_head_flag_word) - 1) : 0x7fffffff;
+          // if not, we loop to find the next head in flag word [i, 32). this is just a fold with min
+#pragma unroll
+          for (int offset = 1; offset < 32; offset <<= 1)
+          {
+            const int shuffled_first_head = __shfl_down_sync(kFullMask, lane_first_head_from_word, offset);
+            lane_first_head_from_word =
+              min(lane_first_head_from_word, (lane_id + offset < 32) ? shuffled_first_head : 0x7fffffff);
+          }
+          // now, lane i holds the next head in [i, 32). we precalculate this in parallel
+          // the warp process 32 runs per round ceil((run_end-run_begin)/32)
+          // now each lane is assigned RUNs
+          const int num_rounds = (run_end - run_begin + 31) >> 5;
+          for (int it = 0; it < num_rounds; ++it)
+          {
+            const int run_idx = run_begin + it * 32 + lane_id;
+            // first question: which head_flag word contains my run's (run_idx) head?
+            // lane_runs_before_word's row i = number of heads in words [0, i)
+            // the word containing run_dex is then the largest i with runs_before(i) that is <= j
+            // we do binary search over the distributed lane_runs_before_word table held across the warp
+            int flag_word_idx = 0;
+#pragma unroll
+            for (int step = 16; step; step >>= 1)
+            {
+              // propose candidate
+              const int candidate_word_idx = flag_word_idx + step;
+              // read the i'th row
+              const int candidate_runs_before = __shfl_sync(kFullMask, lane_runs_before_word, candidate_word_idx & 31);
+              if (candidate_word_idx < 32 && candidate_runs_before <= run_idx)
+              {
+                flag_word_idx = candidate_word_idx;
+              }
+            }
+            // the lane knows the index of the word containing its head
+            // now we need to convert it to the element position
+            // where is my head in the word?
+            const int run_rank_in_word = run_idx - __shfl_sync(kFullMask, lane_runs_before_word, flag_word_idx);
+            // get the actual word
+            const unsigned flag_word = __shfl_sync(kFullMask, lane_head_flag_word, flag_word_idx);
+            // where's the first head in any word after mine?
+            const int first_head_after_word =
+              __shfl_sync(kFullMask, lane_first_head_from_word, (flag_word_idx + 1) & 31);
+            // how many heads my word has?
+            const int flag_word_run_count = __popc(flag_word);
+            // position of my head inside the word
+            const int head_bit_in_word =
+              nth_set_bit(flag_word, (run_rank_in_word < flag_word_run_count) ? run_rank_in_word : 0);
+            const int head_pos_in_warp_tile = flag_word_idx * 32 + head_bit_in_word;
+            // where does my run end?
+            // try find the position of next head in word
+            const int next_head_in_word = flag_word_idx * 32 + __ffs(flag_word & (~1u << head_bit_in_word)) - 1;
+            // does my word contain a head after mine? if not, next_head_in_word is garbage, and we use
+            // first_head_after_word
+            const int next_head_pos =
+              (run_rank_in_word + 1 < flag_word_run_count) ? next_head_in_word : first_head_after_word;
+            if (run_idx < run_end)
+            {
+              const int head_pos        = warp_tile_offset + head_pos_in_warp_tile;
+              const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+              d_unique[global_run_idx]  = tile_keys[head_pos];
+              if (run_idx + 1 < warp_tile_run_count)
+              {
+                d_counts[global_run_idx] = next_head_pos - head_pos_in_warp_tile;
+              }
+            }
+          }
+          return;
+        } // if not staged
+#pragma unroll 2
+        // if staged
         for (int run_idx = run_begin + lane_id; run_idx < run_end; run_idx += 32)
         {
-          const int global_run_idx = global_run_base + run_idx;
-          const int head_pos       = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
-          d_unique[global_run_idx] = tile_keys[head_pos]; // gather the run's key at its head position
+          const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+          const int head_pos        = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)];
+          d_unique[global_run_idx]  = tile_keys[head_pos]; // gather the run's key at its head position
           if (run_idx + 1 < warp_tile_run_count)
           {
             // within-warp delta (next head - this head); the last run is fixed separately
-            d_counts[global_run_idx] =
-              (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
+            const int run_length = (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos;
+            d_counts[global_run_idx] = run_length;
           }
         }
       };
-      if constexpr (kNumStoreWarps >= kNumCompWarps)
+      // since we have more store warps, each warptile is split between store warps
+      constexpr int kStoreWarpsPerWarpTile = kNumStoreWarps / kNumCompWarps;
+      const int warp_tile_id               = store_warp_idx / kStoreWarpsPerWarpTile;
+      const int sub                        = store_warp_idx % kStoreWarpsPerWarpTile;
+      const int warp_tile_run_count        = __shfl_sync(kFullMask, lane_warp_tile_run_count, warp_tile_id);
+      const int runs_before_warp_tile      = __shfl_sync(kFullMask, lane_runs_before_warp_tile, warp_tile_id);
+      // if our register budget allows it and it is worth it, we can buffer intermidiate results in register
+      // and arrive empty early. this buys 2.5% BWUtil at the worst segments
+      if (warp_tile_run_count >= kRegBufMinThreshold && warp_tile_run_count <= kRegBufMaxRuns)
       {
-        // if we have more store warps, each warptile is split between store warps
-        constexpr int kStoreWarpsPerWarpTile = kNumStoreWarps / kNumCompWarps;
-        const int warp_tile_id               = store_warp_idx / kStoreWarpsPerWarpTile;
-        const int sub                        = store_warp_idx % kStoreWarpsPerWarpTile;
-        const int warp_tile_run_count        = warp_run_counts[slot_id][warp_tile_id];
-        drain(warp_tile_id,
-              (int) ((long) warp_tile_run_count * sub / kStoreWarpsPerWarpTile),
-              (int) ((long) warp_tile_run_count * (sub + 1) / kStoreWarpsPerWarpTile));
-      }
-      else
-      {
-        // fewer store warps than compute regions: each store warp walks whole warptiles
-        for (int warp_tile_id = store_warp_idx; warp_tile_id < kNumCompWarps; warp_tile_id += kNumStoreWarps)
+        const int run_begin = (int) ((long) warp_tile_run_count * sub / kStoreWarpsPerWarpTile);
+        const int run_end   = (int) ((long) warp_tile_run_count * (sub + 1) / kStoreWarpsPerWarpTile);
+        // wait for staged_warp_tile (3/3)
+        while (!ptx::mbarrier_try_wait_parity(
+          &staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1)))
         {
-          drain(warp_tile_id, 0, warp_run_counts[slot_id][warp_tile_id]);
         }
-      }
-      // per-warp-tile boundary: a warp-tile's last run is closed by the next nonempty warp-tile's first head
-      // lane L handles warp-tile L.
-      if (store_warp_idx == 0 && lane_id < kNumCompWarps)
-      {
-        const int warp_tile_id = lane_id;
-        // for warp_tile L: how many runs have you produced?
-        const int warp_tile_run_count = warp_run_counts[slot_id][warp_tile_id];
-        // if 0, skip: a warptile that did not start any runs has no last run to close
-        if (warp_tile_run_count > 0)
+        constexpr int kBufPerLane = ((kRegBufMaxRuns + 31) / 32 > 0) ? (kRegBufMaxRuns + 31) / 32 : 1;
+        KeyT buf_key[kBufPerLane];
+        int buf_run_length[kBufPerLane];
+        const int warp_tile_offset = warp_tile_id * kWarpTileSize;
+        const int num_rounds       = (run_end - run_begin + 31) >> 5;
+        if (warp_tile_run_count < kHeadPosStagingThreshold)
         {
-          // we have to close our last run. we scan L+1, L+2 for the first non-empty warptile and takes its first head
-          int next_first_head = -1;
-          for (int next_warp_tile = warp_tile_id + 1; next_warp_tile < kNumCompWarps; ++next_warp_tile)
+          // this is basically the same as drain, need to refactor this so we are not copy pasting code around
+          const unsigned lane_head_flag_word = head_flag_buf[slot_id][warp_tile_id * 32 + lane_id];
+          const int lane_word_run_count      = __popc(lane_head_flag_word);
+          int lane_word_run_count_scan       = lane_word_run_count;
+#pragma unroll
+          for (int offset = 1; offset < 32; offset <<= 1)
           {
-            if (warp_run_counts[slot_id][next_warp_tile] > 0)
+            const int predecessor_partial = __shfl_up_sync(kFullMask, lane_word_run_count_scan, offset);
+            if (lane_id >= offset)
             {
-              next_first_head = warp_first_heads[slot_id][next_warp_tile];
-              break;
+              lane_word_run_count_scan += predecessor_partial;
             }
           }
-          // now we can close it. find the corresponding global idx:
-          const int last_run_global_idx =
-            curr_prefix_run_count + warp_tile_run_base[warp_tile_id] + warp_tile_run_count - 1;
-          if (next_first_head >= 0)
+          const int lane_runs_before_word = lane_word_run_count_scan - lane_word_run_count;
+          int lane_first_head_from_word =
+            lane_word_run_count ? (lane_id * 32 + __ffs(lane_head_flag_word) - 1) : 0x7fffffff;
+#pragma unroll
+          for (int offset = 1; offset < 32; offset <<= 1)
           {
-            // if we found a later warptile in the tile that has runs, we only need to subtract it...
-            d_counts[last_run_global_idx] = next_first_head - warp_last_heads[slot_id][warp_tile_id];
+            const int shuffled_first_head = __shfl_down_sync(kFullMask, lane_first_head_from_word, offset);
+            lane_first_head_from_word =
+              min(lane_first_head_from_word, (lane_id + offset < 32) ? shuffled_first_head : 0x7fffffff);
           }
-          else if (is_last)
+#pragma unroll
+          for (int it = 0; it < kBufPerLane; ++it)
           {
-            // if we are the last warptile of the whole input, we end here
-            d_counts[last_run_global_idx] = tile_len - warp_last_heads[slot_id][warp_tile_id];
+            if (it >= num_rounds)
+            {
+              break;
+            }
+            const int run_idx = run_begin + it * 32 + lane_id;
+            int flag_word_idx = 0;
+#pragma unroll
+            for (int step = 16; step; step >>= 1)
+            {
+              const int candidate_word_idx    = flag_word_idx + step;
+              const int candidate_runs_before = __shfl_sync(kFullMask, lane_runs_before_word, candidate_word_idx & 31);
+              if (candidate_word_idx < 32 && candidate_runs_before <= run_idx)
+              {
+                flag_word_idx = candidate_word_idx;
+              }
+            }
+            const int run_rank_in_word = run_idx - __shfl_sync(kFullMask, lane_runs_before_word, flag_word_idx);
+            const unsigned flag_word   = __shfl_sync(kFullMask, lane_head_flag_word, flag_word_idx);
+            const int first_head_after_word =
+              __shfl_sync(kFullMask, lane_first_head_from_word, (flag_word_idx + 1) & 31);
+            const int flag_word_run_count = __popc(flag_word);
+            const int head_bit_in_word =
+              nth_set_bit(flag_word, (run_rank_in_word < flag_word_run_count) ? run_rank_in_word : 0);
+            const int head_pos_in_warp_tile = flag_word_idx * 32 + head_bit_in_word;
+            const int next_head_in_word     = flag_word_idx * 32 + __ffs(flag_word & (~1u << head_bit_in_word)) - 1;
+            buf_key[it] = (run_idx < run_end) ? tile_keys[warp_tile_offset + head_pos_in_warp_tile] : KeyT{};
+            buf_run_length[it] =
+              ((run_rank_in_word + 1 < flag_word_run_count) ? next_head_in_word : first_head_after_word)
+              - head_pos_in_warp_tile;
           }
-          // else: this run is open in this tile, now this became a job for the next tile (see below)
-        }
-      }
-
-      // now we need to finish last tile's open run
-      if (store_warp_idx == 0 && lane_id == 0)
-      {
-        // this tile's first head = first head of the lowest-indexed warp with any run
-        int first_head = -1;
-        for (int warp_tile_id = 0; warp_tile_id < kNumCompWarps; ++warp_tile_id)
+        } // if not staged
+        else
         {
-          if (warp_run_counts[slot_id][warp_tile_id] > 0)
+#pragma unroll
+          for (int it = 0; it < kBufPerLane; ++it)
           {
-            first_head = warp_first_heads[slot_id][warp_tile_id];
+            if (it >= num_rounds)
+            {
+              break;
+            }
+            const int run_idx  = run_begin + it * 32 + lane_id;
+            const bool act     = run_idx < run_end;
+            const int head_pos = act ? (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx)] : 0;
+            buf_key[it]        = tile_keys[head_pos];
+            buf_run_length[it] = (act && run_idx + 1 < warp_tile_run_count)
+                                 ? (int) run_positions[warp_tile_offset + swizzle_xor_stride32(run_idx + 1)] - head_pos
+                                 : 0;
+          }
+        }
+        if (lane_id == 0)
+        {
+          if constexpr (kPosBufStages < kStages)
+          {
+            ptx::mbarrier_arrive(&pos_buf_free[pipeline_gen % kPosBufStages]);
+          }
+          ptx::mbarrier_arrive(&empty[slot_id]); // with register buffers we can arrive early
+        }
+        const OffT global_runs_before_warp_tile = wait_prefixed_and_read() + runs_before_warp_tile;
+#pragma unroll
+        for (int it = 0; it < kBufPerLane; ++it)
+        {
+          if (it >= num_rounds)
+          {
             break;
           }
+          const int run_idx = run_begin + it * 32 + lane_id;
+          if (run_idx < run_end)
+          {
+            const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
+            d_unique[global_run_idx]  = buf_key[it];
+            if (run_idx + 1 < warp_tile_run_count)
+            {
+              d_counts[global_run_idx] = buf_run_length[it];
+            }
+          }
         }
-        const bool any_head = (first_head >= 0);
+        continue;
+      } // reg buf
+      // if not reg buffed, we do the normal things, i.e. prefixed wait, then staged_warp_tile, then drain
+      const OffT curr_prefix_run_count = wait_prefixed_and_read();
+      // wait for staged_warp_tile (3/3)
+      while (!ptx::mbarrier_try_wait_parity(
+        &staged_warp_tile[slot_id][warp_tile_id], (unsigned) ((pipeline_gen / kStages) & 1)))
+      {
+      }
+      drain(curr_prefix_run_count,
+            warp_tile_id,
+            runs_before_warp_tile,
+            warp_tile_run_count,
+            (int) ((long) warp_tile_run_count * sub / kStoreWarpsPerWarpTile),
+            (int) ((long) warp_tile_run_count * (sub + 1) / kStoreWarpsPerWarpTile));
+      if (lane_id == 0)
+      {
+        if constexpr (kPosBufStages < kStages)
+        {
+          ptx::mbarrier_arrive(&pos_buf_free[pipeline_gen % kPosBufStages]);
+        }
+        // store done, load may proceed!
+        ptx::mbarrier_arrive(&empty[slot_id]);
+      }
+    }
+  }
+  // if you are the bookkeeper (i should rename this to boundarycloser...)
+  else
+  {
+    for (int pipeline_gen = 0;; ++pipeline_gen)
+    {
+      const int slot_id = pipeline_gen % kStages;
+      while (!ptx::mbarrier_try_wait_parity(&computed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1)))
+      {
+      }
+      const int tile_id = tile_id_buf[slot_id];
+      if (tile_id >= num_tiles)
+      {
+        if (lane_id == 0)
+        {
+          ptx::mbarrier_arrive(&empty[slot_id]);
+        }
+        break;
+      }
+      const int tile_len = (int) min((OffT) kTileSize, num_items - (OffT) tile_id * kTileSize);
+      const bool is_last = (tile_id == num_tiles - 1);
+      // same scan as the store warps (lane i = warp-tile i)
+      const int lane_warp_tile_run_count = (lane_id < kNumCompWarps) ? warp_run_counts[slot_id][lane_id] : 0;
+      int lane_warp_tile_run_count_scan  = lane_warp_tile_run_count;
+#pragma unroll
+      for (int offset = 1; offset < kNumCompWarps; offset <<= 1)
+      {
+        const int predecessor_partial = __shfl_up_sync(kFullMask, lane_warp_tile_run_count_scan, offset);
+        if (lane_id >= offset)
+        {
+          lane_warp_tile_run_count_scan += predecessor_partial;
+        }
+      }
+      const int lane_runs_before_warp_tile = lane_warp_tile_run_count_scan - lane_warp_tile_run_count;
+      const int tile_total_runs            = __shfl_sync(kFullMask, lane_warp_tile_run_count_scan, kNumCompWarps - 1);
+      const unsigned nonempty_warp_tiles_mask = __ballot_sync(kFullMask, lane_warp_tile_run_count > 0);
+      while (!ptx::mbarrier_try_wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1)))
+      {
+      }
+      const PrefixT packed_prefix        = prefix_packed[slot_id][(pipeline_gen / kStages) & 1];
+      const OffT curr_prefix_run_count   = prefix_run_count<OffT>(packed_prefix);
+      const OffT curr_prefix_open_length = prefix_open_len<OffT>(packed_prefix);
+      // per-warp-tile boundary: a warp-tile's last run is closed by the next nonempty warp-tile's
+      // first head. lane L handles warp-tile L.
+      if (lane_id < kNumCompWarps && lane_warp_tile_run_count > 0)
+      {
+        const unsigned later_wts = nonempty_warp_tiles_mask >> (lane_id + 1); // nonempty warp-tiles after L
+        const OffT last_run_global_idx =
+          curr_prefix_run_count + lane_runs_before_warp_tile + lane_warp_tile_run_count - 1;
+        if (later_wts)
+        {
+          const int next_wt             = lane_id + 1 + __ffs(later_wts) - 1;
+          d_counts[last_run_global_idx] = warp_first_heads[slot_id][next_wt] - warp_last_heads[slot_id][lane_id];
+        }
+        else if (is_last)
+        {
+          // if we are the last warptile of the whole input, we end here
+          d_counts[last_run_global_idx] = tile_len - warp_last_heads[slot_id][lane_id];
+        }
+        // else: this run is open in this tile, now this became a job for the next tile (see below)
+      }
+      // now we need to finish last tile's open run
+      if (lane_id == 0)
+      {
+        const bool any_head  = (nonempty_warp_tiles_mask != 0);
+        const int first_head = any_head ? warp_first_heads[slot_id][__ffs(nonempty_warp_tiles_mask) - 1] : -1;
         // if our tile has a head, i.e. it stops here
         if (any_head && curr_prefix_run_count > 0)
         {
@@ -629,64 +1055,41 @@ __launch_bounds__(kNumThreads, 1) __global__ void persistent_rle(
           d_counts[curr_prefix_run_count - 1] = curr_prefix_open_length + tile_len;
         }
         // otherwise, next tile's problem
-
-        // total run count
         if (is_last)
         {
-          int total_run_count = curr_prefix_run_count;
-          for (int warp_tile_id = 0; warp_tile_id < kNumCompWarps; ++warp_tile_id)
-          {
-            total_run_count += warp_run_counts[slot_id][warp_tile_id];
-          }
-          *d_num_runs = total_run_count;
+          *d_num_runs = (NumRunsT) (curr_prefix_run_count + tile_total_runs);
         }
-      }
-      if (lane_id == 0)
-      {
-        // store done, load may proceed!
-        ptx::mbarrier_arrive(&empty[slot_id]);
+        ptx::mbarrier_arrive(&empty[slot_id]); // bookkeeping done, slot may recycle
       }
     }
   }
 }
 
+template <class KeyT, class LenT, class NumRunsT, class OffT, class Config = winner_config<KeyT>>
 inline void persistent_rle_launch(
-  const int* d_keys,
-  int* d_unique,
-  int* d_counts,
-  int* d_num_runs,
-  u64* tile_state,
-  [[maybe_unused]] int* global_tile_counter,
-  int num_items,
+  const KeyT* d_keys,
+  KeyT* d_unique,
+  LenT* d_counts,
+  NumRunsT* d_num_runs,
+  TilePartialStateT* tile_state,
+  const unsigned* d_launch_gen,
+  OffT num_items,
   int num_tiles,
   cudaStream_t stream)
 {
-  // raise the dynamic-smem cap once (idempotent; kept off the per-launch path)
+  constexpr size_t kDynSmem      = Config::kDynSmem;
+  constexpr int kNumThreads      = Config::kNumThreads;
   static const bool smem_cap_set = [] {
-    cudaFuncSetAttribute(persistent_rle, cudaFuncAttributeMaxDynamicSharedMemorySize, (int) kDynSmem);
+    cudaFuncSetAttribute(
+      persistent_rle<KeyT, LenT, NumRunsT, OffT, Config>, cudaFuncAttributeMaxDynamicSharedMemorySize, (int) kDynSmem);
     return true;
   }();
   (void) smem_cap_set;
 
-  cudaMemsetAsync(tile_state, 0, sizeof(u64) * num_tiles, stream); // clear per-tile valid bits
-#if !USE_CLC
-  cudaMemsetAsync(global_tile_counter, 0, sizeof(int), stream); // reset the work-steal counter
-  int numSM = 0;
-  cudaDeviceGetAttribute(&numSM, cudaDevAttrMultiProcessorCount, 0);
-  const int blocks = std::min(2 * numSM, num_tiles); // persistent work-steal grid
-#else
+  // no need for per launch clear of tile_state since they are now tagged with launch_gen
   const int blocks = num_tiles;
-#endif
 
-  persistent_rle<<<blocks, kNumThreads, kDynSmem, stream>>>(
-    d_keys,
-    d_unique,
-    d_counts,
-    d_num_runs,
-    tile_state,
-#if !USE_CLC
-    global_tile_counter,
-#endif
-    num_items,
-    num_tiles);
+  persistent_rle<KeyT, LenT, NumRunsT, OffT, Config><<<blocks, kNumThreads, kDynSmem, stream>>>(
+    d_keys, d_unique, d_counts, d_num_runs, tile_state, d_launch_gen, num_items, num_tiles);
 }
+} // namespace rle_impl

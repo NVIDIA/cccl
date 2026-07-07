@@ -1,31 +1,53 @@
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_run_length_encode.cuh>
+
+#include <cuda/std/complex>
 
 #include <cstdio>
 #include <cstdlib>
 #include <random>
 #include <vector>
 
-#include "persistent_rle.cu"
+#include "rle_dispatch.cuh"
 #include <nvbench/nvbench.cuh>
+
+NVBENCH_DECLARE_TYPE_STRINGS(__int128_t, "I128", "__int128_t");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<float>, "C64", "cuda::std::complex<float>");
+
+using key_types =
+  nvbench::type_list<nvbench::int8_t,
+                     nvbench::int16_t,
+                     nvbench::int32_t,
+                     nvbench::int64_t,
+                     __int128_t,
+                     nvbench::float32_t,
+                     nvbench::float64_t,
+                     cuda::std::complex<float>>;
+using offset_types     = nvbench::type_list<nvbench::int32_t, nvbench::int64_t>;
+using run_length_types = nvbench::type_list<nvbench::int32_t, nvbench::int64_t>;
 
 namespace
 {
 // random keys with run lengths uniform in [1, max_seg]; consecutive runs never share a key
-std::vector<int> gen_keys(int n, int max_seg, unsigned seed)
+// (adjacency-distinctness enforced post-cast so narrow key types can't merge segments)
+template <class T>
+std::vector<T> gen_keys(long long n, int max_seg, unsigned seed)
 {
-  std::vector<int> k(n);
+  std::vector<T> k((size_t) n);
   std::mt19937 rng(seed);
   std::uniform_int_distribution<int> seg(1, max_seg), kd(0, 1000000);
-  int i = 0, prev = -1;
+  long long i = 0;
+  T prev      = T(-1);
   while (i < n)
   {
-    int run = seg(rng), v = kd(rng);
-    if (v == prev)
+    int run = seg(rng);
+    T v     = T(kd(rng));
+    for (int tries = 0; v == prev && tries < 8; ++tries)
     {
-      v = (v + 1) % 1000001;
+      v = T(kd(rng));
     }
-    prev  = v;
-    int e = std::min(i + run, n);
+    prev        = v;
+    long long e = std::min<long long>(i + run, n);
     for (; i < e; ++i)
     {
       k[i] = v;
@@ -34,12 +56,13 @@ std::vector<int> gen_keys(int n, int max_seg, unsigned seed)
   return k;
 }
 
-int cpu_run_count(const std::vector<int>& h)
+template <class T>
+long long cpu_run_count(const std::vector<T>& h)
 {
-  int r = 0;
+  long long r = 0;
   for (size_t i = 0; i < h.size(); ++i)
   {
-    if (i == 0 || h[i] != h[i - 1])
+    if (i == 0 || !(h[i] == h[i - 1]))
     {
       ++r;
     }
@@ -47,105 +70,121 @@ int cpu_run_count(const std::vector<int>& h)
   return r;
 }
 
+template <class T, class OffsetT, class RunLengthT>
 struct Bufs
 {
-  int* dk    = nullptr;
-  int* du    = nullptr;
-  int* dc    = nullptr;
-  int* dn    = nullptr;
-  u64* dts   = nullptr; // persistent-RLE per-tile state
-  int* dctr  = nullptr; // persistent-RLE work-steal counter (unused on CLC path)
-  int n      = 0;
-  int ntiles = 0;
-  int R      = 0; // #runs
+  using NumRunsT = cub::detail::choose_signed_offset_t<OffsetT>;
 
-Bufs setup(int n, int max_seg)
+  T* dk          = nullptr;
+  T* du          = nullptr;
+  RunLengthT* dc = nullptr;
+  NumRunsT* dn   = nullptr;
+  void* dtemp    = nullptr; // persistent-RLE temp storage (header + gen-tagged tile states)
+  size_t tempb   = 0;
+  long long n    = 0;
+  long long R    = 0; // #runs
+};
+
+template <class T, class OffsetT, class RunLengthT>
+Bufs<T, OffsetT, RunLengthT> setup(long long n, int max_seg)
 {
-  Bufs b;
-  b.n              = n;
-  b.ntiles         = (n + kTileSize - 1) / kTileSize;
-  const size_t pad = (size_t) b.ntiles * kTileSize;
-  auto h           = gen_keys(n, max_seg, 1u);
-  const int cpuR   = cpu_run_count(h);
+  using config_t = rle_impl::winner_config<T>;
+  Bufs<T, OffsetT, RunLengthT> b;
+  b.n                  = n;
+  const size_t pad     = (size_t) ((n + config_t::kTileSize - 1) / config_t::kTileSize) * config_t::kTileSize;
+  auto h               = gen_keys<T>(n, max_seg, 1u);
+  const long long cpuR = cpu_run_count(h);
 
-  cudaMalloc(&b.dk, sizeof(int) * pad);
-  cudaMemset(b.dk, 0, sizeof(int) * pad);
-  cudaMalloc(&b.du, sizeof(int) * n);
-  cudaMalloc(&b.dc, sizeof(int) * n);
-  cudaMalloc(&b.dn, sizeof(int));
-  cudaMalloc(&b.dts, sizeof(u64) * b.ntiles);
-  cudaMalloc(&b.dctr, sizeof(int));
-  cudaMemcpy(b.dk, h.data(), sizeof(int) * n, cudaMemcpyHostToDevice);
+  cudaMalloc(&b.dk, sizeof(T) * pad);
+  cudaMemset(b.dk, 0, sizeof(T) * pad);
+  cudaMalloc(&b.du, sizeof(T) * (size_t) n);
+  cudaMalloc(&b.dc, sizeof(RunLengthT) * (size_t) n);
+  cudaMalloc(&b.dn, sizeof(typename Bufs<T, OffsetT, RunLengthT>::NumRunsT));
+  rle_impl::persistent_rle_encode<config_t>(nullptr, b.tempb, b.dk, b.du, b.dc, b.dn, (OffsetT) n);
+  cudaMalloc(&b.dtemp, b.tempb);
+  cudaMemset(b.dtemp, 0xAB, b.tempb); // cold start; steady-state calls take the gen-bump path
+  cudaMemcpy(b.dk, h.data(), sizeof(T) * (size_t) n, cudaMemcpyHostToDevice);
 
   // Run CUB once for the authoritative run count + a correctness gate (aborts a fast-but-wrong build).
   void* tmp   = nullptr;
   size_t tbsz = 0;
-  cub::DeviceRunLengthEncode::Encode(tmp, tbsz, b.dk, b.du, b.dc, b.dn, n);
+  cub::DeviceRunLengthEncode::Encode(tmp, tbsz, b.dk, b.du, b.dc, b.dn, (OffsetT) n);
   cudaMalloc(&tmp, tbsz);
-  cub::DeviceRunLengthEncode::Encode(tmp, tbsz, b.dk, b.du, b.dc, b.dn, n);
+  cub::DeviceRunLengthEncode::Encode(tmp, tbsz, b.dk, b.du, b.dc, b.dn, (OffsetT) n);
   cudaDeviceSynchronize();
-  cudaMemcpy(&b.R, b.dn, sizeof(int), cudaMemcpyDeviceToHost);
+  typename Bufs<T, OffsetT, RunLengthT>::NumRunsT r_w = 0;
+  cudaMemcpy(&r_w, b.dn, sizeof(r_w), cudaMemcpyDeviceToHost);
+  b.R = (long long) r_w;
   cudaFree(tmp);
   if (b.R != cpuR)
   {
-    std::printf("*** CUB CORRECTNESS FAIL: n=%d max_seg=%d cub_R=%d cpu_R=%d ***\n", n, max_seg, b.R, cpuR);
+    std::printf("*** CUB CORRECTNESS FAIL: n=%lld max_seg=%d cub_R=%lld cpu_R=%lld ***\n", n, max_seg, b.R, cpuR);
     std::exit(3);
   }
   return b;
 }
 
-void teardown(Bufs& b)
+template <class T, class OffsetT, class RunLengthT>
+void teardown(Bufs<T, OffsetT, RunLengthT>& b)
 {
   cudaFree(b.dk);
   cudaFree(b.du);
   cudaFree(b.dc);
   cudaFree(b.dn);
-  cudaFree(b.dts);
-  cudaFree(b.dctr);
+  cudaFree(b.dtemp);
 }
 
-void add_counters(nvbench::state& s, const Bufs& b)
+template <class T, class OffsetT, class RunLengthT>
+void add_counters(nvbench::state& s, const Bufs<T, OffsetT, RunLengthT>& b)
 {
   s.add_element_count(b.n);
-  s.add_global_memory_reads<int>(b.n, "keys"); // minimal RLE traffic, identical charge for both impls
-  s.add_global_memory_writes<int>(2ll * b.R, "unique+counts");
+  s.add_global_memory_reads<T>(b.n, "keys");
+  s.add_global_memory_writes<T>(b.R, "unique");
+  s.add_global_memory_writes<RunLengthT>(b.R, "counts");
 }
 } // namespace
 
-static void persistent_rle_bench(nvbench::state& state)
+template <class T, class OffsetT, class RunLengthT>
+static void persistent_rle_bench(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
-  const int n = (int) state.get_int64("N"), max_seg = (int) state.get_int64("MaxSeg");
-  Bufs b = setup(n, max_seg);
+  using config_t    = rle_impl::winner_config<T>;
+  const long long n = state.get_int64("Elements{io}");
+  const int max_seg = (int) state.get_int64("MaxSegSize");
+  auto b            = setup<T, OffsetT, RunLengthT>(n, max_seg);
   add_counters(state, b);
   state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    persistent_rle_launch(b.dk, b.du, b.dc, b.dn, b.dts, b.dctr, n, b.ntiles, launch.get_stream());
+    rle_impl::persistent_rle_encode<config_t>(
+      b.dtemp, b.tempb, b.dk, b.du, b.dc, b.dn, (OffsetT) n, launch.get_stream());
   });
   teardown(b);
 }
 
-static void cub_rle_bench(nvbench::state& state)
+template <class T, class OffsetT, class RunLengthT>
+static void cub_rle_bench(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
-  const int n = (int) state.get_int64("N"), max_seg = (int) state.get_int64("MaxSeg");
-  Bufs b = setup(n, max_seg);
+  const long long n = state.get_int64("Elements{io}");
+  const int max_seg = (int) state.get_int64("MaxSegSize");
+  auto b            = setup<T, OffsetT, RunLengthT>(n, max_seg);
   add_counters(state, b);
   void* tmp   = nullptr;
   size_t tbsz = 0;
-  cub::DeviceRunLengthEncode::Encode(tmp, tbsz, b.dk, b.du, b.dc, b.dn, n);
+  cub::DeviceRunLengthEncode::Encode(tmp, tbsz, b.dk, b.du, b.dc, b.dn, (OffsetT) n);
   cudaMalloc(&tmp, tbsz);
   state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::DeviceRunLengthEncode::Encode(tmp, tbsz, b.dk, b.du, b.dc, b.dn, n, launch.get_stream());
+    cub::DeviceRunLengthEncode::Encode(tmp, tbsz, b.dk, b.du, b.dc, b.dn, (OffsetT) n, launch.get_stream());
   });
   cudaFree(tmp);
   teardown(b);
 }
 
-using axis = std::vector<nvbench::int64_t>;
-static axis kSegs{1, 2, 4, 8, 16, 32, 64, 128, 256, 4096, 1048576};
-static axis kN{1 << 28};
-
-NVBENCH_BENCH(persistent_rle_bench).set_name("persistent_rle").add_int64_axis("N", kN).add_int64_axis("MaxSeg", kSegs);
-NVBENCH_BENCH(cub_rle_bench)
+NVBENCH_BENCH_TYPES(persistent_rle_bench, NVBENCH_TYPE_AXES(key_types, offset_types, run_length_types))
+  .set_name("persistent_rle")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "RunLengthT{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", {28})
+  .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});
+NVBENCH_BENCH_TYPES(cub_rle_bench, NVBENCH_TYPE_AXES(key_types, offset_types, run_length_types))
   .set_name("cub_DeviceRunLengthEncode")
-  .add_int64_axis("N", kN)
-  .add_int64_axis("MaxSeg", kSegs);
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "RunLengthT{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", {28})
+  .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});
 NVBENCH_MAIN;
