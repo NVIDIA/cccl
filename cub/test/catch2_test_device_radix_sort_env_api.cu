@@ -717,7 +717,7 @@ struct RadixSortKeysPolicySelector
 };
 // example-end radix-sort-keys-policy-selector
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API with tuning", "[radix_sort][env]")
+C2H_TEST("cub::DeviceRadixSort::SortKeys accepts a custom policy selector", "[radix_sort][env]")
 {
   // example-begin radix-sort-keys-tuning
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
