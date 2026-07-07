@@ -27,8 +27,8 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -55,7 +55,8 @@ using deterministic_num_items_t = typename deterministic_num_items<NormalizedNum
 //! to the grid the host would have computed had it been able to read the problem size. Must be used consistently by
 //! both reduction passes.
 template <typename PolicySelector, typename NumItemsT>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
+deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size) noexcept
 {
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
   constexpr int tile_size           = policy.threads_per_block * policy.items_per_thread;
@@ -114,10 +115,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   constexpr int items_per_thread    = policy.items_per_thread;
   constexpr int threads_per_block   = policy.threads_per_block;
 
-  // A 64-bit deferred problem size is consumed in a single launch instead of host-side chunks, so the index
-  // computations must be 64-bit as well.
+  // A 64-bit deferred problem size is consumed in a single launch that loops over 32-bit chunks in the kernel.
   using num_items_t = deterministic_num_items_t<NormalizedNumItemsT>;
-  using index_t     = ::cuda::std::make_unsigned_t<num_items_t>;
 
   const num_items_t num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<num_items_t>(normalized_num_items);
 
@@ -166,38 +165,94 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
 
   int n_threads = active_grid_size * threads_per_block;
 
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (index_t i = tid; i < static_cast<index_t>(num_items); i += (n_threads * items_per_thread))
+  if constexpr (sizeof(num_items_t) == 8)
   {
-    ftype items[items_per_thread] = {};
-    for (int j = 0; j < items_per_thread; j++)
+    // Loop over 32-bit chunks so that the hot loop keeps the index arithmetic and register footprint of the 32-bit
+    // path below; only the count of remaining items is 64-bit and the iterator advances once per chunk. Binned
+    // accumulation is exact, so accumulating across chunk boundaries produces the same bits as the host-side chunking
+    // of an immediate problem size.
+    // TODO(NaderAlAwar): The chunk body is intentionally duplicated from the 32-bit loop below because extracting it
+    // into a device function changes the SASS of the immediate instantiations. Changes here must also be applied to
+    // the copy below.
+    constexpr num_items_t num_items_per_chunk = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+    for (num_items_t remaining = num_items; remaining > 0; remaining -= num_items_per_chunk)
     {
-      const index_t idx = i + j * n_threads;
-      if (idx < static_cast<index_t>(num_items))
+      const int chunk_num_items = static_cast<int>(::cuda::std::min(remaining, num_items_per_chunk));
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (unsigned i = tid; i < static_cast<unsigned>(chunk_num_items); i += (n_threads * items_per_thread))
       {
-        items[j] = transform_op(d_in[idx]);
+        ftype items[items_per_thread] = {};
+        for (int j = 0; j < items_per_thread; j++)
+        {
+          const unsigned idx = i + j * n_threads;
+          if (idx < static_cast<unsigned>(chunk_num_items))
+          {
+            items[j] = transform_op(d_in[idx]);
+          }
+        }
+
+        ftype abs_max_val = ::cuda::std::fabs(items[0]);
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 1; j < items_per_thread; j++)
+        {
+          abs_max_val = ::cuda::std::fmax(::cuda::std::fabs(items[j]), abs_max_val);
+        }
+
+        thread_aggregate.set_max_val(abs_max_val);
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 0; j < items_per_thread; j++)
+        {
+          thread_aggregate.unsafe_add(items[j]);
+          count++;
+          if (count >= thread_aggregate.endurance())
+          {
+            thread_aggregate.renorm();
+            count = 0;
+          }
+        }
       }
+
+      d_in += chunk_num_items;
     }
-
-    ftype abs_max_val = ::cuda::std::fabs(items[0]);
-
+  }
+  else
+  {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int j = 1; j < items_per_thread; j++)
+    for (unsigned i = tid; i < static_cast<unsigned>(num_items); i += (n_threads * items_per_thread))
     {
-      abs_max_val = ::cuda::std::fmax(::cuda::std::fabs(items[j]), abs_max_val);
-    }
-
-    thread_aggregate.set_max_val(abs_max_val);
-
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int j = 0; j < items_per_thread; j++)
-    {
-      thread_aggregate.unsafe_add(items[j]);
-      count++;
-      if (count >= thread_aggregate.endurance())
+      ftype items[items_per_thread] = {};
+      for (int j = 0; j < items_per_thread; j++)
       {
-        thread_aggregate.renorm();
-        count = 0;
+        const unsigned idx = i + j * n_threads;
+        if (idx < static_cast<unsigned>(num_items))
+        {
+          items[j] = transform_op(d_in[idx]);
+        }
+      }
+
+      ftype abs_max_val = ::cuda::std::fabs(items[0]);
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 1; j < items_per_thread; j++)
+      {
+        abs_max_val = ::cuda::std::fmax(::cuda::std::fabs(items[j]), abs_max_val);
+      }
+
+      thread_aggregate.set_max_val(abs_max_val);
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < items_per_thread; j++)
+      {
+        thread_aggregate.unsafe_add(items[j]);
+        count++;
+        if (count >= thread_aggregate.endurance())
+        {
+          thread_aggregate.renorm();
+          count = 0;
+        }
       }
     }
   }
