@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6076227: ICE when validating tile MLIR
-
 // int memcmp(const void* lhs, const void* rhs, size_t count);
 
 #include <cuda/std/cassert>

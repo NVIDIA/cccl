@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr explicit sentinel(filter_view&);
 
 #include <cuda/std/array>

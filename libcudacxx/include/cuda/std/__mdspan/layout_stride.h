@@ -50,6 +50,25 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __layout_stride_detail
 {
+template <class _Extents, class _StrideArray, bool = (_Extents::rank() == 0)>
+struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base : __mdspan_ebco<_Extents, _StrideArray>
+{
+  using __base = __mdspan_ebco<_Extents, _StrideArray>;
+  using __base::__base;
+};
+
+template <class _Extents, class _StrideArray>
+struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base<_Extents, _StrideArray, true> : __mdspan_ebco<_Extents>
+{
+  using __base = __mdspan_ebco<_Extents>;
+  using __base::__base;
+
+  _CCCL_API constexpr __mapping_base(const _Extents& __ext,
+                                     const _StrideArray&) noexcept(is_nothrow_constructible_v<__base, const _Extents&>)
+      : __base(__ext)
+  {}
+};
+
 template <class _StridedLayoutMapping, class _Extents>
 _CCCL_CONCEPT __can_convert = _CCCL_REQUIRES_EXPR((_StridedLayoutMapping, _Extents))(
   requires(__mdspan_detail::__layout_mapping_alike<_StridedLayoutMapping>),
@@ -70,8 +89,9 @@ struct __constraints
 
 template <class _Extents>
 class _CCCL_DECLSPEC_EMPTY_BASES layout_stride::mapping
-    : private __mdspan_ebco<_Extents,
-                            __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
+    : private __layout_stride_detail::__mapping_base<
+        _Extents,
+        __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {
 public:
   static_assert(__is_cuda_std_extents_v<_Extents>,
@@ -82,7 +102,9 @@ public:
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
   using layout_type  = layout_stride;
-  using __base = __mdspan_ebco<_Extents, __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
+  using __base =
+    __layout_stride_detail::__mapping_base<_Extents,
+                                           __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
 
   template <class, class, class, class>
   friend class mdspan;
@@ -122,6 +144,7 @@ private:
     const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides)
   {
     // nvcc believes strides is unused here
+    bool __result = true;
     if constexpr (extents_type::rank() != 0)
     {
       index_type __size = 1;
@@ -130,26 +153,30 @@ private:
         // We can only check correct conversion of _OtherIndexType if it is an integral
         if (__conversion_may_overflow(__strides[__r]))
         {
-          return false;
+          __result = false;
+          break;
         }
         if (__ext.extent(__r) == index_type{0})
         {
-          return true;
+          __result = true;
+          break;
         }
 
         index_type __prod = (__ext.extent(__r) - 1);
         if (::cuda::std::__mdspan_detail::__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
         {
-          return false;
+          __result = false;
+          break;
         }
         if (__add_overflow(__size, __prod, &__size))
         {
-          return false;
+          __result = false;
+          break;
         }
       }
     }
 
-    return true;
+    return __result;
   }
 
   // compute offset of a strided layout mapping
@@ -258,15 +285,17 @@ public:
     __bubble_sort_by_strides(__permute);
 
     // check that this permutations represents a growing set
+    bool __result = true;
     for (rank_type __i = 1; __i < __rank_; __i++)
     {
       if (static_cast<index_type>(__strides()[__permute[__i]])
           < static_cast<index_type>(__strides()[__permute[__i - 1]]) * extents().extent(__permute[__i - 1]))
       {
-        return false;
+        __result = false;
+        break;
       }
     }
-    return true;
+    return __result;
   }
   [[nodiscard]] _CCCL_API constexpr bool __check_unique_mapping(index_sequence<>) const noexcept
   {
@@ -322,7 +351,7 @@ public:
   _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND
                    __layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>)
   _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
@@ -336,7 +365,7 @@ public:
   _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND(
     !__layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>))
   _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
@@ -420,7 +449,14 @@ public:
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
     //_CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(__extents_, __idx...),
     //             "layout_stride::mapping: out of bounds indexing");
-    return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    if constexpr (extents_type::rank() == 0)
+    {
+      return index_type{0};
+    }
+    else
+    {
+      return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    }
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
@@ -476,14 +512,17 @@ public:
               __r_largest = __r;
             }
           }
+
+          bool __result = true;
           for (rank_type __r = 0; __r != __rank_; __r++)
           {
             if (extents().extent(__r) == 0 && __r != __r_largest)
             {
-              return false;
+              __result = false;
+              break;
             }
           }
-          return true;
+          return __result;
         }
       }
       else

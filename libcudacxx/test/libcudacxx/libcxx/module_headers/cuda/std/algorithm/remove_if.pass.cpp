@@ -15,13 +15,13 @@
 
 struct remove_if_is_odd
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 1;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {1, 2, 3, 4};
   auto r  = cuda::std::remove_if(a, a + 4, remove_if_is_odd{});

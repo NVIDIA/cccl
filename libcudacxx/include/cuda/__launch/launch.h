@@ -24,10 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/__hierarchy/block_level.h>
-#  include <cuda/__hierarchy/cluster_level.h>
-#  include <cuda/__hierarchy/grid_level.h>
-#  include <cuda/__hierarchy/thread_level.h>
+#  include <cuda/__hierarchy/hierarchy_levels.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/__launch/configuration.h>
 #  include <cuda/__runtime/api_wrapper.h>
@@ -519,7 +516,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                                                   decltype(__combined),
                                                   ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>();
   return ::cuda::__launch_impl(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
+    cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter),
     __combined,
     ::cuda::__get_cufunction_of(__launcher),
     __combined,
@@ -634,7 +631,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 {
   __ensure_current_context __dev_setter{__submitter};
   return ::cuda::__launch_impl<_ExpArgs...>(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
+    cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,
     ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);

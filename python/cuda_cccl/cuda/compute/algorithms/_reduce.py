@@ -18,14 +18,22 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._serialization import BUILD_RESULT, ITER, OP, VALUE, Serializable
+from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
 from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
+from ..typing import (
+    DeviceArrayLike,
+    GpuStruct,
+    IteratorBase,
+    IteratorT,
+    Operator,
+    _Struct,
+)
 
 
-class _Reduce:
+class _Reduce(Serializable):
     __slots__ = [
         "d_in_cccl",
         "d_out_cccl",
@@ -34,6 +42,14 @@ class _Reduce:
         "build_result",
         "device_reduce_fn",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("h_init_cccl", VALUE),
+        ("build_result", BUILD_RESULT(_bindings.DeviceReduceBuildResult)),
+    )
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
@@ -60,22 +76,28 @@ class _Reduce:
             self.h_init_cccl,
             determinism,
         )
+        self._bind_device_reduce_fn()
 
-        match determinism:
-            case Determinism.RUN_TO_RUN:
-                self.device_reduce_fn = self.build_result.compute
-            case Determinism.NOT_GUARANTEED:
-                self.device_reduce_fn = self.build_result.compute_nondeterministic
-            case _:
-                raise ValueError(f"Invalid determinism: {determinism}")
+    def _after_deserialize(self) -> None:
+        self._bind_device_reduce_fn()
+
+    def _bind_device_reduce_fn(self) -> None:
+        # device_reduce_fn is derived from build_result (not serialized). Bind it
+        # as a plain slot on both construction paths (__init__ and deserialize) so
+        # each call reads a slot directly, with no per-call recompute.
+        if Determinism(self.build_result.determinism) is Determinism.NOT_GUARANTEED:
+            self.device_reduce_fn = self.build_result.compute_nondeterministic
+        else:
+            self.device_reduce_fn = self.build_result.compute
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
         num_items: int,
+        op: Callable | OpAdapter,
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
@@ -112,6 +134,7 @@ class _Reduce:
 
 @cache_with_registered_key_functions
 def make_reduce_into(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
@@ -130,7 +153,7 @@ def make_reduce_into(
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
-        d_out: Device array (of size 1) that will store the result of the reduction
+        d_out: Device array (of size 1) or iterator that will store the result of the reduction
         op: Binary operator to apply.
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
@@ -139,6 +162,32 @@ def make_reduce_into(
     Returns:
         A callable object that can be used to perform the reduction
     """
+    try:
+        accum_dtype = get_dtype(h_init)
+    except (AttributeError, TypeError) as e:
+        raise TypeError(
+            "Could not determine accumulator dtype from h_init; "
+            "expected numpy array or object with .dtype"
+        ) from e
+
+    # Validate d_in and d_out if they are device arrays (iterators may not expose
+    # dtype reliably here). Additionally, only require equality of dtypes for
+    # struct objects; mixed scalar dtypes (e.g. int8 input with int64 output)
+    # is acceptable
+    if isinstance(h_init, _Struct):
+        for arr, name in ((d_in, "input"), (d_out, "output")):
+            if isinstance(arr, IteratorBase):
+                continue
+
+            dtype = get_dtype(arr)
+            if dtype != accum_dtype:
+                raise TypeError(
+                    f"reduce_into dtype mismatch: {name} dtype {dtype} != "
+                    f"accumulator dtype {accum_dtype}. "
+                    f"Ensure {name} elements and h_init have identical dtype to "
+                    "avoid truncation or misinterpretation."
+                )
+
     op_adapter = make_op_adapter(op)
     return _Reduce(
         d_in,
@@ -150,10 +199,11 @@ def make_reduce_into(
 
 
 def reduce_into(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
-    op: Operator,
     num_items: int,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
     stream=None,
     **kwargs,
@@ -172,15 +222,31 @@ def reduce_into(
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
-        d_out: Device array to store the result of the reduction
+        d_out: Device array or iterator to store the result of the reduction
+        num_items: Number of items to reduce
         op: Binary operator to apply.
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
-        num_items: Number of items to reduce
         h_init: Initial value for the reduction
         stream: CUDA stream for the operation (optional)
     """
-    reducer = make_reduce_into(d_in, d_out, op, h_init, **kwargs)
-    tmp_storage_bytes = reducer(None, d_in, d_out, op, num_items, h_init, stream)
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init, **kwargs)
+    tmp_storage_bytes = reducer(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+        stream=stream,
+    )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(tmp_storage, d_in, d_out, op, num_items, h_init, stream)
+    reducer(
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+        stream=stream,
+    )

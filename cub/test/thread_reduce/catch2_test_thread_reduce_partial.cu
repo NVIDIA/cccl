@@ -9,6 +9,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
 #include "catch2_test_device_reduce.cuh"
@@ -68,8 +69,6 @@ thread_reduce_partial_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce
   *d_out = cub::detail::ThreadReducePartial(span, reduce_operator, valid_items);
 }
 
-#if _CCCL_STD_VER >= 2023
-
 template <int NumItems, typename T, typename ReduceOperator>
 __global__ void
 thread_reduce_partial_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator reduce_operator, int valid_items)
@@ -85,8 +84,6 @@ thread_reduce_partial_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator redu
   cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NumItems>{});
   *d_out = cub::detail::ThreadReducePartial(mdspan, reduce_operator, valid_items);
 }
-
-#endif // _CCCL_STD_VER >= 2023
 
 /***********************************************************************************************************************
  * Type list definition
@@ -251,13 +248,11 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 
-#if _CCCL_STD_VER >= 2023
   thread_reduce_partial_kernel_mdspan<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), op_t{}, valid_items);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
-#endif // _CCCL_STD_VER >= 2023
 }
 
 C2H_TEST("ThreadReducePartial does not invoke the reduction operator on invalid elements", "[reduce][thread]")

@@ -113,6 +113,6 @@ private:
 };
 
 template <class It>
-TEST_FUNC assignable_sentinel(const It&) -> assignable_sentinel<It>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES assignable_sentinel(const It&) -> assignable_sentinel<It>;
 
 #endif // TEST_STD_ITERATORS_ITERATOR_PRIMITIVES_RANGE_ITER_OPS_TYPES_H

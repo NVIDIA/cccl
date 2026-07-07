@@ -32,7 +32,7 @@ struct augmented_value_t
 };
 
 template <typename ValueT, typename FlagT = bool>
-_CCCL_HOST_DEVICE augmented_value_t(ValueT, FlagT) -> augmented_value_t<ValueT, FlagT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES augmented_value_t(ValueT, FlagT) -> augmented_value_t<ValueT, FlagT>;
 
 template <typename ComputeT, int MaxSegmentsPerWorker>
 using agent_segmented_scan_compute_t =
@@ -406,7 +406,8 @@ private:
 };
 
 template <typename IterT, typename OffsetT, typename SearcherT, typename BeginOffsetIterT, typename ReadTransformT>
-_CCCL_HOST_DEVICE multi_segmented_input_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, ReadTransformT)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+multi_segmented_input_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, ReadTransformT)
   -> multi_segmented_input_iterator<IterT,
                                     ::cuda::std::remove_cv_t<OffsetT>,
                                     SearcherT,
@@ -475,7 +476,8 @@ private:
 };
 
 template <typename IterT, typename OffsetT, typename SearcherT, typename BeginOffsetIterT, typename WriteTransformT>
-_CCCL_HOST_DEVICE multi_segmented_output_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, WriteTransformT)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+multi_segmented_output_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, WriteTransformT)
   -> multi_segmented_output_iterator<IterT,
                                      ::cuda::std::remove_cv_t<OffsetT>,
                                      SearcherT,

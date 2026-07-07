@@ -29,8 +29,6 @@
 
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -58,9 +56,55 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @linear_performance{run-length encode}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! The ``Encode`` algorithm that accepts an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns an @ref RleEncodePolicy.
+//!
+//! The ``NonTrivialRuns`` algorithm that accepts an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns an @ref RleNonTrivialRunsPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_run_length_encode_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin non-trivial-runs-policy-selector
+//!      :end-before: example-end non-trivial-runs-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_run_length_encode_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin non-trivial-runs-tuning
+//!      :end-before: example-end non-trivial-runs-tuning
+//!
 //! @endrst
 struct DeviceRunLengthEncode
 {
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // DeviceRunLengthEncode::Encode dispatches to ReduceByKey, but we want to have a dedicated tuning policy, so we need
+  // to adapt the policy selector to convert the tuning policy
+  template <typename PolicySelector>
+#  if _CCCL_HAS_CONCEPTS()
+    requires detail::rle::encode::rle_encode_policy_selector<PolicySelector>
+#  endif // _CCCL_HAS_CONCEPTS()
+  struct __policy_selector_adapter
+  {
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+      -> ReduceByKeyPolicy
+    {
+      const RleEncodePolicy policy = PolicySelector{}(cc);
+      return ReduceByKeyPolicy{
+        policy.threads_per_block,
+        policy.items_per_thread,
+        policy.load_algorithm,
+        policy.load_modifier,
+        policy.scan_algorithm,
+        policy.lookback_delay};
+    }
+  };
+#endif // _CCCL_DOXYGEN_INVOKED
+
   //! @rst
   //! Computes a run-length encoding of the sequence ``d_in``.
   //!
@@ -131,9 +175,11 @@ struct DeviceRunLengthEncode
   //! @tparam NumRunsOutputIteratorT
   //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -151,7 +197,7 @@ struct DeviceRunLengthEncode
   //!   Pointer to total number of runs
   //!
   //! @param[in] num_items
-  //!   Total number of associated key+value pairs (i.e., the length of `d_in_keys` and `d_in_values`)
+  //!   Total number of input items (i.e., the length of `d_in`)
   //!
   //! @param[in] stream
   //!   @rst
@@ -186,13 +232,11 @@ struct DeviceRunLengthEncode
     // Generator type for providing 1s values for run-length reduction
     using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, offset_t>;
 
-    using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
-
-    using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-
+    using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t>;
+    using key_t   = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
     using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
-    return detail::reduce_by_key::dispatch_streaming</* OverrideAccumT */ accum_t>(
+    return detail::reduce_by_key::dispatch_streaming(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -204,7 +248,7 @@ struct DeviceRunLengthEncode
       reduction_op{},
       static_cast<offset_t>(num_items),
       stream,
-      policy_selector_t{});
+      __policy_selector_adapter<policy_selector_t>{});
   }
 
   //! @rst
@@ -283,8 +327,7 @@ struct DeviceRunLengthEncode
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Encode(
     InputIteratorT d_in,
     UniqueOutputIteratorT d_unique_out,
@@ -300,13 +343,13 @@ struct DeviceRunLengthEncode
     using offset_t                 = detail::choose_signed_offset_t<NumItemsT>;
     using length_t                 = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
     using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, offset_t>;
-    using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
+    using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
     using default_policy_selector = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::reduce_by_key::dispatch_streaming<accum_t>(
+      env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::reduce_by_key::dispatch_streaming(
           storage,
           bytes,
           d_in,
@@ -318,7 +361,7 @@ struct DeviceRunLengthEncode
           reduction_op{},
           static_cast<offset_t>(num_items),
           stream,
-          policy_selector);
+          __policy_selector_adapter<decltype(policy_selector)>{});
       });
   }
 
@@ -394,9 +437,11 @@ struct DeviceRunLengthEncode
   //! @tparam NumRunsOutputIteratorT
   //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -415,7 +460,7 @@ struct DeviceRunLengthEncode
   //!   Pointer to total number of runs (i.e., length of `d_offsets_out`)
   //!
   //! @param[in] num_items
-  //!   Total number of associated key+value pairs (i.e., the length of `d_in_keys` and `d_in_values`)
+  //!   Total number of input items (i.e., the length of `d_in`)
   //!
   //! @param[in] stream
   //!   @rst
@@ -530,8 +575,7 @@ struct DeviceRunLengthEncode
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t NonTrivialRuns(
     InputIteratorT d_in,
     OffsetsOutputIteratorT d_offsets_out,

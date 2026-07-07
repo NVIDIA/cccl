@@ -45,6 +45,25 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceHistogram}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceHistogram that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref HistogramPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin histogram-even-policy-selector
+//!      :end-before: example-end histogram-even-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin histogram-even-tuning
+//!      :end-before: example-end histogram-even-tuning
+//!
 //! @endrst
 struct DeviceHistogram
 {
@@ -126,10 +145,11 @@ struct DeviceHistogram
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -154,11 +174,15 @@ struct DeviceHistogram
   //! @param[in] num_samples
   //!   The number of input samples (i.e., the length of `d_samples`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -168,7 +192,7 @@ struct DeviceHistogram
     LevelT lower_level,
     LevelT upper_level,
     OffsetT num_samples,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -183,7 +207,7 @@ struct DeviceHistogram
       num_samples,
       static_cast<OffsetT>(1),
       sizeof(SampleT) * num_samples,
-      stream);
+      env);
   }
 
   //! @rst
@@ -273,10 +297,11 @@ struct DeviceHistogram
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -308,11 +333,15 @@ struct DeviceHistogram
   //!   The number of bytes between starts of consecutive rows in
   //!   the region of interest
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -324,7 +353,7 @@ struct DeviceHistogram
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
@@ -337,7 +366,7 @@ struct DeviceHistogram
       num_row_samples,
       num_rows,
       row_stride_bytes,
-      stream);
+      env);
   }
 
   //! @rst
@@ -438,10 +467,11 @@ struct DeviceHistogram
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -474,16 +504,17 @@ struct DeviceHistogram
   //! @param[in] num_pixels
   //!   The number of multi-channel pixels (i.e., the length of `d_samples / NUM_CHANNELS`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <int NUM_CHANNELS,
             int NUM_ACTIVE_CHANNELS,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
-            typename OffsetT>
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -493,7 +524,7 @@ struct DeviceHistogram
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
     OffsetT num_pixels,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -509,7 +540,7 @@ struct DeviceHistogram
       num_pixels,
       static_cast<OffsetT>(1),
       sizeof(SampleT) * NUM_CHANNELS * num_pixels,
-      stream);
+      env);
   }
 
 private:
@@ -528,7 +559,8 @@ public:
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
-            typename OffsetT>
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays") CUB_RUNTIME_FUNCTION static cudaError_t
   MultiHistogramEven(
     void* d_temp_storage,
@@ -539,7 +571,7 @@ public:
     const LevelT lower_level[NUM_ACTIVE_CHANNELS],
     const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -552,7 +584,7 @@ public:
       to_array<NUM_ACTIVE_CHANNELS>(lower_level),
       to_array<NUM_ACTIVE_CHANNELS>(upper_level),
       num_pixels,
-      stream);
+      env);
   }
 
   //! @rst
@@ -664,10 +696,11 @@ public:
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -707,16 +740,17 @@ public:
   //!   The number of bytes between starts of consecutive rows in the region of
   //!   interest
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <int NUM_CHANNELS,
             int NUM_ACTIVE_CHANNELS,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
-            typename OffsetT>
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -728,53 +762,56 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
 
-    /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    auto policy_selector =
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>{};
+    using default_policy_selector =
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage,
+      temp_storage_bytes,
+      env,
+      [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
+        if constexpr (sizeof(OffsetT) > sizeof(int))
+        {
+          if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
+          {
+            return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+              storage,
+              bytes,
+              d_samples,
+              d_histogram,
+              num_levels,
+              lower_level,
+              upper_level,
+              (int) num_row_pixels,
+              (int) num_rows,
+              (int) (row_stride_bytes / sizeof(SampleT)),
+              stream,
+              is_byte_sample,
+              policy_selector);
+          }
+        }
 
-    if constexpr (sizeof(OffsetT) > sizeof(int))
-    {
-      if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
-      {
-        // Down-convert OffsetT data type
         return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-          d_temp_storage,
-          temp_storage_bytes,
+          storage,
+          bytes,
           d_samples,
           d_histogram,
           num_levels,
           lower_level,
           upper_level,
-          (int) num_row_pixels,
-          (int) num_rows,
-          (int) (row_stride_bytes / sizeof(SampleT)),
+          num_row_pixels,
+          num_rows,
+          (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
           is_byte_sample,
           policy_selector);
-      }
-    }
-
-    return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_row_pixels,
-      num_rows,
-      (OffsetT) (row_stride_bytes / sizeof(SampleT)),
-      stream,
-      is_byte_sample,
-      policy_selector);
+      });
   }
 
   //! Deprecate [Since 3.0]
@@ -783,7 +820,8 @@ public:
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
-            typename OffsetT>
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays") CUB_RUNTIME_FUNCTION static cudaError_t
   MultiHistogramEven(
     void* d_temp_storage,
@@ -796,7 +834,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -809,7 +847,7 @@ public:
       num_row_pixels,
       num_rows,
       row_stride_bytes,
-      stream);
+      env);
   }
 
   //! @}
@@ -883,10 +921,11 @@ public:
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -910,11 +949,15 @@ public:
   //! @param[in] num_samples
   //!   The number of data samples per row in the region of interest
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -923,7 +966,7 @@ public:
     int num_levels,
     const LevelT* d_levels,
     OffsetT num_samples,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -937,7 +980,7 @@ public:
       num_samples,
       (OffsetT) 1,
       (size_t) (sizeof(SampleT) * num_samples),
-      stream);
+      env);
   }
 
   //! @rst
@@ -1017,10 +1060,11 @@ public:
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1051,11 +1095,15 @@ public:
   //!   The number of bytes between starts of consecutive rows in the region
   //!   of interest
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1066,7 +1114,7 @@ public:
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
@@ -1078,7 +1126,7 @@ public:
       num_row_samples,
       num_rows,
       row_stride_bytes,
-      stream);
+      env);
   }
 
   //! @rst
@@ -1169,10 +1217,11 @@ public:
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1206,16 +1255,17 @@ public:
   //! @param[in] num_pixels
   //!   The number of multi-channel pixels (i.e., the length of `d_samples / NUM_CHANNELS`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <int NUM_CHANNELS,
             int NUM_ACTIVE_CHANNELS,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
-            typename OffsetT>
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1224,7 +1274,7 @@ public:
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
     ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
     OffsetT num_pixels,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -1239,7 +1289,7 @@ public:
       num_pixels,
       (OffsetT) 1,
       (size_t) (sizeof(SampleT) * NUM_CHANNELS * num_pixels),
-      stream);
+      env);
   }
 
   //! Deprecate [Since 3.0]
@@ -1372,9 +1422,11 @@ public:
   //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
   //!   pointer differences, etc. @offset_size1
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1415,16 +1467,17 @@ public:
   //!   The number of bytes between starts of consecutive rows in the
   //!   region of interest
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <int NUM_CHANNELS,
             int NUM_ACTIVE_CHANNELS,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
-            typename OffsetT>
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1435,51 +1488,54 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
-    /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    auto policy_selector =
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>{};
+    using default_policy_selector =
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage,
+      temp_storage_bytes,
+      env,
+      [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
+        if constexpr (sizeof(OffsetT) > sizeof(int))
+        {
+          if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
+          {
+            return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+              storage,
+              bytes,
+              d_samples,
+              d_histogram,
+              num_levels,
+              d_levels,
+              (int) num_row_pixels,
+              (int) num_rows,
+              (int) (row_stride_bytes / sizeof(SampleT)),
+              stream,
+              is_byte_sample,
+              policy_selector);
+          }
+        }
 
-    if constexpr (sizeof(OffsetT) > sizeof(int))
-    {
-      if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
-      {
-        // Down-convert OffsetT data type
         return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-          d_temp_storage,
-          temp_storage_bytes,
+          storage,
+          bytes,
           d_samples,
           d_histogram,
           num_levels,
           d_levels,
-          (int) num_row_pixels,
-          (int) num_rows,
-          (int) (row_stride_bytes / sizeof(SampleT)),
+          num_row_pixels,
+          num_rows,
+          (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
           is_byte_sample,
           policy_selector);
-      }
-    }
-
-    return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      d_levels,
-      num_row_pixels,
-      num_rows,
-      (OffsetT) (row_stride_bytes / sizeof(SampleT)),
-      stream,
-      is_byte_sample,
-      policy_selector);
+      });
   }
 
   //! Deprecate [Since 3.0]
@@ -1607,7 +1663,7 @@ public:
     LevelT lower_level,
     LevelT upper_level,
     OffsetT num_samples,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramEven<1, 1>(
@@ -1690,6 +1746,7 @@ public:
   //!
   //! @param[in] num_levels
   //!   The number of boundaries (levels) for delineating histogram samples.
+  //!   Implies that the number of bins is `num_levels - 1`.
   //!
   //! @param[in] lower_level
   //!   The lower sample value bound (inclusive) for the lowest histogram bin.
@@ -1724,7 +1781,7 @@ public:
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     return MultiHistogramEven<1, 1>(
       d_samples,
@@ -1844,7 +1901,7 @@ public:
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
     OffsetT num_pixels,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
@@ -1932,25 +1989,36 @@ public:
   //!   **[inferred]** Type for specifying boundaries (levels)
   //!
   //! @tparam OffsetT
-  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
+  //!   pointer differences, etc. @offset_size1
   //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
   //! @param[in] d_samples
-  //!   The pointer to the multi-channel input sequence of data samples.
+  //!   The pointer to the multi-channel input sequence of data samples. The
+  //!   samples from different channels are assumed to be interleaved (e.g.,
+  //!   an array of 32-bit pixels where each pixel consists of four
+  //!   *RGBA* 8-bit samples).
   //!
   //! @param[out] d_histogram
-  //!   Array of active channel histogram counter output arrays, each of length `num_levels[channel] - 1`.
+  //!   @rst
+  //!   The pointers to the histogram counter output arrays, one for each
+  //!   active channel. For channel\ :sub:`i`, the allocation length
+  //!   of ``d_histogram[i]`` should be ``num_levels[i] - 1``.
+  //!   @endrst
   //!
   //! @param[in] num_levels
-  //!   Array of the number of boundaries (levels) for each active channel.
+  //!   @rst
+  //!   The number of boundaries (levels) for delineating histogram samples in each active channel.
+  //!   Implies that the number of bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //!   @endrst
   //!
   //! @param[in] lower_level
-  //!   Array of the lower sample value bound (inclusive) for the lowest bin of each active channel.
+  //!   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
   //!
   //! @param[in] upper_level
-  //!   Array of the upper sample value bound (exclusive) for the highest bin of each active channel.
+  //!   The upper sample value bound (exclusive) for the highest histogram bin in each active channel.
   //!
   //! @param[in] num_row_pixels
   //!   The number of multi-channel pixels per row in the region of interest
@@ -1959,7 +2027,8 @@ public:
   //!   The number of rows in the region of interest
   //!
   //! @param[in] row_stride_bytes
-  //!   The number of bytes between starts of consecutive rows in the region of interest
+  //!   The number of bytes between starts of consecutive rows in the region of
+  //!   interest
   //!
   //! @param[in] env
   //!   @rst
@@ -1981,18 +2050,17 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramEven");
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        auto policy_selector =
-          detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>{};
-
+    using default_policy_selector =
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
@@ -2088,7 +2156,9 @@ public:
   //!   Implies that the number of bins is `num_levels - 1`.
   //!
   //! @param[in] d_levels
-  //!   The pointer to the array of boundaries (levels). Bins are defined by consecutive pairs.
+  //!   The pointer to the array of boundaries (levels). Bin ranges are defined
+  //!   by consecutive boundary pairings: lower sample value boundaries are
+  //!   inclusive and upper sample value boundaries are exclusive.
   //!
   //! @param[in] num_samples
   //!   The number of input samples (i.e., the length of `d_samples`)
@@ -2108,7 +2178,7 @@ public:
     int num_levels,
     const LevelT* d_levels,
     OffsetT num_samples,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramRange<1, 1>(
@@ -2181,9 +2251,12 @@ public:
   //!
   //! @param[in] num_levels
   //!   The number of boundaries (levels) for delineating histogram samples.
+  //!   Implies that the number of bins is `num_levels - 1`.
   //!
   //! @param[in] d_levels
-  //!   The pointer to the array of boundaries (levels). Bins are defined by consecutive pairs.
+  //!   The pointer to the array of boundaries (levels). Bin ranges are defined
+  //!   by consecutive boundary pairings: lower sample value boundaries are
+  //!   inclusive and upper sample value boundaries are exclusive.
   //!
   //! @param[in] num_row_samples
   //!   The number of data samples per row in the region of interest
@@ -2211,7 +2284,7 @@ public:
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     return MultiHistogramRange<1, 1>(
       d_samples,
@@ -2317,7 +2390,7 @@ public:
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
     ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
     OffsetT num_pixels,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
@@ -2440,18 +2513,17 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramRange");
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        auto policy_selector =
-          detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>{};
-
+    using default_policy_selector =
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)

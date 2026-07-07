@@ -77,7 +77,9 @@ def bench_compare_complex(state: bench.State):
         return
 
     num_items = num_elements - 1
-    transformer = make_binary_transform(d_in[:-1], d_in[1:], d_out, less_complex)
+    transformer = make_binary_transform(
+        d_in1=d_in[:-1], d_in2=d_in[1:], d_out=d_out, op=less_complex
+    )
 
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
@@ -85,12 +87,12 @@ def bench_compare_complex(state: bench.State):
 
     def launcher(launch: bench.Launch):
         transformer(
-            d_in[:-1],
-            d_in[1:],
-            d_out,
-            less_complex,
-            num_items,
-            launch.get_stream(),
+            d_in1=d_in[:-1],
+            d_in2=d_in[1:],
+            d_out=d_out,
+            op=less_complex,
+            num_items=num_items,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

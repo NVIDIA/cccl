@@ -306,8 +306,7 @@ static_assert(cuda::std::_Common_type_exists<BadBasicCommonType, int>);
 static_assert(cuda::std::_Common_type_exists<int, BadBasicCommonType>);
 #endif
 static_assert(!cuda::std::same_as<cuda::std::common_type_t<BadBasicCommonType, int>,
-                                  cuda::std::common_type_t<int, BadBasicCommonType>>,
-              "");
+                                  cuda::std::common_type_t<int, BadBasicCommonType>>);
 static_assert(!CheckCommonWith<BadBasicCommonType, int>());
 
 struct DullCommonType
@@ -836,7 +835,7 @@ static_assert(HasValidCommonType<const T7&, const int&>());
 static_assert(HasCommonReference<const T7&, const int&>());
 #if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // Unspecified MSVC bug
 static_assert(
-  !HasCommonReference<cuda::std::common_type_t<T7, int>&, cuda::std::common_reference_t<const T7&, const int&>>(), "");
+  !HasCommonReference<cuda::std::common_type_t<T7, int>&, cuda::std::common_reference_t<const T7&, const int&>>());
 #endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(!CheckCommonWith<T7, int>());
 

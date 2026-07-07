@@ -69,11 +69,16 @@ class group;
 
 // mappings
 
-template <::cuda::std::size_t _Np = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
+template <class _Fn>
+class binary_partition;
+
+template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
 class group_by;
 
 template <class _Data, bool _IsExahustive>
 class group_as;
+
+class identity_mapping;
 
 // synchronizers
 
@@ -96,6 +101,13 @@ template <class _Hierarchy>
 inline constexpr bool __is_this_group_v<this_cluster<_Hierarchy>> = true;
 template <class _Hierarchy>
 inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
+
+template <class _Tp>
+inline constexpr bool __is_group_mapping_v = false;
+template <::cuda::std::size_t _UnitCount, bool _IsExhaustive>
+inline constexpr bool __is_group_mapping_v<group_by<_UnitCount, _IsExhaustive>> = true;
+template <class _Data, bool _IsExhaustive>
+inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsExhaustive>> = true;
 
 // tags
 

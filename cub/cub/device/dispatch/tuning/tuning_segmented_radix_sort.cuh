@@ -1,0 +1,311 @@
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
+
+#pragma once
+
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__host_stdlib/ostream>
+
+CUB_NAMESPACE_BEGIN
+
+//! The tuning policy for @ref DeviceSegmentedRadixSort.
+struct SegmentedRadixSortPolicy
+{
+  RadixSortDownsweepPolicy regular_pass; //!< Policy for the regular radix sort pass on each segment
+  RadixSortDownsweepPolicy alternate_pass; //!< Policy for the alternate radix sort pass on each segment
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const SegmentedRadixSortPolicy& lhs, const SegmentedRadixSortPolicy& rhs) noexcept
+  {
+    return lhs.regular_pass == rhs.regular_pass && lhs.alternate_pass == rhs.alternate_pass;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const SegmentedRadixSortPolicy& lhs, const SegmentedRadixSortPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
+  {
+    return os << "SegmentedRadixSortPolicy { .regular_pass = " << p.regular_pass
+              << ", .alternate_pass = " << p.alternate_pass << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+namespace detail::segmented_radix_sort
+{
+using radix_sort::make_reg_scaled_radix_sort_downsweep_policy;
+
+// TODO(bgruber): remove in CCCL 4.0
+using segmented_radix_sort_policy = SegmentedRadixSortPolicy;
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept segmented_radix_sort_policy_selector = detail::policy_selector<T, SegmentedRadixSortPolicy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
+{
+  int key_size;
+  int value_size; // when 0, indicates keys-only
+
+  // Dominant-sized key/value type
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __dominant_size() const
+  {
+    return ::cuda::std::max(value_size, key_size);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> SegmentedRadixSortPolicy
+  {
+    if (cc >= ::cuda::compute_capability{10, 0})
+    {
+      const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
+
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        192,
+        39,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
+
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        384,
+        11,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
+
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
+    }
+
+    if (cc >= ::cuda::compute_capability{9, 0})
+    {
+      const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
+
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        192,
+        39,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
+
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        384,
+        11,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
+
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
+    }
+
+    if (cc >= ::cuda::compute_capability{8, 0})
+    {
+      const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
+
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        192,
+        39,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
+
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        384,
+        11,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
+
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
+    }
+
+    if (cc >= ::cuda::compute_capability{7, 0})
+    {
+      const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
+
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        192,
+        39,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
+
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        384,
+        11,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
+
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
+    }
+
+    if (cc >= ::cuda::compute_capability{6, 2})
+    {
+      // SM62: segmented policies match the downsweep policies
+      const int primary_radix_bits = 5;
+      const int alt_radix_bits     = primary_radix_bits - 1;
+
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        256,
+        16,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        primary_radix_bits);
+
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        256,
+        16,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_RAKING_MEMOIZE,
+        alt_radix_bits);
+
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
+    }
+
+    if (cc >= ::cuda::compute_capability{6, 1})
+    {
+      const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
+
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        192,
+        39,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
+
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        384,
+        11,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
+
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
+    }
+
+    if (cc >= ::cuda::compute_capability{6, 0})
+    {
+      const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
+
+      const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        192,
+        39,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits);
+
+      const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+        384,
+        11,
+        __dominant_size(),
+        BLOCK_LOAD_TRANSPOSE,
+        LOAD_DEFAULT,
+        RADIX_RANK_MEMOIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        segmented_radix_bits - 1);
+
+      return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
+    }
+
+    // SM50
+    const int segmented_radix_bits = (key_size > 1) ? 6 : 5;
+
+    const auto regular_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      192,
+      31,
+      __dominant_size(),
+      BLOCK_LOAD_WARP_TRANSPOSE,
+      LOAD_DEFAULT,
+      RADIX_RANK_MEMOIZE,
+      BLOCK_SCAN_WARP_SCANS,
+      segmented_radix_bits);
+
+    const auto alternate_pass = make_reg_scaled_radix_sort_downsweep_policy(
+      256,
+      11,
+      __dominant_size(),
+      BLOCK_LOAD_WARP_TRANSPOSE,
+      LOAD_DEFAULT,
+      RADIX_RANK_MEMOIZE,
+      BLOCK_SCAN_WARP_SCANS,
+      segmented_radix_bits - 1);
+
+    return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(segmented_radix_sort_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+template <typename KeyT, typename ValueT, typename OffsetT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const
+    -> SegmentedRadixSortPolicy
+  {
+    constexpr auto policies =
+      policy_selector{int{sizeof(KeyT)}, ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)}};
+    return policies(cc);
+  }
+};
+} // namespace detail::segmented_radix_sort
+
+CUB_NAMESPACE_END

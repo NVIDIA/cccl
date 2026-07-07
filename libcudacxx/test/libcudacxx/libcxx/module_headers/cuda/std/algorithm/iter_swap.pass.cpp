@@ -18,12 +18,12 @@ struct iter_swap_iter
   int v;
 };
 
-__host__ __device__ constexpr void iter_swap(iter_swap_iter* a, iter_swap_iter* b)
+TEST_FUNC constexpr void iter_swap(iter_swap_iter* a, iter_swap_iter* b)
 {
   cuda::std::swap(a->v, b->v);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int x = 1, y = 2;
   cuda::std::iter_swap(&x, &y);

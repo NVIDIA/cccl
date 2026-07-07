@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6081171: error: "call to non-tile function not supported!"
-
 // template <class T>
 //   constexpr int popcount(T x) noexcept;
 

@@ -77,9 +77,6 @@ struct rw_type_of<mdspan<const T, Extents, Layout, Accessor<const T>>>
 {
   using type = mdspan<T, Extents, Layout, Accessor<T>>;
 };
-
-template <class T>
-inline constexpr bool always_false = false;
 } // namespace reserved
 
 /**
@@ -118,7 +115,8 @@ mdspan<T, Extents, Layout, Accessor<T>> to_rw_type_of(const mdspan<const T, Exte
   }
   else
   {
-    static_assert(reserved::always_false<T>, "Need to implement the conversion of Accessor<T> to Accessor<const T>");
+    static_assert(::cuda::std::__always_false_v<T>,
+                  "Need to implement the conversion of Accessor<T> to Accessor<const T>");
   }
   _CCCL_UNREACHABLE();
 }

@@ -180,7 +180,12 @@ function(
       )
     endif()
 
-    if ("${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$")
+    if (
+      "${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_find_env_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_partition_env_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_select_env_api\\.cu$"
+    )
       if (
         "Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
         AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13
@@ -227,6 +232,23 @@ function(
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
     endif()
 
+    if (
+      "${test_src}" MATCHES "test_future_arch\\.cu$"
+      AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+      AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "13.0.0"
+    )
+      # In future arch test, we replace __CUDA_ARCH__ and __CUDA_ARCH_LIST__ with our own values. However, nvcc
+      # preincludes <cuda_runtime.h> header, already working with __CUDA_ARCH__. So, we define the <cuda_runtime.h>'s
+      # include guard macro so we can modify the values before including the header inside the source file.
+      target_compile_definitions(${test_target} PRIVATE __CUDA_RUNTIME_H__)
+
+      # Force only 1 architecture to be compiled. It must be the newest supported architecture.
+      set_target_properties(
+        ${test_target}
+        PROPERTIES CUDA_ARCHITECTURES "121-virtual"
+      )
+    endif()
+
     if (is_fail_test)
       cccl_add_xfail_compile_target_test(
         ${test_target}
@@ -257,6 +279,14 @@ function(
 
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+  # Disable clang-cuda >= 22 warnings regarding failed loop unrolling.
+  if (
+    "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang"
+    AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "22.0.0"
+  )
+    target_compile_options(${test_target} PRIVATE "-Wno-pass-failed")
+  endif()
 endfunction()
 
 # Sets out_var to launch id if the label contains launch variants

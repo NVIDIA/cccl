@@ -14,11 +14,13 @@
 #endif // no system header
 
 #include <cub/device/dispatch/dispatch_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
 #include <thrust/iterator/iterator_adaptor.h>
 
 #include <cuda/__iterator/tabulate_output_iterator.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/limits>
@@ -152,24 +154,16 @@ struct unzip_and_write_arg_extremum_op
 //   The streaming reduction requires two overloads, one used for selecting the extremum within one partition and one
 //   for selecting the extremum across partitions.
 //
-// @tparam InitT
-//   Initial value type
+// @tparam TuningEnvT
+//   Tuning environment Environment type
 //
-// @tparam PolicySelector
-//   Selects the tuning policy
 template <typename PerPartitionOffsetT,
           typename InputIteratorT,
           typename ExtremumOutIteratorT,
           typename IndexOutIteratorT,
           typename GlobalOffsetT,
           typename ReductionOpT,
-          typename PolicySelector = policy_selector_from_types<
-            KeyValuePair<PerPartitionOffsetT, non_void_value_t<ExtremumOutIteratorT, it_value_t<InputIteratorT>>>,
-            PerPartitionOffsetT,
-            ReductionOpT>>
-#  if _CCCL_HAS_CONCEPTS()
-  requires reduce_policy_selector<PolicySelector>
-#  endif // _CCCL_HAS_CONCEPTS()
+          typename TuningEnvT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -179,10 +173,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   GlobalOffsetT num_items,
   ReductionOpT reduce_op,
   cudaStream_t stream,
-  PolicySelector policy_selector = {})
+  const TuningEnvT& = {})
 {
-  using input_value_t     = it_value_t<InputIteratorT>;
-  using output_extremum_t = non_void_value_t<ExtremumOutIteratorT, input_value_t>;
+  using input_value_t             = detail::it_value_t<InputIteratorT>;
+  using output_extremum_t         = detail::non_void_value_t<ExtremumOutIteratorT, input_value_t>;
+  using default_policy_selector_t = detail::reduce::
+    policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, output_extremum_t>, PerPartitionOffsetT, ReductionOpT>;
+  using default_policy_t = decltype(default_policy_selector_t{}(::cuda::compute_capability{}));
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
+
+#  if _CCCL_HAS_CONCEPTS()
+  static_assert(reduce_policy_selector<policy_selector_t>);
+#  endif // _CCCL_HAS_CONCEPTS()
 
   // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
   auto d_result_out = ::cuda::make_tabulate_output_iterator(
@@ -262,7 +265,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     initial_value,
     stream,
     ::cuda::std::identity{},
-    policy_selector);
+    policy_selector_t{});
 
   // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
   if (const auto error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
@@ -279,14 +282,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
   global_accum_t* const d_global_aggregates = static_cast<global_accum_t*>(allocations[1]);
 
-  accumulating_out_op = accumulating_transform_output_op_t{
-    true,
-    is_single_partition,
-    d_global_aggregates,
-    (d_global_aggregates + 1),
-    d_result_out,
-    local_to_global_op,
-    reduce_op};
+  accumulating_out_op.d_previous_aggregate = d_global_aggregates;
+  accumulating_out_op.d_aggregate_out      = d_global_aggregates + 1;
 
   for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
        current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
@@ -307,7 +304,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
           initial_value,
           stream,
           ::cuda::std::identity{},
-          policy_selector))
+          policy_selector_t{}))
     {
       return error;
     }

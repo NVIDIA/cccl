@@ -44,10 +44,17 @@ def bench_transform_reduce_sum(state: bench.State):
     transform_it = TransformIterator(d_in, square_op)
     h_init = np.zeros(1, dtype=dtype)
 
-    reducer = make_reduce_into(transform_it, d_out, OpKind.PLUS, h_init)
+    reducer = make_reduce_into(
+        d_in=transform_it, d_out=d_out, op=OpKind.PLUS, h_init=h_init
+    )
 
     temp_storage_bytes = reducer(
-        None, transform_it, d_out, OpKind.PLUS, num_items, h_init
+        temp_storage=None,
+        d_in=transform_it,
+        d_out=d_out,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
     )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -57,7 +64,15 @@ def bench_transform_reduce_sum(state: bench.State):
     state.add_global_memory_writes(1 * d_out.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
-        reducer(temp_storage, transform_it, d_out, OpKind.PLUS, num_items, h_init)
+        reducer(
+            temp_storage=temp_storage,
+            d_in=transform_it,
+            d_out=d_out,
+            num_items=num_items,
+            op=OpKind.PLUS,
+            h_init=h_init,
+            stream=launch.get_stream(),
+        )
 
     state.exec(launcher, batched=False)
 

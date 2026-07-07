@@ -274,6 +274,11 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       }
       if (doStartCopy)
       {
+        // need to work around yet another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8838
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+        asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemStartAlignDown));
+        asm volatile("" : "+l"(srcSmem));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         // Copy a subset of the first 16 bytes
         if (::cuda::ptx::elect_sync(~0))
         {

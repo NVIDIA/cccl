@@ -26,8 +26,9 @@ Traditional two-phase APIs can be recognized by taking ``void* d_temp_storage, s
 They follow a two-phase usage pattern that requires three steps:
 
 1. **Query Phase**: The algorithm is called the first time with ``d_temp_storage = nullptr`` to determine the required temporary storage size.
-   The needed size in bytes is written to the parameter ``temp_storage_bytes``.
-2. **Temporary storage allocation**: The user is responsible to allocate device memory of at least ``temp_storage_bytes`` bytes.
+   The required size is written to ``temp_storage_bytes`` without dereferencing iterators or launching kernels.
+2. **Temporary storage allocation**: The user is responsible for allocating device-accessible memory of at least ``temp_storage_bytes`` bytes.
+   No special alignment is required.
 3. **Execution Phase**: The algorithm is called the second time with ``d_temp_storage`` pointing to the allocated device memory, performing the actual operation.
 
 In principle, the query phase and execution phase must call the same CUB API.
@@ -109,6 +110,8 @@ CUB device-level segmented-problem (batched) parallel algorithms:
 * :cpp:struct:`cub::DeviceSegmentedSort` computes batched sort across non-overlapping sequences of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceSegmentedRadixSort` computes batched radix sort across non-overlapping sequences of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceSegmentedReduce` computes reductions across multiple sequences of data residing within device-accessible memory
+* :cpp:struct:`cub::DeviceSegmentedScan` computes prefix scans across multiple sequences of data residing within device-accessible memory
+* :cpp:struct:`cub::DeviceBatchedTopK` finds the largest (or smallest) K items from each of multiple unordered lists (segments) residing within device-accessible memory
 * :cpp:struct:`cub::DeviceCopy` provides device-wide, parallel operations for batched copying of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceMemcpy` provides device-wide, parallel operations for batched copying of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceFind` provides vectorized binary search algorithms

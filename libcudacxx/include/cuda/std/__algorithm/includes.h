@@ -37,19 +37,21 @@ template <class _Iter1, class _Sent1, class _Iter2, class _Sent2, class _Comp, c
 _CCCL_API constexpr bool __includes(
   _Iter1 __first1, _Sent1 __last1, _Iter2 __first2, _Sent2 __last2, _Comp&& __comp, _Proj1&& __proj1, _Proj2&& __proj2)
 {
+  bool __result = true;
   for (; __first2 != __last2; ++__first1)
   {
     if (__first1 == __last1
         || ::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj2, *__first2), ::cuda::std::invoke(__proj1, *__first1)))
     {
-      return false;
+      __result = false;
+      break;
     }
     if (!::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj1, *__first1), ::cuda::std::invoke(__proj2, *__first2)))
     {
       ++__first2;
     }
   }
-  return true;
+  return __result;
 }
 
 _CCCL_EXEC_CHECK_DISABLE

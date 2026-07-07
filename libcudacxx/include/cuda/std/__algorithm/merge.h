@@ -39,11 +39,13 @@ _CCCL_API constexpr _OutputIterator __merge(
   _OutputIterator __result,
   _Compare __comp)
 {
+  bool __second_remains = true;
   for (; __first1 != __last1; ++__result)
   {
     if (__first2 == __last2)
     {
-      return ::cuda::std::copy(__first1, __last1, __result);
+      __second_remains = false;
+      break;
     }
     if (__comp(*__first2, *__first1))
     {
@@ -56,7 +58,14 @@ _CCCL_API constexpr _OutputIterator __merge(
       ++__first1;
     }
   }
-  return ::cuda::std::copy(__first2, __last2, __result);
+  if (__second_remains)
+  {
+    return ::cuda::std::copy(__first2, __last2, __result);
+  }
+  else
+  {
+    return ::cuda::std::copy(__first1, __last1, __result);
+  }
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>

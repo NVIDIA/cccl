@@ -10,6 +10,7 @@ from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._serialization import BUILD_RESULT, ITER, OP, Serializable
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -19,7 +20,7 @@ from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _UniqueByKey:
+class _UniqueByKey(Serializable):
     __slots__ = [
         "build_result",
         "d_in_keys_cccl",
@@ -29,6 +30,16 @@ class _UniqueByKey:
         "d_out_num_selected_cccl",
         "op_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_in_items_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_out_items_cccl", ITER),
+        ("d_out_num_selected_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceUniqueByKeyBuildResult)),
+    )
 
     def __init__(
         self,
@@ -61,6 +72,7 @@ class _UniqueByKey:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in_keys: DeviceArrayLike | IteratorT,
         d_in_items: DeviceArrayLike | IteratorT,
@@ -108,6 +120,7 @@ class _UniqueByKey:
 
 @cache_with_registered_key_functions
 def make_unique_by_key(
+    *,
     d_in_keys: DeviceArrayLike | IteratorT,
     d_in_items: DeviceArrayLike | IteratorT,
     d_out_keys: DeviceArrayLike | IteratorT,
@@ -143,6 +156,7 @@ def make_unique_by_key(
 
 
 def unique_by_key(
+    *,
     d_in_keys: DeviceArrayLike | IteratorT,
     d_in_items: DeviceArrayLike | IteratorT,
     d_out_keys: DeviceArrayLike | IteratorT,
@@ -176,28 +190,33 @@ def unique_by_key(
         stream: CUDA stream for the operation (optional)
     """
     uniquer = make_unique_by_key(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
     )
     tmp_storage_bytes = uniquer(
-        None,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        op,
-        num_items,
-        stream,
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
+        num_items=num_items,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     uniquer(
-        tmp_storage,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        op,
-        num_items,
-        stream,
+        temp_storage=tmp_storage,
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
+        num_items=num_items,
+        stream=stream,
     )

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // cuda::std::views::drop_while
 
 // #include <cuda/std/algorithm>

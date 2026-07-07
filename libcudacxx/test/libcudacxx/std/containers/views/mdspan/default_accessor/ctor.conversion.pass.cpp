@@ -50,24 +50,22 @@ TEST_FUNC constexpr bool test()
 
   // char is convertible to int, but accessors are not
   static_assert(
-    !cuda::std::is_constructible<cuda::std::default_accessor<int>, cuda::std::default_accessor<char>>::value, "");
+    !cuda::std::is_constructible<cuda::std::default_accessor<int>, cuda::std::default_accessor<char>>::value);
   // don't allow conversion from const elements to non-const
   static_assert(
-    !cuda::std::is_constructible<cuda::std::default_accessor<int>, cuda::std::default_accessor<const int>>::value, "");
+    !cuda::std::is_constructible<cuda::std::default_accessor<int>, cuda::std::default_accessor<const int>>::value);
   // MinimalElementType is constructible from int, but accessors should not be convertible
   static_assert(!cuda::std::is_constructible<cuda::std::default_accessor<MinimalElementType>,
-                                             cuda::std::default_accessor<int>>::value,
-                "");
+                                             cuda::std::default_accessor<int>>::value);
   // don't allow conversion from const elements to non-const
   static_assert(!cuda::std::is_constructible<cuda::std::default_accessor<MinimalElementType>,
-                                             cuda::std::default_accessor<const MinimalElementType>>::value,
-                "");
+                                             cuda::std::default_accessor<const MinimalElementType>>::value);
   // don't allow conversion from Base to Derived
   static_assert(
-    !cuda::std::is_constructible<cuda::std::default_accessor<Derived>, cuda::std::default_accessor<Base>>::value, "");
+    !cuda::std::is_constructible<cuda::std::default_accessor<Derived>, cuda::std::default_accessor<Base>>::value);
   // don't allow conversion from Derived to Base
   static_assert(
-    !cuda::std::is_constructible<cuda::std::default_accessor<Base>, cuda::std::default_accessor<Derived>>::value, "");
+    !cuda::std::is_constructible<cuda::std::default_accessor<Base>, cuda::std::default_accessor<Derived>>::value);
 
   return true;
 }

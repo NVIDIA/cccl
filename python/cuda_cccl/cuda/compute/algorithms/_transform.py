@@ -11,13 +11,21 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
+from .._serialization import BUILD_RESULT, ITER, OP, Serializable
 from .._utils import protocols
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _UnaryTransform:
+class _UnaryTransform(Serializable):
     __slots__ = ["d_in_cccl", "d_out_cccl", "op_cccl", "build_result"]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceUnaryTransform)),
+    )
 
     def __init__(
         self,
@@ -42,6 +50,7 @@ class _UnaryTransform:
 
     def __call__(
         self,
+        *,
         d_in,
         d_out,
         op: Callable | OpAdapter,
@@ -65,7 +74,7 @@ class _UnaryTransform:
         return None
 
 
-class _BinaryTransform:
+class _BinaryTransform(Serializable):
     __slots__ = [
         "d_in1_cccl",
         "d_in2_cccl",
@@ -73,6 +82,14 @@ class _BinaryTransform:
         "op_cccl",
         "build_result",
     ]
+
+    __serialization_schema__ = (
+        ("d_in1_cccl", ITER),
+        ("d_in2_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceBinaryTransform)),
+    )
 
     def __init__(
         self,
@@ -101,6 +118,7 @@ class _BinaryTransform:
 
     def __call__(
         self,
+        *,
         d_in1,
         d_in2,
         d_out,
@@ -129,6 +147,7 @@ class _BinaryTransform:
 
 @cache_with_registered_key_functions
 def make_unary_transform(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
@@ -162,6 +181,7 @@ def make_unary_transform(
 
 @cache_with_registered_key_functions
 def make_binary_transform(
+    *,
     d_in1: DeviceArrayLike | IteratorT,
     d_in2: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
@@ -196,6 +216,7 @@ def make_binary_transform(
 
 
 def unary_transform(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
@@ -236,11 +257,14 @@ def unary_transform(
         stream: CUDA stream to use for the operation.
     """
     op_adapter = make_op_adapter(op)
-    transformer = make_unary_transform(d_in, d_out, op_adapter)
-    transformer(d_in, d_out, op_adapter, num_items, stream)
+    transformer = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter)
+    transformer(
+        d_in=d_in, d_out=d_out, op=op_adapter, num_items=num_items, stream=stream
+    )
 
 
 def binary_transform(
+    *,
     d_in1: DeviceArrayLike | IteratorT,
     d_in2: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
@@ -280,5 +304,14 @@ def binary_transform(
         stream: CUDA stream to use for the operation.
     """
     op_adapter = make_op_adapter(op)
-    transformer = make_binary_transform(d_in1, d_in2, d_out, op_adapter)
-    transformer(d_in1, d_in2, d_out, op_adapter, num_items, stream)
+    transformer = make_binary_transform(
+        d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=op_adapter
+    )
+    transformer(
+        d_in1=d_in1,
+        d_in2=d_in2,
+        d_out=d_out,
+        op=op_adapter,
+        num_items=num_items,
+        stream=stream,
+    )

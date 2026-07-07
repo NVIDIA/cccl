@@ -48,6 +48,12 @@
 #  undef _CCCL_BUILTIN_POPCOUNTG
 #endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6081171: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_POPCOUNT
+#  undef _CCCL_BUILTIN_POPCOUNTLL
+#  undef _CCCL_BUILTIN_POPCOUNTLL
+#endif // _CCCL_TILE_COMPILATION()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if !defined(_CCCL_BUILTIN_POPCOUNTG)
@@ -80,7 +86,7 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_API int __cccl_popcount_impl_host(_Tp __v) noexcept
 {
-#    if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#    if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
     return static_cast<int>(::__popcnt(__v));
@@ -90,7 +96,7 @@ template <typename _Tp>
     return static_cast<int>(::__popcnt64(__v));
   }
   // _CountOneBits exists after MSVC 1931
-#    elif _CCCL_COMPILER(MSVC, >, 19, 30) && _CCCL_ARCH(ARM64)
+#    elif _CCCL_COMPILER(MSVC, >, 19, 30) && _CCCL_HOST_ARCH(ARM64)
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
     return static_cast<int>(::_CountOneBits(__v));

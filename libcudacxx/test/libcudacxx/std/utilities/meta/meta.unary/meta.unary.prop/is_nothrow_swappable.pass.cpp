@@ -65,8 +65,8 @@ int main(int, char**)
     // Test that it correctly deduces the noexcept of swap.
     static_assert(cuda::std::is_nothrow_swappable<A>::value);
     static_assert(!cuda::std::is_nothrow_swappable<B>::value && cuda::std::is_swappable<B>::value);
-    static_assert(!cuda::std::is_nothrow_swappable<ThrowingMove>::value && cuda::std::is_swappable<ThrowingMove>::value,
-                  "");
+    static_assert(
+      !cuda::std::is_nothrow_swappable<ThrowingMove>::value && cuda::std::is_swappable<ThrowingMove>::value);
   }
   {
     // Test that it doesn't drop the qualifiers

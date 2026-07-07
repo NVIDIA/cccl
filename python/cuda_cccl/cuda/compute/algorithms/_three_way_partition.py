@@ -11,13 +11,14 @@ from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._serialization import BUILD_RESULT, ITER, OP, Serializable
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _ThreeWayPartition:
+class _ThreeWayPartition(Serializable):
     __slots__ = [
         "build_result",
         "d_in_cccl",
@@ -28,6 +29,17 @@ class _ThreeWayPartition:
         "select_first_part_op_cccl",
         "select_second_part_op_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_first_part_out_cccl", ITER),
+        ("d_second_part_out_cccl", ITER),
+        ("d_unselected_out_cccl", ITER),
+        ("d_num_selected_out_cccl", ITER),
+        ("select_first_part_op_cccl", OP),
+        ("select_second_part_op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceThreeWayPartitionBuildResult)),
+    )
 
     def __init__(
         self,
@@ -67,6 +79,7 @@ class _ThreeWayPartition:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_first_part_out,
@@ -116,6 +129,7 @@ class _ThreeWayPartition:
 
 @cache_with_registered_key_functions
 def make_three_way_partition(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_first_part_out: DeviceArrayLike | IteratorT,
     d_second_part_out: DeviceArrayLike | IteratorT,
@@ -167,6 +181,7 @@ def make_three_way_partition(
 
 
 def three_way_partition(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_first_part_out: DeviceArrayLike | IteratorT,
     d_second_part_out: DeviceArrayLike | IteratorT,
@@ -212,36 +227,36 @@ def three_way_partition(
     second_op_adapter = make_op_adapter(select_second_part_op)
 
     partitioner = make_three_way_partition(
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        first_op_adapter,
-        second_op_adapter,
+        d_in=d_in,
+        d_first_part_out=d_first_part_out,
+        d_second_part_out=d_second_part_out,
+        d_unselected_out=d_unselected_out,
+        d_num_selected_out=d_num_selected_out,
+        select_first_part_op=first_op_adapter,
+        select_second_part_op=second_op_adapter,
     )
     tmp_storage_bytes = partitioner(
-        None,
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        first_op_adapter,
-        second_op_adapter,
-        num_items,
-        stream,
+        temp_storage=None,
+        d_in=d_in,
+        d_first_part_out=d_first_part_out,
+        d_second_part_out=d_second_part_out,
+        d_unselected_out=d_unselected_out,
+        d_num_selected_out=d_num_selected_out,
+        select_first_part_op=first_op_adapter,
+        select_second_part_op=second_op_adapter,
+        num_items=num_items,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     partitioner(
-        tmp_storage,
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        first_op_adapter,
-        second_op_adapter,
-        num_items,
-        stream,
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_first_part_out=d_first_part_out,
+        d_second_part_out=d_second_part_out,
+        d_unselected_out=d_unselected_out,
+        d_num_selected_out=d_num_selected_out,
+        select_first_part_op=first_op_adapter,
+        select_second_part_op=second_op_adapter,
+        num_items=num_items,
+        stream=stream,
     )

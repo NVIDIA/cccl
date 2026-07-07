@@ -56,7 +56,7 @@ inline constexpr bool has_member_system<T, ::cuda::std::void_t<decltype(::cuda::
   ::cuda::std::is_same_v<decltype(::cuda::std::declval<T>().system()), typename allocator_system<T>::type&>;
 
 template <typename Alloc>
-[[nodiscard]] _CCCL_API decltype(auto) system(Alloc& a)
+[[nodiscard]] _CCCL_HOST_DEVICE_API decltype(auto) system(Alloc& a)
 {
   if constexpr (has_member_system<Alloc>)
   { // return the allocator's system

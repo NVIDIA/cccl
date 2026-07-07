@@ -87,8 +87,7 @@ public:
     size_t res = 1;
     for (size_t d = 0; d < dimensions; d++)
     {
-      // TODO: should this be (ends[d] - begins[d] + strides[d] - 1) / strides[d];
-      res *= (ends[d] - begins[d]) / strides[d];
+      res *= (ends[d] - begins[d] + strides[d] - 1) / strides[d];
     }
 
     return res;
@@ -247,10 +246,9 @@ public:
     return cyclic_shape<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
+  _CCCL_HOST_DEVICE static void get_executor(pos4* /*unused*/, pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
   {
     abort();
-    return pos4(0);
   }
 };
 
@@ -274,6 +272,21 @@ UNITTEST("cyclic_shape<3>")
   }
 
   EXPECT(cnt == expected_cnt);
+};
+
+UNITTEST("cyclic_shape<1> size rounds up stragglers")
+{
+  cyclic_shape<1> shape{{::std::make_tuple(0, 7, 2)}};
+  size_t cnt = 0;
+
+  for ([[maybe_unused]] const auto& pos : shape)
+  {
+    EXPECT(cnt < 4);
+    cnt++;
+  }
+
+  EXPECT(cnt == 4);
+  EXPECT(shape.size() == 4);
 };
 
 UNITTEST("empty cyclic_shape<1>")

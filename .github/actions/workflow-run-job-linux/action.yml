@@ -8,6 +8,9 @@ inputs:
   command:
     description: "The command to run."
     required: true
+  environment:
+    description: "Additional environmental parameters for the command."
+    required: false
   image:
     description: "The Docker image to use."
     required: true
@@ -30,6 +33,7 @@ runs:
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        ENVIRONMENT: ${{ inputs.environment }}
         GH_TOKEN: ${{ github.token }}
       run: |
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID ${{inputs.id}}\e[0m"
@@ -43,6 +47,16 @@ runs:
         echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
         echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
         echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
+        echo "JOB_ENVIRONMENT=${ENVIRONMENT}"      | tee -a $GITHUB_ENV
+
+        # Translate the JSON-string ENVIRONMENT input into `--env FOO=bar` args
+        # for the downstream `docker run` step:
+        if [[ -z "$ENVIRONMENT" || "$ENVIRONMENT" == "null" || "$ENVIRONMENT" == "[]" ]]; then
+          ENVARGS=""
+        else
+          ENVARGS=$(echo "$ENVIRONMENT" | jq -rj '.[] | "--env \(.) "')
+        fi
+        echo "ENVARGS=${ENVARGS}"                  | tee -a $GITHUB_ENV
 
         echo "::endgroup::"
 
@@ -54,7 +68,7 @@ runs:
 
     - name: Get AWS credentials for sccache bucket
       if: ${{ github.repository == 'NVIDIA/cccl' }}
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
@@ -89,8 +103,6 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         CI: true
-        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
-        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
@@ -157,9 +169,14 @@ runs:
 
         declare -a gpu_request=()
 
-        # Explicitly pass which GPU to use if on a GPU runner
+        # Explicitly pass which GPU to use if on a GPU runner.
         if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
-          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
+          # Multi-GPU runner labels end with "-<gpu-count>"; expose the full set.
+          if [[ "${JOB_RUNNER}" =~ -gpu-.+-([0-9]+)(-testing)?$ ]] && (( BASH_REMATCH[1] > 1 )); then
+            gpu_request+=(--gpus all)
+          else
+            gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
+          fi
         fi
 
         # If the image contains "cudaXX.Yext"...
@@ -193,6 +210,7 @@ runs:
             --env "JOB_ID=$JOB_ID" \
             --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
             --env "RUNNER_TEMP=$RUNNER_TEMP" \
+            ${ENVARGS:-} \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \

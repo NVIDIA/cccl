@@ -20,6 +20,7 @@
 
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

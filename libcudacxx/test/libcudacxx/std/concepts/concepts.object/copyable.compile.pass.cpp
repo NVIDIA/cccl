@@ -97,7 +97,7 @@ static_assert(!copyable<has_rvalue_reference_member>);
 static_assert(!copyable<has_function_ref_member>);
 
 static_assert(
-  !cuda::std::assignable_from<deleted_assignment_from_const_rvalue&, deleted_assignment_from_const_rvalue const>, "");
+  !cuda::std::assignable_from<deleted_assignment_from_const_rvalue&, deleted_assignment_from_const_rvalue const>);
 static_assert(!copyable<deleted_assignment_from_const_rvalue>);
 
 int main(int, char**)

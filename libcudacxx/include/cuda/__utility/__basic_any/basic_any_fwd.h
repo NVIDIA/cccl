@@ -105,7 +105,7 @@ constexpr size_t __default_small_object_align = alignof(::cuda::std::max_align_t
 
 using __make_type_list _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_quote<::cuda::std::__type_list>;
 
-[[noreturn]] _CCCL_API void __throw_bad_any_cast();
+[[noreturn]] _CCCL_HOST_DEVICE_API void __throw_bad_any_cast();
 
 enum class __vtable_kind : uint8_t
 {

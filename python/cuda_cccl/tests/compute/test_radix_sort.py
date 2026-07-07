@@ -14,7 +14,11 @@ import cuda.compute
 from cuda.compute import (
     DoubleBuffer,
     SortOrder,
+    deserialize,
+    make_radix_sort,
+    serialize,
 )
+from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 
 
 def get_mark(dt, log_size):
@@ -71,15 +75,15 @@ def radix_sort_device(
 ):
     # Use the new single-phase API with automatic temp storage allocation
     cuda.compute.radix_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        order,
-        num_items,
-        begin_bit,
-        end_bit,
-        stream,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        order=order,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        stream=stream,
     )
 
 
@@ -438,12 +442,12 @@ def test_radix_sort_large_num_items(dtype, monkeypatch):
     d_out_keys = cp.empty(num_items, dtype=dtype)
 
     cuda.compute.radix_sort(
-        d_in_keys,
-        d_out_keys,
-        None,
-        None,
-        SortOrder.ASCENDING,
-        num_items,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=None,
+        d_out_values=None,
+        num_items=num_items,
+        order=SortOrder.ASCENDING,
     )
 
     h_out_keys = d_out_keys.get()
@@ -498,12 +502,12 @@ def test_radix_sort(monkeypatch):
 
     # Call single-phase API directly with num_items parameter
     cuda.compute.radix_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        SortOrder.ASCENDING,
-        d_in_keys.size,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=d_in_keys.size,
+        order=SortOrder.ASCENDING,
     )
 
     # Check the result is correct
@@ -550,12 +554,12 @@ def test_radix_sort_double_buffer(monkeypatch):
 
     # Call single-phase API directly with num_items parameter
     cuda.compute.radix_sort(
-        keys_double_buffer,
-        None,
-        values_double_buffer,
-        None,
-        SortOrder.ASCENDING,
-        d_in_keys.size,
+        d_in_keys=keys_double_buffer,
+        d_out_keys=None,
+        d_in_values=values_double_buffer,
+        d_out_values=None,
+        num_items=d_in_keys.size,
+        order=SortOrder.ASCENDING,
     )
 
     # Check the result is correct
@@ -568,3 +572,59 @@ def test_radix_sort_double_buffer(monkeypatch):
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
     np.testing.assert_array_equal(h_out_values, h_in_values)
+
+
+def _run(sorter, *, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items):
+    bytes_needed = sorter(
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+    )
+    tmp = TempStorageBuffer(bytes_needed, None)
+    sorter(
+        temp_storage=tmp,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+    )
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_radix_sort_keys_values():
+    h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
+    h_in_values = np.array(
+        [-3.2, 2.2, 1.9, 4.0, -3.9, 2.7, 0, 8.3 - 1, 2.9, 5.4], dtype="float32"
+    )
+    d_in_keys = cp.asarray(h_in_keys)
+    d_in_values = cp.asarray(h_in_values)
+    d_out_keys = cp.empty_like(d_in_keys)
+    d_out_values = cp.empty_like(d_in_values)
+
+    builder = make_radix_sort(
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        order=SortOrder.ASCENDING,
+    )
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    _run(
+        loaded,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=d_in_keys.size,
+    )
+
+    argsort = np.argsort(h_in_keys, stable=True)
+    np.testing.assert_array_equal(d_out_keys.get(), h_in_keys[argsort])
+    np.testing.assert_array_equal(d_out_values.get(), h_in_values[argsort])

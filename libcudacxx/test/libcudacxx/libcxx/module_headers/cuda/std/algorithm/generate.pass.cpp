@@ -16,13 +16,13 @@
 struct gen
 {
   int* pc;
-  __host__ __device__ int operator()() const
+  TEST_FUNC int operator()() const
   {
     return ++(*pc);
   }
 };
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   int a[3] = {};
   int c    = 0;

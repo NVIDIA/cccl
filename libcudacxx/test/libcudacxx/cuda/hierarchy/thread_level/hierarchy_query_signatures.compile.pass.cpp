@@ -20,6 +20,9 @@
 template <class Level, class Hierarchy>
 TEST_DEVICE_FUNC void test_query_signatures(const Level& level, const Hierarchy& hier)
 {
+  using ProductType =
+    cuda::std::conditional_t<cuda::std::is_same_v<Level, cuda::grid_level>, cuda::std::uint64_t, cuda::std::uint32_t>;
+
   // 1. Test cuda::thread_level::dims(x, hier) signature.
   static_assert(
     cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::thread_level::dims(level, hier))>);
@@ -41,7 +44,7 @@ TEST_DEVICE_FUNC void test_query_signatures(const Level& level, const Hierarchy&
   static_assert(noexcept(cuda::thread_level::static_count(level, hier)));
 
   // 5. Test cuda::thread_level::count(x, hier) signature.
-  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::thread_level::count(level, hier))>);
+  static_assert(cuda::std::is_same_v<ProductType, decltype(cuda::thread_level::count(level, hier))>);
   static_assert(noexcept(cuda::thread_level::count(level, hier)));
 
   // 6. Test cuda::thread_level::index(x, hier) signature.
@@ -50,7 +53,7 @@ TEST_DEVICE_FUNC void test_query_signatures(const Level& level, const Hierarchy&
   static_assert(noexcept(cuda::thread_level::index(level, hier)));
 
   // 7. Test cuda::thread_level::rank(x, hier) signature.
-  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::thread_level::rank(level, hier))>);
+  static_assert(cuda::std::is_same_v<ProductType, decltype(cuda::thread_level::rank(level, hier))>);
   static_assert(noexcept(cuda::thread_level::rank(level, hier)));
 }
 

@@ -15,13 +15,13 @@
 
 struct equal_to
 {
-  __host__ __device__ constexpr bool operator()(int a, int b) const
+  TEST_FUNC constexpr bool operator()(int a, int b) const
   {
     return a == b;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {1, 1, 2, 2, 3};
   auto r  = cuda::std::unique(a, a + 5);

@@ -15,13 +15,13 @@
 
 struct greater
 {
-  __host__ __device__ constexpr bool operator()(int a, int b) const
+  TEST_FUNC constexpr bool operator()(int a, int b) const
   {
     return a > b;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {3, 1, 4, 2};
   cuda::std::partial_sort(a, a + 2, a + 4);

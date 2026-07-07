@@ -171,12 +171,12 @@ __device__ void test_cooperative_algorithm(Group group)
   // Only the root rank should have the correct result.
   if (cuda::gpu_thread.is_root_rank(group))
   {
-    CUDAX_REQUIRE(result.has_value());
-    CUDAX_REQUIRE(result == ref_sum);
+    REQUIRE(result.has_value());
+    REQUIRE(result == ref_sum);
   }
   else
   {
-    CUDAX_REQUIRE(!result.has_value());
+    REQUIRE(!result.has_value());
   }
 }
 

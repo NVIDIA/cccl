@@ -45,7 +45,11 @@ def test_permutation_iterator_with_array_values():
     h_init = np.array([0], dtype="int32")
     d_output = cp.empty(1, dtype="int32")
     cuda.compute.reduce_into(
-        perm_it, d_output, cuda.compute.OpKind.PLUS, len(indices), h_init
+        d_in=perm_it,
+        d_out=d_output,
+        num_items=len(indices),
+        op=cuda.compute.OpKind.PLUS,
+        h_init=h_init,
     )
     assert d_output[0] == values[indices].sum()
 
@@ -59,7 +63,11 @@ def test_permutation_iterator_with_iterator_values():
     d_output = cp.empty(1, dtype="int32")
 
     cuda.compute.reduce_into(
-        perm_it, d_output, cuda.compute.OpKind.PLUS, len(indices), h_init
+        d_in=perm_it,
+        d_out=d_output,
+        num_items=len(indices),
+        op=cuda.compute.OpKind.PLUS,
+        h_init=h_init,
     )
 
     expected = cp.arange(10, 20)[indices].sum()
@@ -84,7 +92,13 @@ def test_permutation_iterator_of_zip_iterator():
     h_init = Pair(0, 0)
     d_output = cp.empty(1, dtype=Pair.dtype)
 
-    cuda.compute.reduce_into(perm_it, d_output, sum_both_fields, len(indices), h_init)
+    cuda.compute.reduce_into(
+        d_in=perm_it,
+        d_out=d_output,
+        num_items=len(indices),
+        op=sum_both_fields,
+        h_init=h_init,
+    )
 
     result = d_output.get()[0]
     assert result["value_0"] == d_values1[indices].sum()
@@ -113,7 +127,13 @@ def test_zip_iterator_of_permutation_iterators():
     d_output = cp.empty(1, dtype=Pair.dtype)
 
     num_items = len(indices1)
-    cuda.compute.reduce_into(zip_it, d_output, sum_both_fields, num_items, h_init)
+    cuda.compute.reduce_into(
+        d_in=zip_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=sum_both_fields,
+        h_init=h_init,
+    )
 
     result = d_output.get()[0]
     assert result["value_0"] == d_values1[indices1].sum()
@@ -129,7 +149,9 @@ def test_unary_transform_of_permutation_iterator():
         return a + 1
 
     d_out = cp.empty_like(values, shape=(len(indices),))
-    cuda.compute.unary_transform(perm_it, d_out, op, len(indices))
+    cuda.compute.unary_transform(
+        d_in=perm_it, d_out=d_out, op=op, num_items=len(indices)
+    )
 
     expected = values[indices] + 1
     assert cp.all(d_out == expected)
@@ -137,7 +159,7 @@ def test_unary_transform_of_permutation_iterator():
 
 def test_caching_permutation_iterator():
     """Test that iterator compilation is cached across instances with the same structure."""
-    from cuda.compute._cpp_compile import compile_cpp_to_ltoir
+    from cuda.compute._cpp_compile import compile_cpp_op_code
 
     # Test 1: Same structure → same kind
     it1 = PermutationIterator(
@@ -161,7 +183,7 @@ def test_caching_permutation_iterator():
     assert it1.kind != it4.kind, "Different value type should have different kind"
 
     # Test 4: Verify compilation caching with cache statistics
-    compile_cpp_to_ltoir.cache_clear()
+    compile_cpp_op_code.cache_clear()
 
     # Create multiple instances with same structure
     iterators = []
@@ -175,7 +197,7 @@ def test_caching_permutation_iterator():
         it.get_input_deref_op()
         iterators.append(it)
 
-    cache_info = compile_cpp_to_ltoir.cache_info()
+    cache_info = compile_cpp_op_code.cache_info()
     assert cache_info.hits >= 2, (
         f"Expected cache hits for same structure, got {cache_info.hits} hits, "
         f"{cache_info.misses} misses"
@@ -210,11 +232,11 @@ def test_permutation_iterator_advance():
 
     remaining_items = len(indices) - offset
     cuda.compute.reduce_into(
-        advanced_perm_it,
-        d_output,
-        cuda.compute.OpKind.PLUS,
-        remaining_items,
-        h_init,
+        d_in=advanced_perm_it,
+        d_out=d_output,
+        num_items=remaining_items,
+        op=cuda.compute.OpKind.PLUS,
+        h_init=h_init,
     )
 
     # Expected: values[indices[2:]] = values[[4, 1, 3, 5]] = [50, 20, 40, 60]

@@ -29,9 +29,9 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 #include <nv/target>
 
@@ -473,7 +473,7 @@ using default_no_delay_t             = default_no_delay_constructor_t::delay_t;
 template <class T>
 using default_delay_constructor_t =
   // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-  ::cuda::std::conditional_t<is_primitive<T>::value || ::cuda::std::is_trivially_copyable_v<T>,
+  ::cuda::std::conditional_t<is_primitive<T>::value || ::cuda::is_trivially_copyable_v<T>,
                              fixed_delay_constructor_t<350, 450>,
                              default_no_delay_constructor_t>;
 
@@ -483,7 +483,7 @@ using default_delay_t = typename default_delay_constructor_t<T>::delay_t;
 template <class KeyT, class ValueT>
 using default_reduce_by_key_delay_constructor_t =
   // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-  ::cuda::std::conditional_t<(is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
+  ::cuda::std::conditional_t<(is_primitive<ValueT>::value || ::cuda::is_trivially_copyable_v<ValueT>)
                                && (sizeof(ValueT) + sizeof(KeyT) < largest_atomic_message_size),
                              reduce_by_key_delay_constructor_t<350, 450>,
                              default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
@@ -582,7 +582,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
 template <typename T,
           // TODO(bgruber): remove the check for is_primitive<T> in CCCL 4.0
           bool SingleWord = detail::is_primitive<T>::value
-                         || (::cuda::std::is_trivially_copyable_v<T>
+                         || (::cuda::is_trivially_copyable_v<T>
                              && sizeof(T) < detail::largest_atomic_message_size
                              // TODO(bgruber): a power of two size is not strictly necessary, but the implementation
                              // cannot handle it currently. For example, we could support status word + int3.
@@ -666,7 +666,7 @@ struct ScanTileState<T, true>
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+    int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
     TxnWord val                = TxnWord();
     TileDescriptor* descriptor = reinterpret_cast<TileDescriptor*>(&val);
@@ -877,7 +877,7 @@ struct ScanTileState<T, false>
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+    int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
     if (tile_idx < num_tiles)
     {
       // Not-yet-set
@@ -957,7 +957,7 @@ struct ScanTileState<T, false>
 template <typename ValueT,
           typename KeyT,
           // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-          bool SingleWord = (detail::is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
+          bool SingleWord = (detail::is_primitive<ValueT>::value || ::cuda::is_trivially_copyable_v<ValueT>)
                          && (sizeof(ValueT) + sizeof(KeyT) < detail::largest_atomic_message_size)>
 struct ReduceByKeyScanTileState;
 
@@ -1073,7 +1073,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx               = (blockIdx.x * blockDim.x) + threadIdx.x;
+    int tile_idx               = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
     TxnWord val                = TxnWord();
     TileDescriptor* descriptor = reinterpret_cast<TileDescriptor*>(&val);
 
@@ -1177,7 +1177,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
-          typename DelayConstructorT = detail::default_delay_constructor_t<T>>
+          typename DelayConstructorT = detail::default_delay_constructor_t<T>,
+          bool StableReductionOrder  = false>
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
@@ -1201,7 +1202,8 @@ struct TilePrefixCallbackOp
 
   // Fields
   _TempStorage& temp_storage; ///< Reference to a warp-reduction instance
-  ScanTileStateT& tile_status; ///< Interface to tile status
+  ScanTileStateT& tile_status; ///< Interface to tile status (non-anchor tiles stay at PARTIAL on the deterministic
+                               ///< path)
   ScanOpT scan_op; ///< Binary scan operator
   int tile_idx; ///< The current tile index
   T exclusive_prefix; ///< Exclusive prefix for the tile
@@ -1251,8 +1253,9 @@ struct TilePrefixCallbackOp
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
 
-  // BlockScan prefix callback functor (called by the first warp)
-  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
+private:
+  // Classic decoupled-lookback prefix computation.
+  _CCCL_DEVICE _CCCL_FORCEINLINE T lookback(T block_aggregate)
   {
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
@@ -1296,6 +1299,69 @@ struct TilePrefixCallbackOp
 
     // Return exclusive_prefix
     return exclusive_prefix;
+  }
+
+  // Run-to-run-deterministic K=1 32-batched lookback. Only anchor tiles publish INCLUSIVE.
+  _CCCL_DEVICE _CCCL_FORCEINLINE T lookback_stable_reduction_order(T block_aggregate)
+  {
+    if (threadIdx.x == 0)
+    {
+      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
+      tile_status.SetPartial(tile_idx, block_aggregate);
+    }
+
+    const int predecessor_idx = tile_idx - threadIdx.x - 1;
+    StatusWord predecessor_status;
+    DelayConstructorT construct_delay(tile_idx);
+
+    // lane that maps to the anchor tile (tile idx multiple of 32)
+    const int anchor_tile_lane = (tile_idx - 1) % detail::warp_threads;
+
+    T value;
+    while (true)
+    {
+      tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
+      const int my_is_inclusive     = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+      const int anchor_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, anchor_tile_lane);
+      if (anchor_is_inclusive)
+      {
+        break;
+      }
+    }
+
+    const int tail_flag = (static_cast<int>(threadIdx.x) == anchor_tile_lane);
+    exclusive_prefix =
+      WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
+
+    if (threadIdx.x == 0)
+    {
+      inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
+
+      // Only anchor tiles publish INCLUSIVE; non-anchor tiles stay at PARTIAL.
+      if (tile_idx % detail::warp_threads == 0)
+      {
+        tile_status.SetInclusive(tile_idx, inclusive_prefix);
+      }
+
+      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
+    }
+
+    return exclusive_prefix;
+  }
+
+public:
+  // BlockScan prefix callback functor.
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
+  {
+    if constexpr (StableReductionOrder)
+    {
+      return lookback_stable_reduction_order(block_aggregate);
+    }
+    else
+    {
+      return lookback(block_aggregate);
+    }
   }
 
   // Get the exclusive prefix stored in temporary storage

@@ -24,6 +24,8 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -108,23 +110,49 @@ enum WarpLoadAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorithm)
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] constexpr const char* to_string(WarpLoadAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case WARP_LOAD_DIRECT:
-      return os << "WARP_LOAD_DIRECT";
+      return "WARP_LOAD_DIRECT";
     case WARP_LOAD_STRIPED:
-      return os << "WARP_LOAD_STRIPED";
+      return "WARP_LOAD_STRIPED";
     case WARP_LOAD_VECTORIZE:
-      return os << "WARP_LOAD_VECTORIZE";
+      return "WARP_LOAD_VECTORIZE";
     case WARP_LOAD_TRANSPOSE:
-      return os << "WARP_LOAD_TRANSPOSE";
+      return "WARP_LOAD_TRANSPOSE";
     default:
-      return os << "<unknown WarpLoadAlgorithm: " << static_cast<int>(algorithm) << ">";
+      return "<unknown WarpLoadAlgorithm>";
   }
 }
+} // namespace detail
+#endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::WarpLoadAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::WarpLoadAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The WarpLoad class provides :ref:`collective <collective-primitives>` data movement methods for
@@ -170,7 +198,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
 //!    __global__ void ExampleKernel(int *d_data, ...)
 //!    {
 //!        constexpr int warp_threads = 16;
-//!        constexpr int block_threads = 256;
+//!        constexpr int threads_per_block = 256;
 //!        constexpr int items_per_thread = 4;
 //!
 //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -179,7 +207,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
 //!                                   cub::WARP_LOAD_TRANSPOSE,
 //!                                   warp_threads>;
 //!
-//!        constexpr int warps_in_block = block_threads / warp_threads;
+//!        constexpr int warps_in_block = threads_per_block / warp_threads;
 //!        constexpr int tile_size = items_per_thread * warp_threads;
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
@@ -466,7 +494,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -475,7 +503,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
@@ -518,7 +546,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -527,7 +555,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
@@ -573,7 +601,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -582,7 +610,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!

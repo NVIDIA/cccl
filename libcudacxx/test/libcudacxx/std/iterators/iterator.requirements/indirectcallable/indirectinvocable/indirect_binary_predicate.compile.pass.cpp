@@ -46,9 +46,9 @@ static_assert(cuda::std::indirect_binary_predicate<decltype(lambda), int*, int*>
 struct NotIndirectlyReadable
 {};
 static_assert(
-  !cuda::std::indirect_binary_predicate<GoodPredicate<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>, "");
+  !cuda::std::indirect_binary_predicate<GoodPredicate<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>);
 static_assert(
-  !cuda::std::indirect_binary_predicate<GoodPredicate<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>, "");
+  !cuda::std::indirect_binary_predicate<GoodPredicate<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>);
 #endif
 
 // Should fail when the predicate is not copy constructible

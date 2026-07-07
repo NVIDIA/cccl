@@ -35,6 +35,12 @@
 #  define _CCCL_BUILTIN_FABSL(...) __builtin_fabsl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fabs)
 
+#if _CCCL_TILE_COMPILATION()
+#  undef _CCCL_BUILTIN_FABSF
+#  undef _CCCL_BUILTIN_FABS
+#  undef _CCCL_BUILTIN_FABSL
+#endif // _CCCL_TILE_COMPILATION()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // fabs

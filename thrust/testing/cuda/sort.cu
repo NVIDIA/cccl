@@ -131,15 +131,45 @@ DECLARE_UNITTEST(TestComparisonSortCudaStreams);
 template <typename T>
 struct TestRadixSortDispatch
 {
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<T>>);
 
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<>>);
 
   void operator()() const {}
 };
@@ -237,16 +267,19 @@ void TestSortWithMagnitude(int magnitude)
     thrust::device_vector<std::uint8_t> vec(num_items);
     auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
     auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<std::uint8_t>{});
-    auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
-    thrust::copy(rev_sorted_it, rev_sorted_it + num_items, vec.begin());
+    auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + static_cast<std::ptrdiff_t>(num_items));
+    thrust::copy(rev_sorted_it, rev_sorted_it + static_cast<std::ptrdiff_t>(num_items), vec.begin());
     thrust::sort(vec.begin(), vec.end());
     auto expected_result_it = thrust::make_transform_iterator(
       thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<std::uint8_t>(num_items));
-    const bool ok = thrust::equal(expected_result_it, expected_result_it + num_items, vec.cbegin());
+    const bool ok =
+      thrust::equal(expected_result_it, expected_result_it + static_cast<std::ptrdiff_t>(num_items), vec.cbegin());
     ASSERT_EQUAL(ok, true);
   }
   catch (std::bad_alloc&)
-  {}
+  {
+    return;
+  }
 }
 
 void TestSortWithLargeNumberOfItems()

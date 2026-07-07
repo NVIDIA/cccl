@@ -84,7 +84,7 @@ int main()
   {
     for (int j = 0; j < n; j++)
     {
-      data[i * N + j] = dist(rng);
+      data[static_cast<std::size_t>(i) * N + j] = dist(rng);
     }
   }
 
@@ -96,7 +96,7 @@ int main()
     std::cout << " ";
     for (int j = 0; j < N; j++)
     {
-      std::cout << data[i * N + j] << " ";
+      std::cout << data[(static_cast<std::size_t>(i) * N) + j] << " ";
     }
     std::cout << "\n";
   }
@@ -111,7 +111,8 @@ int main()
 
   result_type result = thrust::transform_reduce(
     thrust::make_zip_iterator(thrust::counting_iterator<int>(0), data.begin()),
-    thrust::make_zip_iterator(cuda::std::tuple(thrust::counting_iterator<int>(0), data.begin())) + data.size(),
+    thrust::make_zip_iterator(cuda::std::tuple(thrust::counting_iterator<int>(0), data.begin()))
+      + static_cast<std::ptrdiff_t>(data.size()),
     unary_op,
     init,
     binary_op);

@@ -102,8 +102,8 @@ public:
       }
     }
 
-    auto __tmp = ::cuda::std::make_reverse_iterator(
-      ::cuda::std::ranges::next(::cuda::std::ranges::begin(__base_), ::cuda::std::ranges::end(__base_)));
+    auto __tmp = ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__next_cpo{}(
+      ::cuda::std::ranges::__begin_cpo{}(__base_), ::cuda::std::ranges::__end_cpo{}(__base_)));
     if constexpr (_UseCache)
     {
       __cached_begin_.__emplace(__tmp);
@@ -115,45 +115,45 @@ public:
   _CCCL_REQUIRES(common_range<_View2>)
   _CCCL_API constexpr reverse_iterator<iterator_t<_View2>> begin()
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__end_cpo{}(__base_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(common_range<const _View2>)
   _CCCL_API constexpr auto begin() const
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__end_cpo{}(__base_));
   }
 
   _CCCL_API constexpr reverse_iterator<iterator_t<_View>> end()
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__begin_cpo{}(__base_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(common_range<const _View2>)
   _CCCL_API constexpr auto end() const
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__begin_cpo{}(__base_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<_View2>)
   _CCCL_API constexpr auto size()
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::__size_cpo{}(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
   _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::__size_cpo{}(__base_);
   }
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE reverse_view(_Range&&) -> reverse_view<::cuda::std::ranges::views::all_t<_Range>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES reverse_view(_Range&&) -> reverse_view<::cuda::std::ranges::views::all_t<_Range>>;
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<reverse_view<_Tp>> = enable_borrowed_range<_Tp>;

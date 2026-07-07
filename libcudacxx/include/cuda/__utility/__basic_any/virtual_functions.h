@@ -53,7 +53,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
 
 template <class _Fn, class _Cp>
-_CCCL_API auto __class_of_(_Fn _Cp::*) -> _Cp;
+_CCCL_HOST_DEVICE_API auto __class_of_(_Fn _Cp::*) -> _Cp;
 
 template <class _Fn>
 using __class_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::__class_of_(_Fn()));
@@ -71,7 +71,7 @@ _CCCL_NODEBUG_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 
 // Helper function to not use a function pointer as a template parameter, which breaks MSVC in some cases.
 template <class _Tp, class _FnType, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
-[[nodiscard]] _CCCL_API auto __override_fn_dispatch_impl(
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __override_fn_dispatch_impl(
   [[maybe_unused]] _FnType __fn,
   [[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
   [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
@@ -101,8 +101,9 @@ template <class _Tp, class _FnType, class _Ret, bool _IsConst, bool _IsNothrow, 
 }
 
 template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
-[[nodiscard]] _CCCL_API auto __override_fn_([[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
-                                            [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto
+__override_fn_([[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
+               [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
   return __override_fn_dispatch_impl<_Tp, decltype(_Fn), _Ret, _IsConst, _IsNothrow, _Args...>(
     _Fn, __pv, static_cast<_Args&&>(__args)...);
@@ -156,16 +157,16 @@ inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void const*, _Args...) no
     &__override_fn_<_Tp, _Override, _Ret, true, true, _Args...>;
 
 template <class _Ret, class... _Args>
-_CCCL_API auto __get_virtual_result(_Ret (*)(_Args...)) -> _Ret;
+_CCCL_HOST_DEVICE_API auto __get_virtual_result(_Ret (*)(_Args...)) -> _Ret;
 
 template <class _Ret, class... _Args>
-_CCCL_API auto __get_virtual_result(_Ret (*)(_Args...) noexcept) noexcept -> _Ret;
+_CCCL_HOST_DEVICE_API auto __get_virtual_result(_Ret (*)(_Args...) noexcept) noexcept -> _Ret;
 
 template <class _Ret, class... _Args>
-_CCCL_API auto __is_virtual_const(_Ret (*)(void*, _Args...)) -> ::cuda::std::false_type;
+_CCCL_HOST_DEVICE_API auto __is_virtual_const(_Ret (*)(void*, _Args...)) -> ::cuda::std::false_type;
 
 template <class _Ret, class... _Args>
-_CCCL_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -> ::cuda::std::true_type;
+_CCCL_HOST_DEVICE_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -> ::cuda::std::true_type;
 
 //!
 //! __virtual_fn
@@ -180,7 +181,7 @@ struct __virtual_fn
   static constexpr bool __nothrow_fn = noexcept(::cuda::__get_virtual_result(__function_t{}));
 
   template <class _Tp, auto _Override>
-  _CCCL_API constexpr __virtual_fn(__override_tag<_Tp, _Override>) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __virtual_fn(__override_tag<_Tp, _Override>) noexcept
       : __fn_(__virtual_override_fn<decltype(_Fn), _Tp, _Override>)
   {}
 

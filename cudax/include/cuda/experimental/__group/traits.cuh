@@ -32,12 +32,12 @@
 namespace cuda::experimental
 {
 template <class _Mapping, class _Unit, class _ParentGroup>
-using __group_mapping_result_t =
-  decltype(::cuda::std::declval<_Mapping>().map(_Unit{}, ::cuda::std::declval<const _ParentGroup&>()));
+using __group_mapping_result_t = decltype(::cuda::std::declval<_Mapping>().map(
+  ::cuda::std::declval<_Unit>(), ::cuda::std::declval<const _ParentGroup&>()));
 
 template <class _Synchronizer, class _Unit, class _ParentGroup, class _Mapping, class _MappingResult>
 using __group_synchronizer_instance_t = decltype(::cuda::std::declval<_Synchronizer>().make_instance(
-  _Unit{},
+  ::cuda::std::declval<const _Unit&>(),
   ::cuda::std::declval<const _ParentGroup&>(),
   ::cuda::std::declval<const _Mapping&>(),
   ::cuda::std::declval<const _MappingResult&>()));

@@ -121,14 +121,16 @@ inline constexpr size_t __npos = static_cast<size_t>(-1);
 
 [[nodiscard]] _CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
 {
+  size_t __result = __npos;
   for (bool const* __where = __begin; __where != __end; ++__where)
   {
     if (*__where)
     {
-      return static_cast<size_t>(__where - __begin);
+      __result = static_cast<size_t>(__where - __begin);
+      break;
     }
   }
-  return __npos;
+  return __result;
 }
 } // namespace __detail
 
@@ -233,7 +235,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
 #endif // !_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
 
 template <class _Query, class _Value>
-_CCCL_HOST_DEVICE prop(_Query, _Value) -> prop<_Query, _Value>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES prop(_Query, _Value) -> prop<_Query, _Value>;
 
 //! @brief A variadic template structure representing an environment.
 //!
@@ -306,9 +308,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
 };
 
 template <class... _Envs>
-_CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
-
-#ifndef _CCCL_DOXYGEN_INVOKED
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 // Partial specialization for no env because NVCC segfaults trying to compile `__tuple<>`
 template <>
@@ -317,6 +317,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
   _CCCL_API auto query() const = delete;
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 // Partial specialization for two environments so that the syntax `env(env0, env1)` is
 // valid. That is, `env` can use CTAD with a parentesized list of arguments.
 template <class _Env0, class _Env1>

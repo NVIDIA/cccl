@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// complex<__nv_bfloat16> is not available in tile mode
+
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 

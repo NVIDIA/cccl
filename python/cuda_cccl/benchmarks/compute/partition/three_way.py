@@ -80,25 +80,25 @@ def bench_three_way_partition(state: bench.State):
         return x < right_thresh
 
     partitioner = make_three_way_partition(
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        select_first_part,
-        select_second_part,
+        d_in=d_in,
+        d_first_part_out=d_first_part_out,
+        d_second_part_out=d_second_part_out,
+        d_unselected_out=d_unselected_out,
+        d_num_selected_out=d_num_selected_out,
+        select_first_part_op=select_first_part,
+        select_second_part_op=select_second_part,
     )
 
     temp_storage_bytes = partitioner(
-        None,
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        select_first_part,
-        select_second_part,
-        num_elements,
+        temp_storage=None,
+        d_in=d_in,
+        d_first_part_out=d_first_part_out,
+        d_second_part_out=d_second_part_out,
+        d_unselected_out=d_unselected_out,
+        d_num_selected_out=d_num_selected_out,
+        select_first_part_op=select_first_part,
+        select_second_part_op=select_second_part,
+        num_items=num_elements,
     )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -111,16 +111,16 @@ def bench_three_way_partition(state: bench.State):
 
     def launcher(launch: bench.Launch):
         partitioner(
-            temp_storage,
-            d_in,
-            d_first_part_out,
-            d_second_part_out,
-            d_unselected_out,
-            d_num_selected_out,
-            select_first_part,
-            select_second_part,
-            num_elements,
-            launch.get_stream(),
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_first_part_out=d_first_part_out,
+            d_second_part_out=d_second_part_out,
+            d_unselected_out=d_unselected_out,
+            d_num_selected_out=d_num_selected_out,
+            select_first_part_op=select_first_part,
+            select_second_part_op=select_second_part,
+            num_items=num_elements,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

@@ -31,22 +31,18 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-/**
- * Parameterizable tuning policy type for AgentUniqueByKey
- *
- * @tparam DelayConstructorT
- *   Implementation detail, do not specify directly, requirements on the
- *   content of this type are subject to breaking change.
- */
-template <int BlockThreads,
+namespace detail
+{
+// TODO(bgruber): remove this when C++20 is the minimum, since then we can pass policy values as NTTP
+template <int ThreadsPerBlock,
           int ItemsPerThread                    = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
           cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS,
           typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentUniqueByKeyPolicy
+struct agent_unique_by_key_policy
 {
-  static constexpr int BLOCK_THREADS                      = BlockThreads;
+  static constexpr int BLOCK_THREADS                      = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD                   = ItemsPerThread;
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -57,6 +53,17 @@ struct AgentUniqueByKeyPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread                    = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
+          cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS,
+          typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
+using AgentUniqueByKeyPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect") = detail::
+  agent_unique_by_key_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, ScanAlgorithm, DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -259,9 +266,9 @@ struct AgentUniqueByKey
     // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
     // types
     _CCCL_PRAGMA_NOUNROLL()
-    for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += BLOCK_THREADS)
     {
-      items_out[num_selections_prefix + item] = GetShared(tag)[item];
+      items_out[num_selections_prefix + item] = GetShared(tag)[item]; // NOLINT(bugprone-misplaced-widening-cast)
     }
 
     __syncthreads();
@@ -554,7 +561,7 @@ struct AgentUniqueByKey
   ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
-    int tile_idx = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    int tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
 
     // Global offset for the current tile
     OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(ITEMS_PER_TILE);

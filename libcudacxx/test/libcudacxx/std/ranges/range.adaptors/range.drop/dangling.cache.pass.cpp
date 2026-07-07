@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // If we have a copy-propagating cache, when we copy ZeroOnDestroy, we will get a
 // dangling reference to the copied-from object. This test ensures that we do not
 // propagate the cache on copy.

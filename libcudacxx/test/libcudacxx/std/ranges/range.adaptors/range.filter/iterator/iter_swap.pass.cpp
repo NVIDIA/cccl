@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // friend constexpr void iter_swap(iterator const& x, iterator const& y)
 //  noexcept(noexcept(ranges::iter_swap(x.current_, y.current_)))
 //  requires(indirectly_swappable<iterator_t<V>>);

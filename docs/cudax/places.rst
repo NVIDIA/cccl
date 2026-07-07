@@ -198,8 +198,11 @@ streams in a structured way. This is useful when you want to use place
 abstractions (devices, green contexts) for stream management without the full
 task-based programming model.
 
-Each execution place owns a pool of CUDA streams. The
-``exec_place::pick_stream`` method returns a CUDA stream from that pool.
+Stream pools for pooled places (``device(N)``, ``host()``) live in an
+``exec_place_resources`` registry that the caller owns. Pass the registry to
+``exec_place::pick_stream`` to get a CUDA stream; the per-place pool inside the
+registry is created lazily on first request and is destroyed when the registry
+is destroyed.
 
 The method accepts an optional ``for_computation`` hint (defaults to ``true``)
 that may select between computation and data transfer stream pools to improve
@@ -211,19 +214,34 @@ correctness. Not all execution places enforce it.
     #include <cuda/experimental/places.cuh>
     using namespace cuda::experimental::places;
 
+    // Standalone use: own the registry yourself.
+    exec_place_resources resources;
+
     // Get a stream from the current device
     exec_place place = exec_place::current_device();
-    cudaStream_t stream = place.pick_stream();
+    cudaStream_t stream = place.pick_stream(resources);
 
     // Use the stream for CUDA operations
     myKernel<<<grid, block, 0, stream>>>(d_data);
 
-    // Get streams from specific devices
-    cudaStream_t stream_dev0 = exec_place::device(0).pick_stream();
-    cudaStream_t stream_dev1 = exec_place::device(1).pick_stream();
+    // Get streams from specific devices (sharing the same registry)
+    cudaStream_t stream_dev0 = exec_place::device(0).pick_stream(resources);
+    cudaStream_t stream_dev1 = exec_place::device(1).pick_stream(resources);
+
+Inside a CUDASTF context, the context's ``async_resources_handle`` already
+holds an ``exec_place_resources`` registry. Convenience overloads accept the
+handle directly so call sites do not have to dereference it:
+
+.. code:: cpp
+
+    cudaStream_t stream = place.pick_stream(ctx.async_resources());
 
 Stream pools are populated lazily -- CUDA streams are only created when first
-requested via ``pick_stream()``.
+requested via ``pick_stream(resources)`` (or ``pick_stream(ctx.async_resources())``
+inside CUDASTF). Self-contained places (``exec_place::cuda_stream(s)``,
+green-context places) ignore the registry and return their own embedded pool
+instead, so the user-provided ``cudaStream_t`` / ``CUgreenCtx`` must outlive
+any place that wraps it.
 
 .. _places-memory-allocation:
 
@@ -460,7 +478,7 @@ over the different places of a grid.
        template <typename S_out, typename S_in>
        static const S_out apply(const S_in& in, pos4 position, dim4 grid_dims);
 
-       pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims);
+       void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims);
    };
 
 A partitioning class must implement an ``apply`` method which takes:
@@ -486,8 +504,8 @@ method which allows localized data allocators. This
 method indicates, for each entry of a shape, on which place this entry
 should *preferably* be allocated.
 
-``get_executor`` returns a ``pos4`` coordinate in the execution place
-grid, and its arguments are:
+``get_executor`` writes a ``pos4`` coordinate in the execution place
+grid into ``*result``, and its input arguments are:
 
 - a coordinate within the shape described as a ``pos4`` object
 - the dimension of the shape expressed as a ``dim4`` object

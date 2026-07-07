@@ -19,7 +19,7 @@
 struct bench_rle_policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
+    -> cub::RleNonTrivialRunsPolicy
   {
     return {
       TUNE_THREADS,
@@ -28,7 +28,7 @@ struct bench_rle_policy_selector
       TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
       static_cast<bool>(TUNE_TIME_SLICING),
       cub::BLOCK_SCAN_WARP_SCANS,
-      delay_constructor_policy,
+      lookback_delay_policy,
     };
   }
 };

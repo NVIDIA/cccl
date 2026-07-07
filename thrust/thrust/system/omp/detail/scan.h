@@ -76,7 +76,7 @@ OutputIterator scan_impl(
   const int num_threads = omp_get_max_threads();
 
   // Use serial scan for small arrays where parallel overhead dominates
-  if (static_cast<size_t>(n) < ::cuda::std::max(parallel_scan_threshold, static_cast<size_t>(num_threads))
+  if (static_cast<size_t>(n) < (::cuda::std::max) (parallel_scan_threshold, static_cast<size_t>(num_threads))
       || num_threads <= 1)
   {
     if constexpr (IsInclusive)
@@ -106,7 +106,7 @@ OutputIterator scan_impl(
     const int tid         = omp_get_thread_num();
     const Size block_size = ::cuda::ceil_div(n, num_threads);
     const Size start      = tid * block_size;
-    const Size end        = ::cuda::std::min(start + block_size, n);
+    const Size end        = (::cuda::std::min) (start + block_size, n);
 
     if (start < n)
     {
@@ -135,7 +135,7 @@ OutputIterator scan_impl(
     const int tid         = omp_get_thread_num();
     const Size block_size = ::cuda::ceil_div(n, num_threads);
     const Size start      = tid * block_size;
-    const Size end        = ::cuda::std::min(start + block_size, n);
+    const Size end        = (::cuda::std::min) (start + block_size, n);
 
     if (start < n)
     {

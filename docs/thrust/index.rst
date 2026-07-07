@@ -9,8 +9,6 @@ Thrust
 
    Overview <self>
    developer_overview
-   releases
-   release_process
    API documentation <api>
    API reference <api/index>
 

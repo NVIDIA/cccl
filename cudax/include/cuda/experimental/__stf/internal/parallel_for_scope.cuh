@@ -414,12 +414,12 @@ public:
       : args_(args)
   {}
 
-  bool can_release_in_callback() const override
+  bool can_release_in_callback() const noexcept override
   {
     return true;
   }
 
-  void release_in_callback() override
+  void release_in_callback() noexcept override
   {
     delete args_;
   }
@@ -570,8 +570,8 @@ public:
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
 
-    int device = -1;
-    cudaEvent_t start_event, end_event;
+    int device              = -1;
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
 
     SCOPE(exit)
     {
@@ -605,11 +605,13 @@ public:
     {
       if (record_time)
       {
-        cuda_safe_call(cudaGetDevice(&device)); // We will use this to force it during the next run
-        // Events must be created here to avoid issues with multi-gpu
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+        device = cuda_try<cudaGetDevice>(); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu.
+        // cudaEventCreate is an overload set, so use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags.
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
       }
     }
 
@@ -685,7 +687,7 @@ public:
           {
             auto active          = t.activate_place(i);
             const auto sub_shape = partitioner_t::apply(shape, pos4(i), e_place.get_dims());
-            do_parallel_for(f, active.place(), sub_shape, t);
+            do_parallel_for(f, active.place(), sub_shape, t, i);
           }
         }
       }
@@ -743,8 +745,8 @@ public:
         kernel_params.sharedMemBytes = 0;
 
         // This new node will depend on the previous in the chain (allocation)
-        auto lock = t.lock_ctx_graph();
-        cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params));
+        auto lock    = t.lock_ctx_graph();
+        t.get_node() = cuda_try<cudaGraphAddKernelNode>(t.get_ctx_graph(), nullptr, 0, &kernel_params);
       }
 
       return;
@@ -753,7 +755,8 @@ public:
     static const auto conf = [] {
       int minGridSize = 0, blockSize = 0;
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-      cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
+      // Two output parameters: keeps the runtime-status cuda_try form.
+      cuda_try(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
         &minGridSize,
         &blockSize,
         reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>,
@@ -773,7 +776,7 @@ public:
     static const auto conf_finalize = [] {
       int minGridSize = 0, blockSize = 0;
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-      cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
+      cuda_try(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
         &minGridSize, &blockSize, reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>, block_to_shared_mem));
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
@@ -813,7 +816,7 @@ public:
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       // Synchronize stream with allocation events
-      reserved::join_with_stream(ctx, decorated_stream(stream), alloc_events, "alloc_sync", false);
+      reserved::join_with_stream(ctx, augmented_stream(stream), alloc_events, "alloc_sync", false);
 
       // TODO optimize the case where there was a single block to write to result ??
       reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>
@@ -824,7 +827,7 @@ public:
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, blocks);
 
       // Stream context: create event from stream to represent kernel completion
-      completion_event = event_list(reserved::record_event_in_stream(decorated_stream(stream)));
+      completion_event = event_list(reserved::record_event_in_stream(augmented_stream(stream)));
     }
     else
     {
@@ -849,8 +852,8 @@ public:
       kernel_params.sharedMemBytes = dyn_shmem_size;
 
       // This new node depends on allocation (which already incorporated task dependencies)
-      cudaGraphNode_t kernel_1;
-      cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, alloc_nodes.data(), alloc_nodes.size(), &kernel_params));
+      const cudaGraphNode_t kernel_1 =
+        cuda_try<cudaGraphAddKernelNode>(g, alloc_nodes.data(), alloc_nodes.size(), &kernel_params);
 
       // Launch the second kernel to reduce remaining values among original blocks
       // It is ok to use reference to local variables because the arguments
@@ -866,7 +869,7 @@ public:
       kernel2_params.extra          = nullptr;
       kernel2_params.sharedMemBytes = dynamic_shared_mem_finalize;
 
-      cuda_safe_call(cudaGraphAddKernelNode(&last_kernel_node, g, &kernel_1, 1, &kernel2_params));
+      last_kernel_node = cuda_try<cudaGraphAddKernelNode>(g, &kernel_1, 1, &kernel2_params);
 
       // Graph context: create event from kernel completion graph node
       completion_event = event_list(reserved::graph_event(last_kernel_node, stage, g));
@@ -878,7 +881,7 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      reserved::join_with_stream(ctx, decorated_stream(stream), completion_event, "dealloc_sync", false);
+      reserved::join_with_stream(ctx, augmented_stream(stream), completion_event, "dealloc_sync", false);
     }
     else
     {
@@ -893,8 +896,11 @@ public:
 
   // Executes the loop on a device, or use the host implementation
   template <typename Fun, typename sub_shape_t>
-  void do_parallel_for(
-    Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
+  void do_parallel_for(Fun&& f,
+                       const exec_place& sub_exec_place,
+                       const sub_shape_t& sub_shape,
+                       typename context::task_type& t,
+                       size_t place_index = 0)
   {
     // parallel_for never calls this function with a host.
     _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
@@ -902,7 +908,7 @@ public:
     if (sub_exec_place == exec_place::device_auto())
     {
       // We have all latitude - recurse with the current device.
-      return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t);
+      return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t, place_index);
     }
 
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
@@ -938,7 +944,7 @@ public:
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>
-        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
+        <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream(place_index)>>>(
           static_cast<int>(n), sub_shape, mv(f), arg_instances);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
@@ -962,8 +968,8 @@ public:
       // This task corresponds to a single graph node, so we set that
       // node instead of creating an child graph. Input and output
       // dependencies will be filled later.
-      auto lock = t.lock_ctx_graph();
-      cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &kernel_params));
+      auto lock    = t.lock_ctx_graph();
+      t.get_node() = cuda_try<cudaGraphAddKernelNode>(t.get_ctx_graph(), nullptr, 0, &kernel_params);
 
       // fprintf(stderr, "KERNEL NODE => graph %p, gridDim %d blockDim %d (n %ld)\n", t.get_graph(),
       // kernel_params.gridDim.x, kernel_params.blockDim.x, n);
@@ -1034,7 +1040,14 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), host_func, args));
+      // Stream path: the callback owns `args` once the launch succeeds, so delete
+      // it if the enqueue throws. (Graph path hands ownership to a ctx resource
+      // above before the node is created, so it needs no guard here.)
+      SCOPE(fail)
+      {
+        delete args;
+      };
+      cuda_try<cudaLaunchHostFunc>(t.get_stream(), host_func, args);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {
@@ -1043,7 +1056,7 @@ public:
       params.fn       = host_func;
 
       // Put this host node into the child graph that implements the graph_task<>
-      cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
+      t.get_node() = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
     }
     else
     {

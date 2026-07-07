@@ -106,7 +106,7 @@ struct __optional_destruct_base<_Tp, false>
   template <class... _Args>
   _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<value_type, _Args...>)
-      : __storage_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __storage_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
@@ -165,7 +165,7 @@ struct __optional_destruct_base<_Tp, true>
   template <class... _Args>
   _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<value_type, _Args...>)
-      : __storage_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __storage_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 

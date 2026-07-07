@@ -6,6 +6,13 @@ import numpy as np
 import pytest
 
 import cuda.compute
+from cuda.compute import (
+    OpKind,
+    deserialize,
+    make_lower_bound,
+    make_upper_bound,
+    serialize,
+)
 
 DTYPE_LIST = [
     np.int32,
@@ -39,6 +46,65 @@ def disable_sass_check(monkeypatch):
     )
 
 
+@pytest.mark.parametrize(
+    "search, side",
+    [
+        (cuda.compute.lower_bound, "left"),
+        (cuda.compute.upper_bound, "right"),
+    ],
+)
+def test_binary_search_explicit_opkind_less(search, side):
+    h_data = np.array([1, 3, 3, 7, 9], dtype=np.int32)
+    h_values = np.array([0, 3, 4, 10], dtype=np.int32)
+
+    d_data = cp.asarray(h_data)
+    d_values = cp.asarray(h_values)
+    d_out = cp.empty(len(h_values), dtype=np.uintp)
+
+    search(
+        d_data=d_data,
+        num_items=len(d_data),
+        d_values=d_values,
+        num_values=len(d_values),
+        d_out=d_out,
+        comp=OpKind.LESS,
+    )
+
+    expected = np.searchsorted(h_data, h_values, side=side).astype(np.uintp)
+    np.testing.assert_array_equal(d_out.get(), expected)
+
+
+@pytest.mark.parametrize(
+    "search, side",
+    [
+        (cuda.compute.lower_bound, "left"),
+        (cuda.compute.upper_bound, "right"),
+    ],
+)
+def test_binary_search_custom_comparator(search, side):
+    h_data = np.array([9, 7, 3, 3, 1], dtype=np.int32)
+    h_values = np.array([10, 4, 3, 0], dtype=np.int32)
+
+    def greater(lhs, rhs):
+        return lhs > rhs
+
+    d_data = cp.asarray(h_data)
+    d_values = cp.asarray(h_values)
+    d_out = cp.empty(len(h_values), dtype=np.uintp)
+
+    search(
+        d_data=d_data,
+        num_items=len(d_data),
+        d_values=d_values,
+        num_values=len(d_values),
+        d_out=d_out,
+        comp=greater,
+    )
+
+    expected = np.searchsorted(-h_data, -h_values, side=side).astype(np.uintp)
+    np.testing.assert_array_equal(d_out.get(), expected)
+
+
 @pytest.mark.parametrize("dtype", DTYPE_LIST)
 @pytest.mark.parametrize(
     "num_items,num_values", [(0, 0), (0, 128), (128, 0), (512, 128)]
@@ -51,7 +117,13 @@ def test_lower_bound_basic(dtype, num_items, num_values):
     d_values = cp.asarray(h_values)
     d_out = cp.empty(num_values, dtype=np.uintp)
 
-    cuda.compute.lower_bound(d_data, d_values, d_out, num_items, num_values)
+    cuda.compute.lower_bound(
+        d_data=d_data,
+        num_items=num_items,
+        d_values=d_values,
+        num_values=num_values,
+        d_out=d_out,
+    )
 
     expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
     got = cp.asnumpy(d_out)
@@ -70,7 +142,13 @@ def test_upper_bound_basic(dtype, num_items, num_values):
     d_values = cp.asarray(h_values)
     d_out = cp.empty(num_values, dtype=np.uintp)
 
-    cuda.compute.upper_bound(d_data, d_values, d_out, num_items, num_values)
+    cuda.compute.upper_bound(
+        d_data=d_data,
+        num_items=num_items,
+        d_values=d_values,
+        num_values=num_values,
+        d_out=d_out,
+    )
 
     expected = np.searchsorted(h_data, h_values, side="right").astype(np.uintp)
     got = cp.asnumpy(d_out)
@@ -96,12 +174,24 @@ def test_binary_search_with_duplicates(dtype):
     d_values = cp.asarray(h_values)
     d_out = cp.empty(len(h_values), dtype=np.uintp)
 
-    cuda.compute.lower_bound(d_data, d_values, d_out, len(h_data), len(h_values))
+    cuda.compute.lower_bound(
+        d_data=d_data,
+        num_items=len(h_data),
+        d_values=d_values,
+        num_values=len(h_values),
+        d_out=d_out,
+    )
     expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
     got = cp.asnumpy(d_out)
     assert np.array_equal(got, expected)
 
-    cuda.compute.upper_bound(d_data, d_values, d_out, len(h_data), len(h_values))
+    cuda.compute.upper_bound(
+        d_data=d_data,
+        num_items=len(h_data),
+        d_values=d_values,
+        num_values=len(h_values),
+        d_out=d_out,
+    )
     expected = np.searchsorted(h_data, h_values, side="right").astype(np.uintp)
     got = cp.asnumpy(d_out)
     assert np.array_equal(got, expected)
@@ -114,7 +204,13 @@ def test_binary_search_requires_unsigned_output():
     d_out = cp.empty(len(d_values), dtype=np.int32)  # signed, should fail
 
     with pytest.raises(TypeError, match="unsigned integer"):
-        cuda.compute.lower_bound(d_data, d_values, d_out, len(d_data), len(d_values))
+        cuda.compute.lower_bound(
+            d_data=d_data,
+            num_items=len(d_data),
+            d_values=d_values,
+            num_values=len(d_values),
+            d_out=d_out,
+        )
 
 
 def test_binary_search_requires_pointer_sized_output():
@@ -126,4 +222,62 @@ def test_binary_search_requires_pointer_sized_output():
     )  # unsigned but not pointer-sized (on 64-bit)
 
     with pytest.raises(ValueError, match="pointer-sized"):
-        cuda.compute.lower_bound(d_data, d_values, d_out, len(d_data), len(d_values))
+        cuda.compute.lower_bound(
+            d_data=d_data,
+            num_items=len(d_data),
+            d_values=d_values,
+            num_values=len(d_values),
+            d_out=d_out,
+        )
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_lower_bound_round_trip():
+    h_data = np.array([1, 3, 3, 5, 7, 9], dtype=np.int32)
+    h_values = np.array([0, 3, 4, 10], dtype=np.int32)
+    d_data = cp.asarray(h_data)
+    d_values = cp.asarray(h_values)
+    d_out = cp.empty(len(h_values), dtype=np.uintp)
+
+    builder = make_lower_bound(d_data=d_data, d_values=d_values, d_out=d_out)
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    loaded(
+        d_data=d_data,
+        num_items=len(d_data),
+        d_values=d_values,
+        num_values=len(d_values),
+        d_out=d_out,
+        comp=None,
+    )
+
+    expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
+    np.testing.assert_array_equal(d_out.get(), expected)
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_upper_bound_round_trip():
+    h_data = np.array([1, 3, 3, 5, 7, 9], dtype=np.int32)
+    h_values = np.array([0, 3, 4, 10], dtype=np.int32)
+    d_data = cp.asarray(h_data)
+    d_values = cp.asarray(h_values)
+    d_out = cp.empty(len(h_values), dtype=np.uintp)
+
+    builder = make_upper_bound(d_data=d_data, d_values=d_values, d_out=d_out)
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    loaded(
+        d_data=d_data,
+        num_items=len(d_data),
+        d_values=d_values,
+        num_values=len(d_values),
+        d_out=d_out,
+        comp=None,
+    )
+
+    expected = np.searchsorted(h_data, h_values, side="right").astype(np.uintp)
+    np.testing.assert_array_equal(d_out.get(), expected)

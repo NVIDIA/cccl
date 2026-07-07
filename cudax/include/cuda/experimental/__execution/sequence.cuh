@@ -50,7 +50,8 @@ namespace __detail
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Attrs, class... _Env>
-[[nodiscard]] _CCCL_API constexpr auto __mk_seq_env_next(const _Attrs& __attrs, const _Env&... __env) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+__mk_seq_env_next(const _Attrs& __attrs, const _Env&... __env) noexcept
 {
   if constexpr (__callable<get_completion_scheduler_t<set_value_t>, const _Attrs&, const _Env&...>)
   {
@@ -74,13 +75,14 @@ using __seq_env_next_t = decltype(__detail::__mk_seq_env_next(declval<_Attrs>(),
 //! obtained from a sequence of senders, return the scheduler on which the final sender
 //! would complete assuming each sender was started where the previous sender completed.
 // template <class _Tag, class _Env, class _Attrs>
-// [[nodiscard]] _CCCL_API constexpr auto __seq_compl_sch_for(const _Env& __env, const _Attrs& __attrs) noexcept
+// [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __seq_compl_sch_for(const _Env& __env, const _Attrs& __attrs)
+// noexcept
 // {
 //   return __call_or(get_completion_scheduler<_Tag>, __nil{}, __attrs, __env);
 // }
 
 // template <class _Tag, class _Env, class _Attrs0, class _Attrs1, class... _Attrs>
-// [[nodiscard]] _CCCL_API constexpr auto __seq_compl_sch_for(
+// [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __seq_compl_sch_for(
 //   const _Env& __env, const _Attrs0& __attrs0, const _Attrs1& __attrs1, const _Attrs&... __attrs) noexcept
 // {
 //   return __seq_compl_sch_for<_Tag>(__detail::__mk_seq_env_next(__attrs0, __env), __attrs1, __attrs...);
@@ -101,8 +103,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Attrs, class... _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto __mk_env2(const _Attrs& __attrs, const _Env&... __env) noexcept
-    -> __env2_t<_Attrs, _Env...>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto
+  __mk_env2(const _Attrs& __attrs, const _Env&... __env) noexcept -> __env2_t<_Attrs, _Env...>
   {
     return __join_env(__detail::__mk_seq_env_next(__attrs, __fwd_env(__env)...), __fwd_env(__env)...);
   }
@@ -110,7 +112,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
   template <class _Rcvr, class _Env2, class _Sndr2>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
   {
-    _CCCL_API constexpr explicit __state_t(_Rcvr&& __rcvr, _Env2 __env, _Sndr2&& __sndr2)
+    _CCCL_HOST_DEVICE_API constexpr explicit __state_t(_Rcvr&& __rcvr, _Env2 __env, _Sndr2&& __sndr2)
         : __rcvr2_{static_cast<_Rcvr&&>(__rcvr), __env}
         , __opstate2_(execution::connect(static_cast<_Sndr2&&>(__sndr2), __ref_rcvr(__rcvr2_)))
     {}
@@ -125,23 +127,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
     using receiver_concept = receiver_t;
 
     template <class... _Values>
-    _CCCL_API constexpr void set_value(_Values&&...) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_value(_Values&&...) noexcept
     {
       execution::start(__state_->__opstate2_);
     }
 
     template <class _Error>
-    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr2_.__base()), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_API constexpr void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr2_.__base()));
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr2_.__base()));
     }
@@ -157,21 +159,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
 
     // The moves from lvalues here is intentional:
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_API constexpr __opstate_t(_Sndr1& __sndr1, _Sndr2& __sndr2, _Rcvr& __rcvr, __env2_t __env2)
+    _CCCL_HOST_DEVICE_API constexpr __opstate_t(_Sndr1& __sndr1, _Sndr2& __sndr2, _Rcvr& __rcvr, __env2_t __env2)
         : __state_(static_cast<_Rcvr&&>(__rcvr), static_cast<__env2_t&&>(__env2), static_cast<_Sndr2&&>(__sndr2))
         , __opstate1_(execution::connect(static_cast<_Sndr1&&>(__sndr1), __rcvr_t<_Rcvr, __env2_t, _Sndr2>{&__state_}))
     {}
 
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_API constexpr __opstate_t(_Sndr1&& __sndr1, _Sndr2&& __sndr2, _Rcvr&& __rcvr)
+    _CCCL_HOST_DEVICE_API constexpr __opstate_t(_Sndr1&& __sndr1, _Sndr2&& __sndr2, _Rcvr&& __rcvr)
         : __opstate_t(__sndr1, __sndr2, __rcvr, __detail::__mk_seq_env_next(get_env(__sndr1), get_env(__rcvr)))
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_API ~__opstate_t() {}
+    _CCCL_HOST_DEVICE_API ~__opstate_t() {}
 
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       execution::start(__opstate1_);
     }
@@ -187,7 +189,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr1, class _Sndr2>
-  _CCCL_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
 };
 
 template <class _Sndr1, class _Sndr2>
@@ -198,7 +200,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
   using __env2_t _CCCL_NODEBUG_ALIAS = sequence_t::__env2_t<env_of_t<_Sndr1>, _Env...>;
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__completions1) = get_child_completion_signatures<_Self, _Sndr1, _Env...>())
     {
@@ -214,7 +216,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && //
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) && //
     -> sequence_t::__opstate_t<_Rcvr, _Sndr1, _Sndr2>
   {
     using __opstate_t = sequence_t::__opstate_t<_Rcvr, _Sndr1, _Sndr2>;
@@ -223,7 +225,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& //
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) const& //
     -> sequence_t::__opstate_t<_Rcvr, const _Sndr1&, const _Sndr2&>
   {
     using __opstate_t = sequence_t::__opstate_t<_Rcvr, const _Sndr1&, const _Sndr2&>;
@@ -237,17 +239,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     _CCCL_TEMPLATE(class _SetTag, class... _Env)
     _CCCL_REQUIRES(__has_completions_for<_Sndr2, _SetTag, __env2_t<_Env...>> _CCCL_AND(
       !__callable<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr2>, __env2_t<_Env...>>))
-    _CCCL_API auto query(get_completion_scheduler_t<_SetTag>, const _Env&...) const = delete;
+    _CCCL_HOST_DEVICE_API auto query(get_completion_scheduler_t<_SetTag>, const _Env&...) const = delete;
 
     // If _Sndr2 has _SetTag completions but does not know its _SetTag completion domain,
     // then we cannot know it either. Delete the function to prevent its use.
     _CCCL_TEMPLATE(class _SetTag, class... _Env)
     _CCCL_REQUIRES(__has_completions_for<_Sndr2, _SetTag, __env2_t<_Env...>> _CCCL_AND(
       !__callable<get_completion_domain_t<_SetTag>, env_of_t<_Sndr2>, __env2_t<_Env...>>))
-    _CCCL_API auto query(get_completion_domain_t<_SetTag>, const _Env&...) const = delete;
+    _CCCL_HOST_DEVICE_API auto query(get_completion_domain_t<_SetTag>, const _Env&...) const = delete;
 
     template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
     {
       return (execution::min) (execution::get_completion_behavior<_Sndr1, __fwd_env_t<_Env>...>(),
                                execution::get_completion_behavior<_Sndr2, __env2_t<_Env...>>());
@@ -258,7 +260,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<__child_attrs_t, _Query, _Args...>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
       noexcept(__nothrow_queryable_with<__child_attrs_t, _Query, _Args...>)
         -> __query_result_t<__child_attrs_t, _Query, _Args...>
     {
@@ -269,7 +271,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     __sndr_t const* __self_;
   };
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __attrs_t
   {
     return {this};
   }
@@ -282,7 +284,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Sndr1, class _Sndr2>
-_CCCL_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
+_CCCL_HOST_DEVICE_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
   using __sndr_t _CCCL_NODEBUG_ALIAS = sequence_t::__sndr_t<_Sndr1, _Sndr2>;
   return __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};

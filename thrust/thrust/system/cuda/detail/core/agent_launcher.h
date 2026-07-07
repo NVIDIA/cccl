@@ -152,17 +152,17 @@ struct AgentLauncher : Agent
   }
 
   template <class K>
-  static cuda_optional<int> THRUST_RUNTIME_FUNCTION max_blocks_per_sm_impl(K k, int block_threads)
+  static cuda_optional<int> THRUST_RUNTIME_FUNCTION max_blocks_per_sm_impl(K k, int threads_per_block)
   {
     int occ;
-    cudaError_t status = cub::MaxSmOccupancy(occ, k, block_threads);
+    cudaError_t status = cub::MaxSmOccupancy(occ, k, threads_per_block);
     return cuda_optional<int>(status == cudaSuccess ? occ : -1, status);
   }
 
   template <class K>
   cuda_optional<int> THRUST_RUNTIME_FUNCTION max_sm_occupancy(K k) const
   {
-    return max_blocks_per_sm_impl(k, plan.block_threads);
+    return max_blocks_per_sm_impl(k, plan.threads_per_block);
   }
 
   template <class K>
@@ -178,7 +178,7 @@ struct AgentLauncher : Agent
         "%d ptx_version \n",
         name,
         grid,
-        plan.block_threads,
+        plan.threads_per_block,
         (has_shmem ? (int) plan.shared_memory_size : 0),
         (long long) stream,
         (long long) count,
@@ -193,7 +193,7 @@ struct AgentLauncher : Agent
         "Invoking %s<<<%u, %d, %d, %lld>>>(), %d items per thread, %d SM occupancy, %d vshmem size, %d ptx_version\n",
         name,
         grid,
-        plan.block_threads,
+        plan.threads_per_block,
         (has_shmem ? (int) plan.shared_memory_size : 0),
         (long long) stream,
         plan.items_per_thread,
@@ -207,7 +207,7 @@ struct AgentLauncher : Agent
   template <class... Args>
   static cuda_optional<int> THRUST_RUNTIME_FUNCTION get_max_blocks_per_sm(AgentPlan plan)
   {
-    return max_blocks_per_sm_impl(_kernel_agent<Agent, Args...>, plan.block_threads);
+    return max_blocks_per_sm_impl(_kernel_agent<Agent, Args...>, plan.threads_per_block);
   }
 
   // If we are guaranteed to have enough shared memory
@@ -218,7 +218,7 @@ struct AgentLauncher : Agent
   {
     assert(has_shmem && vshmem == nullptr);
     print_info(_kernel_agent<Agent, Args...>);
-    cuda_cub::detail::triple_chevron(grid, plan.block_threads, shmem_size, stream)
+    cuda_cub::detail::triple_chevron(grid, plan.threads_per_block, shmem_size, stream)
       .doit(_kernel_agent<Agent, Args...>, args...);
   }
 
@@ -235,7 +235,7 @@ struct AgentLauncher : Agent
   {
     assert((has_shmem && vshmem == nullptr) || (!has_shmem && vshmem != nullptr && shmem_size == 0));
     print_info(_kernel_agent_vshmem<Agent, Args...>);
-    cuda_cub::detail::triple_chevron(grid, plan.block_threads, shmem_size, stream)
+    cuda_cub::detail::triple_chevron(grid, plan.threads_per_block, shmem_size, stream)
       .doit(_kernel_agent_vshmem<Agent, Args...>, vshmem, args...);
   }
 

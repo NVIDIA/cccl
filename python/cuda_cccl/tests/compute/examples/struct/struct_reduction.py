@@ -36,7 +36,9 @@ d_out = cp.empty(1, Pixel.dtype)
 h_init = Pixel(0, 0, 0)
 
 # Perform the reduction.
-cuda.compute.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
+cuda.compute.reduce_into(
+    d_in=d_rgb, d_out=d_out, num_items=d_rgb.size, op=max_g_value, h_init=h_init
+)
 
 # Calculate the expected result.
 h_rgb = d_rgb.get()

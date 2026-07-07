@@ -52,7 +52,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 struct __memcpy_completion_impl
 {
   template <typename _Group>
-  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static async_contract_fulfillment
   __defer(__completion_mechanism __cm,
           _Group const& __group,
           ::cuda::std::size_t __size,
@@ -100,14 +100,14 @@ struct __memcpy_completion_impl
   }
 
   template <typename _Group, thread_scope _Sco, typename _CompF>
-  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment __defer(
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static async_contract_fulfillment __defer(
     __completion_mechanism __cm, _Group const& __group, ::cuda::std::size_t __size, barrier<_Sco, _CompF>& __barrier)
   {
     return __defer_non_smem_barrier(__cm, __group, __size, __barrier);
   }
 
   template <typename _Group, thread_scope _Sco, typename _CompF>
-  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static async_contract_fulfillment
   __defer_non_smem_barrier(__completion_mechanism __cm, _Group const&, ::cuda::std::size_t, barrier<_Sco, _CompF>&)
   {
     // Overload for non-smem barriers.
@@ -137,7 +137,7 @@ struct __memcpy_completion_impl
   }
 
   template <typename _Group, thread_scope _Sco>
-  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static async_contract_fulfillment
   __defer(__completion_mechanism __cm, _Group const&, ::cuda::std::size_t, pipeline<_Sco>&)
   {
     switch (__cm)

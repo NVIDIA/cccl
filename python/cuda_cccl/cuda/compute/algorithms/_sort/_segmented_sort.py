@@ -11,6 +11,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._serialization import BUILD_RESULT, ITER, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -20,7 +21,7 @@ from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
-class _SegmentedSort:
+class _SegmentedSort(Serializable):
     __slots__ = [
         "build_result",
         "d_in_keys_cccl",
@@ -30,6 +31,16 @@ class _SegmentedSort:
         "start_offsets_in_cccl",
         "end_offsets_in_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_in_values_cccl", ITER),
+        ("d_out_values_cccl", ITER),
+        ("start_offsets_in_cccl", ITER),
+        ("end_offsets_in_cccl", ITER),
+        ("build_result", BUILD_RESULT(_bindings.DeviceSegmentedSortBuildResult)),
+    )
 
     def __init__(
         self,
@@ -65,6 +76,7 @@ class _SegmentedSort:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in_keys,
         d_out_keys,
@@ -134,10 +146,11 @@ class _SegmentedSort:
 
 @cache_with_registered_key_functions
 def make_segmented_sort(
+    *,
     d_in_keys: DeviceArrayLike | DoubleBuffer,
-    d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | None = None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None = None,
+    d_out_values: DeviceArrayLike | None = None,
     start_offsets_in: DeviceArrayLike,
     end_offsets_in: DeviceArrayLike,
     order: SortOrder,
@@ -176,10 +189,11 @@ def make_segmented_sort(
 
 
 def segmented_sort(
+    *,
     d_in_keys: DeviceArrayLike | DoubleBuffer,
-    d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | None = None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None = None,
+    d_out_values: DeviceArrayLike | None = None,
     num_items: int,
     num_segments: int,
     start_offsets_in: DeviceArrayLike,
@@ -219,36 +233,36 @@ def segmented_sort(
         stream: CUDA stream for the operation (optional)
     """
     sorter = make_segmented_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        start_offsets_in,
-        end_offsets_in,
-        order,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        order=order,
     )
     tmp_storage_bytes = sorter(
-        None,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_items,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        stream,
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     sorter(
-        tmp_storage,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_items,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        stream,
+        temp_storage=tmp_storage,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        stream=stream,
     )

@@ -32,6 +32,9 @@
 #if _CCCL_FREESTANDING()
 #  define TIME_UTC 1
 
+#  if _CCCL_HOSTJIT()
+using clock_t = long long int;
+#  endif // _CCCL_HOSTJIT()
 using time_t = long long int;
 
 struct timespec
@@ -52,7 +55,12 @@ using ::timespec;
 
 [[nodiscard]] _CCCL_API inline clock_t clock() noexcept
 {
+#if _CCCL_HOSTJIT() // host-side `clock` is not supported in freestanding
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (::cuda::std::terminate();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
+#else // ^^^ _CCCL_HOSTJIT() ^^^ / vvv !_CCCL_HOSTJIT() vvv
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::clock();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
+#endif // !_CCCL_HOSTJIT()
 }
 
 // difftime
@@ -78,7 +86,11 @@ using ::timespec;
 
 _CCCL_API inline time_t time(time_t* __v) noexcept
 {
+#if _CCCL_HOSTJIT() // host-side `time` is not supported in freestanding
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (::cuda::std::terminate();), (return ::cuda::std::__cccl_time_impl_device(__v);))
+#else // ^^^ _CCCL_HOSTJIT() ^^^ / vvv !_CCCL_HOSTJIT() vvv
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::time(__v);), (return ::cuda::std::__cccl_time_impl_device(__v);))
+#endif // !_CCCL_HOSTJIT()
 }
 
 #if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
@@ -101,9 +113,14 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
 
 [[nodiscard]] _CCCL_API inline int timespec_get(timespec* __ts, int __base) noexcept
 {
+#  if _CCCL_HOSTJIT() // host-side `timespec_get` is not supported in freestanding
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (::cuda::std::terminate();), (return ::cuda::std::__cccl_timespec_get_impl_device(__ts, __base);))
+#  else // ^^^ _CCCL_HOSTJIT() ^^^ / vvv !_CCCL_HOSTJIT() vvv
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::timespec_get(__ts, __base);),
                     (return ::cuda::std::__cccl_timespec_get_impl_device(__ts, __base);))
+#  endif // !_CCCL_HOSTJIT()
 }
 
 #endif // !defined(__ANDROID_API__) || __ANDROID_API__ >= 29

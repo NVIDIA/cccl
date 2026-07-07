@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // transform_view::<iterator>::operator*
 
 #include <cuda/std/ranges>
