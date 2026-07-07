@@ -50,7 +50,7 @@ try
   state.add_global_memory_writes<T>(out.size());
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
       alloc,
       launch,
