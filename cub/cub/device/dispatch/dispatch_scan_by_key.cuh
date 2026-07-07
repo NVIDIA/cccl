@@ -653,6 +653,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return DispatchScanByKey<KeysInputIteratorT,
                              ValuesInputIteratorT,
                              ValuesOutputIteratorT,
@@ -679,6 +680,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
              kernel_source,
              launcher_factory)
       .__invoke(active_policy);
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 };
 
