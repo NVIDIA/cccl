@@ -89,9 +89,12 @@ def _make_transform(cc):
 
 
 def _compilable_ccs(want=2):
-    """Return up to ``want`` cc keys this toolchain can compile for (current first)."""
-    current = current_device_cc_key()
-    candidates = [current, 90, 100, 89, 120, 80, 86, 75]
+    """Return up to ``want`` cc keys this toolchain can compile for.
+
+    Device-free: compilation does not require a GPU, so this discovers arches
+    without querying the current device (used by the no-GPU proxy tests).
+    """
+    candidates = [90, 100, 89, 120, 80, 86, 75]
     found = []
     for cc in dict.fromkeys(candidates):  # de-dupe, preserve order
         try:
@@ -110,7 +113,10 @@ def _compilable_ccs(want=2):
 
 
 def test_proxy_single_cc_compile_is_not_loaded():
-    cc = current_device_cc_key()
+    ccs = _compilable_ccs(1)
+    if not ccs:
+        pytest.skip("toolchain compiles for no target arch")
+    cc = ccs[0]
     builder = _make_transform(cc)
     assert set(builder.build_results.keys()) == {cc}
     # compile() must not touch the driver — no kernels loaded yet.
@@ -167,12 +173,13 @@ def test_compile_only_then_lazy_load_and_execute():
 
 def test_multi_cc_loads_only_the_current_device_build_result():
     cp = pytest.importorskip("cupy")
-    ccs = _compilable_ccs(2)
-    if len(ccs) < 2:
-        pytest.skip("toolchain compiles for <2 target arches")
+    # This test executes kernels, so it legitimately needs a GPU; ensure the
+    # current device's cc is one of the built arches.
     cc = current_device_cc_key()
-    assert cc in ccs
-    other = next(c for c in ccs if c != cc)
+    other = next((c for c in _compilable_ccs(3) if c != cc), None)
+    if other is None:
+        pytest.skip("toolchain compiles for <2 target arches")
+    ccs = [cc, other]
 
     builder = _make_transform(ccs)
     blob = serialize(builder)
