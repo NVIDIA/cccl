@@ -482,9 +482,9 @@ struct segmented_sort_tuning
       cub::SegmentedSortRadixSortPolicy{
         BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_BASIC, cub::BLOCK_SCAN_WARP_SCANS, 4},
       cub::SegmentedSortSubWarpMergeSortPolicy{
-        BlockThreads, 4, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
-      cub::SegmentedSortSubWarpMergeSortPolicy{
         BlockThreads, 32, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        BlockThreads, 4, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
       1000000};
   }
 };
