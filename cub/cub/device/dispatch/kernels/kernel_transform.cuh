@@ -888,14 +888,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
   }
 
-  // all threads wait for bulk copy
-  __syncthreads(); // TODO: ahendriksen said this is not needed, but compute-sanitizer disagrees
-  while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-    ;
-
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
 
+  // determine if we can vectorize storing
   using output_t         = it_value_t<RandomAccessIteratorOut>;
   constexpr int out_size = int{size_of<output_t>};
   static_assert(
@@ -914,10 +910,20 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && ::cuda::is_power_of_two(out_size)
     && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
 
+  [[maybe_unused]] bool can_vectorize = false;
   if constexpr (vectorize_eligible)
   {
-    const bool can_vectorize = ::cuda::std::is_sufficiently_aligned<out_size * store_vec_size>(out)
-                            && (... && (aligned_ptrs.head_padding % (int{sizeof(InTs)} * store_vec_size) == 0));
+    can_vectorize = ::cuda::std::is_sufficiently_aligned<out_size * store_vec_size>(out)
+                 && (... && (aligned_ptrs.head_padding % (int{sizeof(InTs)} * store_vec_size) == 0));
+  }
+
+  // all threads wait for bulk copy
+  __syncthreads(); // TODO: ahendriksen said this is not needed, but compute-sanitizer disagrees
+  while (!ptx::mbarrier_try_wait_parity(&bar, 0))
+    ;
+
+  if constexpr (vectorize_eligible)
+  {
     if (can_vectorize)
     {
       // store_vec_size: element count for vectorized store. default = 16 / sizeof(output). must be pow2
