@@ -919,18 +919,22 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
 
 template <bool StableReductionOrder, typename AccumT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_lookahead_body(
-  warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states, ::cuda::std::uint32_t* atomic_counter)
+  warpspeed::tile_state_t<AccumT>* tile_states,
+  const int num_temp_states,
+  [[maybe_unused]] ::cuda::std::uint32_t* atomic_counter)
 {
   const int tile_id = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
 
   // The atomic counter is only used (and thus only needs zeroing) on SM90 with a stable reduction order.
-  const bool init_atomic_counter = [] {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (return false;), (return StableReductionOrder;));
-  }();
-  if (init_atomic_counter && tile_id == 0 && atomic_counter != nullptr)
-  {
-    *atomic_counter = 0;
-  }
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (), ({
+                 if constexpr (StableReductionOrder)
+                 {
+                   if (tile_id == 0 && atomic_counter != nullptr)
+                   {
+                     *atomic_counter = 0;
+                   }
+                 }
+               }));
 
   if (tile_id >= num_temp_states)
   {
