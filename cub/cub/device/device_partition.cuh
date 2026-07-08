@@ -51,7 +51,9 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @linear_performance{partition}
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DevicePartition, except @p If with three partitions, that accept an environment can be tuned by
 //! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a @ref PartitionPolicy, as shown in the
 //! example below:
