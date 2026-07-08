@@ -10,9 +10,9 @@
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
 
-constexpr int WARP_THREADS                  = 32;
-constexpr int NUM_ITERATIONS                = 100;
-constexpr int BLOCK_DIM_FOR_THROUGHPUT_MODE = 128;
+inline constexpr int warp_threads                  = 32;
+inline constexpr int num_iterations                = 100;
+inline constexpr int block_dim_for_throughput_mode = 128;
 
 enum class Mode
 {
@@ -46,11 +46,11 @@ constexpr int calc_block_dim()
 {
   if constexpr (mode == Mode::Latency)
   {
-    return WARP_THREADS;
+    return warp_threads;
   }
   else
   {
-    return BLOCK_DIM_FOR_THROUGHPUT_MODE;
+    return block_dim_for_throughput_mode;
   }
 }
 
@@ -69,19 +69,19 @@ int calc_grid_dim(int num_SMs, int block_dim, Kernel kernel)
   }
 }
 
-template <typename ActionT, Mode mode, typename KeyT, typename ValueT, int LEN>
+template <typename ActionT, Mode mode, typename KeyT, typename ValueT, int Len>
 void run_bench(nvbench::state& state)
 {
-  constexpr int items_per_thread = LEN / WARP_THREADS;
+  constexpr int items_per_thread = Len / warp_threads;
   const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT, int>;
 
   const int num_SMs       = state.get_device().value().get_number_of_sms();
   constexpr int block_dim = calc_block_dim<mode>();
   const int grid_dim      = calc_grid_dim<mode>(num_SMs, block_dim, kernel);
-  state.add_element_count(grid_dim * (block_dim / WARP_THREADS) * LEN * NUM_ITERATIONS);
+  state.add_element_count(grid_dim * (block_dim / warp_threads) * Len * num_iterations);
 
   state.exec([grid_dim, block_dim, kernel](nvbench::launch& launch) {
-    kernel<<<grid_dim, block_dim, 0, launch.get_stream()>>>(NUM_ITERATIONS, ActionT{}, LEN);
+    kernel<<<grid_dim, block_dim, 0, launch.get_stream()>>>(num_iterations, ActionT{}, Len);
   });
 }
 

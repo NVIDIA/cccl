@@ -12,63 +12,63 @@ using key_types   = nvbench::type_list<int16_t, float>;
 using value_types = offset_types;
 using len_values  = nvbench::enum_type_list<32, 64, 96, 128, 160, 192, 224, 256>;
 
-template <int ITEMS_PER_THREAD>
+template <int ItemsPerThread>
 struct full_op_t
 {
   template <typename KeyT, typename ValueT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  operator()(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int) const
+  operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int) const
   {
-    cub::detail::WarpBitonicSort<ITEMS_PER_THREAD, KeyT, ValueT>{}.Sort(keys, values, CustomLess{});
+    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>{}.Sort(keys, values, CustomLess{});
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int len>
-void full(nvbench::state& state, nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<len>>)
+template <Mode mode, typename KeyT, typename ValueT, int Len>
+void full(nvbench::state& state, nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<Len>>)
 {
-  run_bench<full_op_t<len / WARP_THREADS>, mode, KeyT, ValueT, len>(state);
+  run_bench<full_op_t<Len / warp_threads>, mode, KeyT, ValueT, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(full, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values))
   .set_type_axes_names({"mode", "KeyT", "ValueT", "len"});
 
-template <int ITEMS_PER_THREAD>
+template <int ItemsPerThread>
 struct partial_oob_op_t
 {
   template <typename KeyT, typename ValueT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  operator()(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int len) const
+  operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int len) const
   {
-    cub::detail::WarpBitonicSort<ITEMS_PER_THREAD, KeyT, ValueT>{}.Sort(
+    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>{}.Sort(
       keys, values, CustomLess{}, len, CustomLess::oob_default<KeyT>);
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int len>
+template <Mode mode, typename KeyT, typename ValueT, int Len>
 void partial_oob(nvbench::state& state,
-                 nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<len>>)
+                 nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<Len>>)
 {
-  run_bench<partial_oob_op_t<len / WARP_THREADS>, mode, KeyT, ValueT, len>(state);
+  run_bench<partial_oob_op_t<Len / warp_threads>, mode, KeyT, ValueT, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(partial_oob, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values))
   .set_type_axes_names({"mode", "KeyT", "ValueT", "len"});
 
-template <int ITEMS_PER_THREAD>
+template <int ItemsPerThread>
 struct partial_op_t
 {
   template <typename KeyT, typename ValueT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  operator()(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int len) const
+  operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int len) const
   {
-    cub::detail::WarpBitonicSort<ITEMS_PER_THREAD, KeyT, ValueT>{}.Sort(keys, values, CustomLess{}, len);
+    cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>{}.Sort(keys, values, CustomLess{}, len);
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int len>
-void partial(nvbench::state& state, nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<len>>)
+template <Mode mode, typename KeyT, typename ValueT, int Len>
+void partial(nvbench::state& state, nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<Len>>)
 {
-  run_bench<partial_op_t<len / WARP_THREADS>, mode, KeyT, ValueT, len>(state);
+  run_bench<partial_op_t<Len / warp_threads>, mode, KeyT, ValueT, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(partial, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values))

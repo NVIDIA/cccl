@@ -25,29 +25,29 @@ struct CustomLess
   static constexpr T oob_default = cuda::std::numeric_limits<T>::max();
 };
 
-constexpr int WARP_THREADS = cub::detail::warp_threads;
+inline constexpr int warp_threads = cub::detail::warp_threads;
 
 /**
  * @brief Kernel to dispatch to the appropriate WarpBitonicSort member function, sorting keys-only.
  */
-template <int ITEMS_PER_THREAD, int TOTAL_WARPS, typename KeyT, typename ActionT>
+template <int ItemsPerThread, int TotalWarps, typename KeyT, typename ActionT>
 __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, ActionT action)
 {
-  using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ITEMS_PER_THREAD, KeyT>;
+  using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
 
   // Get linear thread and warp index
   const int tid     = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
-  const int warp_id = tid / WARP_THREADS;
-  const int lane    = tid % WARP_THREADS;
+  const int warp_id = tid / warp_threads;
+  const int lane    = tid % warp_threads;
 
   // Test case of partially finished CTA
-  if (warp_id >= TOTAL_WARPS)
+  if (warp_id >= TotalWarps)
   {
     return;
   }
 
   // Thread-local storage
-  KeyT thread_data[ITEMS_PER_THREAD];
+  KeyT thread_data[ItemsPerThread];
 
   // Instantiate warp-scope algorithm
   warp_bitonic_sort_t warp_sort;
@@ -55,9 +55,9 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   const int warp_offset = valid_items * warp_id;
 
   // Load data
-  for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+  for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * WARP_THREADS + lane;
+    const int idx = i * warp_threads + lane;
     if (idx < valid_items)
     {
       thread_data[i] = in[warp_offset + idx];
@@ -68,9 +68,9 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   action(warp_sort, thread_data, valid_items);
 
   // Store data
-  for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+  for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * WARP_THREADS + lane;
+    const int idx = i * warp_threads + lane;
     if (idx < valid_items)
     {
       out[warp_offset + idx] = thread_data[i];
@@ -82,26 +82,26 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
  * @brief Kernel to dispatch to the appropriate WarpBitonicSort member function, sorting key-value
  * pairs.
  */
-template <int ITEMS_PER_THREAD, int TOTAL_WARPS, typename KeyT, typename ValueT, typename ActionT>
+template <int ItemsPerThread, int TotalWarps, typename KeyT, typename ValueT, typename ActionT>
 __global__ void warp_bitonic_sort_kernel(
   KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_out, int valid_items, ActionT action)
 {
-  using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ITEMS_PER_THREAD, KeyT, ValueT>;
+  using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
 
   // Get linear thread and warp index
   const int tid     = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
-  const int warp_id = tid / WARP_THREADS;
-  const int lane    = tid % WARP_THREADS;
+  const int warp_id = tid / warp_threads;
+  const int lane    = tid % warp_threads;
 
   // Test case of partially finished CTA
-  if (warp_id >= TOTAL_WARPS)
+  if (warp_id >= TotalWarps)
   {
     return;
   }
 
   // Thread-local storage
-  KeyT keys[ITEMS_PER_THREAD];
-  ValueT values[ITEMS_PER_THREAD];
+  KeyT keys[ItemsPerThread];
+  ValueT values[ItemsPerThread];
 
   // Instantiate warp-scope algorithm
   warp_bitonic_sort_t warp_sort;
@@ -109,9 +109,9 @@ __global__ void warp_bitonic_sort_kernel(
   const int warp_offset = valid_items * warp_id;
 
   // Load data
-  for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+  for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * WARP_THREADS + lane;
+    const int idx = i * warp_threads + lane;
     if (idx < valid_items)
     {
       keys[i]   = keys_in[warp_offset + idx];
@@ -123,9 +123,9 @@ __global__ void warp_bitonic_sort_kernel(
   action(warp_sort, keys, values, valid_items);
 
   // Store data
-  for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+  for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * WARP_THREADS + lane;
+    const int idx = i * warp_threads + lane;
     if (idx < valid_items)
     {
       keys_out[warp_offset + idx]   = keys[i];
@@ -144,8 +144,8 @@ __global__ void warp_bitonic_sort_kernel(
  */
 struct sort_keys_full_t
 {
-  template <int ITEMS_PER_THREAD, typename KeyT, typename WarpSortT>
-  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ITEMS_PER_THREAD], int /*valid_items*/) const
+  template <int ItemsPerThread, typename KeyT, typename WarpSortT>
+  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int /*valid_items*/) const
   {
     warp_sort.Sort(thread_data, CustomLess{});
   }
@@ -156,8 +156,8 @@ struct sort_keys_full_t
  */
 struct sort_keys_partial_oob_t
 {
-  template <int ITEMS_PER_THREAD, typename KeyT, typename WarpSortT>
-  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ITEMS_PER_THREAD], int valid_items) const
+  template <int ItemsPerThread, typename KeyT, typename WarpSortT>
+  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int valid_items) const
   {
     warp_sort.Sort(thread_data, CustomLess{}, valid_items, CustomLess::oob_default<KeyT>);
   }
@@ -168,8 +168,8 @@ struct sort_keys_partial_oob_t
  */
 struct sort_keys_partial_t
 {
-  template <int ITEMS_PER_THREAD, typename KeyT, typename WarpSortT>
-  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ITEMS_PER_THREAD], int valid_items) const
+  template <int ItemsPerThread, typename KeyT, typename WarpSortT>
+  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int valid_items) const
   {
     warp_sort.Sort(thread_data, CustomLess{}, valid_items);
   }
@@ -180,9 +180,9 @@ struct sort_keys_partial_t
  */
 struct sort_pairs_full_t
 {
-  template <int ITEMS_PER_THREAD, typename KeyT, typename ValueT, typename WarpSortT>
-  __device__ void operator()(
-    WarpSortT& warp_sort, KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int /*valid_items*/
+  template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpSortT>
+  __device__ void
+  operator()(WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int /*valid_items*/
   ) const
   {
     warp_sort.Sort(keys, values, CustomLess{});
@@ -194,9 +194,9 @@ struct sort_pairs_full_t
  */
 struct sort_pairs_partial_oob_t
 {
-  template <int ITEMS_PER_THREAD, typename KeyT, typename ValueT, typename WarpSortT>
+  template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpSortT>
   __device__ void operator()(
-    WarpSortT& warp_sort, KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int valid_items) const
+    WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int valid_items) const
   {
     warp_sort.Sort(keys, values, CustomLess{}, valid_items, CustomLess::oob_default<KeyT>);
   }
@@ -207,9 +207,9 @@ struct sort_pairs_partial_oob_t
  */
 struct sort_pairs_partial_t
 {
-  template <int ITEMS_PER_THREAD, typename KeyT, typename ValueT, typename WarpSortT>
+  template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpSortT>
   __device__ void operator()(
-    WarpSortT& warp_sort, KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int valid_items) const
+    WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int valid_items) const
   {
     warp_sort.Sort(keys, values, CustomLess{}, valid_items);
   }
@@ -218,20 +218,20 @@ struct sort_pairs_partial_t
 /**
  * @brief Dispatch helper function for sorting keys
  */
-template <int ITEMS_PER_THREAD, int TOTAL_WARPS, typename KeyT, typename ActionT>
+template <int ItemsPerThread, int TotalWarps, typename KeyT, typename ActionT>
 void warp_bitonic_sort(
   c2h::device_vector<KeyT>& in, c2h::device_vector<KeyT>& out, int valid_items, ActionT action, int num_block_dims)
 {
   // only support num_block_dims is 1 or 2
   REQUIRE((num_block_dims == 1 || num_block_dims == 2));
-  dim3 block_dims{WARP_THREADS * TOTAL_WARPS};
+  dim3 block_dims{warp_threads * TotalWarps};
   if (num_block_dims == 2)
   {
-    // test the case when blockDim.x < WARP_THREADS
-    block_dims = dim3{WARP_THREADS / 2, 2 * TOTAL_WARPS};
+    // test the case when blockDim.x < warp_threads
+    block_dims = dim3{warp_threads / 2, 2 * TotalWarps};
   }
 
-  warp_bitonic_sort_kernel<ITEMS_PER_THREAD, TOTAL_WARPS>
+  warp_bitonic_sort_kernel<ItemsPerThread, TotalWarps>
     <<<1, block_dims>>>(thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), valid_items, action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
@@ -241,7 +241,7 @@ void warp_bitonic_sort(
 /**
  * @brief Dispatch helper function for sorting key-value pairs
  */
-template <int ITEMS_PER_THREAD, int TOTAL_WARPS, typename KeyT, typename ValueT, typename ActionT>
+template <int ItemsPerThread, int TotalWarps, typename KeyT, typename ValueT, typename ActionT>
 void warp_bitonic_sort(
   c2h::device_vector<KeyT>& keys_in,
   c2h::device_vector<KeyT>& keys_out,
@@ -253,14 +253,14 @@ void warp_bitonic_sort(
 {
   // only support num_block_dims is 1 or 2
   REQUIRE((num_block_dims == 1 || num_block_dims == 2));
-  dim3 block_dims{WARP_THREADS * TOTAL_WARPS};
+  dim3 block_dims{warp_threads * TotalWarps};
   if (num_block_dims == 2)
   {
-    // test the case when blockDim.x < WARP_THREADS
-    block_dims = dim3{WARP_THREADS / 2, 2 * TOTAL_WARPS};
+    // test the case when blockDim.x < warp_threads
+    block_dims = dim3{warp_threads / 2, 2 * TotalWarps};
   }
 
-  warp_bitonic_sort_kernel<ITEMS_PER_THREAD, TOTAL_WARPS><<<1, block_dims>>>(
+  warp_bitonic_sort_kernel<ItemsPerThread, TotalWarps><<<1, block_dims>>>(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
     thrust::raw_pointer_cast(values_in.data()),
@@ -344,7 +344,7 @@ C2H_TEST("Warp sort on keys-only works", "[sort][warp]", key_types, items_per_th
   using type   = typename params::type;
 
   // Prepare test data
-  const int valid_items     = params::items_per_thread * WARP_THREADS;
+  const int valid_items     = params::items_per_thread * warp_threads;
   constexpr int total_warps = params::total_warps;
   const int total_items     = total_warps * valid_items;
   c2h::device_vector<type> d_in(total_items);
@@ -378,9 +378,9 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works",
   const int valid_items = GENERATE(
     0,
     1,
-    params::items_per_thread * WARP_THREADS - 1,
-    params::items_per_thread * WARP_THREADS,
-    take(5, random(2, params::items_per_thread * WARP_THREADS - 2)));
+    params::items_per_thread * warp_threads - 1,
+    params::items_per_thread * warp_threads,
+    take(5, random(2, params::items_per_thread * warp_threads - 2)));
   constexpr int total_warps = params::total_warps;
   const int total_items     = total_warps * valid_items;
   c2h::device_vector<type> d_in(total_items);
@@ -410,7 +410,7 @@ C2H_TEST("Warp sort on keys-value pairs works",
   using value_type = typename c2h::get<3, TestType>;
 
   // Prepare test data
-  const int valid_items     = params::items_per_thread * WARP_THREADS;
+  const int valid_items     = params::items_per_thread * warp_threads;
   constexpr int total_warps = params::total_warps;
   const int total_items     = total_warps * valid_items;
   c2h::device_vector<key_type> d_keys_in(total_items);
@@ -454,9 +454,9 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   const int valid_items = GENERATE(
     0,
     1,
-    params::items_per_thread * WARP_THREADS - 1,
-    params::items_per_thread * WARP_THREADS,
-    take(5, random(2, params::items_per_thread * WARP_THREADS - 2)));
+    params::items_per_thread * warp_threads - 1,
+    params::items_per_thread * warp_threads,
+    take(5, random(2, params::items_per_thread * warp_threads - 2)));
   constexpr int total_warps = params::total_warps;
   const int total_items     = total_warps * valid_items;
   c2h::device_vector<key_type> d_keys_in(total_items);
