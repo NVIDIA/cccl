@@ -749,7 +749,11 @@ struct lookahead_scan_closure
     }();
 
 #  pragma unroll 1
-    while (idxTile < numTiles)
+    // SM90 produces bad codegen and deadlocks with a `while (true)`, so it exits via the bound check.
+    // SM100 uses a explicit true condition and relies on the clusterlaunchcontrol exit below instead.
+    while ([&] {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (return true;), (return idxTile < numTiles;));
+    }())
     {
       // Get stages. When these objects go out of scope, the stage of the resource is automatically incremented.
       warpspeed::SmemStage stageNextBlockIdx      = res.smemNextBlockIdx.nextStage();
@@ -794,11 +798,9 @@ struct lookahead_scan_closure
         refNextBlockIdxR.setFenceLdsToAsyncProxy();
       }
       const bool nextIdxTileValid = [&] {
-        bool valid = false;
         NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
-                          (valid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
-                          (valid = static_cast<int>(regNextBlockIdx.x) < numTiles;));
-        return valid;
+                          (return ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
+                          (return static_cast<int>(regNextBlockIdx.x) < numTiles;));
       }();
 
       if (squad == squadReduce)
@@ -915,11 +917,21 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
 #endif // __cccl_ptx_isa >= 860
 }
 
-template <typename AccumT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void
-device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
+template <bool StableReductionOrder, typename AccumT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_lookahead_body(
+  warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states, ::cuda::std::uint32_t* atomic_counter)
 {
   const int tile_id = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
+
+  // The atomic counter is only used (and thus only needs zeroing) on SM90 with a stable reduction order.
+  const bool init_atomic_counter = [] {
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (return false;), (return StableReductionOrder;));
+  }();
+  if (init_atomic_counter && tile_id == 0 && atomic_counter != nullptr)
+  {
+    *atomic_counter = 0;
+  }
+
   if (tile_id >= num_temp_states)
   {
     return;
