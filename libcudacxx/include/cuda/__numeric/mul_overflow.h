@@ -74,12 +74,13 @@ template <class _Tp>
   }
   else if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
+    using _Sp               = ::cuda::std::make_signed_t<_Tp>;
     using _Up               = ::cuda::std::make_unsigned_t<_Tp>;
     const auto __lhs1       = static_cast<_Up>(__lhs);
     const auto __rhs1       = static_cast<_Up>(__rhs);
     const auto __product_lo = static_cast<_Tp>(__lhs1 * __rhs1);
     auto __product_hi       = ::cuda::mul_hi(__lhs1, __rhs1);
-    const auto __expected   = __product_lo < 0 ? static_cast<_Up>(-1) : static_cast<_Up>(0);
+    const auto __expected   = static_cast<_Sp>(__product_lo) >> (__num_bits_v<_Tp> - 1);
     if (__rhs < 0)
     {
       __product_hi -= __lhs1;
