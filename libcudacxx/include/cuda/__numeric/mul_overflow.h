@@ -159,7 +159,7 @@ template <class _Tp>
           : "l"(__a0), "l"(__a1), "l"(__b0), "l"(__b1));
 
       const auto __result   = (static_cast<__uint128_t>(__r1) << 64) | __r0;
-      const bool __overflow = (__r2 != 0) || (__r3 != 0);
+      const bool __overflow = (__r2 | __r3) != 0;
       return {__result, __overflow};
     }
 #  endif // _CCCL_HAS_INT128()
@@ -331,7 +331,6 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 
   // Host fallback + device implementation.
 #if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_MUL_OVERFLOW) || (_CCCL_HAS_INT128() && _CCCL_COMPILER(NVHPC))
-  using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
   using _CommonAll                             = ::cuda::std::common_type_t<_Common, _ActResult>;
