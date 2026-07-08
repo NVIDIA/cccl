@@ -50,8 +50,8 @@ void fixed_capacity_map_insert(::nvbench::state& state, ::nvbench::type_list<Key
 
     const auto device = ::cuda::device_ref{0};
     ::cuda::stream stream{device};
-    const ::cuda::device_memory_pool_ref memory_resource = ::cuda::device_default_memory_pool(device);
-    const auto exec_policy                               = ::thrust::cuda::par_nosync.on(stream.get());
+    const ::cuda::device_memory_pool_ref mr = ::cuda::device_default_memory_pool(device);
+    const auto exec_policy                  = ::thrust::cuda::par_nosync.on(stream.get());
 
     auto keys = ::cuda::make_device_buffer<Key>(stream, device, num_keys, ::cuda::no_init);
 
@@ -63,20 +63,13 @@ void fixed_capacity_map_insert(::nvbench::state& state, ::nvbench::type_list<Key
       return pair_type{key, Value{}};
     });
 
-    map_type map{
-      size,
-      cudax::cuco::empty_key<Key>{Key{-1}},
-      cudax::cuco::empty_value<Value>{Value{-1}},
-      ::cuda::std::equal_to<Key>{},
-      typename map_type::probing_scheme_type{},
-      memory_resource,
-      stream};
+    map_type map{stream, mr, size, cudax::cuco::empty_key(Key{-1}), cudax::cuco::empty_value(Value{-1})};
     stream.sync();
 
     state.add_element_count(num_keys);
     state.exec(::nvbench::exec_tag::timer, [&](::nvbench::launch& launch, auto& timer) {
       timer.start();
-      map.insert_async(pairs.begin(), pairs.end(), {launch.get_stream()});
+      map.insert_async({launch.get_stream()}, pairs.begin(), pairs.end());
       timer.stop();
       map.clear_async({launch.get_stream()});
     });

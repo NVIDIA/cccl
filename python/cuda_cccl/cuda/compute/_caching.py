@@ -16,6 +16,11 @@ try:
 except ImportError:
     from cuda.core.experimental import Device
 
+try:
+    from cuda.core._utils.cuda_utils import CUDAError
+except ImportError:
+    from cuda.core.experimental._utils.cuda_utils import CUDAError
+
 from ._utils.protocols import get_dtype, get_shape, is_device_array
 from .struct import _Struct
 
@@ -117,11 +122,43 @@ class _CacheWithRegisteredKeyFunctions:
 
         @functools.wraps(func)
         def inner(*args, **kwargs):
-            cc = Device().compute_capability
             user_cache_key = _make_cache_key_from_args(*args, **kwargs)
-            cache_key = (user_cache_key, tuple(cc))
+            # When the caller targets explicit compute capabilities, that value
+            # is already part of user_cache_key (it arrives as a kwarg) and we
+            # must NOT query a device — the whole point is to build without a
+            # GPU. Otherwise, salt the key with the current device's cc so a
+            # build cached on one device isn't reused on another.
+            if kwargs.get("compute_capability") is None:
+                # Only device-availability failures should be reinterpreted as
+                # "pass compute_capability": no driver / no device raises
+                # CUDAError, and querying device 0 on a machine with zero
+                # devices raises ValueError. Anything else (a real bug) must
+                # propagate untouched. The original error is chained and echoed
+                # so a genuine driver/permission failure isn't hidden behind a
+                # misleading "no device" message.
+                try:
+                    cc = tuple(Device().compute_capability)
+                except (CUDAError, ValueError) as e:
+                    raise RuntimeError(
+                        "make_<algo> was called without compute_capability and the "
+                        f"current CUDA device could not be queried ({e}). Pass "
+                        "compute_capability=<cc or list of ccs> to compile without "
+                        "a GPU (e.g. with ProxyArray / ProxyValue)."
+                    ) from e
+                target_cc_arg = cc
+            else:
+                cc = None
+                target_cc_arg = kwargs.get("compute_capability")
+            cache_key = (user_cache_key, cc)
             if cache_key not in cache:
-                result = func(*args, **kwargs)
+                # Shared device code (operators, iterators) is compiled to LTO-IR
+                # once and linked into every per-arch build result, so it must target
+                # the lowest requested cc (nvJitLink requires final SM >= each
+                # linked input's arch). Set that target around the build.
+                from ._target_cc import target_cc
+
+                with target_cc(target_cc_arg):
+                    result = func(*args, **kwargs)
                 cache[cache_key] = result
             return cache[cache_key]
 
@@ -254,3 +291,20 @@ cache_with_registered_key_functions.register(
     types.FunctionType, lambda fn: CachableFunction(fn)
 )
 cache_with_registered_key_functions.register(_Struct, lambda v: (_type_fqn(v), v.dtype))
+
+
+def _register_proxy_types():
+    # Registered lazily to avoid importing _proxy (and numpy-dtype construction)
+    # at module import time; the keys are dtype-only so equal-dtype proxies share
+    # a cache entry.
+    from ._proxy import ProxyArray, ProxyValue
+
+    cache_with_registered_key_functions.register(
+        ProxyArray, lambda v: ("ProxyArray", v.dtype)
+    )
+    cache_with_registered_key_functions.register(
+        ProxyValue, lambda v: ("ProxyValue", v.dtype)
+    )
+
+
+_register_proxy_types()

@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/device_ref.h>
-#include <cuda/__driver/driver_api.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
@@ -114,160 +112,154 @@ private:
     __stream.sync();
   }
 
-  //! @brief Returns the default memory pool of the current device.
-  [[nodiscard]] _CCCL_HOST_API static ::cuda::device_memory_pool_ref __default_memory_resource()
-  {
-    return ::cuda::device_default_memory_pool(::cuda::device_ref{::cuda::__driver::__ctxGetDevice()});
-  }
-
 public:
   //! @brief Constructs a map with static capacity (encoded in `_Capacity`) and no erasure.
   //!
+  //! @param __stream Stream used for allocation and initialization
+  //! @param __mr Memory resource for device storage
   //! @param __empty_key_sentinel Sentinel indicating an empty key slot
   //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __pred Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __mr Memory resource for device storage
-  //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C != ::cuda::std::dynamic_extent))
   _CCCL_HOST_API fixed_capacity_map(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
-    const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = __default_memory_resource(),
-    ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
+    const _ProbingScheme& __probing_scheme = {})
       : __impl{::cuda::std::make_unique<__impl_type>(
+          __stream,
+          __mr,
           _Capacity,
           value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
           __pred,
-          __probing_scheme,
-          __mr,
-          __stream)}
+          __probing_scheme)}
       , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
   {}
 
   //! @brief Constructs a map with dynamic capacity and no erasure.
   //!
+  //! @param __stream Stream used for allocation and initialization
+  //! @param __mr Memory resource for device storage
   //! @param __capacity Requested slot count (prime/stride-adjusted internally)
   //! @param __empty_key_sentinel Sentinel indicating an empty key slot
   //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __pred Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __mr Memory resource for device storage
-  //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
   _CCCL_HOST_API fixed_capacity_map(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     size_type __capacity,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
-    const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = __default_memory_resource(),
-    ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
+    const _ProbingScheme& __probing_scheme = {})
       : __impl{::cuda::std::make_unique<__impl_type>(
+          __stream,
+          __mr,
           __capacity,
           value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
           __pred,
-          __probing_scheme,
-          __mr,
-          __stream)}
+          __probing_scheme)}
       , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
   {}
 
   //! @brief Constructs a map sized by a target load factor (dynamic capacity only).
   //!
+  //! @param __stream Stream used for allocation and initialization
+  //! @param __mr Memory resource for device storage
   //! @param __n Expected number of keys
   //! @param __desired_load_factor Target load factor in (0, 1]
   //! @param __empty_key_sentinel Sentinel indicating an empty key slot
   //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __pred Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __mr Memory resource for device storage
-  //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
   _CCCL_HOST_API fixed_capacity_map(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     size_type __n,
     double __desired_load_factor,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
-    const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = __default_memory_resource(),
-    ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
+    const _ProbingScheme& __probing_scheme = {})
       : __impl{::cuda::std::make_unique<__impl_type>(
+          __stream,
+          __mr,
           __n,
           __desired_load_factor,
           value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
           __pred,
-          __probing_scheme,
-          __mr,
-          __stream)}
+          __probing_scheme)}
       , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
   {}
 
   //! @brief Constructs a map with static capacity and erasure support.
   //!
+  //! @param __stream Stream used for allocation and initialization
+  //! @param __mr Memory resource for device storage
   //! @param __empty_key_sentinel Sentinel indicating an empty key slot
   //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __erased_key_sentinel Sentinel indicating an erased key slot
   //! @param __pred Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __mr Memory resource for device storage
-  //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C != ::cuda::std::dynamic_extent))
   _CCCL_HOST_API fixed_capacity_map(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     erased_key<_Key> __erased_key_sentinel,
     const _KeyEqual& __pred                = {},
-    const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = __default_memory_resource(),
-    ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
+    const _ProbingScheme& __probing_scheme = {})
       : __impl{::cuda::std::make_unique<__impl_type>(
+          __stream,
+          __mr,
           _Capacity,
           value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
           key_type(__erased_key_sentinel),
           __pred,
-          __probing_scheme,
-          __mr,
-          __stream)}
+          __probing_scheme)}
       , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
   {}
 
   //! @brief Constructs a map with dynamic capacity and erasure support.
   //!
+  //! @param __stream Stream used for allocation and initialization
+  //! @param __mr Memory resource for device storage
   //! @param __capacity Requested slot count (prime/stride-adjusted internally)
   //! @param __empty_key_sentinel Sentinel indicating an empty key slot
   //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __erased_key_sentinel Sentinel indicating an erased key slot
   //! @param __pred Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __mr Memory resource for device storage
-  //! @param __stream Stream used for allocation and initialization
   _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
   _CCCL_REQUIRES((_C == ::cuda::std::dynamic_extent))
   _CCCL_HOST_API fixed_capacity_map(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     size_type __capacity,
     empty_key<_Key> __empty_key_sentinel,
     empty_value<_Tp> __empty_value_sentinel,
     erased_key<_Key> __erased_key_sentinel,
     const _KeyEqual& __pred                = {},
-    const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = __default_memory_resource(),
-    ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
+    const _ProbingScheme& __probing_scheme = {})
       : __impl{::cuda::std::make_unique<__impl_type>(
+          __stream,
+          __mr,
           __capacity,
           value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
           key_type(__erased_key_sentinel),
           __pred,
-          __probing_scheme,
-          __mr,
-          __stream)}
+          __probing_scheme)}
       , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
   {}
 
@@ -276,7 +268,7 @@ public:
   //! @brief Erases all elements from the container. After this call, `size()` returns zero.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  void clear(::cuda::stream_ref __stream = cudaStream_t{nullptr})
+  void clear(::cuda::stream_ref __stream)
   {
     __impl->clear(__stream);
   }
@@ -285,7 +277,7 @@ public:
   //! returns zero.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  void clear_async(::cuda::stream_ref __stream = cudaStream_t{nullptr}) noexcept
+  void clear_async(::cuda::stream_ref __stream) noexcept
   {
     __impl->clear_async(__stream);
   }
@@ -301,15 +293,15 @@ public:
   //! @tparam _InputIt Device accessible random access input iterator whose `value_type` is
   //! convertible to the map's `value_type`
   //!
+  //! @param __stream CUDA stream used for insert
   //! @param __first Beginning of the sequence of keys
   //! @param __last End of the sequence of keys
-  //! @param __stream CUDA stream used for insert
   //!
   //! @return Number of successful insertions
   template <class _InputIt>
-  size_type insert(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = cudaStream_t{nullptr})
+  size_type insert(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
-    return __impl->insert(__first, __last, ref(), __stream);
+    return __impl->insert(__stream, __first, __last, ref());
   }
 
   //! @brief Asynchronously inserts all keys in the range `[__first, __last)`.
@@ -317,13 +309,13 @@ public:
   //! @tparam _InputIt Device accessible random access input iterator whose `value_type` is
   //! convertible to the map's `value_type`
   //!
+  //! @param __stream CUDA stream used for insert
   //! @param __first Beginning of the sequence of keys
   //! @param __last End of the sequence of keys
-  //! @param __stream CUDA stream used for insert
   template <class _InputIt>
-  void insert_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = cudaStream_t{nullptr}) noexcept
+  void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last) noexcept
   {
-    __impl->insert_async(__first, __last, ref(), __stream);
+    __impl->insert_async(__stream, __first, __last, ref());
   }
 
   // ===== Contains =====
@@ -336,17 +328,14 @@ public:
   //! @tparam _InputIt Device accessible input iterator
   //! @tparam _OutputIt Device accessible output iterator assignable from `bool`
   //!
+  //! @param __stream CUDA stream used for executing the kernels
   //! @param __first Beginning of the sequence of keys
   //! @param __last End of the sequence of keys
   //! @param __output_begin Beginning of the output sequence of booleans
-  //! @param __stream CUDA stream used for executing the kernels
   template <class _InputIt, class _OutputIt>
-  void contains(_InputIt __first,
-                _InputIt __last,
-                _OutputIt __output_begin,
-                ::cuda::stream_ref __stream = cudaStream_t{nullptr}) const
+  void contains(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
   {
-    contains_async(__first, __last, __output_begin, __stream);
+    contains_async(__stream, __first, __last, __output_begin);
     __sync(__stream);
   }
 
@@ -355,17 +344,15 @@ public:
   //! @tparam _InputIt Device accessible input iterator
   //! @tparam _OutputIt Device accessible output iterator assignable from `bool`
   //!
+  //! @param __stream CUDA stream used for executing the kernels
   //! @param __first Beginning of the sequence of keys
   //! @param __last End of the sequence of keys
   //! @param __output_begin Beginning of the output sequence of booleans
-  //! @param __stream CUDA stream used for executing the kernels
   template <class _InputIt, class _OutputIt>
-  void contains_async(_InputIt __first,
-                      _InputIt __last,
-                      _OutputIt __output_begin,
-                      ::cuda::stream_ref __stream = cudaStream_t{nullptr}) const noexcept
+  void contains_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
   {
-    __impl->contains_async(__first, __last, __output_begin, ref(), __stream);
+    __impl->contains_async(__stream, __first, __last, __output_begin, ref());
   }
 
   // ===== Accessors =====
