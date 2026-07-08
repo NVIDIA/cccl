@@ -170,7 +170,7 @@ void host_adj_diff(c2h::host_vector<T>& h_data, int valid_items)
   {
     for (int i = 0; i < valid_items - 1; i++)
     {
-      h_data[i] = diff(h_data[i], h_data[i + 1]);
+      h_data[i] = diff(h_data[i], h_data[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 }

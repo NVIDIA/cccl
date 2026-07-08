@@ -30,7 +30,7 @@ struct ReduceByKeyPolicySelector
 };
 // example-end reduce-by-key-policy-selector
 
-C2H_TEST("cub::DeviceReduce::ReduceByKey env-based API with tuning", "[reduce][env]")
+C2H_TEST("cub::DeviceReduce::ReduceByKey accepts a custom policy selector", "[reduce][env]")
 {
   // example-begin reduce-by-key-tuning
   auto d_keys_in        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};

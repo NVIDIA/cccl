@@ -18,6 +18,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._serialization import BUILD_RESULT, ITER, OP, VALUE, Serializable
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -27,7 +28,7 @@ from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
-class _SegmentedReduce:
+class _SegmentedReduce(Serializable):
     __slots__ = [
         "build_result",
         "d_in_cccl",
@@ -37,6 +38,16 @@ class _SegmentedReduce:
         "h_init_cccl",
         "op_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("start_offsets_in_cccl", ITER),
+        ("end_offsets_in_cccl", ITER),
+        ("h_init_cccl", VALUE),
+        ("op_cccl", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceSegmentedReduceBuildResult)),
+    )
 
     def __init__(
         self,

@@ -314,19 +314,19 @@ struct policy_selector_from_hub
         lp::SCAN_ALGORITHM,
         lp::RADIX_BITS},
       SegmentedSortSubWarpMergeSortPolicy{
-        sp::BLOCK_THREADS,
-        sp::WARP_THREADS,
-        sp::ITEMS_PER_THREAD,
-        sp::LOAD_ALGORITHM,
-        sp::LOAD_MODIFIER,
-        sp::STORE_ALGORITHM},
-      SegmentedSortSubWarpMergeSortPolicy{
         mp::BLOCK_THREADS,
         mp::WARP_THREADS,
         mp::ITEMS_PER_THREAD,
         mp::LOAD_ALGORITHM,
         mp::LOAD_MODIFIER,
         mp::STORE_ALGORITHM},
+      SegmentedSortSubWarpMergeSortPolicy{
+        sp::BLOCK_THREADS,
+        sp::WARP_THREADS,
+        sp::ITEMS_PER_THREAD,
+        sp::LOAD_ALGORITHM,
+        sp::LOAD_MODIFIER,
+        sp::STORE_ALGORITHM},
       ap::PARTITIONING_THRESHOLD};
   }
 };
@@ -1360,7 +1360,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     auto large_segments_selector = kernel_source.LargeSegmentsSelector(
       active_policy.medium_segment.items_per_tile(), d_begin_offsets, d_end_offsets);
     auto small_segments_selector = kernel_source.SmallSegmentsSelector(
-      active_policy.small_segment.items_per_tile() + 1, d_begin_offsets, d_end_offsets);
+      static_cast<OffsetT>(active_policy.small_segment.items_per_tile()) + 1, d_begin_offsets, d_end_offsets);
 
     auto device_partition_temp_storage = keys_slot->create_alias<uint8_t>();
     if (partition_segments)

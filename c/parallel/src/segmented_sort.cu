@@ -32,14 +32,14 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
-#include "util/aot_serialize.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include "util/types.h"
-#include <cccl/c/aot.h>
 #include <cccl/c/segmented_sort.h>
+#include <cccl/c/serialization.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -1073,14 +1073,14 @@ catch (const std::exception& exc)
   return CUDA_ERROR_UNKNOWN;
 }
 
-namespace segmented_sort_aot
+namespace segmented_sort_serialization
 {
 // Selector op names are compile-time constants (set in make_segments_selector_op).
 // Deserialize simply points back at these literals — cleanup never frees op.name.
 inline constexpr const char* kLargeSegmentsName = "cccl_large_segments_selector_op";
 inline constexpr const char* kSmallSegmentsName = "cccl_small_segments_selector_op";
 
-inline void serialize_selector_op(cccl::aot::buffer_writer& w, const cccl_op_t& op)
+inline void serialize_selector_op(cccl::serialization::buffer_writer& w, const cccl_op_t& op)
 {
   w.write_pod<uint32_t>(static_cast<uint32_t>(op.type));
   w.write_pod<uint32_t>(static_cast<uint32_t>(op.code_type));
@@ -1089,20 +1089,20 @@ inline void serialize_selector_op(cccl::aot::buffer_writer& w, const cccl_op_t& 
   // state is runtime-specific and fully reconstructed by deserialize_selector_op.
 }
 
-inline cccl_op_t deserialize_selector_op(cccl::aot::buffer_reader& r, const char* fixed_name)
+inline cccl_op_t deserialize_selector_op(cccl::serialization::buffer_reader& r, const char* fixed_name)
 {
   cccl_op_t op{};
   const auto type_v = r.read_pod<uint32_t>();
   if (type_v > static_cast<uint32_t>(CCCL_MAXIMUM))
   {
-    throw std::runtime_error(std::format("aot blob: invalid selector op kind ({})", type_v));
+    throw std::runtime_error(std::format("serialization blob: invalid selector op kind ({})", type_v));
   }
   op.type = static_cast<cccl_op_kind_t>(type_v);
 
   const auto code_type_v = r.read_pod<uint32_t>();
   if (code_type_v > static_cast<uint32_t>(CCCL_OP_CPP_SOURCE))
   {
-    throw std::runtime_error(std::format("aot blob: invalid selector op code type ({})", code_type_v));
+    throw std::runtime_error(std::format("serialization blob: invalid selector op code type ({})", code_type_v));
   }
   op.code_type = static_cast<cccl_op_code_type>(code_type_v);
 
@@ -1144,7 +1144,7 @@ inline cccl_op_t deserialize_selector_op(cccl::aot::buffer_reader& r, const char
   op.num_extra_ltoirs  = 0;
   return op;
 }
-} // namespace segmented_sort_aot
+} // namespace segmented_sort_serialization
 
 CUresult cccl_device_segmented_sort_serialize(
   const cccl_device_segmented_sort_build_result_t* build_ptr, void** out_buf, size_t* out_size)
@@ -1163,14 +1163,14 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_SEGMENTED_SORT, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_SEGMENTED_SORT, build_ptr->payload_kind, build_ptr->cc);
   write_type_info(w, build_ptr->key_type);
   write_type_info(w, build_ptr->offset_type);
   w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->order));
-  segmented_sort_aot::serialize_selector_op(w, build_ptr->large_segments_selector_op);
-  segmented_sort_aot::serialize_selector_op(w, build_ptr->small_segments_selector_op);
+  segmented_sort_serialization::serialize_selector_op(w, build_ptr->large_segments_selector_op);
+  segmented_sort_serialization::serialize_selector_op(w, build_ptr->small_segments_selector_op);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
   w.write_blob(build_ptr->partition_runtime_policy, build_ptr->partition_runtime_policy_size);
@@ -1199,26 +1199,28 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SEGMENTED_SORT);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_SEGMENTED_SORT);
 
   const auto key_t    = read_type_info(r);
   const auto offset_t = read_type_info(r);
   const auto order    = static_cast<cccl_sort_order_t>(r.read_pod<uint32_t>());
   if (order != CCCL_ASCENDING && order != CCCL_DESCENDING)
   {
-    throw std::runtime_error(std::format("aot blob: invalid sort order ({})", static_cast<uint32_t>(order)));
+    throw std::runtime_error(std::format("serialization blob: invalid sort order ({})", static_cast<uint32_t>(order)));
   }
 
   // selector ops are partial-cleanup-friendly: code+state are malloc'd. If a
   // later step throws, segmented_sort_cleanup will std::free both; the unique
   // ownership cleanup happens via memset+full_cleanup in the catch handler.
-  cccl_op_t large_op = segmented_sort_aot::deserialize_selector_op(r, segmented_sort_aot::kLargeSegmentsName);
+  cccl_op_t large_op =
+    segmented_sort_serialization::deserialize_selector_op(r, segmented_sort_serialization::kLargeSegmentsName);
   cccl_op_t small_op{};
   try
   {
-    small_op = segmented_sort_aot::deserialize_selector_op(r, segmented_sort_aot::kSmallSegmentsName);
+    small_op =
+      segmented_sort_serialization::deserialize_selector_op(r, segmented_sort_serialization::kSmallSegmentsName);
   }
   catch (...)
   {
@@ -1249,7 +1251,7 @@ try
     std::free(const_cast<char*>(large_op.code));
     std::free(small_op.state);
     std::free(const_cast<char*>(small_op.code));
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   std::unique_ptr<cub::detail::segmented_sort::policy_selector, decltype(&std::free)> sort_policy(nullptr, std::free);

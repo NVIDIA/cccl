@@ -45,6 +45,7 @@ class choose_merge_agent
             active_policy.store_algorithm,
             active_policy.use_bulk_copy_for_keys,
             active_policy.use_bulk_copy_for_values,
+            active_policy.unroll,
             Args...>;
   using default_noload2sh_agent_t =
     agent_t<active_policy.threads_per_block,
@@ -53,6 +54,7 @@ class choose_merge_agent
             active_policy.store_algorithm,
             /* UseBl2ShForKeys */ false,
             /* UseBl2ShForItems */ false,
+            active_policy.unroll,
             Args...>;
 
   using fallback_agent_t =
@@ -62,6 +64,7 @@ class choose_merge_agent
             active_policy.store_algorithm,
             /* UseBl2ShForKeys */ false,
             /* UseBl2ShForItems */ false,
+            active_policy.unroll,
             Args...>;
 
   static constexpr bool use_default_load2sh =
@@ -110,7 +113,8 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
                        ValueIt3,
                        Offset,
                        CompareOp>::type::items_per_tile;
-  const Offset diagonal_idx = static_cast<Offset>(blockDim.x * blockIdx.x + threadIdx.x);
+  const Offset diagonal_idx =
+    static_cast<Offset>(blockDim.x * blockIdx.x + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
   if (diagonal_idx < num_diagonals)
   {
     const Offset diagonal_num      = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);

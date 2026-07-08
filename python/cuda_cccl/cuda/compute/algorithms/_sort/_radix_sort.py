@@ -9,6 +9,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._serialization import BUILD_RESULT, ITER, OP, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     get_dtype,
@@ -19,7 +20,7 @@ from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
-class _RadixSort:
+class _RadixSort(Serializable):
     __slots__ = [
         "d_in_keys_cccl",
         "d_out_keys_cccl",
@@ -28,6 +29,15 @@ class _RadixSort:
         "decomposer_op",
         "build_result",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_in_values_cccl", ITER),
+        ("d_out_values_cccl", ITER),
+        ("decomposer_op", OP),
+        ("build_result", BUILD_RESULT(_bindings.DeviceRadixSortBuildResult)),
+    )
 
     def __init__(
         self,
@@ -52,7 +62,7 @@ class _RadixSort:
             operator_type=cccl.OpKind.STATELESS,
             ltoir=b"",
             state_alignment=1,
-            state=None,
+            state=b"",  # explicit empty bytes so the serialize path is byte-safe
         )
         decomposer_return_type = "".encode("utf-8")
 

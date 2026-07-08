@@ -91,22 +91,15 @@ using AgentReducePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRe
   LoadModifier,
   ScalingType>;
 
-/**
- * Parameterizable tuning policy type for AgentWarpReduce
- * @tparam ThreadsPerBlock Threads per thread block
- * @tparam WarpThreads Threads per warp
- * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
- * @tparam ComputeT Dominant compute type
- * @tparam VectorLoadLength Number of items per vectorized load
- * @tparam LoadModifier Cache load modifier for reading input elements
- */
+namespace detail
+{
 template <int ThreadsPerBlock,
           int WarpThreads,
           int NominalItemsPerThread4B,
           typename ComputeT,
           int VectorLoadLength,
           CacheLoadModifier LoadModifier>
-struct AgentWarpReducePolicy
+struct agent_warp_reduce_policy
 {
   /// Number of threads per warp
   static constexpr int WARP_THREADS = WarpThreads;
@@ -121,8 +114,8 @@ struct AgentWarpReducePolicy
   /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
   static constexpr int ITEMS_PER_THREAD =
     ::cuda::std::conditional_t<::cuda::std::is_same_v<ComputeT, void>,
-                               detail::NoScaling<0, NominalItemsPerThread4B>,
-                               detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
+                               NoScaling<0, NominalItemsPerThread4B>,
+                               MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
@@ -135,6 +128,17 @@ struct AgentWarpReducePolicy
 
   static_assert((BLOCK_THREADS % WARP_THREADS) == 0, "Block should be multiple of warp");
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int WarpThreads,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          CacheLoadModifier LoadModifier>
+using AgentWarpReducePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") = detail::
+  agent_warp_reduce_policy<ThreadsPerBlock, WarpThreads, NominalItemsPerThread4B, ComputeT, VectorLoadLength, LoadModifier>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -351,14 +355,15 @@ struct AgentReduceImpl
     // Read first item
     if (IsFirstTile && (thread_offset < valid_items))
     {
-      thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
+      thread_aggregate =
+        transform_op(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
       thread_offset += NumThreads;
     }
 
     // Continue reading items (block-striped)
     while (thread_offset < valid_items)
     {
-      InputT item(d_wrapped_in[block_offset + thread_offset]);
+      InputT item(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += NumThreads;
