@@ -18,7 +18,7 @@ struct winner_config
   // IPT should br 32 (32 chunks x 32 lanes)
   static constexpr int kIPT =
     (kIptOverride != 0) ? kIptOverride : ((sizeof(KeyT) >= 16) ? 8 : (sizeof(KeyT) == 8 ? 16 : 32));
-  static constexpr int kNumCompWarps = 8;
+  static constexpr int kNumCompWarps  = 8;
   static constexpr int kNumStoreWarps = 8; // store warps; must divide or be a multiple of kNumCompWarps
   static constexpr int kStages        = 5; // pipeline depth
   // positions ring depth: positions are written at staging and consumed by store about 2 pipeline_gens later,
@@ -68,38 +68,44 @@ constexpr unsigned kFullMask = 0xffffffffu;
 // launch_gen is needed to reuse allocations per launch
 // (this is needed to eliminate overhead of allocating the buffer. CRITICAL for perf!)
 // an aligned 64-bit access is already non-tearing, but atomic_ref doesn't hurt and has clear semantics
-// TODO: make this a struct!!!!
-using TilePartialStateT = u64;
-
-__device__ __forceinline__ unsigned extract_launch_gen_from_tile_partial_state(TilePartialStateT w)
+struct TilePartialStateT
 {
-  return (unsigned) (w >> 32);
-}
+  u64 word;
 
-__device__ __forceinline__ int extract_run_count_from_tile_partial_state(TilePartialStateT w)
-{
-  return (int) (w & 0xffffu);
-}
+  __device__ __forceinline__ unsigned launch_gen() const
+  {
+    return (unsigned) (word >> 32);
+  }
 
-__device__ __forceinline__ int extract_open_len_from_tile_partial_state(TilePartialStateT w)
-{
-  return (int) ((w >> 16) & 0xffffu);
-}
+  __device__ __forceinline__ int run_count() const
+  {
+    return (int) (word & 0xffffu);
+  }
+
+  __device__ __forceinline__ int open_len() const
+  {
+    return (int) ((word >> 16) & 0xffffu);
+  }
+
+  static __device__ __forceinline__ TilePartialStateT pack(unsigned launch_gen, int run_count, int open_len)
+  {
+    return {((u64) launch_gen << 32) | ((u64) (unsigned) open_len << 16) | (u64) (unsigned) run_count};
+  }
+};
 
 __device__ __forceinline__ void
 publish_state(TilePartialStateT* tile_state_arr, int tile_idx, unsigned launch_gen, int run_count, int open_len)
 {
-  TilePartialStateT w = ((u64) launch_gen << 32) | ((u64) (unsigned) open_len << 16) | (u64) (unsigned) run_count;
-  cuda::atomic_ref<TilePartialStateT, cuda::thread_scope_device> a(tile_state_arr[tile_idx]);
-  a.store(w, cuda::memory_order_relaxed);
+  cuda::atomic_ref<u64, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
+  a.store(TilePartialStateT::pack(launch_gen, run_count, open_len).word, cuda::memory_order_relaxed);
 }
 
 // return the state (even if not yet publish for this launch, caller checks it)
 // we do not want to spin here
 __device__ __forceinline__ TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
 {
-  cuda::atomic_ref<TilePartialStateT, cuda::thread_scope_device> a(tile_state_arr[tile_idx]);
-  return a.load(cuda::memory_order_relaxed);
+  cuda::atomic_ref<u64, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
+  return {a.load(cuda::memory_order_relaxed)};
 }
 
 // what is going to be the type of the prefix (run_count, open_len)?
@@ -224,10 +230,10 @@ __device__ __forceinline__ void poll_and_fold(
 #pragma unroll
       for (int i = 0; i < kPollMlp; ++i)
       {
-        if (i < lane_tile_count && extract_launch_gen_from_tile_partial_state(packed_words[i]) != launch_gen)
+        if (i < lane_tile_count && packed_words[i].launch_gen() != launch_gen)
         {
           packed_words[i] = load_state(tile_partial_states, lane_first_tile_id + i);
-          if (extract_launch_gen_from_tile_partial_state(packed_words[i]) != launch_gen)
+          if (packed_words[i].launch_gen() != launch_gen)
           {
             ready = false;
           }
@@ -241,8 +247,8 @@ __device__ __forceinline__ void poll_and_fold(
     {
       if (i < lane_tile_count)
       {
-        const int tile_run_count   = extract_run_count_from_tile_partial_state(packed_words[i]);
-        const int tile_open_length = extract_open_len_from_tile_partial_state(packed_words[i]);
+        const int tile_run_count   = packed_words[i].run_count();
+        const int tile_open_length = packed_words[i].open_len();
         lane_run_count             = lane_run_count + tile_run_count;
         lane_open_length           = (tile_run_count > 0) ? tile_open_length : (lane_open_length + tile_open_length);
       }
