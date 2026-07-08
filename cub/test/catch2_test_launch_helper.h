@@ -189,7 +189,7 @@ void launch(ActionT action, Args... args)
   REQUIRE(temp_storage_bytes > 0); // required by API contract
 
   // randomly offset the temporary storage address by one byte
-  const int offset = GENERATE(random(0, 1));
+  const int offset = GENERATE(take(1, random(0, 1)));
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes + offset, thrust::no_init);
 
   error = action(thrust::raw_pointer_cast(temp_storage.data()) + offset, temp_storage_bytes, args...);
