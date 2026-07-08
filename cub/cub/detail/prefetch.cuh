@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-License-Identifier: BSD-3-Clause
 
 //! @file
 //! Cooperative global-memory prefetch hints for tiles of data, placed explicitly by algorithm agents (or kernel
@@ -75,22 +75,22 @@ inline constexpr bool can_prefetch_from =
   ::cuda::std::contiguous_iterator<RandomAccessIterator> && ::cuda::std::__can_to_address<RandomAccessIterator>;
 
 //! A block-scope collective that cooperatively emits global-memory prefetch hints for a tile. The element type
-//! ``T`` and block size ``ThreadsPerBlock`` are fixed on the type; the cache level (``Prefetch``) and the
+//! ``T`` and block size ``ThreadsPerBlock`` are fixed on the type; the cache level (``PrefetchLevel``) and the
 //! per-cache-line hint spacing (``PrefetchStride``, bytes) are template configuration. Placement in the kernel
 //! schedule is the caller's — fire it where there is lead time before the corresponding loads.
 //!
 //! @tparam T             Element type of the tile being prefetched (drives the byte-size math).
 //! @tparam ThreadsPerBlock Number of threads in the block cooperating on the hints.
-//! @tparam Prefetch      Which cache level to target (see ``LoadPrefetch``); ``none`` makes ``Prefetch()`` a no-op.
+//! @tparam PrefetchLevel  Which cache level to target (see ``LoadPrefetch``); ``none`` makes ``Prefetch()`` a no-op.
 //! @tparam PrefetchStride Byte stride between successive hints; one hint per cache line (default 128 B).
-template <typename T, int ThreadsPerBlock, LoadPrefetch Prefetch = LoadPrefetch::l2, int PrefetchStride = 128>
+template <typename T, int ThreadsPerBlock, LoadPrefetch PrefetchLevel = LoadPrefetch::l2, int PrefetchStride = 128>
 struct BlockPrefetch
 {
   //! Cooperatively emit prefetch hints covering the tile ``[block_src_it, block_src_it + items_to_prefetch)``
   template <typename RandomAccessIterator>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Prefetch(RandomAccessIterator block_src_it, int items_to_prefetch)
   {
-    if constexpr (Prefetch != LoadPrefetch::none && can_prefetch_from<RandomAccessIterator>)
+    if constexpr (PrefetchLevel != LoadPrefetch::none && can_prefetch_from<RandomAccessIterator>)
     {
       static_assert(sizeof(cub::detail::it_value_t<RandomAccessIterator>) == sizeof(T),
                     "BlockPrefetch element type T must match the iterator's value type size");
@@ -98,7 +98,7 @@ struct BlockPrefetch
       const unsigned int total_bytes = static_cast<unsigned int>(items_to_prefetch) * unsigned{sizeof(T)};
       const auto* const src_ptr      = reinterpret_cast<const char*>(::cuda::std::to_address(block_src_it));
 
-      if constexpr (Prefetch == LoadPrefetch::bulk_l2)
+      if constexpr (PrefetchLevel == LoadPrefetch::bulk_l2)
       {
         // One elected thread issues a single TMA bulk prefetch for the whole tile.
         // cp.async.bulk.prefetch is fire-and-forget: no commit_group/wait_group needed.
@@ -124,7 +124,7 @@ struct BlockPrefetch
              offset += static_cast<unsigned int>(ThreadsPerBlock) * PrefetchStride)
         {
           // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
-          if constexpr (Prefetch == LoadPrefetch::l1)
+          if constexpr (PrefetchLevel == LoadPrefetch::l1)
           {
             asm volatile("prefetch.global.L1 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(src_ptr + offset)) : "memory");
           }
