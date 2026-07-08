@@ -70,7 +70,7 @@ catch (const std::bad_alloc&)
 using value_types = nvbench::type_list<TUNE_T>;
 #else
 using value_types =
-  push_back_t<fundamental_types
+  push_back_t<all_types
 #  if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
               ,
               __half
