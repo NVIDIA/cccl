@@ -590,13 +590,13 @@ struct policy_hub
   static constexpr BlockStoreAlgorithm scan_transposed_store =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
     using ScanPolicyT =
       agent_scan_policy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
+  struct Policy520 : detail::chained_policy<520, Policy520, Policy500>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
     using ScanPolicyT =
@@ -611,7 +611,7 @@ struct policy_hub
 
   struct Policy600
       : DefaultPolicy
-      , ChainedPolicy<600, Policy600, Policy520>
+      , detail::chained_policy<600, Policy600, Policy520>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
@@ -629,7 +629,7 @@ struct policy_hub
   template <typename Tuning>
   _CCCL_HOST_DEVICE static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
 
-  struct Policy750 : ChainedPolicy<750, Policy750, Policy600>
+  struct Policy750 : detail::chained_policy<750, Policy750, Policy600>
   {
     // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy600
     template <typename Tuning,
@@ -659,7 +659,7 @@ struct policy_hub
       decltype(select_agent_policy750<sm75_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>>, InputValueT>(0));
   };
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy750>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy750>
   {
     using ScanPolicyT =
       decltype(select_agent_policy<sm80_tuning<classify_type<AccumT>,
@@ -670,15 +670,15 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ScanPolicyT = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy900
     template <typename Tuning,

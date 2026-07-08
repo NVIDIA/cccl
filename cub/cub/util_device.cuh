@@ -745,11 +745,10 @@ struct get_active_policy
 {
   using type = typename T::ActivePolicy;
 };
-} // namespace detail
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
-struct ChainedPolicy
+struct chained_policy
 {
 private:
   static constexpr bool have_previous_policy = !::cuda::std::is_same_v<PolicyT, PrevPolicyT>;
@@ -788,7 +787,7 @@ public:
 
 private:
   template <int, typename, typename>
-  friend struct ChainedPolicy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
+  friend struct chained_policy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int CcMult, int... CudaCcs, typename FunctorT>
@@ -821,6 +820,14 @@ private:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+} // namespace detail
+
+/// Helper for dispatching into a policy chain
+/// Deprecated [Since 3.5]
+template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
+using ChainedPolicy
+  CCCL_DEPRECATED_BECAUSE("Pass policy selectors into the environments of device-scope CUB algorithms to providing "
+                          "custom tunings.") = detail::chained_policy<PolicyPtxVersion, PolicyT, PrevPolicyT>;
 
 namespace detail
 {

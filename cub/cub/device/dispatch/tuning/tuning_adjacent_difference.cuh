@@ -101,7 +101,7 @@ struct policy_hub
 {
   using ValueT = it_value_t<InputIteratorT>;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     using AdjacentDifferencePolicy =
       agent_adjacent_difference_policy<128,
