@@ -41,6 +41,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
 
 #  include <cuda_tile.h>
 
@@ -77,45 +78,40 @@ inline constexpr bool tile_mufu_heavy_v = false;
 // Built-in trait specializations.
 namespace detail::transform::tile
 {
-// Built-ins cover only __half/__nv_bfloat16: the standard CUB transform kernels store elements with scalar
-// instructions, which limits bandwidth for 2-byte element types; the tile kernel's vectorized loads/stores close
-// that gap. Wider types already saturate bandwidth on the standard path, so they are not opted in.
-//
+// cuda::std::plus/multiplies route to the tile kernel for every element type it supports, so the experimental
+// opt-in exercises the tile path broadly. __int128 is excluded (no tensor_span/partition_view support).
 // The transparent cuda::std::plus<>/multiplies<> have a templated operator() that is tile-callable, so they
 // serve directly as the tile_operator for the typed cuda::std::plus<T>/multiplies<T> a user passes.
+template <typename T>
+inline constexpr bool tile_supported_element_v = ::cuda::std::is_arithmetic_v<T> && sizeof(T) <= 8;
 #  if _CCCL_HAS_NVFP16()
 template <>
-inline constexpr bool tile_eligible_v<::cuda::std::plus<::__half>, ::__half, 2> = true;
-template <>
-inline constexpr bool tile_eligible_v<::cuda::std::multiplies<::__half>, ::__half, 2> = true;
-template <>
-struct tile_operator<::cuda::std::plus<::__half>>
-{
-  using type = ::cuda::std::plus<>;
-};
-template <>
-struct tile_operator<::cuda::std::multiplies<::__half>>
-{
-  using type = ::cuda::std::multiplies<>;
-};
+inline constexpr bool tile_supported_element_v<::__half> = true;
 #  endif // _CCCL_HAS_NVFP16()
-
 #  if _CCCL_HAS_NVBF16()
 template <>
-inline constexpr bool tile_eligible_v<::cuda::std::plus<::__nv_bfloat16>, ::__nv_bfloat16, 2> = true;
-template <>
-inline constexpr bool tile_eligible_v<::cuda::std::multiplies<::__nv_bfloat16>, ::__nv_bfloat16, 2> = true;
-template <>
-struct tile_operator<::cuda::std::plus<::__nv_bfloat16>>
+inline constexpr bool tile_supported_element_v<::__nv_bfloat16> = true;
+#  endif // _CCCL_HAS_NVBF16()
+
+template <typename T>
+inline constexpr bool tile_eligible_v<::cuda::std::plus<T>, T, 2> = tile_supported_element_v<T>;
+template <typename T>
+inline constexpr bool tile_eligible_v<::cuda::std::plus<>, T, 2> = tile_supported_element_v<T>;
+template <typename T>
+inline constexpr bool tile_eligible_v<::cuda::std::multiplies<T>, T, 2> = tile_supported_element_v<T>;
+template <typename T>
+inline constexpr bool tile_eligible_v<::cuda::std::multiplies<>, T, 2> = tile_supported_element_v<T>;
+
+template <typename T>
+struct tile_operator<::cuda::std::plus<T>>
 {
   using type = ::cuda::std::plus<>;
 };
-template <>
-struct tile_operator<::cuda::std::multiplies<::__nv_bfloat16>>
+template <typename T>
+struct tile_operator<::cuda::std::multiplies<T>>
 {
   using type = ::cuda::std::multiplies<>;
 };
-#  endif // _CCCL_HAS_NVBF16()
 } // namespace detail::transform::tile
 
 CUB_NAMESPACE_END
