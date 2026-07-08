@@ -77,6 +77,10 @@ inline constexpr bool tile_mufu_heavy_v = false;
 // Built-in trait specializations.
 namespace detail::transform::tile
 {
+// Built-ins cover only __half/__nv_bfloat16: the standard CUB transform kernels store elements with scalar
+// instructions, which limits bandwidth for 2-byte element types; the tile kernel's vectorized loads/stores close
+// that gap. Wider types already saturate bandwidth on the standard path, so they are not opted in.
+//
 // The transparent cuda::std::plus<>/multiplies<> have a templated operator() that is tile-callable, so they
 // serve directly as the tile_operator for the typed cuda::std::plus<T>/multiplies<T> a user passes.
 #  if _CCCL_HAS_NVFP16()
