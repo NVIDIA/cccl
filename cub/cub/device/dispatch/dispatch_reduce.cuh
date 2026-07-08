@@ -39,9 +39,9 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstdint>
 
 // TODO(bgruber): included to not break users when moving DeviceSegmentedReduce to its own file. Remove in CCCL 4.0.
@@ -55,7 +55,7 @@ template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename NormalizedNumItemsT,
+          typename KernelNumItemsT,
           typename ReductionOpT,
           typename InitValueT,
           typename AccumT,
@@ -87,7 +87,7 @@ struct DeviceReduceKernelSource
                        InputIteratorT,
                        reduce_kernel_output_t,
                        OffsetT,
-                       NormalizedNumItemsT,
+                       KernelNumItemsT,
                        ReductionOpT,
                        AccumT,
                        InitValueT,
@@ -110,7 +110,7 @@ struct DeviceReduceKernelSource
       AccumT*,
       OutputIteratorT,
       OffsetT,
-      NormalizedNumItemsT,
+      KernelNumItemsT,
       ReductionOpT,
       InitValueT,
       AccumT>)
@@ -632,10 +632,10 @@ using num_items_offset_t =
                              detail::choose_offset_t<typename ::cuda::args::__traits<OffsetT>::element_type>,
                              typename ::cuda::args::__traits<OffsetT>::element_type>;
 
-//! Normalizes an immediate or deferred problem size without reading a deferred source.
+//! Creates the kernel argument for an immediate or deferred problem size without reading a deferred source.
 //! Immediate values are cast to the selected offset type; deferred arguments are stripped to their source.
 template <typename OffsetT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto normalize_num_items(OffsetT num_items) noexcept
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto make_num_items_kernel_arg(OffsetT num_items) noexcept
 {
   using args_traits_t = ::cuda::args::__traits<OffsetT>;
   using element_t     = typename args_traits_t::element_type;
@@ -643,14 +643,12 @@ template <typename OffsetT>
   if constexpr (args_traits_t::is_deferred)
   {
     static_assert(args_traits_t::is_single_value, "num_items must be a single value wrapped in cuda::args::deferred");
-    static_assert(
-      ::cuda::std::is_integral_v<element_t> && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<element_t>, bool>,
-      "the num_items element type must be integral, but not bool");
+    static_assert(::cuda::std::__cccl_is_integer_v<element_t>, "the num_items element type must be an integer");
     static_assert(
       sizeof(element_t) == sizeof(::cuda::std::int32_t) || sizeof(element_t) == sizeof(::cuda::std::int64_t));
   }
 
-  return CUB_NS_QUALIFIER::detail::normalize_parameter<num_items_offset_t<OffsetT>>(num_items);
+  return CUB_NS_QUALIFIER::detail::parameter_from_host<num_items_offset_t<OffsetT>>(num_items);
 }
 
 template <bool StableReductionOrder,
@@ -679,7 +677,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
 {
   using offset_t = num_items_offset_t<OffsetT>;
 
-  const auto normalized_num_items = normalize_num_items(num_items);
+  const auto kernel_num_items = make_num_items_kernel_arg(num_items);
 
   // Get SM count
   int sm_count = 0;
@@ -738,7 +736,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   if constexpr (!::cuda::args::__traits<OffsetT>::is_deferred)
   {
     const auto tile_size = active_policy.multi_tile.threads_per_block * active_policy.multi_tile.items_per_thread;
-    even_share.DispatchInit(normalized_num_items, max_blocks, tile_size);
+    even_share.DispatchInit(kernel_num_items, max_blocks, tile_size);
   }
 
   const int reduce_grid_size = [&] {
@@ -785,7 +783,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
           .doit(kernel_source.ReductionKernel(),
                 d_in,
                 reduce_kernel_output,
-                normalized_num_items,
+                kernel_num_items,
                 even_share,
                 reduction_op,
                 init,
@@ -825,7 +823,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
           .doit(kernel_source.DeferredSingleTileSecondKernel(),
                 d_block_reductions,
                 d_out,
-                normalized_num_items,
+                kernel_num_items,
                 reduce_grid_size,
                 reduction_op,
                 init,
@@ -905,7 +903,7 @@ template <
     InputIteratorT,
     OutputIteratorT,
     num_items_offset_t<OffsetT>,
-    CUB_NS_QUALIFIER::detail::normalized_parameter_t<num_items_offset_t<OffsetT>, OffsetT>,
+    CUB_NS_QUALIFIER::detail::parameter_from_host_t<num_items_offset_t<OffsetT>, OffsetT>,
     ReductionOpT,
     InitValueT,
     AccumT,

@@ -114,8 +114,8 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, no_init_t, Acc
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam NormalizedNumItemsT
- *   Integral problem size or a deferred problem-size descriptor
+ * @tparam KernelNumItemsT
+ *   Type of integral problem size or a deferred problem-size descriptor
  *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
@@ -133,7 +133,7 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, no_init_t, Acc
  * @param[out] d_out
  *   Pointer to the output aggregate
  *
- * @param[in] normalized_num_items
+ * @param[in] kernel_num_items
  *   Immediate problem size or a deferred problem-size descriptor
  *
  * @param[in] even_share
@@ -148,7 +148,7 @@ template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename NormalizedNumItemsT,
+          typename KernelNumItemsT,
           typename ReductionOpT,
           typename AccumT,
           typename InitValueT,
@@ -160,17 +160,17 @@ _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_block)) void DeviceReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-  _CCCL_GRID_CONSTANT const NormalizedNumItemsT normalized_num_items,
+  _CCCL_GRID_CONSTANT const KernelNumItemsT kernel_num_items,
   GridEvenShare<OffsetT> even_share,
   ReductionOpT reduction_op,
   [[maybe_unused]] _CCCL_GRID_CONSTANT const InitValueT init,
   TransformOpT transform_op)
 {
   static constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
-  const OffsetT num_items                  = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
+  const OffsetT num_items                  = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
 
   // Early return from surplus blocks for deferred num_items
-  if constexpr (!::cuda::std::is_integral_v<NormalizedNumItemsT>)
+  if constexpr (!::cuda::std::is_integral_v<KernelNumItemsT>)
   {
     constexpr int tile_size = policy.threads_per_block * policy.items_per_thread;
     even_share.DispatchInit(num_items, static_cast<int>(gridDim.x), tile_size);
@@ -369,7 +369,7 @@ template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename NormalizedNumItemsT,
+          typename KernelNumItemsT,
           typename ReductionOpT,
           typename InitValueT,
           typename AccumT,
@@ -380,14 +380,14 @@ template <typename PolicySelector,
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   int{current_policy<PolicySelector>().single_tile.threads_per_block},
   1) void DeviceReduceDeferredSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                               OutputIteratorT d_out,
-                                               _CCCL_GRID_CONSTANT const NormalizedNumItemsT normalized_num_items,
+                                               _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+                                               _CCCL_GRID_CONSTANT const KernelNumItemsT kernel_num_items,
                                                _CCCL_GRID_CONSTANT const int first_pass_grid_size,
                                                ReductionOpT reduction_op,
                                                _CCCL_GRID_CONSTANT const InitValueT init,
                                                TransformOpT transform_op)
 {
-  const OffsetT actual_num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<OffsetT>(normalized_num_items);
+  const OffsetT actual_num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
   static constexpr ReducePassPolicy first_pass_policy = current_policy<PolicySelector>().multi_tile;
   constexpr int first_pass_tile_size = first_pass_policy.threads_per_block * first_pass_policy.items_per_thread;
   GridEvenShare<OffsetT> even_share;

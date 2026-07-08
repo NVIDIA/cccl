@@ -19,6 +19,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/temporary_storage.cuh>
@@ -125,9 +126,10 @@ inline constexpr bool is_non_deterministic_v =
 //! Deferred problem sizes
 //! ====================================
 //!
-//! ``Reduce``, ``Sum``, ``Min``, ``Max``, and ``TransformReduce`` accept a device-resident problem size through a
-//! single-value ``cuda::args::deferred`` argument. The deferred source may be a device pointer, a one-element span, or
-//! a random-access fancy iterator whose element is a non-``bool`` 32- or 64-bit integer.
+//! ``Reduce``, ``Sum``, ``Min``, ``Max``, and ``TransformReduce`` allow specifying the problem size from a value that
+//! resides in device memory through a single-value ``cuda::args::deferred`` argument. The deferred source may be a
+//! device pointer, a one-element span, or a random-access fancy iterator whose element is a non-``bool`` 32- or 64-bit
+//! integer.
 //!
 //! The problem size is read in stream order by the reduction kernels. Work that produces the count in the same stream
 //! is ordered automatically; a producer in another stream requires an event or an equivalent dependency. The source
@@ -137,8 +139,10 @@ inline constexpr bool is_non_deterministic_v =
 //!
 //! Deferred reductions are CUDA Graph capturable. The pointed-to count may change between graph replays without
 //! updating or recapturing the graph. Compile-time and runtime bounds are accepted as caller preconditions, but do not
-//! currently change temporary storage, grid dimensions, or pass selection. Deferred problem sizes are not currently
-//! supported with ``gpu_to_gpu`` determinism.
+//! currently change temporary storage, grid dimensions, or pass selection. Since the problem size is not available to
+//! the host, the first reduction pass launches CUB's maximum grid and may launch more blocks than the actual problem
+//! size needs. Extra blocks return without reducing input. Deferred problem sizes are not currently supported with
+//! ``gpu_to_gpu`` determinism.
 //!
 //! Determinism
 //! ====================================
@@ -176,23 +180,6 @@ inline constexpr bool is_non_deterministic_v =
 struct DeviceReduce
 {
 private:
-  //! Preserve deferred arguments for dispatch and canonicalize immediate values to CUB's offset type.
-  template <typename NumItemsT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static constexpr auto resolve_num_items(NumItemsT num_items) noexcept
-  {
-    using args_traits_t = ::cuda::args::__traits<NumItemsT>;
-
-    if constexpr (args_traits_t::is_deferred)
-    {
-      return num_items;
-    }
-    else
-    {
-      using offset_t = detail::choose_offset_t<typename args_traits_t::element_type>;
-      return static_cast<offset_t>(::cuda::args::__unwrap(num_items));
-    }
-  }
-
   template <typename EnvT,
             typename InputIteratorT,
             typename OutputIteratorT,
@@ -213,7 +200,7 @@ private:
   {
     using args_traits_t = ::cuda::args::__traits<NumItemsT>;
     using offset_t      = detail::choose_offset_t<typename args_traits_t::element_type>;
-    using accum_t = decltype(detail::reduce::template select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
+    using accum_t       = decltype(detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
       static_cast<detail::use_default*>(nullptr)));
 
     if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
@@ -221,7 +208,6 @@ private:
       if constexpr (args_traits_t::is_deferred)
       {
         static_assert(!args_traits_t::is_deferred, "cuda::args::deferred is not supported with gpu_to_gpu determinism");
-        return cudaErrorNotSupported;
       }
       else
       {
@@ -232,7 +218,15 @@ private:
         return detail::dispatch_with_env_and_tuning<default_policy_selector>(
           env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
             return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
-              storage, bytes, d_in, d_out, resolve_num_items(num_items), init, stream, transform_op, policy_selector);
+              storage,
+              bytes,
+              d_in,
+              d_out,
+              detail::make_num_items_dispatch_arg(num_items),
+              init,
+              stream,
+              transform_op,
+              policy_selector);
           });
       }
     }
@@ -247,7 +241,7 @@ private:
             bytes,
             d_in,
             THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
-            resolve_num_items(num_items),
+            detail::make_num_items_dispatch_arg(num_items),
             reduction_op,
             init,
             stream,
@@ -266,7 +260,7 @@ private:
             bytes,
             d_in,
             d_out,
-            resolve_num_items(num_items),
+            detail::make_num_items_dispatch_arg(num_items),
             reduction_op,
             init,
             stream,
@@ -277,16 +271,15 @@ private:
   }
 
   //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename ReductionOpT,
-    typename TransformOpT,
-    typename T,
-    typename NumItemsT,
-    typename EnvT,
-    typename AccumT = decltype(detail::reduce::template select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
-      static_cast<detail::use_default*>(nullptr)))>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename NumItemsT,
+            typename EnvT,
+            typename AccumT = decltype(detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
+              static_cast<detail::use_default*>(nullptr)))>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __transform_reduce(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -516,7 +509,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
     return detail::reduce::dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, resolve_num_items(num_items), reduction_op, init, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      detail::make_num_items_dispatch_arg(num_items),
+      reduction_op,
+      init,
+      stream);
   }
 
   //! @rst
@@ -780,7 +780,7 @@ public:
       temp_storage_bytes,
       d_in,
       d_out,
-      resolve_num_items(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       ::cuda::std::plus<>{},
       init_value_t{}, // zero-initialize
       stream);
@@ -891,7 +891,7 @@ public:
       temp_storage_bytes,
       d_in,
       d_out,
-      resolve_num_items(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       ::cuda::minimum<>{},
       limits_t::max(),
       stream);
@@ -1538,7 +1538,7 @@ public:
       temp_storage_bytes,
       d_in,
       d_out,
-      resolve_num_items(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       ::cuda::maximum<>{},
       limits_t::lowest(),
       stream);
@@ -2134,7 +2134,7 @@ public:
       temp_storage_bytes,
       d_in,
       d_out,
-      resolve_num_items(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       reduction_op,
       init,
       stream,
