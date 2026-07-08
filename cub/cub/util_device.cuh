@@ -24,7 +24,6 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/__device/all_devices.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
@@ -36,6 +35,8 @@
 #include <cuda/std/cassert>
 
 #if _CCCL_HOSTED()
+#  include <cuda/__device/all_devices.h>
+
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
 #endif // _CCCL_HOSTED()
 
