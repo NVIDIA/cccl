@@ -215,7 +215,7 @@ public:
   _CCCL_HOST inline PerDeviceAttributeCache()
       : entries_()
   {
-    _CCCL_ASSERT(::cuda::devices.size() <= detail::max_devices, "");
+    _CCCL_ASSERT(static_cast<int>(::cuda::devices.size()) <= detail::max_devices, "");
   }
 
   /**
@@ -227,7 +227,7 @@ public:
   template <typename Invocable>
   _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
   {
-    if (device >= ::cuda::devices.size() || device < 0)
+    if (device >= static_cast<int>(::cuda::devices.size()) || device < 0)
     {
       return DevicePayload{0, cudaErrorInvalidDevice};
     }
