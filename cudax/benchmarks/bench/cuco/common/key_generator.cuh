@@ -43,86 +43,86 @@ struct uniform
 {
   //! Constructs a uniform distribution tag with the requested average key multiplicity.
   //!
-  //! @param __multiplicity Average number of generated keys that map to each unique key value.
-  //! @throws std::invalid_argument if `__multiplicity` is not positive.
-  explicit uniform(::nvbench::int64_t __multiplicity)
-      : __value{__multiplicity}
+  //! @param multiplicity Average number of generated keys that map to each unique key value.
+  //! @throws std::invalid_argument if `multiplicity` is not positive.
+  explicit uniform(::nvbench::int64_t multiplicity)
+      : multiplicity{multiplicity}
   {
-    if (__multiplicity <= 0)
+    if (multiplicity <= 0)
     {
       throw ::std::invalid_argument{"Multiplicity must be greater than 0"};
     }
   }
 
   //! Average number of generated keys that map to each unique key value.
-  ::nvbench::int64_t __value;
+  ::nvbench::int64_t multiplicity;
 };
 } // namespace distribution
 
 namespace detail
 {
-template <typename _Tp, typename _Dist, typename _Rng>
-struct __generate_uniform_fn
+template <typename Key, typename Distribution, typename Rng>
+struct generate_uniform_fn
 {
-  _CCCL_HOST_DEVICE_API constexpr __generate_uniform_fn(
-    ::cuda::std::size_t __num, _Dist __dist, ::cuda::std::size_t __seed)
-      : __num{__num}
-      , __dist{__dist}
-      , __seed{__seed}
+  _CCCL_HOST_DEVICE_API constexpr generate_uniform_fn(
+    ::cuda::std::size_t num, Distribution dist, ::cuda::std::size_t seed)
+      : num{num}
+      , dist{dist}
+      , seed{seed}
   {}
 
-  _CCCL_HOST_DEVICE_API constexpr _Tp operator()(::cuda::std::size_t __idx) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr Key operator()(::cuda::std::size_t idx) const noexcept
   {
-    _Rng __rng;
-    __rng.seed(__seed + __idx * 1664525ull + 1013904223ull);
+    Rng rng;
+    rng.seed(seed + idx * 1664525ull + 1013904223ull);
 
-    const auto __num_unique_keys_unclamped = static_cast<::cuda::std::size_t>(
-      ::cuda::std::ceil(static_cast<double>(__num) / static_cast<double>(__dist.__value)));
-    const auto __num_unique_keys =
-      __num_unique_keys_unclamped < ::cuda::std::size_t{1} ? ::cuda::std::size_t{1} : __num_unique_keys_unclamped;
-    ::thrust::uniform_int_distribution<_Tp> __key_dist{_Tp{0}, static_cast<_Tp>(__num_unique_keys - 1)};
-    return __key_dist(__rng);
+    const auto num_unique_keys_unclamped = static_cast<::cuda::std::size_t>(
+      ::cuda::std::ceil(static_cast<double>(num) / static_cast<double>(dist.multiplicity)));
+    const auto num_unique_keys =
+      num_unique_keys_unclamped < ::cuda::std::size_t{1} ? ::cuda::std::size_t{1} : num_unique_keys_unclamped;
+    ::thrust::uniform_int_distribution<Key> key_dist{Key{0}, static_cast<Key>(num_unique_keys - 1)};
+    return key_dist(rng);
   }
 
-  ::cuda::std::size_t __num;
-  _Dist __dist;
-  ::cuda::std::size_t __seed;
+  ::cuda::std::size_t num;
+  Distribution dist;
+  ::cuda::std::size_t seed;
 };
 
-template <typename _Tp, typename _Rng>
-struct __dropout_fn
+template <typename Key, typename Rng>
+struct dropout_fn
 {
-  _CCCL_HOST_DEVICE_API constexpr explicit __dropout_fn(::cuda::std::size_t __num)
-      : __num{__num}
+  _CCCL_HOST_DEVICE_API constexpr explicit dropout_fn(::cuda::std::size_t num)
+      : num{num}
   {}
 
-  _CCCL_HOST_DEVICE_API _Tp operator()(::cuda::std::size_t __seed) const noexcept
+  _CCCL_HOST_DEVICE_API Key operator()(::cuda::std::size_t seed) const noexcept
   {
-    _Rng __rng;
-    ::thrust::uniform_int_distribution<_Tp> __dist{static_cast<_Tp>(__num), ::cuda::std::numeric_limits<_Tp>::max()};
-    __rng.seed(__seed);
-    return __dist(__rng);
+    Rng rng;
+    ::thrust::uniform_int_distribution<Key> dist{static_cast<Key>(num), ::cuda::std::numeric_limits<Key>::max()};
+    rng.seed(seed);
+    return dist(rng);
   }
 
-  ::cuda::std::size_t __num;
+  ::cuda::std::size_t num;
 };
 
-template <typename _Rng>
-struct __dropout_pred
+template <typename Rng>
+struct dropout_pred
 {
-  _CCCL_HOST_DEVICE_API constexpr explicit __dropout_pred(double __keep_prob)
-      : __keep_prob{__keep_prob}
+  _CCCL_HOST_DEVICE_API constexpr explicit dropout_pred(double keep_prob)
+      : keep_prob{keep_prob}
   {}
 
-  _CCCL_HOST_DEVICE_API bool operator()(::cuda::std::size_t __seed) const noexcept
+  _CCCL_HOST_DEVICE_API bool operator()(::cuda::std::size_t seed) const noexcept
   {
-    _Rng __rng;
-    ::thrust::uniform_real_distribution<double> __dist{0.0, 1.0};
-    __rng.seed(__seed);
-    return __dist(__rng) > __keep_prob;
+    Rng rng;
+    ::thrust::uniform_real_distribution<double> dist{0.0, 1.0};
+    rng.seed(seed);
+    return dist(rng) > keep_prob;
   }
 
-  double __keep_prob;
+  double keep_prob;
 };
 } // namespace detail
 
@@ -130,63 +130,63 @@ struct __dropout_pred
 //!
 //! The generator defaults to `defaults::seed` to keep benchmark data reproducible across runs.
 //!
-//! @tparam _Rng Pseudo-random number generator type compatible with Thrust random distributions.
-template <typename _Rng = ::thrust::default_random_engine>
+//! @tparam Rng Pseudo-random number generator type compatible with Thrust random distributions.
+template <typename Rng = ::thrust::default_random_engine>
 class key_generator
 {
 public:
   //! Constructs a key generator with the given seed.
   //!
-  //! @param __seed Seed used to initialize the generator state.
-  explicit key_generator(::cuda::std::uint32_t __seed = defaults::seed)
-      : __rng{__seed}
+  //! @param seed Seed used to initialize the generator state.
+  explicit key_generator(::cuda::std::uint32_t seed = defaults::seed)
+      : rng{seed}
   {}
 
   //! Generates keys according to the given distribution using the default device execution policy.
   //!
-  //! @tparam _Dist Distribution tag type.
-  //! @tparam _OutputIt Output iterator type whose value type is the generated key type.
-  //! @param __dist Distribution tag controlling how keys are generated.
-  //! @param __out_begin Beginning of the output key range.
-  //! @param __out_end End of the output key range.
-  //! @throws std::invalid_argument if `_Dist` is not a supported distribution tag.
-  template <typename _Dist, typename _OutputIt>
-  void generate(_Dist __dist, _OutputIt __out_begin, _OutputIt __out_end)
+  //! @tparam Distribution Distribution tag type.
+  //! @tparam OutputIt Output iterator type whose value type is the generated key type.
+  //! @param dist Distribution tag controlling how keys are generated.
+  //! @param out_begin Beginning of the output key range.
+  //! @param out_end End of the output key range.
+  //! @throws std::invalid_argument if `Distribution` is not a supported distribution tag.
+  template <typename Distribution, typename OutputIt>
+  void generate(Distribution dist, OutputIt out_begin, OutputIt out_end)
   {
-    generate(__dist, __out_begin, __out_end, ::thrust::device);
+    generate(dist, out_begin, out_end, ::thrust::device);
   }
 
   //! Generates keys according to the given distribution using the provided execution policy.
   //!
-  //! @tparam _Dist Distribution tag type.
-  //! @tparam _OutputIt Output iterator type whose value type is the generated key type.
-  //! @tparam _ExecPolicy Thrust execution policy type.
-  //! @param __dist Distribution tag controlling how keys are generated.
-  //! @param __out_begin Beginning of the output key range.
-  //! @param __out_end End of the output key range.
-  //! @param __exec_policy Execution policy used for the underlying Thrust algorithms.
-  //! @throws std::invalid_argument if `_Dist` is not a supported distribution tag.
-  template <typename _Dist, typename _OutputIt, typename _ExecPolicy>
-  void generate(_Dist __dist, _OutputIt __out_begin, _OutputIt __out_end, _ExecPolicy __exec_policy)
+  //! @tparam Distribution Distribution tag type.
+  //! @tparam OutputIt Output iterator type whose value type is the generated key type.
+  //! @tparam ExecPolicy Thrust execution policy type.
+  //! @param dist Distribution tag controlling how keys are generated.
+  //! @param out_begin Beginning of the output key range.
+  //! @param out_end End of the output key range.
+  //! @param exec_policy Execution policy used for the underlying Thrust algorithms.
+  //! @throws std::invalid_argument if `Distribution` is not a supported distribution tag.
+  template <typename Distribution, typename OutputIt, typename ExecPolicy>
+  void generate(Distribution dist, OutputIt out_begin, OutputIt out_end, ExecPolicy exec_policy)
   {
-    using __value_type = typename ::cuda::std::iterator_traits<_OutputIt>::value_type;
+    using value_type = typename ::cuda::std::iterator_traits<OutputIt>::value_type;
 
-    if constexpr (::cuda::std::is_same_v<_Dist, distribution::unique>)
+    if constexpr (::cuda::std::is_same_v<Distribution, distribution::unique>)
     {
-      ::thrust::sequence(__exec_policy, __out_begin, __out_end, __value_type{0});
-      ::thrust::shuffle(__exec_policy, __out_begin, __out_end, __rng);
+      ::thrust::sequence(exec_policy, out_begin, out_end, value_type{0});
+      ::thrust::shuffle(exec_policy, out_begin, out_end, rng);
     }
-    else if constexpr (::cuda::std::is_same_v<_Dist, distribution::uniform>)
+    else if constexpr (::cuda::std::is_same_v<Distribution, distribution::uniform>)
     {
-      const auto __num_keys = static_cast<::cuda::std::size_t>(::cuda::std::distance(__out_begin, __out_end));
-      const auto __seed     = static_cast<::cuda::std::size_t>(__rng());
+      const auto num_keys = static_cast<::cuda::std::size_t>(::cuda::std::distance(out_begin, out_end));
+      const auto seed     = static_cast<::cuda::std::size_t>(rng());
 
       ::thrust::transform(
-        __exec_policy,
+        exec_policy,
         ::cuda::counting_iterator<::cuda::std::size_t>{0},
-        ::cuda::counting_iterator<::cuda::std::size_t>{__num_keys},
-        __out_begin,
-        detail::__generate_uniform_fn<__value_type, _Dist, _Rng>{__num_keys, __dist, __seed});
+        ::cuda::counting_iterator<::cuda::std::size_t>{num_keys},
+        out_begin,
+        detail::generate_uniform_fn<value_type, Distribution, Rng>{num_keys, dist, seed});
     }
     else
     {
@@ -198,77 +198,81 @@ public:
   //!
   //! Replaced keys are sampled from `[N, max_key]`, where `N` is the number of keys in the range.
   //!
-  //! @tparam _InOutIt Mutable iterator type whose value type is the key type.
-  //! @param __begin Beginning of the key range to update in place.
-  //! @param __end End of the key range to update in place.
-  //! @param __keep_prob Probability of keeping each original key. Must be in `[0, 1]`.
-  //! @throws std::invalid_argument if `__keep_prob` is outside `[0, 1]`.
-  template <typename _InOutIt>
-  void dropout(_InOutIt __begin, _InOutIt __end, double __keep_prob)
+  //! The full range is shuffled afterward, even when all keys are kept.
+  //!
+  //! @tparam InOutIt Mutable iterator type whose value type is the key type.
+  //! @param begin Beginning of the key range to update in place.
+  //! @param end End of the key range to update in place.
+  //! @param keep_prob Probability of keeping each original key. Must be in `[0, 1]`.
+  //! @throws std::invalid_argument if `keep_prob` is outside `[0, 1]`.
+  template <typename InOutIt>
+  void dropout(InOutIt begin, InOutIt end, double keep_prob)
   {
-    dropout(__begin, __end, __keep_prob, ::thrust::device);
+    dropout(begin, end, keep_prob, ::thrust::device);
   }
 
   //! Drops keys with probability `1 - keep_prob` using the provided execution policy.
   //!
   //! Replaced keys are sampled from `[N, max_key]`, where `N` is the number of keys in the range.
   //!
-  //! @tparam _InOutIt Mutable iterator type whose value type is the key type.
-  //! @tparam _ExecPolicy Thrust execution policy type.
-  //! @param __begin Beginning of the key range to update in place.
-  //! @param __end End of the key range to update in place.
-  //! @param __keep_prob Probability of keeping each original key. Must be in `[0, 1]`.
-  //! @param __exec_policy Execution policy used for the underlying Thrust algorithms.
-  //! @throws std::invalid_argument if `__keep_prob` is outside `[0, 1]`.
-  template <typename _InOutIt, typename _ExecPolicy>
-  void dropout(_InOutIt __begin, _InOutIt __end, double __keep_prob, _ExecPolicy __exec_policy)
+  //! The full range is shuffled afterward, even when all keys are kept.
+  //!
+  //! @tparam InOutIt Mutable iterator type whose value type is the key type.
+  //! @tparam ExecPolicy Thrust execution policy type.
+  //! @param begin Beginning of the key range to update in place.
+  //! @param end End of the key range to update in place.
+  //! @param keep_prob Probability of keeping each original key. Must be in `[0, 1]`.
+  //! @param exec_policy Execution policy used for the underlying Thrust algorithms.
+  //! @throws std::invalid_argument if `keep_prob` is outside `[0, 1]`.
+  template <typename InOutIt, typename ExecPolicy>
+  void dropout(InOutIt begin, InOutIt end, double keep_prob, ExecPolicy exec_policy)
   {
-    using __value_type = typename ::cuda::std::iterator_traits<_InOutIt>::value_type;
+    using value_type = typename ::cuda::std::iterator_traits<InOutIt>::value_type;
 
-    if (__keep_prob < 0.0 || __keep_prob > 1.0)
+    if (keep_prob < 0.0 || keep_prob > 1.0)
     {
       throw ::std::invalid_argument{"Probability needs to be between 0 and 1"};
     }
 
-    if (__keep_prob < 1.0)
+    if (keep_prob < 1.0)
     {
-      const auto __num_keys = static_cast<::cuda::std::size_t>(::cuda::std::distance(__begin, __end));
-      ::cuda::counting_iterator<::cuda::std::size_t> __seeds{static_cast<::cuda::std::size_t>(__rng())};
+      const auto num_keys = static_cast<::cuda::std::size_t>(::cuda::std::distance(begin, end));
+      ::cuda::counting_iterator<::cuda::std::size_t> seeds{static_cast<::cuda::std::size_t>(rng())};
 
       ::thrust::transform_if(
-        __exec_policy,
-        __seeds,
-        __seeds + __num_keys,
-        __begin,
-        detail::__dropout_fn<__value_type, _Rng>{__num_keys},
-        detail::__dropout_pred<_Rng>{__keep_prob});
+        exec_policy,
+        seeds,
+        seeds + num_keys,
+        begin,
+        detail::dropout_fn<value_type, Rng>{num_keys},
+        detail::dropout_pred<Rng>{keep_prob});
     }
 
-    ::thrust::shuffle(__exec_policy, __begin, __end, __rng);
+    ::thrust::shuffle(exec_policy, begin, end, rng);
   }
 
 private:
-  _Rng __rng;
+  Rng rng;
 };
 
 //! Constructs the requested distribution tag from NVBench axis values.
 //!
 //! `distribution::uniform` reads the `Multiplicity` axis from `state`.
 //!
-//! @tparam _Dist Distribution tag type to construct.
-//! @param __state NVBench state containing distribution-specific axis values.
+//! @tparam Distribution Distribution tag type to construct.
+//! @param state NVBench state containing distribution-specific axis values.
 //! @return Distribution tag initialized from the benchmark state.
-//! @throws std::invalid_argument if `_Dist` is not a supported distribution tag.
-template <typename _Dist>
-_Dist dist_from_state(::nvbench::state const& __state)
+//! @throws std::invalid_argument if `Distribution` is not a supported distribution tag.
+template <typename Distribution>
+Distribution dist_from_state(::nvbench::state const& state)
 {
-  if constexpr (::cuda::std::is_same_v<_Dist, distribution::unique>)
+  if constexpr (::cuda::std::is_same_v<Distribution, distribution::unique>)
   {
-    return _Dist{};
+    return Distribution{};
   }
-  else if constexpr (::cuda::std::is_same_v<_Dist, distribution::uniform>)
+  else if constexpr (::cuda::std::is_same_v<Distribution, distribution::uniform>)
   {
-    return _Dist{__state.get_int64("Multiplicity")};
+    return Distribution{state.get_int64("Multiplicity")};
   }
   else
   {
