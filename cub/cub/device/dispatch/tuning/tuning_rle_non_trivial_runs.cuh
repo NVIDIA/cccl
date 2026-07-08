@@ -44,7 +44,7 @@ struct RleNonTrivialRunsPolicy
   //! The @ref LookbackDelayPolicy controlling the delay between lookback iterations
   LookbackDelayPolicy lookback_delay = {LookbackDelayAlgorithm::fixed_delay, 350, 450};
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -53,7 +53,7 @@ struct RleNonTrivialRunsPolicy
         && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RleNonTrivialRunsPolicy& lhs, const RleNonTrivialRunsPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

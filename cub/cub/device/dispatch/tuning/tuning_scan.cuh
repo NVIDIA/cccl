@@ -105,7 +105,7 @@ struct ScanLookbackPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -114,7 +114,7 @@ struct ScanLookbackPolicy
         && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -156,7 +156,7 @@ struct ScanLookaheadPolicy
     return items_per_thread * reduce_and_scan_warps * cub::detail::warp_threads;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanLookaheadPolicy& lhs, const ScanLookaheadPolicy& rhs) noexcept
   {
     return lhs.reduce_and_scan_warps == rhs.reduce_and_scan_warps && lhs.items_per_thread == rhs.items_per_thread
@@ -164,7 +164,7 @@ struct ScanLookaheadPolicy
         && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ScanLookaheadPolicy& lhs, const ScanLookaheadPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -188,12 +188,12 @@ struct ScanPolicy
   ScanLookbackPolicy lookback; //!< The look-back scan policy (used when algorithm is @p lookback, otherwise ignored)
   ScanLookaheadPolicy lookahead; //!< The lookahead scan policy (used when algorithm is @p lookahead, otherwise ignored)
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const ScanPolicy& lhs, const ScanPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const ScanPolicy& lhs, const ScanPolicy& rhs) noexcept
   {
     return lhs.lookback == rhs.lookback && lhs.lookahead == rhs.lookahead && lhs.algorithm == rhs.algorithm;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const ScanPolicy& lhs, const ScanPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const ScanPolicy& lhs, const ScanPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
