@@ -41,7 +41,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_extended_arithmetic.h>
 
 #  include <cuda_tile.h>
 
@@ -83,15 +83,7 @@ namespace detail::transform::tile
 // The transparent cuda::std::plus<>/multiplies<> have a templated operator() that is tile-callable, so they
 // serve directly as the tile_operator for the typed cuda::std::plus<T>/multiplies<T> a user passes.
 template <typename T>
-inline constexpr bool tile_supported_element_v = ::cuda::std::is_arithmetic_v<T> && sizeof(T) <= 8;
-#  if _CCCL_HAS_NVFP16()
-template <>
-inline constexpr bool tile_supported_element_v<::__half> = true;
-#  endif // _CCCL_HAS_NVFP16()
-#  if _CCCL_HAS_NVBF16()
-template <>
-inline constexpr bool tile_supported_element_v<::__nv_bfloat16> = true;
-#  endif // _CCCL_HAS_NVBF16()
+inline constexpr bool tile_supported_element_v = ::cuda::std::__is_extended_arithmetic_v<T> && sizeof(T) <= 8;
 
 template <typename T>
 inline constexpr bool tile_eligible_v<::cuda::std::plus<T>, T, 2> = tile_supported_element_v<T>;
