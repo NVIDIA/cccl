@@ -933,7 +933,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       using store_t      = decltype(load_store_type<store_vec_size * out_size>());
       auto* out_vec      = reinterpret_cast<store_t*>(out);
       const int num_vecs = valid_items / store_vec_size;
-      for (int v = threadIdx.x; v < num_vecs; v += threads_per_block)
+      for (auto v = static_cast<int>(threadIdx.x); v < num_vecs; v += threads_per_block)
       {
         char* smem       = smem_base;
         auto load_in_vec = [&](auto aligned_ptr) {
