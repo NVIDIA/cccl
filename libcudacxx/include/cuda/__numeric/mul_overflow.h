@@ -277,13 +277,14 @@ template <class _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __mul_overflow_uniform_type(_Tp __lhs, _Tp __rhs) noexcept
 {
-  // TODO: add_overflow utilizes !_CCCL_TILE_COMPILATION(); is this needed?
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (return ::cuda::__mul_overflow_device(__lhs, __rhs);),
                  (return ::cuda::__mul_overflow_host(__lhs, __rhs);))
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::__mul_overflow_generic_impl(__lhs, __rhs);
 }
 
