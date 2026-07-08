@@ -301,12 +301,11 @@ inline constexpr bool __is_mul_representable_v =
 _CCCL_TEMPLATE(typename _Result = void,
                typename _Lhs,
                typename _Rhs,
-               typename _Common       = ::cuda::std::common_type_t<_Lhs, _Rhs>,
-               typename _ActualResult = ::cuda::std::conditional_t<::cuda::std::is_void_v<_Result>, _Common, _Result>)
+               typename _Common    = ::cuda::std::common_type_t<_Lhs, _Rhs>,
+               typename _ActResult = ::cuda::std::conditional_t<::cuda::std::is_void_v<_Result>, _Common, _Result>)
 _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_integer_v<_Result>)
                  _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Lhs> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Rhs>)
-[[nodiscard]]
-_CCCL_API constexpr overflow_result<_ActualResult> mul_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr overflow_result<_ActResult> mul_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
   // We want to use __builtin_mul_overflow only in host code. When compiling CUDA source file, we cannot use it in
   // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
@@ -318,11 +317,11 @@ _CCCL_API constexpr overflow_result<_ActualResult> mul_overflow(const _Lhs __lhs
   {
     // nvc++ doesn't fully support 128-bit ints with __builtin_mul_overflow.
 #  if _CCCL_COMPILER(NVHPC)
-    if constexpr (sizeof(_ActualResult) != 16 && sizeof(_Lhs) != 16 && sizeof(_Rhs) != 16)
+    if constexpr (sizeof(_ActResult) != 16 && sizeof(_Lhs) != 16 && sizeof(_Rhs) != 16)
 #  endif // _CCCL_COMPILER(NVHPC)
     {
       NV_IF_TARGET(NV_IS_HOST, ({
-                     overflow_result<_ActualResult> __result{};
+                     overflow_result<_ActResult> __result{};
                      __result.overflow = _CCCL_BUILTIN_MUL_OVERFLOW(__lhs, __rhs, &__result.value);
                      return __result;
                    }))
@@ -331,61 +330,61 @@ _CCCL_API constexpr overflow_result<_ActualResult> mul_overflow(const _Lhs __lhs
 #endif // _CCCL_BUILTIN_MUL_OVERFLOW
 
   // Host fallback + device implementation.
-#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_MUL_OVERFLOW) || (_CCCL_COMPILER(NVHPC) && _CCCL_HAS_INT128())
+#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_MUL_OVERFLOW) || (_CCCL_HAS_INT128() && _CCCL_COMPILER(NVHPC))
   using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
-  using _CommonAll                             = ::cuda::std::common_type_t<_Common, _ActualResult>;
+  using _CommonAll                             = ::cuda::std::common_type_t<_Common, _ActResult>;
   [[maybe_unused]] const bool __is_lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= 0;
   [[maybe_unused]] const bool __is_rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= 0;
   // shortcut for the case where inputs are representable with the max type
-  if constexpr (__is_mul_representable_v<_ActualResult, _Lhs, _Rhs>)
+  if constexpr (__is_mul_representable_v<_ActResult, _Lhs, _Rhs>)
   {
     const auto __lhs1    = static_cast<_CommonAll>(__lhs);
     const auto __rhs1    = static_cast<_CommonAll>(__rhs);
     const auto __product = static_cast<_CommonAll>(__lhs1 * __rhs1);
-    return ::cuda::overflow_cast<_ActualResult>(__product);
+    return ::cuda::overflow_cast<_ActResult>(__product);
   }
   // * int x int -> int
-  else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActualResult>) // all signed
+  else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActResult>) // all signed
   {
     using _Sp            = ::cuda::std::make_signed_t<_CommonAll>;
     const auto __lhs1    = static_cast<_Sp>(__lhs);
     const auto __rhs1    = static_cast<_Sp>(__rhs);
     const auto __product = ::cuda::__mul_overflow_uniform_type(__lhs1, __rhs1);
-    const auto __ret     = ::cuda::overflow_cast<_ActualResult>(__product.value);
-    return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __product.overflow};
+    const auto __ret     = ::cuda::overflow_cast<_ActResult>(__product.value);
+    return overflow_result<_ActResult>{__ret.value, __ret.overflow || __product.overflow};
   }
   // Positive inputs
   // * unsigned x unsigned (compile-time)
   // * unsigned x int >= 0 (compile-time + run-time check)
   // * int >= 0 x unsigned (compile-time + run-time check)
-  // * int >= 0 x int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above) (run-time check)
+  // * int >= 0 x int >= 0 -> _ActResult=unsigned (_ActResult=signed already handled above) (run-time check)
   else if (__is_lhs_ge_zero && __is_rhs_ge_zero)
   {
     const auto __lhs1    = static_cast<_CommonAll>(__lhs);
     const auto __rhs1    = static_cast<_CommonAll>(__rhs);
     const auto __product = ::cuda::__mul_overflow_uniform_type(__lhs1, __rhs1);
-    const auto __ret     = ::cuda::overflow_cast<_ActualResult>(__product.value);
-    return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __product.overflow};
+    const auto __ret     = ::cuda::overflow_cast<_ActResult>(__product.value);
+    return overflow_result<_ActResult>{__ret.value, __ret.overflow || __product.overflow};
   }
   // Negative inputs
-  // * int < 0 x int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above) (run-time check)
+  // * int < 0 x int < 0 -> _ActResult=unsigned (_ActResult=signed already handled above) (run-time check)
   else if (!__is_lhs_ge_zero && !__is_rhs_ge_zero)
   {
     using _Up            = ::cuda::std::make_unsigned_t<_CommonAll>;
     const auto __lhs1    = static_cast<_Up>(__lhs);
     const auto __rhs1    = static_cast<_Up>(__rhs);
     const auto __product = __lhs1 * __rhs1;
-    const auto __ret     = ::cuda::overflow_cast<_ActualResult>(__product);
-    return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __product < 0};
+    const auto __ret     = ::cuda::overflow_cast<_ActResult>(__product);
+    return overflow_result<_ActResult>{__ret.value, __ret.overflow || __product < 0};
   }
   // Opposite signs
-  // * int < 0 x int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
-  // * int >= 0 x int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
+  // * int < 0 x int >= 0 -> _ActResult=unsigned (_ActResult=signed already handled above)
+  // * int >= 0 x int < 0 -> _ActResult=unsigned (_ActResult=signed already handled above)
   else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs>)
   {
-    return ::cuda::overflow_cast<_ActualResult>(static_cast<_Common>(__lhs) * static_cast<_Common>(__rhs));
+    return ::cuda::overflow_cast<_ActResult>(static_cast<_Common>(__lhs) * static_cast<_Common>(__rhs));
   }
   // Opposite signs
   // * unsigned x int < 0
@@ -406,20 +405,20 @@ _CCCL_API constexpr overflow_result<_ActualResult> mul_overflow(const _Lhs __lhs
     const auto __product_lo = __lhs1 * __rhs1;
     const auto __product_hi = ::cuda::mul_hi(__lhs1, __rhs1);
 
-    if constexpr (is_unsigned_v<_ActualResult>)
+    if constexpr (is_unsigned_v<_ActResult>)
     {
-      return overflow_result<_ActualResult>{static_cast<_ActualResult>(::cuda::neg(__product_lo)), true};
+      return overflow_result<_ActResult>{static_cast<_ActResult>(::cuda::neg(__product_lo)), true};
     }
     else
     {
       using _Up                = ::cuda::std::make_unsigned_t<_CommonAll>;
-      constexpr auto __min     = ::cuda::std::numeric_limits<_ActualResult>::min();
+      constexpr auto __min     = ::cuda::std::numeric_limits<_ActResult>::min();
       const auto __product_max = _Up{::cuda::uabs(__min)};
       const auto __overflow    = __product_hi != 0 || __product_lo > __product_max;
-      return overflow_result<_ActualResult>{static_cast<_ActualResult>(::cuda::neg(__product_lo)), __overflow};
+      return overflow_result<_ActResult>{static_cast<_ActResult>(::cuda::neg(__product_lo)), __overflow};
     }
   }
-#endif // _CCCL_CUDA_COMPILATION() || !_CCCL_BUILTIN_MUL_OVERFLOW || (_CCCL_COMPILER(NVHPC) && _CCCL_HAS_INT128())
+#endif // _CCCL_CUDA_COMPILATION() || !_CCCL_BUILTIN_MUL_OVERFLOW || (_CCCL_HAS_INT128() && _CCCL_COMPILER(NVHPC))
 }
 
 _CCCL_TEMPLATE(class _Result, class _Lhs, class _Rhs)
