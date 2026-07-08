@@ -22,7 +22,7 @@ set(
 
 project(cuda_stf DESCRIPTION "Python package cuda_stf" LANGUAGES CUDA CXX C)
 
-find_package(CUDAToolkit)
+find_package(CUDAToolkit REQUIRED)
 
 set(CUDA_VERSION_MAJOR ${CUDAToolkit_VERSION_MAJOR})
 set(CUDA_VERSION_DIR "cu${CUDA_VERSION_MAJOR}")
