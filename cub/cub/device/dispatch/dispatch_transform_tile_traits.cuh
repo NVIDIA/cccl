@@ -4,7 +4,7 @@
 // Compile-time policy for cub::DeviceTransform's tile path.
 //
 // INTERNAL EXTENSION POINTS (cub::detail::transform::tile) -- two independent axes:
-//   tile_eligible_v<Op, T, NIn> -- specialize to true to opt a (functor type,
+//   tile_eligible_v<Op, T, NumInputs> -- specialize to true to opt a (functor type,
 //                                   element type, input arity) combo into the
 //                                   tile dispatch path. Eligibility only.
 //   tile_operator<Op>           -- the __tile__ functor the tile kernel runs
@@ -20,7 +20,7 @@
 //
 // Eligibility ("may this combo use the tile path?") and substitution ("which
 // __tile__ functor do we actually run?") are separate traits, so an eligible op
-// always registers both: tile_eligible_v<Op,T,NIn> and tile_operator<Op>.
+// always registers both: tile_eligible_v<Op,T,NumInputs> and tile_operator<Op>.
 
 #pragma once
 
@@ -53,7 +53,7 @@ namespace detail::transform::tile
 // true for the combo. Eligibility only -- the __tile__ functor to actually run is named by tile_operator<Op>.
 // The kernel default-constructs tile_operator_t<Op> and never sees the Op instance, so the substitute must be
 // stateless (the dispatch static_assert enforces this). Op may carry state; it is only used on the fallback path.
-template <typename Op, typename T, ::cuda::std::size_t NIn>
+template <typename Op, typename T, ::cuda::std::size_t NumInputs>
 inline constexpr bool tile_eligible_v = false;
 
 // The __tile__ functor the tile kernel runs for Op.
