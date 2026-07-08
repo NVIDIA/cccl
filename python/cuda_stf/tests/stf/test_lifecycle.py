@@ -159,6 +159,18 @@ def test_host_launch_rejects_logical_data_from_different_context():
     ctx1.finalize()
 
 
+def test_wait_rejects_logical_data_from_different_context():
+    ctx1 = stf.context()
+    ctx2 = stf.context()
+    ld = ctx1.logical_data(np.ones(8, dtype=np.float64), name="lA")
+
+    with pytest.raises(ValueError, match="different context"):
+        ctx2.wait(ld)
+
+    ctx2.finalize()
+    ctx1.finalize()
+
+
 # ---------------------------------------------------------------------------
 # stackable_context
 # ---------------------------------------------------------------------------

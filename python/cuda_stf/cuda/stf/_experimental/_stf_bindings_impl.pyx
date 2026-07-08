@@ -2074,6 +2074,8 @@ cdef class context:
         if not isinstance(ld, logical_data):
             raise TypeError("wait() requires a logical_data object")
         cdef logical_data ldata = <logical_data>ld
+        if ldata._ctx != self._ctx:
+            raise ValueError("logical_data belongs to a different context")
         import numpy as np
         cdef object buf = np.empty(ldata._shape, dtype=ldata._dtype)
         cdef Py_buffer pybuf
