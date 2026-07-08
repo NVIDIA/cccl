@@ -314,19 +314,19 @@ struct policy_selector_from_hub
         lp::SCAN_ALGORITHM,
         lp::RADIX_BITS},
       SegmentedSortSubWarpMergeSortPolicy{
-        sp::BLOCK_THREADS,
-        sp::WARP_THREADS,
-        sp::ITEMS_PER_THREAD,
-        sp::LOAD_ALGORITHM,
-        sp::LOAD_MODIFIER,
-        sp::STORE_ALGORITHM},
-      SegmentedSortSubWarpMergeSortPolicy{
         mp::BLOCK_THREADS,
         mp::WARP_THREADS,
         mp::ITEMS_PER_THREAD,
         mp::LOAD_ALGORITHM,
         mp::LOAD_MODIFIER,
         mp::STORE_ALGORITHM},
+      SegmentedSortSubWarpMergeSortPolicy{
+        sp::BLOCK_THREADS,
+        sp::WARP_THREADS,
+        sp::ITEMS_PER_THREAD,
+        sp::LOAD_ALGORITHM,
+        sp::LOAD_MODIFIER,
+        sp::STORE_ALGORITHM},
       ap::PARTITIONING_THRESHOLD};
   }
 };
