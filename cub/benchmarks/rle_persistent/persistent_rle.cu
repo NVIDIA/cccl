@@ -199,6 +199,21 @@ __device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
   return bit_position;
 }
 
+template <int kWidth>
+__device__ __forceinline__ int warp_inclusive_scan_add(int lane_value, int lane_id)
+{
+#pragma unroll
+  for (int offset = 1; offset < kWidth; offset <<= 1)
+  {
+    const int predecessor_partial = __shfl_up_sync(kFullMask, lane_value, offset);
+    if (lane_id >= offset)
+    {
+      lane_value += predecessor_partial;
+    }
+  }
+  return lane_value;
+}
+
 template <class Config, class OffT>
 __device__ __forceinline__ void poll_and_fold(
   TilePartialStateT* tile_partial_states,
@@ -593,15 +608,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           // we store run R at warp_tile_offset + (R ^ (R>>5)) to avoid bank conflicts for dense cases
           // (CRITICAL for MaxSeg=1,2,4)
           int head_scan = __popc(my_flags); // start: this word's head count
-#pragma unroll
-          for (int offset = 1; offset < 32; offset <<= 1)
-          {
-            const int pred_head_scan = __shfl_up_sync(kFullMask, head_scan, offset);
-            if (lane_id >= offset)
-            {
-              head_scan += pred_head_scan;
-            }
-          }
+          head_scan     = warp_inclusive_scan_add<32>(head_scan, lane_id);
           // head_scan is a running sum of run_count, so each lane know each chunk's base
           const int runs_before_word = head_scan - __popc(my_flags);
           if (lane_id < kIPT)
@@ -694,16 +701,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       // per-warp-tile run bases (lane i owns warp-tile i's count/base) and done BEFORE the wait on prefixed so they
       // overlap
       const int lane_warp_tile_run_count = (lane_id < kNumCompWarps) ? warp_run_counts[slot_id][lane_id] : 0;
-      int lane_warp_tile_run_count_scan  = lane_warp_tile_run_count;
-#pragma unroll
-      for (int offset = 1; offset < kNumCompWarps; offset <<= 1)
-      {
-        const int predecessor_partial = __shfl_up_sync(kFullMask, lane_warp_tile_run_count_scan, offset);
-        if (lane_id >= offset)
-        {
-          lane_warp_tile_run_count_scan += predecessor_partial;
-        }
-      }
+      const int lane_warp_tile_run_count_scan =
+        warp_inclusive_scan_add<kNumCompWarps>(lane_warp_tile_run_count, lane_id);
       // lane i: run-count sum over warp-tiles [0, i) = where warp-tile i's runs begin within the tile
       const int lane_runs_before_warp_tile = lane_warp_tile_run_count_scan - lane_warp_tile_run_count;
       const KeyT* tile_keys                = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
@@ -736,16 +735,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           // one warp tile is 32 chunks x 32 elements so lane i owns word i
           const unsigned lane_head_flag_word = head_flag_buf[slot_id][warp_tile_id * 32 + lane_id];
           const int lane_word_run_count      = __popc(lane_head_flag_word);
-          int lane_word_run_count_scan       = lane_word_run_count;
-#pragma unroll
-          for (int offset = 1; offset < 32; offset <<= 1)
-          {
-            const int predecessor_partial = __shfl_up_sync(kFullMask, lane_word_run_count_scan, offset);
-            if (lane_id >= offset)
-            {
-              lane_word_run_count_scan += predecessor_partial;
-            }
-          }
+          const int lane_word_run_count_scan = warp_inclusive_scan_add<32>(lane_word_run_count, lane_id);
           // lane i: # of runs starting in head_flag words [0, i), i.e. in elements [0, i*32)
           const int lane_runs_before_word = lane_word_run_count_scan - lane_word_run_count;
           // lane i -> first head position in head flag words [i, 32)
@@ -862,17 +852,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
           // this is basically the same as drain, need to refactor this so we are not copy pasting code around
           const unsigned lane_head_flag_word = head_flag_buf[slot_id][warp_tile_id * 32 + lane_id];
           const int lane_word_run_count      = __popc(lane_head_flag_word);
-          int lane_word_run_count_scan       = lane_word_run_count;
-#pragma unroll
-          for (int offset = 1; offset < 32; offset <<= 1)
-          {
-            const int predecessor_partial = __shfl_up_sync(kFullMask, lane_word_run_count_scan, offset);
-            if (lane_id >= offset)
-            {
-              lane_word_run_count_scan += predecessor_partial;
-            }
-          }
-          const int lane_runs_before_word = lane_word_run_count_scan - lane_word_run_count;
+          const int lane_word_run_count_scan = warp_inclusive_scan_add<32>(lane_word_run_count, lane_id);
+          const int lane_runs_before_word    = lane_word_run_count_scan - lane_word_run_count;
           int lane_first_head_from_word =
             lane_word_run_count ? (lane_id * 32 + __ffs(lane_head_flag_word) - 1) : 0x7fffffff;
 #pragma unroll
@@ -1009,16 +990,8 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       const bool is_last = (tile_id == num_tiles - 1);
       // same scan as the store warps (lane i = warp-tile i)
       const int lane_warp_tile_run_count = (lane_id < kNumCompWarps) ? warp_run_counts[slot_id][lane_id] : 0;
-      int lane_warp_tile_run_count_scan  = lane_warp_tile_run_count;
-#pragma unroll
-      for (int offset = 1; offset < kNumCompWarps; offset <<= 1)
-      {
-        const int predecessor_partial = __shfl_up_sync(kFullMask, lane_warp_tile_run_count_scan, offset);
-        if (lane_id >= offset)
-        {
-          lane_warp_tile_run_count_scan += predecessor_partial;
-        }
-      }
+      const int lane_warp_tile_run_count_scan =
+        warp_inclusive_scan_add<kNumCompWarps>(lane_warp_tile_run_count, lane_id);
       const int lane_runs_before_warp_tile = lane_warp_tile_run_count_scan - lane_warp_tile_run_count;
       const int tile_total_runs            = __shfl_sync(kFullMask, lane_warp_tile_run_count_scan, kNumCompWarps - 1);
       const unsigned nonempty_warp_tiles_mask = __ballot_sync(kFullMask, lane_warp_tile_run_count > 0);
