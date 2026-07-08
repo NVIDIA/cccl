@@ -34,7 +34,6 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/span>
 
@@ -231,7 +230,7 @@ public:
           __kernel,
           __shmem_bytes);
 
-        const auto __ptr      = ::cuda::std::addressof(__first[0]);
+        const auto __ptr      = ::cuda::std::to_address(__first);
         void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__ptr)),
                                  const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                  reinterpret_cast<void*>(this)};
