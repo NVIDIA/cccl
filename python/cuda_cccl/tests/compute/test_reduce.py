@@ -1157,7 +1157,12 @@ def test_serialize_deserialize_preserves_determinism():
     blob = serialize(reducer)
 
     loaded = deserialize(blob)
-    assert loaded.build_result.determinism == int(Determinism.NOT_GUARANTEED)
+    # determinism is a build-time property, preserved on each compiled per-arch
+    # build result (loaded_build_result binds lazily on first call, so inspect build_results).
+    assert all(
+        v.determinism == int(Determinism.NOT_GUARANTEED)
+        for v in loaded.build_results.values()
+    )
 
 
 @pytest.mark.serialization
