@@ -26,8 +26,7 @@ namespace detail
 #if !_CCCL_COMPILER(NVRTC)
 // Preserve deferred problem sizes for dispatch and canonicalize immediate values to CUB's offset type.
 template <typename NumItemsT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto
-make_num_items_dispatch_arg(NumItemsT num_items) noexcept
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto make_num_items_dispatch_arg(NumItemsT num_items) noexcept
 {
   using args_traits_t = ::cuda::args::__traits<NumItemsT>;
 
