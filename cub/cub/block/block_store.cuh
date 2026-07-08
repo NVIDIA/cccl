@@ -548,7 +548,7 @@ enum BlockStoreAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(BlockStoreAlgorithm algo) noexcept
+_CCCL_API [[nodiscard]] constexpr const char* to_string(BlockStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {

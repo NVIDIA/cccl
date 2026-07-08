@@ -41,7 +41,7 @@ enum class RadixSortAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
+_CCCL_API [[nodiscard]] constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
 {
   switch (algo)
   {

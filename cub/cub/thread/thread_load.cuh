@@ -51,7 +51,7 @@ enum CacheLoadModifier
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(CacheLoadModifier modifier) noexcept
+_CCCL_API [[nodiscard]] constexpr const char* to_string(CacheLoadModifier modifier) noexcept
 {
   switch (modifier)
   {
