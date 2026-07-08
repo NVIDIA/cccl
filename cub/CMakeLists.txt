@@ -10,9 +10,6 @@ option(CUB_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
 option(CUB_ENABLE_TESTING "Build CUB testing suite." ON)
 option(CUB_ENABLE_EXAMPLES "Build CUB examples." ON)
 
-# Build cub::DeviceTransform's experimental tile-DSL path (test + benches) under `nvcc --enable-tile`.
-# Opt-in and OFF by default. Requires CTK 13.4+ (nvcc --enable-tile). The sm_80+ floor is enforced at
-# runtime (dispatch cc check + NV_IF_TARGET in the kernels), so a build still runs correctly on any GPU.
 option(
   CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
   "EXPERIMENTAL: build cub::DeviceTransform's tile path (requires nvcc --enable-tile). This flag is experimental and may change or be removed."

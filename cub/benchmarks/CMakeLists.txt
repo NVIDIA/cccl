@@ -92,8 +92,6 @@ function(add_bench target_name bench_name bench_src)
       nvbench::main
   )
 
-  # Tile-DSL transform benches: build under --enable-tile + the dispatch opt-in when requested. Gated by
-  # CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH (default OFF) so CI builds the tile/ benches with the tile path off.
   if (
     CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
     AND "${bench_src}" MATCHES "/transform/tile/"
