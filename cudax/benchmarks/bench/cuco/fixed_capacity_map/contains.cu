@@ -26,7 +26,7 @@
 #include <nvbench/nvbench.cuh>
 
 namespace cudax = ::cuda::experimental;
-namespace bench = ::cuda::experimental::cuco::benchmark;
+namespace bench = cudax::cuco::benchmark;
 
 /**
  * @brief A benchmark evaluating `cudax::cuco::fixed_capacity_map::contains_async` performance.
