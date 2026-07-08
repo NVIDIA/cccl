@@ -628,10 +628,7 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
   const int extra_space = (num_bytes == 0) ? 0 : detail::bulk_copy_min_align;
   return ::cuda::round_up(num_bytes, detail::bulk_copy_min_align) + extra_space;
 }
-} // namespace detail
 
-namespace detail
-{
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #  if !_CCCL_HAS_CONCEPTS()
@@ -689,15 +686,9 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
 }
-} // namespace detail
-
-//----------------------------------------------------------------------------------------------------------------------
-// ChainedPolicy
 
 #if !_CCCL_COMPILER(NVRTC)
 
-namespace detail
-{
 // Forward declaration of the default kernel launcher factory
 struct TripleChevronFactory;
 
@@ -746,11 +737,9 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 };
-} // namespace detail
+
 #endif // !_CCCL_COMPILER(NVRTC)
 
-namespace detail
-{
 template <typename T>
 struct get_active_policy
 {
