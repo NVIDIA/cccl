@@ -105,6 +105,48 @@ def test_logical_data_rejects_non_contiguous():
     ctx.finalize()
 
 
+class _CudaArrayInterfaceWrapper:
+    def __init__(self, array):
+        self._array = array
+        self.__cuda_array_interface__ = {
+            "version": 3,
+            "shape": array.shape,
+            "typestr": array.dtype.str,
+            "data": (array.ctypes.data, False),
+            "strides": array.strides,
+        }
+
+
+@pytest.mark.parametrize("context_type", [stf.context, stf.stackable_context])
+@pytest.mark.parametrize(
+    "make_view",
+    [
+        pytest.param(lambda array: array[::2], id="strided"),
+        pytest.param(lambda array: array[::-1], id="negative-stride"),
+        pytest.param(lambda array: array.reshape(2, 4).T, id="transposed"),
+    ],
+)
+def test_logical_data_rejects_non_contiguous_cai(context_type, make_view):
+    view = make_view(np.arange(8, dtype=np.float32))
+    assert not view.flags["C_CONTIGUOUS"]
+
+    ctx = context_type()
+    with pytest.raises(ValueError, match="not C-contiguous"):
+        ctx.logical_data(_CudaArrayInterfaceWrapper(view))
+    ctx.finalize()
+
+
+@pytest.mark.parametrize("context_type", [stf.context, stf.stackable_context])
+def test_logical_data_accepts_explicit_c_contiguous_cai_strides(context_type):
+    array = np.arange(8, dtype=np.float32).reshape(2, 4)
+    assert array.strides is not None
+
+    ctx = context_type()
+    ld = ctx.logical_data(_CudaArrayInterfaceWrapper(array))
+    assert ld.shape == array.shape
+    ctx.finalize()
+
+
 def test_fence_returns_stream():
     """fence() returns a non-zero CUDA stream handle."""
     ctx = stf.context()

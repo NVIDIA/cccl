@@ -470,6 +470,30 @@ def _dtype_from_cai(dict cai):
     return np.dtype(typestr)
 
 
+def _validate_cai_c_contiguous(dict cai, dtype):
+    """Reject CUDA Array Interface inputs that are not C-contiguous."""
+    strides = cai.get("strides")
+    if strides is None:
+        return
+
+    shape = tuple(int(dim) for dim in cai["shape"])
+    if len(strides) != len(shape):
+        raise ValueError(
+            "CUDA Array Interface strides must match the number of dimensions"
+        )
+    if any(dim < 0 for dim in shape):
+        raise ValueError("CUDA Array Interface shape dimensions must be non-negative")
+    if any(dim == 0 for dim in shape):
+        return
+
+    expected_stride = np.dtype(dtype).itemsize
+    for dim, stride in zip(reversed(shape), reversed(strides)):
+        stride = int(stride)
+        if dim > 1 and stride != expected_stride:
+            raise ValueError("CUDA Array Interface input is not C-contiguous")
+        expected_stride *= dim
+
+
 def _cai_from_pointer(uintptr_t ptr, tuple shape, dtype, uintptr_t stream=0):
     """Build a CUDA Array Interface v3 dict for an STF task argument."""
     dtype = np.dtype(dtype)
@@ -661,6 +685,7 @@ cdef class logical_data:
             data_ptr, readonly = cai['data']
             original_shape = cai['shape']
             self._dtype = _dtype_from_cai(cai)
+            _validate_cai_c_contiguous(cai, self._dtype)
 
             # Shape is always the same regardless of type
             self._shape = original_shape
@@ -3142,6 +3167,7 @@ cdef class stackable_context:
             data_ptr, readonly = cai['data']
             original_shape = cai['shape']
             out._dtype = _dtype_from_cai(cai)
+            _validate_cai_c_contiguous(cai, out._dtype)
             out._shape = original_shape
             out._ndim = len(out._shape)
             itemsize = out._dtype.itemsize
