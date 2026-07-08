@@ -40,7 +40,7 @@ struct partial_oob_op_t
   operator()(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int len) const
   {
     cub::detail::WarpBitonicSort<ITEMS_PER_THREAD, KeyT, ValueT>{}.Sort(
-      keys, values, CustomLess{}, len, CustomLess::oob<KeyT>);
+      keys, values, CustomLess{}, len, CustomLess::oob_default<KeyT>);
   }
 };
 

@@ -94,5 +94,5 @@ struct CustomLess
   }
 
   template <typename T>
-  static constexpr T oob = cuda::std::numeric_limits<T>::max();
+  static constexpr T oob_default = cuda::std::numeric_limits<T>::max();
 };

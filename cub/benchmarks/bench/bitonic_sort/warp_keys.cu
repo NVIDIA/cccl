@@ -35,7 +35,7 @@ struct partial_oob_op_t
   template <typename KeyT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(KeyT (&keys)[ITEMS_PER_THREAD], int len) const
   {
-    cub::detail::WarpBitonicSort<ITEMS_PER_THREAD, KeyT>{}.Sort(keys, CustomLess{}, len, CustomLess::oob<KeyT>);
+    cub::detail::WarpBitonicSort<ITEMS_PER_THREAD, KeyT>{}.Sort(keys, CustomLess{}, len, CustomLess::oob_default<KeyT>);
   }
 };
 

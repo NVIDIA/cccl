@@ -20,6 +20,9 @@ struct CustomLess
   {
     return lhs < rhs;
   }
+
+  template <typename T>
+  static constexpr T oob_default = cuda::std::numeric_limits<T>::max();
 };
 
 constexpr int WARP_THREADS = cub::detail::warp_threads;
@@ -133,13 +136,13 @@ __global__ void warp_bitonic_sort_kernel(
 
 // -----------------------------------------------------------
 // Dimensions being instantiated:
-// {full,partial} x {keys, kv-pairs}
+// {full,partial_oob,partial} x {keys, kv-pairs}
 // -----------------------------------------------------------
 
 /**
  * @brief Delegate wrapper for WarpBitonicSort::Sort on keys-only
  */
-struct sort_keys_t
+struct sort_keys_full_t
 {
   template <int ITEMS_PER_THREAD, typename KeyT, typename WarpSortT>
   __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ITEMS_PER_THREAD], int /*valid_items*/) const
@@ -149,9 +152,21 @@ struct sort_keys_t
 };
 
 /**
+ * @brief Delegate wrapper for partial WarpBitonicSort::Sort on keys-only with oob_default
+ */
+struct sort_keys_partial_oob_t
+{
+  template <int ITEMS_PER_THREAD, typename KeyT, typename WarpSortT>
+  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ITEMS_PER_THREAD], int valid_items) const
+  {
+    warp_sort.Sort(thread_data, CustomLess{}, valid_items, CustomLess::oob_default<KeyT>);
+  }
+};
+
+/**
  * @brief Delegate wrapper for partial WarpBitonicSort::Sort on keys-only
  */
-struct partial_sort_keys_t
+struct sort_keys_partial_t
 {
   template <int ITEMS_PER_THREAD, typename KeyT, typename WarpSortT>
   __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ITEMS_PER_THREAD], int valid_items) const
@@ -163,7 +178,7 @@ struct partial_sort_keys_t
 /**
  * @brief Delegate wrapper for WarpBitonicSort::Sort on key-value pairs
  */
-struct sort_pairs_t
+struct sort_pairs_full_t
 {
   template <int ITEMS_PER_THREAD, typename KeyT, typename ValueT, typename WarpSortT>
   __device__ void operator()(
@@ -175,9 +190,22 @@ struct sort_pairs_t
 };
 
 /**
+ * @brief Delegate wrapper for partial WarpBitonicSort::Sort on key-value pairs with oob_default
+ */
+struct sort_pairs_partial_oob_t
+{
+  template <int ITEMS_PER_THREAD, typename KeyT, typename ValueT, typename WarpSortT>
+  __device__ void operator()(
+    WarpSortT& warp_sort, KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], int valid_items) const
+  {
+    warp_sort.Sort(keys, values, CustomLess{}, valid_items, CustomLess::oob_default<KeyT>);
+  }
+};
+
+/**
  * @brief Delegate wrapper for partial WarpBitonicSort::Sort on key-value pairs
  */
-struct partial_sort_pairs_t
+struct sort_pairs_partial_t
 {
   template <int ITEMS_PER_THREAD, typename KeyT, typename ValueT, typename WarpSortT>
   __device__ void operator()(
@@ -300,7 +328,7 @@ C2H_TEST("Warp sort on keys-only works", "[sort][warp]", key_types, items_per_th
   c2h::gen(C2H_SEED(10), d_in);
 
   // Run test
-  warp_bitonic_sort<params::items_per_thread, total_warps>(d_in, d_out, valid_items, sort_keys_t{});
+  warp_bitonic_sort<params::items_per_thread, total_warps>(d_in, d_out, valid_items, sort_keys_full_t{});
 
   // Prepare verification data
   c2h::host_vector<type> h_in_out = d_in;
@@ -310,13 +338,23 @@ C2H_TEST("Warp sort on keys-only works", "[sort][warp]", key_types, items_per_th
   REQUIRE(h_in_out == d_out);
 }
 
-C2H_TEST("Warp sort keys-only on partial warp-tile works", "[sort][warp]", key_types, items_per_thread_list)
+C2H_TEST("Warp sort keys-only on partial warp-tile works",
+         "[sort][warp]",
+         key_types,
+         items_per_thread_list,
+         c2h::type_list<sort_keys_partial_oob_t, sort_keys_partial_t>)
 {
-  using params = params_t<TestType>;
-  using type   = typename params::type;
+  using params   = params_t<TestType>;
+  using type     = typename params::type;
+  using action_t = typename c2h::get<2, TestType>;
 
   // Prepare test data
-  const int valid_items     = GENERATE(0, take(5, random(1, params::items_per_thread * WARP_THREADS)));
+  const int valid_items = GENERATE(
+    0,
+    1,
+    params::items_per_thread * WARP_THREADS - 1,
+    params::items_per_thread * WARP_THREADS,
+    take(5, random(2, params::items_per_thread * WARP_THREADS - 2)));
   constexpr int total_warps = params::total_warps;
   const int total_items     = total_warps * valid_items;
   c2h::device_vector<type> d_in(total_items);
@@ -324,7 +362,7 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works", "[sort][warp]", key_t
   c2h::gen(C2H_SEED(5), d_in);
 
   // Run test
-  warp_bitonic_sort<params::items_per_thread, total_warps>(d_in, d_out, valid_items, partial_sort_keys_t{});
+  warp_bitonic_sort<params::items_per_thread, total_warps>(d_in, d_out, valid_items, action_t{});
 
   // Prepare verification data
   c2h::host_vector<type> h_in_out = d_in;
@@ -353,7 +391,7 @@ C2H_TEST("Warp sort on keys-value pairs works", "[sort][warp]", key_types, items
 
   // Run test
   warp_bitonic_sort<params::items_per_thread, total_warps>(
-    d_keys_in, d_keys_out, d_values_in, d_values_out, valid_items, sort_pairs_t{});
+    d_keys_in, d_keys_out, d_values_in, d_values_out, valid_items, sort_pairs_full_t{});
 
   // Prepare verification data
   c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
@@ -372,14 +410,21 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
          "[sort][warp]",
          key_types,
          items_per_thread_list,
-         value_types)
+         value_types,
+         c2h::type_list<sort_pairs_partial_oob_t, sort_pairs_partial_t>)
 {
   using params     = params_t<TestType>;
   using key_type   = typename params::type;
   using value_type = typename c2h::get<2, TestType>;
+  using action_t   = typename c2h::get<3, TestType>;
 
   // Prepare test data
-  const int valid_items     = GENERATE(0, take(5, random(1, params::items_per_thread * WARP_THREADS)));
+  const int valid_items = GENERATE(
+    0,
+    1,
+    params::items_per_thread * WARP_THREADS - 1,
+    params::items_per_thread * WARP_THREADS,
+    take(5, random(2, params::items_per_thread * WARP_THREADS - 2)));
   constexpr int total_warps = params::total_warps;
   const int total_items     = total_warps * valid_items;
   c2h::device_vector<key_type> d_keys_in(total_items);
@@ -391,7 +436,7 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
 
   // Run test
   warp_bitonic_sort<params::items_per_thread, total_warps>(
-    d_keys_in, d_keys_out, d_values_in, d_values_out, valid_items, partial_sort_pairs_t{});
+    d_keys_in, d_keys_out, d_values_in, d_values_out, valid_items, action_t{});
 
   // Prepare verification data
   c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
