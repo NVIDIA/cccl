@@ -20,6 +20,7 @@
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -203,7 +204,6 @@ enum class LookbackDelayAlgorithm
   __reduce_by_key //!< Internal
 };
 
-#if _CCCL_HOSTED()
 namespace detail
 {
 [[nodiscard]] constexpr const char* to_string(LookbackDelayAlgorithm algo) noexcept
@@ -233,7 +233,6 @@ namespace detail
   }
 }
 } // namespace detail
-#endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
