@@ -357,10 +357,10 @@ _CCCL_API constexpr overflow_result<_ActualResult> mul_overflow(const _Lhs __lhs
     return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __product.overflow};
   }
   // Positive inputs
-  // * unsigned + unsigned (compile-time)
-  // * unsigned + int >= 0 (compile-time + run-time check)
-  // * int >= 0 + unsigned (compile-time + run-time check)
-  // * int >= 0 + int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above) (run-time check)
+  // * unsigned x unsigned (compile-time)
+  // * unsigned x int >= 0 (compile-time + run-time check)
+  // * int >= 0 x unsigned (compile-time + run-time check)
+  // * int >= 0 x int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above) (run-time check)
   else if (__is_lhs_ge_zero && __is_rhs_ge_zero)
   {
     const auto __lhs1    = static_cast<_CommonAll>(__lhs);
@@ -370,7 +370,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> mul_overflow(const _Lhs __lhs
     return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __product.overflow};
   }
   // Negative inputs
-  // * int < 0 + int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above) (run-time check)
+  // * int < 0 x int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above) (run-time check)
   else if (!__is_lhs_ge_zero && !__is_rhs_ge_zero)
   {
     using _Up            = ::cuda::std::make_unsigned_t<_CommonAll>;
@@ -381,15 +381,15 @@ _CCCL_API constexpr overflow_result<_ActualResult> mul_overflow(const _Lhs __lhs
     return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __product < 0};
   }
   // Opposite signs
-  // * int < 0 + int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
-  // * int >= 0 + int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
+  // * int < 0 x int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
+  // * int >= 0 x int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
   else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs>)
   {
     return ::cuda::overflow_cast<_ActualResult>(static_cast<_Common>(__lhs) * static_cast<_Common>(__rhs));
   }
   // Opposite signs
-  // * unsigned + int < 0
-  // * int < 0 + unsigned
+  // * unsigned x int < 0
+  // * int < 0 x unsigned
   else
   {
     // skip checks in cmp_less, cmp_greater, uabs
