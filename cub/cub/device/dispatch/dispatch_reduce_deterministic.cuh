@@ -177,7 +177,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   KernelLauncherFactory launcher_factory)
 {
   // Immediate chunk sizes are passed to the kernels as-is; deferred problem sizes are read on device.
-  using num_items_kernel_t = CUB_NS_QUALIFIER::detail::normalized_parameter_t<int, OffsetT>;
+  using num_items_kernel_t = CUB_NS_QUALIFIER::detail::parameter_from_host_t<int, OffsetT>;
 
   int sm_count;
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
@@ -264,7 +264,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const auto kernel_num_items = [&] {
       if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
-        return detail::reduce::normalize_num_items(num_items);
+        return detail::reduce::make_num_items_kernel_arg(num_items);
       }
       else
       {
@@ -344,7 +344,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                 DeterministicAccumT>,
               d_block_reductions,
               d_out,
-              detail::reduce::normalize_num_items(num_items),
+              detail::reduce::make_num_items_kernel_arg(num_items),
               reduce_grid_size,
               reduction_op,
               init,

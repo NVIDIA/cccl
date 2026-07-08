@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -18,6 +18,7 @@
 #include <cuda/argument>
 #include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -39,9 +40,9 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<std::int32_t>, std::int32_t>);
-using deferred_count_t = decltype(cuda::args::deferred{static_cast<std::int32_t*>(nullptr)});
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<deferred_count_t>, std::uint32_t>);
+static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<int32_t>, int32_t>);
+using deferred_count_t = decltype(cuda::args::deferred{static_cast<int32_t*>(nullptr)});
+static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<deferred_count_t>, uint32_t>);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -87,8 +88,8 @@ struct fixed_grid_reduce_t
 {
   template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT, typename ReductionOpT, typename InitT>
   CUB_RUNTIME_FUNCTION cudaError_t operator()(
-    std::uint8_t* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    uint8_t* d_temp_storage,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
@@ -158,8 +159,8 @@ struct select_then_reduce_t
             typename ReductionOpT,
             typename InitT>
   CUB_RUNTIME_FUNCTION cudaError_t operator()(
-    std::uint8_t* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    uint8_t* d_temp_storage,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     SelectedOutputIteratorT d_selected_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -170,7 +171,7 @@ struct select_then_reduce_t
     InitT init,
     cudaStream_t stream = nullptr) const
   {
-    std::size_t select_temp_storage_bytes{};
+    size_t select_temp_storage_bytes{};
     if (const cudaError_t error = cub::DeviceSelect::If(
           nullptr, select_temp_storage_bytes, d_in, d_selected_out, d_num_selected_out, num_items, select_op, stream);
         error != cudaSuccess)
@@ -179,7 +180,7 @@ struct select_then_reduce_t
     }
 
     const auto deferred_num_items = cuda::args::deferred{d_num_selected_out};
-    std::size_t reduce_temp_storage_bytes{};
+    size_t reduce_temp_storage_bytes{};
     if (const cudaError_t error = cub::DeviceReduce::Reduce(
           nullptr,
           reduce_temp_storage_bytes,
@@ -194,8 +195,7 @@ struct select_then_reduce_t
       return error;
     }
 
-    temp_storage_bytes =
-      select_temp_storage_bytes < reduce_temp_storage_bytes ? reduce_temp_storage_bytes : select_temp_storage_bytes;
+    temp_storage_bytes = cuda::std::max(select_temp_storage_bytes, reduce_temp_storage_bytes);
     if (d_temp_storage == nullptr)
     {
       return cudaSuccess;
@@ -227,18 +227,18 @@ struct select_then_reduce_t
   }
 };
 
-using count_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
+using count_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 
 C2H_TEST("DeviceReduce::Reduce accepts deferred num_items", "[device][reduce][deferred]", count_types)
 {
-  using value_t = std::int64_t;
+  using value_t = int64_t;
   using count_t = typename c2h::get<0, TestType>;
 
   constexpr count_t max_num_items = 100'000;
   const count_t num_items         = GENERATE_COPY(count_t{0}, count_t{1}, count_t{1'000}, max_num_items);
   constexpr value_t init          = 42;
 
-  c2h::device_vector<value_t> input(static_cast<std::size_t>(num_items), thrust::no_init);
+  c2h::device_vector<value_t> input(static_cast<size_t>(num_items), thrust::no_init);
   c2h::gen(C2H_SEED(2), input);
 
   const c2h::device_vector<count_t> device_num_items(1, num_items);
@@ -258,7 +258,7 @@ C2H_TEST("DeviceReduce::Reduce with deferred num_items is run-to-run reproducibl
          "[device][reduce][deferred][run_to_run]")
 {
   using value_t = float;
-  using count_t = std::int32_t;
+  using count_t = int32_t;
 
   constexpr count_t num_items = 100'000;
   constexpr int num_runs      = 3;
@@ -282,10 +282,10 @@ C2H_TEST("DeviceReduce::Reduce with deferred num_items is run-to-run reproducibl
   }
 }
 
-C2H_TEST("DeviceReduce::Reduce handles deferred grid boundaries", "[device][reduce][deferred]")
+C2H_TEST("DeviceReduce::Reduce with a deferred size handles grid boundaries", "[device][reduce][deferred]")
 {
-  using value_t = std::int64_t;
-  using count_t = std::int32_t;
+  using value_t = int64_t;
+  using count_t = int32_t;
 
   constexpr count_t tile_size  = 32;
   constexpr count_t max_blocks = cub::detail::subscription_factor;
@@ -311,10 +311,11 @@ C2H_TEST("DeviceReduce::Reduce handles deferred grid boundaries", "[device][redu
   REQUIRE(output[0] == value_t{7} + num_items);
 }
 
-C2H_TEST("DeviceReduce atomic dispatch handles deferred grid boundaries", "[device][reduce][deferred][not_guaranteed]")
+C2H_TEST("DeviceReduce atomic dispatch with a deferred size handles grid boundaries",
+         "[device][reduce][deferred][not_guaranteed]")
 {
   using value_t = float;
-  using count_t = std::int32_t;
+  using count_t = int32_t;
 
   constexpr count_t tile_size  = 32;
   constexpr count_t max_blocks = cub::detail::subscription_factor;
@@ -377,30 +378,35 @@ C2H_TEST("DeviceReduce deterministic dispatch handles deferred grid boundaries",
 
 C2H_TEST("DeviceReduce::Reduce accepts deferred span and fancy-iterator sources", "[device][reduce][deferred]")
 {
-  using value_t = std::int64_t;
-  using count_t = std::int32_t;
+  using value_t = int64_t;
+  using count_t = int32_t;
 
   constexpr count_t capacity  = 100'000;
   constexpr count_t num_items = 1'000;
 
   const c2h::device_vector<value_t> input(capacity, value_t{1});
-  const c2h::device_vector<count_t> device_num_items(1, num_items);
+  c2h::device_vector<count_t> device_num_items(1, num_items);
   c2h::device_vector<value_t> output(1, value_t{-1});
 
   const auto d_input     = thrust::raw_pointer_cast(input.data());
   const auto d_output    = thrust::raw_pointer_cast(output.data());
   const auto d_num_items = thrust::raw_pointer_cast(device_num_items.data());
 
-  const auto count_span = cuda::std::span<const count_t, 1>{d_num_items, 1};
-  device_reduce(d_input, d_output, cuda::args::deferred{count_span}, cuda::std::plus<>{}, value_t{});
+  const auto const_count_span = cuda::std::span<const count_t, 1>{d_num_items, 1};
+  device_reduce(d_input, d_output, cuda::args::deferred{const_count_span}, cuda::std::plus<>{}, value_t{});
   REQUIRE(output[0] == num_items);
 
-  output[0]                  = value_t{-2};
+  output[0]                     = value_t{-2};
+  const auto mutable_count_span = cuda::std::span<count_t, 1>{d_num_items, 1};
+  device_reduce(d_input, d_output, cuda::args::deferred{mutable_count_span}, cuda::std::plus<>{}, value_t{});
+  REQUIRE(output[0] == num_items);
+
+  output[0]                  = value_t{-3};
   const auto count_transform = cuda::transform_iterator(d_num_items, cuda::std::identity{});
   device_reduce(d_input, d_output, cuda::args::deferred{count_transform}, cuda::std::plus<>{}, value_t{});
   REQUIRE(output[0] == num_items);
 
-  output[0]                = value_t{-3};
+  output[0]                = value_t{-4};
   const auto bounded_count = cuda::args::deferred{
     d_num_items, cuda::args::bounds<count_t{0}, capacity>(), cuda::args::bounds(count_t{0}, capacity)};
   device_reduce(d_input, d_output, bounded_count, cuda::std::plus<>{}, value_t{});
@@ -409,8 +415,8 @@ C2H_TEST("DeviceReduce::Reduce accepts deferred span and fancy-iterator sources"
 
 C2H_TEST("DeviceReduce entry points sharing reduce dispatch accept deferred num_items", "[device][reduce][deferred]")
 {
-  using value_t = std::int64_t;
-  using count_t = std::int32_t;
+  using value_t = int64_t;
+  using count_t = int32_t;
 
   constexpr count_t capacity  = 100'000;
   constexpr count_t num_items = 1'000;
@@ -445,8 +451,8 @@ C2H_TEST("DeviceReduce entry points sharing reduce dispatch accept deferred num_
 
 C2H_TEST("DeviceReduce::Reduce consumes a count produced by DeviceSelect::If", "[device][reduce][deferred]")
 {
-  using value_t = std::int64_t;
-  using count_t = std::int32_t;
+  using value_t = int64_t;
+  using count_t = int32_t;
 
   constexpr count_t num_items  = 100'000;
   const count_t selected_count = GENERATE_COPY(count_t{0}, count_t{1}, count_t{1'000}, num_items);
@@ -482,8 +488,8 @@ C2H_TEST("DeviceReduce::Reduce consumes a count produced by DeviceSelect::If", "
 C2H_TEST("DeviceReduce::Reduce consumes a deferred count produced in another stream after an event",
          "[device][reduce][deferred]")
 {
-  using value_t = std::int64_t;
-  using count_t = std::int32_t;
+  using value_t = int64_t;
+  using count_t = int32_t;
 
   constexpr count_t capacity       = 100'000;
   constexpr count_t selected_count = 1'000;
@@ -504,63 +510,51 @@ C2H_TEST("DeviceReduce::Reduce consumes a deferred count produced in another str
   const auto num_selected     = cuda::args::deferred{d_num_selected};
   const auto select_op        = thrust::placeholders::_1 < value_t{selected_count};
 
-  std::size_t select_temp_storage_bytes{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::If(
-      nullptr,
-      select_temp_storage_bytes,
-      d_input,
-      d_selected_items,
-      d_num_selected,
-      capacity,
-      select_op,
-      producer.get()));
+  size_t select_temp_storage_bytes{};
+  const auto select_query_error = cub::DeviceSelect::If(
+    nullptr, select_temp_storage_bytes, d_input, d_selected_items, d_num_selected, capacity, select_op, producer.get());
+  REQUIRE(cudaSuccess == select_query_error);
 
-  std::size_t reduce_temp_storage_bytes{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::Reduce(
-      nullptr,
-      reduce_temp_storage_bytes,
-      d_selected_items,
-      d_output,
-      num_selected,
-      cuda::std::plus<>{},
-      value_t{},
-      consumer.get()));
+  size_t reduce_temp_storage_bytes{};
+  const auto reduce_query_error = cub::DeviceReduce::Reduce(
+    nullptr,
+    reduce_temp_storage_bytes,
+    d_selected_items,
+    d_output,
+    num_selected,
+    cuda::std::plus<>{},
+    value_t{},
+    consumer.get());
+  REQUIRE(cudaSuccess == reduce_query_error);
 
-  const std::size_t temp_storage_bytes =
-    select_temp_storage_bytes < reduce_temp_storage_bytes ? reduce_temp_storage_bytes : select_temp_storage_bytes;
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  const size_t temp_storage_bytes = cuda::std::max(select_temp_storage_bytes, reduce_temp_storage_bytes);
+  c2h::device_vector<uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   const auto d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::If(
-      d_temp_storage,
-      select_temp_storage_bytes,
-      d_input,
-      d_selected_items,
-      d_num_selected,
-      capacity,
-      select_op,
-      producer.get()));
+  const auto select_error = cub::DeviceSelect::If(
+    d_temp_storage,
+    select_temp_storage_bytes,
+    d_input,
+    d_selected_items,
+    d_num_selected,
+    capacity,
+    select_op,
+    producer.get());
+  REQUIRE(cudaSuccess == select_error);
 
   const auto count_ready = producer.record_event();
   consumer.wait(count_ready);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::Reduce(
-      d_temp_storage,
-      reduce_temp_storage_bytes,
-      d_selected_items,
-      d_output,
-      num_selected,
-      cuda::std::plus<>{},
-      value_t{},
-      consumer.get()));
+  const auto reduce_error = cub::DeviceReduce::Reduce(
+    d_temp_storage,
+    reduce_temp_storage_bytes,
+    d_selected_items,
+    d_output,
+    num_selected,
+    cuda::std::plus<>{},
+    value_t{},
+    consumer.get());
+  REQUIRE(cudaSuccess == reduce_error);
   consumer.sync();
 
   REQUIRE(device_num_selected[0] == selected_count);
@@ -571,8 +565,8 @@ C2H_TEST("DeviceReduce::Reduce consumes a deferred count produced in another str
 
 C2H_TEST("DeviceReduce environment entry points accept deferred num_items", "[device][reduce][deferred]")
 {
-  using value_t = std::int64_t;
-  using count_t = std::int32_t;
+  using value_t = int64_t;
+  using count_t = int32_t;
 
   constexpr count_t num_items = 1'000;
   c2h::device_vector<value_t> input(num_items + 2, value_t{2});
@@ -583,26 +577,30 @@ C2H_TEST("DeviceReduce environment entry points accept deferred num_items", "[de
 
   const auto count = cuda::args::deferred{device_num_items.begin()};
 
-  REQUIRE(
-    cudaSuccess == cub::DeviceReduce::Reduce(input.begin(), output.begin(), count, cuda::std::plus<>{}, value_t{7}));
+  const auto reduce_error =
+    cub::DeviceReduce::Reduce(input.begin(), output.begin(), count, cuda::std::plus<>{}, value_t{7});
+  REQUIRE(cudaSuccess == reduce_error);
   REQUIRE(output[0] == value_t{7} + value_t{2} * num_items);
 
-  output[0] = value_t{-2};
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(input.begin(), output.begin(), count));
+  output[0]            = value_t{-2};
+  const auto sum_error = cub::DeviceReduce::Sum(input.begin(), output.begin(), count);
+  REQUIRE(cudaSuccess == sum_error);
   REQUIRE(output[0] == value_t{2} * num_items);
 
-  output[0] = value_t{-3};
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Min(input.begin(), output.begin(), count));
+  output[0]            = value_t{-3};
+  const auto min_error = cub::DeviceReduce::Min(input.begin(), output.begin(), count);
+  REQUIRE(cudaSuccess == min_error);
   REQUIRE(output[0] == value_t{2});
 
-  output[0] = value_t{-4};
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Max(input.begin(), output.begin(), count));
+  output[0]            = value_t{-4};
+  const auto max_error = cub::DeviceReduce::Max(input.begin(), output.begin(), count);
+  REQUIRE(cudaSuccess == max_error);
   REQUIRE(output[0] == value_t{2});
 
-  output[0] = value_t{-5};
-  REQUIRE(cudaSuccess
-          == cub::DeviceReduce::TransformReduce(
-            input.begin(), output.begin(), count, cuda::std::plus<>{}, thrust::square<value_t>{}, value_t{}));
+  output[0]                         = value_t{-5};
+  const auto transform_reduce_error = cub::DeviceReduce::TransformReduce(
+    input.begin(), output.begin(), count, cuda::std::plus<>{}, thrust::square<value_t>{}, value_t{});
+  REQUIRE(cudaSuccess == transform_reduce_error);
   REQUIRE(output[0] == value_t{4} * num_items);
 }
 
@@ -610,7 +608,7 @@ C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed d
          "[device][reduce][deferred]")
 {
   using value_t = float;
-  using count_t = std::int32_t;
+  using count_t = int32_t;
 
   constexpr count_t capacity = 100'000;
   const count_t num_items    = GENERATE_COPY(count_t{0}, count_t{1}, count_t{1'000}, capacity);
@@ -620,11 +618,10 @@ C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed d
   const c2h::device_vector<count_t> device_num_items(1, num_items);
   c2h::device_vector<value_t> output(1, value_t{-1});
 
-  const auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::Reduce(
-      input.begin(), output.begin(), cuda::args::deferred{device_num_items.begin()}, cuda::std::plus<>{}, init, env));
+  const auto env          = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
+  const auto reduce_error = cub::DeviceReduce::Reduce(
+    input.begin(), output.begin(), cuda::args::deferred{device_num_items.begin()}, cuda::std::plus<>{}, init, env);
+  REQUIRE(cudaSuccess == reduce_error);
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
 }
 
@@ -693,7 +690,7 @@ C2H_TEST("captured DeviceReduce atomic dispatch replays with zero and nonzero de
          "[device][reduce][deferred][not_guaranteed]")
 {
   using value_t = float;
-  using count_t = std::int32_t;
+  using count_t = int32_t;
 
   constexpr count_t capacity = 100'000;
   constexpr value_t init     = 3.0f;
@@ -711,16 +708,18 @@ C2H_TEST("captured DeviceReduce atomic dispatch replays with zero and nonzero de
   REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
 
   const fixed_grid_reduce_t<false> reduce;
-  std::size_t temp_storage_bytes{};
-  REQUIRE(
-    cudaSuccess == reduce(nullptr, temp_storage_bytes, input, d_output, count, cuda::std::plus<>{}, init, stream));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  size_t temp_storage_bytes{};
+  const auto query_error =
+    reduce(nullptr, temp_storage_bytes, input, d_output, count, cuda::std::plus<>{}, init, stream);
+  REQUIRE(cudaSuccess == query_error);
+  c2h::device_vector<uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   const auto d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cudaGraph_t graph{};
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
-  REQUIRE(cudaSuccess
-          == reduce(d_temp_storage, temp_storage_bytes, input, d_output, count, cuda::std::plus<>{}, init, stream));
+  const auto reduce_error =
+    reduce(d_temp_storage, temp_storage_bytes, input, d_output, count, cuda::std::plus<>{}, init, stream);
+  REQUIRE(cudaSuccess == reduce_error);
   REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
 
   cudaGraphExec_t executable{};
@@ -792,8 +791,8 @@ C2H_TEST("captured DeviceReduce deterministic dispatch replays with zero and non
 C2H_TEST("captured DeviceSelect::If to DeviceReduce::Reduce pipeline replays with changing counts",
          "[device][reduce][deferred]")
 {
-  using value_t  = std::int64_t;
-  using count_t  = std::int32_t;
+  using value_t  = int64_t;
+  using count_t  = int32_t;
   using offset_t = cub::detail::choose_offset_t<count_t>;
 
   constexpr count_t capacity = 100'000;
@@ -819,47 +818,35 @@ C2H_TEST("captured DeviceSelect::If to DeviceReduce::Reduce pipeline replays wit
   cudaStream_t stream{};
   REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
 
-  std::size_t select_temp_storage_bytes{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::If(
-      nullptr, select_temp_storage_bytes, d_input, d_selected_items, d_num_selected, capacity, select_op, stream));
+  size_t select_temp_storage_bytes{};
+  const auto select_query_error = cub::DeviceSelect::If(
+    nullptr, select_temp_storage_bytes, d_input, d_selected_items, d_num_selected, capacity, select_op, stream);
+  REQUIRE(cudaSuccess == select_query_error);
 
-  std::size_t reduce_temp_storage_bytes{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::Reduce(
-      nullptr,
-      reduce_temp_storage_bytes,
-      d_selected_items,
-      d_output,
-      num_selected,
-      cuda::std::plus<>{},
-      value_t{},
-      stream));
+  size_t reduce_temp_storage_bytes{};
+  const auto reduce_query_error = cub::DeviceReduce::Reduce(
+    nullptr, reduce_temp_storage_bytes, d_selected_items, d_output, num_selected, cuda::std::plus<>{}, value_t{}, stream);
+  REQUIRE(cudaSuccess == reduce_query_error);
 
-  const std::size_t temp_storage_bytes =
-    select_temp_storage_bytes < reduce_temp_storage_bytes ? reduce_temp_storage_bytes : select_temp_storage_bytes;
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  const size_t temp_storage_bytes = cuda::std::max(select_temp_storage_bytes, reduce_temp_storage_bytes);
+  c2h::device_vector<uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   const auto d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cudaGraph_t graph{};
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::If(
-      d_temp_storage, select_temp_storage_bytes, d_input, d_selected_items, d_num_selected, capacity, select_op, stream));
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::Reduce(
-      d_temp_storage,
-      reduce_temp_storage_bytes,
-      d_selected_items,
-      d_output,
-      num_selected,
-      cuda::std::plus<>{},
-      value_t{},
-      stream));
+  const auto select_error = cub::DeviceSelect::If(
+    d_temp_storage, select_temp_storage_bytes, d_input, d_selected_items, d_num_selected, capacity, select_op, stream);
+  REQUIRE(cudaSuccess == select_error);
+  const auto reduce_error = cub::DeviceReduce::Reduce(
+    d_temp_storage,
+    reduce_temp_storage_bytes,
+    d_selected_items,
+    d_output,
+    num_selected,
+    cuda::std::plus<>{},
+    value_t{},
+    stream);
+  REQUIRE(cudaSuccess == reduce_error);
   REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
 
   cudaGraphExec_t executable{};

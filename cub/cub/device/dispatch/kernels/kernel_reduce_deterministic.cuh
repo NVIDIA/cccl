@@ -118,7 +118,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   // A 64-bit deferred problem size is consumed in a single launch that loops over 32-bit chunks in the kernel.
   using num_items_t = deterministic_num_items_t<NormalizedNumItemsT>;
 
-  const num_items_t num_items = CUB_NS_QUALIFIER::detail::resolve_parameter<num_items_t>(normalized_num_items);
+  const num_items_t num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<num_items_t>(normalized_num_items);
 
   // The worst-case grid of a deferred problem size is trimmed to the blocks that receive at least one tile. Both the
   // early exit and the loop stride must use the trimmed grid so that the remaining blocks cover the whole input.
@@ -401,7 +401,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
 {
   using actual_num_items_t = deterministic_num_items_t<NormalizedNumItemsT>;
   const actual_num_items_t actual_num_items =
-    CUB_NS_QUALIFIER::detail::resolve_parameter<actual_num_items_t>(normalized_num_items);
+    CUB_NS_QUALIFIER::detail::parameter_from_device<actual_num_items_t>(normalized_num_items);
   const int num_items = deferred_reduce_grid_size<PolicySelector>(actual_num_items, first_pass_grid_size);
 
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
