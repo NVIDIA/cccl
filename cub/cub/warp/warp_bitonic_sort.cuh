@@ -19,6 +19,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
 
@@ -274,7 +275,7 @@ private:
   static constexpr int warp_threads = detail::warp_threads;
   static constexpr bool keys_only   = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  const int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+  int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -508,7 +509,7 @@ private:
   static constexpr unsigned int full_warp_mask = 0xFFFFFFFFu;
   static constexpr bool keys_only              = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  const int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+  int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -582,7 +583,7 @@ private:
       //    (i.e., groups 1, 2, 4, 7, etc.). Because group ID < 16 (at most 4 set
       //    bits), this means IDs with 1 or 3 set bits.
       group_reverse ^= static_cast<bool>(Stage & 1);
-      int num_set_bits = __popc((lane >> (Stage + 1)));
+      int num_set_bits = ::cuda::std::popcount((static_cast<unsigned>(lane) >> (Stage + 1)));
       group_reverse ^= (num_set_bits == 1 || num_set_bits == 3);
     }
 
