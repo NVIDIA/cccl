@@ -208,6 +208,8 @@ private:
       if constexpr (args_traits_t::is_deferred)
       {
         static_assert(!args_traits_t::is_deferred, "cuda::args::deferred is not supported with gpu_to_gpu determinism");
+        // NVHPC requires a return statement even though the static assertion makes this branch ill-formed.
+        return cudaErrorNotSupported;
       }
       else
       {
