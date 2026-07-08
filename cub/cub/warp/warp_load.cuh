@@ -124,9 +124,8 @@ namespace detail
       return "WARP_LOAD_VECTORIZE";
     case WARP_LOAD_TRANSPOSE:
       return "WARP_LOAD_TRANSPOSE";
-    default:
-      return "<unknown WarpLoadAlgorithm>";
   }
+  return "<unknown WarpLoadAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

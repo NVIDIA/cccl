@@ -90,9 +90,8 @@ namespace detail
       return "RADIX_RANK_MATCH_EARLY_COUNTS_ANY";
     case RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR:
       return "RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR";
-    default:
-      return "<unknown RadixRankAlgorithm>";
   }
+  return "<unknown RadixRankAlgorithm>";
 }
 } // namespace detail
 

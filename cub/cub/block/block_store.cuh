@@ -564,9 +564,8 @@ namespace detail
       return "BLOCK_STORE_WARP_TRANSPOSE";
     case BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED:
       return "BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED";
-    default:
-      return "<unknown BlockStoreAlgorithm>";
   }
+  return "<unknown BlockStoreAlgorithm>";
 }
 } // namespace detail
 

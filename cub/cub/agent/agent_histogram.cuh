@@ -53,9 +53,8 @@ namespace detail
       return "SMEM";
     case BLEND:
       return "BLEND";
-    default:
-      return "<unknown BlockHistogramMemoryPreference>";
   }
+  return "<unknown BlockHistogramMemoryPreference>";
 }
 } // namespace detail
 

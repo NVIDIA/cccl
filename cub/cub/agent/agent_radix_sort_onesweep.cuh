@@ -64,9 +64,8 @@ namespace detail
       return "RADIX_SORT_STORE_DIRECT";
     case RADIX_SORT_STORE_ALIGNED:
       return "RADIX_SORT_STORE_ALIGNED";
-    default:
-      return "<unknown RadixSortStoreAlgorithm>";
   }
+  return "<unknown RadixSortStoreAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

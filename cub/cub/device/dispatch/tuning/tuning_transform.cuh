@@ -59,9 +59,8 @@ namespace detail
       return "TransformAlgorithm::ldgsts";
     case TransformAlgorithm::ublkcp:
       return "TransformAlgorithm::ublkcp";
-    default:
-      return "<unknown TransformAlgorithm>";
   }
+  return "<unknown TransformAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

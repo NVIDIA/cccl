@@ -49,9 +49,8 @@ namespace detail
       return "RadixSortAlgorithm::multi_pass";
     case RadixSortAlgorithm::onesweep:
       return "RadixSortAlgorithm::onesweep";
-    default:
-      return "<unknown RadixSortAlgorithm>";
   }
+  return "<unknown RadixSortAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

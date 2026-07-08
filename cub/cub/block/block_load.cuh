@@ -748,9 +748,8 @@ namespace detail
       return "BLOCK_LOAD_WARP_TRANSPOSE";
     case BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED:
       return "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED";
-    default:
-      return "<unknown BlockLoadAlgorithm>";
   }
+  return "<unknown BlockLoadAlgorithm>";
 }
 } // namespace detail
 

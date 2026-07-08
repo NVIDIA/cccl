@@ -63,9 +63,8 @@ namespace detail
       return "ScanAlgorithm::lookback";
     case ScanAlgorithm::lookahead:
       return "ScanAlgorithm::lookahead";
-    default:
-      return "<unknown ScanAlgorithm>";
   }
+  return "<unknown ScanAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

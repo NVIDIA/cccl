@@ -128,9 +128,8 @@ namespace detail
       return "WARP_STORE_VECTORIZE";
     case WARP_STORE_TRANSPOSE:
       return "WARP_STORE_TRANSPOSE";
-    default:
-      return "<unknown WarpStoreAlgorithm>";
   }
+  return "<unknown WarpStoreAlgorithm>";
 }
 } // namespace detail
 

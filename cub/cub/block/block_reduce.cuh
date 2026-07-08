@@ -166,9 +166,8 @@ namespace detail
       return "BLOCK_REDUCE_WARP_REDUCTIONS";
     case BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
       return "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
-    default:
-      return "<unknown BlockReduceAlgorithm>";
   }
+  return "<unknown BlockReduceAlgorithm>";
 }
 } // namespace detail
 

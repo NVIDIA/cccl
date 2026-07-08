@@ -69,9 +69,8 @@ namespace detail
       return "LOAD_LDG";
     case LOAD_VOLATILE:
       return "LOAD_VOLATILE";
-    default:
-      return "<unknown CacheLoadModifier>";
   }
+  return "<unknown CacheLoadModifier>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()

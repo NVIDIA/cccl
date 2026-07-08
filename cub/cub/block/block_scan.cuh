@@ -115,9 +115,8 @@ namespace detail
       return "BLOCK_SCAN_RAKING_MEMOIZE";
     case BLOCK_SCAN_WARP_SCANS:
       return "BLOCK_SCAN_WARP_SCANS";
-    default:
-      return "<unknown BlockScanAlgorithm>";
   }
+  return "<unknown BlockScanAlgorithm>";
 }
 } // namespace detail
 
