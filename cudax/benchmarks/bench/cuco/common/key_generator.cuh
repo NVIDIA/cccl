@@ -17,12 +17,14 @@
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/transform.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/iterator>
 #include <cuda/std/cmath>
 #include <cuda/std/cstddef>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
+#include <cuda/std/memory>
 #include <cuda/std/type_traits>
 
 #include <stdexcept>
@@ -61,6 +63,22 @@ struct uniform
 
 namespace detail
 {
+template <typename ExecPolicy, typename RandomIt, typename Rng>
+void shuffle(ExecPolicy exec_policy, RandomIt begin, RandomIt end, Rng& rng)
+{
+  const auto num_items = ::cuda::std::distance(begin, end);
+  if constexpr (::thrust::is_contiguous_iterator_v<RandomIt>)
+  {
+    // TODO(NVIDIA/cccl#9755): Temporary workaround for thrust::shuffle's &*it contiguous unwrap.
+    auto shuffle_begin = ::cuda::std::to_address(begin);
+    ::thrust::shuffle(exec_policy, shuffle_begin, shuffle_begin + num_items, rng);
+  }
+  else
+  {
+    ::thrust::shuffle(exec_policy, begin, end, rng);
+  }
+}
+
 template <typename Key, typename Distribution, typename Rng>
 struct generate_uniform_fn
 {
@@ -174,7 +192,7 @@ public:
     if constexpr (::cuda::std::is_same_v<Distribution, distribution::unique>)
     {
       ::thrust::sequence(exec_policy, out_begin, out_end, value_type{0});
-      ::thrust::shuffle(exec_policy, out_begin, out_end, rng);
+      detail::shuffle(exec_policy, out_begin, out_end, rng);
     }
     else if constexpr (::cuda::std::is_same_v<Distribution, distribution::uniform>)
     {
@@ -248,7 +266,7 @@ public:
         detail::dropout_pred<Rng>{keep_prob});
     }
 
-    ::thrust::shuffle(exec_policy, begin, end, rng);
+    detail::shuffle(exec_policy, begin, end, rng);
   }
 
 private:
