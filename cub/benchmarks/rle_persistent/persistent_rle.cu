@@ -199,6 +199,7 @@ __device__ __forceinline__ int nth_set_bit(unsigned flag_mask, int rank)
   return bit_position;
 }
 
+// kWidth = how many low lanes participate
 template <int kWidth>
 __device__ __forceinline__ int warp_inclusive_scan_add(int lane_value, int lane_id)
 {
@@ -212,6 +213,20 @@ __device__ __forceinline__ int warp_inclusive_scan_add(int lane_value, int lane_
     }
   }
   return lane_value;
+}
+
+struct WarpTileRunScanT
+{
+  int lane_run_count;
+  int lane_runs_before;
+};
+
+template <int kNumCompWarps>
+__device__ __forceinline__ WarpTileRunScanT scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
+{
+  const int lane_run_count = (lane_id < kNumCompWarps) ? slot_warp_run_counts[lane_id] : 0;
+  const int lane_scan      = warp_inclusive_scan_add<kNumCompWarps>(lane_run_count, lane_id);
+  return {lane_run_count, lane_scan - lane_run_count};
 }
 
 template <class Config, class OffT>
@@ -700,12 +715,10 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
                     "store warps: a whole multiple of compute warps");
       // per-warp-tile run bases (lane i owns warp-tile i's count/base) and done BEFORE the wait on prefixed so they
       // overlap
-      const int lane_warp_tile_run_count = (lane_id < kNumCompWarps) ? warp_run_counts[slot_id][lane_id] : 0;
-      const int lane_warp_tile_run_count_scan =
-        warp_inclusive_scan_add<kNumCompWarps>(lane_warp_tile_run_count, lane_id);
       // lane i: run-count sum over warp-tiles [0, i) = where warp-tile i's runs begin within the tile
-      const int lane_runs_before_warp_tile = lane_warp_tile_run_count_scan - lane_warp_tile_run_count;
-      const KeyT* tile_keys                = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
+      const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
+        scan_warp_tile_run_counts<kNumCompWarps>(warp_run_counts[slot_id], lane_id);
+      const KeyT* tile_keys = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
       // staged positions
       const short* run_positions = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
       // wait for prefixed (2/3)
@@ -989,11 +1002,10 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       const int tile_len = (int) min((OffT) kTileSize, num_items - (OffT) tile_id * kTileSize);
       const bool is_last = (tile_id == num_tiles - 1);
       // same scan as the store warps (lane i = warp-tile i)
-      const int lane_warp_tile_run_count = (lane_id < kNumCompWarps) ? warp_run_counts[slot_id][lane_id] : 0;
-      const int lane_warp_tile_run_count_scan =
-        warp_inclusive_scan_add<kNumCompWarps>(lane_warp_tile_run_count, lane_id);
-      const int lane_runs_before_warp_tile = lane_warp_tile_run_count_scan - lane_warp_tile_run_count;
-      const int tile_total_runs            = __shfl_sync(kFullMask, lane_warp_tile_run_count_scan, kNumCompWarps - 1);
+      const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
+        scan_warp_tile_run_counts<kNumCompWarps>(warp_run_counts[slot_id], lane_id);
+      const int tile_total_runs =
+        __shfl_sync(kFullMask, lane_runs_before_warp_tile + lane_warp_tile_run_count, kNumCompWarps - 1);
       const unsigned nonempty_warp_tiles_mask = __ballot_sync(kFullMask, lane_warp_tile_run_count > 0);
       while (!ptx::mbarrier_try_wait_parity(&prefixed[slot_id], (unsigned) ((pipeline_gen / kStages) & 1)))
       {
