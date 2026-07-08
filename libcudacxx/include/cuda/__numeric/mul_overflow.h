@@ -1,11 +1,11 @@
-// //===----------------------------------------------------------------------===//
-// //
-// // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
-// // See https://llvm.org/LICENSE.txt for license information.
-// // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
-// //
-// //===----------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
+//
+// Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef _CUDA___NUMERIC_MUL_OVERFLOW_H
 #define _CUDA___NUMERIC_MUL_OVERFLOW_H

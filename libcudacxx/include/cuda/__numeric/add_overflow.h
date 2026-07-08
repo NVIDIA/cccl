@@ -346,12 +346,20 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   else
   {
     // skip checks in cmp_less, cmp_greater, uabs
-    // TODO: check if this is a typo (comparing same types always returns false?)
-    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Rhs>)
+    // TODO: check if current code has typo (current condition is always false?)
+    // if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Rhs>)
+    // {
+    //   _CCCL_ASSUME(__rhs < 0);
+    // }
+    // else if constexpr (is_signed_v<_Lhs> && is_unsigned_v<_Rhs>)
+    // {
+    //   _CCCL_ASSUME(__lhs < 0);
+    // }
+    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Lhs>)
     {
       _CCCL_ASSUME(__rhs < 0);
     }
-    else if constexpr (is_signed_v<_Lhs> && is_unsigned_v<_Rhs>)
+    else if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_Rhs>)
     {
       _CCCL_ASSUME(__lhs < 0);
     }
