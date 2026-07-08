@@ -10,28 +10,29 @@ Defined in ``<cuda/numeric>`` header.
    namespace cuda {
 
    template <class T>
-   [[nodiscard]] __host__ __device__ __tile__ constexpr
+   [[nodiscard]] __host__ __device__
    bool isclose(T lhs, T rhs) noexcept;
 
    template <class T>
-   [[nodiscard]] __host__ __device__ __tile__ constexpr
+   [[nodiscard]] __host__ __device__
    bool isclose(T lhs, T rhs, float relative_tol) noexcept;
 
    template <class T>
-   [[nodiscard]] __host__ __device__ __tile__ constexpr
+   [[nodiscard]] __host__ __device__
    bool isclose(T lhs, T rhs, float relative_tol, T absolute_tol) noexcept;
 
    template <class Complex>
-   [[nodiscard]] __host__ __device__ constexpr
+   [[nodiscard]] __host__ __device__
    bool isclose(const Complex& lhs, const Complex& rhs) noexcept;
 
    template <class Complex>
-   [[nodiscard]] __host__ __device__ constexpr
+   [[nodiscard]] __host__ __device__
    bool isclose(const Complex& lhs, const Complex& rhs, float relative_tol) noexcept;
 
    template <class Complex, class AbsTol>
-   [[nodiscard]] __host__ __device__ constexpr
-   bool isclose(const Complex& lhs, const Complex& rhs,
+   [[nodiscard]] __host__ __device__
+   bool isclose(const Complex& lhs,
+                const Complex& rhs,
                 float  relative_tol,
                 AbsTol absolute_tol) noexcept;
 
@@ -65,7 +66,7 @@ Defined in ``<cuda/numeric>`` header.
 **Constraints**
 
 - Scalar overloads require ``lhs``, ``rhs``, ``absolute_tol`` to have the same arithmetic type (integer or floating point).
-- Complex overloads accept ``cuda::std::complex<T>``, ``cuda::complex<T>``, ``std::complex<T>`` operands.
+- Complex overloads accept ``cuda::std::complex<T>`` and ``std::complex<T>`` operands.
 - ``AbsTol`` must be the same type as the complex value type.
 
 **Special values**
@@ -84,15 +85,15 @@ Example
 
     __global__ void kernel()
     {
-        assert(cuda::isclose( 1.0, 1.0 + 5e-10));
-        assert(!cuda::isclose(1.0, 1.0 + 5e-8));
+        assert(cuda::isclose( 1.0f, 1.0f + 5e-10f));
+        assert(!cuda::isclose(1.0f, 1.0f + 5e-8f));
 
-        assert(!cuda::isclose(0.0, 1e-12));
-        assert(cuda::isclose( 0.0, 1e-12, 0.0, 1e-12));
+        assert(!cuda::isclose(0.0f, 1e-12f));
+        assert(cuda::isclose( 0.0f, 1e-12f, 0.0f, 1e-12f));
 
-        cuda::std::complex<double> z1{1.0, 1.0};
-        cuda::std::complex<double> z2{2.0, 0.0};
-        assert(cuda::isclose(z1, z2, 0.75));
+        cuda::std::complex<float> z1{1.0f, 1.0f};
+        cuda::std::complex<float> z2{2.0f, 0.0f};
+        assert(cuda::isclose(z1, z2, 0.75f));
     }
 
     int main()

@@ -32,7 +32,7 @@ inline constexpr bool has_isclose_abs_tol_v<
     cuda::std::declval<T>(), cuda::std::declval<T>(), 0.0f, cuda::std::declval<AbsTol>()))>> = true;
 
 template <class T>
-TEST_FUNC constexpr bool test_floating_point()
+TEST_FUNC bool test_floating_point()
 {
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(T{}, T{}))>);
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(T{}, T{}, 0.0f))>);
@@ -61,7 +61,7 @@ TEST_FUNC constexpr bool test_floating_point()
 }
 
 template <typename T>
-TEST_FUNC constexpr bool test_integral()
+TEST_FUNC bool test_integral()
 {
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(T{}, T{}))>);
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(T{}, T{}, 0.0f))>);
@@ -96,6 +96,11 @@ TEST_FUNC constexpr bool test_integral()
   assert(!cuda::isclose(3u, 5u, 0.0f, 1u));
   assert(cuda::isclose(5u, 3u, 0.0f, 2u));
   assert(!cuda::isclose(5u, 3u, 0.0f, 1u));
+
+  // edge cases
+  constexpr auto max = cuda::std::numeric_limits<T>::max();
+  assert(cuda::isclose(max, max, 1.0f));
+  assert(cuda::isclose(T{0}, max, 1.0f));
   return true;
 }
 
@@ -146,7 +151,7 @@ TEST_FUNC constexpr void test_invalid_complex_cases()
 #endif // _CCCL_HAS_HOST_STD_LIB()
 }
 
-TEST_FUNC constexpr bool test()
+TEST_FUNC bool test()
 {
   test_floating_point<float>();
   test_floating_point<double>();
@@ -213,6 +218,5 @@ int main(int, char**)
 {
   assert(test());
   assert(test_runtime());
-  static_assert(test());
   return 0;
 }

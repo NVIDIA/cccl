@@ -29,6 +29,7 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/min_max.h>
@@ -38,8 +39,9 @@
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_signed_integer.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/cmp.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -121,16 +123,16 @@ template <typename _ComplexType, typename _AbsTol>
   return __diff <= ::cuda::std::fmax(__abs, __rel_value);
 }
 
-template <typename _Tp>
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<_Tp>
 __safe_abs_diff(const _Tp __lhs, const _Tp __rhs) noexcept
 {
   using __unsigned_t _CCCL_NODEBUG_ALIAS = ::cuda::std::make_unsigned_t<_Tp>;
   const auto __lhs_abs                   = ::cuda::uabs(__lhs);
   const auto __rhs_abs                   = ::cuda::uabs(__rhs);
-  const auto __is_lhs_negative           = ::cuda::std::is_signed_v<_Tp> && __lhs < _Tp{0};
-  const auto __is_rhs_negative           = ::cuda::std::is_signed_v<_Tp> && __rhs < _Tp{0};
-
+  const auto __is_lhs_negative           = ::cuda::std::cmp_less(__lhs, _Tp{0});
+  const auto __is_rhs_negative           = ::cuda::std::cmp_less(__rhs, _Tp{0});
   if (__is_lhs_negative != __is_rhs_negative)
   {
     return static_cast<__unsigned_t>(__lhs_abs + __rhs_abs);
@@ -140,23 +142,77 @@ __safe_abs_diff(const _Tp __lhs, const _Tp __rhs) noexcept
          : static_cast<__unsigned_t>(__lhs_abs - __rhs_abs);
 }
 
+_CCCL_TEMPLATE(typename _Unsigned, typename _Float)
+_CCCL_REQUIRES(::cuda::std::is_unsigned_v<_Unsigned>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool __is_floating_point_convertible_to_unsigned(const _Float __x) noexcept
+{
+  constexpr int __unsigned_bits = ::cuda::std::numeric_limits<_Unsigned>::digits;
+  if constexpr (__unsigned_bits >= ::cuda::std::numeric_limits<_Float>::max_exponent)
+  {
+    return true;
+  }
+  else
+  {
+    return __x < ::cuda::std::ldexp(_Float{1}, __unsigned_bits);
+  }
+}
+
+// Edge cases for 128-bit integers can be not representable as 32-bit float. In addition, large 128-bit values
+// rounding to floatint-point values can cause precision loss.
 template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr bool
+using __isclose_integer_rel_t _CCCL_NODEBUG_ALIAS = ::cuda::std::conditional_t<
+#if _CCCL_HAS_INT128()
+  sizeof(_Tp) == sizeof(__int128_t),
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  false,
+#endif // !_CCCL_HAS_INT128()
+  double,
+  float>;
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API int __extract_power_of_two_shift(const float __rel_tol) noexcept
+{
+  int __exponent                 = 0;
+  const auto __normalized_mant   = ::cuda::std::frexp(__rel_tol, &__exponent);
+  constexpr auto __pow2_mantissa = 0.5f;
+  if (__normalized_mant != __pow2_mantissa) // not a power of two
+  {
+    return -1;
+  }
+  return 1 - __exponent;
+}
+
+template <typename _Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool
 __isclose_integer_impl(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, const _Tp __abs_tol) noexcept
 {
   _CCCL_ASSERT(::cuda::in_range(__rel_tol, 0.0f, 1.0f),
                "cuda::isclose: relative tolerance must be in the range [0.0, 1.0]");
-  if constexpr (::cuda::std::__cccl_is_signed_integer_v<_Tp>)
-  {
-    _CCCL_ASSERT(__abs_tol >= _Tp{0}, "cuda::isclose: absolute tolerance must be non-negative");
-  }
+  _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__abs_tol, _Tp{0}),
+               "cuda::isclose: absolute tolerance must be non-negative");
   using __unsigned_t _CCCL_NODEBUG_ALIAS = ::cuda::std::make_unsigned_t<_Tp>;
   const auto __lhs_abs                   = ::cuda::uabs(__lhs);
   const auto __rhs_abs                   = ::cuda::uabs(__rhs);
   const auto __diff                      = ::cuda::__safe_abs_diff(__lhs, __rhs);
   const auto __abs                       = static_cast<__unsigned_t>(__abs_tol);
-  const auto __rel_value = static_cast<__unsigned_t>(__rel_tol * ::cuda::std::max(__lhs_abs, __rhs_abs));
-  return __diff <= ::cuda::std::max(__abs, __rel_value);
+  const auto __max_abs                   = ::cuda::std::max(__lhs_abs, __rhs_abs);
+  // if the relative tolerance is exactly a power of two, we can use bit shifts to compute the relative value without
+  // potentially losing precision
+  const auto __pow2_rel_tol_shift = ::cuda::__extract_power_of_two_shift(__rel_tol);
+  if (__pow2_rel_tol_shift >= 0)
+  {
+    constexpr int __digits = ::cuda::std::numeric_limits<__unsigned_t>::digits;
+    const auto __rel_value = (__pow2_rel_tol_shift >= __digits) ? __unsigned_t{0} : (__max_abs >> __pow2_rel_tol_shift);
+    return __diff <= ::cuda::std::max(__abs, __rel_value);
+  }
+  using __rel_value_t _CCCL_NODEBUG_ALIAS = ::cuda::__isclose_integer_rel_t<_Tp>;
+  const auto __rel_value = static_cast<__rel_value_t>(__rel_tol) * static_cast<__rel_value_t>(__max_abs);
+  // if the floating-point value is too large to be convertible to an unsigned type,
+  // then __diff is always less than __rel_value
+  if (!::cuda::__is_floating_point_convertible_to_unsigned<__unsigned_t>(__rel_value))
+  {
+    return true;
+  }
+  return __diff <= ::cuda::std::max(__abs, static_cast<__unsigned_t>(__rel_value));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -173,7 +229,7 @@ __isclose_integer_impl(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, 
 //! @return True if __lhs and __rhs are close to each other, false otherwise.
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr bool
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool
 isclose(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, const _Tp __abs_tol) noexcept
 {
   if constexpr (::cuda::std::__cccl_is_integer_v<_Tp>)
@@ -196,7 +252,7 @@ isclose(const _Tp __lhs, const _Tp __rhs, const float __rel_tol, const _Tp __abs
 //! @return True if __lhs and __rhs are close to each other, false otherwise.
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr bool isclose(const _Tp __lhs, const _Tp __rhs, const float __rel_tol) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool isclose(const _Tp __lhs, const _Tp __rhs, const float __rel_tol) noexcept
 {
   return ::cuda::isclose(__lhs, __rhs, __rel_tol, _Tp{0});
 }
@@ -208,7 +264,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_poin
 //! @return True if __lhs and __rhs are close to each other, false otherwise.
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr bool isclose(const _Tp __lhs, const _Tp __rhs) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool isclose(const _Tp __lhs, const _Tp __rhs) noexcept
 {
   if constexpr (::cuda::std::__cccl_is_integer_v<_Tp>)
   {
