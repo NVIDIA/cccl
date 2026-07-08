@@ -41,7 +41,9 @@ CUB_NAMESPACE_BEGIN
 //! @rst
 //! DeviceFor provides device-wide, parallel operations for iterating over data elements.
 //!
-//! @par Tuning
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
 //! All algorithms in DeviceFor that accept an environment can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ForPolicy, as shown in the
 //! example below:
