@@ -6,6 +6,7 @@
 #include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/std/cmath>
+#include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/numeric>
