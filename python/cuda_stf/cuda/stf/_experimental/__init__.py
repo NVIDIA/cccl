@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Experimental Python bindings for CUDASTF (Stream Task Flow)."""
+"""Experimental Python bindings for CUDASTF (Sequential Task Flow)."""
 
 from __future__ import annotations
 

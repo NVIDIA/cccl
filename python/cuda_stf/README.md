@@ -1,7 +1,7 @@
 # CUDA STF Python Package
 
 [`cuda.stf._experimental`](https://nvidia.github.io/cccl/python/stf.html)
-provides Python bindings to **CUDASTF (Stream Task Flow)**: you define logical
+provides Python bindings to **CUDASTF (Sequential Task Flow)**: you define logical
 data and submit tasks that read or write that data, and STF infers the
 dependencies and orchestrates execution and data movement. It is part of the
 [CUDA Core Compute Libraries](https://nvidia.github.io/cccl/cpp.html#cccl-cpp-libraries).

@@ -60,7 +60,11 @@ Linux-only package. Install it explicitly when you need it:
 
    pip install cuda-stf[cu13]  # or cuda-stf[cu12]
 
-``cuda-stf`` depends on ``cuda-cccl`` and will pull it in automatically.
+The bindings previously shipped as part of ``cuda-cccl``. The standalone
+``cuda-stf`` package now ships the STF/cudax headers and CUDA-version detection
+needed by the bindings, so it does not pull in ``cuda-cccl`` automatically.
+Install both packages when using ``cuda.compute`` with STF or compiling external
+C++ code that also needs the lower-level libcudacxx, CUB, or Thrust headers.
 
 Install from conda-forge
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -10,7 +10,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "cuda-stf"
-description = "CUDASTF (Stream Task Flow) bindings for CUDA Python"
+description = "CUDASTF (Sequential Task Flow) bindings for CUDA Python"
 authors = [{ name = "NVIDIA Corporation" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
