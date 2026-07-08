@@ -145,8 +145,10 @@ class _CacheWithRegisteredKeyFunctions:
                         "compute_capability=<cc or list of ccs> to compile without "
                         "a GPU (e.g. with ProxyArray / ProxyValue)."
                     ) from e
+                target_cc_arg = cc
             else:
                 cc = None
+                target_cc_arg = kwargs.get("compute_capability")
             cache_key = (user_cache_key, cc)
             if cache_key not in cache:
                 # Shared device code (operators, iterators) is compiled to LTO-IR
@@ -155,7 +157,7 @@ class _CacheWithRegisteredKeyFunctions:
                 # linked input's arch). Set that target around the build.
                 from ._target_cc import target_cc
 
-                with target_cc(kwargs.get("compute_capability")):
+                with target_cc(target_cc_arg):
                     result = func(*args, **kwargs)
                 cache[cache_key] = result
             return cache[cache_key]

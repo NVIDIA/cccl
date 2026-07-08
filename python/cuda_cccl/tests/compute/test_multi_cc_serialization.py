@@ -26,6 +26,7 @@ from cuda.compute import (
     make_unary_transform,
     serialize,
 )
+from cuda.compute._caching import cache_with_registered_key_functions
 from cuda.compute._cccl_interop import (
     cc_to_key,
     current_device_cc_key,
@@ -234,6 +235,47 @@ def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
     with target_cc(lo):
         # Regression: the memoized hi-arch LTO-IR must not leak into the lo build.
         assert arch_bytes(it) == ref[lo]
+
+
+def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
+    ccs = _compilable_ccs(2)
+    if len(ccs) < 2:
+        pytest.skip("toolchain compiles for <2 target arches")
+    lo_cc, hi_cc = key_to_cc(sorted(ccs)[0]), key_to_cc(sorted(ccs)[-1])
+
+    import cuda.compute._caching as _caching_mod
+
+    class _FakeDevice:
+        cc = hi_cc  # flipped between builds to emulate two different devices
+
+        def __init__(self, *a, **k):
+            pass
+
+        @property
+        def compute_capability(self):
+            return _FakeDevice.cc
+
+    monkeypatch.setattr(_caching_mod, "Device", _FakeDevice)
+
+    # A cc-cached build that exercises the iterator's deref op under the default
+    # (compute_capability=None) path, returning the build's target cc and LTO-IR.
+    @cache_with_registered_key_functions
+    def _build(*, it, compute_capability=None):
+        from cuda.compute._target_cc import get_target_cc
+
+        return get_target_cc(), bytes(it.get_input_deref_op().code.op_bytes)
+
+    it = CountingIterator(np.int32(0))
+    _FakeDevice.cc = hi_cc
+    seen_hi, bytes_hi = _build(it=it)
+    _FakeDevice.cc = lo_cc
+    seen_lo, bytes_lo = _build(it=it)
+
+    # The build's target cc is the resolved device cc, never None.
+    assert seen_hi == hi_cc and seen_lo == lo_cc
+    # Regression: the second device must not reuse the first device's arch.
+    assert bytes_hi != bytes_lo
+    assert set(it._input_deref_op.keys()) == {hi_cc, lo_cc}
 
 
 def test_select_always_false_op_recompiles_per_target_cc():
