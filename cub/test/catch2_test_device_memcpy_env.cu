@@ -240,14 +240,31 @@ C2H_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1_small).empty());
-  REQUIRE(!to_string(p1_large).empty());
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(
+    to_string(p1_small)
+    == "BatchedCopySmallBufferPolicy { .threads_per_block = 128, .buffers_per_thread = 4"
+       ", .bytes_per_thread = 8, .prefer_pow2_bits = 0, .block_level_tile_size = 8192"
+       ", .warp_level_threshold = 128, .block_level_threshold = 8192"
+       ", .buffer_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 }"
+       ", .block_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 } }");
+  REQUIRE(to_string(p1_large) == "BatchedCopyLargeBufferPolicy { .threads_per_block = 256, .bytes_per_thread = 32 }");
+  REQUIRE(
+    to_string(p1)
+    == "BatchedCopyPolicy { .small_buffer = BatchedCopySmallBufferPolicy { .threads_per_block = 128"
+       ", .buffers_per_thread = 4, .bytes_per_thread = 8, .prefer_pow2_bits = 0"
+       ", .block_level_tile_size = 8192, .warp_level_threshold = 128, .block_level_threshold = 8192"
+       ", .buffer_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 }"
+       ", .block_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 350, .l2_write_latency = 450 } }"
+       ", .large_buffer = BatchedCopyLargeBufferPolicy { .threads_per_block = 256"
+       ", .bytes_per_thread = 32 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

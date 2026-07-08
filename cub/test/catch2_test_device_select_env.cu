@@ -1307,13 +1307,17 @@ C2H_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1)
+          == "UniqueByKeyPolicy { .threads_per_block = 256, .items_per_thread = 11"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 350, .l2_write_latency = 450 } }");
 }
 #  endif // _CCCL_COMPILER(GCC, >=, 8)
 
@@ -1351,12 +1355,16 @@ C2H_TEST("Test SelectPolicy properties", "[select][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1)
+          == "SelectPolicy { .threads_per_block = 128, .items_per_thread = 10"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 350, .l2_write_latency = 450 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

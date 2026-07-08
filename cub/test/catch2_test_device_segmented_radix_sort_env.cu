@@ -1105,12 +1105,21 @@ C2H_TEST("Test SegmentedRadixSortPolicy properties", "[segmented_radix_sort][dev
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(
+    to_string(p1)
+    == "SegmentedRadixSortPolicy { .regular_pass = RadixSortDownsweepPolicy {"
+       " .threads_per_block = 192, .items_per_thread = 15"
+       ", .load_algorithm = BLOCK_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+       ", .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .radix_bits = 6 }"
+       ", .alternate_pass = RadixSortDownsweepPolicy { .threads_per_block = 384"
+       ", .items_per_thread = 11, .load_algorithm = BLOCK_LOAD_TRANSPOSE"
+       ", .load_modifier = LOAD_DEFAULT, .rank_algorithm = RADIX_RANK_MEMOIZE"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .radix_bits = 5 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

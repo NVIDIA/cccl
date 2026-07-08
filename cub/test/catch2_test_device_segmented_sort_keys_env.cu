@@ -666,15 +666,37 @@ C2H_TEST("Test SegmentedSortPolicy properties", "[segmented_sort][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1_large).empty());
-  REQUIRE(!to_string(p1_small).empty());
-  REQUIRE(!to_string(p1_medium).empty());
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1_large)
+          == "SegmentedSortRadixSortPolicy { .threads_per_block = 256, .items_per_thread = 16"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = BLOCK_SCAN_RAKING_MEMOIZE"
+             ", .radix_bits = 6 }");
+  REQUIRE(to_string(p1_small)
+          == "SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = 256, .threads_per_warp = 4"
+             ", .items_per_thread = 7, .load_algorithm = WARP_LOAD_DIRECT"
+             ", .load_modifier = LOAD_DEFAULT, .store_algorithm = WARP_STORE_DIRECT }");
+  REQUIRE(to_string(p1_medium)
+          == "SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = 256, .threads_per_warp = 32"
+             ", .items_per_thread = 7, .load_algorithm = WARP_LOAD_DIRECT"
+             ", .load_modifier = LOAD_DEFAULT, .store_algorithm = WARP_STORE_DIRECT }");
+  REQUIRE(
+    to_string(p1)
+    == "SegmentedSortPolicy { .large_segment = SegmentedSortRadixSortPolicy {"
+       " .threads_per_block = 256, .items_per_thread = 16"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = BLOCK_SCAN_RAKING_MEMOIZE"
+       ", .radix_bits = 6 }"
+       ", .small_segment = SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 4, .items_per_thread = 7, .load_algorithm = WARP_LOAD_DIRECT"
+       ", .load_modifier = LOAD_DEFAULT, .store_algorithm = WARP_STORE_DIRECT }"
+       ", .medium_segment = SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 32, .items_per_thread = 7, .load_algorithm = WARP_LOAD_DIRECT"
+       ", .load_modifier = LOAD_DEFAULT, .store_algorithm = WARP_STORE_DIRECT }"
+       ", .partitioning_threshold = 300 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

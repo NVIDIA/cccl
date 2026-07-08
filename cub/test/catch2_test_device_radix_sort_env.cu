@@ -1703,20 +1703,69 @@ C2H_TEST("Test RadixSortPolicy properties", "[radix_sort][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1_histogram).empty());
-  REQUIRE(!to_string(p1_exclusive_sum).empty());
-  REQUIRE(!to_string(p1_onesweep).empty());
-  REQUIRE(!to_string(p1_downsweep).empty());
-  REQUIRE(!to_string(p1_alt_downsweep).empty());
-  REQUIRE(!to_string(p1_upsweep).empty());
-  REQUIRE(!to_string(p1_alt_upsweep).empty());
-  REQUIRE(!to_string(p1_single_tile).empty());
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1_histogram)
+          == "RadixSortHistogramPolicy { .threads_per_block = 256, .items_per_thread = 8"
+             ", .private_partitions = 1, .radix_bits = 8 }");
+  REQUIRE(to_string(p1_exclusive_sum) == "RadixSortExclusiveSumPolicy { .threads_per_block = 256, .radix_bits = 8 }");
+  REQUIRE(to_string(p1_onesweep)
+          == "RadixSortOnesweepPolicy { .threads_per_block = 256, .items_per_thread = 21"
+             ", .store_algorithm = RADIX_SORT_STORE_DIRECT"
+             ", .rank_algorithm = RADIX_RANK_MATCH_EARLY_COUNTS_ANY"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .rank_private_partitions = 1, .radix_bits = 8 }");
+  REQUIRE(to_string(p1_downsweep)
+          == "RadixSortDownsweepPolicy { .threads_per_block = 256, .items_per_thread = 25"
+             ", .load_algorithm = BLOCK_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+             ", .rank_algorithm = RADIX_RANK_MATCH, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .radix_bits = 7 }");
+  REQUIRE(to_string(p1_alt_downsweep)
+          == "RadixSortDownsweepPolicy { .threads_per_block = 192, .items_per_thread = 39"
+             ", .load_algorithm = BLOCK_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+             ", .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .radix_bits = 6 }");
+  REQUIRE(to_string(p1_upsweep)
+          == "RadixSortUpsweepPolicy { .threads_per_block = 256, .items_per_thread = 25"
+             ", .load_modifier = LOAD_DEFAULT, .radix_bits = 7 }");
+  REQUIRE(to_string(p1_alt_upsweep)
+          == "RadixSortUpsweepPolicy { .threads_per_block = 192, .items_per_thread = 39"
+             ", .load_modifier = LOAD_DEFAULT, .radix_bits = 6 }");
+  REQUIRE(to_string(p1_single_tile)
+          == "RadixSortDownsweepPolicy { .threads_per_block = 256, .items_per_thread = 19"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG"
+             ", .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .radix_bits = 6 }");
+  REQUIRE(
+    to_string(p1)
+    == "RadixSortPolicy { .algorithm = RadixSortAlgorithm::onesweep"
+       ", .histogram = RadixSortHistogramPolicy { .threads_per_block = 256, .items_per_thread = 8, .private_partitions "
+       "= 1, .radix_bits = 8 }"
+       ", .exclusive_sum = RadixSortExclusiveSumPolicy { .threads_per_block = 256, .radix_bits = 8 }"
+       ", .onesweep = RadixSortOnesweepPolicy { .threads_per_block = 256, .items_per_thread = 21, .store_algorithm = "
+       "RADIX_SORT_STORE_DIRECT, .rank_algorithm = RADIX_RANK_MATCH_EARLY_COUNTS_ANY, .scan_algorithm = "
+       "BLOCK_SCAN_WARP_SCANS, .rank_private_partitions = 1, .radix_bits = 8 }"
+       ", .scan = ScanPolicy { .algorithm = ScanAlgorithm::lookback"
+       ", .lookback = ScanLookbackPolicy { .threads_per_block = 512, .items_per_thread = 23, .load_algorithm = "
+       "BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, "
+       ".scan_algorithm = BLOCK_SCAN_RAKING_MEMOIZE, .lookback_delay = LookbackDelayPolicy { .kind = "
+       "LookbackDelayAlgorithm::no_delay, .delay = 0, .l2_write_latency = 0 } }"
+       ", .lookahead = ScanLookaheadPolicy { .reduce_and_scan_warps = 0, .items_per_thread = 0, "
+       ".lookahead_items_per_thread = 0, .lookahead_stages = 2, .block_idx_stages = -1 } }"
+       ", .downsweep = RadixSortDownsweepPolicy { .threads_per_block = 256, .items_per_thread = 25, .load_algorithm = "
+       "BLOCK_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT, .rank_algorithm = RADIX_RANK_MATCH, .scan_algorithm = "
+       "BLOCK_SCAN_WARP_SCANS, .radix_bits = 7 }"
+       ", .alt_downsweep = RadixSortDownsweepPolicy { .threads_per_block = 192, .items_per_thread = 39, "
+       ".load_algorithm = BLOCK_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT, .rank_algorithm = RADIX_RANK_MEMOIZE, "
+       ".scan_algorithm = BLOCK_SCAN_WARP_SCANS, .radix_bits = 6 }"
+       ", .upsweep = RadixSortUpsweepPolicy { .threads_per_block = 256, .items_per_thread = 25, .load_modifier = "
+       "LOAD_DEFAULT, .radix_bits = 7 }"
+       ", .alt_upsweep = RadixSortUpsweepPolicy { .threads_per_block = 192, .items_per_thread = 39, .load_modifier = "
+       "LOAD_DEFAULT, .radix_bits = 6 }"
+       ", .single_tile = RadixSortDownsweepPolicy { .threads_per_block = 256, .items_per_thread = 19, .load_algorithm "
+       "= BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = "
+       "BLOCK_SCAN_WARP_SCANS, .radix_bits = 6 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

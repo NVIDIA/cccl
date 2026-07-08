@@ -1133,15 +1133,24 @@ C2H_TEST("Test ReducePolicy properties", "[reduce][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1_multi).empty());
-  REQUIRE(!to_string(p1_single).empty());
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1_multi)
+          == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
+             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }");
+  REQUIRE(to_string(p1_single)
+          == "ReducePassPolicy { .threads_per_block = 128, .items_per_thread = 8, .vec_size = 2"
+             ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT }");
+  REQUIRE(to_string(p1)
+          == "ReducePolicy { .multi_tile = ReducePassPolicy { .threads_per_block = 256"
+             ", .items_per_thread = 16, .vec_size = 4"
+             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }"
+             ", .single_tile = ReducePassPolicy { .threads_per_block = 128"
+             ", .items_per_thread = 8, .vec_size = 2"
+             ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT } }");
 }
 
 C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
@@ -1176,12 +1185,16 @@ C2H_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1)
+          == "ReduceByKeyPolicy { .threads_per_block = 128, .items_per_thread = 7"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 832, .l2_write_latency = 1165 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

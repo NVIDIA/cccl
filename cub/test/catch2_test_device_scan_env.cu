@@ -653,14 +653,29 @@ C2H_TEST("Test ScanPolicy properties", "[scan][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1_lb).empty());
-  REQUIRE(!to_string(p1_la).empty());
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1_lb)
+          == "ScanLookbackPolicy { .threads_per_block = 256, .items_per_thread = 11"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+             ", .store_algorithm = BLOCK_STORE_DIRECT, .scan_algorithm = BLOCK_SCAN_RAKING"
+             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+             ", .delay = 832, .l2_write_latency = 1165 } }");
+  REQUIRE(to_string(p1_la)
+          == "ScanLookaheadPolicy { .reduce_and_scan_warps = 3, .items_per_thread = 8"
+             ", .lookahead_items_per_thread = 4, .lookahead_stages = 2, .block_idx_stages = -1 }");
+  REQUIRE(
+    to_string(p1)
+    == "ScanPolicy { .algorithm = ScanAlgorithm::lookback"
+       ", .lookback = ScanLookbackPolicy { .threads_per_block = 256, .items_per_thread = 11"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .store_algorithm = BLOCK_STORE_DIRECT, .scan_algorithm = BLOCK_SCAN_RAKING"
+       ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 832, .l2_write_latency = 1165 } }"
+       ", .lookahead = ScanLookaheadPolicy { .reduce_and_scan_warps = 3, .items_per_thread = 8"
+       ", .lookahead_items_per_thread = 4, .lookahead_stages = 2, .block_idx_stages = -1 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

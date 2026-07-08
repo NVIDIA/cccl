@@ -253,12 +253,11 @@ C2H_TEST("Test ForPolicy properties", "[for][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1) == "ForPolicy { .threads_per_block = 128, .items_per_thread = 4 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -694,15 +694,28 @@ C2H_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1_large).empty());
-  REQUIRE(!to_string(p1_medium).empty());
-  REQUIRE(!to_string(p1_small).empty());
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1_large)
+          == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
+             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }");
+  REQUIRE(to_string(p1_medium)
+          == "SegmentedReduceWarpReducePolicy { .threads_per_block = 256, .threads_per_warp = 32"
+             ", .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }");
+  REQUIRE(to_string(p1_small)
+          == "SegmentedReduceWarpReducePolicy { .threads_per_block = 256, .threads_per_warp = 1"
+             ", .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }");
+  REQUIRE(
+    to_string(p1)
+    == "SegmentedReducePolicy { .large_reduce = ReducePassPolicy { .threads_per_block = 256"
+       ", .items_per_thread = 16, .vec_size = 4"
+       ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }"
+       ", .medium_reduce = SegmentedReduceWarpReducePolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 32, .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }"
+       ", .small_reduce = SegmentedReduceWarpReducePolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 1, .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -410,12 +410,14 @@ C2H_TEST("Test MergePolicy properties", "[merge][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1)
+          == "MergePolicy { .threads_per_block = 128, .items_per_thread = 7, .load_modifier = LOAD_LDG"
+             ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .use_bulk_copy_for_keys = 1"
+             ", .use_bulk_copy_for_values = 0, .unroll = 0 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

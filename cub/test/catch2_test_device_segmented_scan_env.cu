@@ -706,13 +706,20 @@ C2H_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(block1).empty());
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(block1)
+          == "SegmentedScanBlockPolicy { .threads_per_block = 128, .items_per_thread = 9"
+             ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+             ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+             ", .max_segments_per_block = 512 }");
+  REQUIRE(to_string(p1)
+          == "SegmentedScanPolicy { .block = SegmentedScanBlockPolicy { .threads_per_block = 128"
+             ", .items_per_thread = 9, .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE"
+             ", .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE"
+             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .max_segments_per_block = 512 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

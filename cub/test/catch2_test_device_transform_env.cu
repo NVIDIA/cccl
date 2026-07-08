@@ -355,15 +355,30 @@ C2H_TEST("Test TransformPolicy properties", "[transform][device]")
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
-  // just verify operator<< produces a non-empty string; we don't care about the content
   auto to_string = [](const auto& p) {
     std::ostringstream os;
     os << p;
     return os.str();
   };
-  REQUIRE(!to_string(p1_prefetch).empty());
-  REQUIRE(!to_string(p1_vectorized).empty());
-  REQUIRE(!to_string(p1_async_copy).empty());
-  REQUIRE(!to_string(p1).empty());
+  REQUIRE(to_string(p1_prefetch)
+          == "TransformPrefetchPolicy { .threads_per_block = 256, .items_per_thread_no_input = 2"
+             ", .min_items_per_thread = 1, .max_items_per_thread = 32"
+             ", .prefetch_byte_stride = 128, .unroll_factor = 0 }");
+  REQUIRE(to_string(p1_vectorized)
+          == "TransformVectorizedPolicy { .threads_per_block = 256, .items_per_thread = 8, .vec_size = 4 }");
+  REQUIRE(to_string(p1_async_copy)
+          == "TransformAsyncCopyPolicy { .threads_per_block = 256, .min_items_per_thread = 1"
+             ", .max_items_per_thread = 32, .unroll_factor = 1 }");
+  REQUIRE(
+    to_string(p1)
+    == "TransformPolicy { .min_bytes_in_flight = 65536"
+       ", .algorithm = TransformAlgorithm::prefetch"
+       ", .prefetch = TransformPrefetchPolicy { .threads_per_block = 256"
+       ", .items_per_thread_no_input = 2, .min_items_per_thread = 1, .max_items_per_thread = 32"
+       ", .prefetch_byte_stride = 128, .unroll_factor = 0 }"
+       ", .vectorized = TransformVectorizedPolicy { .threads_per_block = 256"
+       ", .items_per_thread = 8, .vec_size = 4 }"
+       ", .async_copy = TransformAsyncCopyPolicy { .threads_per_block = 256"
+       ", .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
