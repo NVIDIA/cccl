@@ -70,9 +70,7 @@ template <class _Tp>
   {
     using _Up            = ::cuda::std::__make_nbit_int_t<__num_bits_v<uint32_t>, ::cuda::std::is_signed_v<_Tp>>;
     const auto __product = static_cast<_Up>(__lhs) * static_cast<_Up>(__rhs);
-    constexpr auto __min = static_cast<_Up>(::cuda::std::numeric_limits<_Tp>::min());
-    constexpr auto __max = static_cast<_Up>(::cuda::std::numeric_limits<_Tp>::max());
-    return {static_cast<_Tp>(__product), __product < __min || __product > __max};
+    return {static_cast<_Tp>(__product), !::cuda::std::in_range<_Tp>(__product)};
   }
   else if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
