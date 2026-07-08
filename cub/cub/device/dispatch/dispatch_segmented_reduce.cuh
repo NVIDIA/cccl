@@ -70,21 +70,21 @@ struct policy_selector_from_hub
 {
 private:
   template <typename ActivePolicyT>
-  _CCCL_HOST_DEVICE_API static constexpr auto convert_policy() -> segmented_reduce_policy
+  _CCCL_HOST_DEVICE_API static constexpr auto convert_policy() -> SegmentedReducePolicy
   {
     using rp  = typename ActivePolicyT::ReducePolicy;
     using srp = typename segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>::MaxPolicy;
     using sp  = typename srp::SmallReducePolicy;
     using mp  = typename srp::MediumReducePolicy;
-    return segmented_reduce_policy{
+    return SegmentedReducePolicy{
       {rp::BLOCK_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::BLOCK_ALGORITHM, rp::LOAD_MODIFIER},
-      {rp::BLOCK_THREADS, sp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER},
-      {rp::BLOCK_THREADS, mp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER}};
+      {rp::BLOCK_THREADS, mp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER},
+      {rp::BLOCK_THREADS, sp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER}};
   }
 
   struct extract_policy_dispatch_t
   {
-    segmented_reduce_policy& policy;
+    SegmentedReducePolicy& policy;
 
     template <typename ActivePolicyT>
     _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
@@ -96,20 +96,22 @@ private:
 
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> segmented_reduce_policy
+    -> SegmentedReducePolicy
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (const int ptx_version = cc.get() * 10; segmented_reduce_policy policy{};
-       extract_policy_dispatch_t dispatch{policy};
-       PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-       return policy;),
-      (return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();));
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        const int ptx_version = cc.get() * 10;
+                        SegmentedReducePolicy policy{};
+                        extract_policy_dispatch_t dispatch{policy};
+                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+                        return policy;
+                      }),
+                      (return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();));
   }
 };
 } // namespace detail::segmented_reduce
 
-// TODO(bgruber): deprecate once we publish the tuning API
+// TODO(bgruber): drop in CCCL 4.0
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide reduction
@@ -159,7 +161,7 @@ template <
     InitValueT,
     AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchSegmentedReduce
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSegmentedReduce") DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -540,7 +542,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const segmented_reduce_policy active_policy = policy_selector(cc);
+  const SegmentedReducePolicy active_policy = policy_selector(cc);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
@@ -749,7 +751,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
     return error;
   }
 
-  const segmented_reduce_policy active_policy = policy_selector(cc);
+  const SegmentedReducePolicy active_policy = policy_selector(cc);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -782,7 +784,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
       return cudaSuccess;
     }
 
-    const auto num_segments_per_invocation =
+    constexpr auto num_segments_per_invocation =
       static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
@@ -812,7 +814,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
         return error;
       }
 
-      d_in += num_segments_per_invocation * segment_size;
+      d_in += num_segments_per_invocation * segment_size; // NOLINT(bugprone-misplaced-widening-cast)
       d_out += num_segments_per_invocation;
 
       if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -923,7 +925,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
       return error;
     }
 
-    d_in += num_segments_per_invocation * segment_size;
+    d_in += num_segments_per_invocation * segment_size; // NOLINT(bugprone-misplaced-widening-cast)
     d_out += num_segments_per_invocation;
 
     if (const auto error = CubDebug(cudaPeekAtLastError()))

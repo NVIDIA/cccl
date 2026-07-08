@@ -32,10 +32,10 @@
 
 #include <nvrtc.h>
 
-#include "util/aot_serialize.h"
 #include "util/nvjitlink.h"
-#include <cccl/c/aot.h>
+#include "util/serialization.h"
 #include <cccl/c/scan.h>
+#include <cccl/c/serialization.h>
 #include <kernels/iterators.h>
 #include <kernels/operators.h>
 #include <nvrtc/command_list.h>
@@ -824,9 +824,9 @@ try
   *out_buf  = nullptr;
   *out_size = 0;
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_SCAN, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_SCAN, build_ptr->payload_kind, build_ptr->cc);
   write_type_info(w, build_ptr->input_type);
   write_type_info(w, build_ptr->output_type);
   write_type_info(w, build_ptr->accumulator_type);
@@ -857,9 +857,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_SCAN);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_SCAN);
 
   const auto in_type     = read_type_info(r);
   const auto out_type    = read_type_info(r);
@@ -868,7 +868,7 @@ try
   const auto init_kind_v = r.read_pod<uint32_t>();
   if (init_kind_v > static_cast<uint32_t>(CCCL_NO_INIT))
   {
-    throw std::runtime_error(std::format("aot blob: invalid init kind ({})", init_kind_v));
+    throw std::runtime_error(std::format("serialization blob: invalid init kind ({})", init_kind_v));
   }
   const auto init_kind  = static_cast<cccl_init_kind_t>(init_kind_v);
   const auto desc_bytes = r.read_pod<uint64_t>();
@@ -883,7 +883,7 @@ try
   }
   if (payload_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   std::unique_ptr<cub::detail::scan::policy_selector, decltype(&std::free)> policy(

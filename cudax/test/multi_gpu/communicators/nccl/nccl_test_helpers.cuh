@@ -58,7 +58,7 @@ public:
 
     comms_.resize(devs.size());
 
-    const ncclResult_t result = ncclCommInitAll(comms_.data(), devs.size(), devs.data());
+    const ncclResult_t result = ncclCommInitAll(comms_.data(), static_cast<int>(devs.size()), devs.data());
 
     INFO("NCCL: " << ncclGetErrorString(result));
     REQUIRE(result == ncclSuccess);

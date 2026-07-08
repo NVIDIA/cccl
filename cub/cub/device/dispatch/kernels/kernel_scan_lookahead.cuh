@@ -283,7 +283,7 @@ struct lookahead_scan_closure
   const scanKernelParams<InputT, OutputT, AccumT> params;
   mutable ScanOpT scan_op; // mutable, so we can support non-const operator()
   const RealInitValueT real_init_value;
-  scan_resources_t& res; // this is the only shared mutable state
+  scan_resources_t res; // this is the only shared mutable state
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   load_next_tile_index(const warpspeed::Squad& squad, warpspeed::SmemPhase<uint4>& phaseNextBlockIdxW) const
