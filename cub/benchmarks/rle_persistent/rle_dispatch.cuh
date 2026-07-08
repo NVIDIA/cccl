@@ -42,7 +42,7 @@ __global__ void rle_init_states(RleTempHeader* hdr, StateT* states, long long n_
   {
     for (long long i = threadIdx.x; i < n_states; i += blockDim.x)
     {
-      states[i] = 0; // tag 0 never matches a live tag (>= 1)
+      states[i] = StateT{}; // tag 0 never matches a live tag (>= 1)
     }
   }
   if (threadIdx.x == 0)
