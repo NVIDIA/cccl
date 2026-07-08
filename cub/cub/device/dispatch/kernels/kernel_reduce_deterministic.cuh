@@ -27,6 +27,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -35,7 +36,9 @@ CUB_NAMESPACE_BEGIN
 namespace detail::reduce
 {
 //! Type a normalized problem size resolves to on device: an immediate problem size keeps its integral type, a
-//! deferred source resolves to a signed integer wide enough for its element.
+//! deferred source resolves to an integer wide enough for its element. Only a signed 32-bit element is guaranteed
+//! to fit a single 32-bit chunk; every other element type is widened to 64 bits and consumed in chunks, with an
+//! unsigned element resolving to an unsigned type so that its full value range is representable.
 template <typename NormalizedNumItemsT, bool = ::cuda::std::is_integral_v<NormalizedNumItemsT>>
 struct deterministic_num_items
 {
@@ -45,7 +48,11 @@ struct deterministic_num_items
 template <typename NormalizedNumItemsT>
 struct deterministic_num_items<NormalizedNumItemsT, false>
 {
-  using type = ::cuda::std::conditional_t<sizeof(it_value_t<NormalizedNumItemsT>) == 4, int, ::cuda::std::int64_t>;
+  using element_t = it_value_t<NormalizedNumItemsT>;
+  using type      = ::cuda::std::conditional_t<
+         ::cuda::std::is_signed_v<element_t> && sizeof(element_t) == 4,
+         int,
+         ::cuda::std::conditional_t<::cuda::std::is_signed_v<element_t>, ::cuda::std::int64_t, ::cuda::std::uint64_t>>;
 };
 
 template <typename NormalizedNumItemsT>
@@ -175,7 +182,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
     // into a device function changes the SASS of the immediate instantiations. Changes here must also be applied to
     // the copy below.
     constexpr num_items_t num_items_per_chunk = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-    for (num_items_t remaining = num_items; remaining > 0; remaining -= num_items_per_chunk)
+    // Subtracting the actual chunk size keeps the countdown exact, so it cannot wrap for unsigned problem sizes.
+    for (num_items_t remaining = num_items; remaining > 0;)
     {
       const int chunk_num_items = static_cast<int>(::cuda::std::min(remaining, num_items_per_chunk));
 
@@ -216,6 +224,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
       }
 
       d_in += chunk_num_items;
+      remaining -= chunk_num_items;
     }
   }
   else

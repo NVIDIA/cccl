@@ -37,8 +37,6 @@
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -406,17 +404,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
-  {
-    // A deferred problem size cannot be chunked on the host, so the reduction kernel consumes it in a single launch:
-    // a 32-bit element keeps the 32-bit index arithmetic of the chunked path, a 64-bit element switches the kernel to
-    // 64-bit indexing.
-    using element_t = typename ::cuda::args::__traits<OffsetT>::element_type;
-    static_assert(::cuda::std::is_integral_v<element_t> && ::cuda::std::is_signed_v<element_t>
-                    && (sizeof(element_t) == 4 || sizeof(element_t) == 8),
-                  "a deferred num_items element must be a signed 32- or 64-bit integer with gpu_to_gpu determinism");
-  }
-
   // Get CC
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))

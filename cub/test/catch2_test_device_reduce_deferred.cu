@@ -625,7 +625,7 @@ C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed d
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
 }
 
-using gpu_to_gpu_count_types = c2h::type_list<std::int32_t, std::int64_t>;
+using gpu_to_gpu_count_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
 
 C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate result bitwise with gpu_to_gpu "
          "determinism",
@@ -656,12 +656,15 @@ C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate res
   REQUIRE_THAT(detail::to_vec(reference), detail::BitwiseEqualsRange(detail::to_vec(output)));
 }
 
+using gpu_to_gpu_large_count_types = c2h::type_list<std::uint32_t, std::int64_t, std::uint64_t>;
+
 C2H_TEST("DeviceReduce::Reduce with a large deferred num_items matches the immediate result bitwise with gpu_to_gpu "
          "determinism",
-         "[device][reduce][deferred][gpu_to_gpu]")
+         "[device][reduce][deferred][gpu_to_gpu]",
+         gpu_to_gpu_large_count_types)
 {
   using value_t = float;
-  using count_t = std::int64_t;
+  using count_t = typename c2h::get<0, TestType>;
 
   // Exceeds INT32_MAX, so the immediate reference reduces two host-side chunks while the deferred reduction consumes
   // the whole problem in a single launch with 64-bit indexing; RFA results are partition independent, so the results

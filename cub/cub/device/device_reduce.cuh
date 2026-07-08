@@ -141,8 +141,7 @@ inline constexpr bool is_non_deterministic_v =
 //! updating or recapturing the graph. Compile-time and runtime bounds are accepted as caller preconditions, but do not
 //! currently change temporary storage, grid dimensions, or pass selection. Since the problem size is not available to
 //! the host, the first reduction pass launches CUB's maximum grid and may launch more blocks than the actual problem
-//! size needs. Extra blocks return without reducing input. With ``gpu_to_gpu`` determinism, the element of a deferred
-//! problem size must currently be a signed 32- or 64-bit integer.
+//! size needs. Extra blocks return without reducing input.
 //!
 //! Determinism
 //! ====================================
