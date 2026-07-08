@@ -172,16 +172,16 @@ public:
     clear_async(__stream);
   }
 
-  ~hyperloglog() = default;
+  _CCCL_HIDE_FROM_ABI ~hyperloglog() = default;
 
   hyperloglog(const hyperloglog&) = delete;
   //! @brief Copy-assignment operator.
   //!
   //! @return Copy of `*this`
-  hyperloglog& operator=(const hyperloglog&) = delete;
-  hyperloglog(hyperloglog&&)                 = default; ///< Move constructor
+  hyperloglog& operator=(const hyperloglog&)     = delete;
+  _CCCL_HIDE_FROM_ABI hyperloglog(hyperloglog&&) = default; ///< Move constructor
 
-  hyperloglog& operator=(hyperloglog&&) = default;
+  _CCCL_HIDE_FROM_ABI hyperloglog& operator=(hyperloglog&&) = default;
 
   //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
   //!

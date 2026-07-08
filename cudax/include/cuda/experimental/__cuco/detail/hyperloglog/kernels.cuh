@@ -107,7 +107,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
       __local_ref.__add(*(__first + __n - __i - 1));
     }
   });
-#  else
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 1) ^^^ / vvv _CCCL_CTK_BELOW(12, 1) vvv
   if (__grid.thread_rank() == 0)
   {
     const auto __remainder = __n % _VectorSize;
@@ -116,7 +116,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
       __local_ref.__add(*(__first + __n - __i - 1));
     }
   }
-#  endif
+#  endif // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^
 
   __block.sync();
 
