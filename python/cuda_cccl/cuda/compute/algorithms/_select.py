@@ -18,7 +18,13 @@ from ._three_way_partition import _ThreeWayPartition, make_three_way_partition
 
 
 @cache
-def _always_false_op():
+def _always_false_op(_target_cc):
+    # ``_target_cc`` (the build's get_target_cc()) is part of the cache key so the
+    # predicate's LTO-IR is recompiled per target arch: this RawOp is linked into
+    # the three-way-partition build, and nvJitLink rejects a newer-arch input in
+    # an older-arch result. Without the key, the first build's arch would leak
+    # into every later build (module-global cache). compile_cpp_op_code() reads
+    # the same target internally; the arg only distinguishes cache entries.
     source = """
 extern "C" __device__ void always_false(void*, void* result) {{
     *static_cast<bool*>(result) = false;
@@ -26,6 +32,13 @@ extern "C" __device__ void always_false(void*, void* result) {{
 """
     code = compile_cpp_op_code(source)
     return RawOp(ltoir=code, name="always_false")
+
+
+def _get_always_false_op():
+    """The always-false predicate compiled for the current build's target cc."""
+    from .._target_cc import get_target_cc
+
+    return _always_false_op(get_target_cc())
 
 
 class _Select(Serializable):
@@ -41,7 +54,7 @@ class _Select(Serializable):
         cond: OpAdapter,
         compute_capability=None,
     ):
-        self.always_false_op = _always_false_op()
+        self.always_false_op = _get_always_false_op()
         d_second, d_unselected = self._discard_iterators(d_out)
         self.partitioner = make_three_way_partition(
             d_in=d_in,
@@ -66,9 +79,14 @@ class _Select(Serializable):
             return self._discards
 
     def _after_deserialize(self) -> None:
-        # always_false_op (the always-false second predicate) is not serialized;
-        # rebind it as a plain slot so each call reads a slot directly.
-        self.always_false_op = _always_false_op()
+        # always_false_op (the always-false second predicate) is not serialized.
+        # Its compiled LTO-IR is already baked into the (serialized) three-way
+        # partition build result, and __call__ reads only this op's runtime state
+        # (which is empty — the predicate is stateless). So reconstruct an
+        # empty-state stand-in WITHOUT compiling: deserialize() must neither
+        # recompile nor require a GPU, and calling _get_always_false_op() here
+        # would do both (cold cache -> compile_cpp_op_code -> Device() fallback).
+        self.always_false_op = RawOp(ltoir=b"", name="always_false")
 
     def __call__(
         self,

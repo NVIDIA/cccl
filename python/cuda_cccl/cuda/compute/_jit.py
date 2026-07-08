@@ -37,7 +37,12 @@ from numba.extending import lower_builtin, lower_cast
 
 from . import types as cccl_types
 from ._bindings import Op, OpKind
-from ._caching import CachableFunction, cache_with_registered_key_functions
+from ._caching import (
+    CachableFunction,
+    _cache_registry,
+    _make_cache_key_from_args,
+    cache_with_registered_key_functions,
+)
 
 try:
     from ._build_info import USING_V2  # type: ignore[import-not-found]
@@ -525,8 +530,29 @@ def _numba_type_to_type_descriptor(numba_type):
     return cccl_types.from_numpy_dtype(dtype)
 
 
-@cache_with_registered_key_functions
+# Return-type inference is architecture-independent — it depends only on the
+# function and its input types — so it must NOT go through
+# ``cache_with_registered_key_functions``, whose key is salted with
+# ``Device().compute_capability`` (that query requires a visible GPU). Otherwise
+# merely *constructing* an unannotated ``TransformIterator`` on a GPU-free build
+# machine would fail, before any ``compute_capability=<cc>`` build argument can
+# take effect. Use a plain cache keyed the same way (minus the device salt).
+_infer_return_type_cache: dict = {}
+
+
 def _infer_return_type(py_func, input_types):
+    key = _make_cache_key_from_args(py_func, input_types)
+    if key not in _infer_return_type_cache:
+        _infer_return_type_cache[key] = _infer_return_type_impl(py_func, input_types)
+    return _infer_return_type_cache[key]
+
+
+_infer_return_type.cache_clear = _infer_return_type_cache.clear  # type: ignore[attr-defined]
+# Keep clear_all_caches() covering this cache too.
+_cache_registry["_jit._infer_return_type"] = _infer_return_type
+
+
+def _infer_return_type_impl(py_func, input_types):
     # Ensure any gpu_struct classes referenced in the function are registered
     _ensure_function_structs_registered(py_func)
 

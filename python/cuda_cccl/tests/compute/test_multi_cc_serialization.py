@@ -22,6 +22,7 @@ import pytest
 from cuda.compute import (
     ProxyArray,
     deserialize,
+    make_select,
     make_unary_transform,
     serialize,
 )
@@ -31,6 +32,9 @@ from cuda.compute._cccl_interop import (
     key_to_cc,
     normalize_compute_capabilities,
 )
+from cuda.compute._target_cc import target_cc
+from cuda.compute.iterators import CountingIterator, TransformIterator
+from cuda.compute.types import from_numpy_dtype
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -145,6 +149,201 @@ def test_multi_cc_serialize_deserialize_roundtrip_defers_load():
     # Deserialized build results are not loaded (load is deferred to first call) — so
     # a multi-arch artifact stays portable and needs no live device to load.
     assert all(not br._loaded for br in loaded.build_results.values())
+
+
+# ----------------------------------------------------------------------------
+# Iterator device code must be recompiled per target arch, even when the same
+# iterator instance is reused across builds (no GPU needed)
+# ----------------------------------------------------------------------------
+
+
+def _counting_case():
+    """Leaf iterator: the arch-specific bytes are its own advance/deref ops,
+    memoized by IteratorBase's per-op caches."""
+
+    def make():
+        return CountingIterator(np.int32(0))
+
+    def arch_bytes(it):
+        # CountingIterator op symbol names derive only from (type, value_type),
+        # so these LTO-IR blobs are byte-stable across instances at a given arch.
+        return (
+            bytes(it.get_advance_op().code.op_bytes),
+            bytes(it.get_input_deref_op().code.op_bytes),
+        )
+
+    return make, arch_bytes
+
+
+def _transform_case():
+    """Compound iterator: the arch-specific leak surface is the compiled transform
+    op, memoized by TransformIterator._compiled_op and embedded as an extra_ltoir.
+
+    (The top-level wrapper LTO-IR is deliberately excluded: its symbol name is
+    instance-dependent, so it is not byte-stable across instances. It is always
+    recompiled per arch anyway; the compiled op below is the byte we must guard.)
+    """
+
+    def make():
+        return TransformIterator(CountingIterator(np.int32(0)), _add_one)
+
+    def arch_bytes(it):
+        it.get_input_deref_op()  # drive the real path that compiles the op
+        # wrapped_<fn> symbol names are content-based, so byte-stable per arch.
+        return (bytes(it._get_compiled_op().code.op_bytes),)
+
+    return make, arch_bytes
+
+
+@pytest.mark.parametrize(
+    "case", [_counting_case(), _transform_case()], ids=["counting", "transform"]
+)
+def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
+    """Reusing one iterator instance across builds targeting different arches
+    must recompile its device code for each arch.
+
+    Iterators memoize their compiled ops on the instance (``IteratorBase``'s
+    per-op caches and ``TransformIterator._compiled_op``). If that memo is not
+    keyed on the target compute capability, passing the same iterator object to
+    two ``make_<algo>`` calls whose targets *decrease* (e.g. 90 then 80) leaves
+    the first build's newer-arch LTO-IR cached on the instance; it then gets
+    linked into the older-arch build result, which nvJitLink rejects (final SM
+    must be >= every linked input's arch). Guard against that by requiring the
+    reused instance to yield, for each target, the same LTO-IR a fresh instance
+    produces.
+    """
+    make, arch_bytes = case
+    ccs = _compilable_ccs(2)
+    if len(ccs) < 2:
+        pytest.skip("toolchain compiles for <2 target arches")
+    hi, lo = sorted(ccs, reverse=True)  # build the higher arch first
+
+    # Ground truth: fresh instances compiled directly for each target arch.
+    ref = {}
+    for cc in (hi, lo):
+        with target_cc(cc):
+            ref[cc] = arch_bytes(make())
+    # The two arches must produce different device code, else the test below
+    # could pass vacuously.
+    assert ref[hi] != ref[lo]
+
+    # Reuse a single instance across both targets, higher arch first.
+    it = make()
+    with target_cc(hi):
+        assert arch_bytes(it) == ref[hi]
+    with target_cc(lo):
+        # Regression: the memoized hi-arch LTO-IR must not leak into the lo build.
+        assert arch_bytes(it) == ref[lo]
+
+
+def test_select_always_false_op_recompiles_per_target_cc():
+    """``_always_false_op`` is a module-global cache whose LTO-IR is linked into
+    every ``make_select`` build (as the three-way-partition's second predicate).
+
+    It must be keyed on the target compute capability. A cc-unkeyed cache would
+    compile once for whatever arch built first and hand that same op to every
+    later build, linking newer-arch code into an older-arch result — which
+    nvJitLink rejects. Unlike the iterator memos this leaks process-globally,
+    across unrelated select builds.
+    """
+    from cuda.compute.algorithms._select import _get_always_false_op
+
+    ccs = _compilable_ccs(2)
+    if len(ccs) < 2:
+        pytest.skip("toolchain compiles for <2 target arches")
+    hi, lo = sorted(ccs, reverse=True)  # populate the cache for the higher arch first
+
+    def code(cc):
+        with target_cc(cc):
+            return bytes(_get_always_false_op()._ltoir.op_bytes)
+
+    b_hi = code(hi)
+    b_lo = code(lo)
+    # Regression: lo must not return the cached hi-arch LTO-IR.
+    assert b_hi != b_lo
+
+
+# ----------------------------------------------------------------------------
+# GPU-free construction / deserialization (no device query, no recompile)
+# ----------------------------------------------------------------------------
+
+
+def test_unannotated_transform_iterator_construction_needs_no_gpu(monkeypatch):
+    """Constructing an unannotated TransformIterator infers the lambda's return
+    type; that inference is architecture-independent and must not query the
+    current device.
+
+    Otherwise a GPU-free build machine cannot even construct the iterator to hand
+    to ``make_<algo>(compute_capability=...)`` — the device query happens at
+    construction, before the explicit cc can take effect.
+    """
+    import cuda.compute._caching as _caching_mod
+
+    class _NoDevice:
+        def __init__(self, *a, **k):
+            raise AssertionError("iterator construction must not query a CUDA device")
+
+    # Any current-device query (e.g. the build cache's cc salt) now fails loudly.
+    monkeypatch.setattr(_caching_mod, "Device", _NoDevice)
+
+    it = TransformIterator(CountingIterator(np.int32(0)), lambda x: x + 1)
+    # int32 + Python int promotes to int64 in Numba; the point is that the type
+    # resolved with no device query.
+    assert it.value_type == from_numpy_dtype(np.dtype(np.int64))
+
+
+def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
+    """``deserialize()`` must neither recompile device code nor require a GPU.
+
+    ``_Select``'s always-false predicate is not serialized: its LTO-IR is already
+    baked into the serialized three-way-partition build result, and ``__call__``
+    needs only its (empty) runtime state. Regression: ``_after_deserialize`` must
+    not call ``_always_false_op()``, which on a cold cache compiles via NVRTC and
+    falls back to ``Device().compute_capability``.
+    """
+    # A multi-arch blob defers the single-target cc check at deserialize (see
+    # _check_loadable), so deserialization is device-independent — the real
+    # GPU-free AoT scenario (ship one blob, load on the target).
+    ccs = _compilable_ccs(2)
+    if len(ccs) < 2:
+        pytest.skip("toolchain compiles for <2 target arches")
+
+    def _cond(x):
+        return np.uint8(x < np.int32(5))
+
+    # Device-free AoT build + serialize (this may legitimately compile).
+    sel = make_select(
+        d_in=ProxyArray(np.int32),
+        d_out=ProxyArray(np.int32),
+        d_num_selected_out=ProxyArray(np.int32),
+        cond=_cond,
+        compute_capability=ccs,
+    )
+    blob = serialize(sel)
+
+    # Now simulate a GPU-free machine on which any recompile or device query is
+    # fatal, and require deserialize to succeed regardless.
+    import cuda.compute._caching as _caching_mod
+    import cuda.compute._cpp_compile as _cpp_mod
+    import cuda.compute.algorithms._select as _select_mod
+
+    def _boom(*a, **k):
+        raise AssertionError("deserialize must not recompile the always-false op")
+
+    class _NoDevice:
+        def __init__(self, *a, **k):
+            raise AssertionError("deserialize must not query a CUDA device")
+
+    monkeypatch.setattr(_select_mod, "_always_false_op", _boom)
+    monkeypatch.setattr(_select_mod, "_get_always_false_op", _boom)
+    monkeypatch.setattr(_cpp_mod, "Device", _NoDevice)
+    monkeypatch.setattr(_caching_mod, "Device", _NoDevice)
+
+    loaded = deserialize(blob)
+    # The always-false predicate is stateless, so its reconstructed runtime state
+    # is empty — exactly what __call__ reads.
+    assert loaded.always_false_op.get_state() == b""
+    assert set(loaded.partitioner.build_results.keys()) == set(ccs)
 
 
 # ----------------------------------------------------------------------------
