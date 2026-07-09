@@ -55,6 +55,11 @@ expected_allocation_size(size_t expected)
 struct get_allowed_kernels_t
 {};
 
+//! The listed kernels must be the exact instantiations the dispatch launches, taken from the dispatch's kernel
+//! source. Beware of computing the expected instantiations with decltype() of a variable captured by reference
+//! inside a lambda: nvcc 13.3 with MSVC misevaluates such a decltype() as a reference type, silently yielding a
+//! different kernel instantiation. Compute the types at function scope instead.
+//! See: https://github.com/NVIDIA/cccl/issues/9643
 __host__ __device__ static cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
 allowed_kernels(cuda::std::span<void*> allowed_kernels)
 {
