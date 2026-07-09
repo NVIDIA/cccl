@@ -17,7 +17,10 @@ set(LIBNVCC_CPM_CMAKE_PATH "${_cccl_root}/cmake/CPM.cmake")
 set(LIBNVCC_HEADER_INSTALL_DESTINATION "cuda/cccl/headers/libnvcc")
 set(LIBNVCC_CLANG_HEADER_INSTALL_DESTINATION "cuda/cccl/headers/clang")
 if (CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY)
-  set(LIBNVCC_LIBRARY_OUTPUT_DIRECTORY "${CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY}")
+  set(
+    LIBNVCC_LIBRARY_OUTPUT_DIRECTORY
+    "${CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY}"
+  )
 endif()
 
 add_subdirectory(libnvcc)
@@ -39,9 +42,7 @@ add_library(
 
 target_include_directories(
   cccl.c.parallel.v2.hostjit_lib
-  PUBLIC
-    ${_hostjit_include_dir}
-    ${_c_parallel_dir}/include
+  PUBLIC ${_hostjit_include_dir} ${_c_parallel_dir}/include
 )
 
 target_compile_definitions(
@@ -71,10 +72,7 @@ if (NOT WIN32)
   target_link_libraries(cccl.c.parallel.v2.hostjit_lib PUBLIC dl)
 endif()
 
-target_link_libraries(
-  cccl.c.parallel.v2.hostjit_lib
-  PUBLIC libnvcc
-)
+target_link_libraries(cccl.c.parallel.v2.hostjit_lib PUBLIC libnvcc)
 
 if (CUDAToolkit_FOUND)
   target_link_libraries(cccl.c.parallel.v2.hostjit_lib PUBLIC CUDA::cudart)
@@ -90,10 +88,7 @@ set_target_properties(
 )
 
 # Hostjit's minimal CUDA runtime headers (replacements for upstream clang headers)
-set(
-  _hostjit_cuda_minimal_dir
-  "${_hostjit_include_dir}/hostjit/cuda_minimal"
-)
+set(_hostjit_cuda_minimal_dir "${_hostjit_include_dir}/hostjit/cuda_minimal")
 file(GLOB _hostjit_cuda_minimal_headers "${_hostjit_cuda_minimal_dir}/*.h")
 install(
   FILES ${_hostjit_cuda_minimal_headers}

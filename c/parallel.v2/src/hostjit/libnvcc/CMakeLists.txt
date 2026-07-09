@@ -1,11 +1,19 @@
 if (DEFINED LIBNVCC_CPM_CMAKE_PATH AND EXISTS "${LIBNVCC_CPM_CMAKE_PATH}")
   include("${LIBNVCC_CPM_CMAKE_PATH}")
 else()
-  find_file(LIBNVCC_CPM_CMAKE_PATH NAMES CPM.cmake PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+  find_file(
+    LIBNVCC_CPM_CMAKE_PATH
+    NAMES CPM.cmake
+    PATHS ${CMAKE_MODULE_PATH}
+    NO_DEFAULT_PATH
+  )
   if (LIBNVCC_CPM_CMAKE_PATH)
     include("${LIBNVCC_CPM_CMAKE_PATH}")
   else()
-    message(FATAL_ERROR "CPM.cmake not found. Set LIBNVCC_CPM_CMAKE_PATH or add it to CMAKE_MODULE_PATH.")
+    message(
+      FATAL_ERROR
+      "CPM.cmake not found. Set LIBNVCC_CPM_CMAKE_PATH or add it to CMAKE_MODULE_PATH."
+    )
   endif()
 endif()
 
@@ -23,7 +31,12 @@ if (DEFINED HOSTJIT_LLVM_VERSION AND NOT DEFINED LIBNVCC_LLVM_VERSION)
 else()
   set(_libnvcc_llvm_version_default "llvmorg-22.1.1")
 endif()
-set(LIBNVCC_LLVM_VERSION "${_libnvcc_llvm_version_default}" CACHE STRING "LLVM git tag to fetch")
+set(
+  LIBNVCC_LLVM_VERSION
+  "${_libnvcc_llvm_version_default}"
+  CACHE STRING
+  "LLVM git tag to fetch"
+)
 
 # List options must be set before CPMAddPackage
 set(LLVM_ENABLE_PROJECTS "clang;lld" CACHE STRING "" FORCE)
@@ -63,11 +76,7 @@ file(
   MAKE_DIRECTORY "${llvm_project_BINARY_DIR}/lib/clang/${LLVM_VERSION_MAJOR}"
 )
 
-add_library(
-  libnvcc
-  SHARED
-  compiler.cpp
-)
+add_library(libnvcc SHARED compiler.cpp)
 
 target_include_directories(
   libnvcc
@@ -96,10 +105,7 @@ if (NOT CUDAToolkit_FOUND)
   message(FATAL_ERROR "libnvcc requires a CUDA toolkit")
 endif()
 
-target_include_directories(
-  libnvcc
-  PRIVATE ${CUDAToolkit_INCLUDE_DIRS}
-)
+target_include_directories(libnvcc PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
 cmake_path(GET CUDAToolkit_BIN_DIR PARENT_PATH CUDA_TOOLKIT_ROOT_FROM_CMAKE)
 target_compile_definitions(
   libnvcc
@@ -147,32 +153,20 @@ target_link_libraries(
 )
 
 if (CUDAToolkit_FOUND)
-  target_link_libraries(
-    libnvcc
-    PRIVATE CUDA::cuda_driver CUDA::cudart
-  )
+  target_link_libraries(libnvcc PRIVATE CUDA::cuda_driver CUDA::cudart)
   if (WIN32)
     # On Windows, static CUDA libs are built with /MT which conflicts with
     # the project's dynamic CRT (/MD). Use dynamic variants instead.
-    target_link_libraries(
-      libnvcc
-      PRIVATE CUDA::nvJitLink CUDA::nvfatbin
-    )
+    target_link_libraries(libnvcc PRIVATE CUDA::nvJitLink CUDA::nvfatbin)
   else()
     # Prefer static CUDA libs on Linux for self-contained binaries. If the
     # toolchain (e.g. lite/pip CUDA installs or some Docker images) only ships
     # the dynamic variants, fall back to those rather than failing configure.
     foreach (_cudalib nvJitLink nvptxcompiler nvfatbin)
       if (TARGET "CUDA::${_cudalib}_static")
-        target_link_libraries(
-          libnvcc
-          PRIVATE "CUDA::${_cudalib}_static"
-        )
+        target_link_libraries(libnvcc PRIVATE "CUDA::${_cudalib}_static")
       elseif (TARGET "CUDA::${_cudalib}")
-        target_link_libraries(
-          libnvcc
-          PRIVATE "CUDA::${_cudalib}"
-        )
+        target_link_libraries(libnvcc PRIVATE "CUDA::${_cudalib}")
       else()
         message(
           FATAL_ERROR
@@ -224,7 +218,10 @@ if (NOT LIBNVCC_CLANG_HEADER_INSTALL_DESTINATION)
   set(LIBNVCC_CLANG_HEADER_INSTALL_DESTINATION "include/libnvcc/clang")
 endif()
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/libnvcc/libnvcc.h" DESTINATION "${LIBNVCC_HEADER_INSTALL_DESTINATION}")
+install(
+  FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/libnvcc/libnvcc.h"
+  DESTINATION "${LIBNVCC_HEADER_INSTALL_DESTINATION}"
+)
 
 # --------------------------------------------------------------------------
 # Install clang headers into wheel (for self-sufficient packaging)
@@ -262,4 +259,7 @@ set(
   "${llvm_project_SOURCE_DIR}/clang/lib/Headers/inttypes.h"
   ${_clang_stddef_headers}
 )
-install(FILES ${_clang_c_headers} DESTINATION "${LIBNVCC_CLANG_HEADER_INSTALL_DESTINATION}")
+install(
+  FILES ${_clang_c_headers}
+  DESTINATION "${LIBNVCC_CLANG_HEADER_INSTALL_DESTINATION}"
+)
