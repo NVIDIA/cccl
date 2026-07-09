@@ -628,10 +628,7 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
   const int extra_space = (num_bytes == 0) ? 0 : detail::bulk_copy_min_align;
   return ::cuda::round_up(num_bytes, detail::bulk_copy_min_align) + extra_space;
 }
-} // namespace detail
 
-namespace detail
-{
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #  if !_CCCL_HAS_CONCEPTS()
@@ -689,15 +686,9 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
 }
-} // namespace detail
-
-//----------------------------------------------------------------------------------------------------------------------
-// ChainedPolicy
 
 #if !_CCCL_COMPILER(NVRTC)
 
-namespace detail
-{
 // Forward declaration of the default kernel launcher factory
 struct TripleChevronFactory;
 
@@ -746,21 +737,18 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 };
-} // namespace detail
+
 #endif // !_CCCL_COMPILER(NVRTC)
 
-namespace detail
-{
 template <typename T>
 struct get_active_policy
 {
   using type = typename T::ActivePolicy;
 };
-} // namespace detail
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
-struct ChainedPolicy
+struct chained_policy
 {
 private:
   static constexpr bool have_previous_policy = !::cuda::std::is_same_v<PolicyT, PrevPolicyT>;
@@ -799,7 +787,7 @@ public:
 
 private:
   template <int, typename, typename>
-  friend struct ChainedPolicy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
+  friend struct chained_policy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int CcMult, int... CudaCcs, typename FunctorT>
@@ -832,6 +820,14 @@ private:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+} // namespace detail
+
+/// Helper for dispatching into a policy chain
+/// Deprecated [Since 3.5]
+template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
+using ChainedPolicy
+  CCCL_DEPRECATED_BECAUSE("Pass policy selectors into the environments of device-scope CUB algorithms to providing "
+                          "custom tunings.") = detail::chained_policy<PolicyPtxVersion, PolicyT, PrevPolicyT>;
 
 namespace detail
 {

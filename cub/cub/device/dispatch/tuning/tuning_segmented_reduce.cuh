@@ -142,7 +142,7 @@ struct policy_selector_from_types
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
 {
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
   private:
     static constexpr int items_per_vec_load = 4;

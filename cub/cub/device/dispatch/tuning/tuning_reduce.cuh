@@ -251,7 +251,7 @@ get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int acc
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
 {
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 20;
@@ -279,7 +279,7 @@ struct policy_hub
                           NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 16;
@@ -307,7 +307,7 @@ struct policy_hub
                           NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy600>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy600>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy600
     template <typename Tuning>
