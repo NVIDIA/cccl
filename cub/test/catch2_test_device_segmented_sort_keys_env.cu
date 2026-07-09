@@ -614,9 +614,9 @@ C2H_TEST("Test SegmentedSortPolicy properties", "[segmented_sort][device]")
   // aggregate init
   constexpr auto p1_large = cub::SegmentedSortRadixSortPolicy{
     256, 16, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_RAKING_MEMOIZE, 6};
-  constexpr auto p1_small = cub::SegmentedSortSubWarpMergeSortPolicy{
-    256, 32, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT};
   constexpr auto p1_medium = cub::SegmentedSortSubWarpMergeSortPolicy{
+    256, 32, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT};
+  constexpr auto p1_small = cub::SegmentedSortSubWarpMergeSortPolicy{
     256, 4, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT};
   constexpr auto p1 = cub::SegmentedSortPolicy{p1_large, p1_small, p1_medium, 300};
 
