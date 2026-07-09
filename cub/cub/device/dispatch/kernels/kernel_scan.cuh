@@ -67,8 +67,7 @@ template <typename PolicySelectorT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename ScanTileState,
-          typename AccumT,
-          bool StableReductionOrder = false>
+          typename AccumT>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, _CCCL_GRID_CONSTANT const int num_tiles)
 {
@@ -79,8 +78,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   constexpr ScanPolicy policy = current_policy<PolicySelectorT>();
   if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    device_scan_init_lookahead_body<StableReductionOrder>(
-      tile_state.lookahead.tile_states, num_tiles, tile_state.lookahead.atomic_counter);
+    device_scan_init_lookahead_body(tile_state.lookahead.tile_states, num_tiles, tile_state.lookahead.atomic_counter);
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)

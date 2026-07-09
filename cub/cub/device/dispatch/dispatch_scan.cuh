@@ -73,12 +73,7 @@ struct DeviceScanKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(
     InitKernel,
-    DeviceScanInitKernel<PolicySelector,
-                         UnwrappedInputIteratorT,
-                         UnwrappedOutputIteratorT,
-                         ScanTileStateT,
-                         AccumT,
-                         StableReductionOrder>)
+    DeviceScanInitKernel<PolicySelector, UnwrappedInputIteratorT, UnwrappedOutputIteratorT, ScanTileStateT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     ScanKernel,
