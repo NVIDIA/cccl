@@ -305,7 +305,7 @@ __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__
   auto __result          = ::cub::ThreadReduce(__thread_data, __red_fn);
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (unsigned __stride = 1; __stride < ::cuda::next_power_of_two(__mapping_result.count()); __stride *= 2)
+  for (unsigned __stride = 1; __stride < ::cuda::next_power_of_two(__mapping_result.unit_count()); __stride *= 2)
   {
     const auto __other = ::cuda::experimental::coop::shuffle_down(__group, __result, __stride);
     if (__other.has_value())
@@ -321,7 +321,7 @@ __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__
   }
   else
   {
-    return (__mapping_result.rank() == 0) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
+    return (__mapping_result.unit_rank() == 0) ? ::cuda::std::optional{__result} : ::cuda::std::nullopt;
   }
 }
 

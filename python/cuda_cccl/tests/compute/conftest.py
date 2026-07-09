@@ -6,6 +6,11 @@ import pytest
 
 from cuda.core import Device, Stream
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
 check_ldl_stl_in_sass = False
 
 
@@ -116,7 +121,12 @@ def raise_on_numba_import(monkeypatch):
 
 
 def pytest_collection_modifyitems(config, items):
+    serialization_skip = pytest.mark.skip(
+        reason="serialization not supported on v2 (HostJIT) backend"
+    )
     for item in items:
         if item.get_closest_marker("no_numba"):
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
+        if USING_V2 and item.get_closest_marker("serialization"):
+            item.add_marker(serialization_skip)

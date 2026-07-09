@@ -10,7 +10,11 @@ import cuda.compute
 from cuda.compute import (
     CountingIterator,
     OpKind,
+    deserialize,
     gpu_struct,
+    make_binary_transform,
+    make_unary_transform,
+    serialize,
 )
 
 
@@ -276,6 +280,22 @@ def test_unary_transform_well_known_identity():
     np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
+def test_unary_transform_well_known_bit_not():
+    h_input = np.array([0, 1, -2, 42, -100], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
+
+    cuda.compute.unary_transform(
+        d_in=d_input,
+        d_out=d_output,
+        op=OpKind.BIT_NOT,
+        num_items=len(d_input),
+    )
+
+    expected = np.array([-1, -2, 1, -43, 99], dtype=np.int32)
+    np.testing.assert_array_equal(d_output.copy_to_host(), expected)
+
+
 @pytest.mark.parametrize("dtype", [np.int32, np.float16])
 def test_binary_transform_well_known_plus(dtype):
     """Test binary transform with well-known PLUS operation."""
@@ -320,6 +340,31 @@ def test_binary_transform_well_known_multiplies():
     # Check the result is correct
     expected = np.array([2, 6, 12, 20, 30])
     np.testing.assert_equal(d_output.copy_to_host(), expected)
+
+
+@pytest.mark.parametrize(
+    "op,host_op",
+    [
+        pytest.param(OpKind.LOGICAL_AND, np.logical_and, id="logical_and"),
+        pytest.param(OpKind.LOGICAL_OR, np.logical_or, id="logical_or"),
+    ],
+)
+def test_binary_transform_well_known_logical(op, host_op):
+    h_input1 = np.array([True, True, False, False], dtype=np.bool_)
+    h_input2 = np.array([True, False, True, False], dtype=np.bool_)
+    d_input1 = DeviceArray.from_numpy(h_input1)
+    d_input2 = DeviceArray.from_numpy(h_input2)
+    d_output = DeviceArray.empty(h_input1.shape, h_input1.dtype)
+
+    cuda.compute.binary_transform(
+        d_in1=d_input1,
+        d_in2=d_input2,
+        d_out=d_output,
+        op=op,
+        num_items=len(d_input1),
+    )
+
+    np.testing.assert_array_equal(d_output.copy_to_host(), host_op(h_input1, h_input2))
 
 
 def test_unary_transform_struct_type_with_annotations():
@@ -652,3 +697,43 @@ def test_transform_caching_with_global_np_ufunc():
         d_in=d_in, d_out=d_out, op=make_op(), num_items=h_in.size
     )
     np.testing.assert_allclose(d_out.copy_to_host(), np.cos(h_in))
+
+
+def _add_one(a):
+    return a + 1
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_unary_transform_round_trip():
+    h_in = np.array([1, 2, 3, 4, 5], dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    builder = make_unary_transform(d_in=d_in, d_out=d_out, op=_add_one)
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    loaded(d_in=d_in, d_out=d_out, op=_add_one, num_items=h_in.size)
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in + 1)
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_binary_transform_round_trip():
+    h_in1 = np.array([1, 2, 3, 4], dtype=np.int32)
+    h_in2 = np.array([10, 20, 30, 40], dtype=np.int32)
+    d_in1 = DeviceArray.from_numpy(h_in1)
+    d_in2 = DeviceArray.from_numpy(h_in2)
+    d_out = DeviceArray.empty(h_in1.shape, h_in1.dtype)
+
+    builder = make_binary_transform(
+        d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=OpKind.PLUS
+    )
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    loaded(d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=OpKind.PLUS, num_items=h_in1.size)
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in1 + h_in2)

@@ -13,8 +13,15 @@ from cuda.compute import (
     OpKind,
     ReverseIterator,
     TransformOutputIterator,
+    clear_all_caches,
+    deserialize,
+    exclusive_scan,
     gpu_struct,
+    make_exclusive_scan,
+    make_inclusive_scan,
+    serialize,
 )
+from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 
 
 def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
@@ -521,3 +528,122 @@ def test_scan_bool_maximum(force_inclusive):
         expected = np.array([False, False, True, True], dtype=np.bool_)
 
     np.testing.assert_array_equal(d_output.copy_to_host(), expected)
+
+
+def _run(scanner, *, d_in, d_out, op, init_value, num_items):
+    bytes_needed = scanner(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        op=op,
+        init_value=init_value,
+        num_items=num_items,
+    )
+    tmp = TempStorageBuffer(bytes_needed, None)
+    scanner(
+        temp_storage=tmp,
+        d_in=d_in,
+        d_out=d_out,
+        op=op,
+        init_value=init_value,
+        num_items=num_items,
+    )
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_exclusive_scan_round_trip():
+    h_in = np.arange(1, 33, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+    init_value = np.array([0], dtype=np.int32)
+
+    builder = make_exclusive_scan(
+        d_in=d_in, d_out=d_out, op=OpKind.PLUS, init_value=init_value
+    )
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    _run(
+        loaded,
+        d_in=d_in,
+        d_out=d_out,
+        op=OpKind.PLUS,
+        init_value=init_value,
+        num_items=h_in.size,
+    )
+
+    expected = np.zeros_like(h_in)
+    np.cumsum(h_in[:-1], out=expected[1:])
+    np.testing.assert_array_equal(d_out.copy_to_host(), expected)
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_inclusive_scan_round_trip():
+    h_in = np.arange(1, 33, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+    init_value = np.array([0], dtype=np.int32)
+
+    builder = make_inclusive_scan(
+        d_in=d_in, d_out=d_out, op=OpKind.PLUS, init_value=init_value
+    )
+    blob = serialize(builder)
+
+    loaded = deserialize(blob)
+    _run(
+        loaded,
+        d_in=d_in,
+        d_out=d_out,
+        op=OpKind.PLUS,
+        init_value=init_value,
+        num_items=h_in.size,
+    )
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), np.cumsum(h_in))
+
+
+@pytest.mark.serialization
+def test_deserialize_after_jit_matches_jit_result():
+    """Serialize a JITed scan, deserialize, and confirm output matches a fresh JIT."""
+    h_in = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out_jit = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_out_serialization = DeviceArray.empty(h_in.shape, h_in.dtype)
+    init_value = np.array([1], dtype=np.int32)
+
+    def max_op(a, b):
+        return a if a > b else b
+
+    # Build + serialize (this JITs), then clear every in-process cache so the serialization
+    # leg below runs cold: the deserialized scan must stand on its own and cannot
+    # free-ride on a callable warmed by the build or by the JIT reference.
+    blob = serialize(
+        make_exclusive_scan(
+            d_in=d_in, d_out=d_out_serialization, op=max_op, init_value=init_value
+        )
+    )
+    clear_all_caches()
+
+    loaded = deserialize(blob)
+    _run(
+        loaded,
+        d_in=d_in,
+        d_out=d_out_serialization,
+        op=max_op,
+        init_value=init_value,
+        num_items=h_in.size,
+    )
+
+    # Compute the JIT reference only after the serialization path has already run.
+    exclusive_scan(
+        d_in=d_in,
+        d_out=d_out_jit,
+        op=max_op,
+        init_value=init_value,
+        num_items=h_in.size,
+    )
+
+    np.testing.assert_array_equal(
+        d_out_serialization.copy_to_host(), d_out_jit.copy_to_host()
+    )

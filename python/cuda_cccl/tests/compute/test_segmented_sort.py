@@ -9,6 +9,8 @@ import pytest
 from _utils.device_array import DeviceArray
 
 import cuda.compute
+from cuda.compute import SortOrder, deserialize, make_segmented_sort, serialize
+from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 
 DTYPE_LIST = [
     np.uint8,
@@ -331,3 +333,90 @@ def test_segmented_sort_variable_segment_sizes(num_segments):
 
     np.testing.assert_array_equal(h_out_keys, expected_keys)
     np.testing.assert_array_equal(h_out_vals, expected_vals)
+
+
+def _run(
+    sorter,
+    *,
+    d_in_keys,
+    d_out_keys,
+    d_in_values,
+    d_out_values,
+    num_items,
+    num_segments,
+    start,
+    end,
+):
+    bytes_needed = sorter(
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start,
+        end_offsets_in=end,
+    )
+    tmp = TempStorageBuffer(bytes_needed, None)
+    sorter(
+        temp_storage=tmp,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start,
+        end_offsets_in=end,
+    )
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_segmented_sort_round_trip():
+    h_in_keys = np.array([9, 1, 5, 4, 2, 8, 7, 3, 6], dtype="int32")
+    h_in_vals = np.array([90, 10, 50, 40, 20, 80, 70, 30, 60], dtype="int32")
+    start_offsets = np.array([0, 3, 5], dtype=np.int64)
+    end_offsets = np.array([3, 5, 9], dtype=np.int64)
+
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_vals = DeviceArray.from_numpy(h_in_vals)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_vals = DeviceArray.empty(h_in_vals.shape, h_in_vals.dtype)
+    start = DeviceArray.from_numpy(start_offsets)
+    end = DeviceArray.from_numpy(end_offsets)
+
+    builder = make_segmented_sort(
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_vals,
+        d_out_values=d_out_vals,
+        start_offsets_in=start,
+        end_offsets_in=end,
+        order=SortOrder.ASCENDING,
+    )
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    _run(
+        loaded,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_vals,
+        d_out_values=d_out_vals,
+        num_items=h_in_keys.size,
+        num_segments=start_offsets.size,
+        start=start,
+        end=end,
+    )
+
+    expected_pairs = []
+    for s, e in zip(start_offsets, end_offsets):
+        expected_pairs.extend(
+            sorted(zip(h_in_keys[s:e], h_in_vals[s:e]), key=lambda kv: kv[0])
+        )
+    expected_keys = np.array([k for k, _ in expected_pairs], dtype=h_in_keys.dtype)
+    expected_vals = np.array([v for _, v in expected_pairs], dtype=h_in_vals.dtype)
+    np.testing.assert_array_equal(d_out_keys.copy_to_host(), expected_keys)
+    np.testing.assert_array_equal(d_out_vals.copy_to_host(), expected_vals)

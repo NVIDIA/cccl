@@ -6,7 +6,13 @@ import pytest
 from _utils.device_array import DeviceArray
 
 import cuda.compute
-from cuda.compute import OpKind
+from cuda.compute import (
+    OpKind,
+    deserialize,
+    make_lower_bound,
+    make_upper_bound,
+    serialize,
+)
 
 DTYPE_LIST = [
     np.int32,
@@ -227,3 +233,55 @@ def test_binary_search_requires_pointer_sized_output():
             num_values=len(h_values),
             d_out=d_out,
         )
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_lower_bound_round_trip():
+    h_data = np.array([1, 3, 3, 5, 7, 9], dtype=np.int32)
+    h_values = np.array([0, 3, 4, 10], dtype=np.int32)
+    d_data = DeviceArray.from_numpy(h_data)
+    d_values = DeviceArray.from_numpy(h_values)
+    d_out = DeviceArray.empty(len(h_values), np.uintp)
+
+    builder = make_lower_bound(d_data=d_data, d_values=d_values, d_out=d_out)
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    loaded(
+        d_data=d_data,
+        num_items=len(d_data),
+        d_values=d_values,
+        num_values=len(d_values),
+        d_out=d_out,
+        comp=None,
+    )
+
+    expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
+    np.testing.assert_array_equal(d_out.copy_to_host(), expected)
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_upper_bound_round_trip():
+    h_data = np.array([1, 3, 3, 5, 7, 9], dtype=np.int32)
+    h_values = np.array([0, 3, 4, 10], dtype=np.int32)
+    d_data = DeviceArray.from_numpy(h_data)
+    d_values = DeviceArray.from_numpy(h_values)
+    d_out = DeviceArray.empty(len(h_values), np.uintp)
+
+    builder = make_upper_bound(d_data=d_data, d_values=d_values, d_out=d_out)
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    loaded(
+        d_data=d_data,
+        num_items=len(d_data),
+        d_values=d_values,
+        num_values=len(d_values),
+        d_out=d_out,
+        comp=None,
+    )
+
+    expected = np.searchsorted(h_data, h_values, side="right").astype(np.uintp)
+    np.testing.assert_array_equal(d_out.copy_to_host(), expected)

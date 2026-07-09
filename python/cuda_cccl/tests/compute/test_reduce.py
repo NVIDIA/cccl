@@ -18,8 +18,12 @@ from cuda.compute import (
     OpKind,
     TransformIterator,
     TransformOutputIterator,
+    deserialize,
     gpu_struct,
+    make_reduce_into,
+    serialize,
 )
+from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 
 
 def random_int(shape, dtype):
@@ -991,3 +995,175 @@ def test_reduce_input_and_accumulator_type_mismatch():
         cuda.compute.reduce_into(
             d_in=d_data, d_out=d_out, op=op, num_items=h_data.size, h_init=h_init
         )
+
+
+def _serialization_add(a, b):
+    return a + b
+
+
+def _serialization_plus_one(x):
+    return x + 1
+
+
+def _run_loaded_reducer(loaded, *, d_in, d_out, num_items, op, h_init):
+    """Drive a loaded reducer through the (size query, execute) two-step."""
+    bytes_needed = loaded(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+    )
+    tmp = TempStorageBuffer(bytes_needed, None)
+    loaded(
+        temp_storage=tmp,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+    )
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_well_known_op_round_trip():
+    h_in = np.arange(1024, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+    h_init = np.zeros(1, dtype=np.int32)
+
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init)
+    blob = serialize(reducer)
+    assert len(blob) > 0
+
+    # Loaded reducer is fully usable without any JIT and without supplying objects.
+    loaded = deserialize(blob)
+    _run_loaded_reducer(
+        loaded,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=h_in.size,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    assert int(d_out.copy_to_host()[0]) == int(h_in.sum())
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_jit_op_round_trip():
+    h_in = np.arange(1024, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+    h_init = np.zeros(1, dtype=np.int32)
+
+    reducer = make_reduce_into(
+        d_in=d_in, d_out=d_out, op=_serialization_add, h_init=h_init
+    )
+    blob = serialize(reducer)
+
+    loaded = deserialize(blob)
+    # The user op's device code is rebuilt from the blob, not from a re-supplied
+    # / recompiled operator: assert it is present before any object reaches the
+    # call below (deserialize took only the blob).
+    assert len(loaded.op_cccl.ltoir) > 0
+    _run_loaded_reducer(
+        loaded,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=h_in.size,
+        op=_serialization_add,
+        h_init=h_init,
+    )
+
+    assert int(d_out.copy_to_host()[0]) == int(h_in.sum())
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_counting_iterator_input():
+    # Custom (ITERATOR-kind) input: its device advance/dereference code must be
+    # captured in the descriptor sidecar and rebuilt with no object supplied.
+    n = 1024
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int64))
+    h_init = np.zeros(1, dtype=np.int64)
+
+    reducer = make_reduce_into(
+        d_in=CountingIterator(np.int32(0)), d_out=d_out, op=OpKind.PLUS, h_init=h_init
+    )
+    blob = serialize(reducer)
+
+    loaded = deserialize(blob)
+    # The ITERATOR-kind descriptor (with its advance/dereference device code) was
+    # rebuilt purely from the blob — no iterator object was passed to deserialize,
+    # so a regression to caller-supplied descriptors would fail here, not silently
+    # pass via the object reconstructed for the call.
+    assert loaded.d_in_cccl.is_kind_iterator()
+    _run_loaded_reducer(
+        loaded,
+        d_in=CountingIterator(np.int32(0)),
+        d_out=d_out,
+        num_items=n,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    assert int(d_out.copy_to_host()[0]) == n * (n - 1) // 2
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_transform_iterator_input():
+    # TransformIterator carries a user op (device code) inside the iterator's
+    # dereference op — exercises iterator-embedded LTOIR round-tripping.
+    n = 512
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int64))
+    h_init = np.zeros(1, dtype=np.int64)
+
+    def make_it():
+        return TransformIterator(CountingIterator(np.int32(0)), _serialization_plus_one)
+
+    reducer = make_reduce_into(
+        d_in=make_it(), d_out=d_out, op=OpKind.PLUS, h_init=h_init
+    )
+    blob = serialize(reducer)
+
+    loaded = deserialize(blob)
+    # Iterator descriptor (incl. the transform op's embedded LTOIR) rebuilt from
+    # the blob alone — deserialize took no objects.
+    assert loaded.d_in_cccl.is_kind_iterator()
+    _run_loaded_reducer(
+        loaded, d_in=make_it(), d_out=d_out, num_items=n, op=OpKind.PLUS, h_init=h_init
+    )
+
+    # sum of (i + 1) for i in 0..n-1
+    assert int(d_out.copy_to_host()[0]) == n * (n - 1) // 2 + n
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_preserves_determinism():
+    d_in = DeviceArray.from_numpy(np.arange(64, dtype=np.int32))
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+    h_init = np.zeros(1, dtype=np.int32)
+
+    reducer = make_reduce_into(
+        d_in=d_in,
+        d_out=d_out,
+        op=OpKind.PLUS,
+        h_init=h_init,
+        determinism=Determinism.NOT_GUARANTEED,
+    )
+    blob = serialize(reducer)
+
+    loaded = deserialize(blob)
+    # determinism is a build-time property, preserved on each compiled per-arch
+    # build result (loaded_build_result binds lazily on first call, so inspect build_results).
+    assert all(
+        v.determinism == int(Determinism.NOT_GUARANTEED)
+        for v in loaded.build_results.values()
+    )
+
+
+@pytest.mark.serialization
+def test_deserialize_garbage_raises():
+    with pytest.raises((ValueError, RuntimeError)):
+        deserialize(b"not a real serialization blob" + b"\0" * 64)

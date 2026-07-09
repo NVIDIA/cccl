@@ -13,7 +13,11 @@ import cuda.compute
 from cuda.compute import (
     DoubleBuffer,
     SortOrder,
+    deserialize,
+    make_radix_sort,
+    serialize,
 )
+from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 
 
 def get_mark(dt, log_size):
@@ -567,3 +571,59 @@ def test_radix_sort_double_buffer(monkeypatch):
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
     np.testing.assert_array_equal(h_out_values, h_in_values)
+
+
+def _run(sorter, *, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items):
+    bytes_needed = sorter(
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+    )
+    tmp = TempStorageBuffer(bytes_needed, None)
+    sorter(
+        temp_storage=tmp,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+    )
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_radix_sort_keys_values():
+    h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
+    h_in_values = np.array(
+        [-3.2, 2.2, 1.9, 4.0, -3.9, 2.7, 0, 8.3 - 1, 2.9, 5.4], dtype="float32"
+    )
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_values = DeviceArray.from_numpy(h_in_values)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_values = DeviceArray.empty(h_in_values.shape, h_in_values.dtype)
+
+    builder = make_radix_sort(
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        order=SortOrder.ASCENDING,
+    )
+    blob = serialize(builder)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    _run(
+        loaded,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=h_in_keys.size,
+    )
+
+    argsort = np.argsort(h_in_keys, stable=True)
+    np.testing.assert_array_equal(d_out_keys.copy_to_host(), h_in_keys[argsort])
+    np.testing.assert_array_equal(d_out_values.copy_to_host(), h_in_values[argsort])
