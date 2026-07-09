@@ -82,6 +82,19 @@ assert_equal(cuda::stream_ref stream, Buffer& buffer, cuda::std::initializer_lis
     ASSERT_EQUAL(expected.begin()[i], actual[i]);
   }
 }
+
+template <typename Buffer>
+_CCCL_HOST_API inline void assert_filled(cuda::stream_ref stream, Buffer& buffer, typename Buffer::value_type expected)
+{
+  std::vector<typename Buffer::value_type> actual(buffer.size());
+  cuda::copy_bytes(stream, buffer, actual);
+  stream.sync();
+
+  for (cuda::std::size_t i = 0; i < actual.size(); ++i)
+  {
+    ASSERT_EQUAL(expected, actual[i]);
+  }
+}
 } // namespace test_runtime
 
 #define TEST_ASSERT_DEVICE(condition) ::test_runtime::assert_device((condition), #condition, __FILE__, __LINE__)

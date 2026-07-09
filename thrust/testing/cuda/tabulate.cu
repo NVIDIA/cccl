@@ -2,50 +2,52 @@
 #include <thrust/functional.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/std/functional>
+#include <cuda/stream>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator, typename Function>
-__global__ void tabulate_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Function f)
+struct tabulate_kernel
 {
-  thrust::tabulate(exec, first, last, f);
-}
+  template <typename ExecutionPolicy, typename Result, typename Function>
+  __device__ void operator()(ExecutionPolicy exec, Result result, Function f) const
+  {
+    thrust::tabulate(exec, result.begin(), result.end(), f);
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestTabulateDevice(ExecutionPolicy exec)
 {
-  using Vector = thrust::device_vector<int>;
-  using namespace thrust::placeholders;
-  using T = typename Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector v(5);
+  auto v = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
-  tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{});
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  cuda::launch(stream, test_runtime::single_thread_config(), tabulate_kernel{}, exec, v, ::cuda::std::identity{});
+  stream.sync();
 
-  Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  test_runtime::assert_equal(stream, v, {0, 1, 2, 3, 4});
 
-  tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), -_1);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  cuda::launch(stream, test_runtime::single_thread_config(), tabulate_kernel{}, exec, v, -thrust::placeholders::_1);
+  stream.sync();
 
-  ref = {0, -1, -2, -3, -4};
-  ASSERT_EQUAL(v, ref);
+  test_runtime::assert_equal(stream, v, {0, -1, -2, -3, -4});
 
-  tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), _1 * _1 * _1);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  cuda::launch(
+    stream,
+    test_runtime::single_thread_config(),
+    tabulate_kernel{},
+    exec,
+    v,
+    thrust::placeholders::_1 * thrust::placeholders::_1 * thrust::placeholders::_1);
+  stream.sync();
 
-  ref = {0, 1, 8, 27, 64};
-  ASSERT_EQUAL(v, ref);
+  test_runtime::assert_equal(stream, v, {0, 1, 8, 27, 64});
 }
 
 void TestTabulateDeviceSeq()
@@ -63,33 +65,27 @@ DECLARE_UNITTEST(TestTabulateDeviceDevice);
 
 void TestTabulateCudaStreams()
 {
-  using namespace thrust::placeholders;
-  using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector v(5);
+  auto v = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
+  thrust::tabulate(thrust::cuda::par.on(stream.get()), v.begin(), v.end(), ::cuda::std::identity{});
+  stream.sync();
 
-  thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{});
-  cudaStreamSynchronize(s);
+  test_runtime::assert_equal(stream, v, {0, 1, 2, 3, 4});
 
-  Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  thrust::tabulate(thrust::cuda::par.on(stream.get()), v.begin(), v.end(), -thrust::placeholders::_1);
+  stream.sync();
 
-  thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), -_1);
-  cudaStreamSynchronize(s);
+  test_runtime::assert_equal(stream, v, {0, -1, -2, -3, -4});
 
-  ref = {0, -1, -2, -3, -4};
-  ASSERT_EQUAL(v, ref);
+  thrust::tabulate(thrust::cuda::par.on(stream.get()),
+                   v.begin(),
+                   v.end(),
+                   thrust::placeholders::_1 * thrust::placeholders::_1 * thrust::placeholders::_1);
+  stream.sync();
 
-  thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), _1 * _1 * _1);
-  cudaStreamSynchronize(s);
-
-  ref = {0, 1, 8, 27, 64};
-  ASSERT_EQUAL(v, ref);
-
-  cudaStreamSynchronize(s);
+  test_runtime::assert_equal(stream, v, {0, 1, 8, 27, 64});
 }
 DECLARE_UNITTEST(TestTabulateCudaStreams);
