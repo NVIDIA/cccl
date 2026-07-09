@@ -35,8 +35,11 @@ python -m pip install pytest pytest-xdist "cupy-cuda${cuda_major_version}x"
 cd "${repo_root}/python/cuda_cccl/tests/"
 python -m pytest -n 6 -v compute/test_no_numba.py
 if [[ "${py_version}" == "3.14t" ]]; then
-  # Select the module directly so pytest does not collect unrelated tests that
-  # import numba-cuda and re-enable the GIL. The stress tests provide their own
-  # worker threads, so keep pytest itself in a single process.
-  python -m pytest -n 0 -v compute/test_free_threading_stress.py
+  # Select only tests that support the minimal extra so pytest does not collect
+  # tests that import numba-cuda and re-enable the GIL. These tests provide their
+  # own worker threads, so keep pytest itself in a single process.
+  python -m pytest -n 0 -v \
+    compute/test_free_threading_stress.py \
+    compute/test_multi_cc_serialization.py::test_aot_build_result_load_failure_is_shared_and_retryable \
+    compute/test_multi_cc_serialization.py::test_aot_serialization_waits_for_canonical_first_load
 fi

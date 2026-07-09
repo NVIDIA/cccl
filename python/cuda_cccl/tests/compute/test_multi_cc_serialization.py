@@ -87,9 +87,10 @@ def test_proxy_array_data_pointer_raises():
 
 
 class _FakeBuildResult:
-    def __init__(self, payload: bytes, load_gate=None):
+    def __init__(self, payload: bytes, load_gate=None, load_failures=0):
         self.payload = payload
         self.load_gate = load_gate
+        self.load_failures = load_failures
         self.load_count = 0
         self.serialize_count = 0
         self._loaded = False
@@ -100,6 +101,8 @@ class _FakeBuildResult:
             started, proceed = self.load_gate
             started.set()
             assert proceed.wait(timeout=5)
+        if self.load_count <= self.load_failures:
+            raise RuntimeError("synthetic build-result load failure")
         self._loaded = True
 
     def serialize(self):
@@ -113,6 +116,46 @@ class _FakeBuildResult:
         if load:
             result.load()
         return result
+
+
+class _CoordinatedGetCache(dict):
+    """Make concurrent callers all observe the initial cache miss."""
+
+    def __init__(self, participants):
+        super().__init__()
+        self._get_barrier = threading.Barrier(participants)
+        self._setdefault_barrier = threading.Barrier(participants)
+
+    def get(self, key, default=None):
+        value = super().get(key, default)
+        self._get_barrier.wait(timeout=5)
+        return value
+
+    def setdefault(self, key, default=None):
+        value = super().setdefault(key, default)
+        self._setdefault_barrier.wait(timeout=5)
+        return value
+
+
+class _TrackingLock:
+    """Signal when a second caller tries to acquire an already-held lock."""
+
+    def __init__(self):
+        self.second_attempt = threading.Event()
+        self._attempt_count = 0
+        self._attempt_count_lock = threading.Lock()
+        self._lock = threading.Lock()
+
+    def __enter__(self):
+        with self._attempt_count_lock:
+            self._attempt_count += 1
+            if self._attempt_count == 2:
+                self.second_attempt.set()
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._lock.release()
 
 
 def test_aot_build_results_load_once_per_device_without_recompiling():
@@ -150,6 +193,63 @@ def test_aot_build_result_concurrent_load_is_coalesced_per_device():
 
     assert all(result is source for result in results)
     assert source.load_count == 1
+
+
+def test_aot_build_result_load_failure_is_shared_and_retryable():
+    thread_count = 4
+    source = _FakeBuildResult(b"sm80-cubin", load_failures=1)
+    build_results = _BuildResultCollection({80: source})
+    build_results._loaded_results = _CoordinatedGetCache(thread_count)
+    barrier = threading.Barrier(thread_count)
+
+    def resolve():
+        barrier.wait()
+        try:
+            build_results.resolve(80, 0)
+        except RuntimeError as error:
+            return error
+        raise AssertionError("the first load must fail")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
+        errors = [
+            future.result()
+            for future in [executor.submit(resolve) for _ in range(thread_count)]
+        ]
+
+    assert len({id(error) for error in errors}) == 1
+    assert str(errors[0]) == "synthetic build-result load failure"
+    assert source.load_count == 1
+
+    # A failed in-flight entry is removed. A later caller retries the load and
+    # can cache the successful result.
+    build_results._loaded_results = {}
+    assert build_results.resolve(80, 0) is source
+    assert source.load_count == 2
+    assert source._loaded
+
+
+def test_aot_serialization_waits_for_canonical_first_load():
+    load_started = threading.Event()
+    allow_load = threading.Event()
+    source = _FakeBuildResult(b"sm80-cubin", (load_started, allow_load))
+    build_results = _BuildResultCollection({80: source})
+    source_lock = _TrackingLock()
+    build_results._source_locks[80] = source_lock
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        load_future = executor.submit(build_results.resolve, 80, 0)
+        assert load_started.wait(timeout=5)
+        serialize_future = executor.submit(build_results.serialize_build_result, 80)
+        try:
+            assert source_lock.second_attempt.wait(timeout=5)
+            assert source.serialize_count == 0
+        finally:
+            allow_load.set()
+
+        assert load_future.result() is source
+        assert serialize_future.result() == b"sm80-cubin"
+
+    assert source.serialize_count == 1
 
 
 def test_current_device_build_result_preserves_device_query_free_fast_path(

@@ -43,6 +43,13 @@ def _require_free_threaded_python() -> None:
     _assert_gil_disabled("before importing cuda.compute")
 
 
+def _require_serialization_backend() -> None:
+    from cuda.compute._build_info import USING_V2
+
+    if USING_V2:
+        pytest.skip("serialization is not supported by the C Parallel v2 backend")
+
+
 @pytest.fixture
 def compute_modules():
     _require_free_threaded_python()
@@ -1104,6 +1111,207 @@ def test_thread_local_algorithm_objects_share_build_result(compute_modules, case
     cp, cc = compute_modules
 
     _run_thread_local_algorithm_case(cp, cc, case)
+
+
+@pytest.mark.parametrize("case", SHARED_ALGORITHM_CASES, ids=str)
+def test_concurrent_deserialize_and_execute(compute_modules, case):
+    cp, cc = compute_modules
+    _require_serialization_backend()
+
+    source_algorithm = case.make_shared(cp, cc)
+    blob = cc.serialize(source_algorithm)
+    device_id = cp.cuda.Device().id
+    _assert_gil_disabled("after serializing a cuda.compute algorithm")
+
+    for iteration in range(STRESS_ITERATIONS):
+        workers = [
+            case.make_worker(cp, cc, worker_id=worker_id, iteration=iteration)
+            for worker_id in range(STRESS_THREADS)
+        ]
+        algorithms = [None] * STRESS_THREADS
+        execute_barrier = threading.Barrier(STRESS_THREADS)
+
+        def make_thread(worker_id, worker):
+            def thread(barrier):
+                with cp.cuda.Device(device_id):
+                    barrier.wait()
+                    try:
+                        algorithm = cc.deserialize(blob)
+                        algorithms[worker_id] = algorithm
+                        # Force the independently deserialized build results to
+                        # perform their first native loads concurrently.
+                        execute_barrier.wait(timeout=60)
+                        case.run(cp, cc, algorithm, worker)
+                        case.check(cp, cc, worker)
+                    except BaseException:
+                        execute_barrier.abort()
+                        raise
+
+            return thread
+
+        _run_threaded(
+            [make_thread(worker_id, worker) for worker_id, worker in enumerate(workers)]
+        )
+
+        # deserialize() intentionally returns independent mutable wrappers and
+        # independently owned native build results. Sharing one wrapper between
+        # concurrent callers remains unsupported.
+        assert len({id(algorithm) for algorithm in algorithms}) == STRESS_THREADS
+        assert (
+            len({id(_get_build_result(algorithm)) for algorithm in algorithms})
+            == STRESS_THREADS
+        )
+
+
+def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_modules):
+    cp, cc = compute_modules
+    _require_serialization_backend()
+
+    from cuda.core import Device
+
+    device = Device()
+    target_cc = tuple(device.compute_capability)
+    proxy_in = cc.ProxyArray(np.int32)
+    proxy_out = cc.ProxyArray(np.int32)
+    workers = [
+        _make_unary_worker(cp, cc, worker_id=worker_id, iteration=0)
+        for worker_id in range(STRESS_THREADS)
+    ]
+    algorithms = [None] * STRESS_THREADS
+    execute_barrier = threading.Barrier(STRESS_THREADS)
+
+    def make_thread(worker_id, worker):
+        def thread(barrier):
+            with cp.cuda.Device(device.device_id):
+                barrier.wait()
+                try:
+                    algorithm = cc.make_unary_transform(
+                        d_in=proxy_in,
+                        d_out=proxy_out,
+                        op=cc.OpKind.NEGATE,
+                        compute_capability=target_cc,
+                    )
+                    algorithms[worker_id] = algorithm
+                    execute_barrier.wait(timeout=60)
+                    _run_unary(cp, cc, algorithm, worker)
+                    _check_unary(cp, cc, worker)
+                except BaseException:
+                    execute_barrier.abort()
+                    raise
+
+        return thread
+
+    _run_threaded(
+        [make_thread(worker_id, worker) for worker_id, worker in enumerate(workers)]
+    )
+
+    assert len({id(algorithm) for algorithm in algorithms}) == STRESS_THREADS
+    assert len({id(algorithm.build_results) for algorithm in algorithms}) == 1
+    assert len({id(_get_build_result(algorithm)) for algorithm in algorithms}) == 1
+    assert _get_build_result(algorithms[0])._loaded
+
+
+def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_modules):
+    cp, cc = compute_modules
+    _require_serialization_backend()
+
+    from cuda.core import Device
+
+    device = Device()
+    target_cc = tuple(device.compute_capability)
+    source_algorithm = cc.make_unary_transform(
+        d_in=cc.ProxyArray(np.int32),
+        d_out=cc.ProxyArray(np.int32),
+        op=cc.OpKind.NEGATE,
+        compute_capability=target_cc,
+    )
+    source_build_result = _get_build_result(source_algorithm)
+    assert not source_build_result._loaded
+    blob = cc.serialize(source_algorithm)
+
+    workers = [
+        _make_unary_worker(cp, cc, worker_id=worker_id, iteration=0)
+        for worker_id in range(STRESS_THREADS)
+    ]
+    algorithms = [None] * STRESS_THREADS
+    execute_barrier = threading.Barrier(STRESS_THREADS)
+
+    def make_thread(worker_id, worker):
+        def thread(barrier):
+            with cp.cuda.Device(device.device_id):
+                barrier.wait()
+                try:
+                    algorithm = cc.deserialize(blob)
+                    algorithms[worker_id] = algorithm
+                    assert not _get_build_result(algorithm)._loaded
+                    execute_barrier.wait(timeout=60)
+                    _run_unary(cp, cc, algorithm, worker)
+                    _check_unary(cp, cc, worker)
+                except BaseException:
+                    execute_barrier.abort()
+                    raise
+
+        return thread
+
+    _run_threaded(
+        [make_thread(worker_id, worker) for worker_id, worker in enumerate(workers)]
+    )
+
+    build_results = [_get_build_result(algorithm) for algorithm in algorithms]
+    assert len({id(algorithm) for algorithm in algorithms}) == STRESS_THREADS
+    assert len({id(build_result) for build_result in build_results}) == STRESS_THREADS
+    assert all(build_result._loaded for build_result in build_results)
+    assert not source_build_result._loaded
+
+
+def test_free_threaded_deserialize_diagnostics_are_thread_local(compute_modules):
+    cp, cc = compute_modules
+    _require_serialization_backend()
+
+    source_algorithm = _make_reduce_shared(cp, cc)
+    blob = cc.serialize(source_algorithm)
+    c_magic = b"CCCLSER1"
+    c_header_offset = blob.find(c_magic)
+    assert c_header_offset >= 0
+
+    bad_magic = bytearray(blob)
+    bad_magic[c_header_offset : c_header_offset + len(c_magic)] = b"XXXXXXXX"
+
+    bad_payload_kind = bytearray(blob)
+    payload_kind_offset = c_header_offset + len(c_magic) + 4
+    bad_payload_kind[payload_kind_offset : payload_kind_offset + 4] = (
+        0xFFFFFFFF
+    ).to_bytes(4, "little")
+
+    corruptions = [
+        (bytes(bad_magic), "bad magic"),
+        (bytes(bad_payload_kind), "unknown payload kind"),
+    ]
+
+    for _ in range(STRESS_ITERATIONS):
+        errors = [None] * len(corruptions)
+
+        def make_thread(worker_id, corrupted_blob):
+            def thread(barrier):
+                barrier.wait()
+                try:
+                    cc.deserialize(corrupted_blob)
+                except RuntimeError as error:
+                    errors[worker_id] = str(error)
+                    return
+                raise AssertionError("deserializing a corrupted C blob must fail")
+
+            return thread
+
+        _run_threaded(
+            [
+                make_thread(worker_id, corrupted_blob)
+                for worker_id, (corrupted_blob, _) in enumerate(corruptions)
+            ]
+        )
+
+        for error, (_, expected_message) in zip(errors, corruptions):
+            assert expected_message in error
 
 
 def _cache_miss_reduce(cp, cc, worker_id, iteration):
