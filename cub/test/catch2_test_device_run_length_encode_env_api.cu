@@ -97,7 +97,7 @@ struct RleNonTrivialRunsPolicySelector
 };
 // example-end non-trivial-runs-policy-selector
 
-C2H_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns env-based API with tuning", "[run_length_encode][env]")
+C2H_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts a custom policy selector", "[run_length_encode][env]")
 {
   // example-begin non-trivial-runs-tuning
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};

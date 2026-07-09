@@ -9,7 +9,8 @@ from __future__ import annotations
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
-from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._cccl_interop import set_cccl_iterator_state
+from .._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -19,9 +20,10 @@ from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _UniqueByKey:
+class _UniqueByKey(Serializable):
     __slots__ = [
-        "build_result",
+        "build_results",
+        "loaded_build_result",
         "d_in_keys_cccl",
         "d_in_items_cccl",
         "d_out_keys_cccl",
@@ -29,6 +31,16 @@ class _UniqueByKey:
         "d_out_num_selected_cccl",
         "op_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_in_items_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_out_items_cccl", ITER),
+        ("d_out_num_selected_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceUniqueByKeyBuildResult)),
+    )
 
     def __init__(
         self,
@@ -38,6 +50,7 @@ class _UniqueByKey:
         d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
         op: OpAdapter,
+        compute_capability=None,
     ):
         self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
@@ -49,7 +62,8 @@ class _UniqueByKey:
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.uint8)
 
-        self.build_result = call_build(
+        # Active build result, bound at __call__ from build_results (see resolve_build_result).
+        self.build_results = cccl.build_for_ccs(
             _bindings.DeviceUniqueByKeyBuildResult,
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
@@ -57,6 +71,7 @@ class _UniqueByKey:
             self.d_out_items_cccl,
             self.d_out_num_selected_cccl,
             self.op_cccl,
+            compute_capability=compute_capability,
         )
 
     def __call__(
@@ -72,6 +87,9 @@ class _UniqueByKey:
         num_items: int,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
         set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
@@ -92,7 +110,7 @@ class _UniqueByKey:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -116,6 +134,7 @@ def make_unique_by_key(
     d_out_items: DeviceArrayLike | IteratorT,
     d_out_num_selected: DeviceArrayLike,
     op: Operator,
+    compute_capability=None,
 ):
     """Implements a device-wide unique by key operation using ``d_in_keys`` and the comparison operator ``op``. Only the first key and its value from each run is selected and the total number of items selected is also reported.
 
@@ -134,13 +153,24 @@ def make_unique_by_key(
         d_out_items: Device array or iterator to store each outputted key's item
         d_out_num_selected: Device array to store how many items were selected
         op: Callable or OpKind representing the equality operator
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform unique by key
     """
     op_adapter = make_op_adapter(op)
     return _UniqueByKey(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op_adapter
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        op_adapter,
+        compute_capability=compute_capability,
     )
 
 

@@ -569,7 +569,7 @@ C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("ThreeWayPartition build result has AoT metadata populated", "[three_way_partition][aot]")
+C2H_TEST("ThreeWayPartition build result has serialization metadata populated", "[three_way_partition][serialization]")
 {
   using T = int32_t;
 
@@ -618,7 +618,7 @@ C2H_TEST("ThreeWayPartition build result has AoT metadata populated", "[three_wa
   REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_cleanup(&build));
 }
 
-C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][aot]")
+C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][serialization]")
 {
   using T = int32_t;
 
@@ -721,7 +721,7 @@ C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][aot
   REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_cleanup(&build));
 }
 
-C2H_TEST("ThreeWayPartition compile rejects mismatched custom ops", "[three_way_partition][aot]")
+C2H_TEST("ThreeWayPartition compile rejects mismatched custom ops", "[three_way_partition][serialization]")
 {
   using T                 = int32_t;
   constexpr int device_id = 0;
