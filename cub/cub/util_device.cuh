@@ -105,11 +105,10 @@ public:
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 
-/**
- * \brief Returns the number of CUDA devices available or -1 if an error
- *        occurred.
- */
-CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
+namespace detail
+{
+// TODO(bgruber): remove in CCCL 4.0
+CUB_RUNTIME_FUNCTION inline int device_count_uncached()
 {
   int count = -1;
   if (CubDebug(cudaGetDeviceCount(&count)))
@@ -122,27 +121,56 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
   return count;
 }
 
-// Host code. This is a separate function to avoid defining a local static in a host/device function.
-_CCCL_HOST inline int DeviceCountCachedValue()
+// TODO(bgruber): remove in CCCL 4.0
+_CCCL_HOST inline int device_count_cached_value()
 {
-  static int count = DeviceCountUncached();
+  static int count = device_count_uncached();
   return count;
 }
 
+// TODO(bgruber): remove in CCCL 4.0
+CUB_RUNTIME_FUNCTION inline int device_count()
+{
+  int result = -1;
+
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, ({ result = detail::device_count_cached_value(); }), ({ result = detail::device_count_uncached(); }));
+
+  return result;
+}
+} // namespace detail
+
+// TODO(bgruber): remove in CCCL 4.0
+/**
+ * \brief Returns the number of CUDA devices available or -1 if an error
+ *        occurred.
+ * Deprecated [Since 3.5]
+ */
+CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
+{
+  return detail::device_count_uncached();
+}
+
+// TODO(bgruber): remove in CCCL 4.0
+// Host code. This is a separate function to avoid defining a local static in a host/device function.
+CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline int DeviceCountCachedValue()
+{
+  return detail::device_count_cached_value();
+}
+
+// TODO(bgruber): remove in CCCL 4.0
 /**
  * \brief Returns the number of CUDA devices available.
  *
  * \note This function may cache the result internally.
  *
  * \note This function is thread safe.
+ *
+ * Deprecated [Since 3.5]
  */
-CUB_RUNTIME_FUNCTION inline int DeviceCount()
+CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
-  int result = -1;
-
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (result = DeviceCountCachedValue();), (result = DeviceCountUncached();));
-
-  return result;
+  return detail::device_count();
 }
 
 #  if _CCCL_HOSTED()
@@ -186,7 +214,7 @@ public:
   _CCCL_HOST inline PerDeviceAttributeCache()
       : entries_()
   {
-    _CCCL_ASSERT(DeviceCount() <= detail::max_devices, "");
+    _CCCL_ASSERT(detail::device_count() <= detail::max_devices, "");
   }
 
   /**
@@ -198,7 +226,7 @@ public:
   template <typename Invocable>
   _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
   {
-    if (device >= DeviceCount() || device < 0)
+    if (device >= detail::device_count() || device < 0)
     {
       return DevicePayload{0, cudaErrorInvalidDevice};
     }
