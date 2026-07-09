@@ -618,7 +618,7 @@ C2H_TEST("Test SegmentedSortPolicy properties", "[segmented_sort][device]")
     256, 32, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT};
   constexpr auto p1_small = cub::SegmentedSortSubWarpMergeSortPolicy{
     256, 4, 7, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT};
-  constexpr auto p1 = cub::SegmentedSortPolicy{p1_large, p1_small, p1_medium, 300};
+  constexpr auto p1 = cub::SegmentedSortPolicy{p1_large, p1_medium, p1_small, 300};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
