@@ -669,30 +669,33 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       // tile 0 has no predecessor and skips the over-fetch
       const bool first_tile = (tile_id == 0);
       const int tile_len    = (int) min((OffT) kTileSize, num_items - (OffT) tile_id * kTileSize);
-      // partial LAST tile: we only BULK COPY to the closest 16B boundary and we LDG load the rest
-      // TODO: unaligned tile0, can we make TMA automatically zero pad?
-      const int tma_elems = (tile_len == kTileSize) ? kTileSize : (tile_len & ~(kSlotPad - 1));
-      if (tile_len != kTileSize)
-      {
-        KeyT* const slot_keys = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
-        for (int e = tma_elems + lane_id; e < tile_len; e += 32)
-        {
-          slot_keys[e] = d_keys[(size_t) tile_id * kTileSize + e];
-        }
-        __syncwarp(); // all epilogue stores done before lane 0's release arrive
-      }
       if (lane_id == 0)
       {
-        const unsigned nbytes = (unsigned) (((size_t) tma_elems + (first_tile ? 0 : kSlotPad)) * sizeof(KeyT));
-        ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &full[slot_id], nbytes);
-        if (nbytes != 0)
+        const unsigned nbytes = (unsigned) (((size_t) tile_len + (first_tile ? 0 : kSlotPad)) * sizeof(KeyT));
+        if (tile_len == kTileSize)
         {
+          ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &full[slot_id], nbytes);
           ptx::cp_async_bulk(
             ptx::space_shared,
             ptx::space_global,
             tile_buf + (size_t) slot_id * kSlotStride + (first_tile ? kSlotPad : 0),
             d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
             nbytes,
+            &full[slot_id]);
+        }
+        else
+        {
+          const unsigned span_bytes = (nbytes + 15u) & ~15u;
+          ptx::mbarrier_arrive_expect_tx(
+            ptx::sem_release, ptx::scope_cta, ptx::space_shared, &full[slot_id], span_bytes);
+          ptx::cp_async_bulk_ignore_oob(
+            ptx::space_shared,
+            ptx::space_global,
+            tile_buf + (size_t) slot_id * kSlotStride + (first_tile ? kSlotPad : 0),
+            d_keys + (size_t) tile_id * kTileSize - (first_tile ? 0 : kSlotPad),
+            span_bytes,
+            0u,
+            span_bytes - nbytes,
             &full[slot_id]);
         }
       }
