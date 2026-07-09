@@ -64,15 +64,16 @@ __device__ __forceinline__ int swizzle_xor_stride32(int x)
 constexpr unsigned kFullMask = 0xffffffffu;
 
 // tile_partial_states: one word per tile
-// Layout: u64 [launch_gen:32][open_len:16][run_count:16]
-// launch_gen is needed to reuse allocations per launch
-// (this is needed to eliminate overhead of allocating the buffer. CRITICAL for perf!)
+// Layout: u64 [published_tag:32][open_len:16][run_count:16]
+// states are cleared by rle_init_states every launch (CUB temp storage has no cross-call ownership)
 // an aligned 64-bit access is already non-tearing, but atomic_ref doesn't hurt and has clear semantics
+constexpr unsigned kTilePublished = 1u;
+
 struct TilePartialStateT
 {
   u64 word;
 
-  __device__ __forceinline__ unsigned launch_gen() const
+  __device__ __forceinline__ unsigned published_tag() const
   {
     return (unsigned) (word >> 32);
   }
@@ -87,17 +88,17 @@ struct TilePartialStateT
     return (int) ((word >> 16) & 0xffffu);
   }
 
-  static __device__ __forceinline__ TilePartialStateT pack(unsigned launch_gen, int run_count, int open_len)
+  static __device__ __forceinline__ TilePartialStateT pack(int run_count, int open_len)
   {
-    return {((u64) launch_gen << 32) | ((u64) (unsigned) open_len << 16) | (u64) (unsigned) run_count};
+    return {((u64) kTilePublished << 32) | ((u64) (unsigned) open_len << 16) | (u64) (unsigned) run_count};
   }
 };
 
 __device__ __forceinline__ void
-publish_state(TilePartialStateT* tile_state_arr, int tile_idx, unsigned launch_gen, int run_count, int open_len)
+publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, int open_len)
 {
   cuda::atomic_ref<u64, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
-  a.store(TilePartialStateT::pack(launch_gen, run_count, open_len).word, cuda::memory_order_relaxed);
+  a.store(TilePartialStateT::pack(run_count, open_len).word, cuda::memory_order_relaxed);
 }
 
 // return the state (even if not yet publish for this launch, caller checks it)
@@ -258,7 +259,6 @@ compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int 
 template <int kNumCompWarps>
 __device__ __forceinline__ void reduce_and_publish_tile_state(
   TilePartialStateT* tile_partial_states,
-  unsigned launch_gen,
   int tile_id,
   int tile_len,
   const int* slot_warp_run_counts,
@@ -284,7 +284,7 @@ __device__ __forceinline__ void reduce_and_publish_tile_state(
   {
     const int open_len = (run_count > 0) ? (tile_len - last_head_idx) : tile_len;
     // CRITICAL: publish as soon as possible, this is why we calculate head_flags first
-    publish_state(tile_partial_states, tile_id, launch_gen, run_count, open_len);
+    publish_state(tile_partial_states, tile_id, run_count, open_len);
   }
 }
 
@@ -457,7 +457,6 @@ __device__ __forceinline__ void drain_warp_tile_runs(
 template <class Config, class OffT>
 __device__ __forceinline__ void poll_and_fold(
   TilePartialStateT* tile_partial_states,
-  unsigned launch_gen,
   int tile_id,
   int& last_seen_tile_id,
   OffT& last_seen_prefix_run_count,
@@ -487,10 +486,10 @@ __device__ __forceinline__ void poll_and_fold(
 #pragma unroll
       for (int i = 0; i < kPollMlp; ++i)
       {
-        if (i < lane_tile_count && packed_words[i].launch_gen() != launch_gen)
+        if (i < lane_tile_count && packed_words[i].published_tag() != kTilePublished)
         {
           packed_words[i] = load_state(tile_partial_states, lane_first_tile_id + i);
-          if (packed_words[i].launch_gen() != launch_gen)
+          if (packed_words[i].published_tag() != kTilePublished)
           {
             ready = false;
           }
@@ -535,7 +534,6 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   LenT* __restrict__ d_counts,
   NumRunsT* __restrict__ d_num_runs,
   TilePartialStateT* __restrict__ tile_partial_states,
-  const unsigned* __restrict__ d_launch_gen,
   OffT num_items,
   int num_tiles)
 {
@@ -602,11 +600,10 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   __shared__ __align__(16) uint4 clc_resp;
   __shared__ u64 clc_bar;
 
-  const int thr_id          = threadIdx.x;
-  const int warp_id         = thr_id >> 5;
-  const int lane_id         = thr_id & 31;
-  const int blk_id          = blockIdx.x;
-  const unsigned launch_gen = __ldg(d_launch_gen);
+  const int thr_id  = threadIdx.x;
+  const int warp_id = thr_id >> 5;
+  const int lane_id = thr_id & 31;
+  const int blk_id  = blockIdx.x;
   if (thr_id == 0)
   {
     for (int slot_id = 0; slot_id < kStages; ++slot_id)
@@ -780,13 +777,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
         {
         }
         reduce_and_publish_tile_state<kNumCompWarps>(
-          tile_partial_states,
-          launch_gen,
-          tile_id,
-          tile_len,
-          warp_run_counts[slot_id],
-          warp_last_heads[slot_id],
-          lane_id);
+          tile_partial_states, tile_id, tile_len, warp_run_counts[slot_id], warp_last_heads[slot_id], lane_id);
       }
       // now we start to stage head positions per warp tile, if a warptile has enough runs
       // (it is only worth it when we have more runs by a certain threshold per warp tile)
@@ -843,7 +834,6 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       OffT curr_prefix_run_count, curr_prefix_open_length;
       poll_and_fold<Config>(
         tile_partial_states,
-        launch_gen,
         tile_id,
         last_seen_tile_id,
         last_seen_prefix_run_count,
@@ -1100,7 +1090,6 @@ inline void persistent_rle_launch(
   LenT* d_counts,
   NumRunsT* d_num_runs,
   TilePartialStateT* tile_state,
-  const unsigned* d_launch_gen,
   OffT num_items,
   int num_tiles,
   cudaStream_t stream)
@@ -1114,10 +1103,9 @@ inline void persistent_rle_launch(
   }();
   (void) smem_cap_set;
 
-  // no need for per launch clear of tile_state since they are now tagged with launch_gen
   const int blocks = num_tiles;
 
   persistent_rle<KeyT, LenT, NumRunsT, OffT, Config><<<blocks, kNumThreads, kDynSmem, stream>>>(
-    d_keys, d_unique, d_counts, d_num_runs, tile_state, d_launch_gen, num_items, num_tiles);
+    d_keys, d_unique, d_counts, d_num_runs, tile_state, num_items, num_tiles);
 }
 } // namespace rle_impl

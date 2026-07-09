@@ -79,7 +79,7 @@ struct Bufs
   T* du          = nullptr;
   RunLengthT* dc = nullptr;
   NumRunsT* dn   = nullptr;
-  void* dtemp    = nullptr; // persistent-RLE temp storage (header + gen-tagged tile states)
+  void* dtemp    = nullptr; // persistent-RLE temp storage (tile states, cleared every launch)
   size_t tempb   = 0;
   long long n    = 0;
   long long R    = 0; // #runs
@@ -102,7 +102,7 @@ Bufs<T, OffsetT, RunLengthT> setup(long long n, int max_seg)
   cudaMalloc(&b.dn, sizeof(typename Bufs<T, OffsetT, RunLengthT>::NumRunsT));
   rle_impl::persistent_rle_encode<config_t>(nullptr, b.tempb, b.dk, b.du, b.dc, b.dn, (OffsetT) n);
   cudaMalloc(&b.dtemp, b.tempb);
-  cudaMemset(b.dtemp, 0xAB, b.tempb); // cold start; steady-state calls take the gen-bump path
+  cudaMemset(b.dtemp, 0xAB, b.tempb); // garbage contents; every call must clear the states itself
   cudaMemcpy(b.dk, h.data(), sizeof(T) * (size_t) n, cudaMemcpyHostToDevice);
 
   // Run CUB once for the authoritative run count + a correctness gate (aborts a fast-but-wrong build).

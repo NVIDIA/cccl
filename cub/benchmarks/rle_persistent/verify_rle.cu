@@ -86,7 +86,7 @@ static bool run_case(long long n, int max_seg, unsigned seed, bool sampled = fal
   size_t temp_bytes = 0;
   rle_impl::persistent_rle_encode<RleConfigT>(nullptr, temp_bytes, dk, du, dc, dn, (OffsetT) n);
   CHECK_CUDA(cudaMalloc(&dtemp, temp_bytes));
-  CHECK_CUDA(cudaMemset(dtemp, 0xAB, temp_bytes)); // garbage: the magic-word path must cold-init
+  CHECK_CUDA(cudaMemset(dtemp, 0xAB, temp_bytes)); // garbage: the per-launch clear must handle it
 
   // reference
   void* tmp   = nullptr;
