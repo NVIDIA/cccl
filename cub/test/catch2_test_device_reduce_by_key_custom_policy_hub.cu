@@ -19,7 +19,7 @@ template <class ReductionOpT, class AccumT, class KeyT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB reduce-by-key tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,

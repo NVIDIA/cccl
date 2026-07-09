@@ -935,7 +935,7 @@ struct policy_hub
   static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max) (sizeof(key_t), sizeof(AccumT)));
   static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int nominal_4b_items_per_thread = 6;
     static constexpr int items_per_thread =
@@ -973,7 +973,7 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy520
-      , ChainedPolicy<520, Policy520, Policy500>
+      , detail::chained_policy<520, Policy520, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -991,7 +991,7 @@ struct policy_hub
   // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT, ValueT>::ScanByKeyPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy520>
   {
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
@@ -1001,15 +1001,15 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>

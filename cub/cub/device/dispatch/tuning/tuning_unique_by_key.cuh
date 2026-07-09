@@ -804,7 +804,7 @@ struct policy_hub
 
   struct Policy500
       : DefaultPolicy500
-      , ChainedPolicy<500, Policy500, Policy500>
+      , detail::chained_policy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
@@ -824,10 +824,10 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy520
-      , ChainedPolicy<520, Policy520, Policy500>
+      , detail::chained_policy<520, Policy520, Policy500>
   {};
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy520>
   {
     using UniqueByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<KeyT, ValueT>>(0));
   };
@@ -837,15 +837,15 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using UniqueByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<KeyT, ValueT>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
