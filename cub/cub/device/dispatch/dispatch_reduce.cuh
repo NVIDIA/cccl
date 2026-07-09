@@ -816,34 +816,36 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
 #endif // CUB_DEBUG_LOG
 
     // Invoke DeviceReduceSingleTileKernel/DeviceReduceDeferredSingleTileKernel
-    const auto second_pass_error = [&] {
-      if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
-      {
-        return launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-          .doit(kernel_source.DeferredSingleTileSecondKernel(),
-                d_block_reductions,
-                d_out,
-                kernel_num_items,
-                reduce_grid_size,
-                reduction_op,
-                init,
-                ::cuda::std::identity{});
-      }
-      else
-      {
-        return launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-          .doit(kernel_source.SingleTileSecondKernel(),
-                d_block_reductions,
-                d_out,
-                reduce_grid_size,
-                reduction_op,
-                init,
-                ::cuda::std::identity{});
-      }
-    }();
-    if (const auto error = CubDebug(second_pass_error))
+    if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
     {
-      return error;
+      if (const auto error = CubDebug(
+            launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
+              .doit(kernel_source.DeferredSingleTileSecondKernel(),
+                    d_block_reductions,
+                    d_out,
+                    kernel_num_items,
+                    reduce_grid_size,
+                    reduction_op,
+                    init,
+                    ::cuda::std::identity{})))
+      {
+        return error;
+      }
+    }
+    else
+    {
+      if (const auto error = CubDebug(
+            launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
+              .doit(kernel_source.SingleTileSecondKernel(),
+                    d_block_reductions,
+                    d_out,
+                    reduce_grid_size,
+                    reduction_op,
+                    init,
+                    ::cuda::std::identity{})))
+      {
+        return error;
+      }
     }
 
     // Check for failure to launch
