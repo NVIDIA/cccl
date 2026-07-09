@@ -95,9 +95,9 @@ struct BlockPrefetch
   {
     if constexpr (PrefetchLevel != LoadPrefetch::none && can_prefetch_from<It>)
     {
-      const int linear_tid           = static_cast<int>(threadIdx.x);
-      const unsigned int total_bytes = static_cast<unsigned int>(items_to_prefetch) * unsigned{sizeof(it_value_t<It>)};
-      const auto* const src_ptr      = reinterpret_cast<const char*>(::cuda::std::to_address(tile_base));
+      const int linear_tid      = static_cast<int>(threadIdx.x);
+      const int total_bytes     = items_to_prefetch * static_cast<int>(sizeof(it_value_t<It>));
+      const auto* const src_ptr = reinterpret_cast<const char*>(::cuda::std::to_address(tile_base));
 
       if constexpr (PrefetchLevel == LoadPrefetch::bulk_l2)
       {
@@ -105,27 +105,24 @@ struct BlockPrefetch
         // cp.async.bulk.prefetch is fire-and-forget: no commit_group/wait_group needed.
         // Requires SM_90+; a no-op on older architectures.
         NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-                       if (::cuda::device::__block_elect_one())
+                       if (total_bytes > 0 && ::cuda::device::__block_elect_one())
                        {
                          // srcMem must be 16-byte aligned per PTX ISA; align base down and extend size to compensate
-                         const auto* const aligned_base  = ::cuda::align_down(src_ptr, 16);
-                         const unsigned int prefix       = static_cast<unsigned int>(src_ptr - aligned_base);
-                         const unsigned int aligned_size = ::cuda::round_up(total_bytes + prefix, 16u);
-                         if (aligned_size > 0)
-                         {
-                           asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
-                                        :
-                                        : "l"(::cuda::ptx::__as_ptr_gmem(aligned_base)), "r"(aligned_size)
-                                        : "memory");
-                         }
+                         const auto* const aligned_base = ::cuda::align_down(src_ptr, 16);
+                         const unsigned int prefix      = static_cast<unsigned int>(src_ptr - aligned_base);
+                         const unsigned int aligned_size =
+                           ::cuda::round_up(static_cast<unsigned int>(total_bytes) + prefix, 16u);
+                         asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
+                                      :
+                                      : "l"(::cuda::ptx::__as_ptr_gmem(aligned_base)), "r"(aligned_size)
+                                      : "memory");
                        }
                      }))
       }
       else
       {
         _CCCL_PRAGMA_NOUNROLL()
-        for (unsigned int offset = static_cast<unsigned int>(linear_tid) * PrefetchStride; offset < total_bytes;
-             offset += static_cast<unsigned int>(ThreadsPerBlock) * PrefetchStride)
+        for (int offset = linear_tid * PrefetchStride; offset < total_bytes; offset += ThreadsPerBlock * PrefetchStride)
         {
           // TODO: replace with cuda::ptx::prefetch_L1/L2 once exposed in libcudacxx
           if constexpr (PrefetchLevel == LoadPrefetch::l1)
