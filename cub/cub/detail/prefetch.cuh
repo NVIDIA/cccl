@@ -99,6 +99,11 @@ struct BlockPrefetch
       const int total_bytes     = items_to_prefetch * static_cast<int>(sizeof(it_value_t<It>));
       const auto* const src_ptr = reinterpret_cast<const char*>(::cuda::std::to_address(tile_base));
 
+      // Suppress "variable declared but not referenced" MSVC error
+      (void) linear_tid;
+      (void) total_bytes;
+      (void) src_ptr;
+
       if constexpr (PrefetchLevel == LoadPrefetch::bulk_l2)
       {
         // One elected thread issues a single TMA bulk prefetch for the whole tile.
