@@ -84,15 +84,20 @@ inline constexpr bool can_prefetch_from = ::cuda::std::contiguous_iterator<It> &
 template <int ThreadsPerBlock, LoadPrefetch PrefetchLevel = LoadPrefetch::l2, int PrefetchStride = 128>
 struct BlockPrefetch
 {
-  //! Cooperatively emit prefetch hints covering the tile ``[block_src_it, block_src_it + items_to_prefetch)``
+  //! Cooperatively emit prefetch hints covering the tile ``[tile_base, tile_base + items_to_prefetch)``.
+  //!
+  //! @param tile_base Iterator to the first item of the calling block's tile.
+  //! @param items_to_prefetch Total number of items in the tile, across all threads of the block — NOT a
+  //!   per-thread count. Same semantics as ``BlockLoad::Load``'s ``valid_items``: pass e.g.
+  //!   ``min(num_remaining, TILE_ITEMS)`` for a partial tile.
   template <typename It>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Prefetch(It block_src_it, int items_to_prefetch)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void Prefetch(It tile_base, int items_to_prefetch)
   {
     if constexpr (PrefetchLevel != LoadPrefetch::none && can_prefetch_from<It>)
     {
       const int linear_tid           = static_cast<int>(threadIdx.x);
       const unsigned int total_bytes = static_cast<unsigned int>(items_to_prefetch) * unsigned{sizeof(it_value_t<It>)};
-      const auto* const src_ptr      = reinterpret_cast<const char*>(::cuda::std::to_address(block_src_it));
+      const auto* const src_ptr      = reinterpret_cast<const char*>(::cuda::std::to_address(tile_base));
 
       if constexpr (PrefetchLevel == LoadPrefetch::bulk_l2)
       {
