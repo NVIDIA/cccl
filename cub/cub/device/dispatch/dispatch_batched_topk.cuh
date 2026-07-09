@@ -706,8 +706,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t launch_cluster_arm(
       const auto c_lo = ::cuda::ceil_div(seg, static_cast<::cuda::std::uint64_t>(max_block_tile_capacity));
       // Cluster blocks the max segment actually needs (shared with the device so the launch is never wider than
       // necessary). At `min_chunks_per_block == 1` this equals `c_full`; a larger knob shrinks it.
-      const int desired_cluster_blocks = batched_topk_cluster::effective_cluster_blocks_from_chunks(
-        ::cuda::ceil_div(seg, chunk_items_u64), MinChunksPerBlock, max_supported_cluster_blocks);
+      const int desired_cluster_blocks = ::cuda::narrow<int>(batched_topk_cluster::effective_cluster_blocks_from_chunks(
+        ::cuda::ceil_div(seg, chunk_items_u64),
+        MinChunksPerBlock,
+        ::cuda::narrow<unsigned int>(max_supported_cluster_blocks)));
 
       int cluster_blocks   = 0;
       int dynamic_smem_sel = 0;

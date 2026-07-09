@@ -177,11 +177,11 @@ inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred_sequence<_Arg, 
 // `min_chunks_per_block` chunks, clamped to `[1, cluster_blocks_cap]`. Identical arithmetic on both sides; only the cap
 // differs (the live cluster size on the device, max launchable blocks on the host). `min_chunks_per_block` is
 // `static_assert`ed positive, so the divide is well-defined. 64-bit math.
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr int effective_cluster_blocks_from_chunks(
-  ::cuda::std::uint64_t chunks, int min_chunks_per_block, int cluster_blocks_cap) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr unsigned int effective_cluster_blocks_from_chunks(
+  ::cuda::std::uint64_t chunks, int min_chunks_per_block, unsigned int cluster_blocks_cap) noexcept
 {
   const auto blocks = chunks / static_cast<::cuda::std::uint64_t>(min_chunks_per_block);
-  return static_cast<int>(
+  return static_cast<unsigned int>(
     ::cuda::std::clamp(blocks, ::cuda::std::uint64_t{1}, static_cast<::cuda::std::uint64_t>(cluster_blocks_cap)));
 }
 
@@ -234,8 +234,8 @@ struct agent_batched_topk_cluster
 
   // 32-bit covers every supported segment: the public entry caps the statically-known maximum segment size at 2^21, so
   // a runtime value exceeding its declared bound is a caller precondition violation (undefined behavior). Unsigned
-  // because all offsets are non-negative (segment sizes are clamped to >= 0 upstream; ranks/blocks are `int`s cast in
-  // at the boundaries). The cross-CTA scan also packs two lanes into one `uint64_t`, which needs 32-bit lanes.
+  // because all offsets, ranks, and block counts are non-negative (segment sizes are clamped to >= 0 upstream). The
+  // cross-CTA scan also packs two lanes into one `uint64_t`, which needs 32-bit lanes.
   using offset_t     = ::cuda::std::uint32_t;
   using out_offset_t = ::cuda::std::uint32_t;
   using state_t      = cluster_topk_state<key_t, offset_t, out_offset_t>;
@@ -505,11 +505,10 @@ struct agent_batched_topk_cluster
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
-  num_rank_chunks(offset_t chunks, int cluster_rank, int cluster_blocks) const
+  num_rank_chunks(offset_t chunks, unsigned int cluster_rank, unsigned int cluster_blocks) const
   {
-    return (static_cast<offset_t>(cluster_rank) < chunks)
-           ? static_cast<offset_t>(
-               (chunks - 1 - static_cast<offset_t>(cluster_rank)) / static_cast<offset_t>(cluster_blocks) + 1)
+    return (cluster_rank < chunks)
+           ? static_cast<offset_t>((chunks - 1 - cluster_rank) / cluster_blocks + 1)
            : offset_t{0};
   }
 
@@ -541,7 +540,7 @@ struct agent_batched_topk_cluster
   // The blocked layout is required by the deterministic tie-break (its cross-CTA scan assumes CTA-rank order matches
   // ascending contiguous global-index ranges), so it is selected exactly when `need_determinism` is set.
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_partition
-  make_chunk_partition(offset_t chunks, int cluster_rank, int cluster_blocks) const
+  make_chunk_partition(offset_t chunks, unsigned int cluster_rank, unsigned int cluster_blocks) const
   {
     if constexpr (need_determinism)
     {
@@ -833,7 +832,7 @@ private:
   // it to rank 0 to form the leader's `shared::cluster` address (no 64-bit pointer, no memory descriptor). Cluster
   // scope makes it mutually atomic with the leader's `hist_inc` adds.
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  hist_fold_remote(::cuda::std::uint32_t own_bucket_addr32, offset_t v, int leader_rank)
+  hist_fold_remote(::cuda::std::uint32_t own_bucket_addr32, offset_t v, unsigned int leader_rank)
   {
     ::cuda::std::uint32_t remote;
     asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote) : "r"(own_bucket_addr32), "r"(leader_rank));
@@ -842,7 +841,7 @@ private:
 
   // Generic pointer to this CTA's `state` as seen in the CTA at cluster rank `rank` (reached over DSMEM) -- the PTX
   // equivalent of cooperative_groups' `map_shared_rank`, via `mapa.u64` (generic-address form).
-  _CCCL_DEVICE _CCCL_FORCEINLINE state_t* map_state_to_rank(int rank)
+  _CCCL_DEVICE _CCCL_FORCEINLINE state_t* map_state_to_rank(unsigned int rank)
   {
     const ::cuda::std::uint64_t own = reinterpret_cast<::cuda::std::uint64_t>(&temp_storage.state);
     ::cuda::std::uint64_t remote;
@@ -853,7 +852,7 @@ private:
   // Adds the packed 64-bit `v` to the `prefix_pair` of the CTA at cluster rank `target_rank` through DSMEM (mirrors
   // `hist_fold_remote`: `mapa` to `target_rank`, then a cluster-scope `red.add`). Exact because the two 32-bit lanes
   // never carry into each other. Drives the combined cross-CTA selected/candidate prefix scan.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void add_remote_prefix(int target_rank, ::cuda::std::uint64_t v)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void add_remote_prefix(unsigned int target_rank, ::cuda::std::uint64_t v)
   {
     const ::cuda::std::uint32_t own =
       static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.prefix_pair));
@@ -1276,8 +1275,8 @@ private:
   // The successor pushes are lane-parallel: the `red.add` reductions are commutative and target distinct remote ranks,
   // so each thread owns a strided slice of the successor range (one push per thread for the usual small cluster). All
   // threads see the same CTA-uniform `packed`, so the guard and the post-push barrier stay uniform.
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint64_t
-  combined_prefix_scan(bool is_single_cta, int cluster_rank, int eff_cluster_blocks, ::cuda::std::uint64_t packed)
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint64_t combined_prefix_scan(
+    bool is_single_cta, unsigned int cluster_rank, unsigned int eff_cluster_blocks, ::cuda::std::uint64_t packed)
   {
     if (is_single_cta)
     {
@@ -1288,9 +1287,8 @@ private:
       if constexpr (is_scan_descending)
       {
         _CCCL_PRAGMA_NOUNROLL()
-        for (int rank = static_cast<int>(threadIdx.x); rank < cluster_rank; rank += threads_per_block) // lower ranks
-                                                                                                       // follow; leader
-                                                                                                       // last
+        for (unsigned int rank = threadIdx.x; rank < cluster_rank; rank += threads_per_block) // lower ranks follow;
+                                                                                              // leader last
         {
           add_remote_prefix(rank, packed);
         }
@@ -1300,8 +1298,7 @@ private:
         // Higher ranks follow. Stops at `eff_cluster_blocks` since idle ranks own nothing; the leader at the last
         // effective rank is last.
         _CCCL_PRAGMA_NOUNROLL()
-        for (int rank = cluster_rank + 1 + static_cast<int>(threadIdx.x); rank < eff_cluster_blocks;
-             rank += threads_per_block)
+        for (unsigned int rank = cluster_rank + 1u + threadIdx.x; rank < eff_cluster_blocks; rank += threads_per_block)
         {
           add_remote_prefix(rank, packed);
         }
@@ -1723,9 +1720,9 @@ private:
   template <class IdentifyOp, class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void write_nondeterministic_topk(
     num_segments_val_t segment_id,
-    int cluster_rank,
-    int eff_cluster_blocks,
-    int leader_rank,
+    unsigned int cluster_rank,
+    unsigned int eff_cluster_blocks,
+    unsigned int leader_rank,
     bool is_single_cta,
     bool is_idle_rank,
     out_offset_t k,
@@ -1914,9 +1911,9 @@ private:
   template <detail::topk::select SelectDirection, class IdentifyOp, class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void write_deterministic_topk(
     num_segments_val_t segment_id,
-    int cluster_rank,
-    int eff_cluster_blocks,
-    int leader_rank,
+    unsigned int cluster_rank,
+    unsigned int eff_cluster_blocks,
+    unsigned int leader_rank,
     bool is_single_cta,
     bool is_idle_rank,
     out_offset_t k,
@@ -2053,8 +2050,8 @@ private:
   // histogram visible cluster-wide.
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(
-    int cluster_rank,
-    int leader_rank,
+    unsigned int cluster_rank,
+    unsigned int leader_rank,
     bool is_single_cta,
     const chunk_partition& part,
     offset_t my_resident_chunks,
@@ -2230,10 +2227,10 @@ private:
     const key_t* block_keys_base;
     offset_t head_items;
     offset_t chunks;
-    int eff_cluster_blocks;
+    unsigned int eff_cluster_blocks;
     bool is_idle_rank;
     chunk_partition part;
-    int leader_rank;
+    unsigned int leader_rank;
     state_t* leader_state;
     offset_t my_chunks;
     offset_t my_resident_chunks;
@@ -2247,7 +2244,10 @@ private:
   };
 
   _CCCL_DEVICE _CCCL_FORCEINLINE segment_layout compute_segment_layout(
-    num_segments_val_t segment_id, int cluster_rank, int cluster_blocks, segment_size_val_t segment_size)
+    num_segments_val_t segment_id,
+    unsigned int cluster_rank,
+    unsigned int cluster_blocks,
+    segment_size_val_t segment_size)
   {
     segment_layout layout;
     layout.block_keys_in    = d_key_segments_it[segment_id];
@@ -2256,7 +2256,7 @@ private:
     // small segment onto rank 0. A lone CTA routes barriers to `__syncthreads()`, keeps `state`/atomics block-local,
     // and uses CTA-scope histogram atomics (no cross-rank DSMEM folds to be mutually atomic with). For wider clusters,
     // `eff_cluster_blocks` (below) further excludes ranks that receive no chunks; they stay resident but idle.
-    layout.is_single_cta = (cluster_blocks == 1);
+    layout.is_single_cta = (cluster_blocks == 1u);
 
     layout.block_keys_base = nullptr;
     layout.head_items      = 0;
@@ -2295,7 +2295,7 @@ private:
     // (`< eff_cluster_blocks`). The deterministic tie-break makes the leader the *last* CTA in scan order so it never
     // needs its own (merged-away) local candidate count: prefer-smallest scans ascending by rank (leader = last
     // effective rank), prefer-largest scans descending (leader = rank 0). The nondeterministic path keeps rank 0.
-    layout.leader_rank = (need_determinism && !is_tie_reversed) ? (layout.eff_cluster_blocks - 1) : 0;
+    layout.leader_rank = (need_determinism && !is_tie_reversed) ? (layout.eff_cluster_blocks - 1u) : 0u;
 
     // DSMEM pointer into the leader block's shared memory. The Step 2 histogram fold reaches the leader's `hist`
     // through a `mapa`-formed `shared::cluster` address instead (see `hist_fold_remote`).
@@ -2367,7 +2367,7 @@ private:
 
     // Persistent boundary-edge lengths: the head prefix lives on rank 0 (`head_items` is 0 on the generic fallback and
     // for an aligned base); the peeled tail suffix lives on the tail owner whenever it is unaligned.
-    layout.head_edge_len_items = (cluster_rank == 0) ? static_cast<int>(layout.head_items) : 0;
+    layout.head_edge_len_items = (cluster_rank == 0u) ? static_cast<int>(layout.head_items) : 0;
     layout.tail_edge_len_items = should_peel_tail ? static_cast<int>(tail_suffix_items) : 0;
     return layout;
   }
@@ -2377,8 +2377,8 @@ private:
   // that actually ran (`last_pass`), which the final filter uses to size its identify operator.
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE int run_radix_passes(
-    int cluster_rank,
-    int leader_rank,
+    unsigned int cluster_rank,
+    unsigned int leader_rank,
     bool is_single_cta,
     bool is_idle_rank,
     const chunk_partition& part,
@@ -2570,8 +2570,12 @@ private:
   }
 
   template <detail::topk::select SelectDirection>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void run(
-    num_segments_val_t segment_id, int cluster_rank, int cluster_blocks, segment_size_val_t segment_size, out_offset_t k)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  run(num_segments_val_t segment_id,
+      unsigned int cluster_rank,
+      unsigned int cluster_blocks,
+      segment_size_val_t segment_size,
+      out_offset_t k)
   {
     using identify_candidates_op_t =
       detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
@@ -2739,13 +2743,15 @@ private:
 
   // Copies an entire segment `input[i] -> output[i]` for the select-all fast path (`k >= segment_size`).
   _CCCL_DEVICE _CCCL_FORCEINLINE void copy_segment_select_all(
-    num_segments_val_t segment_id, segment_size_val_t segment_size, int cluster_rank, int cluster_blocks)
+    num_segments_val_t segment_id,
+    segment_size_val_t segment_size,
+    unsigned int cluster_rank,
+    unsigned int cluster_blocks)
   {
-    constexpr int copy_items = copy_items_per_thread_clamped;
-    const offset_t num_items = static_cast<offset_t>(segment_size);
-    const offset_t cluster_tid =
-      static_cast<offset_t>(cluster_rank) * static_cast<offset_t>(threads_per_block) + threadIdx.x;
-    const offset_t cluster_threads = static_cast<offset_t>(cluster_blocks) * static_cast<offset_t>(threads_per_block);
+    constexpr int copy_items       = copy_items_per_thread_clamped;
+    const offset_t num_items       = static_cast<offset_t>(segment_size);
+    const offset_t cluster_tid     = cluster_rank * static_cast<offset_t>(threads_per_block) + threadIdx.x;
+    const offset_t cluster_threads = cluster_blocks * static_cast<offset_t>(threads_per_block);
     const offset_t step            = cluster_threads * static_cast<offset_t>(copy_items);
     const offset_t full_tiles      = ::cuda::round_down(num_items, step);
     auto keys_in_it                = d_key_segments_it[segment_id];
@@ -2829,13 +2835,12 @@ private:
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_impl()
   {
-    // Cluster rank/size from the PTX special registers (replaces cooperative_groups' `this_cluster()`). Cast the
-    // unsigned sregs to `int` once here so all downstream rank/block indexing stays signed (both always fit `int`).
-    const int cluster_rank = static_cast<int>(::cuda::ptx::get_sreg_cluster_ctarank());
+    // Cluster rank/size from the PTX special registers (replaces cooperative_groups' `this_cluster()`).
+    const unsigned int cluster_rank = ::cuda::ptx::get_sreg_cluster_ctarank();
     // Runtime cluster blocks match the launch attribute the dispatch passed
     // to `cudaLaunchKernelExC` (or the kernel's `__cluster_dims__` on CDP).
-    const int cluster_blocks = static_cast<int>(::cuda::ptx::get_sreg_cluster_nctarank());
-    const auto segment_id    = static_cast<num_segments_val_t>(static_cast<int>(blockIdx.x) / cluster_blocks);
+    const unsigned int cluster_blocks = ::cuda::ptx::get_sreg_cluster_nctarank();
+    const auto segment_id             = static_cast<num_segments_val_t>(blockIdx.x / cluster_blocks);
 
     if (segment_id >= detail::params::get_param(num_segments, num_segments_val_t{0}))
     {
@@ -2877,8 +2882,8 @@ private:
     // served by rank 0 alone via the barrier-free path; the cluster's other CTAs exit immediately, freeing their SM
     // slots. The decision is per-segment uniform across the block, so a redundant CTA returns whole. Compiled out for
     // host-exact sizes, which the dispatch already sized to exact cluster blocks.
-    int eff_cluster_blocks = cluster_blocks;
-    int eff_cluster_rank   = cluster_rank;
+    unsigned int eff_cluster_blocks = cluster_blocks;
+    unsigned int eff_cluster_rank   = cluster_rank;
     if constexpr (enable_runtime_single_cta)
     {
       const bool fits_single_cta = is_single_cta_eligible(
@@ -2887,15 +2892,15 @@ private:
         single_block_max_seg_size);
       if (fits_single_cta)
       {
-        if (cluster_rank != 0)
+        if (cluster_rank != 0u)
         {
           return;
         }
-        eff_cluster_blocks = 1;
-        eff_cluster_rank   = 0;
+        eff_cluster_blocks = 1u;
+        eff_cluster_rank   = 0u;
       }
     }
-    const bool is_single_cta = (eff_cluster_blocks == 1);
+    const bool is_single_cta = (eff_cluster_blocks == 1u);
 
     // Every block's thread 0 initializes its local `state`. Only the
     // leader's copy is semantically read (non-leaders reach the cluster
