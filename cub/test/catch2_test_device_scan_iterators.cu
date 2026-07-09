@@ -159,7 +159,7 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   {
     // cuda::buffer currently does not handle types with size of exactly 3 in the value
     // constructor. See https://github.com/NVIDIA/cccl/pull/9776
-    if constexpr (sizeof(input_t) == 3)
+    if constexpr (sizeof(input_t) != 3)
     {
       using op_t    = cuda::std::plus<>;
       using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
