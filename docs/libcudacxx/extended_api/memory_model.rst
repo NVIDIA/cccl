@@ -211,11 +211,11 @@ leads to a **data race**, and exhibits **undefined behavior**:
           assert(x == 42);
 
 While the memory operations on ``f`` - the store and the loads - are
-atomic, the scope of the store operation is “block scope”. Since the
+atomic, the scope of the store operation is "block scope". Since the
 store is performed by Thread 0 of Block 0, it only includes all other
 threads of Block 0. However, the thread doing the loads is in Block 1,
 i.e., it is not in a scope included by the store operation performed in
-Block 0, causing the store and the load to not be “atomic”, and
+Block 0, causing the store and the load to not be "atomic", and
 introducing a data-race.
 
 For more examples see the `PTX memory consistency model litmus

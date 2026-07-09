@@ -78,7 +78,7 @@ template <class _UPair, class _T1, class _T2>
 {
   using ::cuda::std::get;
   if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>>)
-  { // [pairs#pair]-15.1: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+  { // [pairs#pair]-15.1: remove_cvref_t<UTuple> is not a specialization of ranges::subrange,
     return __select_constructor::__invalid;
   }
   else if constexpr (!__pair_like<_UPair>)
@@ -86,11 +86,11 @@ template <class _UPair, class _T1, class _T2>
     return __select_constructor::__invalid;
   }
   else if constexpr (!is_constructible_v<_T1, decltype(get<0>(::cuda::std::declval<_UPair>()))>)
-  { // [pairs#pair]-15.2: is_constructible<T1, decltype(get<0>(std​::​forward<UTuple>(u)))>... is true
+  { // [pairs#pair]-15.2: is_constructible<T1, decltype(get<0>(std::forward<UTuple>(u)))>... is true
     return __select_constructor::__invalid;
   }
   else if constexpr (!is_constructible_v<_T2, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
-  { // [pairs#pair]-15.3: is_constructible<T2, decltype(get<1>(std​::​forward<UTuple>(u)))>... is true
+  { // [pairs#pair]-15.3: is_constructible<T2, decltype(get<1>(std::forward<UTuple>(u)))>... is true
     return __select_constructor::__invalid;
   }
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
@@ -129,8 +129,8 @@ template <bool _IsConst, class _UPair, class _T1, class _T2>
     return __select_assignment::__invalid;
   }
   else if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>>)
-  { // [pairs.pair]-42.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
-    // [pairs.pair]-45.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+  { // [pairs.pair]-42.2: remove_cvref_t<UTuple> is not a specialization of ranges::subrange,
+    // [pairs.pair]-45.2: remove_cvref_t<UTuple> is not a specialization of ranges::subrange,
     return __select_assignment::__invalid;
   }
   else if constexpr (!__pair_like<_UPair>)
@@ -141,11 +141,11 @@ template <bool _IsConst, class _UPair, class _T1, class _T2>
   else if constexpr (_IsConst)
   {
     if constexpr (!is_assignable_v<const _T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>)
-    { // [pairs.pair]-45.3: is_assignable_v<const T1&, decltype(get<0>(std​::​forward<P>(p)))> is true
+    { // [pairs.pair]-45.3: is_assignable_v<const T1&, decltype(get<0>(std::forward<P>(p)))> is true
       return __select_assignment::__invalid;
     }
     else if constexpr (!is_assignable_v<const _T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
-    { // [pairs.pair]-45.4: is_assignable_v<const T2&, decltype(get<1>(std​::​forward<P>(p)))> is true
+    { // [pairs.pair]-45.4: is_assignable_v<const T2&, decltype(get<1>(std::forward<P>(p)))> is true
       return __select_assignment::__invalid;
     }
     else if constexpr (is_nothrow_assignable_v<const _T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>
@@ -159,11 +159,11 @@ template <bool _IsConst, class _UPair, class _T1, class _T2>
     }
   }
   else if constexpr (!is_assignable_v<_T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>)
-  { // [pairs.pair]-42.3: is_assignable_v<const T1&, decltype(get<0>(std​::​forward<P>(p)))> is true
+  { // [pairs.pair]-42.3: is_assignable_v<const T1&, decltype(get<0>(std::forward<P>(p)))> is true
     return __select_assignment::__invalid;
   }
   else if constexpr (!is_assignable_v<_T2&, decltype(get<1>(::cuda::std::declval<_UPair>()))>)
-  { // [pairs.pair]-42.4: is_assignable_v<const T2&, decltype(get<1>(std​::​forward<P>(p)))> is true
+  { // [pairs.pair]-42.4: is_assignable_v<const T2&, decltype(get<1>(std::forward<P>(p)))> is true
     return __select_assignment::__invalid;
   }
   else if constexpr (is_nothrow_assignable_v<_T1&, decltype(get<0>(::cuda::std::declval<_UPair>()))>
