@@ -45,4 +45,3 @@ void TestDeviceBufferSortCudaStreams()
   test_runtime::assert_equal(stream, buffer, {0, 1, 2, 3, 4});
 }
 DECLARE_UNITTEST(TestDeviceBufferSortCudaStreams);
-#include <thrust/execution_policy.h>
