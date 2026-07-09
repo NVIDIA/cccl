@@ -1242,12 +1242,24 @@ private:
   // -------------------------------------------------------------------------
   // Per-direction implementation
   // -------------------------------------------------------------------------
-  // Cluster-wide barrier via PTX (replaces cooperative_groups' `cluster.sync()`): `.release` on arrive, `.acquire` on
-  // wait, both `.aligned` since every thread reaches it under a uniform branch.
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_barrier()
+  // Split halves of the cluster-wide barrier (replaces cooperative_groups' `cluster.sync()`). `arrive` releases this
+  // CTA's prior writes and signals arrival; `wait` acquires all CTAs' writes once every CTA has arrived. Both are
+  // `.aligned` since every thread reaches them under a uniform branch. Issuing independent, block-local work between
+  // them hides the cluster-arrival latency.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_arrive()
   {
     asm volatile("barrier.cluster.arrive.release.aligned;" : : : "memory");
+  }
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_wait()
+  {
     asm volatile("barrier.cluster.wait.acquire.aligned;" : : : "memory");
+  }
+
+  // Cluster-wide barrier: arrive immediately followed by wait, no work window exploited.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_barrier()
+  {
+    cluster_arrive();
+    cluster_wait();
   }
 
   // Synchronize the segment's cluster. A single-CTA "cluster" keeps all state block-local, so `__syncthreads()` orders
@@ -1263,6 +1275,29 @@ private:
     else
     {
       cluster_barrier();
+    }
+  }
+
+  // Split form of `cluster_or_block_sync`, for overlapping the cluster-arrival latency with independent block-local
+  // work: `arrive`, then the work, then `wait`. A single-CTA "cluster" has no arrival latency to hide and no cross-CTA
+  // state, so it takes the whole `__syncthreads()` at `arrive` and its `wait` is a no-op. In the multi-CTA case the
+  // work between the two must touch only block-local state (a cross-CTA read before `wait` may miss a peer's writes).
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_or_block_arrive(bool is_single_cta)
+  {
+    if (is_single_cta)
+    {
+      __syncthreads();
+    }
+    else
+    {
+      cluster_arrive();
+    }
+  }
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_or_block_wait(bool is_single_cta)
+  {
+    if (!is_single_cta)
+    {
+      cluster_wait();
     }
   }
 
@@ -2046,8 +2081,9 @@ private:
   // Fused first pass: load this rank's resident chunks into the block_tile, stage the persistent boundary edges into
   // `edge_keys`, and fold every key (resident + edges + overflow) into pass 0's histogram in the same sweep (pass 0
   // needs no candidate filtering). Publishes the resident span as `resident_keys` and its 32-bit shared base address
-  // as `resident_smem32` for the later passes and the final filter; ends on the barrier that makes `edge_keys` and the
-  // histogram visible cluster-wide.
+  // as `resident_smem32` for the later passes and the final filter; ends on a `__syncthreads()` that makes `edge_keys`
+  // and the block-local histogram visible within the block. Cross-CTA visibility of the zeroed histogram comes later,
+  // from the deferred initial cluster wait in `run_radix_passes` (this whole load runs in that arrive->wait window).
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(
     unsigned int cluster_rank,
@@ -2462,11 +2498,19 @@ private:
         fold_boundary_edges(head_edge_len_items, tail_edge_len_items, add_hist);
       }
 
-      // Local barrier is enough: all Step 1 / Step 2 writes to `hist[]`
-      // are atomic at compatible scopes (see Step 1 dispatch). The
-      // cluster-wide ordering before Step 3's leader read of `hist[]`
-      // is supplied by the cluster barrier further below.
+      // Local barrier is enough here: all Step 1 / Step 2 writes to `hist[]` are atomic at compatible scopes (see Step
+      // 1 dispatch). The cluster-wide ordering before Step 3's leader read of the merged `hist[]` is supplied by the
+      // split post-fold cluster wait further below.
       __syncthreads();
+
+      // First pass only: complete the deferred initial cluster barrier here. `process_impl` issued its matching
+      // `cluster_arrive` right after zeroing `state`/`hist`, so the cluster-arrival latency overlapped the fused
+      // first-pass load + histogram. The wait must precede the first cross-CTA access -- the Step-2 folds just below,
+      // which need the leader's `hist` visibly zeroed.
+      if (is_first_pass)
+      {
+        cluster_or_block_wait(is_single_cta);
+      }
 
       // Step 2: non-leader blocks fold their per-bucket raw counts into
       // the leader's `hist` via cluster-scope DSMEM atomics (see
@@ -2488,26 +2532,21 @@ private:
         }
       }
 
+      // Split the post-fold cluster barrier: arrive once the folds are released, then overlap the non-leaders'
+      // own-histogram scan (block-local) with the cluster-arrival latency, and only wait before the leader reads the
+      // merged `hist`.
       // TODO(cccl): idle ranks arrive here only because the cluster barrier spans the whole launched cluster. An
       // mbarrier over just the active ranks would let them exit and free their SM slots instead of spinning here.
-      cluster_or_block_sync(is_single_cta);
+      cluster_or_block_arrive(is_single_cta);
 
-      // Step 3: the leader prefix-scans the merged `hist` (raw counts) and
-      // updates the cluster-shared `state`. Subsequent reads (end-of-pass
-      // fold, last filter) all observe these writes after the next cluster sync.
-      //
-      // In parallel, each non-leader exclusive-scans its *own* (un-merged) histogram into registers (the leader was
-      // otherwise the only block doing useful work here). Once the leader publishes `kth_bucket` below, the lane that
-      // owns it reads its exclusive prefix (= this block's keys strictly above the splitter this pass -> accumulated
-      // into `num_strictly_selected`) and its raw bucket count (-> `my_candidates`). Keeping the scan in registers lets
-      // `hist` reset on the normal schedule (the regs survive the reset and the next cluster sync).
+      // Step 3 (non-leader half, run in the arrive->wait window): each non-leader exclusive-scans its *own* (un-merged)
+      // histogram into registers -- the leader is otherwise the only block doing useful work at Step 3. Once the leader
+      // publishes `kth_bucket` below, the lane owning it reads its exclusive prefix (this block's keys strictly above
+      // the splitter this pass -> `num_strictly_selected`) and its raw bucket count (-> `my_candidates`). Keeping the
+      // scan in registers lets `hist` reset on the normal schedule (the regs survive the reset and the next sync).
       offset_t local_prefixes[buckets_per_thread]{};
       offset_t local_hist_vals[buckets_per_thread]{};
-      if (cluster_rank == leader_rank)
-      {
-        leader_identify_kth_bucket();
-      }
-      else if (!is_idle_rank)
+      if (cluster_rank != leader_rank && !is_idle_rank)
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < buckets_per_thread; ++j)
@@ -2516,6 +2555,16 @@ private:
           local_hist_vals[j] = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
         }
         block_scan_t(temp_storage.scan_storage).ExclusiveSum(local_hist_vals, local_prefixes);
+      }
+
+      cluster_or_block_wait(is_single_cta);
+
+      // Step 3 (leader half): the leader prefix-scans the merged `hist` (raw counts, all folds now visible) and updates
+      // the cluster-shared `state`. Subsequent reads (end-of-pass fold, last filter) observe these writes after the
+      // next cluster sync.
+      if (cluster_rank == leader_rank)
+      {
+        leader_identify_kth_bucket();
       }
 
       if (pass + 1 < num_passes)
@@ -2912,9 +2961,10 @@ private:
       temp_storage.state.len         = static_cast<offset_t>(segment_size);
       temp_storage.state.k           = k;
       temp_storage.state.result_pair = 0;
-      // Front-load every counter the final filter relies on so the first cluster barrier below publishes the zeros to
-      // all ranks (the combined scan's DSMEM pushes then add into an already-zeroed `prefix_pair`, needing only a
-      // post-push barrier). `my_candidates` is zeroed too so idle/leader ranks (which never write it) read 0.
+      // Front-load every counter the final filter relies on so the initial cluster barrier below (arrive here, wait in
+      // the first pass) publishes the zeros to all ranks (the combined scan's DSMEM pushes then add into an
+      // already-zeroed `prefix_pair`, needing only a post-push barrier). `my_candidates` is zeroed too so idle/leader
+      // ranks (which never write it) read 0.
       temp_storage.prefix_pair           = 0;
       temp_storage.front_local_cnt       = 0;
       temp_storage.back_local_cnt        = 0;
@@ -2922,7 +2972,11 @@ private:
       temp_storage.my_candidates         = 0;
     }
     reset_hist();
-    cluster_or_block_sync(is_single_cta);
+    // Only arrive here; the matching wait is deferred to just before the first cross-CTA fold in `run_radix_passes`'
+    // first pass, so the cluster-arrival latency overlaps the fused first-pass load + histogram. Safe because nothing
+    // between here and that wait touches another rank's DSMEM (the first-pass histogram writes only block-local
+    // `hist`; `leader_state`/`prefix_pair` are untouched until later).
+    cluster_or_block_arrive(is_single_cta);
 
     [[maybe_unused]] const bool is_ok = detail::params::dispatch_discrete(
       select_directions,
