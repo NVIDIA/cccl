@@ -86,14 +86,18 @@ inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(__shfl_s
 //!   The number of items per thread.
 //!
 //! @tparam KeyT
-//!   Key type
+//!   Key type. Should be default constructible and trivially copyable.
 //!
 //! @tparam ValueT
-//!   <b>[optional]</b> Value type (default: cub::NullType, which indicates a keys-only sort)
+//!   <b>[optional]</b> Value type (default: cub::NullType, which indicates a keys-only sort).
+//!   Should be default constructible and trivially copyable.
 //!
 template <int ItemsPerThread, typename KeyT, typename ValueT = NullType>
 class WarpBitonicSort
 {
+  static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>);
+  static_assert(::cuda::std::is_default_constructible_v<ValueT> && ::cuda::is_trivially_copyable_v<ValueT>);
+
 public:
   //! @brief Sorts keys across a warp of threads using bitonic sorting network.
   //!
@@ -154,7 +158,7 @@ public:
   //!   that the relative order of these two elements will be preserved by sort.
   //! - All threads in the calling warp must invoke this collective.
   //! - All threads in the calling warp must agree on the same value for `valid_items`.
-  //! - `KeyT` should be default constructible. Keys out of `valid_items` boundary may get overwritten.
+  //! - Keys out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
@@ -208,7 +212,7 @@ public:
   //! - The value of `oob_default` is assigned to all keys that are out of
   //!   `valid_items` boundaries. It's expected that `oob_default` is ordered
   //!   after any key in the `valid_items` boundaries.
-  //! - `ValueT` should be default constructible. Values out of `valid_items` boundary may get overwritten.
+  //! - Values out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
@@ -245,8 +249,7 @@ public:
   //!   that the relative order of these two elements will be preserved by sort.
   //! - All threads in the calling warp must invoke this collective.
   //! - All threads in the calling warp must agree on the same value for `valid_items`.
-  //! - `KeyT` and `ValueT` should be default constructible. Keys and values out of `valid_items` boundary may get
-  //! overwritten.
+  //! - Keys and values out of `valid_items` boundary may get overwritten.
   //!
   //! @tparam CompareOp Comparison functor type
   //!
