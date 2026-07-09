@@ -23,6 +23,8 @@
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
@@ -43,23 +45,49 @@ enum class TransformAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algorithm)
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] constexpr const char* to_string(TransformAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case TransformAlgorithm::prefetch:
-      return os << "TransformAlgorithm::prefetch";
+      return "TransformAlgorithm::prefetch";
     case TransformAlgorithm::vectorized:
-      return os << "TransformAlgorithm::vectorized";
+      return "TransformAlgorithm::vectorized";
     case TransformAlgorithm::ldgsts:
-      return os << "TransformAlgorithm::ldgsts";
+      return "TransformAlgorithm::ldgsts";
     case TransformAlgorithm::ublkcp:
-      return os << "TransformAlgorithm::ublkcp";
+      return "TransformAlgorithm::ublkcp";
     default:
-      return os << "TransformAlgorithm::<unknown>";
+      return "<unknown TransformAlgorithm>";
   }
 }
+} // namespace detail
 #endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::TransformAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::TransformAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The prefetch sub-policy for @ref TransformPolicy.
 struct TransformPrefetchPolicy
@@ -144,13 +172,21 @@ struct TransformAsyncCopyPolicy
   int max_items_per_thread = 32; //!< Maximum number of items per thread (inclusive)
   // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
   int unroll_factor = 1; //!< The unroll factor for the transformation loop in the kernel. The value 0 retains the
-                         //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling.
+                         //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling. This
+                         //!< parameter has no effect when store vectorization is enabled (see @p store_vec_size) and
+                         //!< eligible at runtime (buffer alignments are sufficient).
+  // Setting store_vec_size smaller narrows the store but also reduces the number of fully-unrolled lambda calls per
+  // store, which bounds register pressure for heavy functors (their stores aren't the bottleneck anyway).
+  int store_vec_size = 0; //!< Output elements per vectorized store; only used when algorithm == ublkcp. 0 = auto
+                          //!< (16 / sizeof(output), a 16-byte STG.128); 1 disables vectorization (scalar stores) and
+                          //!< compiles the vectorized branch out of the kernel.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.min_items_per_thread == rhs.min_items_per_thread
-        && lhs.max_items_per_thread == rhs.max_items_per_thread && lhs.unroll_factor == rhs.unroll_factor;
+        && lhs.max_items_per_thread == rhs.max_items_per_thread && lhs.unroll_factor == rhs.unroll_factor
+        && lhs.store_vec_size == rhs.store_vec_size;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -162,9 +198,11 @@ struct TransformAsyncCopyPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const TransformAsyncCopyPolicy& policy)
   {
-    return os << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
-              << ", .min_items_per_thread = " << policy.min_items_per_thread << ", .max_items_per_thread = "
-              << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor << " }";
+    return os
+        << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .min_items_per_thread = " << policy.min_items_per_thread
+        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
+        << ", .store_vec_size = " << policy.store_vec_size << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -322,6 +360,11 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
   return TransformVectorizedPolicy{256, 8, 4};
 }
 
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int auto_ublkcp_store_vec_size(int out_size)
+{
+  return (out_size > 0 && out_size <= 16 && ::cuda::is_power_of_two(out_size)) ? 16 / out_size : 1;
+}
+
 template <int InputCount>
 struct policy_selector
 {
@@ -359,7 +402,8 @@ struct policy_selector
       const auto prefetch = TransformPrefetchPolicy{256};
       const auto vectorized =
         tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
-      const auto async = TransformAsyncCopyPolicy{async_block_size};
+      auto async           = TransformAsyncCopyPolicy{async_block_size};
+      async.store_vec_size = auto_ublkcp_store_vec_size(output.value_type_size);
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but

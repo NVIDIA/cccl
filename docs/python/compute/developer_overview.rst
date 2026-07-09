@@ -469,17 +469,20 @@ Internally, ``cuda.compute`` separates two kinds of cached state:
   ``cuda/compute/_caching.py``. Keeping wrapper caches thread-local avoids
   sharing mutable wrapper state across concurrent calls from free-threaded
   Python.
-* **Build results** are the Cython objects that own the native C parallel build
-  state, such as loaded CUDA libraries, kernels, policy state, and other
-  read-only data needed to invoke an algorithm. They are cached by
-  ``cache_build_result`` and may be shared by wrapper objects in different
-  Python threads.
+* **Build-result collections** contain one canonical Cython build result per
+  target compute capability. They are cached by ``cache_build_results`` and may
+  be shared by wrapper objects in different Python threads. For explicit AOT
+  builds, the canonical results contain device-independent compiled payloads;
+  loaded CUDA libraries and kernels are cached separately per device ordinal.
 
 The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
 thread-local and does not consult the process-wide build-result cache. When a
 wrapper is constructed, a completed build-result hit requires one process-wide
-dictionary lookup and does not take an explicit cache lock. Neither cache layer
-is consulted during ordinary execution of an already-returned wrapper object.
+dictionary lookup and does not take an explicit cache lock. A default
+current-device build stores a direct reference to its already-loaded result, so
+executing that wrapper does not query the current device or consult a shared
+cache. Explicit or deserialized AOT results resolve through a per-collection,
+per-device dictionary; a completed lookup also takes no explicit lock.
 
 Design requirements
 +++++++++++++++++++
@@ -541,10 +544,20 @@ criteria for a free-threaded build are:
 Device keying
 +++++++++++++
 
-Both cache layers include the current CUDA runtime device ordinal and compute
-capability in their keys. The compute capability identifies the architecture used
-for code generation and policy selection. The device ordinal keeps native build
-state associated with the device on which it was built.
+For the default ``compute_capability=None`` path, both cache layers include the
+current CUDA runtime device ordinal and compute capability in their keys. The
+compute capability identifies the architecture used for code generation and
+policy selection. The device ordinal keeps loaded native state associated with
+the device on which it was built.
+
+Explicit AOT builds cannot include a device ordinal in their compilation key:
+they are intentionally supported on machines with no GPU. Their canonical
+compiled results are therefore shared process-wide by specialization and target
+compute capability. On first execution, the canonical result is assigned to the
+current device. Execution on another device with the same compute capability
+clones the canonical result through serialization and loads the clone for that
+device. This reuses the compiled payload without sharing loaded handles or
+recompiling.
 
 The first implementation intentionally keys shared build results by CUDA runtime
 device ordinal rather than by CUDA context handle. User-managed CUDA driver
@@ -552,25 +565,24 @@ contexts are not a target use case for ``cuda.compute``. CUDA runtime,
 ``cuda.core``, CuPy, and PyTorch-style applications are expected to use the
 primary-context model, and language frontends generally prefer that model.
 
-The first implementation also does not share build results across devices that
-happen to have the same compute capability. Native build results are not treated
-as pure SM-level code artifacts. They can contain CUDA-facing build/load state,
-and CUB launch paths may resolve a ``CUkernel`` to the current-context
-``CUfunction`` before occupancy queries or launch. Some paths also get or set
-kernel attributes on the resolved function, and CUDA kernel-attribute behavior
-is device-specific. Until every build-result path is audited for same-SM
-cross-device sharing, separate device ordinals build and cache separate native
-results.
+Loaded native build results are not shared across devices that happen to have
+the same compute capability. They can contain CUDA-facing load state, and CUB
+launch paths may resolve a ``CUkernel`` to the current-context ``CUfunction``
+before occupancy queries or launch. Some paths also get or set kernel attributes
+on the resolved function, and CUDA kernel-attribute behavior is device-specific.
+Canonical AOT payloads may be shared, but each device receives a distinct loaded
+native result.
 
 Concurrent build coordination
 +++++++++++++++++++++++++++++
 
-``cache_build_result`` is responsible for coordinating concurrent cache misses.
-The process-wide dictionary stores either a completed build result or a
-temporary ``_InFlightBuild`` entry. On a miss, each caller creates a candidate
-in-flight entry, and ``dict.setdefault`` elects one caller to run the builder.
-Other callers receive the winning entry and wait on its ``threading.Event``. If
-the build succeeds, the in-flight entry is replaced by the completed result and
+``cache_build_results`` coordinates concurrent compilation misses, while the
+build-result collection uses the same single-flight helper for per-device load
+misses. A cache dictionary stores either a completed value or a temporary
+``_InFlightBuild`` entry. On a miss, each caller creates a candidate in-flight
+entry, and ``dict.setdefault`` elects one caller to run the builder. Other
+callers receive the winning entry and wait on its ``threading.Event``. If the
+operation succeeds, the in-flight entry is replaced by the completed result and
 all waiting threads receive that same object. If it fails, the exception is
 propagated to the waiting threads and the failed entry is removed so that a
 later call can retry. Completed-result hits do not allocate an in-flight entry
@@ -578,10 +590,10 @@ or take an explicit cache lock.
 
 When adding a new algorithm, the factory that returns the reusable wrapper object
 should use ``cache_with_registered_key_functions``. The wrapper constructor
-should pass the expensive native build operation to ``cache_build_result`` if
-that native state is safe to share across threads. Do not perform an expensive
-native build before entering ``cache_build_result``; otherwise same-key cold
-factory calls can duplicate the build and bypass single-flight coordination.
+should pass the expensive native build operation to ``cache_build_results``.
+Do not perform an expensive native build before entering
+``cache_build_results``; otherwise same-key cold factory calls can duplicate the
+build and bypass single-flight coordination.
 
 The specialization key must include every argument that can affect generated
 code, type layout, policy selection, or native build state. It should not include

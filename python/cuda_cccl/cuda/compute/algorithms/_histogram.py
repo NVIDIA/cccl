@@ -12,14 +12,15 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_build_result, cache_with_registered_key_functions
-from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._caching import cache_build_results, cache_with_registered_key_functions
+from .._cccl_interop import set_cccl_iterator_state, to_cccl_value_state
+from .._serialization import BUILD_RESULTS, ITER, U64, VALUE, Serializable
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..typing import DeviceArrayLike, IteratorT
 
 
-class _Histogram:
+class _Histogram(Serializable):
     __slots__ = [
         "num_rows",
         "d_samples_cccl",
@@ -27,8 +28,19 @@ class _Histogram:
         "h_num_output_levels_cccl",
         "h_lower_level_cccl",
         "h_upper_level_cccl",
-        "build_result",
+        "build_results",
+        "loaded_build_result",
     ]
+
+    __serialization_schema__ = (
+        ("num_rows", U64),
+        ("d_samples_cccl", ITER),
+        ("d_histogram_cccl", ITER),
+        ("h_num_output_levels_cccl", VALUE),
+        ("h_lower_level_cccl", VALUE),
+        ("h_upper_level_cccl", VALUE),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceHistogramBuildResult)),
+    )
 
     def __init__(
         self,
@@ -38,6 +50,7 @@ class _Histogram:
         h_lower_level: np.ndarray,
         h_upper_level: np.ndarray,
         num_samples: int,
+        compute_capability=None,
     ):
         num_channels = 1
         num_active_channels = 1
@@ -52,7 +65,7 @@ class _Histogram:
         self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
         self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
 
-        self.build_result = cache_build_result(
+        self.build_results = cache_build_results(
             _bindings.DeviceHistogramBuildResult,
             d_samples,
             d_histogram,
@@ -60,7 +73,8 @@ class _Histogram:
             h_lower_level.dtype,
             num_samples,
             is_evenly_segmented,
-            builder=lambda: call_build(
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
                 _bindings.DeviceHistogramBuildResult,
                 num_channels,
                 num_active_channels,
@@ -71,6 +85,7 @@ class _Histogram:
                 self.num_rows,
                 row_stride_samples,
                 is_evenly_segmented,
+                compute_capability=compute_capability,
             ),
         )
 
@@ -86,6 +101,9 @@ class _Histogram:
         num_samples: int,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         set_cccl_iterator_state(self.d_samples_cccl, d_samples)
         set_cccl_iterator_state(self.d_histogram_cccl, d_histogram)
         self.h_num_output_levels_cccl.state = to_cccl_value_state(h_num_output_levels)
@@ -102,7 +120,7 @@ class _Histogram:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute_even(
+        temp_storage_bytes = self.loaded_build_result.compute_even(
             d_temp_storage,
             temp_storage_bytes,
             self.d_samples_cccl,
@@ -127,6 +145,7 @@ def _make_histogram_even_impl(
     level_dtype,
     uses_64bit_offset: bool,
     uses_privatized_smem: bool,
+    compute_capability=None,
 ):
     """Internal cached implementation of make_histogram_even.
 
@@ -159,6 +178,7 @@ def _make_histogram_even_impl(
         h_lower_level,
         h_upper_level,
         build_num_samples,
+        compute_capability=compute_capability,
     )
 
 
@@ -170,6 +190,7 @@ def make_histogram_even(
     h_lower_level: np.ndarray,
     h_upper_level: np.ndarray,
     num_samples: int,
+    compute_capability=None,
 ):
     """Implements a device-wide histogram that places ``d_samples`` into evenly-spaced bins.
 
@@ -187,6 +208,11 @@ def make_histogram_even(
         h_lower_level: Host array containing the lower level
         h_upper_level: Host array containing the upper level
         num_samples: Number of samples to be histogrammed
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the histogram
@@ -226,6 +252,7 @@ def make_histogram_even(
         level_dtype,
         uses_64bit_offset,
         uses_privatized_smem,
+        compute_capability=compute_capability,
     )
 
 

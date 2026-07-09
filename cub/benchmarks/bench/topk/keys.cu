@@ -34,9 +34,9 @@ struct policy_selector_t
     return cub::detail::topk::topk_policy{
       TUNE_THREADS_PER_BLOCK,
       items_per_thread,
-      cub::detail::topk::calc_bits_per_pass<KeyInT>(),
       load_alg,
-      cub::BLOCK_SCAN_WARP_SCANS};
+      cub::BLOCK_SCAN_WARP_SCANS,
+      cub::detail::topk::calc_bits_per_pass<KeyInT>()};
   }
 };
 #endif // !TUNE_BASE

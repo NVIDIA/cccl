@@ -688,7 +688,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
 
   const int threads_per_block = active_policy.threads_per_block;
   const int items_per_thread  = active_policy.items_per_thread;
-  const auto tile_size        = static_cast<global_offset_t>(threads_per_block * items_per_thread);
+  const auto tile_size =
+    static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)

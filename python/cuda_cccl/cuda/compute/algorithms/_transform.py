@@ -9,21 +9,36 @@ from typing import Callable
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_build_result, cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
+from .._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from .._utils import protocols
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _UnaryTransform:
-    __slots__ = ["d_in_cccl", "d_out_cccl", "op_cccl", "build_result"]
+class _UnaryTransform(Serializable):
+    __slots__ = [
+        "d_in_cccl",
+        "d_out_cccl",
+        "op_cccl",
+        "build_results",
+        "loaded_build_result",
+    ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceUnaryTransform)),
+    )
 
     def __init__(
         self,
         d_in: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
+        compute_capability=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -33,16 +48,18 @@ class _UnaryTransform:
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in_type,), out_type)
 
-        self.build_result = cache_build_result(
+        self.build_results = cache_build_results(
             _bindings.DeviceUnaryTransform,
             d_in,
             d_out,
             op,
-            builder=lambda: cccl.call_build(
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
                 _bindings.DeviceUnaryTransform,
                 self.d_in_cccl,
                 self.d_out_cccl,
                 self.op_cccl,
+                compute_capability=compute_capability,
             ),
         )
 
@@ -55,6 +72,9 @@ class _UnaryTransform:
         num_items: int,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         op_adapter = make_op_adapter(op)
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
@@ -62,7 +82,7 @@ class _UnaryTransform:
         self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        self.build_result.compute(
+        self.loaded_build_result.compute(
             self.d_in_cccl,
             self.d_out_cccl,
             num_items,
@@ -72,14 +92,23 @@ class _UnaryTransform:
         return None
 
 
-class _BinaryTransform:
+class _BinaryTransform(Serializable):
     __slots__ = [
         "d_in1_cccl",
         "d_in2_cccl",
         "d_out_cccl",
         "op_cccl",
-        "build_result",
+        "build_results",
+        "loaded_build_result",
     ]
+
+    __serialization_schema__ = (
+        ("d_in1_cccl", ITER),
+        ("d_in2_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceBinaryTransform)),
+    )
 
     def __init__(
         self,
@@ -87,6 +116,7 @@ class _BinaryTransform:
         d_in2: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
+        compute_capability=None,
     ):
         self.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
         self.d_in2_cccl = cccl.to_cccl_input_iter(d_in2)
@@ -98,18 +128,20 @@ class _BinaryTransform:
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in1_type, in2_type), out_type)
 
-        self.build_result = cache_build_result(
+        self.build_results = cache_build_results(
             _bindings.DeviceBinaryTransform,
             d_in1,
             d_in2,
             d_out,
             op,
-            builder=lambda: cccl.call_build(
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
                 _bindings.DeviceBinaryTransform,
                 self.d_in1_cccl,
                 self.d_in2_cccl,
                 self.d_out_cccl,
                 self.op_cccl,
+                compute_capability=compute_capability,
             ),
         )
 
@@ -123,6 +155,9 @@ class _BinaryTransform:
         num_items: int,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         set_cccl_iterator_state(self.d_in1_cccl, d_in1)
         set_cccl_iterator_state(self.d_in2_cccl, d_in2)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
@@ -131,7 +166,7 @@ class _BinaryTransform:
         self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        self.build_result.compute(
+        self.loaded_build_result.compute(
             self.d_in1_cccl,
             self.d_in2_cccl,
             self.d_out_cccl,
@@ -148,6 +183,7 @@ def make_unary_transform(
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
+    compute_capability=None,
 ):
     """
     Create a unary transform object that can be called to apply a transformation
@@ -168,12 +204,19 @@ def make_unary_transform(
         op: Unary operation to apply to each element.
             The signature is ``(T) -> U``, where ``T`` is
             the input data type and ``U`` is the output data type.
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that performs the transformation.
     """
     op_adapter = make_op_adapter(op)
-    return _UnaryTransform(d_in, d_out, op_adapter)
+    return _UnaryTransform(
+        d_in, d_out, op_adapter, compute_capability=compute_capability
+    )
 
 
 @cache_with_registered_key_functions
@@ -183,6 +226,7 @@ def make_binary_transform(
     d_in2: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
+    compute_capability=None,
 ):
     """
     Create a binary transform object that can be called to apply a transformation
@@ -204,12 +248,19 @@ def make_binary_transform(
         op: Binary operation.
             The signature is ``(T1, T2) -> U``, where ``T1`` and ``T2`` are the input data types and
             ``U`` is the output data type.
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that performs the transformation.
     """
     op_adapter = make_op_adapter(op)
-    return _BinaryTransform(d_in1, d_in2, d_out, op_adapter)
+    return _BinaryTransform(
+        d_in1, d_in2, d_out, op_adapter, compute_capability=compute_capability
+    )
 
 
 def unary_transform(

@@ -279,10 +279,12 @@ arrays of the same type.
 Multi-GPU behavior
 ++++++++++++++++++
 
-Cached builds are device-specific. If the same algorithm configuration is used
-on multiple GPUs, ``cuda.compute`` may compile and cache a separate build for
-each device. Set the intended current CUDA device before constructing or invoking
-an algorithm, and pass arrays that are valid on that device.
+Loaded builds are device-specific. With the default current-device build path,
+``cuda.compute`` may compile and cache a separate build for each GPU. An explicit
+ahead-of-time build can reuse its compiled payload on multiple GPUs with the same
+compute capability, but each GPU receives separate loaded native state. Set the
+intended current CUDA device before invoking an algorithm, and pass arrays that
+are valid on that device.
 
 Free-threaded Python
 ++++++++++++++++++++
@@ -357,6 +359,91 @@ To clear all caches and free memory:
 
 This forces recompilation on the next algorithm invocation—useful for benchmarking
 compilation time or reclaiming memory.
+
+.. _cuda.compute.serialization:
+
+Serialization
+-------------
+
+:ref:`Caching <cuda.compute.caching>` reuses build results *within* a single
+process. Serialization goes one step further: it lets you persist a built
+algorithm to a blob of bytes and reconstruct it later—in another process, or on
+another machine—**without recompiling**.
+
+Use :func:`serialize <cuda.compute.algorithms.serialize>` on any object returned by a
+``make_*`` factory to obtain a ``bytes`` blob, and
+:func:`deserialize <cuda.compute.algorithms.deserialize>` to reconstruct it. The blob stores
+the *compiled* build result, so :func:`deserialize <cuda.compute.algorithms.deserialize>`
+performs no JIT compilation—it neither invokes Numba nor recompiles device code.
+In practice you would write the blob to a file and load it in a later run or on
+another machine.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/serialization/serialize_roundtrip.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Serializing a built algorithm and reconstructing it without recompiling.
+
+The same argument-matching rules described above for the object-based API apply
+to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
+when invoking it must match those used when it was originally built.
+
+.. _cuda.compute.ahead_of_time_compilation:
+
+Ahead-of-Time Compilation
+-------------------------
+
+By default, an algorithm is compiled for the compute capability of the *current*
+device. To build for other GPUs—or to build on a machine with no GPU at all—pass
+``compute_capability=`` to any ``make_*`` factory. Combined with
+:ref:`serialization <cuda.compute.serialization>`, this lets you compile once on
+a build machine and ship a ready-to-run artifact to your deployment targets.
+
+Building for specific architectures
++++++++++++++++++++++++++++++++++++
+
+Pass a single compute capability, or a list of them, to build one artifact that
+runs on any of the listed architectures:
+
+.. code-block:: python
+
+   reducer = cuda.compute.make_reduce_into(
+       d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init,
+       compute_capability=[80, 90],   # build for sm_80 and sm_90
+   )
+
+A compute capability may be given as an integer (``90``, ``75``), a
+``(major, minor)`` pair (``(9, 0)``), or a string (``"9.0"``). When the argument
+is omitted, the current device's architecture is used.
+
+When a multi-architecture artifact is invoked, the build result matching the
+running GPU is selected and loaded on the first call. Invoking it on a GPU whose
+architecture was not built raises an error.
+
+The compiled artifact may be reused by multiple devices with the same compute
+capability. Loading remains device-specific: the first device uses the canonical
+build result, and another device loads a deserialized copy of the same compiled
+payload without recompiling it.
+
+Building without a GPU
+++++++++++++++++++++++
+
+A ``make_*`` factory normally inspects its input arrays to determine dtypes,
+which requires real device allocations. To build on a machine that has no
+GPU—for example, in CI—pass :class:`ProxyArray <cuda.compute.ProxyArray>` and
+:class:`ProxyValue <cuda.compute.ProxyValue>` placeholders in place of real
+arrays and scalars. A proxy describes *only* the dtype (and, for arrays, shape
+and contiguity); it holds no GPU memory.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/serialization/ahead_of_time_compilation.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Compiling for two architectures with no GPU present.
+
+When building without a GPU you must pass ``compute_capability=`` explicitly:
+with no device to query, there is no architecture to default to. A proxy is a
+build-time placeholder only—supply the real device arrays and scalars when you
+invoke the (possibly deserialized) algorithm. Passing a proxy to a compiled
+algorithm's ``__call__`` raises ``RuntimeError``.
 
 .. _cuda.compute.externally_compiled_operators:
 

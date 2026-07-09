@@ -10,6 +10,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -601,3 +602,62 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax fixed-size env-based API", "[segmen
   thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
   REQUIRE(d_out == expected);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin segmented-reduce-sum-policy-selector
+struct SegmentedReducePolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedReducePolicy
+  {
+    auto rp = cub::ReducePassPolicy{
+      .threads_per_block = 128,
+      .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 11 : 7,
+      .vec_size          = 4,
+      .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      .load_modifier     = cub::LOAD_LDG};
+    return {
+      .large_reduce  = rp,
+      .medium_reduce = {.threads_per_block = rp.threads_per_block,
+                        .threads_per_warp  = 32,
+                        .items_per_thread  = rp.items_per_thread,
+                        .vec_size          = rp.vec_size,
+                        .load_modifier     = rp.load_modifier},
+      .small_reduce  = {.threads_per_block = rp.threads_per_block,
+                        .threads_per_warp  = 1,
+                        .items_per_thread  = rp.items_per_thread,
+                        .vec_size          = rp.vec_size,
+                        .load_modifier     = rp.load_modifier}};
+  }
+};
+// example-end segmented-reduce-sum-policy-selector
+
+C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts a custom policy selector", "[segmented_reduce][env]")
+{
+  // example-begin segmented-reduce-sum-tuning
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_out(3, thrust::no_init);
+
+  const auto error = cub::DeviceSegmentedReduce::Sum(
+    d_in.begin(),
+    d_out.begin(),
+    num_segments,
+    d_offsets_it,
+    d_offsets_it + 1,
+    cuda::execution::tune(SegmentedReducePolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{21, 0, 17};
+  // example-end segmented-reduce-sum-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

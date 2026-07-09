@@ -15,6 +15,11 @@ import numpy as np
 
 from cuda.core import Device
 
+try:
+    from cuda.core._utils.cuda_utils import CUDAError
+except ImportError:
+    from cuda.core.experimental._utils.cuda_utils import CUDAError
+
 from ._utils.protocols import get_dtype, get_shape, is_device_array
 from .struct import _Struct
 
@@ -106,9 +111,10 @@ class _ThreadLocalCaches:
     __slots__ = ("wrapper_caches", "__weakref__")
 
     def __init__(self) -> None:
-        # Outer key: decorated algorithm factory name. Inner key: current thread
-        # id, current CUDA runtime device ordinal, compute capability, and
-        # specialization key derived from factory arguments.
+        # Outer key: decorated algorithm factory name. Inner key: current
+        # thread id, target identity, and specialization key derived from
+        # factory arguments. The target is a device ordinal plus compute
+        # capability for default builds, or the explicit AOT target otherwise.
         self.wrapper_caches: dict[str, dict[Hashable, Any]] = {}
 
 
@@ -135,15 +141,110 @@ _process_wide_thread_cache_registry: weakref.WeakSet[_ThreadLocalCaches] = (
 )
 _process_wide_thread_cache_registry_lock = threading.Lock()
 
-# Values are either completed build results or temporary _InFlightBuild entries.
-_process_wide_shared_build_cache: dict[Hashable, Any] = {}
+# Values are either completed build-result collections or temporary
+# _InFlightBuild entries.
+_process_wide_build_results_cache: dict[Hashable, Any] = {}
 _CACHE_MISS = object()
+
+
+def _cache_single_flight(
+    cache: dict[Hashable, Any], cache_key: Hashable, builder: Callable[[], Any]
+) -> Any:
+    """Return a cached value, coalescing concurrent builds for the same key."""
+    cache_entry = cache.get(cache_key, _CACHE_MISS)
+    if cache_entry is _CACHE_MISS:
+        in_flight = _InFlightBuild()
+        # setdefault elects one builder without an explicit lock on cache hits.
+        cache_entry = cache.setdefault(cache_key, in_flight)
+        if cache_entry is in_flight:
+            try:
+                result = builder()
+                in_flight.result = result
+                cache[cache_key] = result
+            except BaseException as exc:
+                in_flight.exception = exc
+                cache.pop(cache_key, None)
+                raise
+            finally:
+                in_flight.event.set()
+            return result
+
+    if isinstance(cache_entry, _InFlightBuild):
+        cache_entry.event.wait()
+        if cache_entry.exception is not None:
+            raise cache_entry.exception
+        return cache_entry.result
+
+    return cache_entry
+
+
+class _BuildResultCollection(dict[int, Any]):
+    """Compiled build results with process-shared, per-device loaded state.
+
+    The mapping contains one canonical native build result per compute
+    capability. Explicit AOT results begin unloaded and can be shared across
+    threads without a current device. On first use, one device claims the
+    canonical result; additional devices clone it through serialization before
+    loading, so compiled payloads are reused without sharing device-owned native
+    handles.
+    """
+
+    def __init__(
+        self,
+        build_results: dict[int, Any],
+        *,
+        loaded_device_id: int | None = None,
+    ) -> None:
+        super().__init__(build_results)
+        self._owner_devices: dict[int, int] = {}
+        self._loaded_results: dict[Hashable, Any] = {}
+        self._device_bound_result: Any | None = None
+        # Loading the canonical result mutates its native handle fields, while
+        # cloning serializes its payload. Serialize those source operations, but
+        # keep completed-result lookups lock-free.
+        self._source_locks = {cc: threading.Lock() for cc in self}
+
+        if loaded_device_id is not None:
+            if len(self) != 1:
+                raise ValueError(
+                    "A device-bound build-result collection must be singular"
+                )
+            for cc, build_result in self.items():
+                self._owner_devices[cc] = loaded_device_id
+                self._loaded_results[(cc, loaded_device_id)] = build_result
+                self._device_bound_result = build_result
+
+    def resolve(self, cc: int, device_id: int) -> Any:
+        """Return the build result loaded for ``device_id`` without recompiling."""
+        source = self[cc]
+        owner_device = self._owner_devices.setdefault(cc, device_id)
+
+        def load_for_device():
+            if owner_device == device_id:
+                with self._source_locks[cc]:
+                    source.load()
+                return source
+
+            with self._source_locks[cc]:
+                blob = source.serialize()
+            result = type(source).deserialize(blob, load=False, check_cc=True)
+            result.load()
+            return result
+
+        return _cache_single_flight(
+            self._loaded_results, (cc, device_id), load_for_device
+        )
+
+    def serialize_build_result(self, cc: int) -> bytes:
+        """Serialize a canonical result without racing its first device load."""
+        with self._source_locks[cc]:
+            return self[cc].serialize()
 
 
 def _get_current_device_info() -> tuple[int, tuple[int, int]]:
     device = Device()
-    cc = device.compute_capability
-    return device.device_id, (cc.major, cc.minor)
+    cc_major, cc_minor = device.compute_capability
+    return device.device_id, (cc_major, cc_minor)
 
 
 def _get_thread_caches() -> _ThreadLocalCaches:
@@ -167,60 +268,47 @@ def _clear_wrapper_caches(cache_name: str | None = None) -> None:
             caches.wrapper_caches.pop(cache_name, None)
 
 
-def cache_build_result(
+def cache_build_results(
     build_result_type: type,
     *key_args,
+    compute_capability,
     builder: Callable[[], Any],
 ) -> Any:
     """
-    Cache a shared Cython build-result object for the current CUDA device.
+    Cache a shared collection of Cython build-result objects.
 
-    The key intentionally excludes the current Python thread. Wrappers are
-    cached per thread, but build results are shared across threads for the same
-    device ordinal and specialization key.
+    Current-device builds are keyed by CUDA device ordinal and compute
+    capability. Explicit AOT builds have no current device and are instead keyed
+    by their normalized target compute capabilities. The key intentionally
+    excludes the current Python thread so wrappers can share compiled results.
 
     Args:
-        build_result_type: Cython build-result type. This separates different
-            build-result caches that may otherwise have identical specialization
-            keys.
+        build_result_type: Cython build-result type. This separates collections
+            that may otherwise have identical specialization keys.
         *key_args: Positional values used to form the specialization part of
             the cache key.
-        builder: Callable that creates the build result on a cache miss.
+        compute_capability: Explicit AOT target or ``None`` for the current
+            device.
+        builder: Callable that creates the build-result collection on a cache miss.
             Exactly one thread runs this callable for a given key while other
             threads wait for the result.
 
     Returns:
-        The cached or newly built Cython build-result object.
+        The cached or newly built build-result collection.
     """
-    device_id, cc_key = _get_current_device_info()
+    if compute_capability is None:
+        device_id, cc_key = _get_current_device_info()
+        target_key: Hashable = ("device", device_id, cc_key)
+    else:
+        from ._cccl_interop import cc_to_key, normalize_compute_capabilities
+
+        target_ccs = normalize_compute_capabilities(compute_capability)
+        assert target_ccs is not None
+        target_key = ("aot", tuple(cc_to_key(cc) for cc in target_ccs))
+
     user_cache_key = _make_cache_key_from_args(*key_args)
-    cache_key = (build_result_type, device_id, cc_key, user_cache_key)
-
-    cache_entry = _process_wide_shared_build_cache.get(cache_key, _CACHE_MISS)
-    if cache_entry is _CACHE_MISS:
-        in_flight = _InFlightBuild()
-        # setdefault elects one builder without an explicit lock on cache hits.
-        cache_entry = _process_wide_shared_build_cache.setdefault(cache_key, in_flight)
-        if cache_entry is in_flight:
-            try:
-                result = builder()
-                in_flight.result = result
-                _process_wide_shared_build_cache[cache_key] = result
-            except BaseException as exc:
-                in_flight.exception = exc
-                _process_wide_shared_build_cache.pop(cache_key, None)
-                raise
-            finally:
-                in_flight.event.set()
-            return result
-
-    if isinstance(cache_entry, _InFlightBuild):
-        cache_entry.event.wait()
-        if cache_entry.exception is not None:
-            raise cache_entry.exception
-        return cache_entry.result
-
-    return cache_entry
+    cache_key = (build_result_type, target_key, user_cache_key)
+    return _cache_single_flight(_process_wide_build_results_cache, cache_key, builder)
 
 
 class _CacheWithRegisteredKeyFunctions:
@@ -240,20 +328,54 @@ class _CacheWithRegisteredKeyFunctions:
 
         Notes
         -----
-        The CUDA compute capability of the current device is appended to
-        the cache key.
+        Default builds append the current CUDA device and compute capability to
+        the cache key. Explicit AOT builds include their normalized target
+        compute capabilities without querying a device.
         """
         cache_name = func.__qualname__
 
         @functools.wraps(func)
         def inner(*args, **kwargs):
-            device_id, cc_key = _get_current_device_info()
             user_cache_key = _make_cache_key_from_args(*args, **kwargs)
-            cache_key = (threading.get_ident(), device_id, cc_key, user_cache_key)
+            # When the caller targets explicit compute capabilities, that value
+            # is already part of user_cache_key (it arrives as a kwarg) and we
+            # must NOT query a device — the whole point is to build without a
+            # GPU. Otherwise, salt the key with the current device's cc so a
+            # build cached on one device isn't reused on another.
+            if kwargs.get("compute_capability") is None:
+                # Only device-availability failures should be reinterpreted as
+                # "pass compute_capability": no driver / no device raises
+                # CUDAError, and querying device 0 on a machine with zero
+                # devices raises ValueError. Anything else (a real bug) must
+                # propagate untouched. The original error is chained and echoed
+                # so a genuine driver/permission failure isn't hidden behind a
+                # misleading "no device" message.
+                try:
+                    device_id, cc = _get_current_device_info()
+                except (CUDAError, ValueError) as e:
+                    raise RuntimeError(
+                        "make_<algo> was called without compute_capability and the "
+                        f"current CUDA device could not be queried ({e}). Pass "
+                        "compute_capability=<cc or list of ccs> to compile without "
+                        "a GPU (e.g. with ProxyArray / ProxyValue)."
+                    ) from e
+                target_cc_arg = cc
+            else:
+                device_id = None
+                cc = None
+                target_cc_arg = kwargs.get("compute_capability")
+            cache_key = (threading.get_ident(), device_id, cc, user_cache_key)
             thread_caches = _get_thread_caches()
             cache = thread_caches.wrapper_caches.setdefault(cache_name, {})
             if cache_key not in cache:
-                result = func(*args, **kwargs)
+                # Shared device code (operators, iterators) is compiled to LTO-IR
+                # once and linked into every per-arch build result, so it must target
+                # the lowest requested cc (nvJitLink requires final SM >= each
+                # linked input's arch). Set that target around the build.
+                from ._target_cc import target_cc
+
+                with target_cc(target_cc_arg):
+                    result = func(*args, **kwargs)
                 cache[cache_key] = result
             return cache[cache_key]
 
@@ -293,6 +415,14 @@ def _make_hashable(value):
         return (get_dtype(value), get_shape(value))
     elif isinstance(value, (np.number, np.bool_)):
         return ("numpy.scalar", value.dtype.str, value.tobytes())
+    elif isinstance(value, (bool, int, float)):
+        # Python scalars are immutable values; key them by type and value so
+        # equal-valued scalars share a cache entry. Without this they fall
+        # through to ``id(value)`` below, and a fresh (non-interned) ``int``/
+        # ``float`` with the same value misses the build cache on every call.
+        # ``_type_fqn`` keeps ``True`` distinct from ``1``/``1.0`` (and avoids
+        # collisions between like-named scalar subclasses from other modules).
+        return ("python.scalar", _type_fqn(value), value)
     elif isinstance(value, (list, tuple)):
         return tuple(_make_hashable(v) for v in value)
     elif isinstance(value, dict):
@@ -323,7 +453,7 @@ def clear_all_caches():
     >>> cuda.compute.clear_all_caches()
     """
     _clear_wrapper_caches()
-    _process_wide_shared_build_cache.clear()
+    _process_wide_build_results_cache.clear()
 
 
 class CachableFunction:
@@ -384,3 +514,20 @@ cache_with_registered_key_functions.register(
     types.FunctionType, lambda fn: CachableFunction(fn)
 )
 cache_with_registered_key_functions.register(_Struct, lambda v: (_type_fqn(v), v.dtype))
+
+
+def _register_proxy_types():
+    # Registered lazily to avoid importing _proxy (and numpy-dtype construction)
+    # at module import time; the keys are dtype-only so equal-dtype proxies share
+    # a cache entry.
+    from ._proxy import ProxyArray, ProxyValue
+
+    cache_with_registered_key_functions.register(
+        ProxyArray, lambda v: ("ProxyArray", v.dtype)
+    )
+    cache_with_registered_key_functions.register(
+        ProxyValue, lambda v: ("ProxyValue", v.dtype)
+    )
+
+
+_register_proxy_types()

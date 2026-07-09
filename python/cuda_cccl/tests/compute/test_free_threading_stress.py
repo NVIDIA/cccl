@@ -94,6 +94,9 @@ def _call_with_temp(cp, algorithm, **kwargs):
 
 
 def _get_build_result(algorithm):
+    if hasattr(algorithm, "build_results"):
+        assert len(algorithm.build_results) == 1
+        return next(iter(algorithm.build_results.values()))
     if hasattr(algorithm, "build_result"):
         return algorithm.build_result
     if hasattr(algorithm, "partitioner"):

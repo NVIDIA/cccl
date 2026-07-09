@@ -131,3 +131,26 @@ C2H_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binar
   c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("FindBoundSortedValuesPolicy", "[find][device][binary-search]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::FindBoundSortedValuesPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindBoundSortedValuesPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::FindBoundSortedValuesPolicy{256, 15, cub::CacheLoadModifier::LOAD_LDG};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::FindBoundSortedValuesPolicy{
+    .threads_per_block = 256, .items_per_thread = 15, .load_modifier = cub::CacheLoadModifier::LOAD_LDG};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

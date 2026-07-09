@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_build_result, cache_with_registered_key_functions
-from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._caching import cache_build_results, cache_with_registered_key_functions
+from ..._cccl_interop import set_cccl_iterator_state
+from ..._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from ..._utils.protocols import (
     get_data_pointer,
     get_dtype,
@@ -19,15 +20,25 @@ from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 
 
-class _RadixSort:
+class _RadixSort(Serializable):
     __slots__ = [
         "d_in_keys_cccl",
         "d_out_keys_cccl",
         "d_in_values_cccl",
         "d_out_values_cccl",
         "decomposer_op",
-        "build_result",
+        "build_results",
+        "loaded_build_result",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_in_values_cccl", ITER),
+        ("d_out_values_cccl", ITER),
+        ("decomposer_op", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceRadixSortBuildResult)),
+    )
 
     def __init__(
         self,
@@ -36,6 +47,7 @@ class _RadixSort:
         d_in_values: DeviceArrayLike | DoubleBuffer | None,
         d_out_values: DeviceArrayLike | None,
         order: SortOrder,
+        compute_capability=None,
     ):
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
@@ -52,7 +64,7 @@ class _RadixSort:
             operator_type=cccl.OpKind.STATELESS,
             ltoir=b"",
             state_alignment=1,
-            state=None,
+            state=b"",  # explicit empty bytes so the serialize path is byte-safe
         )
         decomposer_return_type = "".encode("utf-8")
 
@@ -61,20 +73,22 @@ class _RadixSort:
             if order is SortOrder.ASCENDING
             else _bindings.SortOrder.DESCENDING
         )
-        self.build_result = cache_build_result(
+        self.build_results = cache_build_results(
             _bindings.DeviceRadixSortBuildResult,
             d_in_keys,
             d_out_keys,
             d_in_values,
             d_out_values,
             order,
-            builder=lambda: call_build(
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
                 _bindings.DeviceRadixSortBuildResult,
                 build_order,
                 self.d_in_keys_cccl,
                 self.d_in_values_cccl,
                 self.decomposer_op,
                 decomposer_return_type,
+                compute_capability=compute_capability,
             ),
         )
 
@@ -91,6 +105,9 @@ class _RadixSort:
         end_bit: int | None = None,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
         )
@@ -122,7 +139,7 @@ class _RadixSort:
 
         selector = -1
 
-        temp_storage_bytes, selector = self.build_result.compute(
+        temp_storage_bytes, selector = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -157,6 +174,7 @@ def make_radix_sort(
     d_in_values: DeviceArrayLike | DoubleBuffer | None,
     d_out_values: DeviceArrayLike | None,
     order: SortOrder,
+    compute_capability=None,
 ):
     """Implements a device-wide radix sort using ``d_in_keys`` in the requested order.
 
@@ -174,11 +192,23 @@ def make_radix_sort(
         d_in_values: Optional Device array or DoubleBuffer containing the input keys to be sorted
         d_out_values: Device array to store the sorted values
         op: Callable representing the comparison operator
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the radix sort
     """
-    return _RadixSort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
+    return _RadixSort(
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        order,
+        compute_capability=compute_capability,
+    )
 
 
 def radix_sort(
