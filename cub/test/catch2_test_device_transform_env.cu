@@ -368,7 +368,7 @@ C2H_TEST("Test TransformPolicy properties", "[transform][device]")
           == "TransformVectorizedPolicy { .threads_per_block = 256, .items_per_thread = 8, .vec_size = 4 }");
   REQUIRE(to_string(p1_async_copy)
           == "TransformAsyncCopyPolicy { .threads_per_block = 256, .min_items_per_thread = 1"
-             ", .max_items_per_thread = 32, .unroll_factor = 1 }");
+             ", .max_items_per_thread = 32, .unroll_factor = 1, .store_vec_size = 0 }");
   REQUIRE(
     to_string(p1)
     == "TransformPolicy { .min_bytes_in_flight = 65536"
@@ -379,6 +379,6 @@ C2H_TEST("Test TransformPolicy properties", "[transform][device]")
        ", .vectorized = TransformVectorizedPolicy { .threads_per_block = 256"
        ", .items_per_thread = 8, .vec_size = 4 }"
        ", .async_copy = TransformAsyncCopyPolicy { .threads_per_block = 256"
-       ", .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1 } }");
+       ", .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1, .store_vec_size = 0 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
