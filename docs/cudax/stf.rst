@@ -92,43 +92,43 @@ CUDASTF is part of the CUDA Experimental library of the CCCL project. It is not 
 Using CUDASTF
 ^^^^^^^^^^^^^
 
-CUDASTF is a header-only C++ library which only require to include its
-main header. CUDASTF API is part of the ``cuda::experimental::stf`` C++
-namespace, and we will assume for brevity that we are using this
-workspace in the rest of this document.
+CUDASTF is a header-only C++ library that requires only its main header.
+The CUDASTF API is part of the ``cuda::experimental::stf`` C++ namespace;
+for brevity, the rest of this document imports that namespace.
 
 .. code:: cpp
 
    #include <cuda/experimental/stf.cuh>
 
-   using cuda::experimental::stf;
+   using namespace cuda::experimental::stf;
 
 Compiling
 ^^^^^^^^^
 
 CUDASTF requires a compiler conforming to the C++17 standard or later.
-Although there is no need to link against CUDASTF itself, the library
-internally utilizes the CUDA library.
+Although there is no CUDASTF library to link, applications use the CUDA Runtime
+and Driver APIs. CMake is the recommended integration method. For a manual
+source-tree build, add both public CCCL include roots:
 
 .. code:: bash
 
-   # Compilation flags
-   nvcc -std=c++17 --expt-relaxed-constexpr --extended-lambda -I$(cudastf_path)
-   # Linking flags
-   nvcc -lcuda
+   export CCCL_ROOT=/path/to/cccl
+   nvcc -std=c++17 --expt-relaxed-constexpr --extended-lambda \
+     -I"${CCCL_ROOT}/cudax/include" -I"${CCCL_ROOT}/libcudacxx/include" \
+     example.cu -lcuda -lcudart
 
 It is also possible to use CUDASTF without ``nvcc``. This is for example
-useful when calling existing CUDA libraries such as CUBLAS which do not
+useful when calling existing CUDA libraries such as cuBLAS, which do not
 require authoring custom kernels. Note that CUDASTF APIs intended to
 automatically generate CUDA kernels such as ``parallel_for`` or
 ``launch`` are disabled when compiling without nvcc.
 
 .. code:: bash
 
-   # Compilation flags
-   g++ -I$(cudastf_path)
-   # Linking flags
-   g++ -lcuda -lcudart
+   export CCCL_ROOT=/path/to/cccl
+   export CUDA_HOME=/usr/local/cuda
+   g++ -std=c++17 -I"${CCCL_ROOT}/cudax/include" -I"${CCCL_ROOT}/libcudacxx/include" \
+     -I"${CUDA_HOME}/include" example.cpp -L"${CUDA_HOME}/lib64" -lcuda -lcudart
 
 Using CUDASTF within a CMake project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -137,7 +137,9 @@ As part of the CCCL project, CUDASTF uses CMake for its build and installation
 infrastructure, and is the recommended way of building applications that use
 CUDASTF.
 
-This is facilitated by the CMake Package Manager as illustrated in this simple example which is available `here <https://github.com/NVIDIA/cccl/tree/main/examples/cudax_stf>`_, and which is described in the next paragraph.
+This is facilitated by the CMake Package Manager, as illustrated by the
+`standalone CUDASTF example <https://github.com/NVIDIA/cccl/tree/main/examples/cudax_stf>`_
+described in the next section.
 
 A simple example
 ^^^^^^^^^^^^^^^^
@@ -146,45 +148,9 @@ The following example illustrates the use of CUDASTF to implement the
 well-known AXPY kernel, which computes ``Y = Y + alpha * X`` where ``X``
 and ``Y`` are two vectors, and ``alpha`` is a scalar_view value.
 
-.. code:: cpp
-
-   #include <cuda/experimental/stf.cuh>
-
-   using namespace cuda::experimental::stf;
-
-   template <typename T>
-   __global__ void axpy(T a, slice<T> x, slice<T> y) {
-       int tid = blockIdx.x * blockDim.x + threadIdx.x;
-       int nthreads = gridDim.x * blockDim.x;
-
-       for (int ind = tid; ind < x.size(); ind += nthreads) {
-           y(ind) += a * x(ind);
-       }
-   }
-
-   int main(int argc, char** argv) {
-       context ctx;
-
-       const size_t N = 16;
-       double X[N], Y[N];
-
-       for (size_t ind = 0; ind < N; ind++) {
-           X[ind] = sin((double)ind);
-           Y[ind] = col((double)ind);
-       }
-
-       auto lX = ctx.logical_data(X);
-       auto lY = ctx.logical_data(Y);
-
-       double alpha = 3.14;
-
-       /* Compute Y = Y + alpha X */
-       ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t s, auto sX, auto sY) {
-           axpy<<<16, 128, 0, s>>>(alpha, sX, sY);
-       };
-
-       ctx.finalize();
-   }
+.. literalinclude:: ../../cudax/examples/stf/01-axpy.cu
+   :language: cpp
+   :caption: AXPY expressed as a CUDASTF task
 
 The code is organized into several steps, which will be described in
 more detail in the following sections:
@@ -207,19 +173,22 @@ consumption and system instability.
 
 .. code:: bash
 
-    mkdir -p build
-    cd build
-    cmake .. --preset cudax
-    cd cudax
-    ninja cudax.examples.stf -j4
+    cmake --preset cudax
+    cmake --build --preset cudax --target cudax.example.stf.01-axpy -j 4
 
-To launch examples, simply run binaries under the `bin/`
-subdirectory in the current directory. For instance, to launch the `01-axpy`
-example:
+To launch the example from a non-devcontainer build, run:
 
 .. code:: bash
 
-    ./bin/cudax.cpp17.example.stf.01-axpy
+    ./build/cudax/bin/cudax.example.stf.01-axpy
+
+Inside a development container, ``CCCL_BUILD_INFIX`` adds a directory between
+``build`` and ``cudax``. The configured example can also be located and run
+portably through CTest:
+
+.. code:: bash
+
+    ctest --preset cudax -R '^cudax.example.stf.01-axpy$' --output-on-failure
 
 Backends and contexts
 -------------------------------
@@ -1069,8 +1038,8 @@ Box shape
 
 There are situations where the desired index space does not correspond
 to the shape of a logical data object. For those cases, CUDASTF also
-provides the template class ``box<size_t dimensions = 1>`` (located in
-the header ``cudastf/utility/dimensions.h``) that allows user code to
+provides the template class ``box<size_t dimensions = 1>``, available
+through the main ``<cuda/experimental/stf.cuh>`` header, which allows user code to
 define multidimensional shapes with explicit bounds. The template
 parameter represents the dimension of the shape.
 
@@ -1929,13 +1898,13 @@ patterns.
 Generating visualizations of task graphs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Let us consider the ``examples/01-axpy.cu`` example which we compile as
-usual with ``make build/examples/01-axpy``.
+Consider the ``cudax/examples/stf/01-axpy.cu`` example built in the
+getting-started section.
 
 .. code:: bash
 
    # Run the application with CUDASTF_DOT_FILE set to the filename
-   CUDASTF_DOT_FILE=axpy.dot build/examples/01-axpy
+   CUDASTF_DOT_FILE=axpy.dot ./build/cudax/bin/cudax.example.stf.01-axpy
 
    # Generate the visualization from this dot file
    ## PDF format
@@ -1988,7 +1957,7 @@ visualization.
 
 .. code:: bash
 
-   CUDASTF_DOT_FILE=heat.dot build/examples/heat_mgpu 1000 8 4
+   CUDASTF_DOT_FILE=heat.dot ./build/cudax/bin/cudax.example.stf.heat_mgpu 1000 8 4
    dot -Tpng heat.dot -o heat.png
 
 .. image:: stf/images/dot-output-heat.png
@@ -1997,9 +1966,9 @@ For advanced users, it is also possible to display internally generated
 asynchronous operations by setting the ``CUDASTF_DOT_IGNORE_PREREQS``
 environment variable to 0.
 
-.. code:: c++
+.. code:: bash
 
-   CUDASTF_DOT_IGNORE_PREREQS=0 CUDASTF_DOT_FILE=axpy-with-events.dot build/examples/01-axpy
+   CUDASTF_DOT_IGNORE_PREREQS=0 CUDASTF_DOT_FILE=axpy-with-events.dot ./build/cudax/bin/cudax.example.stf.01-axpy
    dot -Tpng axpy-with-events.dot -o axpy-with-events.png
 
 .. image:: stf/images/dot-output-axpy-events.png
@@ -2107,23 +2076,18 @@ name the generated kernel “updateA” :
    auto lA = ctx.logical_data(A);
 
    ctx.parallel_for(lA.shape(), lA.write()).set_symbol("updateA")->*[] __device__ (size_t i, auto sA) {
-       A(i) = 2*i + 1;
+       sA(i) = 2*i + 1;
    };
 
-Example with miniWeather
-~~~~~~~~~~~~~~~~~~~~~~~~
+Example command
+~~~~~~~~~~~~~~~
 
-Kernel tuning should always be performed on optimized code :
-
-.. code:: bash
-
-   make build/examples/miniweather
-
-The following command will analyse the performance of kernels :
+Kernel tuning should always be performed on an optimized build. The following
+command analyzes a CUDASTF application whose generated kernels have symbols:
 
 .. code:: bash
 
-   ncu --section=ComputeWorkloadAnalysis --print-nvtx-rename=kernel --nvtx -o output build/examples/miniWeather
+   ncu --section=ComputeWorkloadAnalysis --print-nvtx-rename=kernel --nvtx -o output ./your_stf_application
 
 Note that ``--print-nvtx-rename=kernel --nvtx`` is used to name kernels
 accordingly to ``NVTX`` traces (which are enabled by the ``set_symbol``
@@ -2148,8 +2112,8 @@ The file generated by ``ncu`` can be opened using ``ncu-ui`` :
 
    ncu-ui output.ncu-rep
 
-In this case, we can see that the kernel are named accordingly to the
-symbols set in the tasks of the miniWeather examples : |image1|
+The generated report displays kernel names derived from the symbols attached to
+the corresponding CUDASTF constructs: |image1|
 
 .. |image1| image:: stf/images/ncu-ui.png
 
@@ -2161,13 +2125,13 @@ This section gives a brief overview of the CUDASTF API.
 Using CUDASTF
 ^^^^^^^^^^^^^
 
-STF is a C++ header-only library which API is defined in the `cuda::experimental::stf` namespace.
+STF is a C++ header-only library whose API is defined in the ``cuda::experimental::stf`` namespace.
 
 .. code-block:: cpp
 
-    #include <cudastf/cudastf.h>
+    #include <cuda/experimental/stf.cuh>
 
-    using cuda::experimental::stf;
+    using namespace cuda::experimental::stf;
 
 Creating a Context
 ^^^^^^^^^^^^^^^^^^
@@ -2200,10 +2164,6 @@ Creating a Logical Data
 
 Purpose: Encapsulates data structures (e.g. arrays, slices) to be shared and accessed by tasks. Logical data represents the abstraction of data in the model.
 
-.. code-block:: cpp
-
-    // Create a logical data from an existing piece of data
-    auto ctx.logical_data(data view [data_place = data_place::current_device()]);
 
 Examples:
 
@@ -2218,25 +2178,25 @@ Examples:
 
 .. code-block:: cpp
 
-    auto data_handle = ctx.logical_data(slice<T>(addr {n}));
+    auto data_handle = ctx.logical_data(make_slice(addr, n));
 
 - Describing a contiguous matrix of size (m, n)
 
 .. code-block:: cpp
 
-    auto data_handle = ctx.logical_data(slice<T, 2>(addr, {m, n}));
+    auto data_handle = ctx.logical_data(make_slice(addr, ::std::tuple{m, n}, m));
 
 - Describing a matrix of size (m, n) with a stride of ld elements
 
 .. code-block:: cpp
 
-    auto data_handle = ctx.logical_data(slice<T, 2>(addr, {m, n}, {ld}));
+    auto data_handle = ctx.logical_data(make_slice(addr, ::std::tuple{m, n}, ld));
 
 - Create a logical data from a shape
 
 .. code-block:: cpp
 
-    auto ctx.logical_data(shape);
+    auto data_handle = ctx.logical_data(shape);
 
 Examples:
 
@@ -2251,7 +2211,7 @@ Tasks
 Data Dependency
 ~~~~~~~~~~~~~~~
 
-Purpose: Define how a logical data should be used in a task construct (and derivated constructs such as `parallel_for`, `launch`, `host_launch`).
+Purpose: Define how logical data is used in a task construct and derived constructs such as ``parallel_for``, ``launch``, and ``host_launch``.
 
 Syntax:
 
