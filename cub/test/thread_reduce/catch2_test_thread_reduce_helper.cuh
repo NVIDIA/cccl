@@ -20,6 +20,38 @@
 
 namespace detail
 {
+// Convert a bound computed in a wider or floating-point domain down to `To`, avoiding the pitfalls of a plain
+// static_cast:
+//   * integer -> narrower integer: static_cast wraps around when the value is outside `To`'s range (e.g.
+//     static_cast<int16_t>(INT_MAX) == -1), which can invert the resulting interval (min > max). Saturating clamps to
+//     `To`'s range instead, preserving the intersection.
+//   * floating-point -> integer: static_cast is UB when the (truncated) value is outside `To`'s range (e.g.
+//     static_cast<int64_t>(exp2(log2(INT64_MAX))), where log2/exp2 round-trip up to 2^63). Clamp to `To`'s range first.
+template <typename To, typename From>
+constexpr To clamp_to(From value)
+{
+  if constexpr (cuda::std::__cccl_is_integer_v<To> && cuda::std::__cccl_is_integer_v<From>)
+  {
+    return cuda::std::saturating_cast<To>(value);
+  }
+  else if constexpr (cuda::std::__cccl_is_integer_v<To> && cuda::std::is_floating_point_v<From>)
+  {
+    if (value <= static_cast<From>(cuda::std::numeric_limits<To>::lowest()))
+    {
+      return cuda::std::numeric_limits<To>::lowest();
+    }
+    if (value >= static_cast<From>(cuda::std::numeric_limits<To>::max()))
+    {
+      return cuda::std::numeric_limits<To>::max();
+    }
+    return static_cast<To>(value);
+  }
+  else
+  {
+    return static_cast<To>(value);
+  }
+}
+
 template <typename T, typename Operator, cuda::std::ptrdiff_t MaxReductionLength, typename = void>
 struct dist_interval
 {
@@ -62,46 +94,20 @@ struct dist_interval<
   // signed_integer: Avoid possibility of over-/underflow causing UB
   // floating_point: Avoid possibility of over-/underflow causing inf destroying pseudo-associativity
   // Use floating point arithmetic to avoid unnecessarily small interval.
+  // clamp_to guards the floating -> T conversion: the log2/exp2 round-trip can round up above T's range (e.g. for
+  // int64_t at MaxReductionLength == 1, exp2(log2(INT64_MAX)) == 2^63), and static_cast of that is float-cast-overflow
+  // UB.
   static constexpr T min()
   {
     const double log2_abs_min = cuda::std::log2(cuda::std::fabs(cuda::std::numeric_limits<T>::lowest()));
-    return static_cast<T>(-cuda::std::exp2(log2_abs_min / MaxReductionLength));
+    return clamp_to<T>(-cuda::std::exp2(log2_abs_min / MaxReductionLength));
   }
   static constexpr T max()
   {
     const double log2_max = cuda::std::log2(cuda::std::numeric_limits<T>::max());
-    return static_cast<T>(cuda::std::exp2(log2_max / MaxReductionLength));
+    return clamp_to<T>(cuda::std::exp2(log2_max / MaxReductionLength));
   }
 };
-
-// Narrow a bound computed in a wider Accum/Output domain down to the Input domain. A plain static_cast would wrap
-// around when the value is outside Input's range (e.g. static_cast<int16_t>(INT_MAX) == -1), which can invert the
-// resulting interval (min > max). Saturating instead clamps to Input's range, preserving the intersection.
-template <typename To, typename From>
-constexpr To clamp_to(From value)
-{
-  if constexpr (cuda::std::__cccl_is_integer_v<To> && cuda::std::__cccl_is_integer_v<From>)
-  {
-    return cuda::std::saturating_cast<To>(value);
-  }
-  else if constexpr (cuda::std::__cccl_is_integer_v<To> && cuda::std::is_floating_point_v<From>)
-  {
-    // Floating -> integer narrowing: a plain static_cast is UB when the value is outside To's range, so clamp first.
-    if (value <= static_cast<From>(cuda::std::numeric_limits<To>::lowest()))
-    {
-      return cuda::std::numeric_limits<To>::lowest();
-    }
-    if (value >= static_cast<From>(cuda::std::numeric_limits<To>::max()))
-    {
-      return cuda::std::numeric_limits<To>::max();
-    }
-    return static_cast<To>(value);
-  }
-  else
-  {
-    return static_cast<To>(value);
-  }
-}
 } // namespace detail
 
 template <typename Input,
@@ -148,8 +154,9 @@ struct dist_interval
 
 // Regression guard: these (Input, Op, num_items, Output) combinations used to compute inverted intervals (min > max)
 // because a wider Accum/Output bound was narrowed to Input with a wrapping static_cast (e.g.
-// static_cast<int16_t>(INT_MAX) == -1). An inverted interval makes Catch2's random(min, max) hang. These cover the
-// integer-narrowing cases; they avoid log2/exp2 so they are always constant-evaluable across host compilers.
+// static_cast<int16_t>(INT_MAX) == -1). An inverted interval violates the precondition of Catch2's random(min, max).
+// These cover the integer-narrowing cases; they avoid log2/exp2 so they are always constant-evaluable across host
+// compilers.
 template <typename Input, typename Op, cuda::std::ptrdiff_t MaxReductionLength, typename Output>
 using test_dist_interval = dist_interval<Input, Op, MaxReductionLength, cuda::std::__accumulator_t<Op, Input>, Output>;
 
