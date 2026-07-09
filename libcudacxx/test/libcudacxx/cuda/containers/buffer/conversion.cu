@@ -49,7 +49,7 @@ C2H_CCCLRT_TEST("cuda::buffer conversion", "[container][buffer]", test_types)
     }
 
     { // can be copy constructed from non-empty input
-      const MatchingBuffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const MatchingBuffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(1)}};
       Buffer buf(input);
       CCCLRT_CHECK(!buf.empty());
       CCCLRT_CHECK(equal_range(buf));
