@@ -68,12 +68,19 @@ template <class _Tp>
 
   if constexpr (__num_bits_v<_Tp> < __num_bits_v<uint32_t>)
   {
+    // Integer-promoted operands
     using _Up            = ::cuda::std::__make_nbit_int_t<__num_bits_v<uint32_t>, ::cuda::std::is_signed_v<_Tp>>;
     const auto __product = static_cast<_Up>(__lhs) * static_cast<_Up>(__rhs);
     return {static_cast<_Tp>(__product), !::cuda::std::in_range<_Tp>(__product)};
   }
   else if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
+    // One trick to get high word of multiplication result from two signed operands
+    // is the Hacker's Delight (8-3) approach. Treat operands A and B as unsigned,
+    // multiply them, subtract unsigned version of A from result if signed version
+    // is less than zero, and vice versa. Overflow exists if high-word does not
+    // equal extended sign (high-word should be 0xFFFFFFFF for negative values
+    // and 0x00000000 for 32-bit operands if no overflow occurred)
     using _Sp               = ::cuda::std::make_signed_t<_Tp>;
     using _Up               = ::cuda::std::make_unsigned_t<_Tp>;
     const auto __lhs1       = static_cast<_Up>(__lhs);
@@ -140,12 +147,25 @@ template <class _Tp>
 #  if _CCCL_HAS_INT128()
     else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
     {
+      // Registers only go up to 64-bit; need to handle
+      // multiplying 128-bit words in stages:
+      //
+      // a * b = (a1·2^64 + a0) * (b1·2^64 + b0)
+      //       = a1·b1·2^128 + a1·b0·2^64 + a0·b1·2^64 + a0·b0
+      //
+      //   __r3    |    __r2    |    __r1    |    __r0
+      //           |            |  hi(a0*b0) |  lo(a0*b0)
+      //           |  hi(a0*b1) |  lo(a0*b1) |
+      //           |  hi(a1*b0) |  lo(a1*b0) |
+      // hi(a1*b1) |  lo(a1*b1) |            |
+
       const uint64_t __a0 = static_cast<uint64_t>(__lhs);
       const uint64_t __a1 = static_cast<uint64_t>(__lhs >> 64);
       const uint64_t __b0 = static_cast<uint64_t>(__rhs);
       const uint64_t __b1 = static_cast<uint64_t>(__rhs >> 64);
 
       uint64_t __r0, __r1, __r2, __r3;
+
       asm("mul.lo.u64      %0, %4, %6;" // r0 = lo(a0 * b0)
           "mul.hi.u64      %1, %4, %6;" // r1 = hi(a0 * b0)
           "mad.lo.cc.u64   %1, %4, %7, %1;" // r1 += lo(a0 * b1)
