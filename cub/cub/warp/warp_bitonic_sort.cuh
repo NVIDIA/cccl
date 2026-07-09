@@ -108,7 +108,7 @@ public:
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op) const
   {
     sort<CompareOp, false>(keys, nullptr, compare_op);
   }
@@ -133,7 +133,7 @@ public:
   //! @param[in] oob_default Default value for out-of-bound items
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items, KeyT oob_default)
+  Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items, KeyT oob_default) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
@@ -162,10 +162,11 @@ public:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the warp
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items) const
   {
     // Padding keys beyond valid_items ensures no uninitialized data is read.
     // Faster than guarding reads with valid_items check.
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       if (i * warp_threads + lane >= valid_items)
@@ -191,7 +192,7 @@ public:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op)
+  Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op) const
   {
     sort<CompareOp, false>(keys, values, compare_op);
   }
@@ -222,7 +223,7 @@ public:
        ValueT (&values)[ItemsPerThread],
        CompareOp compare_op,
        int valid_items,
-       KeyT oob_default)
+       KeyT oob_default) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
@@ -255,8 +256,9 @@ public:
   //! @param[in] valid_items Total number of valid items across the warp
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int valid_items)
+  Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int valid_items) const
   {
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       if (i * warp_threads + lane >= valid_items)
@@ -279,7 +281,7 @@ private:
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  sort(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op)
+  sort(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op) const
   {
     constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
     constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -306,7 +308,7 @@ private:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  merge(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op)
+  merge(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op) const
   {
     constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
     constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -350,7 +352,7 @@ private:
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  sort(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items)
+  sort(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items) const
   {
     constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
     constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -386,7 +388,7 @@ private:
   //! @param[in] valid_items Total number of valid items across the warp
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  merge(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items)
+  merge(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items) const
   {
     constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
     constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -447,13 +449,14 @@ class WarpBitonicSort<1, KeyT, ValueT>
 {
 public:
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op) const
   {
     sort<CompareOp, false>(keys, nullptr, compare_op);
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items, KeyT oob_default)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items, KeyT oob_default) const
   {
     if (lane >= valid_items)
     {
@@ -463,7 +466,7 @@ public:
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items) const
   {
     if (lane >= valid_items)
     {
@@ -473,14 +476,14 @@ public:
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op) const
   {
     sort<CompareOp, false>(keys, values, compare_op);
   }
 
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items, KeyT oob_default)
+  Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items, KeyT oob_default) const
   {
     if (lane >= valid_items)
     {
@@ -491,7 +494,8 @@ public:
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items) const
   {
     if (lane >= valid_items)
     {
@@ -513,7 +517,7 @@ private:
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  sort(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op)
+  sort(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op) const
   {
     // Non-recursive implementation for 32 inputs consists of log2(32)=5 stages.
     merge_stage<CompareOp, Reverse, true, 0>(keys, values, compare_op);
@@ -525,14 +529,14 @@ private:
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  merge(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op)
+  merge(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op) const
   {
     merge_stage<CompareOp, Reverse, true, 4>(keys, values, compare_op);
   }
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  sort(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items)
+  sort(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items) const
   {
     merge_stage<CompareOp, Reverse, false, 0>(keys, values, compare_op, valid_items);
     merge_stage<CompareOp, Reverse, false, 1>(keys, values, compare_op, valid_items);
@@ -543,7 +547,7 @@ private:
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  merge(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items)
+  merge(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items) const
   {
     merge_stage<CompareOp, Reverse, false, 4>(keys, values, compare_op, valid_items);
   }
@@ -553,8 +557,8 @@ private:
   //! @tparam Full If true, all items are valid (no boundary checks: ``valid_items`` is not used)
   //! @tparam Stage Stage index (0-4 for a 32-thread warp)
   template <typename CompareOp, bool Reverse, bool Full, int Stage>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  merge_stage(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items = -1)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void merge_stage(
+    KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items = -1) const
   {
     // Each stage divides the inputs into groups and sorts within each group.
     // Sort direction of each group should be adjusted to maintain the bitonic property.
@@ -583,7 +587,7 @@ private:
       //    (i.e., groups 1, 2, 4, 7, etc.). Because group ID < 16 (at most 4 set
       //    bits), this means IDs with 1 or 3 set bits.
       group_reverse ^= static_cast<bool>(Stage & 1);
-      int num_set_bits = ::cuda::std::popcount((static_cast<unsigned>(lane) >> (Stage + 1)));
+      const int num_set_bits = ::cuda::std::popcount((static_cast<unsigned>(lane) >> (Stage + 1)));
       group_reverse ^= (num_set_bits == 1 || num_set_bits == 3);
     }
 

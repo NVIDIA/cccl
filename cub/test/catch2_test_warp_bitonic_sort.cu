@@ -22,7 +22,10 @@ struct CustomLess
   }
 
   template <typename T>
-  static constexpr T oob_default = cuda::std::numeric_limits<T>::max();
+  static __device__ __host__ T get_oob_default()
+  {
+    return cuda::std::numeric_limits<T>::max();
+  };
 };
 
 inline constexpr int warp_threads = cub::detail::warp_threads;
@@ -145,7 +148,7 @@ __global__ void warp_bitonic_sort_kernel(
 struct sort_keys_full_t
 {
   template <int ItemsPerThread, typename KeyT, typename WarpSortT>
-  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int /*valid_items*/) const
+  __device__ void operator()(const WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int /*valid_items*/) const
   {
     warp_sort.Sort(thread_data, CustomLess{});
   }
@@ -157,9 +160,9 @@ struct sort_keys_full_t
 struct sort_keys_partial_oob_t
 {
   template <int ItemsPerThread, typename KeyT, typename WarpSortT>
-  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int valid_items) const
+  __device__ void operator()(const WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int valid_items) const
   {
-    warp_sort.Sort(thread_data, CustomLess{}, valid_items, CustomLess::oob_default<KeyT>);
+    warp_sort.Sort(thread_data, CustomLess{}, valid_items, CustomLess::get_oob_default<KeyT>());
   }
 };
 
@@ -169,7 +172,7 @@ struct sort_keys_partial_oob_t
 struct sort_keys_partial_t
 {
   template <int ItemsPerThread, typename KeyT, typename WarpSortT>
-  __device__ void operator()(WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int valid_items) const
+  __device__ void operator()(const WarpSortT& warp_sort, KeyT (&thread_data)[ItemsPerThread], int valid_items) const
   {
     warp_sort.Sort(thread_data, CustomLess{}, valid_items);
   }
@@ -181,8 +184,8 @@ struct sort_keys_partial_t
 struct sort_pairs_full_t
 {
   template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpSortT>
-  __device__ void
-  operator()(WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int /*valid_items*/
+  __device__ void operator()(
+    const WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int /*valid_items*/
   ) const
   {
     warp_sort.Sort(keys, values, CustomLess{});
@@ -196,9 +199,9 @@ struct sort_pairs_partial_oob_t
 {
   template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpSortT>
   __device__ void operator()(
-    WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int valid_items) const
+    const WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int valid_items) const
   {
-    warp_sort.Sort(keys, values, CustomLess{}, valid_items, CustomLess::oob_default<KeyT>);
+    warp_sort.Sort(keys, values, CustomLess{}, valid_items, CustomLess::get_oob_default<KeyT>());
   }
 };
 
@@ -209,7 +212,7 @@ struct sort_pairs_partial_t
 {
   template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpSortT>
   __device__ void operator()(
-    WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int valid_items) const
+    const WarpSortT& warp_sort, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int valid_items) const
   {
     warp_sort.Sort(keys, values, CustomLess{}, valid_items);
   }
@@ -360,7 +363,8 @@ C2H_TEST("Warp sort on keys-only works", "[sort][warp]", key_types, items_per_th
   compute_host_reference(h_in_out.begin(), valid_items, total_warps);
 
   // Verify results
-  REQUIRE(h_in_out == d_out);
+  const c2h::host_vector<type> h_out(d_out);
+  REQUIRE(h_in_out == h_out);
 }
 
 C2H_TEST("Warp sort keys-only on partial warp-tile works",
@@ -391,11 +395,12 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works",
   warp_bitonic_sort<params::items_per_thread, total_warps>(d_in, d_out, valid_items, action_t{}, params::num_block_dims);
 
   // Prepare verification data
-  c2h::host_vector<type> h_in_out = d_in;
+  c2h::host_vector<type> h_in_out(d_in);
   compute_host_reference(h_in_out.begin(), valid_items, total_warps);
 
   // Verify results
-  REQUIRE(h_in_out == d_out);
+  const c2h::host_vector<type> h_out(d_out);
+  REQUIRE(h_in_out == h_out);
 }
 
 C2H_TEST("Warp sort on keys-value pairs works",
@@ -431,10 +436,14 @@ C2H_TEST("Warp sort on keys-value pairs works",
   compute_host_reference(cpu_kv_pairs, valid_items, total_warps);
 
   // Verify results
-  REQUIRE(h_keys_in_out == d_keys_out);
+  const c2h::host_vector<key_type> h_keys_out(d_keys_out);
+  REQUIRE(h_keys_in_out == h_keys_out);
+
   sort_values_for_equal_keys(h_keys_in_out.begin(), h_values_in_out.begin(), valid_items, total_warps);
   sort_values_for_equal_keys(d_keys_out.begin(), d_values_out.begin(), valid_items, total_warps);
-  REQUIRE(h_values_in_out == d_values_out);
+
+  const c2h::host_vector<value_type> h_values_out(d_values_out);
+  REQUIRE(h_values_in_out == h_values_out);
 }
 
 C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
@@ -477,8 +486,12 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   compute_host_reference(cpu_kv_pairs, valid_items, total_warps);
 
   // Verify results
-  REQUIRE(h_keys_in_out == d_keys_out);
+  const c2h::host_vector<key_type> h_keys_out(d_keys_out);
+  REQUIRE(h_keys_in_out == h_keys_out);
+
   sort_values_for_equal_keys(h_keys_in_out.begin(), h_values_in_out.begin(), valid_items, total_warps);
   sort_values_for_equal_keys(d_keys_out.begin(), d_values_out.begin(), valid_items, total_warps);
-  REQUIRE(h_values_in_out == d_values_out);
+
+  const c2h::host_vector<value_type> h_values_out(d_values_out);
+  REQUIRE(h_values_in_out == h_values_out);
 }
