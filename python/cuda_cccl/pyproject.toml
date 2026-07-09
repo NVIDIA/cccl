@@ -81,6 +81,9 @@ sysctk13 = [
   "numba>=0.60.0,<0.66",
   "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
+# The test extras do not include CuPy. The cuda.compute examples (run via
+# tests/test_examples.py) require it; install it separately (e.g.
+# `pip install cupy-cuda13x`).
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
   # GH pypa #11296
@@ -99,10 +102,6 @@ test-sysctk13 = [
   "pytest",
   "pytest-xdist",
 ]
-test-with-examples-cu12 = ["cuda-cccl[test-cu12]", "cupy-cuda12x"]
-test-with-examples-cu13 = ["cuda-cccl[test-cu13]", "cupy-cuda13x"]
-test-with-examples-sysctk12 = ["cuda-cccl[test-sysctk12]", "cupy-cuda12x"]
-test-with-examples-sysctk13 = ["cuda-cccl[test-sysctk13]", "cupy-cuda13x"]
 bench-cu12 = [
   "cuda-cccl[cu12]",
   "cuda-bench[cu12]",
