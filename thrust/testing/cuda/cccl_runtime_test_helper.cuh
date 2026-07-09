@@ -59,9 +59,10 @@ random_integers_buffer(cuda::stream_ref stream, cuda::std::size_t size, cuda::st
   auto result = make_host_buffer<T>(stream, size);
   stream.sync();
 
+  const auto generator = unittest::generate_random_integer<RandomT>{};
   for (cuda::std::size_t i = 0; i < size; ++i)
   {
-    result[i] = static_cast<T>(unittest::generate_random_integer<RandomT>{}(static_cast<unsigned int>(first + i)));
+    result[i] = static_cast<T>(generator(static_cast<unsigned int>(first + i)));
   }
 
   return result;
@@ -74,9 +75,10 @@ random_samples_buffer(cuda::stream_ref stream, cuda::std::size_t size, cuda::std
   auto result = make_host_buffer<T>(stream, size);
   stream.sync();
 
+  const auto generator = unittest::generate_random_sample<RandomT>{};
   for (cuda::std::size_t i = 0; i < size; ++i)
   {
-    result[i] = static_cast<T>(unittest::generate_random_sample<RandomT>{}(static_cast<unsigned int>(first + i)));
+    result[i] = static_cast<T>(generator(static_cast<unsigned int>(first + i)));
   }
 
   return result;
