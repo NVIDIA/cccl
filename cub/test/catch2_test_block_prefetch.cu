@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/prefetch.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
@@ -23,7 +23,7 @@ static_assert(!cub::detail::can_prefetch_from<cub::CacheModifiedInputIterator<cu
 template <typename T, int ThreadsInBlock, cub::detail::LoadPrefetch Level, int Stride, typename InputIteratorT>
 __global__ void block_prefetch_kernel(InputIteratorT input, T* output, int num_items)
 {
-  cub::detail::BlockPrefetch<T, ThreadsInBlock, Level, Stride>::Prefetch(input, num_items);
+  cub::detail::BlockPrefetch<ThreadsInBlock, Level, Stride>::Prefetch(input, num_items);
 
   for (int i = static_cast<int>(threadIdx.x); i < num_items; i += ThreadsInBlock)
   {
