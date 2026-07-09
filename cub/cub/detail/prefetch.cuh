@@ -48,7 +48,7 @@ enum class LoadPrefetch : int
   bulk_l2,
 };
 
-#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
 {
   switch (prefetch)
@@ -65,7 +65,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
       return os << "<unknown detail::LoadPrefetch: " << static_cast<int>(prefetch) << ">";
   }
 }
-#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED()
 
 // Prefetch hints require a raw address, so only contiguous iterators qualify.
 // Note: ``cub::CacheModifiedInputIterator`` does not qualify: it routes loads through an explicit cache path
@@ -104,17 +104,20 @@ struct BlockPrefetch
         // One elected thread issues a single TMA bulk prefetch for the whole tile.
         // cp.async.bulk.prefetch is fire-and-forget: no commit_group/wait_group needed.
         // Requires SM_90+; a no-op on older architectures.
-        NV_IF_TARGET(NV_PROVIDES_SM_90, (if (::cuda::device::__block_elect_one()) {
-                       // srcMem must be 16-byte aligned per PTX ISA; align base down and extend size to compensate
-                       const auto* const aligned_base  = ::cuda::align_down(src_ptr, 16);
-                       const unsigned int prefix       = static_cast<unsigned int>(src_ptr - aligned_base);
-                       const unsigned int aligned_size = ::cuda::round_up(total_bytes + prefix, 16u);
-                       if (aligned_size > 0)
+        NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                       if (::cuda::device::__block_elect_one())
                        {
-                         asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
-                                      :
-                                      : "l"(::cuda::ptx::__as_ptr_gmem(aligned_base)), "r"(aligned_size)
-                                      : "memory");
+                         // srcMem must be 16-byte aligned per PTX ISA; align base down and extend size to compensate
+                         const auto* const aligned_base  = ::cuda::align_down(src_ptr, 16);
+                         const unsigned int prefix       = static_cast<unsigned int>(src_ptr - aligned_base);
+                         const unsigned int aligned_size = ::cuda::round_up(total_bytes + prefix, 16u);
+                         if (aligned_size > 0)
+                         {
+                           asm volatile("cp.async.bulk.prefetch.L2.global [%0], %1;"
+                                        :
+                                        : "l"(::cuda::ptx::__as_ptr_gmem(aligned_base)), "r"(aligned_size)
+                                        : "memory");
+                         }
                        }
                      }))
       }
