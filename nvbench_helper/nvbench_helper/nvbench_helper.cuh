@@ -90,7 +90,7 @@ using integral_types    = nvbench::type_list<TUNE_T>;
 using fundamental_types = nvbench::type_list<TUNE_T>;
 using all_types         = nvbench::type_list<TUNE_T>;
 #else
-// keep those lists in sync with the documentation in tuning.rst
+// keep those lists in sync with the documentation in tuning_infra.rst
 using integral_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;
 
 using fundamental_types =
@@ -514,6 +514,20 @@ struct max_t
     less_t less{};
     return less(lhs, rhs) ? rhs : lhs;
   }
+
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __half operator()(__half lhs, __half rhs) const
+  {
+    return static_cast<float>(lhs) < static_cast<float>(rhs) ? rhs : lhs;
+  }
+#endif // _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __nv_bfloat16 operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const
+  {
+    return static_cast<float>(lhs) < static_cast<float>(rhs) ? rhs : lhs;
+  }
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 };
 
 template <class T>

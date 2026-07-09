@@ -5,20 +5,41 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import numpy as np
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
-from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._cccl_interop import set_cccl_iterator_state
+from .._serialization import (
+    BUILD_RESULTS,
+    ITER,
+    OP,
+    Serializable,
+)
 from .._utils import protocols
 from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
+def _data_pointer_or_none(array) -> int | None:
+    # A ProxyArray is a build-time placeholder with no GPU allocation and thus no
+    # data pointer; return None for it (these pointers are only cache-key
+    # discriminators) so binary_search can be built without a GPU.
+    from .._proxy import is_proxy
+
+    return None if is_proxy(array) else protocols.get_data_pointer(array)
+
+
 class _BinarySearch:
+    # Shared implementation for the lower/upper bound searchers.
+    _MODE: ClassVar[_bindings.BinarySearchMode]
+
     __slots__ = [
-        "build_result",
+        "build_results",
+        "loaded_build_result",
         "d_data_cccl",
         "d_values_cccl",
         "d_out_cccl",
@@ -27,13 +48,21 @@ class _BinarySearch:
         "out_ptr",
     ]
 
+    __serialization_schema__ = (
+        ("d_data_cccl", ITER),
+        ("d_values_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceBinarySearchBuildResult)),
+    )
+
     def __init__(
         self,
         d_data: DeviceArrayLike,
         d_values: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike,
         comp: OpAdapter,
-        mode: _bindings.BinarySearchMode,
+        compute_capability=None,
     ):
         if not protocols.is_device_array(d_data):
             raise ValueError("d_data must be a device array for index outputs.")
@@ -48,8 +77,8 @@ class _BinarySearch:
                 "d_out must use a pointer-sized unsigned integer dtype (np.uintp)."
             )
 
-        self.data_ptr = protocols.get_data_pointer(d_data)
-        self.out_ptr = protocols.get_data_pointer(d_out)
+        self.data_ptr = _data_pointer_or_none(d_data)
+        self.out_ptr = _data_pointer_or_none(d_out)
 
         self.d_data_cccl = cccl.to_cccl_input_iter(d_data)
         self.d_values_cccl = cccl.to_cccl_input_iter(d_values)
@@ -58,13 +87,15 @@ class _BinarySearch:
 
         self.op_cccl = comp.compile((data_value_type, data_value_type), types.uint8)
 
-        self.build_result = call_build(
+        # Active build result, bound at __call__ from build_results (see resolve_build_result).
+        self.build_results = cccl.build_for_ccs(
             _bindings.DeviceBinarySearchBuildResult,
-            mode,
+            self._MODE,
             self.d_data_cccl,
             self.d_values_cccl,
             self.d_out_cccl,
             self.op_cccl,
+            compute_capability=compute_capability,
         )
 
     def __call__(
@@ -78,6 +109,9 @@ class _BinarySearch:
         comp: Operator | None,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         set_cccl_iterator_state(self.d_data_cccl, d_data)
         set_cccl_iterator_state(self.d_values_cccl, d_values)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
@@ -87,7 +121,7 @@ class _BinarySearch:
         self.op_cccl.state = comp_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        self.build_result.compute(
+        self.loaded_build_result.compute(
             self.d_data_cccl,
             num_items,
             self.d_values_cccl,
@@ -96,6 +130,16 @@ class _BinarySearch:
             self.op_cccl,
             stream_handle,
         )
+
+
+class _LowerBound(_BinarySearch, Serializable):
+    __slots__ = ()
+    _MODE = _bindings.BinarySearchMode.LOWER_BOUND
+
+
+class _UpperBound(_BinarySearch, Serializable):
+    __slots__ = ()
+    _MODE = _bindings.BinarySearchMode.UPPER_BOUND
 
 
 @cache_with_registered_key_functions
@@ -107,9 +151,11 @@ def _make_binary_search(
     mode: _bindings.BinarySearchMode,
     data_ptr: int,
     out_ptr: int,
+    compute_capability=None,
 ):
-    """Cached factory for _BinarySearch."""
-    return _BinarySearch(d_data, d_values, d_out, comp, mode)
+    """Cached factory for the binary_search searchers."""
+    cls = _LowerBound if mode == _bindings.BinarySearchMode.LOWER_BOUND else _UpperBound
+    return cls(d_data, d_values, d_out, comp, compute_capability=compute_capability)
 
 
 def make_lower_bound(
@@ -118,6 +164,7 @@ def make_lower_bound(
     d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     comp: Operator | None = None,
+    compute_capability=None,
 ):
     """
     Create a lower_bound object that can be called to find insertion positions.
@@ -132,6 +179,11 @@ def make_lower_bound(
         d_values: Device array or iterator containing the search values.
         d_out: Device array to store the index results.
         comp: Optional comparison operator (default: ``OpKind.LESS``).
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that performs lower_bound.
@@ -146,8 +198,9 @@ def make_lower_bound(
         d_out,
         comp_adapter,
         _bindings.BinarySearchMode.LOWER_BOUND,
-        protocols.get_data_pointer(d_data),
-        protocols.get_data_pointer(d_out),
+        _data_pointer_or_none(d_data),
+        _data_pointer_or_none(d_out),
+        compute_capability=compute_capability,
     )
 
 
@@ -157,6 +210,7 @@ def make_upper_bound(
     d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     comp: Operator | None = None,
+    compute_capability=None,
 ):
     """
     Create an upper_bound object that can be called to find insertion positions.
@@ -171,6 +225,11 @@ def make_upper_bound(
         d_values: Device array or iterator containing the search values.
         d_out: Device array to store the index results.
         comp: Optional comparison operator (default: ``OpKind.LESS``).
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that performs upper_bound.
@@ -185,8 +244,9 @@ def make_upper_bound(
         d_out,
         comp_adapter,
         _bindings.BinarySearchMode.UPPER_BOUND,
-        protocols.get_data_pointer(d_data),
-        protocols.get_data_pointer(d_out),
+        _data_pointer_or_none(d_data),
+        _data_pointer_or_none(d_out),
+        compute_capability=compute_capability,
     )
 
 

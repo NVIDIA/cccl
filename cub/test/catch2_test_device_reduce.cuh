@@ -403,7 +403,7 @@ void compute_fixed_size_segmented_problem_reference(
 
   for (int segment = 0; segment < num_segments; segment++)
   {
-    auto seg_begin = h_begin + segment * segment_size;
+    auto seg_begin = h_begin + static_cast<long>(segment) * segment_size;
     auto seg_end   = seg_begin + segment_size;
     h_results[segment] =
       static_cast<cub::detail::it_value_t<ResultItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
@@ -429,7 +429,7 @@ void compute_fixed_size_segmented_argmax_reference(
     }
     else
     {
-      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::max_element(seg_begin, seg_end);
       int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
@@ -457,7 +457,7 @@ void compute_fixed_size_segmented_argmin_reference(
     }
     else
     {
-      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::min_element(seg_begin, seg_end);
       int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));

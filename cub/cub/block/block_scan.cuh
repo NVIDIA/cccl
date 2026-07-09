@@ -23,7 +23,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 
@@ -101,21 +103,45 @@ enum BlockScanAlgorithm
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
+namespace detail
+{
+[[nodiscard]] constexpr const char* to_string(BlockScanAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case BLOCK_SCAN_RAKING:
-      return os << "BLOCK_SCAN_RAKING";
+      return "BLOCK_SCAN_RAKING";
     case BLOCK_SCAN_RAKING_MEMOIZE:
-      return os << "BLOCK_SCAN_RAKING_MEMOIZE";
+      return "BLOCK_SCAN_RAKING_MEMOIZE";
     case BLOCK_SCAN_WARP_SCANS:
-      return os << "BLOCK_SCAN_WARP_SCANS";
+      return "BLOCK_SCAN_WARP_SCANS";
     default:
-      return os << "<unknown BlockScanAlgorithm: " << static_cast<int>(algo) << ">";
+      return "<unknown BlockScanAlgorithm>";
   }
 }
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockScanAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockScanAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockScan class provides :ref:`collective <collective-primitives>` methods for computing a parallel prefix

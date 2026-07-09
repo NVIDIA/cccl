@@ -13,11 +13,11 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
-    call_build,
     get_value_type,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._serialization import BUILD_RESULTS, ITER, OP, VALUE, Serializable
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
@@ -32,15 +32,24 @@ from ..typing import (
 )
 
 
-class _Reduce:
+class _Reduce(Serializable):
     __slots__ = [
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
         "op_cccl",
-        "build_result",
+        "build_results",
+        "loaded_build_result",
         "device_reduce_fn",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_out_cccl", ITER),
+        ("op_cccl", OP),
+        ("h_init_cccl", VALUE),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceReduceBuildResult)),
+    )
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
@@ -50,6 +59,7 @@ class _Reduce:
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
         determinism: Determinism,
+        compute_capability=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -59,22 +69,28 @@ class _Reduce:
         value_type = get_value_type(h_init)
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self.build_result = call_build(
+        # loaded_build_result / device_reduce_fn are bound lazily on the first
+        # __call__ (see _bind_device_reduce_fn); nothing is loaded here.
+        self.build_results = cccl.build_for_ccs(
             _bindings.DeviceReduceBuildResult,
             self.d_in_cccl,
             self.d_out_cccl,
             self.op_cccl,
             self.h_init_cccl,
             determinism,
+            compute_capability=compute_capability,
         )
 
-        match determinism:
-            case Determinism.RUN_TO_RUN:
-                self.device_reduce_fn = self.build_result.compute
-            case Determinism.NOT_GUARANTEED:
-                self.device_reduce_fn = self.build_result.compute_nondeterministic
-            case _:
-                raise ValueError(f"Invalid determinism: {determinism}")
+    def _bind_device_reduce_fn(self) -> None:
+        # Derived from the loaded build result (not serialized); bound at __call__
+        # once resolve_build_result picks + loads the current device's build result.
+        if (
+            Determinism(self.loaded_build_result.determinism)
+            is Determinism.NOT_GUARANTEED
+        ):
+            self.device_reduce_fn = self.loaded_build_result.compute_nondeterministic
+        else:
+            self.device_reduce_fn = self.loaded_build_result.compute
 
     def __call__(
         self,
@@ -87,6 +103,11 @@ class _Reduce:
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
+        # Select (and lazily load) the current device's build result, then bind the
+        # derived compute fn from it.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self._bind_device_reduce_fn()
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
@@ -144,6 +165,11 @@ def make_reduce_into(
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
         init: Numpy array storing initial value of the reduction
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the reduction
@@ -181,6 +207,7 @@ def make_reduce_into(
         op_adapter,
         h_init,
         kwargs.get("determinism", Determinism.RUN_TO_RUN),
+        compute_capability=kwargs.get("compute_capability"),
     )
 
 
