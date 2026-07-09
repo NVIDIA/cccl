@@ -229,6 +229,90 @@ __device__ __forceinline__ WarpTileRunScanT scan_warp_tile_run_counts(const int*
   return {lane_run_count, lane_scan - lane_run_count};
 }
 
+// start calculating head_flags:
+// each iter is 32 consecutive elements (lane L owns loc = warp_tile_offset + iter*32 + L)
+// head = (key != predecessor)
+template <int kIPT, class KeyT>
+__device__ __forceinline__ unsigned
+compute_head_flags(const KeyT* key_buf, int warp_tile_offset, int tile_len, int tile_id, int lane_id)
+{
+  static_assert(kIPT <= 32, "one lane per iter requires kIPT<=32");
+  unsigned my_flags = 0;
+#pragma unroll
+  for (int iter = 0; iter < kIPT; ++iter)
+  {
+    const int loc             = warp_tile_offset + iter * 32 + lane_id;
+    const KeyT key            = (loc < tile_len) ? key_buf[loc] : KeyT{};
+    const KeyT pred           = key_buf[loc - 1]; // loc==0 reads the over fetched slot[kSlotPad-1]
+    const int is_global_first = (tile_id == 0 && loc == 0);
+    const int head            = (loc < tile_len) ? (is_global_first ? 1 : (key != pred)) : 0;
+    const unsigned flags      = __ballot_sync(kFullMask, head);
+    if (lane_id == iter)
+    {
+      my_flags = flags;
+    }
+  }
+  return my_flags;
+}
+
+template <int kNumCompWarps>
+__device__ __forceinline__ void reduce_and_publish_tile_state(
+  TilePartialStateT* tile_partial_states,
+  unsigned launch_gen,
+  int tile_id,
+  int tile_len,
+  const int* slot_warp_run_counts,
+  const int* slot_warp_last_heads,
+  int lane_id)
+{
+  // kNumCompWarps<=32 so one lane/warp fits
+  // (in practice we will never have anything close to 32)
+  static_assert(kNumCompWarps <= 32, "kNumCompWarps must be less than 32!");
+  const bool active        = lane_id < kNumCompWarps;
+  const int warp_run_count = active ? slot_warp_run_counts[lane_id] : 0;
+  const int run_count      = __reduce_add_sync(kFullMask, warp_run_count);
+  // last head = the highest-index warp that has any run (its last_head is the tile's last head)
+  const unsigned warps_with_runs = __ballot_sync(kFullMask, active && warp_run_count > 0);
+  int last_head_idx              = -1;
+  // if we have any heads, get last head index
+  if (warps_with_runs)
+  {
+    const int last_warp_with_runs = 31 - __clz(warps_with_runs);
+    last_head_idx = __shfl_sync(kFullMask, active ? slot_warp_last_heads[lane_id] : -1, last_warp_with_runs);
+  }
+  if (lane_id == 0)
+  {
+    const int open_len = (run_count > 0) ? (tile_len - last_head_idx) : tile_len;
+    // CRITICAL: publish as soon as possible, this is why we calculate head_flags first
+    publish_state(tile_partial_states, tile_id, launch_gen, run_count, open_len);
+  }
+}
+
+template <int kIPT>
+__device__ __forceinline__ void
+stage_head_positions(unsigned my_flags, short* pos_dst, int warp_tile_offset, int lane_id)
+{
+  // we store run R at warp_tile_offset + (R ^ (R>>5)) to avoid bank conflicts for dense cases
+  // (CRITICAL for MaxSeg=1,2,4)
+  int head_scan = __popc(my_flags); // start: this word's head count
+  head_scan     = warp_inclusive_scan_add<32>(head_scan, lane_id);
+  // head_scan is a running sum of run_count, so each lane know each chunk's base
+  const int runs_before_word = head_scan - __popc(my_flags);
+  if (lane_id < kIPT)
+  {
+    const int word_pos     = warp_tile_offset + lane_id * 32; // element position of bit 0 of this word
+    unsigned pending_heads = my_flags; // this word's head mask; we need to "peel" it headbit by headbit
+    int run_index          = runs_before_word; // run-order slot for this word's next head
+    while (pending_heads)
+    {
+      const int head_offset = __ffs(pending_heads) - 1; // offset (0..31) of the next head within the word
+      pos_dst[warp_tile_offset + swizzle_xor_stride32(run_index)] = (short) (word_pos + head_offset);
+      ++run_index;
+      pending_heads &= (pending_heads - 1); // clear the lowest set bit
+    }
+  }
+}
+
 template <class Config, class OffT>
 __device__ __forceinline__ void poll_and_fold(
   TilePartialStateT* tile_partial_states,
@@ -524,27 +608,9 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
       const KeyT* key_buf = tile_buf + (size_t) slot_id * kSlotStride + kSlotPad;
       const int tile_len  = (int) min((OffT) kTileSize, num_items - (OffT) tile_id * kTileSize);
       int local_run_count = 0, warp_first_head = -1, warp_last_head = -1;
-      static_assert(kIPT <= 32, "one lane per iter requires kIPT<=32");
-      // start calculating head_flags:
-      // each iter is 32 consecutive elements (lane L owns loc = warp_tile_offset + iter*32 + L)
-      // head = (key != predecessor)
-      short* const pos_dst = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
-      unsigned my_flags    = 0;
-#pragma unroll
-      for (int iter = 0; iter < kIPT; ++iter)
-      {
-        const int loc             = warp_tile_offset + iter * 32 + lane_id;
-        const KeyT key            = (loc < tile_len) ? key_buf[loc] : KeyT{};
-        const KeyT pred           = key_buf[loc - 1]; // loc==0 reads the over fetched slot[kSlotPad-1]
-        const int is_global_first = (tile_id == 0 && loc == 0);
-        const int head            = (loc < tile_len) ? (is_global_first ? 1 : (key != pred)) : 0;
-        const unsigned flags      = __ballot_sync(kFullMask, head);
-        if (lane_id == iter)
-        {
-          my_flags = flags;
-        }
-      }
-      local_run_count = __reduce_add_sync(kFullMask, __popc(my_flags));
+      short* const pos_dst    = pos_buf + (size_t) (pipeline_gen % kPosBufStages) * kTileSize;
+      const unsigned my_flags = compute_head_flags<kIPT>(key_buf, warp_tile_offset, tile_len, tile_id, lane_id);
+      local_run_count         = __reduce_add_sync(kFullMask, __popc(my_flags));
       // each lane in a warp now has a mask that tells which chunk is non empty
       const unsigned nonempty_chunk_mask = __ballot_sync(kFullMask, my_flags != 0u);
       // if warptile is non empty (has heads), we get the location of warps first head and last head
@@ -572,30 +638,14 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
         while (!ptx::mbarrier_try_wait_parity(&computed[slot_id], (unsigned) (slot_gen & 1)))
         {
         }
-        {
-          // kNumCompWarps<=32 so one lane/warp fits
-          // (in practice we will never have anything close to 32)
-          static_assert(kNumCompWarps <= 32, "kNumCompWarps must be less than 32!");
-          const bool active        = lane_id < kNumCompWarps;
-          const int warp_run_count = active ? warp_run_counts[slot_id][lane_id] : 0;
-          const int run_count      = __reduce_add_sync(kFullMask, warp_run_count);
-          // last head = the highest-index warp that has any run (its last_head is the tile's last head)
-          const unsigned warps_with_runs = __ballot_sync(kFullMask, active && warp_run_count > 0);
-          int last_head_idx              = -1;
-          // if we have any heads, get last head index
-          if (warps_with_runs)
-          {
-            const int last_warp_with_runs = 31 - __clz(warps_with_runs);
-            last_head_idx =
-              __shfl_sync(kFullMask, active ? warp_last_heads[slot_id][lane_id] : -1, last_warp_with_runs);
-          }
-          if (lane_id == 0)
-          {
-            const int open_len = (run_count > 0) ? (tile_len - last_head_idx) : tile_len;
-            // CRITICAL: publish as soon as possible, this is why we calculate head_flags first
-            publish_state(tile_partial_states, tile_id, launch_gen, run_count, open_len);
-          }
-        }
+        reduce_and_publish_tile_state<kNumCompWarps>(
+          tile_partial_states,
+          launch_gen,
+          tile_id,
+          tile_len,
+          warp_run_counts[slot_id],
+          warp_last_heads[slot_id],
+          lane_id);
       }
       // now we start to stage head positions per warp tile, if a warptile has enough runs
       // (it is only worth it when we have more runs by a certain threshold per warp tile)
@@ -619,27 +669,7 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
             }
           }
         }
-        {
-          // we store run R at warp_tile_offset + (R ^ (R>>5)) to avoid bank conflicts for dense cases
-          // (CRITICAL for MaxSeg=1,2,4)
-          int head_scan = __popc(my_flags); // start: this word's head count
-          head_scan     = warp_inclusive_scan_add<32>(head_scan, lane_id);
-          // head_scan is a running sum of run_count, so each lane know each chunk's base
-          const int runs_before_word = head_scan - __popc(my_flags);
-          if (lane_id < kIPT)
-          {
-            const int word_pos     = warp_tile_offset + lane_id * 32; // element position of bit 0 of this word
-            unsigned pending_heads = my_flags; // this word's head mask; we need to "peel" it headbit by headbit
-            int run_index          = runs_before_word; // run-order slot for this word's next head
-            while (pending_heads)
-            {
-              const int head_offset = __ffs(pending_heads) - 1; // offset (0..31) of the next head within the word
-              pos_dst[warp_tile_offset + swizzle_xor_stride32(run_index)] = (short) (word_pos + head_offset);
-              ++run_index;
-              pending_heads &= (pending_heads - 1); // clear the lowest set bit
-            }
-          }
-        }
+        stage_head_positions<kIPT>(my_flags, pos_dst, warp_tile_offset, lane_id);
       } // stage flags
       if (lane_id == 0)
       {
