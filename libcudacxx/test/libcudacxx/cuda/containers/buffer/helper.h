@@ -237,11 +237,14 @@ using test_types =
                  cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
                  cuda::buffer<short, cuda::mr::device_accessible>,
                  cuda::buffer<float, cuda::mr::device_accessible>,
-                 cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+                 cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>,
+                 cuda::buffer<uchar3, cuda::mr::device_accessible>>;
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
-using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,
-                                  cuda::buffer<short, cuda::mr::device_accessible>,
-                                  cuda::buffer<float, cuda::mr::device_accessible>>;
+using test_types =
+  c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,
+                 cuda::buffer<short, cuda::mr::device_accessible>,
+                 cuda::buffer<float, cuda::mr::device_accessible>,
+                 cuda::buffer<uchar3, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 #endif // CUDA_TEST_CONTAINER_VECTOR_HELPER_H
