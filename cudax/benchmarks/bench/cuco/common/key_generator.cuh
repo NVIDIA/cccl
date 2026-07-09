@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include <cuda/std/detail/__config>
-
 #include <thrust/execution_policy.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
@@ -22,6 +20,7 @@
 #include <cuda/iterator>
 #include <cuda/std/cmath>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/memory>
@@ -82,14 +81,13 @@ void shuffle(ExecPolicy exec_policy, RandomIt begin, RandomIt end, Rng& rng)
 template <typename Key, typename Distribution, typename Rng>
 struct generate_uniform_fn
 {
-  _CCCL_HOST_DEVICE_API constexpr generate_uniform_fn(
-    ::cuda::std::size_t num, Distribution dist, ::cuda::std::size_t seed)
+  __host__ __device__ constexpr generate_uniform_fn(::cuda::std::size_t num, Distribution dist, ::cuda::std::size_t seed)
       : num{num}
       , dist{dist}
       , seed{seed}
   {}
 
-  _CCCL_HOST_DEVICE_API constexpr Key operator()(::cuda::std::size_t idx) const noexcept
+  __host__ __device__ constexpr Key operator()(::cuda::std::size_t idx) const noexcept
   {
     Rng rng;
     rng.seed(seed + idx * 1664525ull + 1013904223ull);
@@ -110,11 +108,11 @@ struct generate_uniform_fn
 template <typename Key, typename Rng>
 struct dropout_fn
 {
-  _CCCL_HOST_DEVICE_API constexpr explicit dropout_fn(::cuda::std::size_t num)
+  __host__ __device__ constexpr explicit dropout_fn(::cuda::std::size_t num)
       : num{num}
   {}
 
-  _CCCL_HOST_DEVICE_API Key operator()(::cuda::std::size_t seed) const noexcept
+  __host__ __device__ Key operator()(::cuda::std::size_t seed) const noexcept
   {
     Rng rng;
     ::thrust::uniform_int_distribution<Key> dist{static_cast<Key>(num), ::cuda::std::numeric_limits<Key>::max()};
@@ -128,11 +126,11 @@ struct dropout_fn
 template <typename Rng>
 struct dropout_pred
 {
-  _CCCL_HOST_DEVICE_API constexpr explicit dropout_pred(double keep_prob)
+  __host__ __device__ constexpr explicit dropout_pred(double keep_prob)
       : keep_prob{keep_prob}
   {}
 
-  _CCCL_HOST_DEVICE_API bool operator()(::cuda::std::size_t seed) const noexcept
+  __host__ __device__ bool operator()(::cuda::std::size_t seed) const noexcept
   {
     Rng rng;
     ::thrust::uniform_real_distribution<double> dist{0.0, 1.0};

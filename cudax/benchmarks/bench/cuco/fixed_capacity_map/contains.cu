@@ -36,7 +36,7 @@ void fixed_capacity_map_contains(::nvbench::state& state, ::nvbench::type_list<K
 {
   if constexpr (sizeof(Key) != sizeof(Value))
   {
-    state.skip("Key should be the same type as Value.");
+    state.skip("Key and Value must have the same size.");
   }
   else
   {
