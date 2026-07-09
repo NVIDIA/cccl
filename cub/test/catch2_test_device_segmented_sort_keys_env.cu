@@ -691,11 +691,11 @@ C2H_TEST("Test SegmentedSortPolicy properties", "[segmented_sort][device]")
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
        ", .rank_algorithm = RADIX_RANK_MEMOIZE, .scan_algorithm = BLOCK_SCAN_RAKING_MEMOIZE"
        ", .radix_bits = 6 }"
-       ", .small_segment = SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = 256"
-       ", .threads_per_warp = 4, .items_per_thread = 7, .load_algorithm = WARP_LOAD_DIRECT"
-       ", .load_modifier = LOAD_DEFAULT, .store_algorithm = WARP_STORE_DIRECT }"
        ", .medium_segment = SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = 256"
        ", .threads_per_warp = 32, .items_per_thread = 7, .load_algorithm = WARP_LOAD_DIRECT"
+       ", .load_modifier = LOAD_DEFAULT, .store_algorithm = WARP_STORE_DIRECT }"
+       ", .small_segment = SegmentedSortSubWarpMergeSortPolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 4, .items_per_thread = 7, .load_algorithm = WARP_LOAD_DIRECT"
        ", .load_modifier = LOAD_DEFAULT, .store_algorithm = WARP_STORE_DIRECT }"
        ", .partitioning_threshold = 300 }");
 }

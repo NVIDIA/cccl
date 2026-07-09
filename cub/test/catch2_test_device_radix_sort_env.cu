@@ -1612,14 +1612,16 @@ C2H_TEST("Test RadixSortPolicy properties", "[radix_sort][device]")
          .radix_bits              = 8};
   constexpr auto p2_scan = cub::ScanPolicy{
     .algorithm = cub::ScanAlgorithm::lookback,
-    .lookback  = {.threads_per_block = 512,
-                  .items_per_thread  = 23,
-                  .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                  .load_modifier     = cub::LOAD_DEFAULT,
-                  .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
-                  .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
-                  .lookback_delay    = {}},
-    .lookahead = {}};
+    .lookback =
+      cub::ScanLookbackPolicy{
+        .threads_per_block = 512,
+        .items_per_thread  = 23,
+        .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+        .scan_algorithm    = cub::BLOCK_SCAN_RAKING_MEMOIZE,
+        .lookback_delay    = cub::LookbackDelayPolicy{}},
+    .lookahead = cub::ScanLookaheadPolicy{}};
   constexpr auto p2_downsweep = cub::RadixSortDownsweepPolicy{
     .threads_per_block = 256,
     .items_per_thread  = 25,
