@@ -54,6 +54,7 @@ if not _BINDINGS_AVAILABLE:
         )
 else:
     from ._caching import clear_all_caches
+    from ._proxy import ProxyArray, ProxyValue
     from .algorithms import (
         DoubleBuffer,
         SortOrder,
@@ -110,6 +111,8 @@ else:
         "_BINDINGS_AVAILABLE",
         "serialize",
         "deserialize",
+        "ProxyArray",
+        "ProxyValue",
         "binary_transform",
         "clear_all_caches",
         "CacheModifiedInputIterator",
