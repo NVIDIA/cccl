@@ -126,8 +126,8 @@ struct fixed_grid_deterministic_reduce_t
 {
   template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT, typename InitT>
   CUB_RUNTIME_FUNCTION cudaError_t operator()(
-    std::uint8_t* d_temp_storage,
-    std::size_t& temp_storage_bytes,
+    uint8_t* d_temp_storage,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
@@ -347,11 +347,11 @@ C2H_TEST("DeviceReduce atomic dispatch with a deferred size handles grid boundar
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
 }
 
-C2H_TEST("DeviceReduce deterministic dispatch handles deferred grid boundaries",
+C2H_TEST("DeviceReduce deterministic dispatch with a deferred size handles grid boundaries",
          "[device][reduce][deferred][gpu_to_gpu]")
 {
   using value_t = float;
-  using count_t = std::int32_t;
+  using count_t = int32_t;
 
   // The deterministic dispatch derives its occupancy without consulting the launcher factory, so the worst-case grid
   // size is not fixed here; large_num_items exceeds the capacity of any single-pass grid of 32-thread tiles.
@@ -625,7 +625,7 @@ C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed d
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
 }
 
-using gpu_to_gpu_count_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
+using gpu_to_gpu_count_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 
 C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate result bitwise with gpu_to_gpu "
          "determinism",
@@ -656,7 +656,7 @@ C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate res
   REQUIRE_THAT(detail::to_vec(reference), detail::BitwiseEqualsRange(detail::to_vec(output)));
 }
 
-using gpu_to_gpu_large_count_types = c2h::type_list<std::uint32_t, std::int64_t, std::uint64_t>;
+using gpu_to_gpu_large_count_types = c2h::type_list<uint32_t, int64_t, uint64_t>;
 
 C2H_TEST("DeviceReduce::Reduce with a large deferred num_items matches the immediate result bitwise with gpu_to_gpu "
          "determinism",
@@ -746,7 +746,7 @@ C2H_TEST("captured DeviceReduce deterministic dispatch replays with zero and non
          "[device][reduce][deferred][gpu_to_gpu]")
 {
   using value_t = float;
-  using count_t = std::int32_t;
+  using count_t = int32_t;
 
   constexpr count_t capacity = 100'000;
   constexpr value_t init     = 3.0f;
@@ -764,9 +764,9 @@ C2H_TEST("captured DeviceReduce deterministic dispatch replays with zero and non
   REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
 
   const fixed_grid_deterministic_reduce_t reduce;
-  std::size_t temp_storage_bytes{};
+  size_t temp_storage_bytes{};
   REQUIRE(cudaSuccess == reduce(nullptr, temp_storage_bytes, input, d_output, count, init, stream));
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  c2h::device_vector<uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   const auto d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cudaGraph_t graph{};

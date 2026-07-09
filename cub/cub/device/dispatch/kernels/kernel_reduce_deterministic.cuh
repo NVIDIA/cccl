@@ -35,32 +35,32 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-//! Type a normalized problem size resolves to on device: an immediate problem size keeps its integral type, a
-//! deferred source resolves to an integer wide enough for its element. Only a signed 32-bit element is guaranteed
-//! to fit a single 32-bit chunk; every other element type is widened to 64 bits and consumed in chunks, with an
-//! unsigned element resolving to an unsigned type so that its full value range is representable.
-template <typename NormalizedNumItemsT, bool = ::cuda::std::is_integral_v<NormalizedNumItemsT>>
+// Type a kernel problem-size argument resolves to on device: an immediate problem size keeps its integral type, a
+// deferred source resolves to an integer wide enough for its element. Only a signed 32-bit element is guaranteed
+// to fit a single 32-bit chunk; every other element type is widened to 64 bits and consumed in chunks, with an
+// unsigned element resolving to an unsigned type so that its full value range is representable.
+template <typename KernelNumItemsT, bool = ::cuda::std::is_integral_v<KernelNumItemsT>>
 struct deterministic_num_items
 {
-  using type = NormalizedNumItemsT;
+  using type = KernelNumItemsT;
 };
 
-template <typename NormalizedNumItemsT>
-struct deterministic_num_items<NormalizedNumItemsT, false>
+template <typename KernelNumItemsT>
+struct deterministic_num_items<KernelNumItemsT, false>
 {
-  using element_t = it_value_t<NormalizedNumItemsT>;
+  using element_t = it_value_t<KernelNumItemsT>;
   using type      = ::cuda::std::conditional_t<
          ::cuda::std::is_signed_v<element_t> && sizeof(element_t) == 4,
          int,
          ::cuda::std::conditional_t<::cuda::std::is_signed_v<element_t>, ::cuda::std::int64_t, ::cuda::std::uint64_t>>;
 };
 
-template <typename NormalizedNumItemsT>
-using deterministic_num_items_t = typename deterministic_num_items<NormalizedNumItemsT>::type;
+template <typename KernelNumItemsT>
+using deterministic_num_items_t = typename deterministic_num_items<KernelNumItemsT>::type;
 
-//! Number of first-pass blocks that produce a partial for a deferred problem size: the worst-case launch is trimmed
-//! to the grid the host would have computed had it been able to read the problem size. Must be used consistently by
-//! both reduction passes.
+// Number of first-pass blocks that produce a partial for a deferred problem size: the worst-case launch is trimmed
+// to the grid the host would have computed had it been able to read the problem size. Must be used consistently by
+// both reduction passes.
 template <typename PolicySelector, typename NumItemsT>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
 deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size) noexcept
@@ -81,8 +81,8 @@ deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size) noexcept
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
- * @tparam NormalizedNumItemsT
- *   Integral problem size or a deferred problem-size descriptor
+ * @tparam KernelNumItemsT
+ *   Type of integral problem size or a deferred problem-size descriptor
  *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
@@ -97,7 +97,7 @@ deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size) noexcept
  * @param[out] d_out
  *   Pointer to the output aggregate
  *
- * @param[in] normalized_num_items
+ * @param[in] kernel_num_items
  *   Immediate problem size or a deferred problem-size descriptor
  *
  * @param[in] reduction_op
@@ -105,7 +105,7 @@ deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size) noexcept
  */
 template <typename PolicySelector,
           typename InputIteratorT,
-          typename NormalizedNumItemsT,
+          typename KernelNumItemsT,
           typename ReductionOpT,
           typename AccumT,
           typename TransformOpT>
@@ -113,7 +113,7 @@ _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_block)) void DeterministicDeviceReduceKernel(
   InputIteratorT d_in,
   AccumT* d_out,
-  const NormalizedNumItemsT normalized_num_items,
+  const KernelNumItemsT kernel_num_items,
   ReductionOpT reduction_op,
   TransformOpT transform_op,
   const int reduce_grid_size)
@@ -123,14 +123,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   constexpr int threads_per_block   = policy.threads_per_block;
 
   // A 64-bit deferred problem size is consumed in a single launch that loops over 32-bit chunks in the kernel.
-  using num_items_t = deterministic_num_items_t<NormalizedNumItemsT>;
+  using num_items_t = deterministic_num_items_t<KernelNumItemsT>;
 
-  const num_items_t num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<num_items_t>(normalized_num_items);
+  const num_items_t num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<num_items_t>(kernel_num_items);
 
   // The worst-case grid of a deferred problem size is trimmed to the blocks that receive at least one tile. Both the
   // early exit and the loop stride must use the trimmed grid so that the remaining blocks cover the whole input.
   const int active_grid_size = [&] {
-    if constexpr (::cuda::std::is_integral_v<NormalizedNumItemsT>)
+    if constexpr (::cuda::std::is_integral_v<KernelNumItemsT>)
     {
       return reduce_grid_size;
     }
@@ -140,7 +140,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
     }
   }();
 
-  if constexpr (!::cuda::std::is_integral_v<NormalizedNumItemsT>)
+  if constexpr (!::cuda::std::is_integral_v<KernelNumItemsT>)
   {
     if (static_cast<int>(blockIdx.x) >= active_grid_size)
     {
@@ -393,24 +393,24 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
 template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
-          typename NormalizedNumItemsT,
+          typename KernelNumItemsT,
           typename ReductionOpT,
           typename InitValueT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(current_policy<PolicySelector>().single_tile.threads_per_block),
-  1) void DeterministicDeviceReduceDeferredSingleTileKernel(InputIteratorT d_in,
-                                                            OutputIteratorT d_out,
-                                                            const NormalizedNumItemsT normalized_num_items,
-                                                            const int first_pass_grid_size,
+  1) void DeterministicDeviceReduceDeferredSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+                                                            _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+                                                            _CCCL_GRID_CONSTANT const KernelNumItemsT kernel_num_items,
+                                                            _CCCL_GRID_CONSTANT const int first_pass_grid_size,
                                                             ReductionOpT reduction_op,
-                                                            InitValueT init,
+                                                            _CCCL_GRID_CONSTANT const InitValueT init,
                                                             TransformOpT transform_op)
 {
-  using actual_num_items_t = deterministic_num_items_t<NormalizedNumItemsT>;
+  using actual_num_items_t = deterministic_num_items_t<KernelNumItemsT>;
   const actual_num_items_t actual_num_items =
-    CUB_NS_QUALIFIER::detail::parameter_from_device<actual_num_items_t>(normalized_num_items);
+    CUB_NS_QUALIFIER::detail::parameter_from_device<actual_num_items_t>(kernel_num_items);
   const int num_items = deferred_reduce_grid_size<PolicySelector>(actual_num_items, first_pass_grid_size);
 
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
