@@ -45,18 +45,18 @@ struct uniform
   //! Constructs a uniform distribution tag with the requested average key multiplicity.
   //!
   //! @param multiplicity Average number of generated keys that map to each unique key value.
-  //! @throws std::invalid_argument if `multiplicity` is not positive.
-  explicit uniform(nvbench::int64_t multiplicity)
+  //! @throws std::invalid_argument if `multiplicity` is not finite or is less than 1.0.
+  explicit uniform(double multiplicity)
       : multiplicity{multiplicity}
   {
-    if (multiplicity <= 0)
+    if (!cuda::std::isfinite(multiplicity) || multiplicity < 1.0)
     {
-      throw ::std::invalid_argument{"Multiplicity must be greater than 0"};
+      throw ::std::invalid_argument{"Multiplicity must be finite and at least 1"};
     }
   }
 
   //! Average number of generated keys that map to each unique key value.
-  nvbench::int64_t multiplicity;
+  double multiplicity;
 };
 } // namespace distribution
 
@@ -92,8 +92,8 @@ struct generate_uniform_fn
     Rng rng;
     rng.seed(seed + idx * 1664525ull + 1013904223ull);
 
-    const auto num_unique_keys_unclamped = static_cast<cuda::std::size_t>(
-      cuda::std::ceil(static_cast<double>(num) / static_cast<double>(dist.multiplicity)));
+    const auto num_unique_keys_unclamped =
+      static_cast<cuda::std::size_t>(cuda::std::ceil(static_cast<double>(num) / dist.multiplicity));
     const auto num_unique_keys =
       num_unique_keys_unclamped < cuda::std::size_t{1} ? cuda::std::size_t{1} : num_unique_keys_unclamped;
     thrust::uniform_int_distribution<Key> key_dist{Key{0}, static_cast<Key>(num_unique_keys - 1)};
@@ -288,7 +288,7 @@ Distribution dist_from_state(nvbench::state const& state)
   }
   else if constexpr (cuda::std::is_same_v<Distribution, distribution::uniform>)
   {
-    return Distribution{state.get_int64("Multiplicity")};
+    return Distribution{state.get_float64("Multiplicity")};
   }
   else
   {

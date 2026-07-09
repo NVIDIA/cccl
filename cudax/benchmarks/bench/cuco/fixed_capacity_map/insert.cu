@@ -102,4 +102,4 @@ NVBENCH_BENCH_TYPES(fixed_capacity_map_insert,
   .set_type_axes_names({"Key", "Value", "Distribution"})
   .add_int64_axis("NumInputs", {bench::defaults::n})
   .add_float64_axis("Occupancy", {bench::defaults::occupancy})
-  .add_int64_axis("Multiplicity", bench::defaults::multiplicity_range);
+  .add_float64_axis("Multiplicity", bench::defaults::multiplicity_range);
