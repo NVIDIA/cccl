@@ -297,43 +297,6 @@ __device__ __forceinline__ bool _isnan(T val)
   return ::isnan(static_cast<float>(val));
 }
 
-// c10::cuda::compat (c10/cuda/CUDAMathCompat.h)
-namespace compat
-{
-__device__ __forceinline__ float copysign(float x, float y)
-{
-  return ::copysignf(x, y);
-}
-__device__ __forceinline__ double copysign(double x, double y)
-{
-  return ::copysign(x, y);
-}
-__device__ __forceinline__ float exp(float x)
-{
-  return ::expf(x);
-}
-__device__ __forceinline__ double exp(double x)
-{
-  return ::exp(x);
-}
-__device__ __forceinline__ float log1p(float x)
-{
-  return ::log1pf(x);
-}
-__device__ __forceinline__ double log1p(double x)
-{
-  return ::log1p(x);
-}
-__device__ __forceinline__ float tanh(float x)
-{
-  return ::tanhf(x);
-}
-__device__ __forceinline__ double tanh(double x)
-{
-  return ::tanh(x);
-}
-} // namespace compat
-
 // c10::div_floor_floating (c10/util/generic_math.h:34)
 template <typename scalar_t>
 __device__ __forceinline__ scalar_t div_floor_floating(scalar_t a, scalar_t b)
@@ -361,7 +324,7 @@ __device__ __forceinline__ scalar_t div_floor_floating(scalar_t a, scalar_t b)
   }
   else
   {
-    floordiv = compat::copysign(scalar_t(0), a / b);
+    floordiv = ::copysignf(scalar_t(0), a / b);
   }
   return floordiv;
 }
@@ -1023,7 +986,7 @@ try
       [] __device__(T x) -> T {
         using opmath_t       = opmath_type<T>;
         const opmath_t x_acc = static_cast<opmath_t>(x);
-        return x_acc * compat::tanh(compat::log1p(compat::exp(x_acc)));
+        return x_acc * ::tanhf(::log1pf(::expf(x_acc)));
       },
       s);
 
