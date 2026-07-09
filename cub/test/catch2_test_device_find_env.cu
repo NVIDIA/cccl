@@ -16,6 +16,8 @@ struct stream_registry_factory_t;
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, device_find_if);
@@ -539,7 +541,7 @@ C2H_TEST("Device FindIf can be tuned", "[find][device]", block_sizes)
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("FindIfPolicy", "[find][device]")
+C2H_TEST("Test FindIfPolicy properties", "[find][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::FindIfPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindIfPolicy>);
@@ -558,5 +560,14 @@ C2H_TEST("FindIfPolicy", "[find][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "FindIfPolicy { .threads_per_block = 128, .items_per_thread = 7, .vec_size = 4"
+             ", .load_modifier = LOAD_LDG }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
