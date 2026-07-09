@@ -232,12 +232,12 @@ struct agent_batched_topk_cluster
   using segment_size_val_t = typename ::cuda::args::__traits<SegmentSizeParameterT>::element_type;
   using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
 
-  // Signed, so the indexing arithmetic below can never wrap on underflow. 32-bit comfortably covers every supported
-  // segment: the public entry caps the statically-known maximum segment size at 2^21, well within this width, so a
-  // value that actually exceeds its declared bound at runtime is a caller precondition violation (undefined behavior).
-  // The cross-CTA scan also packs two of these lanes into one `uint64_t`, which only holds for 32-bit lanes.
-  using offset_t     = ::cuda::std::int32_t;
-  using out_offset_t = ::cuda::std::int32_t;
+  // 32-bit covers every supported segment: the public entry caps the statically-known maximum segment size at 2^21, so
+  // a runtime value exceeding its declared bound is a caller precondition violation (undefined behavior). Unsigned
+  // because all offsets are non-negative (segment sizes are clamped to >= 0 upstream; ranks/blocks are `int`s cast in
+  // at the boundaries). The cross-CTA scan also packs two lanes into one `uint64_t`, which needs 32-bit lanes.
+  using offset_t     = ::cuda::std::uint32_t;
+  using out_offset_t = ::cuda::std::uint32_t;
   using state_t      = cluster_topk_state<key_t, offset_t, out_offset_t>;
   using key_prefix_t = typename state_t::key_prefix_t;
 
