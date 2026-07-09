@@ -112,8 +112,8 @@ OutputIterator scan_impl(
     const Size end   = (::cuda::std::min) (start + block_size, n);
 
     // For both has_init and no-init cases: reduce each block using first element as init
-    accum_t first_elem = *(first + start);
-    block_sums[tid]    = ::cuda::std::reduce(first + start + 1, first + end, first_elem, wrapped_binary_op);
+    const accum_t first_elem = *(first + start);
+    block_sums[tid]          = ::cuda::std::reduce(first + start + 1, first + end, first_elem, wrapped_binary_op);
   }
 
   // Step 2: Scan block sums
