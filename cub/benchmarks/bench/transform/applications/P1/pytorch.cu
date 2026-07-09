@@ -290,13 +290,6 @@ using opmath_type = typename opmath_type_impl<T>::type;
 // Each wrapper is annotated with the ATen source it replicates.
 // ============================================================================
 
-// at::_isnan (ATen/NumericUtils.h:30) — on CUDA this is just ::isnan
-template <typename T>
-__device__ __forceinline__ bool _isnan(T val)
-{
-  return ::isnan(static_cast<float>(val));
-}
-
 // c10::div_floor_floating (c10/util/generic_math.h:34)
 template <typename scalar_t>
 __device__ __forceinline__ scalar_t div_floor_floating(scalar_t a, scalar_t b)
@@ -638,7 +631,7 @@ try
       d_b,
       n,
       [] __device__(T x, T y) -> T {
-        if (_isnan(y))
+        if (::isnan(static_cast<float>(y)))
         {
           return NAN;
         }
@@ -656,7 +649,7 @@ try
       d_a,
       n,
       [] __device__(T x, T y) -> T {
-        if (_isnan(y))
+        if (::isnan(static_cast<float>(y)))
         {
           return NAN;
         }
@@ -1109,7 +1102,7 @@ try
       n,
       [=] __device__(T v) -> T {
         using opmath_t = opmath_type<T>;
-        if (_isnan(static_cast<opmath_t>(v)))
+        if (::isnan(static_cast<opmath_t>(v)))
         {
           return v;
         }
