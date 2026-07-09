@@ -24,7 +24,7 @@ struct my_policy_hub
   using key_t = cub::detail::it_value_t<KeysInputIteratorT>;
 
   // from Policy500 of the CUB scan-by-key tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<128,

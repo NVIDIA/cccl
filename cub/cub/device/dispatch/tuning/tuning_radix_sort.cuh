@@ -1037,7 +1037,7 @@ struct policy_hub
   //------------------------------------------------------------------------------
 
   /// SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1129,7 +1129,7 @@ struct policy_hub
   };
 
   /// SM60 (GP100)
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 6.9B 32b keys/s (Quadro P100)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1222,7 +1222,7 @@ struct policy_hub
   };
 
   /// SM61 (GP104)
-  struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
+  struct Policy610 : detail::chained_policy<610, Policy610, Policy600>
   {
     static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1315,7 +1315,7 @@ struct policy_hub
   };
 
   /// SM62 (Tegra, less RF)
-  struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
+  struct Policy620 : detail::chained_policy<620, Policy620, Policy610>
   {
     static constexpr int PRIMARY_RADIX_BITS  = 5;
     static constexpr int ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1;
@@ -1390,7 +1390,7 @@ struct policy_hub
   };
 
   /// SM70 (GV100)
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
+  struct Policy700 : detail::chained_policy<700, Policy700, Policy620>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1484,7 +1484,7 @@ struct policy_hub
   };
 
   /// SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy700>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1699,12 +1699,12 @@ struct policy_hub
   };
 
   struct Policy900
-      : ChainedPolicy<900, Policy900, Policy800>
+      : detail::chained_policy<900, Policy900, Policy800>
       , OnesweepSmallKeyTunedPolicy<sm90_small_key_tuning<sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>>
   {};
 
   struct Policy1000
-      : ChainedPolicy<1000, Policy1000, Policy900>
+      : detail::chained_policy<1000, Policy1000, Policy900>
       , OnesweepSmallKeyTunedPolicy<
           sm100_small_key_tuning<ValueT, sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>>
   {};

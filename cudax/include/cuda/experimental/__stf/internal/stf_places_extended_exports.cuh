@@ -39,6 +39,7 @@
 namespace cuda::experimental::stf
 {
 using ::cuda::experimental::places::blocked_partition;
+using ::cuda::experimental::places::blocked_partition_custom;
 using ::cuda::experimental::places::cyclic_partition;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 using ::cuda::experimental::places::green_context_helper;

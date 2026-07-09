@@ -25,7 +25,7 @@ struct my_policy_hub
   using KeyT = cub::detail::it_value_t<KeyIteratorT>;
 
   // from Policy500 of the CUB merge sort tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using MergeSortPolicy =
       AgentMergeSortPolicy<256,

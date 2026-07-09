@@ -30,6 +30,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CUDA_COMPILATION()
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 
@@ -97,7 +99,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
     __idx += __loop_stride;
   }
   // a single thread processes the remaining items
-#if _CCCL_CTK_AT_LEAST(12, 1)
+#  if _CCCL_CTK_AT_LEAST(12, 1)
   ::cooperative_groups::invoke_one(__grid, [&]() {
     const auto __remainder = __n % _VectorSize;
     for (int __i = 0; __i < __remainder; ++__i)
@@ -105,7 +107,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
       __local_ref.__add(*(__first + __n - __i - 1));
     }
   });
-#else
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 1) ^^^ / vvv _CCCL_CTK_BELOW(12, 1) vvv
   if (__grid.thread_rank() == 0)
   {
     const auto __remainder = __n % _VectorSize;
@@ -114,7 +116,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
       __local_ref.__add(*(__first + __n - __i - 1));
     }
   }
-#endif
+#  endif // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^
 
   __block.sync();
 
@@ -172,6 +174,8 @@ _CCCL_KERNEL_ATTRIBUTES void __merge(_OtherRefType __other_ref, _RefType __ref)
 } // namespace cuda::experimental::cuco::__hyperloglog_ns
 
 _CCCL_DIAG_POP
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/std/__cccl/epilogue.h>
 
