@@ -113,8 +113,9 @@ def git_commit_for_path(path) -> str:
 #     also answer "can the dynamic kernel replace the static <=256 kernel?" -- previously a
 #     separate bespoke script. `smem_static` is skipped above MAX_STATIC_BINS (the static
 #     kernel is compile-time-sized for 256 bins; forcing it higher reads out of bounds).
-# GPC/GPS (gmem_privatized_cuckoo / _single_probe) DROPPED: the wins analysis showed
-# both are never the best, nor within 2% of best, on any cell -- dead dispatch surface.
+# GPS (gmem_privatized_single_probe) is retained as a forced-only characterization
+# point. The selector never returns it, but dedicated high-bin runs compare its
+# block-private spill + gather against the direct-atomic cache.
 #
 # WARP-COALESCE VARIANTS: each coalesce-affected off-chip algo is measured BOTH with
 # coalescing (the stock binary) and without (the `*__nocoal` key -> the .nocoal binary,
@@ -130,7 +131,9 @@ _COALESCE_AFFECTED = [
     "direct_single_probe",
 ]
 FORCED_HIGH_BIN_ALGOS = (
-    ["hybrid"] + _COALESCE_AFFECTED + [a + "__nocoal" for a in _COALESCE_AFFECTED]
+    ["hybrid", "gmem_privatized_single_probe"]
+    + _COALESCE_AFFECTED
+    + [a + "__nocoal" for a in _COALESCE_AFFECTED]
 )
 FORCED_LOW_BIN_ALGOS = ["smem_static", "smem_dynamic"]
 FORCED_ALGOS = (
@@ -227,7 +230,14 @@ def algos_for_bin(bins: int) -> list:
     algos = [""]
     if bins <= MAX_STATIC_BINS:
         algos += FORCED_LOW_BIN_ALGOS
-    if bins >= HIGH_BIN_THRESHOLD:
+    # An explicit forced-algorithm request is authoritative even below the
+    # historical sweep-scope floor. This matters when the compiled selector's
+    # SMEM boundary is lower for a particular family (multi-RANGE is already
+    # off-chip at 4096 bins).
+    force_high_bin_set = FORCED_ALGO_FILTER is not None and any(
+        algo in FORCED_HIGH_BIN_ALGOS for algo in FORCED_ALGO_FILTER
+    )
+    if bins >= HIGH_BIN_THRESHOLD or force_high_bin_set:
         algos += FORCED_HIGH_BIN_ALGOS
     if FORCED_ALGO_FILTER is not None:
         algos = [a for a in algos if a == "" or a in FORCED_ALGO_FILTER]
