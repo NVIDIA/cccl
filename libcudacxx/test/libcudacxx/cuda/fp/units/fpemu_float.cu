@@ -140,8 +140,8 @@ __global__ void kern_d2f(const double* v, int n, int* mism)
 template <class T, class Kern>
 static int device_mismatches(Kern kern, const T* vals, int n)
 {
-  T* dv    = nullptr;
-  int* dm  = nullptr;
+  T* dv   = nullptr;
+  int* dm = nullptr;
   if (cudaMallocManaged(&dv, n * sizeof(T)) != cudaSuccess)
   {
     return -1;
@@ -360,11 +360,11 @@ C2H_TEST("fpemu double->float (narrowing, rounding)", "[fpemu]")
     std::mt19937_64 gen(777);
     for (int i = 0; i < N; i++)
     {
-      uint64_t r     = gen();
-      int32_t exp_d  = 874 + (int32_t) (r % 23); // biased double exp for subnormal float output
-      uint64_t frac  = gen() & 0x000FFFFFFFFFFFFFull;
-      uint64_t sign  = (gen() & 1) ? (1ULL << 63) : 0;
-      vals[i]        = from_d_bits(sign | ((uint64_t) exp_d << 52) | frac);
+      uint64_t r    = gen();
+      int32_t exp_d = 874 + (int32_t) (r % 23); // biased double exp for subnormal float output
+      uint64_t frac = gen() & 0x000FFFFFFFFFFFFFull;
+      uint64_t sign = (gen() & 1) ? (1ULL << 63) : 0;
+      vals[i]       = from_d_bits(sign | ((uint64_t) exp_d << 52) | frac);
     }
     REQUIRE(run_d2f("subnormal output", vals.data(), N) == 0);
   }

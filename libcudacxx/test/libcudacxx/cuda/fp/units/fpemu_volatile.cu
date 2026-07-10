@@ -31,7 +31,8 @@ static_assert(std::is_trivially_copyable<fp64emu>::value, "fp64emu must be trivi
 static_assert(std::is_trivially_copyable<fp64emu_low>::value, "fp64emu_low must be trivially copyable");
 static_assert(std::is_trivially_copyable<fp64emu_high>::value, "fp64emu_high must be trivially copyable");
 static_assert(std::is_trivially_copyable<fp64emu_unpacked>::value, "fp64emu_unpacked must be trivially copyable");
-static_assert(std::is_trivially_copyable<fp64emu_unpacked_low>::value, "fp64emu_unpacked_low must be trivially copyable");
+static_assert(std::is_trivially_copyable<fp64emu_unpacked_low>::value,
+              "fp64emu_unpacked_low must be trivially copyable");
 static_assert(std::is_trivially_copyable<fp64emu_unpacked_high>::value,
               "fp64emu_unpacked_high must be trivially copyable");
 

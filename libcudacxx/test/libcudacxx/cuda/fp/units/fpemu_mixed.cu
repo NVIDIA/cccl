@@ -37,12 +37,10 @@ _CCCL_HOST_DEVICE bool run_test(double dx, double dy, double dz)
   fp64emu ez = dz;
 
   // Complex expression: native double reference vs fp64emu.
-  const double ref0 = (dx < dy)
-                      ? c2 + (dx * dy + dz) * c2 + ::cuda::std::fma(dz, dy, dx) / (dz - dx) + c1
-                      : c1 + (dx * dz - dy) * c1 + ::cuda::std::fma(dx, dz, dy) / (dx - dz) + c2;
-  const double got0 = (double) ((ex < ey)
-                                 ? c2 + (ex * ey + ez) * c2 + fma(ez, ey, ex) / (ez - ex) + c1
-                                 : c1 + (ex * ez - ey) * c1 + fma(ex, ez, ey) / (ex - ez) + c2);
+  const double ref0 = (dx < dy) ? c2 + (dx * dy + dz) * c2 + ::cuda::std::fma(dz, dy, dx) / (dz - dx) + c1
+                                : c1 + (dx * dz - dy) * c1 + ::cuda::std::fma(dx, dz, dy) / (dx - dz) + c2;
+  const double got0 = (double) ((ex < ey) ? c2 + (ex * ey + ez) * c2 + fma(ez, ey, ex) / (ez - ex) + c1
+                                          : c1 + (ex * ez - ey) * c1 + fma(ex, ez, ey) / (ex - ez) + c2);
 
   // Mixed-type builtins: one fp64emu operand, one plain arithmetic operand.
   const double ref[5] = {dx + 2.5, 2.5 + dx, dx * c2, dx - 1.0, c2 + dy};

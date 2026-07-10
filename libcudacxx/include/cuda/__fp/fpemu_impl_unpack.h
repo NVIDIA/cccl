@@ -51,13 +51,11 @@
  */
 
 #include <cuda/__fp/fpemu_impl.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-
-
-
 /**
  * @brief Unpack a packed binary64 value into the public unpacked ABI.
  *
@@ -70,43 +68,48 @@ namespace cuda::experimental
  * @param  x The packed 64-bit value to unpack
  * @return The unpacked representation
  */
-_CCCL_TRIVIAL_API
-__fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
+_CCCL_TRIVIAL_API __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
 {
-    __fpbits64_unpacked __a_unpacked;
-    __uint32x2 __a32 = __fpemu_bit_cast<__uint32x2>(__x);
-    __a_unpacked.sign = __a32.x[1] & ( 1U << 31 );
-    __a32.x[1] &= 0x7fffffff;
-    int32_t __exponent = static_cast<int32_t>(__a32.x[1] >> 20);
+  __fpbits64_unpacked __a_unpacked;
+  __uint32x2 __a32  = __fpemu_bit_cast<__uint32x2>(__x);
+  __a_unpacked.sign = __a32.x[1] & (1U << 31);
+  __a32.x[1] &= 0x7fffffff;
+  int32_t __exponent = static_cast<int32_t>(__a32.x[1] >> 20);
 
-    // Normalize denormals: leading-zero count of the magnitude (clamped so a
-    // normal stays at shift == EXTRA_BITS, and a true zero maps to the zero band).
-    uint64_t __abs_a = __fpemu_bit_cast<uint64_t>(__a32);
-    int __nzeros = __internal_clzll(__abs_a);
-    if (__nzeros <  11 ) __nzeros = 11;
-    if (__nzeros == 64 ) __nzeros = 2049;
-    __a32.x[1] = __a32.x[1] & 0x000fffff;
+  // Normalize denormals: leading-zero count of the magnitude (clamped so a
+  // normal stays at shift == EXTRA_BITS, and a true zero maps to the zero band).
+  uint64_t __abs_a = __fpemu_bit_cast<uint64_t>(__a32);
+  int __nzeros     = __internal_clzll(__abs_a);
+  if (__nzeros < 11)
+  {
+    __nzeros = 11;
+  }
+  if (__nzeros == 64)
+  {
+    __nzeros = 2049;
+  }
+  __a32.x[1] = __a32.x[1] & 0x000fffff;
 
-    if (__exponent == 0x7ff)
-    {
-        // inf -> 0x00007ff0 band, nan -> 0x0007ff00 band (recovered on pack).
-        __exponent = (__a32.x[1] == 0 && __a32.x[0] == 0) ? 0x00007ff0 : 0x0007ff00;
-    }
-    if (__exponent != 0)
-    {
-        __a32.x[1] = __a32.x[1] | ( 1 << 20 );   // set the implicit bit
-    }
-    if (__exponent == 0)
-    {
-        __exponent = 12 - __nzeros;              // denormal / zero
-    }
+  if (__exponent == 0x7ff)
+  {
+    // inf -> 0x00007ff0 band, nan -> 0x0007ff00 band (recovered on pack).
+    __exponent = (__a32.x[1] == 0 && __a32.x[0] == 0) ? 0x00007ff0 : 0x0007ff00;
+  }
+  if (__exponent != 0)
+  {
+    __a32.x[1] = __a32.x[1] | (1 << 20); // set the implicit bit
+  }
+  if (__exponent == 0)
+  {
+    __exponent = 12 - __nzeros; // denormal / zero
+  }
 
-    int __shift = EXTRA_BITS + __nzeros - 11;
-    uint64_t __a64 = __fpemu_bit_cast<uint64_t>(__a32);
+  int __shift    = EXTRA_BITS + __nzeros - 11;
+  uint64_t __a64 = __fpemu_bit_cast<uint64_t>(__a32);
 
-    __a_unpacked.exponent = static_cast<uint32_t>(__exponent);
-    __a_unpacked.mantissa = __a64 << __shift;
-    return __a_unpacked;
+  __a_unpacked.exponent = static_cast<uint32_t>(__exponent);
+  __a_unpacked.mantissa = __a64 << __shift;
+  return __a_unpacked;
 }
 
 /**
@@ -128,80 +131,87 @@ __fpbits64_unpacked __internal_fp64emu_unpack(__fpbits64 __x) noexcept
  * @param  x  The unpacked value to pack
  * @return The packed 64-bit value
  */
-template<__fpemu_rounding _Rm = __fpemu_rounding::def>
-_CCCL_TRIVIAL_API
-__fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) noexcept
+template <__fpemu_rounding _Rm = __fpemu_rounding::def>
+_CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) noexcept
 {
-    const bool    __sign     = __x.sign != 0;
-    const bool    __is_inf   = (static_cast<int32_t>(__x.exponent) >= 0x2000);
-    const int32_t __e        = static_cast<int32_t>(__x.exponent) - 1;
-    int32_t       __exponent = __e > 0 ? __e : 0;
+  const bool __sign   = __x.sign != 0;
+  const bool __is_inf = (static_cast<int32_t>(__x.exponent) >= 0x2000);
+  const int32_t __e   = static_cast<int32_t>(__x.exponent) - 1;
+  int32_t __exponent  = __e > 0 ? __e : 0;
 
-    int __shift = __e > 0 ? 0 : -__e;
+  int __shift = __e > 0 ? 0 : -__e;
 #ifndef __CUDA_ARCH__
-    __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0;
+  __shift = (__shift > 0) ? (__shift > 63) ? 63 : __shift : 0;
 #endif
-    if (__shift > 0)
+  if (__shift > 0)
+  {
+    const uint64_t __mask = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
+    const bool __inexact  = (__x.mantissa & __mask) != 0;
+    __x.mantissa >>= __shift;
+    if constexpr (_Rm == __fpemu_rounding::rn)
     {
-        const uint64_t __mask    = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
-        const bool     __inexact = (__x.mantissa & __mask) != 0;
-        __x.mantissa >>= __shift;
-        if constexpr (_Rm == __fpemu_rounding::rn)
-        {
-            if (__inexact) __x.mantissa |= 1;
-        }
-        else if constexpr (_Rm == __fpemu_rounding::ru)
-        {
-            if (!__sign && __inexact) __x.mantissa |= 1;
-        }
-        else if constexpr (_Rm == __fpemu_rounding::rd)
-        {
-            if (__sign && __inexact) __x.mantissa |= 1;
-        }
+      if (__inexact)
+      {
+        __x.mantissa |= 1;
+      }
     }
-
-    __uint32x2 __mantissa32 = __fpemu_bit_cast<__uint32x2>(__x.mantissa);
-    __mantissa32 = __round<_Rm>(__mantissa32, 0, __sign);
-
-    const bool __is_nan = (__exponent >= (int)(0x0007ff00 - __fpemu_bias - 2048 - 1 - 128 + 0xC));
-
-    if (__mantissa32.x[0] == 0 && __mantissa32.x[1] == 0 && __exponent < 0x000007ff)
+    else if constexpr (_Rm == __fpemu_rounding::ru)
     {
-        __exponent = 0;
+      if (!__sign && __inexact)
+      {
+        __x.mantissa |= 1;
+      }
     }
-
-    if (__exponent >= 0x000007ff) __exponent = 0x000007ff;
-
-    __exponent <<= 20;
-    __mantissa32.x[1] += __exponent;
-
-    if (__mantissa32.x[1] >= 0x7ff00000)
+    else if constexpr (_Rm == __fpemu_rounding::rd)
     {
-        if (__is_nan)
-        {
-            __mantissa32.x[0] = 0;
-            __mantissa32.x[1] = 0x7fffffff;
-        }
-        else if (__is_inf)
-        {
-            __mantissa32.x[0] = 0;
-            __mantissa32.x[1] = 0x7ff00000;
-        }
-        else
-        {
-            int32_t __sat_exp = 0;
-            __fp64_ovfl_sat<_Rm>(__sign, __sat_exp, __mantissa32);
-            __mantissa32.x[1] |= (uint32_t)__sat_exp << _CCCL_FP64_HI_MANT_SHIFT;
-        }
+      if (__sign && __inexact)
+      {
+        __x.mantissa |= 1;
+      }
     }
+  }
 
-    __mantissa32.x[1] += __x.sign;
-    return __fpemu_bit_cast<__fpbits64>(__mantissa32);
+  __uint32x2 __mantissa32 = __fpemu_bit_cast<__uint32x2>(__x.mantissa);
+  __mantissa32            = __round<_Rm>(__mantissa32, 0, __sign);
+
+  const bool __is_nan = (__exponent >= (int) (0x0007ff00 - __fpemu_bias - 2048 - 1 - 128 + 0xC));
+
+  if (__mantissa32.x[0] == 0 && __mantissa32.x[1] == 0 && __exponent < 0x000007ff)
+  {
+    __exponent = 0;
+  }
+
+  if (__exponent >= 0x000007ff)
+  {
+    __exponent = 0x000007ff;
+  }
+
+  __exponent <<= 20;
+  __mantissa32.x[1] += __exponent;
+
+  if (__mantissa32.x[1] >= 0x7ff00000)
+  {
+    if (__is_nan)
+    {
+      __mantissa32.x[0] = 0;
+      __mantissa32.x[1] = 0x7fffffff;
+    }
+    else if (__is_inf)
+    {
+      __mantissa32.x[0] = 0;
+      __mantissa32.x[1] = 0x7ff00000;
+    }
+    else
+    {
+      int32_t __sat_exp = 0;
+      __fp64_ovfl_sat<_Rm>(__sign, __sat_exp, __mantissa32);
+      __mantissa32.x[1] |= (uint32_t) __sat_exp << _CCCL_FP64_HI_MANT_SHIFT;
+    }
+  }
+
+  __mantissa32.x[1] += __x.sign;
+  return __fpemu_bit_cast<__fpbits64>(__mantissa32);
 }
-
-
-
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

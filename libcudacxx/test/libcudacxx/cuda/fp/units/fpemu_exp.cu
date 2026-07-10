@@ -64,14 +64,15 @@ _CCCL_HOST_DEVICE T exp_impl(T x)
 #endif
 
   // Polynomial approximation of exp(r), r in [-ln2/2, ln2/2].
-  T poly = 0x1p+0
-         + r
-             * (0x1p+0
-                + r
-                    * (0x1p-1
-                       + r
-                           * (0x1.5555555555555p-3
-                              + r * (0x1.999999999999ap-5 + r * (0x1.6c16c16c16c17p-7 + r * (0x1.a01a01a01a01ap-9))))));
+  T poly =
+    0x1p+0
+    + r
+        * (0x1p+0
+           + r
+               * (0x1p-1
+                  + r
+                      * (0x1.5555555555555p-3
+                         + r * (0x1.999999999999ap-5 + r * (0x1.6c16c16c16c17p-7 + r * (0x1.a01a01a01a01ap-9))))));
 
   // Reconstruct exp(x) = 2^k * exp(r). Bias = 1023 for double.
   int exponent = k + 1023;

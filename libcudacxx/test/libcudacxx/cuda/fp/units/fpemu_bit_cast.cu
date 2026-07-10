@@ -45,11 +45,11 @@ _CCCL_HOST_DEVICE bool run_test()
   ok = ok && (::cuda::std::fabs(bit_cast<double>(a * b + c) - 7.0) <= 1e-10);
 
   // A plain conversion produces identical bits across all accuracy levels.
-  const double pi        = 3.14159265358979323846;
+  const double pi          = 3.14159265358979323846;
   const uint64_t bits_def  = bit_cast<uint64_t>(fpemu_unpacked<double, fpemu_accuracy::def>(pi));
   const uint64_t bits_high = bit_cast<uint64_t>(fpemu_unpacked<double, fpemu_accuracy::high>(pi));
   const uint64_t bits_low  = bit_cast<uint64_t>(fpemu_unpacked<double, fpemu_accuracy::low>(pi));
-  ok = ok && (bits_def == bits_high) && (bits_def == bits_low);
+  ok                       = ok && (bits_def == bits_high) && (bits_def == bits_low);
 
   return ok;
 }

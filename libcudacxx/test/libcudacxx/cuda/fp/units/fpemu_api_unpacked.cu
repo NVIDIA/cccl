@@ -37,7 +37,7 @@ using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later
 #define C7 (1.0 / 40320.0)
 
 // Horner evaluation of the degree-7 polynomial for any value type.
-#define POLY(v) (C0 + (v) * (C1 + (v) * (C2 + (v) * (C3 + (v) * (C4 + (v) * (C5 + (v) * (C6 + (v) *C7)))))))
+#define POLY(v) (C0 + (v) * (C1 + (v) * (C2 + (v) * (C3 + (v) * (C4 + (v) * (C5 + (v) * (C6 + (v) * C7)))))))
 
 _CCCL_HOST_DEVICE bool run_test(double dx, double dy, double dz, double dw)
 {
@@ -61,7 +61,7 @@ _CCCL_HOST_DEVICE bool run_test(double dx, double dy, double dz, double dw)
 
   // Unpacked C++ API (explicit conversion to disambiguate from the packed type).
   fp64emu_unpacked ux = (fp64emu_unpacked) dx, uy = (fp64emu_unpacked) dy, uz = (fp64emu_unpacked) dz,
-                   uw = (fp64emu_unpacked) dw;
+                   uw      = (fp64emu_unpacked) dw;
   const double unpacked[5] = {
     (double) (__dmul_rn(ex, ey) * ez * ew),
     (double) (__dadd_rn(ux, uy) + uz + uw),

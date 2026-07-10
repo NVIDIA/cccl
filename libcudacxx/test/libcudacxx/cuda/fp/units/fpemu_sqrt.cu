@@ -108,8 +108,8 @@ _CCCL_HOST_DEVICE static uint64_t ref_one(double a, int mode)
   // volatile forces the sqrtsd to execute (in memory) between the fesetround
   // calls and prevents compile-time constant folding under the wrong mode.
   volatile double va = a;
-  volatile double r = sqrt(va);
-  double rr         = r;
+  volatile double r  = sqrt(va);
+  double rr          = r;
   fesetround(old);
   return d_bits(rr);
 #endif

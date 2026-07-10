@@ -52,18 +52,18 @@ _CCCL_HOST_DEVICE bool run_test(double dx, double dy, double dz, double dw)
   __fpbits64 ez = __fp64emu_from_double(dz);
   __fpbits64 ew = __fp64emu_from_double(dw);
 
-  __fpbits64 pmul = __fp64emu_mid_dmul_rn(__fp64emu_mid_dmul_rn(__fp64emu_mid_dmul_rn(ex, ey), ez), ew);
-  __fpbits64 padd = __fp64emu_mid_dadd_rn(__fp64emu_mid_dadd_rn(__fp64emu_mid_dadd_rn(ex, ey), ez), ew);
-  __fpbits64 pmad = __fp64emu_mid_mad_rn(ex, ey, ez);
-  __fpbits64 pdot = __fp64emu_mid_dot_rn(ex, ez, ey, ew);
-  __fpbits64 ppoly = __fp64emu_dmul_rn(ex, __fp64emu_from_double(C7));
-  ppoly            = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C6)), ex);
-  ppoly            = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C5)), ex);
-  ppoly            = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C4)), ex);
-  ppoly            = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C3)), ex);
-  ppoly            = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C2)), ex);
-  ppoly            = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C1)), ex);
-  ppoly            = __fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C0));
+  __fpbits64 pmul        = __fp64emu_mid_dmul_rn(__fp64emu_mid_dmul_rn(__fp64emu_mid_dmul_rn(ex, ey), ez), ew);
+  __fpbits64 padd        = __fp64emu_mid_dadd_rn(__fp64emu_mid_dadd_rn(__fp64emu_mid_dadd_rn(ex, ey), ez), ew);
+  __fpbits64 pmad        = __fp64emu_mid_mad_rn(ex, ey, ez);
+  __fpbits64 pdot        = __fp64emu_mid_dot_rn(ex, ez, ey, ew);
+  __fpbits64 ppoly       = __fp64emu_dmul_rn(ex, __fp64emu_from_double(C7));
+  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C6)), ex);
+  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C5)), ex);
+  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C4)), ex);
+  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C3)), ex);
+  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C2)), ex);
+  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C1)), ex);
+  ppoly                  = __fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C0));
   const double packed[5] = {
     __fp64emu_to_double(pmul),
     __fp64emu_to_double(padd),
