@@ -133,7 +133,7 @@ namespace cuda::experimental
      public:
 
         // Only double emulation is implemented today; the _FpType axis exists for future extension.
-        static_assert(::cuda::std::is_same_v<_FpType, double>, "cuda::experimental::fpemu currently supports only _FpType == double, posible future extension to other types emulation");
+        static_assert(::cuda::std::is_same_v<_FpType, double>, "cuda::experimental::fpemu currently supports only _FpType == double, possible future extension to other types emulation");
 
         // Internal representation of the floating-point value
         // __fpbits64 is defined in fpemu_common.h

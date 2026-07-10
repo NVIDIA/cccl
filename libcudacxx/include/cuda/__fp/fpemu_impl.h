@@ -318,7 +318,7 @@ enum struct __fpemu_rounding
     // to be added to the exponent of the result
     #define _CCCL_FP64_MANT_MUL_CARRY_BIT    (((_CCCL_FP64_MANT_BITS*2) - _CCCL_FP64_TOTAL_BITS) - _CCCL_FP32_TOTAL_BITS)  // 8
 
-    /* Total lengh of the internal representation of the mantissa  */
+    /* Total length of the internal representation of the mantissa  */
     //constexpr uint64_t bitwidth = (MANTISSA_WIDTH + EXTRA_BITS);
     /* Exponent bias is 2^(11-1) -1 */    
     /* fp64 mantissa is 52 */
@@ -991,7 +991,7 @@ enum struct __fpemu_rounding
         //remove sign bit
         __input.x[1] &= 0x7fffffff;
 
-        //Shift exponent bits to the beggining
+        //Shift exponent bits to the beginning
         __exp = __input.x[1] >> 20;
 
         //Extract mantissa bits
@@ -1430,4 +1430,3 @@ _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_round_pack (bool     __sign,
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___FP_FPEMU_IMPL_UTILS_H
-
