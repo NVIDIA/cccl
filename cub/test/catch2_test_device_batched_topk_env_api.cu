@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Defer the unsupported-architecture diagnosis to the dispatch's runtime check (not a compile-time static_assert)
-// so this test compiles across all target architectures, including pre-SM90, for the full configuration space. See
-// _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in cub/device/dispatch/dispatch_batched_topk.cuh. Precedes CUB includes.
-#define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
-
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_batched_topk.cuh>

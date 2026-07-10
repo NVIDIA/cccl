@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Defer the unsupported-architecture diagnosis to the dispatch's runtime check (not a compile-time static_assert)
-// so this test compiles across all target architectures, including pre-SM90, for the full configuration space. See
-// _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT in cub/device/dispatch/dispatch_batched_topk.cuh. Precedes CUB includes.
-#define _CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
-
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_batched_topk.cuh>
@@ -272,4 +267,51 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
   thrust::sort(keys_out.begin(), keys_out.begin() + k);
   thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k);
   REQUIRE(keys_out == expected_result_set);
+}
+
+// The temporary storage size requirement must not assume a particular base-pointer alignment (the public contract
+// states that no special alignment is required). Over-allocate by one byte and offset the base pointer.
+C2H_TEST("cub::DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage pointer", "[batched_topk][device]")
+{
+  constexpr int num_segments = 2;
+  constexpr int segment_size = 8;
+  constexpr int k            = 3;
+
+  auto keys_in  = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
+  auto keys_out = thrust::device_vector<int>(num_segments * k, thrust::no_init);
+
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), segment_size);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
+
+  constexpr auto segment_sizes = cuda::args::constant<segment_size>{};
+  constexpr auto k_arg         = cuda::args::constant<k>{};
+  auto num_segs                = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env                     = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::unsorted)};
+
+  size_t temp_storage_bytes = 0;
+  auto error                = cub::DeviceBatchedTopK::MaxKeys(
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
+  REQUIRE(error == cudaSuccess);
+
+  // Allocate one extra byte and offset the base pointer by one to misalign it.
+  thrust::device_vector<char> temp_storage(temp_storage_bytes + 1, thrust::no_init);
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()) + 1,
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
 }
