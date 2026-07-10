@@ -166,6 +166,20 @@ inline bool bench_correctness_checks_enabled()
   return enabled;
 }
 
+inline void bench_log_input_cache_slots(int64_t cache_slots)
+{
+  if (std::getenv("CUB_HISTO_LOG_INPUT_CACHE_SLOTS") != nullptr)
+  {
+    std::fprintf(stderr, "[input-cache] slots=%lld\n", static_cast<long long>(cache_slots));
+    std::fflush(stderr);
+  }
+}
+
+inline bool bench_input_cache_slot_query_only()
+{
+  return std::getenv("CUB_HISTO_QUERY_INPUT_CACHE_SLOTS_ONLY") != nullptr;
+}
+
 // A correctness-check failure MUST end the trial in a hard runtime failure, not
 // a silent skip. nvbench catches a thrown std::exception from the benchmark body
 // and merely marks the measurement `Skipped: Yes`, then exits 0 -- which lets an

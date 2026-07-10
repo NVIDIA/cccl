@@ -80,6 +80,12 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     query_direct_atomic_cache_slots_for_extent<1, 1, /*IsEven=*/false, SampleT, CounterT, SampleT, OffsetT>(
       static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(elements));
 #endif
+  bench_log_input_cache_slots(cache_slots);
+  if (bench_input_cache_slot_query_only())
+  {
+    state.skip("input cache-slot query only");
+    return;
+  }
 
   thrust::device_vector<SampleT> input = generate_histogram_input_range<SampleT>(
     shape, elements, static_cast<int>(num_bins), d_levels, /*seed=*/42, cache_slots);
