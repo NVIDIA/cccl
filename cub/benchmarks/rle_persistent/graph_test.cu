@@ -29,7 +29,6 @@ using NumRunsT = RLE_NUM_RUNS_T;
 using OffT     = RLE_OFFSET_T;
 static_assert(sizeof(OffT) == 4 || sizeof(OffT) == 8, "OffT: int32 or int64");
 using RleConfigT        = rle_impl::winner_config<KeyT, K_IPT>;
-using u64               = rle_impl::u64;
 using TilePartialStateT = rle_impl::TilePartialStateT;
 
 constexpr int kTileSize = RleConfigT::kTileSize;
