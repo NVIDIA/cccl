@@ -17,12 +17,14 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
@@ -320,6 +322,114 @@ concept cluster_topk_policy_selector = policy_selector<T, cluster_topk_policy>;
 
 static_assert(is_valid_cluster_policy(make_cluster_policy()));
 
+// Tuned cluster sub-policies for SM 10.x pairs (key + index) requests under a deterministic result-set requirement,
+// measured on B200 (EVO search over `cub.bench.segmented_topk.variable.indexed.cluster` with F32 keys and I32
+// indices, deterministic gpu-to-gpu + prefer-larger-index). Buckets are keyed by the request's statically-known
+// upper bounds on segment size and k; bounds outside the measured grid fall back to the default policy.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::cuda::std::int64_t max_k)
+  -> cluster_topk_policy
+{
+  if (static_max_segment_size <= 512 && max_k <= 512)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/128,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/15 * 1024,
+      /*load_align_bytes=*/32,
+      /*pipeline_stages=*/8,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/10,
+      /*histogram_items_per_thread=*/4,
+      /*tie_break_items_per_thread=*/21,
+      /*copy_items_per_thread=*/16};
+  }
+  if (static_max_segment_size <= 1024 && max_k <= 512)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/352,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/27 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/13,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/6,
+      /*tie_break_items_per_thread=*/8,
+      /*copy_items_per_thread=*/9};
+  }
+  if (static_max_segment_size <= 1024 && max_k <= 1024)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/256,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/2,
+      /*chunk_bytes=*/14 * 1024,
+      /*load_align_bytes=*/64,
+      /*pipeline_stages=*/15,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/17,
+      /*tie_break_items_per_thread=*/16,
+      /*copy_items_per_thread=*/19};
+  }
+  if (static_max_segment_size <= 2048 && max_k <= 512)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/352,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/30 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/14,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/12,
+      /*tie_break_items_per_thread=*/2,
+      /*copy_items_per_thread=*/14};
+  }
+  if (static_max_segment_size <= 2048 && max_k <= 1024)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/416,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/23 * 1024,
+      /*load_align_bytes=*/16,
+      /*pipeline_stages=*/4,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/8,
+      /*histogram_items_per_thread=*/3,
+      /*tie_break_items_per_thread=*/1,
+      /*copy_items_per_thread=*/4};
+  }
+  if (static_max_segment_size <= 2048 && max_k <= 2048)
+  {
+    return cluster_topk_policy{
+      /*threads_per_block=*/256,
+      /*min_blocks_per_sm=*/1,
+      /*min_chunks_per_block=*/1,
+      /*chunk_bytes=*/15 * 1024,
+      /*load_align_bytes=*/32,
+      /*pipeline_stages=*/15,
+      /*single_block_max_seg_size=*/8 * 1024,
+      /*bits_per_pass=*/9,
+      /*histogram_items_per_thread=*/11,
+      /*tie_break_items_per_thread=*/11,
+      /*copy_items_per_thread=*/14};
+  }
+  return make_cluster_policy();
+}
+
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(512, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(1024, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(1024, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 512)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 1024)));
+static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 2048)));
+
 // Default selector for cluster-capable architectures (SM 9.0+). The tuning is currently identical across CCs.
 struct cluster_policy_selector
 {
@@ -429,6 +539,9 @@ enum class backend_mode
 struct policy_selector
 {
   ::cuda::std::int64_t static_max_segment_size;
+  ::cuda::std::int64_t max_k;
+  int key_size;
+  bool keys_only;
   ::cuda::execution::determinism::__determinism_t determinism;
   ::cuda::execution::tie_break::__tie_break_t tie_break;
   bool baseline_can_cover;
@@ -436,12 +549,19 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
-    const auto baseline = make_baseline_policy();
-    const auto cluster  = make_cluster_policy();
-
     // A deterministic result set (or a concrete tie-break preference) can only be honored by the cluster backend.
     const bool deterministic = (determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
                             || (tie_break != ::cuda::execution::tie_break::__tie_break_t::__unspecified);
+
+    const auto baseline = make_baseline_policy();
+
+    // SM 10.x cluster tunings so far cover deterministic pairs requests with 4-byte keys (measured on B200 under a
+    // prefer-larger-index tie-break; applied to both tie-break directions on the expectation of near-symmetry).
+    // Other request shapes keep the default policy until their measurements land.
+    const bool has_sm100_tuning = deterministic && !keys_only && key_size == 4
+                               && cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{11, 0};
+    const auto cluster =
+      has_sm100_tuning ? make_sm100_pairs_cluster_policy(static_max_segment_size, max_k) : make_cluster_policy();
 
     topk_backend backend = topk_backend::unsupported;
     if (mode == backend_mode::force_cluster)
@@ -500,7 +620,15 @@ struct policy_selector_from_types
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
-    return policy_selector{StaticMaxSegSize, Determinism, TieBreak, BaselineCanCover, Mode}(cc);
+    return policy_selector{
+      StaticMaxSegSize,
+      MaxK,
+      int{sizeof(KeyT)},
+      ::cuda::std::is_same_v<ValueT, NullType>,
+      Determinism,
+      TieBreak,
+      BaselineCanCover,
+      Mode}(cc);
   }
 };
 
