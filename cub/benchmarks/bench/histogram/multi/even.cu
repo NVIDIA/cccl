@@ -15,8 +15,8 @@
 // %RANGE% TUNE_LOAD_ALGORITHM_ID laid 0:2:1
 // %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
 
-template <typename SampleT, typename CounterT, typename OffsetT>
-static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
+template <typename SampleT, typename LocalCounterT, typename GlobalCounterT, typename OffsetT>
+static void even(nvbench::state& state, nvbench::type_list<SampleT, LocalCounterT, GlobalCounterT, OffsetT>)
 {
   constexpr int num_channels        = 4;
   constexpr int num_active_channels = 3;
@@ -66,9 +66,9 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   // the ranges passed to CUB and is therefore not part of the benchmark output.
   constexpr std::size_t cache_line_bytes      = 128;
   constexpr std::size_t channel_padding_lines = 3;
-  static_assert(cache_line_bytes % sizeof(CounterT) == 0);
+  static_assert(cache_line_bytes % sizeof(GlobalCounterT) == 0);
   static_assert((channel_padding_lines & (channel_padding_lines - 1)) != 0);
-  constexpr std::size_t counters_per_cache_line  = cache_line_bytes / sizeof(CounterT);
+  constexpr std::size_t counters_per_cache_line  = cache_line_bytes / sizeof(GlobalCounterT);
   constexpr std::size_t channel_padding_counters = channel_padding_lines * counters_per_cache_line;
 
   const cuda::std::array<std::size_t, num_active_channels> histogram_bins{
@@ -88,7 +88,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
         + channel_padding_counters;
     }
   }
-  thrust::device_vector<CounterT> histogram_storage(histogram_storage_size);
+  thrust::device_vector<GlobalCounterT> histogram_storage(histogram_storage_size);
   // Per-block direct-atomic SMEM cache slot count S for the multi-channel EVEN path,
   // queried from CUB's occupancy sizer so hash_synonym, stale_resident, and poison
   // track the ACTUAL cache (multi-channel floor differs from single-channel).
@@ -102,10 +102,11 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     num_active_channels,
     /*IsEven=*/true,
     SampleT,
-    CounterT,
+    LocalCounterT,
     SampleT,
-    OffsetT>(static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(num_channels)
-             * static_cast<unsigned long long>(elements));
+    OffsetT,
+    GlobalCounterT>(static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(num_channels)
+                    * static_cast<unsigned long long>(elements));
 #endif
   bench_log_input_cache_slots(cache_slots);
   if (bench_input_cache_slot_query_only())
@@ -123,16 +124,16 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     cache_slots,
     /*sample_stride=*/num_channels);
 
-  SampleT* d_input              = thrust::raw_pointer_cast(input.data());
-  CounterT* d_histogram_storage = thrust::raw_pointer_cast(histogram_storage.data());
-  const cuda::std::array<CounterT*, num_active_channels> d_histograms{
+  SampleT* d_input                    = thrust::raw_pointer_cast(input.data());
+  GlobalCounterT* d_histogram_storage = thrust::raw_pointer_cast(histogram_storage.data());
+  const cuda::std::array<GlobalCounterT*, num_active_channels> d_histograms{
     d_histogram_storage + histogram_offsets[0],
     d_histogram_storage + histogram_offsets[1],
     d_histogram_storage + histogram_offsets[2]};
 
   state.add_element_count(elements);
   state.add_global_memory_reads<SampleT>(elements * num_active_channels);
-  state.add_global_memory_writes<CounterT>(histogram_bins[0] + histogram_bins[1] + histogram_bins[2]);
+  state.add_global_memory_writes<GlobalCounterT>(histogram_bins[0] + histogram_bins[1] + histogram_bins[2]);
 
   // Warmup + correctness check: run MultiHistogramEven once outside
   // `state.exec`, checking the dispatch return code, then verify each
@@ -141,43 +142,28 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   // Skipped when CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
   if (bench_correctness_checks_enabled())
   {
-    thrust::fill(histogram_storage.begin(), histogram_storage.end(), CounterT{0});
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
+    thrust::fill(histogram_storage.begin(), histogram_storage.end(), GlobalCounterT{0});
     bench_check_cuda(
       (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>(
-        d_temp_storage,
-        temp_storage_bytes,
         d_input,
         d_histograms,
         cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
         cuda::std::array<SampleT, num_active_channels>{lower_level_r, lower_level_g, lower_level_b},
         cuda::std::array<SampleT, num_active_channels>{upper_level_r, upper_level_g, upper_level_b},
-        static_cast<OffsetT>(elements))),
-      "warmup MultiHistogramEven temp-size");
-    thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
-    d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
-    bench_check_cuda(
-      (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_input,
-        d_histograms,
-        cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
-        cuda::std::array<SampleT, num_active_channels>{lower_level_r, lower_level_g, lower_level_b},
-        cuda::std::array<SampleT, num_active_channels>{upper_level_r, upper_level_g, upper_level_b},
-        static_cast<OffsetT>(elements))),
+        static_cast<OffsetT>(elements),
+        cuda::execution::tune(
+          bench_policy_selector<SampleT, LocalCounterT, num_channels, num_active_channels, true>{}))),
       "warmup MultiHistogramEven");
     bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
 
-    std::vector<thrust::device_vector<CounterT>> opt_hists_d;
+    std::vector<thrust::device_vector<GlobalCounterT>> opt_hists_d;
     opt_hists_d.reserve(num_active_channels);
     for (int channel = 0; channel < num_active_channels; ++channel)
     {
       const auto first = histogram_storage.begin() + histogram_offsets[channel];
       opt_hists_d.emplace_back(first, first + histogram_bins[channel]);
     }
-    bench_verify_histogram_even<num_channels, num_active_channels, SampleT, CounterT, OffsetT>(
+    bench_verify_histogram_even<num_channels, num_active_channels, SampleT, GlobalCounterT, OffsetT>(
       input,
       opt_hists_d,
       static_cast<OffsetT>(elements),
@@ -200,12 +186,9 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
                timer.start();
                auto env = cub_bench_env(
                  alloc,
-                 launch
-#if !TUNE_BASE
-                 ,
-                 cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
-#endif // !TUNE_BASE
-               );
+                 launch,
+                 cuda::execution::tune(
+                   bench_policy_selector<SampleT, LocalCounterT, num_channels, num_active_channels, true>{}));
                _CCCL_TRY_CUDA_API(
                  (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>),
                  "MultiHistogramEven failed",
@@ -220,13 +203,21 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
              });
 }
 
-// CounterT / OffsetT overridable for the 64-bit-counter / 64-bit-offset variant
-// (matches the single-channel benches). Inert when undefined. Multi-channel 8-byte
-// counters are the case where the multi on-chip SMEM caps must be byte-derived.
-#ifdef TUNE_CounterT
-using counter_types = nvbench::type_list<TUNE_CounterT>;
+// Local and global counter widths are independent axes. TUNE_CounterT remains a
+// compatibility fallback that selects the historical same-width configuration.
+#ifdef TUNE_LocalCounterT
+using local_counter_types = nvbench::type_list<TUNE_LocalCounterT>;
+#elif defined(TUNE_CounterT)
+using local_counter_types = nvbench::type_list<TUNE_CounterT>;
 #else
-using counter_types = nvbench::type_list<int32_t>;
+using local_counter_types = nvbench::type_list<int32_t>;
+#endif
+#ifdef TUNE_GlobalCounterT
+using global_counter_types = nvbench::type_list<TUNE_GlobalCounterT>;
+#elif defined(TUNE_CounterT)
+using global_counter_types = nvbench::type_list<TUNE_CounterT>;
+#else
+using global_counter_types = nvbench::type_list<int32_t>;
 #endif
 #ifdef TUNE_OffsetT
 using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
@@ -240,9 +231,9 @@ using sample_types = nvbench::type_list<TUNE_SampleT>;
 using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
 #endif // TUNE_SampleT
 
-NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
+NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, local_counter_types, global_counter_types, some_offset_types))
   .set_name("base")
-  .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"SampleT{ct}", "LocalCounter{ct}", "GlobalCounter{ct}", "OffsetT{ct}"})
   .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
   .add_int64_axis("Bins", {32, 100, 2000, 16384, 60000, 2097152})
   // One `concentrated` shape swept across entropy (1.0=uniform, 0.5=spike,

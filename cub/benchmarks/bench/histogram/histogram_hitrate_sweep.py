@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-# Pass 2 of the main sweep: gather SMEM-cache HIT RATE for the cached high-bin
+# Pass 1 of the main sweep: gather SMEM-cache HIT RATE for the cached high-bin
 # algorithms (cuckoo, single_probe). Uses the hit-rate-instrumented binaries
 # (built with -DCUB_HISTO_TRACK_HITRATE=1) which, under CUB_HISTO_LOG_HITRATE=1,
 # print one '[hitrate] bins=.. ch=.. pixels=.. hits=.. misses=.. rate=..' line per
 # cached launch. Measuring hit rate adds overhead, so this is a SEPARATE pass from
 # the performance sweep (sweep_algorithms_6shape.py).
 #
-# Hit rate is a pure function of the BIN-INDEX sequence (shape, bins, elements,
-# seed) -- independent of SampleT -- so we sweep a single sample type. The shape is
-# fixed per subprocess (it is not in the [hitrate] line); each line is keyed to its
-# cell by (bins, pixels==elements).
+# Hit rate is a function of the bin-index sequence and the compiled cache policy.
+# Although identical bin sequences are sample-type-independent, cache capacity can
+# change with SampleT because the selected kernel's occupancy changes. Cache-sensitive
+# generators also use that capacity. Measure every plotted SampleT instead of reusing
+# I32 measurements for F64. The shape is fixed per subprocess (it is not in the
+# [hitrate] line); each line is keyed to its (SampleT, bins, pixels==elements) cell.
 #
 # Output: hitrate_results.json in autocuda/ (augments the MAIN sweep; the perf
 # JSON sweep_results_6shape.json is untouched).
+import hashlib
 import json
 import os
 import re
@@ -24,6 +27,7 @@ from pathlib import Path
 # HIST_BENCH_BINDIR. Outputs go to $HIST_SWEEP_OUTDIR (default: cwd) so this tracked
 # script never writes results into the source tree -- run it from autocuda/results/.
 BINDIR = Path(os.environ.get("HIST_BENCH_BINDIR", "build/autocuda/cub-benchmark/bin"))
+QUERY_BINDIR = Path(os.environ.get("HIST_HR_QUERY_BINDIR", str(BINDIR)))
 OUT = Path(os.environ.get("HIST_SWEEP_OUTDIR", ".")) / "hitrate_results.json"
 
 # Same matrix as the main sweep, minus the sample-type axis (hit rate is
@@ -34,10 +38,26 @@ OUT = Path(os.environ.get("HIST_SWEEP_OUTDIR", ".")) / "hitrate_results.json"
 # targets cub.bench.histogram.<b>.base.hitrate.u64 instead of the 32-bit name.
 _HR_SUFFIX = os.environ.get("HIST_HR_BINARY_SUFFIX", "")
 BINARIES = [
-    ("even", f"cub.bench.histogram.even.base.hitrate{_HR_SUFFIX}"),
-    ("range", f"cub.bench.histogram.range.base.hitrate{_HR_SUFFIX}"),
-    ("multi_even", f"cub.bench.histogram.multi_even.base.hitrate{_HR_SUFFIX}"),
-    ("multi_range", f"cub.bench.histogram.multi_range.base.hitrate{_HR_SUFFIX}"),
+    (
+        "even",
+        f"cub.bench.histogram.even.base.hitrate{_HR_SUFFIX}",
+        "cub.bench.histogram.even.base",
+    ),
+    (
+        "range",
+        f"cub.bench.histogram.range.base.hitrate{_HR_SUFFIX}",
+        "cub.bench.histogram.range.base",
+    ),
+    (
+        "multi_even",
+        f"cub.bench.histogram.multi_even.base.hitrate{_HR_SUFFIX}",
+        "cub.bench.histogram.multi.even.base",
+    ),
+    (
+        "multi_range",
+        f"cub.bench.histogram.multi_range.base.hitrate{_HR_SUFFIX}",
+        "cub.bench.histogram.multi.range.base",
+    ),
 ]
 
 
@@ -78,26 +98,28 @@ ELEMENTS = _env_list(
     [1048576, 16777216, 67108864, 268435456, 1073741824, 2000000000],
     int,
 )
+SAMPLES = _env_list("HIST_HR_SAMPLES", ["I32", "F64"])
 # Current CUB_HISTO_FORCE_ALGO names for the two cached high-bin kernels (the old
 # direct_atomic_* spellings are no longer recognized -> forcing would silently
 # no-op and report no cached launch). These keys are also what histogram_algo_perf.py
 # reads for the hit-rate panels.
 ALGOS = ["direct_cuckoo", "direct_single_probe"]
-SAMPLE = "I32"  # hit rate is sample-independent
 GENERATOR_CACHE_SLOTS = int(os.environ.get("HIST_HR_CACHE_SLOTS", "0"))
 
 HITRATE_RE = re.compile(
     r"\[hitrate\] bins=(\d+) ch=(\d+) pixels=(\d+) hits=(\d+) misses=(\d+) rate=([0-9.]+)"
 )
 INPUT_CACHE_RE = re.compile(r"\[input-cache\] slots=(\d+)")
+SLOTS_RE = re.compile(r"\[CUB_HISTO_DEBUG_SLOTS\].*auto_or_forced_slots=(\d+)")
+LAUNCH_RE = re.compile(r"\[launch\] bins=(\d+) ch=(\d+) ran=([a-z_:]+)")
 _CACHE_SLOT_QUERY_RESULTS = {}
 # NVBench may run several warmup/measurement launches per cell; the rate is stable
 # across them (deterministic input), so we keep the LAST line seen per (bins,pixels).
 
 
-def query_cache_slots(binexe, elements):
+def query_cache_slots(binexe, sample, elements):
     """Ask this compiled policy for S without allocating the benchmark input."""
-    key = (str(Path(binexe).resolve()), elements)
+    key = (str(Path(binexe).resolve()), sample, elements)
     if key in _CACHE_SLOT_QUERY_RESULTS:
         return _CACHE_SLOT_QUERY_RESULTS[key]
 
@@ -108,7 +130,7 @@ def query_cache_slots(binexe, elements):
         "--profile",
         "--quiet",
         "--axis",
-        f"SampleT{{ct}}={SAMPLE}",
+        f"SampleT{{ct}}={sample}",
         "--axis",
         f"Elements{{io}}={elements}",
         "--axis",
@@ -141,17 +163,17 @@ def query_cache_slots(binexe, elements):
     return value
 
 
-def cache_slot_groups(binexe, elements):
+def cache_slot_groups(binexe, sample, elements):
     """Group cells by the cache size queried from the compiled policy."""
     if GENERATOR_CACHE_SLOTS > 0:
         return [(GENERATOR_CACHE_SLOTS, list(elements))]
     groups = {}
     for n in elements:
-        groups.setdefault(query_cache_slots(binexe, n), []).append(n)
+        groups.setdefault(query_cache_slots(binexe, sample, n), []).append(n)
     return sorted(groups.items())
 
 
-def run(binexe, algo, shape, elements, stale_slots):
+def run(binexe, algo, sample, shape, elements, stale_slots):
     # --profile: ONE measured launch per cell (plus a warmup), no NVBench sampling
     # loop. Hit/miss counts are deterministic, so a single launch is exact -- this
     # avoids the per-launch readback-sync overhead exploding across NVBench's normal
@@ -162,7 +184,7 @@ def run(binexe, algo, shape, elements, stale_slots):
         "base",
         "--profile",
         "--axis",
-        f"SampleT{{ct}}=[{SAMPLE}]",
+        f"SampleT{{ct}}=[{sample}]",
         "--axis",
         "Elements{io}=[" + ",".join(str(e) for e in elements) + "]",
         "--axis",
@@ -172,6 +194,9 @@ def run(binexe, algo, shape, elements, stale_slots):
     ]  # >=2 values: NVBench rejects single-value string axis
     env = dict(os.environ)
     env["CUB_HISTO_FORCE_ALGO"] = algo
+    env["CUB_HISTO_FORCE_SLOTS"] = str(stale_slots)
+    env["CUB_HISTO_DEBUG_SLOTS"] = "1"
+    env["CUB_HISTO_LOG_LAUNCH"] = "1"
     env["CUB_HISTO_LOG_HITRATE"] = "1"
     # Always pin the exact per-cell group size. Ambient shell state must not
     # override this or branch/main input sequences cease to be comparable.
@@ -185,22 +210,66 @@ def run(binexe, algo, shape, elements, stale_slots):
         env=env,
     )
     if p.returncode != 0:
-        sys.stderr.write(
+        raise RuntimeError(
             f"[HR] {Path(binexe).name} {algo} {shape} exit={p.returncode}\n{p.stderr[-600:]}\n"
         )
-        return {}
+    launched_slots = {int(match.group(1)) for match in SLOTS_RE.finditer(p.stderr)}
+    if launched_slots != {stale_slots}:
+        raise RuntimeError(
+            f"[HR] {Path(binexe).name} {algo} {sample} {shape}: "
+            f"forced slots={stale_slots}, launched={sorted(launched_slots)}"
+        )
+    launched_algos = {match.group(3) for match in LAUNCH_RE.finditer(p.stderr)}
+    if launched_algos != {algo}:
+        raise RuntimeError(
+            f"[HR] {Path(binexe).name} {algo} {sample} {shape}: "
+            f"launch tags={sorted(launched_algos)}"
+        )
     cells = {}
     for line in p.stderr.splitlines():
         m = HITRATE_RE.search(line)
         if not m:
             continue
-        bins, _ch, pixels, hits, misses, rate = m.groups()
+        bins, channels, pixels, hits, misses, rate = m.groups()
+        channels = int(channels)
+        pixels = int(pixels)
+        hits = int(hits)
+        misses = int(misses)
+        if hits + misses != pixels * channels:
+            raise RuntimeError(
+                f"[HR] inconsistent contribution count: bins={bins} channels={channels} "
+                f"pixels={pixels} hits={hits} misses={misses}"
+            )
         cells[f"{int(bins)}|{int(pixels)}"] = {
-            "hits": int(hits),
-            "misses": int(misses),
+            "channels": channels,
+            "hits": hits,
+            "misses": misses,
             "rate": float(rate),
         }
+    expected = {f"{bins}|{n}" for bins in BINS for n in elements}
+    if cells.keys() != expected:
+        raise RuntimeError(
+            f"[HR] incomplete output for {Path(binexe).name} {algo} {sample} {shape}: "
+            f"missing={sorted(expected - cells.keys())[:5]} "
+            f"extra={sorted(cells.keys() - expected)[:5]}"
+        )
     return cells
+
+
+def write_results(results):
+    """Durably checkpoint after each completed (binary, algo, sample, shape)."""
+    meta = results.setdefault("_meta", {})
+    meta["schema"] = "binary -> algorithm -> SampleT|Bins|Elements|InputShape"
+    for key, values in (
+        ("samples", SAMPLES),
+        ("bins", BINS),
+        ("elements", ELEMENTS),
+        ("shapes", SHAPES),
+    ):
+        meta[key] = list(dict.fromkeys([*meta.get(key, []), *values]))
+    tmp = OUT.with_suffix(OUT.suffix + ".tmp")
+    tmp.write_text(json.dumps(results, indent=1) + "\n")
+    tmp.replace(OUT)
 
 
 def main():
@@ -208,38 +277,77 @@ def main():
     # only the multi-channel ones) preserves the already-collected data.
     results = json.loads(OUT.read_text()) if OUT.exists() else {}
     only = set(sys.argv[1:])  # optional: labels to run; empty = all
-    for label, binname in BINARIES:
+    for label, binname, query_binname in BINARIES:
         if only and label not in only:
             continue
         binexe = BINDIR / binname
-        if not binexe.exists():
-            sys.stderr.write(f"[HR] MISSING {binexe} (build hitrate variants first)\n")
-            continue
+        query_binexe = QUERY_BINDIR / query_binname
+        if not binexe.is_file():
+            raise FileNotFoundError(f"missing hit-rate binary: {binexe}")
+        if not query_binexe.is_file():
+            raise FileNotFoundError(
+                f"missing uninstrumented query binary: {query_binexe}"
+            )
+        provenance = {
+            "hitrate_binary": str(binexe.resolve()),
+            "hitrate_sha256": hashlib.sha256(binexe.read_bytes()).hexdigest(),
+            "query_binary": str(query_binexe.resolve()),
+            "query_sha256": hashlib.sha256(query_binexe.read_bytes()).hexdigest(),
+            "variant_suffix": _HR_SUFFIX,
+        }
+        binary_provenance = results.setdefault("_meta", {}).setdefault(
+            "binary_provenance", {}
+        )
+        previous = binary_provenance.get(label)
+        if previous is not None and previous != provenance:
+            raise RuntimeError(
+                f"refusing to merge hit-rate data from different binaries for {label}: "
+                f"previous={previous}, current={provenance}"
+            )
+        binary_provenance[label] = provenance
         binary_results = results.setdefault(label, {})
         for algo in ALGOS:
             algo_results = binary_results.setdefault(algo, {})
-            for shape in SHAPES:
-                cells = {}
-                for stale_slots, elements in cache_slot_groups(binexe, ELEMENTS):
-                    sys.stderr.write(
-                        f"[HR] {label} {algo} {shape} slots={stale_slots} "
-                        f"elements={elements}\n"
-                    )
-                    group_cells = run(binexe, algo, shape, elements, stale_slots)
-                    duplicates = cells.keys() & group_cells.keys()
-                    if duplicates:
-                        raise RuntimeError(
-                            f"duplicate hit-rate cells for {label}/{algo}/{shape}: "
-                            f"{sorted(duplicates)}"
+            for sample in SAMPLES:
+                for shape in SHAPES:
+                    expected = {
+                        f"{sample}|{bins}|{elements}|{shape}"
+                        for bins in BINS
+                        for elements in ELEMENTS
+                    }
+                    if expected.issubset(algo_results):
+                        sys.stderr.write(
+                            f"[HR] SKIP complete {label} {algo} {sample} {shape}\n"
                         )
-                    cells.update(group_cells)
-                # re-key to bins|elements|shape for joining with the perf/plot data
-                for k, v in cells.items():
-                    bins, pixels = k.split("|")
-                    algo_results[f"{bins}|{pixels}|{shape}"] = v
-    OUT.write_text(json.dumps(results, indent=1))
+                        continue
+                    cells = {}
+                    for stale_slots, elements in cache_slot_groups(
+                        query_binexe, sample, ELEMENTS
+                    ):
+                        sys.stderr.write(
+                            f"[HR] {label} {algo} {sample} {shape} slots={stale_slots} "
+                            f"elements={elements}\n"
+                        )
+                        group_cells = run(
+                            binexe, algo, sample, shape, elements, stale_slots
+                        )
+                        duplicates = cells.keys() & group_cells.keys()
+                        if duplicates:
+                            raise RuntimeError(
+                                f"duplicate hit-rate cells for {label}/{algo}/{sample}/{shape}: "
+                                f"{sorted(duplicates)}"
+                            )
+                        cells.update(group_cells)
+                    # Re-key for an unambiguous join with the sample-specific figure.
+                    for k, v in cells.items():
+                        bins, pixels = k.split("|")
+                        algo_results[f"{sample}|{bins}|{pixels}|{shape}"] = v
+                    write_results(results)
+    write_results(results)
     sys.stderr.write(f"[HR] wrote {OUT}\n")
     for label, av in results.items():
+        if label.startswith("_"):
+            continue
         for algo, cells in av.items():
             sys.stderr.write(f"[HR] {label} {algo}: {len(cells)} cells\n")
     return 0
