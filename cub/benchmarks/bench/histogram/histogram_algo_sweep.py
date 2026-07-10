@@ -478,15 +478,15 @@ def main():
         default="",
         help="appended to the bench target name for BOTH branch and main bins "
         "(default '' -> cub.bench.histogram.<b>.base; e.g. '.u64' selects the "
-        "64-bit-counter variant cub.bench.histogram.<b>.base.u64). One unified "
-        "driver covers the I32, low-bin static/dynamic, and 64-bit-counter sweeps.",
+        "u32-local/u64-global counter variant cub.bench.histogram.<b>.base.u64). One unified "
+        "driver covers the I32, low-bin static/dynamic, and wide-output sweeps.",
     )
     ap.add_argument(
         "--generator-cache-slots",
         type=int,
         default=0,
         help="override the cache-slot count supplied to cache-sensitive input generators "
-        "for every cell in this invocation; required for build variants whose CounterT "
+        "for every cell in this invocation; required for build variants whose LocalCounter "
         "width differs from the default 32-bit dispatch assumptions",
     )
     ap.add_argument("--repeats", type=int, default=3)
