@@ -13,13 +13,13 @@ set -euo pipefail
 BUILD=$(cd "${HIST_BENCH_BUILD:-build/autocuda/cub-benchmark}" && pwd)
 CMDS=/tmp/hist_u64_cmds.json
 LABELS="even range multi_even multi_range"
-# The global 64-bit counter MUST be `unsigned long long` (not uint64_t): CUDA atomicAdd /
-# atomicAdd_block provide an `unsigned long long` overload but none for `unsigned long`
-# (= uint64_t on this platform), so uint64_t fails to compile in the histogram kernels.
+# Use libcu++ fixed-width types. The cache and spill paths use libcu++ atomics, so
+# uint64_t is supported even on platforms where it aliases unsigned long rather than
+# unsigned long long.
 LEGACY_COUNTER="${TUNE_COUNTER:-}"
-LOCAL_COUNTER="${TUNE_LOCAL_COUNTER:-${LEGACY_COUNTER:-unsigned int}}"
-GLOBAL_COUNTER="${TUNE_GLOBAL_COUNTER:-${LEGACY_COUNTER:-unsigned long long}}"
-OFFSET="${TUNE_OFFSET:-long long}"
+LOCAL_COUNTER="${TUNE_LOCAL_COUNTER:-${LEGACY_COUNTER:-cuda::std::uint32_t}}"
+GLOBAL_COUNTER="${TUNE_GLOBAL_COUNTER:-${LEGACY_COUNTER:-cuda::std::uint64_t}}"
+OFFSET="${TUNE_OFFSET:-cuda::std::int64_t}"
 cd "$BUILD"
 # Map the label (used for the compile-cmds key + obj name) to the dotted CUB target
 # stem the unified sweep expects: multi_even -> multi.even, multi_range -> multi.range.
@@ -38,6 +38,7 @@ local_counter=os.environ['LOCAL_COUNTER']; global_counter=os.environ['GLOBAL_COU
 m=json.load(open(os.environ['CMDS']))
 toks=shlex.split(m[L]['cmd'])
 i=toks.index('-o'); toks[i+1]=obj
+toks=[t for t in toks if not t.startswith(('-DTUNE_LocalCounterT=', '-DTUNE_GlobalCounterT=', '-DTUNE_OffsetT='))]
 nvcc_i=next(j for j,t in enumerate(toks) if t.endswith('nvcc'))
 toks=toks[:nvcc_i+1] + [f'-DTUNE_LocalCounterT={local_counter}', f'-DTUNE_GlobalCounterT={global_counter}', f'-DTUNE_OffsetT={offset}'] + toks[nvcc_i+1:]
 r=subprocess.run(toks, cwd=build)

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Build the 4 histogram benches with BOTH the hit-rate instrumentation
 # (-DCUB_HISTO_TRACK_HITRATE=1), u32 local counters, and u64 global counters/offsets
-# (-DTUNE_LocalCounterT='unsigned int' -DTUNE_GlobalCounterT='unsigned long long'
-#  -DTUNE_OffsetT='long long') into
+# (-DTUNE_LocalCounterT='cuda::std::uint32_t'
+#  -DTUNE_GlobalCounterT='cuda::std::uint64_t'
+#  -DTUNE_OffsetT='cuda::std::int64_t') into
 # *.hitrate.u64 binaries. Local cache counts remain 32-bit, while the 64-bit output
 # type and large-input extent may still change kernel occupancy and the queried slot
 # count. Measure this variant directly rather than reusing rates from the narrow-output
@@ -17,9 +18,9 @@ BUILD=$(cd "${HIST_BENCH_BUILD:-build/autocuda/cub-benchmark}" && pwd)
 CMDS=/tmp/hist_u64_cmds.json
 LABELS="even range multi_even multi_range"
 LEGACY_COUNTER="${TUNE_COUNTER:-}"
-LOCAL_COUNTER="${TUNE_LOCAL_COUNTER:-${LEGACY_COUNTER:-unsigned int}}"
-GLOBAL_COUNTER="${TUNE_GLOBAL_COUNTER:-${LEGACY_COUNTER:-unsigned long long}}"
-OFFSET="${TUNE_OFFSET:-long long}"
+LOCAL_COUNTER="${TUNE_LOCAL_COUNTER:-${LEGACY_COUNTER:-cuda::std::uint32_t}}"
+GLOBAL_COUNTER="${TUNE_GLOBAL_COUNTER:-${LEGACY_COUNTER:-cuda::std::uint64_t}}"
+OFFSET="${TUNE_OFFSET:-cuda::std::int64_t}"
 cd "$BUILD"
 for L in $LABELS; do
   OUT="bin/cub.bench.histogram.${L}.base.hitrate.u64"
@@ -35,6 +36,7 @@ m=json.load(open(os.environ['CMDS']))
 toks=shlex.split(m[L]['cmd'])
 i=toks.index('-o'); toks[i+1]=obj
 # Inject instrumentation plus the three type defines after nvcc (the command may be ccache-prefixed).
+toks=[t for t in toks if not t.startswith(('-DTUNE_LocalCounterT=', '-DTUNE_GlobalCounterT=', '-DTUNE_OffsetT='))]
 nvcc_i=next(j for j,t in enumerate(toks) if t.endswith('nvcc'))
 defines=['-DCUB_HISTO_TRACK_HITRATE=1', f'-DTUNE_LocalCounterT={local_counter}', f'-DTUNE_GlobalCounterT={global_counter}', f'-DTUNE_OffsetT={offset}']
 toks=toks[:nvcc_i+1] + defines + toks[nvcc_i+1:]

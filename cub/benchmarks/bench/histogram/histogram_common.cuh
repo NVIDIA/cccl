@@ -11,6 +11,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 
+#include <cuda/atomic>
 #include <cuda/std/type_traits>
 
 #include <cctype>
@@ -259,7 +260,8 @@ struct bench_ref_even_op
       }
       if (bin >= 0)
       {
-        atomicAdd(d_hist[c] + bin, CounterT{1});
+        ::cuda::atomic_ref<CounterT, ::cuda::thread_scope_device>{d_hist[c][bin]}.fetch_add(
+          CounterT{1}, ::cuda::memory_order_relaxed);
       }
     }
   }
@@ -296,7 +298,8 @@ struct bench_ref_range_op
       const int bin                = idx - 1;
       if (bin >= 0 && bin < channel_num_bins)
       {
-        atomicAdd(d_hist[c] + bin, CounterT{1});
+        ::cuda::atomic_ref<CounterT, ::cuda::thread_scope_device>{d_hist[c][bin]}.fetch_add(
+          CounterT{1}, ::cuda::memory_order_relaxed);
       }
     }
   }
