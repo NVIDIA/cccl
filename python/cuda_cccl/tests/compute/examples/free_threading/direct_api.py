@@ -5,6 +5,11 @@
 # example-begin
 """
 Run independent direct API calls from multiple Python threads.
+
+The direct algorithm APIs (``cuda.compute.reduce_into`` and friends) are safe
+to call concurrently from any thread: each calling thread transparently
+receives its own per-thread algorithm object, while the expensive compiled
+build result is shared across threads.
 """
 
 from concurrent.futures import ThreadPoolExecutor

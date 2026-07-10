@@ -23,8 +23,13 @@ pytestmark = [
 ]
 
 STRESS_ITERATIONS = 10
-STRESS_THREADS = 2
+# Four workers give the single-flight build path multiple simultaneous waiters
+# and richer interleavings than a single winner/waiter pair.
+STRESS_THREADS = 4
 TRANSFORM_NATIVE_CACHE_THREADS = 4
+# Each iteration compiles one distinct specialization per worker, so iterations
+# are capped well below STRESS_ITERATIONS to bound native-compile time.
+DISTINCT_KEY_STORM_ITERATIONS = 3
 
 
 def _is_free_threaded_build() -> bool:
@@ -86,11 +91,28 @@ def _make_stream(cp):
 
 
 def _run_threaded(workers: list[Callable[[threading.Barrier], None]]) -> None:
-    barrier = threading.Barrier(len(workers))
+    # The default timeout turns a worker that dies before reaching the barrier
+    # into a BrokenBarrierError in its peers instead of hanging the CI job.
+    barrier = threading.Barrier(len(workers), timeout=60)
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(workers)) as executor:
         futures = [executor.submit(worker, barrier) for worker in workers]
+        errors = []
         for future in futures:
-            future.result()
+            try:
+                future.result()
+            except BaseException as exc:  # noqa: BLE001
+                errors.append(exc)
+        if errors:
+            # Surface the root-cause worker failure, not the barrier breakage
+            # it caused in the other workers.
+            raise next(
+                (
+                    error
+                    for error in errors
+                    if not isinstance(error, threading.BrokenBarrierError)
+                ),
+                errors[0],
+            )
     _assert_gil_disabled("after concurrent cuda.compute operations")
 
 
@@ -1264,6 +1286,86 @@ def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_modules)
     assert not source_build_result._loaded
 
 
+def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
+    compute_modules,
+):
+    """Concurrent per-thread use of a genuine multi-arch blob.
+
+    Multi-cc blobs take a different path from the single-cc blobs above: the
+    cc check is deferred from deserialize time to call time, and each call
+    resolves the current device's entry out of a multi-entry collection. The
+    entry for the other arch must stay lazy in every thread.
+    """
+    cp, cc = compute_modules
+    _require_serialization_backend()
+
+    from cuda.core import Device
+
+    device = Device()
+    cc_major, cc_minor = device.compute_capability
+    current_key = cc_major * 10 + cc_minor
+
+    # Find one more arch this toolchain can compile for.
+    other_key = None
+    for candidate in (90, 100, 89, 120, 80, 86, 75):
+        if candidate == current_key:
+            continue
+        try:
+            cc.make_unary_transform(
+                d_in=cc.ProxyArray(np.int32),
+                d_out=cc.ProxyArray(np.int32),
+                op=cc.OpKind.NEGATE,
+                compute_capability=candidate,
+            )
+        except Exception:
+            continue
+        other_key = candidate
+        break
+    if other_key is None:
+        pytest.skip("toolchain compiles for <2 target arches")
+
+    source_algorithm = cc.make_unary_transform(
+        d_in=cc.ProxyArray(np.int32),
+        d_out=cc.ProxyArray(np.int32),
+        op=cc.OpKind.NEGATE,
+        compute_capability=[current_key, other_key],
+    )
+    blob = cc.serialize(source_algorithm)
+
+    workers = [
+        _make_unary_worker(cp, cc, worker_id=worker_id, iteration=0)
+        for worker_id in range(STRESS_THREADS)
+    ]
+    algorithms = [None] * STRESS_THREADS
+    execute_barrier = threading.Barrier(STRESS_THREADS)
+
+    def make_thread(worker_id, worker):
+        def thread(barrier):
+            with cp.cuda.Device(device.device_id):
+                barrier.wait()
+                try:
+                    algorithm = cc.deserialize(blob)
+                    algorithms[worker_id] = algorithm
+                    execute_barrier.wait(timeout=60)
+                    _run_unary(cp, cc, algorithm, worker)
+                    _check_unary(cp, cc, worker)
+                except BaseException:
+                    execute_barrier.abort()
+                    raise
+
+        return thread
+
+    _run_threaded(
+        [make_thread(worker_id, worker) for worker_id, worker in enumerate(workers)]
+    )
+
+    for algorithm in algorithms:
+        assert set(algorithm.build_results.keys()) == {current_key, other_key}
+        # Only the current device's arch loads; the other entry stays lazy.
+        assert algorithm.build_results[current_key]._loaded
+        assert not algorithm.build_results[other_key]._loaded
+
+
 def test_free_threaded_deserialize_diagnostics_are_thread_local(compute_modules):
     cp, cc = compute_modules
     _require_serialization_backend()
@@ -1373,6 +1475,140 @@ def test_same_key_factory_cache_miss_storm(compute_modules, factory):
 
         assert len({id(obj) for obj in returned_objects}) == len(returned_objects)
         assert len({id(_get_build_result(obj)) for obj in returned_objects}) == 1
+
+
+def _storm_reduce_int32(cp, cc, worker_id, iteration):
+    stream, cuda_stream = _make_stream(cp)
+    h_in = np.arange(64, dtype=np.int32) + worker_id + iteration
+    h_init = np.array([worker_id], dtype=np.int32)
+    with stream:
+        d_in = cp.asarray(h_in)
+        d_out = cp.empty(1, dtype=np.int32)
+    reducer = cc.make_reduce_into(
+        d_in=d_in, d_out=d_out, op=cc.OpKind.PLUS, h_init=h_init
+    )
+    _call_with_temp(
+        cp,
+        reducer,
+        d_in=d_in,
+        d_out=d_out,
+        op=cc.OpKind.PLUS,
+        h_init=h_init,
+        num_items=h_in.size,
+        stream=cuda_stream,
+    )
+    stream.synchronize()
+    assert int(d_out.get()[0]) == int(h_in.sum()) + int(h_init[0])
+    return reducer
+
+
+def _storm_reduce_float64(cp, cc, worker_id, iteration):
+    stream, cuda_stream = _make_stream(cp)
+    h_in = np.arange(64, dtype=np.float64) + worker_id + iteration
+    h_init = np.array([worker_id], dtype=np.float64)
+    with stream:
+        d_in = cp.asarray(h_in)
+        d_out = cp.empty(1, dtype=np.float64)
+    reducer = cc.make_reduce_into(
+        d_in=d_in, d_out=d_out, op=cc.OpKind.PLUS, h_init=h_init
+    )
+    _call_with_temp(
+        cp,
+        reducer,
+        d_in=d_in,
+        d_out=d_out,
+        op=cc.OpKind.PLUS,
+        h_init=h_init,
+        num_items=h_in.size,
+        stream=cuda_stream,
+    )
+    stream.synchronize()
+    assert float(d_out.get()[0]) == float(h_in.sum()) + float(h_init[0])
+    return reducer
+
+
+def _storm_unary_transform_int64(cp, cc, worker_id, iteration):
+    stream, cuda_stream = _make_stream(cp)
+    h_in = np.arange(64, dtype=np.int64) + worker_id + iteration
+    with stream:
+        d_in = cp.asarray(h_in)
+        d_out = cp.empty_like(d_in)
+    transformer = cc.make_unary_transform(d_in=d_in, d_out=d_out, op=cc.OpKind.NEGATE)
+    transformer(
+        d_in=d_in,
+        d_out=d_out,
+        op=cc.OpKind.NEGATE,
+        num_items=h_in.size,
+        stream=cuda_stream,
+    )
+    stream.synchronize()
+    np.testing.assert_array_equal(d_out.get(), -h_in)
+    return transformer
+
+
+def _storm_binary_transform_float32(cp, cc, worker_id, iteration):
+    stream, cuda_stream = _make_stream(cp)
+    h_in1 = np.arange(64, dtype=np.float32) + worker_id
+    h_in2 = np.arange(64, dtype=np.float32) + iteration
+    with stream:
+        d_in1 = cp.asarray(h_in1)
+        d_in2 = cp.asarray(h_in2)
+        d_out = cp.empty_like(d_in1)
+    transformer = cc.make_binary_transform(
+        d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=cc.OpKind.PLUS
+    )
+    transformer(
+        d_in1=d_in1,
+        d_in2=d_in2,
+        d_out=d_out,
+        op=cc.OpKind.PLUS,
+        num_items=h_in1.size,
+        stream=cuda_stream,
+    )
+    stream.synchronize()
+    np.testing.assert_array_equal(d_out.get(), h_in1 + h_in2)
+    return transformer
+
+
+_DISTINCT_KEY_STORM_FACTORIES = [
+    _storm_reduce_int32,
+    _storm_reduce_float64,
+    _storm_unary_transform_int64,
+    _storm_binary_transform_float32,
+]
+
+
+def test_distinct_key_cold_build_storm(compute_modules):
+    """Force truly concurrent native compilations.
+
+    Same-key storms coalesce through _cache_single_flight to a single builder
+    thread, so they never overlap the native compile pipeline. Distinct keys
+    (different algorithms and dtypes) elect one builder per worker, running
+    NVRTC/nvJitLink (v1) or HostJIT (v2) compilations genuinely in parallel.
+    """
+    cp, cc = compute_modules
+
+    for iteration in range(DISTINCT_KEY_STORM_ITERATIONS):
+        cc.clear_all_caches()
+        returned_objects = [None] * len(_DISTINCT_KEY_STORM_FACTORIES)
+
+        def make_thread(worker_id, factory):
+            def thread(barrier):
+                barrier.wait()
+                returned_objects[worker_id] = factory(cp, cc, worker_id, iteration)
+
+            return thread
+
+        _run_threaded(
+            [
+                make_thread(worker_id, factory)
+                for worker_id, factory in enumerate(_DISTINCT_KEY_STORM_FACTORIES)
+            ]
+        )
+
+        # Distinct keys must not share builds: one build result per worker.
+        build_ids = {id(_get_build_result(obj)) for obj in returned_objects}
+        assert len(build_ids) == len(_DISTINCT_KEY_STORM_FACTORIES)
 
 
 def test_shared_raw_op_object_direct_algorithm_stress(compute_modules):
@@ -1622,12 +1858,8 @@ _V2_FIRST_CALL_CASES = [
 ]
 
 
-def test_v2_concurrent_cold_llvm_initialization():
-    from cuda.compute._build_info import USING_V2
-
-    if not USING_V2:
-        pytest.skip("requires the C Parallel v2 backend")
-
+def _run_concurrent_cold_llvm_initialization():
+    """Body of test_v2_concurrent_cold_llvm_initialization, run in a fresh process."""
     import cupy as cp
 
     import cuda.compute as cc
@@ -1651,9 +1883,7 @@ def test_v2_concurrent_cold_llvm_initialization():
         return thread
 
     try:
-        # LLVM target registration is process-wide and only cold once. CI runs
-        # this test alone in a fresh pytest process before any other v2 test;
-        # distinct algorithm keys prevent the Python build cache from
+        # Distinct algorithm keys prevent the Python build cache from
         # coalescing these concurrent HostJIT compiler initializations.
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=len(_V2_FIRST_CALL_CASES)
@@ -1672,6 +1902,38 @@ def test_v2_concurrent_cold_llvm_initialization():
     assert len(
         {id(_get_build_result(algorithm)) for algorithm in returned_algorithms}
     ) == len(returned_algorithms)
+
+
+def test_v2_concurrent_cold_llvm_initialization():
+    from cuda.compute._build_info import USING_V2
+
+    if not USING_V2:
+        pytest.skip("requires the C Parallel v2 backend")
+
+    import os
+    import subprocess
+
+    # LLVM target registration is process-wide and only cold once, so earlier
+    # tests in this pytest process would leave it warm and this test would no
+    # longer exercise concurrent *cold* initialization. Run the storm in a
+    # fresh interpreter regardless of what already ran here.
+    code = (
+        "import sys; sys.path.insert(0, ''); "
+        "import test_free_threading_stress as m; "
+        "m._run_concurrent_cold_llvm_initialization()"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=os.path.dirname(os.path.abspath(__file__)),
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    assert result.returncode == 0, (
+        f"cold LLVM initialization subprocess failed "
+        f"(exit {result.returncode})\nstdout:\n{result.stdout}\n"
+        f"stderr:\n{result.stderr}"
+    )
 
 
 @pytest.mark.parametrize("case", _V2_FIRST_CALL_CASES, ids=str)
@@ -1775,11 +2037,15 @@ ITERATOR_FACTORIES = [
 def test_shared_iterator_object_stress(compute_modules, make_iterator):
     cp, cc = compute_modules
 
-    shared_iterator, dtype, num_items, expected_sum = make_iterator(cp, cc)
     cp.cuda.Device().synchronize()
 
     for iteration in range(STRESS_ITERATIONS):
         cc.clear_all_caches()
+        # Recreate the shared iterator every iteration: its lazy advance/deref
+        # Op construction (guarded by IteratorBase._op_lock) is only racy while
+        # the per-instance caches are cold, so a fresh instance re-arms that
+        # first-construction race on each pass instead of only once per test.
+        shared_iterator, dtype, num_items, expected_sum = make_iterator(cp, cc)
 
         def make_thread(worker_id):
             stream, cuda_stream = _make_stream(cp)

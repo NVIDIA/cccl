@@ -550,6 +550,16 @@ compute capability identifies the architecture used for code generation and
 policy selection. The device ordinal keeps loaded native state associated with
 the device on which it was built.
 
+The compiled payload, however, is shared across same-cc device ordinals: the
+first successful default build for a given specialization and compute
+capability registers itself as a payload donor, and a later default build for
+another device with the same compute capability reconstructs the donor through
+serialization (serialize, deserialize without loading, then load on the new
+device) instead of running a full native compilation. The clone re-validates
+the payload against the current device. When the backend cannot serialize
+build results (the v2 HostJIT backend today), the clone attempt falls back to
+a full per-device build.
+
 Explicit AOT builds cannot include a device ordinal in their compilation key:
 they are intentionally supported on machines with no GPU. Their canonical
 compiled results are therefore shared process-wide by specialization and target
@@ -611,6 +621,16 @@ serialize access to a shared wrapper. The wrapper updates its Cython
 native call, so concurrent calls through the same wrapper could overwrite the
 descriptor state another thread is about to use.
 
+The same contract applies to wrappers reconstructed by ``deserialize()`` —
+they are the same classes with the same mutable descriptors. Unlike the
+factories, ``deserialize()`` does not hand each calling thread its own object
+through the per-thread wrapper cache: every call constructs a fresh, uncached
+wrapper. The natural deserialize-once-and-share pattern therefore reintroduces
+exactly the descriptor races the per-thread factory cache prevents. Threads
+that need a deserialized algorithm concurrently should each deserialize the
+blob themselves; that performs no recompilation, at the cost of an independent
+native load per object.
+
 Read-only iterator and operator objects may be shared across threads. The
 iterator base class uses a per-iterator lock for first-time lazy construction of
 advance, input-dereference, and output-dereference ``Op`` objects; cached access
@@ -632,14 +652,15 @@ NVRTC, nvJitLink, CUDA library loading, and CUB host dispatch. v2 adds HostJIT
 compiler state, LLVM/Clang initialization, persistent PCH paths, generated
 source/cubin artifacts, and dynamic loader lifetime.
 
-Transform has one additional v1 native-cache rule. In CPython 3.14
-free-threaded builds, ``python/cuda_cccl/CMakeLists.txt`` defines
-``CCCL_PYTHON_FREE_THREADED`` for the bundled C parallel target, and
-``c/parallel/src/transform.cu`` uses that macro to bypass the native
-``async_config`` / ``prefetch_config`` cache. Normal non-free-threaded builds
-keep the existing lazy native cache path. This avoids adding launch-path locking
-for transform in free-threaded Python builds while preserving the existing
-single-threaded behavior elsewhere.
+Transform has one additional v1 native-cache rule. Each transform build result
+owns a native cache of launch configurations (``async_config`` /
+``prefetch_config``) in ``c/parallel/src/transform.cu``. Because one build
+result is shared by every thread using the same specialization, and the Cython
+bindings release the GIL around the native call, each configuration is filled
+exactly once through ``std::call_once``; later calls on any thread only pay the
+``once_flag`` fast-path check. This holds on every interpreter build — regular
+GIL builds also execute the native call concurrently once the GIL is released,
+so the cache must be thread-safe unconditionally.
 
 Clearing caches
 +++++++++++++++
@@ -652,6 +673,9 @@ independently.
 Calling ``clear_all_caches()`` concurrently with active factory calls or
 algorithm execution is not supported unless the caller synchronizes externally.
 
+
+Source map
+----------
 
 For readers who want to connect this overview back to the source tree:
 

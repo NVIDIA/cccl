@@ -280,11 +280,15 @@ Multi-GPU behavior
 ++++++++++++++++++
 
 Loaded builds are device-specific. With the default current-device build path,
-``cuda.compute`` may compile and cache a separate build for each GPU. An explicit
-ahead-of-time build can reuse its compiled payload on multiple GPUs with the same
-compute capability, but each GPU receives separate loaded native state. Set the
-intended current CUDA device before invoking an algorithm, and pass arrays that
-are valid on that device.
+``cuda.compute`` compiles once per compute capability and reuses the compiled
+payload on other GPUs with the same compute capability; each GPU still receives
+its own loaded native state. An explicit ahead-of-time build behaves the same
+way across same-compute-capability GPUs. Set the intended current CUDA device
+before invoking an algorithm, and pass arrays — and a stream — that belong to
+that device; the stream selects a queue on the current device but never selects
+the device itself.
+
+.. _cuda.compute.free_threading:
 
 Free-threaded Python
 ++++++++++++++++++++
@@ -306,9 +310,10 @@ Free-threaded Python
    :class:`RawOp <cuda.compute.op.RawOp>` operations with the minimal
    installation.
 
-When ``cuda.compute`` is built for a free-threaded Python interpreter,
-independent calls from multiple Python threads can reuse compiled build results
-within the same process.
+Independent calls from multiple Python threads reuse compiled build results
+within the same process on any interpreter build. A free-threaded interpreter
+additionally runs those calls in parallel instead of interleaving them under
+the GIL.
 
 The cache is local to the current Python process. Separate Python processes build
 and cache independently, even if they use the same GPU and algorithm
@@ -325,6 +330,16 @@ algorithm APIs, such as
 reusable algorithm object in each thread (for example, the object returned by
 :func:`make_reduce_into <cuda.compute.algorithms.make_reduce_into>`). If multiple
 threads share one of these objects, serialize access to that object.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/free_threading/direct_api.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Concurrent reductions through the direct API from multiple threads.
+
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/free_threading/object_api.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Per-thread algorithm objects created with a ``make_*`` factory.
 
 How user-defined functions are cached
 +++++++++++++++++++++++++++++++++++++
@@ -360,6 +375,11 @@ To clear all caches and free memory:
 This forces recompilation on the next algorithm invocation—useful for benchmarking
 compilation time or reclaiming memory.
 
+In multi-threaded programs, make sure no other thread is building or running an
+algorithm while you call it: ``clear_all_caches()`` does not synchronize with
+concurrent use, and a build that is already in progress may finish afterwards
+and place its result back into the cache.
+
 .. _cuda.compute.serialization:
 
 Serialization
@@ -386,6 +406,14 @@ another machine.
 The same argument-matching rules described above for the object-based API apply
 to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
 when invoking it must match those used when it was originally built.
+
+The same threading rules also apply: like any other reusable algorithm object,
+a deserialized algorithm must be used by one thread at a time unless access is
+externally serialized (see :ref:`Free-threaded Python <cuda.compute.free_threading>`).
+For concurrent use, call :func:`deserialize <cuda.compute.algorithms.deserialize>`
+in each thread — reconstruction performs no recompilation, so per-thread
+deserialization from one shared blob is cheap. Each deserialized object holds
+its own copy of the native build state and loads it independently.
 
 .. _cuda.compute.ahead_of_time_compilation:
 

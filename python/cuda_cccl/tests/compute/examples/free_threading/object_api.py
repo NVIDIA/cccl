@@ -5,6 +5,12 @@
 # example-begin
 """
 Run independent object-based API calls from multiple Python threads.
+
+This demonstrates the supported object-API pattern for concurrency: each
+thread calls the ``make_*`` factory itself and uses the returned object only
+on that thread. Algorithm objects must be used by one thread at a time, so a
+per-thread factory call (cheap: objects are cached per thread and the compiled
+build result is shared process-wide) is the way to use them concurrently.
 """
 
 from concurrent.futures import ThreadPoolExecutor

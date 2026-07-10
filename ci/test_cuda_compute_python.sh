@@ -36,8 +36,9 @@ fi
 
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
 if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
-  # LLVM initialization is process-wide and only cold once, so this test must
-  # run in a fresh pytest process before another v2 test can initialize it.
+  # The test isolates itself in a fresh subprocess (LLVM initialization is
+  # process-wide and only cold once), but it carries the free_threading marker,
+  # so it must be selected by node-id here or the sweeps below never run it.
   python -m pytest "${pytest_extra[@]}" -n 0 -v \
     compute/test_free_threading_stress.py::test_v2_concurrent_cold_llvm_initialization
 fi

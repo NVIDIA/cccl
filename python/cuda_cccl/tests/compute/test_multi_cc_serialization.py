@@ -299,6 +299,65 @@ def test_explicit_aot_compilation_cache_normalizes_compute_capability():
     assert build_count == 1
 
 
+def test_default_build_second_same_cc_device_clones_from_donor(monkeypatch):
+    """A default build on a second same-cc device clones the donor payload.
+
+    Default builds are keyed per device ordinal, but the compiled payload only
+    depends on the compute capability: the first build registers itself as a
+    payload donor, and a later build for another same-cc ordinal reconstructs
+    it via serialize -> deserialize -> load instead of running the builder.
+    """
+    import cuda.compute._caching as _caching_mod
+
+    device = {"id": 0}
+    monkeypatch.setattr(
+        _caching_mod, "_get_current_device_info", lambda: (device["id"], (8, 0))
+    )
+    monkeypatch.setattr(_caching_mod, "_process_wide_build_results_cache", {})
+    monkeypatch.setattr(_caching_mod, "_process_wide_default_build_donors", {})
+
+    built_sources = []
+
+    def build():
+        source = _FakeBuildResult(b"sm80-cubin")
+        source._loaded = True
+        built_sources.append(source)
+        return _BuildResultCollection({80: source}, loaded_device_id=device["id"])
+
+    first = cache_build_results(
+        _FakeBuildResult, "spec", compute_capability=None, builder=build
+    )
+    assert len(built_sources) == 1
+
+    # Same device: plain cache hit, no builder, no clone.
+    assert (
+        cache_build_results(
+            _FakeBuildResult, "spec", compute_capability=None, builder=build
+        )
+        is first
+    )
+    assert len(built_sources) == 1
+    assert first[80].serialize_count == 0
+
+    # Second same-cc device: cloned from the donor, builder never runs.
+    device["id"] = 1
+    second = cache_build_results(
+        _FakeBuildResult, "spec", compute_capability=None, builder=build
+    )
+    assert len(built_sources) == 1
+    assert second is not first
+    assert first[80].serialize_count == 1
+    assert second[80] is not first[80]
+    assert second[80]._loaded
+
+    # A different specialization has no donor and builds from scratch.
+    device["id"] = 0
+    cache_build_results(
+        _FakeBuildResult, "other-spec", compute_capability=None, builder=build
+    )
+    assert len(built_sources) == 2
+
+
 # ----------------------------------------------------------------------------
 # Helpers to build with proxies (no GPU data) and discover compilable arches
 # ----------------------------------------------------------------------------
@@ -674,3 +733,235 @@ def test_fused_fast_path_unchanged_when_no_cc_given():
     builder(d_in=d_in, d_out=d_out, op=_add_one, num_items=d_in.size)
     cp.cuda.runtime.deviceSynchronize()
     np.testing.assert_array_equal(d_out.get(), h + 1)
+
+
+# ----------------------------------------------------------------------------
+# Multi-GPU: the second device loads via serialize/deserialize clone, with real
+# native build results (single-GPU CI skips these; see the fake-backed tests
+# above for the single-device protocol coverage)
+# ----------------------------------------------------------------------------
+
+
+def _same_cc_device_pair():
+    """Two device ordinals sharing a compute capability, or None.
+
+    The clone branch of _BuildResultCollection.resolve() is reachable only
+    when a second device resolves the same cc entry that another device
+    already owns, which requires two devices of equal compute capability.
+    """
+    cp = pytest.importorskip("cupy")
+    by_cc = {}
+    for device_id in range(cp.cuda.runtime.getDeviceCount()):
+        props = cp.cuda.runtime.getDeviceProperties(device_id)
+        by_cc.setdefault(cc_to_key((props["major"], props["minor"])), []).append(
+            device_id
+        )
+    for cc_key, device_ids in by_cc.items():
+        if len(device_ids) >= 2:
+            return cc_key, device_ids[0], device_ids[1]
+    return None
+
+
+def test_second_device_loads_via_clone_without_recompiling():
+    cp = pytest.importorskip("cupy")
+    pair = _same_cc_device_pair()
+    if pair is None:
+        pytest.skip("requires two devices with the same compute capability")
+    cc_key, device_a, device_b = pair
+
+    transformer = _make_transform(cc_key)
+    h = np.arange(512, dtype=np.int32)
+
+    with cp.cuda.Device(device_a):
+        d_in = cp.asarray(h)
+        d_out = cp.empty_like(d_in)
+        transformer(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+        cp.cuda.runtime.deviceSynchronize()
+        np.testing.assert_array_equal(d_out.get(), h + 1)
+
+    with cp.cuda.Device(device_b):
+        d_in_b = cp.asarray(h)
+        d_out_b = cp.empty_like(d_in_b)
+        transformer(d_in=d_in_b, d_out=d_out_b, op=_add_one, num_items=h.size)
+        cp.cuda.runtime.deviceSynchronize()
+        np.testing.assert_array_equal(d_out_b.get(), h + 1)
+
+    collection = transformer.build_results
+    loaded_a = collection._loaded_results[(cc_key, device_a)]
+    loaded_b = collection._loaded_results[(cc_key, device_b)]
+    # The first device claimed and loaded the canonical result; the second
+    # device received an independent serialize -> deserialize -> load clone.
+    assert loaded_a is collection[cc_key]
+    assert loaded_b is not loaded_a
+    assert loaded_b._loaded
+
+
+def test_deserialized_wrapper_runs_on_both_devices():
+    cp = pytest.importorskip("cupy")
+    pair = _same_cc_device_pair()
+    if pair is None:
+        pytest.skip("requires two devices with the same compute capability")
+    cc_key, device_a, device_b = pair
+
+    blob = serialize(_make_transform(cc_key))
+    restored = deserialize(blob)
+    h = np.arange(512, dtype=np.int32)
+
+    # Run on device_b FIRST so a non-zero ordinal claims canonical ownership,
+    # then device_a exercises the clone path from a non-zero owner.
+    for device_id in (device_b, device_a):
+        with cp.cuda.Device(device_id):
+            d_in = cp.asarray(h)
+            d_out = cp.empty_like(d_in)
+            restored(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+            cp.cuda.runtime.deviceSynchronize()
+            np.testing.assert_array_equal(d_out.get(), h + 1)
+
+    collection = restored.build_results
+    loaded_b = collection._loaded_results[(cc_key, device_b)]
+    loaded_a = collection._loaded_results[(cc_key, device_a)]
+    assert loaded_b is collection[cc_key]
+    assert loaded_a is not loaded_b
+
+
+# ----------------------------------------------------------------------------
+# Serialization under concurrent use, and round-trip stability
+# ----------------------------------------------------------------------------
+
+
+def test_serialize_while_other_threads_execute():
+    """serialize() must be safe while other threads run the same build.
+
+    Worker threads each obtain their own wrapper from the factory (sharing one
+    _BuildResultCollection through the process-wide build cache) and execute
+    repeatedly — including the first device load — while the main thread
+    serializes its wrapper concurrently. serialize_build_result and the first
+    load take the same per-cc source lock; compute never mutates the fields
+    serialize reads. Every produced blob must be identical and usable.
+    """
+    cp = pytest.importorskip("cupy")
+    cc = current_device_cc_key()
+
+    # int16 keeps this specialization's cache key distinct from every other
+    # test in this module, so the first device load happens inside this test.
+    def make_wrapper():
+        return make_unary_transform(
+            d_in=ProxyArray(np.int16),
+            d_out=ProxyArray(np.int16),
+            op=_add_one,
+            compute_capability=cc,
+        )
+
+    main_wrapper = make_wrapper()
+    h = np.arange(1024, dtype=np.int16)
+    n_workers = 2
+    iterations = 20
+    barrier = threading.Barrier(n_workers + 1, timeout=120)
+    shared_collections = []
+
+    def worker():
+        wrapper = make_wrapper()
+        shared_collections.append(wrapper.build_results)
+        d_in = cp.asarray(h)
+        d_out = cp.empty_like(d_in)
+        barrier.wait()
+        for _ in range(iterations):
+            wrapper(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+            cp.cuda.runtime.deviceSynchronize()
+            np.testing.assert_array_equal(d_out.get(), h + 1)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
+        futures = [executor.submit(worker) for _ in range(n_workers)]
+        barrier.wait()
+        blobs = [serialize(main_wrapper) for _ in range(iterations)]
+        for future in futures:
+            future.result()
+
+    # All threads shared one collection, and serialization was stable
+    # throughout the concurrent first-load and execution window.
+    assert all(coll is main_wrapper.build_results for coll in shared_collections)
+    assert len(set(blobs)) == 1
+
+    restored = deserialize(blobs[0])
+    d_in = cp.asarray(h)
+    d_out = cp.empty_like(d_in)
+    restored(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    cp.cuda.runtime.deviceSynchronize()
+    np.testing.assert_array_equal(d_out.get(), h + 1)
+
+
+def test_double_serialize_roundtrip_is_stable_and_executes():
+    """serialize -> deserialize -> serialize -> deserialize is stable.
+
+    Iterator/value/op runtime state is not serialized and loading only
+    populates native handles, so a reconstructed wrapper must serialize back
+    to the identical bytes both before and after it has been loaded and
+    executed, and the second reconstruction must still run correctly.
+    """
+    cp = pytest.importorskip("cupy")
+    cc = current_device_cc_key()
+
+    blob1 = serialize(_make_transform(cc))
+
+    # Byte-stable before any load.
+    assert serialize(deserialize(blob1)) == blob1
+
+    # Load + execute the reconstruction, then round-trip again: loading must
+    # leak nothing into the blob.
+    loaded = deserialize(blob1)
+    h = np.arange(256, dtype=np.int32)
+    d_in = cp.asarray(h)
+    d_out = cp.empty_like(d_in)
+    loaded(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    cp.cuda.runtime.deviceSynchronize()
+    np.testing.assert_array_equal(d_out.get(), h + 1)
+
+    blob2 = serialize(loaded)
+    assert blob2 == blob1
+
+    second = deserialize(blob2)
+    d_out.fill(0)
+    second(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    cp.cuda.runtime.deviceSynchronize()
+    np.testing.assert_array_equal(d_out.get(), h + 1)
+
+
+def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
+    """Real-GPU check of the default-path payload donor (see the fake-based
+    test_default_build_second_same_cc_device_clones_from_donor for the
+    protocol): the second same-cc device must never run a native build."""
+    cp = pytest.importorskip("cupy")
+    pair = _same_cc_device_pair()
+    if pair is None:
+        pytest.skip("requires two devices with the same compute capability")
+    _, device_a, device_b = pair
+
+    # uint8 keeps this specialization's cache key distinct from other tests.
+    h = np.arange(256, dtype=np.uint8)
+
+    with cp.cuda.Device(device_a):
+        d_in = cp.asarray(h)
+        d_out = cp.empty_like(d_in)
+        w_a = make_unary_transform(d_in=d_in, d_out=d_out, op=_add_one)
+        w_a(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+        cp.cuda.runtime.deviceSynchronize()
+        np.testing.assert_array_equal(d_out.get(), h + 1)
+
+    def _no_native_build(*args, **kwargs):
+        raise AssertionError("second same-cc device must clone, not rebuild")
+
+    monkeypatch.setattr(cccl_interop, "call_build", _no_native_build)
+    with cp.cuda.Device(device_b):
+        d_in_b = cp.asarray(h)
+        d_out_b = cp.empty_like(d_in_b)
+        w_b = make_unary_transform(d_in=d_in_b, d_out=d_out_b, op=_add_one)
+        w_b(d_in=d_in_b, d_out=d_out_b, op=_add_one, num_items=h.size)
+        cp.cuda.runtime.deviceSynchronize()
+        np.testing.assert_array_equal(d_out_b.get(), h + 1)
+
+    # Distinct per-device collections and loaded results; shared payload.
+    assert w_b.build_results is not w_a.build_results
+    (result_a,) = w_a.build_results.values()
+    (result_b,) = w_b.build_results.values()
+    assert result_b is not result_a
+    assert result_b._loaded

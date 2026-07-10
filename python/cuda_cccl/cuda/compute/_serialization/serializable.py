@@ -153,14 +153,17 @@ class _BuildResults(_Kind):
     def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
         from .._caching import _BuildResultCollection
 
-        items = sorted(value.items())
-        w.u32(len(items))
-        for cc, build_result in items:
+        # Wrappers always hold a _BuildResultCollection (build_for_ccs and
+        # read() below both produce one). serialize_build_result takes the
+        # per-cc source lock, so serialization cannot observe a source whose
+        # first device load is still in progress; a plain dict here would
+        # silently bypass that lock.
+        assert isinstance(value, _BuildResultCollection)
+        ccs = sorted(value)
+        w.u32(len(ccs))
+        for cc in ccs:
             w.u32(int(cc))
-            if isinstance(value, _BuildResultCollection):
-                w.blob(value.serialize_build_result(cc))
-            else:
-                w.blob(build_result.serialize())
+            w.blob(value.serialize_build_result(cc))
 
     def read(self, r: codec.Reader, obj: Any) -> Any:
         count = r.u32()

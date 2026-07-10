@@ -38,6 +38,8 @@ if [[ "${py_version}" == "3.14t" ]]; then
   # Select only tests that support the minimal extra so pytest does not collect
   # tests that import numba-cuda and re-enable the GIL. These tests provide their
   # own worker threads, so keep pytest itself in a single process.
+  # The serialization node-ids are module-skipped on the v2 backend today and
+  # will start running there automatically once v2 gains serialization support.
   python -m pytest -n 0 -v \
     compute/test_free_threading_stress.py \
     compute/test_multi_cc_serialization.py::test_aot_build_result_load_failure_is_shared_and_retryable \

@@ -45,6 +45,7 @@ from ._bindings import (
     Value,
     make_pointer_object,
 )
+from ._caching import _BuildResultCollection
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._base import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
@@ -327,8 +328,6 @@ def build_for_ccs(build_impl_cls: Callable, *args, compute_capability=None, **kw
     requested compute capability and returns ``{cc_key: build_result}``, with
     each result loaded lazily on first use by ``resolve_build_result``.
     """
-    from ._caching import _BuildResultCollection
-
     ccs = normalize_compute_capabilities(compute_capability)
     if ccs is None:
         # Fused build+load for the current device. Query its cc once (clear error
@@ -418,27 +417,45 @@ def current_device_cc_key() -> int:
     return current_device_info()[1]
 
 
+def current_device_id() -> int:
+    """The current CUDA device ordinal, without a compute-capability query.
+
+    The compute-capability query roughly doubles the cost of
+    ``current_device_info()``, and callers that only key per-device state
+    (see ``resolve_build_result``) run on every algorithm invocation.
+    """
+    try:
+        return CudaDevice().device_id
+    except Exception as e:
+        raise RuntimeError("No CUDA device is available to execute on.") from e
+
+
 def resolve_build_result(build_results: dict):
     """Load the build result for the current device."""
-    from ._caching import _BuildResultCollection
+    # Wrappers always hold a _BuildResultCollection (build_for_ccs and
+    # deserialization both produce one); the per-device ownership/clone
+    # protocol in resolve() relies on it, so fail loudly on anything else
+    # rather than fall back to an unprotected load.
+    assert isinstance(build_results, _BuildResultCollection)
 
     # The default build path already compiled and loaded this singular result
     # for the wrapper's device. Preserve its existing invocation fast path: it
     # does not need a CUDA device query or a per-device cache lookup.
-    if (
-        isinstance(build_results, _BuildResultCollection)
-        and build_results._device_bound_result is not None
-    ):
+    if build_results._device_bound_result is not None:
         return build_results._device_bound_result
 
-    device_id, device_cc_key = current_device_info()
     if len(build_results) == 1:
-        build_result_cc, build_result = next(iter(build_results.items()))
+        # A singular collection is used as-is whatever the current device's
+        # compute capability is (single-target blobs were already cc-checked at
+        # deserialization), so only the device ordinal is needed to key the
+        # per-device loaded state. This path runs on every call of AOT and
+        # deserialized wrappers; skip the costlier compute-capability query.
+        (build_result_cc,) = build_results
+        device_id = current_device_id()
     else:
+        device_id, device_cc_key = current_device_info()
         build_result_cc = device_cc_key
-        try:
-            build_result = build_results[build_result_cc]
-        except KeyError:
+        if build_result_cc not in build_results:
             available = ", ".join(
                 f"{maj}.{minor}"
                 for maj, minor in (key_to_cc(k) for k in sorted(build_results))
@@ -450,8 +467,4 @@ def resolve_build_result(build_results: dict):
                 f"Rebuild with compute_capability including {major}{minor}."
             )
 
-    if isinstance(build_results, _BuildResultCollection):
-        return build_results.resolve(build_result_cc, device_id)
-
-    build_result.load()
-    return build_result
+    return build_results.resolve(build_result_cc, device_id)

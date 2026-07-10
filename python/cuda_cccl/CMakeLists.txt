@@ -83,61 +83,6 @@ install(
 # Build and install Cython extension
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
-set(_python_gil_disabled "0")
-if (Python3_VERSION VERSION_GREATER_EQUAL 3.14)
-  set(
-    _python_gil_disabled_cache_key
-    "${Python3_EXECUTABLE}|${Python3_VERSION}|${Python3_SOABI}"
-  )
-  if (
-    NOT _cached_python_gil_disabled_key STREQUAL _python_gil_disabled_cache_key
-  )
-    set(
-      _python_gil_disabled_query
-      "import sysconfig; print('1' if sysconfig.get_config_var('Py_GIL_DISABLED') in (1, '1') else '0')"
-    )
-    execute_process(
-      COMMAND "${Python3_EXECUTABLE}" -c "${_python_gil_disabled_query}"
-      OUTPUT_VARIABLE _python_gil_disabled_output
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-      COMMAND_ERROR_IS_FATAL ANY
-    )
-    if (NOT _python_gil_disabled_output MATCHES "^[01]$")
-      message(
-        FATAL_ERROR
-        "Unexpected Py_GIL_DISABLED query output from ${Python3_EXECUTABLE}: "
-        "'${_python_gil_disabled_output}' (expected '0' or '1')"
-      )
-    endif()
-    set(
-      _cached_python_gil_disabled
-      "${_python_gil_disabled_output}"
-      CACHE INTERNAL
-      "Whether the selected Python interpreter disables the GIL"
-      FORCE
-    )
-    set(
-      _cached_python_gil_disabled_key
-      "${_python_gil_disabled_cache_key}"
-      CACHE INTERNAL
-      "Python interpreter used for the cached GIL query"
-      FORCE
-    )
-  endif()
-  set(_python_gil_disabled "${_cached_python_gil_disabled}")
-endif()
-
-if (_python_gil_disabled STREQUAL "1")
-  target_compile_definitions(
-    ${_cccl_c_parallel_target}
-    PRIVATE CCCL_PYTHON_FREE_THREADED=1
-  )
-  message(
-    STATUS
-    "Enabling CCCL_PYTHON_FREE_THREADED for free-threaded Python ${Python3_VERSION}"
-  )
-endif()
-
 get_filename_component(_python_path "${Python3_EXECUTABLE}" PATH)
 
 set(CYTHON_version_command "${Python3_EXECUTABLE}" -m cython --version)
