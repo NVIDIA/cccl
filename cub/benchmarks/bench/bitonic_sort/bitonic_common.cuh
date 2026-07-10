@@ -75,7 +75,7 @@ void run_bench(nvbench::state& state)
   constexpr int items_per_thread = Len / warp_threads;
   const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT, int>;
 
-  const int num_SMs       = state.get_device().value().get_number_of_sms();
+  const int num_SMs = state.get_device().value().get_number_of_sms(); // NOLINT(bugprone-unchecked-optional-access)
   constexpr int block_dim = calc_block_dim<mode>();
   const int grid_dim      = calc_grid_dim<mode>(num_SMs, block_dim, kernel);
   state.add_element_count(grid_dim * (block_dim / warp_threads) * Len * num_iterations);

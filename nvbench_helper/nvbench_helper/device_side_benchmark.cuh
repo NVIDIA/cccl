@@ -87,7 +87,7 @@ __global__ static void benchmark_kernel(int num_iterations, _CCCL_GRID_CONSTANT 
   constexpr bool has_values  = !cuda::std::is_void_v<ValueT>;
   KeyT keys[ItemsPerThread];
   [[maybe_unused]] cuda::std::conditional_t<has_values, ValueT, char> values[ItemsPerThread];
-  const int tid = threadIdx.x;
+  const auto tid = threadIdx.x;
   // Shift tid by 7 to reduce the likelihood of threads within a warp getting monotonically increasing data
   uint32_t seed = cuda::ptx::get_sreg_clock() + (tid + 7) % warp_threads;
 

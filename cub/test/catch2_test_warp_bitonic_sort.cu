@@ -39,7 +39,7 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT>;
 
   // Get linear thread and warp index
-  const int tid     = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
+  const auto tid    = static_cast<int>(threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z));
   const int warp_id = tid / warp_threads;
   const int lane    = tid % warp_threads;
 
@@ -92,7 +92,7 @@ __global__ void warp_bitonic_sort_kernel(
   using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<ItemsPerThread, KeyT, ValueT>;
 
   // Get linear thread and warp index
-  const int tid     = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
+  const auto tid    = static_cast<int>(threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z));
   const int warp_id = tid / warp_threads;
   const int lane    = tid % warp_threads;
 
