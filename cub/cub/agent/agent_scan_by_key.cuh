@@ -66,7 +66,7 @@ struct agent_scan_by_key_policy
 };
 } // namespace detail
 
-//! Deprecate [Since 3.5]
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int ItemsPerThread                 = 1,
           BlockLoadAlgorithm LoadAlgorithm   = BLOCK_LOAD_DIRECT,
