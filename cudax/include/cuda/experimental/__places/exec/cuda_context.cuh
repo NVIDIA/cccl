@@ -182,6 +182,13 @@ protected:
 
 inline exec_place exec_place::cuda_context(CUcontext ctx, int devid, size_t pool_size)
 {
+  if (ctx == nullptr)
+  {
+    // Reject eagerly: with an explicit devid a null context would construct a
+    // place that only fails (or silently unbinds the current context) at
+    // activation time.
+    throw ::std::invalid_argument("exec_place::cuda_context requires a valid CUcontext");
+  }
   return exec_place(::std::make_shared<exec_place_cuda_ctx_impl>(ctx, devid, pool_size));
 }
 
@@ -234,6 +241,20 @@ UNITTEST("cuda_context exec_place derives the device ordinal")
   EXPECT(p.is_device());
   EXPECT(p.affine_data_place() == data_place::device(0));
   EXPECT(p == exec_place::cuda_context(guard.ctx, 0));
+};
+
+UNITTEST("cuda_context exec_place rejects a null context")
+{
+  bool thrown = false;
+  try
+  {
+    auto p = exec_place::cuda_context(nullptr, 0);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
 };
 
 UNITTEST("cuda_context exec_place activate/deactivate round trip")
