@@ -3,6 +3,12 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <cuda/buffer>
+#include <cuda/memory_resource>
+#include <cuda/std/execution>
+#include <cuda/std/functional>
+#include <cuda/stream>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
@@ -50,17 +56,22 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  thrust::device_vector<OffsetT> num_runs_out(1);
-  thrust::device_vector<ValueT> in_vals(elements);
-  thrust::device_vector<ValueT> out_vals(elements);
-  thrust::device_vector<KeyT> out_keys(elements);
-  thrust::device_vector<KeyT> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
+  const auto stream     = get_stream_ref(state);
+  const auto device     = stream.device();
+  auto& memory_resource = cuda::device_default_memory_pool(device);
 
-  const KeyT* d_in_keys   = thrust::raw_pointer_cast(in_keys.data());
-  KeyT* d_out_keys        = thrust::raw_pointer_cast(out_keys.data());
-  const ValueT* d_in_vals = thrust::raw_pointer_cast(in_vals.data());
-  ValueT* d_out_vals      = thrust::raw_pointer_cast(out_vals.data());
-  OffsetT* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
+  auto num_runs_out = cuda::make_buffer<OffsetT>(stream, pinned_memory_resource(), 1, cuda::no_init);
+  auto in_vals      = cuda::make_device_buffer<ValueT>(stream, device, elements, ValueT{});
+  auto out_vals     = cuda::make_device_buffer<ValueT>(stream, device, elements, cuda::no_init);
+  auto out_keys     = cuda::make_device_buffer<KeyT>(stream, device, elements, cuda::no_init);
+  auto in_keys =
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size).device_buffer<KeyT>(stream, device);
+
+  const KeyT* d_in_keys   = in_keys.data();
+  KeyT* d_out_keys        = out_keys.data();
+  const ValueT* d_in_vals = in_vals.data();
+  ValueT* d_out_vals      = out_vals.data();
+  OffsetT* d_num_runs_out = num_runs_out.data();
 
   const auto num_items = static_cast<OffsetT>(elements);
 
@@ -74,8 +85,9 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     d_out_vals,
     d_num_runs_out,
     num_items,
-    equality_op_t{});
-  _CCCL_TRY_CUDA_API(cudaDeviceSynchronize, "Sync failed");
+    equality_op_t{},
+    cub_bench_env(memory_resource, stream));
+  stream.sync();
   const OffsetT num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
@@ -85,13 +97,12 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   state.add_global_memory_writes<KeyT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
-  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
-      alloc,
-      launch
+      memory_resource,
+      get_stream_ref(launch)
 #if !TUNE_BASE
-      ,
+        ,
       cuda::execution::tune(bench_unique_by_key_policy_selector{})
 #endif // !TUNE_BASE
     );

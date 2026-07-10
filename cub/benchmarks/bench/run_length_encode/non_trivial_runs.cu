@@ -3,6 +3,11 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <cuda/buffer>
+#include <cuda/memory_resource>
+#include <cuda/std/execution>
+#include <cuda/stream>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
@@ -43,23 +48,23 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  thrust::device_vector<offset_t> num_runs_out(1);
-  thrust::device_vector<offset_t> out_offsets(elements);
-  thrust::device_vector<RunLengthT> out_lengths(elements);
-  thrust::device_vector<T> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
+  const auto stream     = get_stream_ref(state);
+  const auto device     = stream.device();
+  auto& memory_resource = cuda::device_default_memory_pool(device);
 
-  const T* d_in_keys        = thrust::raw_pointer_cast(in_keys.data());
-  offset_t* d_out_offsets   = thrust::raw_pointer_cast(out_offsets.data());
-  RunLengthT* d_out_lengths = thrust::raw_pointer_cast(out_lengths.data());
-  offset_t* d_num_runs_out  = thrust::raw_pointer_cast(num_runs_out.data());
+  auto num_runs_out = cuda::make_buffer<offset_t>(stream, pinned_memory_resource(), 1, cuda::no_init);
+  auto out_offsets  = cuda::make_device_buffer<offset_t>(stream, device, elements, cuda::no_init);
+  auto out_lengths  = cuda::make_device_buffer<RunLengthT>(stream, device, elements, cuda::no_init);
+  auto in_keys =
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size).device_buffer<T>(stream, device);
+
+  const T* d_in_keys        = in_keys.data();
+  offset_t* d_out_offsets   = out_offsets.data();
+  RunLengthT* d_out_lengths = out_lengths.data();
+  offset_t* d_num_runs_out  = num_runs_out.data();
 
   {
     // Run once to get num_runs for memory accounting
-    auto memory_env = cuda::std::execution::env{
-#if !TUNE_BASE
-      cuda::execution::tune(bench_rle_policy_selector{})
-#endif // !TUNE_BASE
-    };
     _CCCL_TRY_CUDA_API(
       cub::DeviceRunLengthEncode::NonTrivialRuns,
       "NonTrivialRuns failed",
@@ -68,8 +73,14 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       d_out_lengths,
       d_num_runs_out,
       static_cast<OffsetT>(elements),
-      memory_env);
-    cudaDeviceSynchronize();
+      cub_bench_env(memory_resource,
+                    stream
+#if !TUNE_BASE
+                    ,
+                    cuda::execution::tune(bench_rle_policy_selector{})
+#endif // !TUNE_BASE
+                      ));
+    stream.sync();
   }
   const OffsetT num_runs = num_runs_out[0];
 
@@ -79,13 +90,12 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   state.add_global_memory_writes<OffsetT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
-  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(
-      alloc,
-      launch
+      memory_resource,
+      get_stream_ref(launch)
 #if !TUNE_BASE
-      ,
+        ,
       cuda::execution::tune(bench_rle_policy_selector{})
 #endif // !TUNE_BASE
     );
