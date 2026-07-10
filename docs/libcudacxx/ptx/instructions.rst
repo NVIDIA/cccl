@@ -26,7 +26,6 @@ PTX Instructions
    instructions/exit
    instructions/fence
    instructions/getctarank
-   instructions/mapa
    instructions/mbarrier_init
    instructions/mbarrier_inval
    instructions/mbarrier_arrive
@@ -55,6 +54,40 @@ PTX Instructions
    instructions/trap
    instructions/setmaxnreg
    instructions/special_registers
+   instructions/applypriority_async_bulk
+   instructions/cp_async_bulk_multicast
+   instructions/cp_async_bulk_prefetch
+   instructions/cp_async_bulk_prefetch_tensor
+   instructions/cp_async_bulk_tensor_gather_scatter
+   instructions/cp_async_bulk_tensor_multicast
+   instructions/cp_async_mbarrier_arrive_noinc
+   instructions/fabric_submit
+   instructions/fabric_try_get
+   instructions/fabric_try_pullred
+   instructions/fabric_try_put
+   instructions/fabric_try_red
+   instructions/fabric_wait
+   instructions/fence_mbarrier_init
+   instructions/fence_proxy_alias
+   instructions/fence_proxy_async
+   instructions/fence_proxy_async_generic_sync_restrict
+   instructions/fence_proxy_fabric_fabric_alias
+   instructions/fence_proxy_fabric_generic_alias
+   instructions/fence_proxy_generic_fabric_alias
+   instructions/fence_proxy_tensormap_generic
+   instructions/fence_sync_restrict
+   instructions/ldmatrix
+   instructions/mbarrier_arrive_drop
+   instructions/mbarrier_arrive_expect_tx
+   instructions/mbarrier_arrive_no_complete
+   instructions/mbarrier_check_layout
+   instructions/mbarrier_complete_tx
+   instructions/mbarrier_pending_count
+   instructions/mbarrier_test_wait_parity
+   instructions/mbarrier_try_wait_parity
+   instructions/prefetch
+   instructions/stmatrix
+   instructions/tcgen05_mma_sp
 
 
 Instructions by section
@@ -84,7 +117,7 @@ Instructions by section
      - No
    * - `clz <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-clz>`__
      - No
-   * - `bfind <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bfind>`__
+   * - :ref:`bfind <libcudacxx-ptx-instructions-bfind>`
      - CCCL 3.0.0
    * - `fns <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-fns>`__
      - No
@@ -96,7 +129,7 @@ Instructions by section
      - No
    * - `szext <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-szext>`__
      - No
-   * - `bmsk <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bmsk>`__
+   * - :ref:`bmsk <libcudacxx-ptx-instructions-bmsk>`
      - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `dp4a <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp4a>`__
      - No
@@ -246,9 +279,9 @@ Instructions by section
      - No
    * - `shf <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shf>`__
      - No
-   * - `shl <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shl>`__
+   * - :ref:`shl <libcudacxx-ptx-instructions-shl>`
      - Yes, CCCL 3.0.0 / CUDA 13.0
-   * - `shr <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shr>`__
+   * - :ref:`shr <libcudacxx-ptx-instructions-shr>`
      - Yes, CCCL 3.0.0 / CUDA 13.0
 
 .. list-table:: `Data Movement and Conversion Instructions <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions>`__
@@ -261,26 +294,30 @@ Instructions by section
      - No
    * - `shfl <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated>`__
      - No
-   * - `shfl.sync <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync>`__
+   * - :ref:`shfl.sync <libcudacxx-ptx-instructions-shfl_sync>`
      - Yes, CCCL 2.9.0 / CUDA 12.9
-   * - `prmt <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prmt>`__
+   * - :ref:`prmt <libcudacxx-ptx-instructions-prmt>`
      - Yes, CCCL 3.0.0 / CUDA 13.0
-   * - `ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`__
+   * - :ref:`ld <libcudacxx-ptx-instructions-ld>`
      - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `ld.global.nc <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc>`__
      - Yes, CCCL 3.0.0 / CUDA 13.0
    * - `ldu <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ldu>`__
      - No
-   * - `st <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st>`__
+   * - :ref:`st <libcudacxx-ptx-instructions-st>`
      - Yes, CCCL 3.0.0 / CUDA 13.0
    * - :ref:`st.async <libcudacxx-ptx-instructions-st-async>`
      - CCCL 2.3.0 / CUDA 12.4
    * - :ref:`st.bulk <libcudacxx-ptx-instructions-st-bulk>`
      - CCCL 2.8 / CUDA 12.9
-   * - `multimem.ld_reduce, multimem.st, multimem.red <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-multimem-ld-reduce-multimem-st-multimem-red>`__
+   * - :ref:`multimem.ld_reduce <libcudacxx-ptx-instructions-multimem-ld_reduce>`
      - CCCL 2.8 / CUDA 12.9
-   * - `prefetch, prefetchu <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prefetch-prefetchu>`__
-     - No
+   * - :ref:`multimem.st <libcudacxx-ptx-instructions-multimem-st>`
+     - CCCL 2.8 / CUDA 12.9
+   * - :ref:`multimem.red <libcudacxx-ptx-instructions-multimem-red>`
+     - CCCL 2.8 / CUDA 12.9
+   * - :ref:`prefetch, prefetchu <libcudacxx-ptx-instructions-prefetch>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - `applypriority <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-applypriority>`__
      - No
    * - `discard <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-discard>`__
@@ -294,8 +331,6 @@ Instructions by section
    * - `cvt <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt>`__
      - No
    * - `cvt.pack <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt-pack>`__
-     - No
-   * - :ref:`mapa <libcudacxx-ptx-instructions-mapa>`
      - No
    * - :ref:`getctarank <libcudacxx-ptx-instructions-getctarank>`
      - CCCL 2.4.0 / CUDA 12.5
@@ -316,18 +351,26 @@ Instructions by section
      - CCCL 2.4.0 / CUDA 12.5
    * - :ref:`cp.reduce.async.bulk <libcudacxx-ptx-instructions-cp-reduce-async-bulk>`
      - CCCL 2.4.0 / CUDA 12.5
-   * - `cp.async.bulk.prefetch <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch>`__
-     - No
+   * - :ref:`cp.async.bulk.multicast <libcudacxx-ptx-instructions-cp-async-bulk-multicast>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`cp.async.bulk.prefetch <libcudacxx-ptx-instructions-cp-async-bulk-prefetch>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`cp.reduce.async.bulk <libcudacxx-ptx-instructions-cp-async-bulk-tensor>`
      - CCCL 2.4.0 / CUDA 12.5
+   * - :ref:`cp.async.bulk.tensor.gather_scatter <libcudacxx-ptx-instructions-cp-async-bulk-tensor-gather-scatter>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`cp.async.bulk.tensor.multicast <libcudacxx-ptx-instructions-cp-async-bulk-tensor-multicast>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`cp.reduce.async.bulk.tensor <libcudacxx-ptx-instructions-cp-reduce-async-bulk-tensor>`
      - CCCL 2.4.0 / CUDA 12.5
-   * - `cp.async.bulk.prefetch.tensor <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch-tensor>`__
-     - No
+   * - :ref:`cp.async.bulk.prefetch.tensor <libcudacxx-ptx-instructions-cp-async-bulk-prefetch-tensor>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`cp.async.bulk.commit_group <libcudacxx-ptx-instructions-cp-async-bulk-commit_group>`
      - CCCL 2.4.0 / CUDA 12.5
    * - :ref:`cp.async.bulk.wait_group <libcudacxx-ptx-instructions-cp-async-bulk-wait_group>`
      - CCCL 2.4.0 / CUDA 12.5
+   * - :ref:`applypriority.async.bulk <libcudacxx-ptx-instructions-applypriority-async-bulk>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`tensormap.replace <libcudacxx-ptx-instructions-tensormap-replace>`
      - CCCL 2.4.0 / CUDA 12.5
 
@@ -379,7 +422,7 @@ Instructions by section
      - No
    * - `ret <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-ret>`__
      - No
-   * - `exit <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-exit>`__
+   * - :ref:`exit <libcudacxx-ptx-instructions-exit>`
      - CCCL 3.0.0
 
 .. list-table:: `Parallel Synchronization and Communication Instructions <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions>`__
@@ -398,6 +441,24 @@ Instructions by section
      - No
    * - :ref:`fence <libcudacxx-ptx-instructions-fence>`
      - CCCL 2.4.0 / CUDA 12.5
+   * - :ref:`fence.mbarrier_init <libcudacxx-ptx-instructions-fence-mbarrier-init>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fence.proxy.alias <libcudacxx-ptx-instructions-fence-proxy-alias>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fence.proxy.async <libcudacxx-ptx-instructions-fence-proxy-async>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fence.proxy.async::generic.sync_restrict <libcudacxx-ptx-instructions-fence-proxy-async-generic-sync-restrict>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fence.proxy.fabric::fabric.alias <libcudacxx-ptx-instructions-fence-proxy-fabric-fabric-alias>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fence.proxy.fabric::generic.alias <libcudacxx-ptx-instructions-fence-proxy-fabric-generic-alias>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fence.proxy.generic::fabric.alias <libcudacxx-ptx-instructions-fence-proxy-generic-fabric-alias>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fence.proxy.tensormap::generic <libcudacxx-ptx-instructions-fence-proxy-tensormap-generic>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fence.sync_restrict <libcudacxx-ptx-instructions-fence-sync-restrict>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - `atom <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom>`__
      - No
    * - `red <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red>`__
@@ -416,8 +477,20 @@ Instructions by section
      - No
    * - `griddepcontrol <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol>`__
      - No
-   * - `elect.sync <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync>`__
+   * - :ref:`elect.sync <libcudacxx-ptx-instructions-elect_sync>`
      - CCCL 3.1.0 / CUDA 13.1
+   * - :ref:`fabric.submit <libcudacxx-ptx-instructions-fabric-submit>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fabric.try_get <libcudacxx-ptx-instructions-fabric-try-get>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fabric.try_pullred <libcudacxx-ptx-instructions-fabric-try-pullred>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fabric.try_put <libcudacxx-ptx-instructions-fabric-try-put>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fabric.try_red <libcudacxx-ptx-instructions-fabric-try-red>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`fabric.wait <libcudacxx-ptx-instructions-fabric-wait>`
+     - CCCL 3.4.0 / CUDA 13.4
 
 .. list-table:: `Parallel Synchronization and Communication Instructions: mbarrier <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier>`__
    :widths: 50 50
@@ -427,24 +500,36 @@ Instructions by section
      - Available in libcu++
    * - :ref:`mbarrier.init <libcudacxx-ptx-instructions-mbarrier-init>`
      - CCCL 2.5.0 / CUDA Future
-   * - `mbarrier.inval <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval>`__
+   * - :ref:`mbarrier.inval <libcudacxx-ptx-instructions-mbarrier_inval>`
      - CCCL 3.2.0 / CUDA 13.2
-   * - `mbarrier.complete_tx <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx>`__
-     - No
+   * - :ref:`mbarrier.complete_tx <libcudacxx-ptx-instructions-mbarrier-complete-tx>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`mbarrier.arrive <libcudacxx-ptx-instructions-mbarrier-arrive>`
      - CCCL 2.3.0 / CUDA 12.4
-   * - `mbarrier.arrive_drop <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive-drop>`__
-     - No
-   * - `cp.async.mbarrier.arrive <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-cp-async-mbarrier-arrive>`__
+   * - :ref:`mbarrier.arrive_drop <libcudacxx-ptx-instructions-mbarrier-arrive-drop>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`mbarrier.arrive.expect_tx <libcudacxx-ptx-instructions-mbarrier-arrive-expect-tx>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`mbarrier.arrive.noComplete <libcudacxx-ptx-instructions-mbarrier-arrive-no-complete>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`cp.async.mbarrier.arrive <libcudacxx-ptx-instructions-cp-async-mbarrier-arrive>`
      - CCCL 2.8 / CUDA 12.9
-   * - `mbarrier.expect_tx <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-expect-tx>`__
+   * - :ref:`cp.async.mbarrier.arrive.noinc <libcudacxx-ptx-instructions-cp-async-mbarrier-arrive-noinc>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`mbarrier.check_layout <libcudacxx-ptx-instructions-mbarrier-check-layout>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`mbarrier.expect_tx <libcudacxx-ptx-instructions-mbarrier-expect_tx>`
      - CCCL 2.8 / CUDA 12.9
    * - :ref:`mbarrier.test_wait <libcudacxx-ptx-instructions-mbarrier-test_wait>`
      - CCCL 2.3.0 / CUDA 12.4
+   * - :ref:`mbarrier.test_wait.parity <libcudacxx-ptx-instructions-mbarrier-test-wait-parity>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`mbarrier.try_wait <libcudacxx-ptx-instructions-mbarrier-try_wait>`
      - CCCL 2.3.0 / CUDA 12.4
-   * - `mbarrier.pending_count <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-pending-count>`__
-     - No
+   * - :ref:`mbarrier.try_wait.parity <libcudacxx-ptx-instructions-mbarrier-try-wait-parity>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`mbarrier.pending_count <libcudacxx-ptx-instructions-mbarrier-pending-count>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - :ref:`tensormap.cp_fenceproxy <libcudacxx-ptx-instructions-tensormap-cp_fenceproxy>`
      - CCCL 2.4.0 / CUDA 12.5
    * - :ref:`clusterlaunchcontrol.try_cancel <libcudacxx-ptx-instructions-clusterlaunchcontrol>`
@@ -466,10 +551,10 @@ Instructions by section
      - No
    * - `mma <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-mma>`__
      - No
-   * - `ldmatrix <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-load-instruction-ldmatrix>`__
-     - No
-   * - `stmatrix <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-stmatrix>`__
-     - No
+   * - :ref:`ldmatrix <libcudacxx-ptx-instructions-ldmatrix>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`stmatrix <libcudacxx-ptx-instructions-stmatrix>`
+     - CCCL 3.4.0 / CUDA 13.4
    * - `movmatrix <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-transpose-instruction-movmatrix>`__
      - No
    * - `mma.sp <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-for-sparse-mma>`__
@@ -498,25 +583,27 @@ Instructions by section
 
    * - Instruction
      - Available in libcu++
-   * - `tcgen05.alloc <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-dealloc-tcgen05-relinquish-alloc-permit>`__
+   * - :ref:`tcgen05.alloc <libcudacxx-ptx-instructions-tcgen05-alloc>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.commit <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-commit>`__
+   * - :ref:`tcgen05.commit <libcudacxx-ptx-instructions-tcgen05-commit>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.cp <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-cp>`__
+   * - :ref:`tcgen05.cp <libcudacxx-ptx-instructions-tcgen05-cp>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.fence <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-fence>`__
+   * - :ref:`tcgen05.fence <libcudacxx-ptx-instructions-tcgen05-fence>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-ld>`__
+   * - :ref:`tcgen05.ld <libcudacxx-ptx-instructions-tcgen05-ld>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.mma <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-mma>`__
+   * - :ref:`tcgen05.mma <libcudacxx-ptx-instructions-tcgen05-mma>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.mma.ws <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-mma-ws>`__
+   * - :ref:`tcgen05.mma.sp <libcudacxx-ptx-instructions-tcgen05-mma-sp>`
+     - CCCL 3.4.0 / CUDA 13.4
+   * - :ref:`tcgen05.mma.ws <libcudacxx-ptx-instructions-tcgen05-mma-ws>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.shift <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-shift>`__
+   * - :ref:`tcgen05.shift <libcudacxx-ptx-instructions-tcgen05-shift>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.st <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-st>`__
+   * - :ref:`tcgen05.st <libcudacxx-ptx-instructions-tcgen05-st>`
      - CCCL 2.8 / CUDA 12.9
-   * - `tcgen05.wait <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-wait>`__
+   * - :ref:`tcgen05.wait <libcudacxx-ptx-instructions-tcgen05-wait>`
      - CCCL 2.8 / CUDA 12.9
 
 
@@ -575,9 +662,9 @@ Instructions by section
      - No
    * - `pmevent <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-pmevent>`__
      - No
-   * - `trap <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-trap>`__
+   * - :ref:`trap <libcudacxx-ptx-instructions-trap>`
      - CCCL 3.0.0
-   * - `setmaxnreg <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg>`__
+   * - :ref:`setmaxnreg <libcudacxx-ptx-instructions-setmaxnreg>`
      - CCCL 3.2.0 / CUDA 13.2
 
 .. list-table:: `Special registers <libcudacxx-ptx-instructions-special-registers>`
