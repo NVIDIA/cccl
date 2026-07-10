@@ -508,10 +508,10 @@ void fill_normal(thrust::device_vector<T>& v, int64_t n, int buf_idx)
 // ============================================================================
 
 template <typename... Inputs, typename Output, typename TransformOp>
-void transform(::cuda::std::tuple<Inputs...> inputs, Output output, int64_t n, TransformOp op, cudaStream_t stream)
+void transform(cuda::std::tuple<Inputs...> inputs, Output output, int64_t n, TransformOp op, cudaStream_t stream)
 {
   auto env = cuda::std::execution::env{
-    ::cuda::stream_ref{stream}
+    cuda::stream_ref{stream}
 #if !TUNE_BASE
     ,
     cuda::execution::tune(policy_selector{})
@@ -523,7 +523,7 @@ void transform(::cuda::std::tuple<Inputs...> inputs, Output output, int64_t n, T
 template <typename Input, typename Output, typename TransformOp>
 void transform(Input input, Output output, int64_t n, TransformOp op, cudaStream_t stream)
 {
-  transform(::cuda::std::make_tuple(input), output, n, op, stream);
+  transform(cuda::std::make_tuple(input), output, n, op, stream);
 }
 
 // ============================================================================
@@ -579,7 +579,7 @@ try
 
     // div_floor: native/cuda/BinaryDivFloorKernel.cu:72, helper c10/util/generic_math.h:34
     transform(
-      ::cuda::std::make_tuple(d_in[0], d_in[1]),
+      cuda::std::make_tuple(d_in[0], d_in[1]),
       d_a,
       n,
       [] __device__(T a, T b) -> T {
@@ -589,7 +589,7 @@ try
 
     // div_trunc: native/cuda/BinaryDivTruncKernel.cu:42
     transform(
-      ::cuda::std::make_tuple(d_a, d_in[2]),
+      cuda::std::make_tuple(d_a, d_in[2]),
       d_b,
       n,
       [] __device__(T a, T b) -> T {
@@ -598,11 +598,11 @@ try
       s);
 
     // div: native/cuda/BinaryDivTrueKernel.cu:54, DivFunctor in native/cuda/BinaryInternal.h:20
-    transform(::cuda::std::make_tuple(d_b, d_in[3]), d_a, n, DivFunctor<T>(), s);
+    transform(cuda::std::make_tuple(d_b, d_in[3]), d_a, n, DivFunctor<T>(), s);
 
     // atan2: native/cuda/BinaryGeometricKernels.cu:18
     transform(
-      ::cuda::std::make_tuple(d_a, d_in[4]),
+      cuda::std::make_tuple(d_a, d_in[4]),
       d_b,
       n,
       [] __device__(T a, T b) -> T {
@@ -612,7 +612,7 @@ try
 
     // hypot: native/cuda/BinaryGeometricKernels.cu:29
     transform(
-      ::cuda::std::make_tuple(d_b, d_in[5]),
+      cuda::std::make_tuple(d_b, d_in[5]),
       d_a,
       n,
       [] __device__(T a, T b) -> T {
@@ -622,7 +622,7 @@ try
 
     // xlogy: native/cuda/BinaryMiscOpsKernels.cu:46
     transform(
-      ::cuda::std::make_tuple(d_a, d_in[6]),
+      cuda::std::make_tuple(d_a, d_in[6]),
       d_b,
       n,
       [] __device__(T x, T y) -> T {
@@ -640,7 +640,7 @@ try
 
     // xlog1py: native/cuda/BinaryMiscOpsKernels.cu:60
     transform(
-      ::cuda::std::make_tuple(d_b, d_in[7]),
+      cuda::std::make_tuple(d_b, d_in[7]),
       d_a,
       n,
       [] __device__(T x, T y) -> T {
@@ -658,7 +658,7 @@ try
 
     // logaddexp: native/cuda/LogAddExpKernel.cu:253
     transform(
-      ::cuda::std::make_tuple(d_a, d_in[8]),
+      cuda::std::make_tuple(d_a, d_in[8]),
       d_b,
       n,
       [] __device__(T a_, T b_) -> T {
@@ -679,7 +679,7 @@ try
 
     // logaddexp2: native/cuda/LogAddExpKernel.cu:272
     transform(
-      ::cuda::std::make_tuple(d_b, d_in[9]),
+      cuda::std::make_tuple(d_b, d_in[9]),
       d_a,
       n,
       [inv_log_2] __device__(T a_, T b_) -> T {
@@ -700,7 +700,7 @@ try
 
     // pow (tensor,tensor): native/cuda/PowKernel.cu:136, helper native/cuda/Pow.cuh:40
     transform(
-      ::cuda::std::make_tuple(d_a, d_in[10]),
+      cuda::std::make_tuple(d_a, d_in[10]),
       d_b,
       n,
       [] __device__(T base, T exp) -> T {
@@ -763,7 +763,7 @@ try
 
     // mse_loss: native/cuda/BinaryMiscOpsKernels.cu:37
     transform(
-      ::cuda::std::make_tuple(d_in[0], d_in[1]),
+      cuda::std::make_tuple(d_in[0], d_in[1]),
       d_a,
       n,
       [] __device__(T a, T b) -> T {
@@ -774,7 +774,7 @@ try
 
     // smooth_l1_loss(beta=1.0): native/cuda/BinaryMiscOpsKernels.cu:19
     transform(
-      ::cuda::std::make_tuple(d_a, d_in[2]),
+      cuda::std::make_tuple(d_a, d_in[2]),
       d_b,
       n,
       [beta_val] __device__(T a, T b) -> T {
@@ -785,7 +785,7 @@ try
 
     // huber_loss(delta=1.0): native/cuda/BinaryMiscOpsKernels.cu:29
     transform(
-      ::cuda::std::make_tuple(d_b, d_in[3]),
+      cuda::std::make_tuple(d_b, d_in[3]),
       d_a,
       n,
       [delta_val] __device__(T a, T b) -> T {
@@ -796,7 +796,7 @@ try
 
     // clamp(min=tensor) -> maximum: native/cuda/MaxMinElementwiseKernel.cu:28
     transform(
-      ::cuda::std::make_tuple(d_a, d_in[4]),
+      cuda::std::make_tuple(d_a, d_in[4]),
       d_b,
       n,
       [] __device__(T a, T b) -> T {
@@ -817,14 +817,14 @@ try
 
     // mul: native/cuda/BinaryMulKernel.cu:39, MulFunctor in native/cuda/BinaryInternal.h:27
     using mul_opmath_t = opmath_type<T>;
-    transform(::cuda::std::make_tuple(d_b, d_in[5]), d_a, n, MulFunctor<mul_opmath_t>(), s);
+    transform(cuda::std::make_tuple(d_b, d_in[5]), d_a, n, MulFunctor<mul_opmath_t>(), s);
 
     // add(alpha=1): native/ufunc/add.h:14, torchgen/dest/ufunc.py
-    transform(::cuda::std::make_tuple(d_a, d_in[6]), d_b, n, CUDAFunctor_add<T>(1.0), s);
+    transform(cuda::std::make_tuple(d_a, d_in[6]), d_b, n, CUDAFunctor_add<T>(1.0), s);
 
     // addcmul(value=1): native/cuda/PointwiseOpsKernel.cu:87, native/cuda/DeviceAddCmulCdiv.cuh:9
     transform(
-      ::cuda::std::make_tuple(d_b, d_in[7], d_in[8]),
+      cuda::std::make_tuple(d_b, d_in[7], d_in[8]),
       d_a,
       n,
       [alpha] __device__(T a, T b, T c) -> T {
@@ -834,7 +834,7 @@ try
 
     // lerp(weight=4.0): native/cuda/Lerp.cu:130, native/Lerp.h:21
     transform(
-      ::cuda::std::make_tuple(d_a, d_in[9]),
+      cuda::std::make_tuple(d_a, d_in[9]),
       d_b,
       n,
       [=] __device__(T self_val, T end_val) {
@@ -844,7 +844,7 @@ try
 
     // lerp(weight=tensor): native/cuda/Lerp.cu:76, native/Lerp.h:21
     transform(
-      ::cuda::std::make_tuple(d_b, d_in[10], d_in[11]),
+      cuda::std::make_tuple(d_b, d_in[10], d_in[11]),
       d_a,
       n,
       [] __device__(T self_val, T end_val, T weight_val) -> T {
@@ -856,7 +856,7 @@ try
     // it must hold at least enough memory per element for bool (1 byte)
     // greater: native/cuda/CompareKernels.cu:69
     CompareFunctor<T> comp_f(OpType::GT);
-    transform(::cuda::std::make_tuple(d_a, d_in[12]), d_b, n, comp_f, s);
+    transform(cuda::std::make_tuple(d_a, d_in[12]), d_b, n, comp_f, s);
   });
 }
 catch (const std::bad_alloc&)
