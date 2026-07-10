@@ -32,13 +32,14 @@
 #endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/random.h>
-#include <thrust/transform.h>
 
-#include <cmath>
-#include <functional>
-#include <type_traits>
+#include <cuda/iterator>
+#include <cuda/random>
+#include <cuda/std/algorithm.transform.h>
+#include <cuda/std/cmath>
+#include <cuda/std/execution>
+#include <cuda/std/random>
+#include <cuda/std/type_traits>
 
 #include "../../common.h"
 #include "bfloat16.h"
@@ -255,9 +256,9 @@ struct normal_gen
   int64_t offset;
   __host__ __device__ T operator()(int64_t idx) const
   {
-    thrust::default_random_engine rng;
-    thrust::random::normal_distribution<float> dist(mean, stddev);
+    cuda::pcg64 rng(42);
     rng.discard(offset + idx);
+    cuda::std::normal_distribution<float> dist(mean, stddev);
     return T(dist(rng));
   }
 };
@@ -266,10 +267,12 @@ template <typename T>
 void fill_normal(thrust::device_vector<T>& v, int64_t n, int buf_idx)
 {
   v.resize(n);
-  thrust::transform(thrust::counting_iterator<int64_t>(0),
-                    thrust::counting_iterator<int64_t>(n),
-                    v.begin(),
-                    normal_gen<T>{0.0f, 1.0f, buf_idx * n});
+  cuda::std::transform(
+    cuda::execution::gpu,
+    cuda::counting_iterator<int64_t, int64_t>(0),
+    cuda::counting_iterator<int64_t, int64_t>(n),
+    v.begin(),
+    normal_gen<T>{0.0f, 1.0f, buf_idx * n});
 }
 
 // ============================================================================
