@@ -324,7 +324,8 @@ struct agent_batched_topk_cluster
   static constexpr int slot_alignment   = smem_layout_t::slot_alignment;
 
   // (pointer, count) carrier for a contiguous run of SMEM-staged keys, used only where the length must travel with the
-  // base across call boundaries (the resident window and the streamer's per-stage view); elsewhere: `key_t*` + count.
+  // base across call boundaries (the resident window and the overflow stream's per-stage view); elsewhere: `key_t*` +
+  // count.
   using smem_keys_t = ::cuda::std::span<key_t>;
 
   // Tie-break unroll for the deterministic filter's streamed overflow, which feeds `process_tiles` one chunk slot at a
@@ -400,7 +401,7 @@ struct agent_batched_topk_cluster
     offset_t num_strictly_selected;
     offset_t my_candidates;
     typename block_scan_t::TempStorage scan_storage;
-    // One mbarrier handle per pipeline stage, shared by the resident load and the overflow streamer and reused
+    // One mbarrier handle per pipeline stage, shared by the resident load and the overflow stream and reused
     // (ping-ponged) across radix passes; all are initialized once up front by `init_load_barriers`.
     ::cuda::std::uint64_t load_mbar[PipelineStages];
     // Persistent unaligned boundary edges (block-load path only): the head prefix (`[0, head_edge_cap_items)`, on rank
@@ -439,7 +440,8 @@ struct agent_batched_topk_cluster
 
   // Assignment of the cluster's global chunk indices `[0, chunks)` to its CTAs. A rank owns `count` chunks; its i-th
   // owned chunk has global index `global_index(i) = first + i * stride`. The single mapping point lets the rest of the
-  // agent (resident load, streamer, per-pass scans) stay agnostic to the layout chosen by `make_chunk_partition`.
+  // agent (resident load, overflow stream, per-pass scans) stay agnostic to the layout chosen by
+  // `make_chunk_partition`.
   struct chunk_partition
   {
     offset_t first; // global index of this rank's first owned chunk
@@ -455,7 +457,7 @@ struct agent_batched_topk_cluster
 
   // Decides which global chunks a cluster rank owns. Both layouts keep chunk 0 on rank 0 (which also stages the head
   // edge) and the tail (chunk `chunks-1`) on a single rank, and leave the per-chunk alignment, the resident/streaming
-  // split, and the streamer ping-pong untouched, because all of those depend only on the global chunk index, not on
+  // split, and the streaming ping-pong untouched, because all of those depend only on the global chunk index, not on
   // which rank owns it.
   //
   //   * Strided (default): chunk `i` goes to rank `i % cluster_blocks`, so each CTA walks `first, first+S, first+2S,
@@ -657,7 +659,7 @@ struct agent_batched_topk_cluster
   // chunking, the effective (non-idle) cluster width and this rank's partition of it, the leader/idle roles, and the
   // resident/streaming/edge split of this rank's chunks. All fields are loop-invariant for the segment; the
   // streaming-only intermediates (`overflow_base`, `resident_slots_cap`, `stream_slots`, `my_chunks`) are kept because
-  // the `overflow_streamer` constructor needs them.
+  // the overflow-streaming helpers (`init_overflow_stream`, `run_pass`, ...) read them.
   struct segment_layout
   {
     offset_t segment_size_off;
@@ -696,7 +698,7 @@ struct agent_batched_topk_cluster
   char* key_slots;
   offset_t block_tile_capacity;
   // Per-thread mbarrier phase parity, one bit per pipeline stage (see `wait_stage`); the resident load and the
-  // overflow streamer keep their per-stage issue/wait calls balanced so each bit tracks its mbarrier's phase.
+  // overflow stream keep their per-stage issue/wait calls balanced so each bit tracks its mbarrier's phase.
   ::cuda::std::uint32_t load_phase{};
   // The single block leader (warp 0's elected lane) that drives the bulk copies. Elected once at construction (the
   // block constructs convergently) and cached so the pipeline reuses it instead of re-electing per copy.
@@ -717,6 +719,15 @@ struct agent_batched_topk_cluster
   segment_size_val_t segment_size{};
   out_offset_t k{};
   segment_layout layout{};
+
+  // Overflow-streaming slot geometry + ping-pong cursor, set once per segment by `init_overflow_stream` and carried
+  // across every radix pass and the final filter (the "Overflow streaming" section documents the reuse scheme). Inert
+  // when this rank has no overflow chunks (`init_overflow_stream` still runs, but streaming then touches no slot).
+  int stream_slot_base = 0;
+  int stream_stages    = 1;
+  bool stream_is_forward{true};
+  bool stream_is_primed{false};
+  ::cuda::std::uint32_t stream_inflight_mask{0};
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_batched_topk_cluster(
     TempStorage& temp_storage_,
@@ -871,318 +882,287 @@ private:
   }
 
   // ---------------------------------------------------------------------------
-  // Overflow streamer
+  // Overflow streaming
   // ---------------------------------------------------------------------------
   // Re-streams a rank's "overflow" chunks (those that do not fit its resident SMEM region) from gmem through a fixed,
-  // round-robin set of `eff_stages` (<= `PipelineStages`) streaming slots, reused across every radix pass and the final
-  // filter. It ping-pongs the iteration order across calls so the `eff_stages` turn-around chunks that one pass leaves
-  // resident in the streaming slots are reused by the next with no reload; the remaining `overflow_chunks - eff_stages`
-  // are reloaded from gmem each pass. The caller sizes the reservation to `eff_stages = min(PipelineStages, excess)`
-  // (`excess = my_chunks - full_slots`), so a streaming rank reloads exactly `excess` chunks per pass -- the reserved
-  // slots only ever buy reuse of the turn-around chunks, never a reload-free pass. The resident region occupies slots
-  // `[0, resident_slots)`, the streaming region `[stream_slot_base, stream_slot_base + eff_stages)`.
-  struct overflow_streamer
+  // round-robin set of `stream_stages` (<= `PipelineStages`) streaming slots, reused across every radix pass and the
+  // final filter. It ping-pongs the iteration order across calls (`stream_is_forward`) so the `stream_stages`
+  // turn-around chunks one pass leaves resident in the streaming slots are reused by the next with no reload; the
+  // remaining `overflow_chunks - stream_stages` are reloaded from gmem each pass. `compute_segment_layout` sizes the
+  // reservation `stream_slots = min(PipelineStages, excess)` (`excess = my_chunks - full_slots`) that
+  // `init_overflow_stream` adopts as `stream_stages`, so a streaming rank reloads exactly `excess` chunks per pass --
+  // the reserved slots only ever buy reuse of the turn-around chunks, never a reload-free pass. The resident region
+  // occupies slots `[0, resident_slots)`, the streaming region `[stream_slot_base, stream_slot_base + stream_stages)`.
+  // All geometry comes from `layout`; the only per-stage state
+  // is one bit each of `stream_inflight_mask` (set while a copy is in flight) and the `load_phase` parity, so a
+  // spillable per-stage array is avoided (the read span is recomputed on demand by `stage_span`).
+
+  // Adopt the streaming-slot window (`stream_slots`, sized by `compute_segment_layout`) and reset the ping-pong/priming
+  // cursor for this segment. `run` may then flip `stream_is_forward` for the deterministic filter's entry parity.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void init_overflow_stream()
   {
-    agent_batched_topk_cluster& agent;
-    key_it_t block_keys_in;
-    const key_t* block_keys_base; // unwrapped contiguous base (pipeline path only; null otherwise)
-    offset_t segment_size;
-    offset_t head_items;
-    chunk_partition part; // rank -> global chunk index mapping (strided or blocked)
-    offset_t resident_chunks; // number of rank-local chunks kept resident
-    offset_t overflow_base; // rank-local chunk index of the first overflow (streamed) chunk
-    int stream_slot_base; // SMEM slot index at which the streaming region begins
-    offset_t overflow_chunks; // number of overflow chunks for this rank (M)
-    int eff_stages; // streaming region size = reserved streaming slots (<= PipelineStages; <= M when M>0, else 1)
-    bool is_forward = true;
-    bool is_primed  = false;
+    stream_slot_base = static_cast<int>(layout.resident_slots_cap);
+    // Use the whole reserved streaming region as pipeline stages for maximal ping-pong reuse; the `1` floor covers the
+    // no-op (`overflow_chunks == 0`) case, where streaming never touches a slot (asserted below).
+    stream_stages        = (layout.stream_slots > offset_t{0}) ? static_cast<int>(layout.stream_slots) : 1;
+    stream_is_forward    = true;
+    stream_is_primed     = false;
+    stream_inflight_mask = 0;
+    // Both chunk windows must lie inside this rank's `part.count` (resident first, streamed from `overflow_base`).
+    _CCCL_ASSERT(layout.my_chunks == layout.part.count && layout.my_resident_chunks <= layout.my_chunks
+                   && layout.overflow_base <= layout.my_chunks
+                   && layout.overflow_chunks <= layout.my_chunks - layout.overflow_base,
+                 "overflow stream chunk windows escape the rank's partition");
+    // The streaming region is carved from the tile's slots and capped by the pipeline depth.
+    _CCCL_ASSERT(stream_slot_base >= 0 && layout.stream_slots <= static_cast<offset_t>(PipelineStages)
+                   && static_cast<offset_t>(stream_slot_base) + layout.stream_slots
+                        <= block_tile_capacity / static_cast<offset_t>(chunk_items),
+                 "overflow stream slots escape the block tile or pipeline");
+    _CCCL_ASSERT(layout.overflow_chunks == 0 || stream_stages <= static_cast<int>(layout.overflow_chunks),
+                 "streaming depth exceeds the overflow chunk count");
+  }
 
-    // Stage mbarriers are shared with the resident load (`agent.temp_storage.load_mbar`); stage `stage` targets slot
-    // `stream_slot_base + stage`. `inflight_mask` bit `stage` is set only while a copy is in flight (issued, not yet
-    // waited). The slot/stage mapping is fixed, so the read span is recomputed on demand by `stage_span` rather than
-    // held in a spillable per-stage array; the only per-stage state is one bit each of `inflight_mask` (here) and the
-    // agent's `load_phase` parity.
-    ::cuda::std::uint32_t inflight_mask = 0;
+  _CCCL_DEVICE _CCCL_FORCEINLINE void issue_load(int stage, offset_t overflow_idx)
+  {
+    _CCCL_ASSERT(overflow_idx < layout.overflow_chunks, "overflow chunk index out of range");
+    _CCCL_ASSERT(stage >= 0 && stage < stream_stages, "overflow stage index exceeds the reserved streaming slots");
+    _CCCL_ASSERT((stream_inflight_mask & (::cuda::std::uint32_t{1} << stage)) == 0,
+                 "cannot issue a load into a streaming stage that is still in flight");
+    const offset_t chunk_idx = layout.part.global_index(layout.overflow_base + overflow_idx);
+    const auto chunk         = get_chunk(chunk_idx, layout.segment_size_off, layout.head_items);
+    // Every chunk begins on a `load_align` boundary, so the guard-free aligned (TMA bulk) path applies. The global-
+    // last chunk's unaligned suffix is always peeled into `edge_keys`, so streaming just its aligned bulk excludes
+    // it. For every interior chunk `bulk == count`.
+    const offset_t bulk =
+      ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items));
+    _CCCL_ASSERT(::cuda::is_aligned(layout.block_keys_base + chunk.offset, load_align_bytes),
+                 "overflow stream received a chunk with an unaligned start");
+    char* const dst = key_slots + (stream_slot_base + stage) * ChunkBytes;
+    const ::cuda::std::span<const key_t> src{
+      layout.block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
+    issue_bulk_copy(stage, dst, src);
+    stream_inflight_mask |= (::cuda::std::uint32_t{1} << stage);
+  }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE overflow_streamer(
-      agent_batched_topk_cluster& agent_,
-      key_it_t block_keys_in_,
-      const key_t* block_keys_base_,
-      offset_t segment_size_,
-      offset_t head_items_,
-      chunk_partition part_,
-      offset_t resident_chunks_,
-      offset_t overflow_base_,
-      int stream_slot_base_,
-      int stream_slots_,
-      offset_t my_chunks_)
-        : agent(agent_)
-        , block_keys_in(block_keys_in_)
-        , block_keys_base(block_keys_base_)
-        , segment_size(segment_size_)
-        , head_items(head_items_)
-        , part(part_)
-        , resident_chunks(resident_chunks_)
-        , overflow_base(overflow_base_)
-        , stream_slot_base(stream_slot_base_)
-        , overflow_chunks((my_chunks_ > resident_chunks_) ? (my_chunks_ - resident_chunks_) : offset_t{0})
+  // Shared-memory view of the chunk currently resident in `stage`'s slot: the slot index is a pure function of `stage`
+  // and the length is recomputed from `overflow_idx` (no spillable per-stage array). Returns the aligned bulk only (the
+  // always-peeled tail suffix is excluded).
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE smem_keys_t stage_span(int stage, offset_t overflow_idx) const
+  {
+    const auto chunk = get_chunk(
+      layout.part.global_index(layout.overflow_base + overflow_idx), layout.segment_size_off, layout.head_items);
+    return smem_keys_t(
+      ::cuda::ptr_rebind<key_t>(key_slots + (stream_slot_base + stage) * ChunkBytes),
+      static_cast<int>(::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items))));
+  }
+
+  // Shared driver for one overflow pass. `block_apply(stage, overflow_idx)` folds the chunk `overflow_idx` resident
+  // in streaming slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from
+  // gmem (fallback). `mid()` runs once on a full pass -- after the first reload wave (`stream_stages` visits) is issued
+  // but before it is waited on, overlapping the caller's resident-chunk work with those in-flight copies (skipped if
+  // phase 1 stops early); it must be block-uniform with no unmatched barrier. `should_continue()` is polled once
+  // after each consumed chunk (before its refill copy is issued); returning false breaks the stream so the final
+  // filter bails once the top-k is placed. Its result must be block-uniform (all lanes break together, else the
+  // post-break barrier deadlocks) and it is evaluated by every lane, so it may contain a barrier (the deterministic
+  // filter's does, to read its placement counters block-wide); the histogram and non-deterministic filter pass an
+  // always-true predicate. An early break can leave prefetches in flight, so the pass drains the
+  // remaining stages before returning (a full pass ends with an empty `stream_inflight_mask`, so the drain is a no-op).
+  template <typename BlockApply, typename GenericApply, typename Mid, typename Continue>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  run_pass(BlockApply&& block_apply, GenericApply&& generic_apply, Mid&& mid, Continue&& should_continue)
+  {
+    _CCCL_ASSERT(stream_inflight_mask == ::cuda::std::uint32_t{0},
+                 "an overflow pass must begin with no copies in flight");
+    if (layout.overflow_chunks == 0)
     {
-      // Use the whole reserved streaming region as pipeline stages for maximal ping-pong reuse; the `1` floor covers
-      // the no-op (`M == 0`) case, where the streamer never touches a slot (asserted `<= overflow_chunks` below).
-      eff_stages = (stream_slots_ > 0) ? stream_slots_ : 1;
-      // Both chunk windows must lie inside this rank's `part.count` (resident first, streamed from `overflow_base`).
-      _CCCL_ASSERT(my_chunks_ == part.count && resident_chunks <= my_chunks_ && overflow_base <= my_chunks_
-                     && overflow_chunks <= my_chunks_ - overflow_base,
-                   "overflow streamer chunk windows escape the rank's partition");
-      // The streaming region is carved from the tile's slots and capped by the pipeline depth.
-      _CCCL_ASSERT(stream_slot_base >= 0 && stream_slots_ >= 0 && stream_slots_ <= PipelineStages
-                     && static_cast<offset_t>(stream_slot_base) + static_cast<offset_t>(stream_slots_)
-                          <= agent.block_tile_capacity / static_cast<offset_t>(chunk_items),
-                   "overflow streamer streaming slots escape the block tile or pipeline");
-      _CCCL_ASSERT(overflow_chunks == 0 || eff_stages <= static_cast<int>(overflow_chunks),
-                   "streaming depth exceeds the overflow chunk count");
+      mid();
+      return;
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void issue_load(int stage, offset_t overflow_idx)
+    if constexpr (use_block_load_to_shared)
     {
-      _CCCL_ASSERT(overflow_idx < overflow_chunks, "overflow chunk index out of range");
-      _CCCL_ASSERT(stage >= 0 && stage < eff_stages, "overflow stage index exceeds the reserved streaming slots");
-      _CCCL_ASSERT((inflight_mask & (::cuda::std::uint32_t{1} << stage)) == 0,
-                   "cannot issue a load into a streaming stage that is still in flight");
-      const offset_t chunk_idx = part.global_index(overflow_base + overflow_idx);
-      const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
-      // Every chunk begins on a `load_align` boundary, so the guard-free aligned (TMA bulk) path applies. The global-
-      // last chunk's unaligned suffix is always peeled into `edge_keys`, so streaming just its aligned bulk excludes
-      // it. For every interior chunk `bulk == count`.
-      const offset_t bulk =
-        ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items));
-      _CCCL_ASSERT(::cuda::is_aligned(block_keys_base + chunk.offset, load_align_bytes),
-                   "overflow streamer received a chunk with an unaligned start");
-      char* const dst = agent.key_slots + (stream_slot_base + stage) * ChunkBytes;
-      const ::cuda::std::span<const key_t> src{block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
-      agent.issue_bulk_copy(stage, dst, src);
-      inflight_mask |= (::cuda::std::uint32_t{1} << stage);
-    }
-
-    // Shared-memory view of the chunk currently resident in `stage`'s slot without storing per-stage state: the slot
-    // index is a pure function of `stage` and the length is recomputed from `overflow_idx`, so there is no spillable
-    // `pending[]` array. Returns the aligned bulk only (the always-peeled tail suffix is excluded).
-    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE smem_keys_t stage_span(int stage, offset_t overflow_idx) const
-    {
-      const auto chunk = agent.get_chunk(part.global_index(overflow_base + overflow_idx), segment_size, head_items);
-      return smem_keys_t(
-        ::cuda::ptr_rebind<key_t>(agent.key_slots + (stream_slot_base + stage) * ChunkBytes),
-        static_cast<int>(
-          ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items))));
-    }
-
-    // Shared driver for one overflow pass. `block_apply(stage, overflow_idx)` folds the chunk `overflow_idx` resident
-    // in streaming slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from
-    // gmem (fallback). `mid()` runs once on a full pass -- after the first reload wave (`eff_stages` visits) is issued
-    // but before it is waited on, overlapping the caller's resident-chunk work with those in-flight copies (skipped if
-    // phase 1 stops early); it must be block-uniform with no unmatched barrier. `should_continue()` is polled once
-    // after each consumed chunk (before its refill copy is issued); returning false breaks the stream so the final
-    // filter bails once the top-k is placed. Its result must be block-uniform (all lanes break together, else the
-    // post-break barrier deadlocks) and it is evaluated by every lane, so it may contain a barrier (the deterministic
-    // filter's does, to read its placement counters block-wide); the histogram and non-deterministic filter pass an
-    // always-true predicate. An early break can leave prefetches in flight, so the pass drains the
-    // remaining stages before returning (a full pass ends with an empty `inflight_mask`, so the drain is a no-op).
-    template <typename BlockApply, typename GenericApply, typename Mid, typename Continue>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    run_pass(BlockApply&& block_apply, GenericApply&& generic_apply, Mid&& mid, Continue&& should_continue)
-    {
-      _CCCL_ASSERT(inflight_mask == ::cuda::std::uint32_t{0}, "an overflow pass must begin with no copies in flight");
-      if (overflow_chunks == 0)
+      // First ever call: prime the streaming slots. Subsequent calls inherit the previous pass's resident tail, which
+      // (because the order ping-pongs) is exactly the first `stream_stages` chunks of this direction.
+      if (!stream_is_primed)
       {
-        mid();
-        return;
+        // Wait for all threads to leave the resident load's final wait before re-arming its shared mbarriers; else
+        // the phase advances twice and a lagging thread misses the flip and spins forever.
+        __syncthreads();
+        for (int i = 0; i < stream_stages; ++i)
+        {
+          const offset_t overflow_idx =
+            stream_is_forward ? static_cast<offset_t>(i) : (layout.overflow_chunks - 1 - static_cast<offset_t>(i));
+          issue_load(static_cast<int>(overflow_idx % static_cast<offset_t>(stream_stages)), overflow_idx);
+        }
+        stream_is_primed = true;
       }
 
-      if constexpr (use_block_load_to_shared)
-      {
-        // First ever call: prime the streaming slots. Subsequent calls inherit
-        // the previous pass's resident tail, which (because the order
-        // ping-pongs) is exactly the first `eff_stages` chunks of this direction.
-        if (!is_primed)
+      // Consume the `i`-th visit (its ping-pong-ordered position is `overflow_idx`): wait for its slot, fold its keys
+      // via `block_apply`, then prefetch the chunk `stream_stages` visits ahead into the slot just freed (a barrier
+      // guards the slot before the async copy can overwrite the data the block was just reading). Returns false once
+      // `should_continue()` reports the top-k fully placed -- polled before the prefetch so we never launch a copy we
+      // would only drain again; the up-to-`stream_stages - 1` prefetches already in flight (from earlier visits or
+      // priming) are drained after the loop.
+      const auto consume = [&](offset_t i) -> bool {
+        const offset_t overflow_idx = stream_is_forward ? i : (layout.overflow_chunks - 1 - i);
+        const int stage             = static_cast<int>(overflow_idx % static_cast<offset_t>(stream_stages));
+        if (stream_inflight_mask & (::cuda::std::uint32_t{1} << stage))
         {
-          // Wait for all threads to leave the resident load's final wait before re-arming its shared mbarriers; else
-          // the phase advances twice and a lagging thread misses the flip and spins forever.
-          __syncthreads();
-          for (int i = 0; i < eff_stages; ++i)
-          {
-            const offset_t overflow_idx =
-              is_forward ? static_cast<offset_t>(i) : (overflow_chunks - 1 - static_cast<offset_t>(i));
-            issue_load(static_cast<int>(overflow_idx % static_cast<offset_t>(eff_stages)), overflow_idx);
-          }
-          is_primed = true;
+          wait_stage(stage);
+          stream_inflight_mask &= ~(::cuda::std::uint32_t{1} << stage);
+        }
+        block_apply(stage, overflow_idx);
+
+        if (!should_continue())
+        {
+          return false;
         }
 
-        // Consume the `i`-th visit (its ping-pong-ordered position is `overflow_idx`): wait for its slot, fold its keys
-        // via `block_apply`, then prefetch the chunk `eff_stages` visits ahead into the slot just freed (a barrier
-        // guards the slot before the async copy can overwrite the data the block was just reading). Returns false once
-        // `should_continue()` reports the top-k fully placed -- polled before the prefetch so we never launch a copy we
-        // would only drain again; the up-to-`eff_stages - 1` prefetches already in flight (from earlier visits or
-        // priming) are drained after the loop.
-        const auto consume = [&](offset_t i) -> bool {
-          const offset_t overflow_idx = is_forward ? i : (overflow_chunks - 1 - i);
-          const int stage             = static_cast<int>(overflow_idx % static_cast<offset_t>(eff_stages));
-          if (inflight_mask & (::cuda::std::uint32_t{1} << stage))
-          {
-            agent.wait_stage(stage);
-            inflight_mask &= ~(::cuda::std::uint32_t{1} << stage);
-          }
-          block_apply(stage, overflow_idx);
+        const offset_t next_step = i + static_cast<offset_t>(stream_stages);
+        if (next_step < layout.overflow_chunks)
+        {
+          const offset_t next_overflow_idx = stream_is_forward ? next_step : (layout.overflow_chunks - 1 - next_step);
+          __syncthreads();
+          issue_load(stage, next_overflow_idx);
+        }
+        return true;
+      };
 
-          if (!should_continue())
-          {
-            return false;
-          }
+      // Phase 1: consume the first `stream_stages` visits (the chunks reused from the previous pass, already resident
+      // in the streaming slots), which issues the prefetch loads for this pass's reload wave into the freed slots.
+      bool is_stopped      = false;
+      const offset_t split = (::cuda::std::min) (static_cast<offset_t>(stream_stages), layout.overflow_chunks);
+      for (offset_t i = 0; i < split; ++i)
+      {
+        if (!consume(i))
+        {
+          is_stopped = true;
+          break;
+        }
+      }
 
-          const offset_t next_step = i + static_cast<offset_t>(eff_stages);
-          if (next_step < overflow_chunks)
-          {
-            const offset_t next_overflow_idx = is_forward ? next_step : (overflow_chunks - 1 - next_step);
-            __syncthreads();
-            issue_load(stage, next_overflow_idx);
-          }
-          return true;
-        };
+      if (!is_stopped)
+      {
+        // The reload wave is now in flight; run the caller's resident-chunk work to hide its latency before waiting.
+        mid();
 
-        // Phase 1: consume the first `eff_stages` visits (the chunks reused from the previous pass, already resident in
-        // the streaming slots), which issues the prefetch loads for this pass's reload wave into the freed slots.
-        bool is_stopped      = false;
-        const offset_t split = (::cuda::std::min) (static_cast<offset_t>(eff_stages), overflow_chunks);
-        for (offset_t i = 0; i < split; ++i)
+        // Phase 2: consume the remaining visits (their loads were issued in phase 1 and overlapped `mid`).
+        for (offset_t i = split; i < layout.overflow_chunks; ++i)
         {
           if (!consume(i))
           {
-            is_stopped = true;
             break;
           }
         }
-
-        if (!is_stopped)
-        {
-          // The reload wave is now in flight; run the caller's resident-chunk work to hide its latency before waiting.
-          mid();
-
-          // Phase 2: consume the remaining visits (their loads were issued in phase 1 and overlapped `mid`).
-          for (offset_t i = split; i < overflow_chunks; ++i)
-          {
-            if (!consume(i))
-            {
-              break;
-            }
-          }
-        }
-
-        // Drain prefetches still in flight before returning: an early break leaves outstanding bulk copies whose
-        // mbarriers were never waited, and they must complete before the block can exit (their slots are never read).
-        // `inflight_mask` is block-uniform (set/cleared under uniform control flow), so the trip count and each
-        // collective `wait_stage` are uniform across the block.
-        while (inflight_mask != ::cuda::std::uint32_t{0})
-        {
-          const int drain_stage = __ffs(static_cast<int>(inflight_mask)) - 1;
-          agent.wait_stage(drain_stage);
-          inflight_mask &= ~(::cuda::std::uint32_t{1} << drain_stage);
-        }
-        is_forward = !is_forward;
       }
-      else
+
+      // Drain prefetches still in flight before returning: an early break leaves outstanding bulk copies whose
+      // mbarriers were never waited, and they must complete before the block can exit (their slots are never read).
+      // `stream_inflight_mask` is block-uniform (set/cleared under uniform control flow), so the trip count and each
+      // collective `wait_stage` are uniform across the block.
+      while (stream_inflight_mask != ::cuda::std::uint32_t{0})
       {
-        // Generic fallback: no async SMEM pipeline, so resident work cannot hide load latency here. Fold the resident
-        // chunks first (preserving the prior ordering), then read the overflow keys straight from gmem each pass (no
-        // SMEM reuse), with the walk still snaking for L2 locality.
-        mid();
-        for (offset_t i = 0; i < overflow_chunks; ++i)
-        {
-          const offset_t overflow_idx = is_forward ? i : (overflow_chunks - 1 - i);
-          const offset_t chunk_idx    = part.global_index(overflow_base + overflow_idx);
-          const auto chunk            = agent.get_chunk(chunk_idx, segment_size, head_items);
-          generic_apply(chunk);
-          if (!should_continue())
-          {
-            break;
-          }
-        }
-        is_forward = !is_forward;
+        const int drain_stage = __ffs(static_cast<int>(stream_inflight_mask)) - 1;
+        wait_stage(drain_stage);
+        stream_inflight_mask &= ~(::cuda::std::uint32_t{1} << drain_stage);
       }
+      stream_is_forward = !stream_is_forward;
     }
-
-    // Fold every overflow key once in the current ping-pong direction. `Indexed` selects the callable shape: keys-only
-    // (`Indexed == false`) applies `f(key)`; the pair filter (`Indexed == true`) applies `f(key, seg_idx)` with each
-    // key's segment-local index, needed to fetch its value payload from gmem while still reusing the streamed overflow
-    // keys. The index math lives entirely inside the `if constexpr (Indexed)` arms, so it is elided in the keys-only
-    // instantiation. See `run_pass` for the overlap semantics of `mid`; `UnrollFactor` partially unrolls the generic
-    // (gmem fallback) fold loop.
-    template <int UnrollFactor, bool Indexed, typename F, typename Mid>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_dispatch(F&& f, Mid&& mid)
+    else
     {
-      run_pass(
-        [&](int stage, offset_t overflow_idx) {
-          if constexpr (Indexed)
+      // Generic fallback: no async SMEM pipeline, so resident work cannot hide load latency here. Fold the resident
+      // chunks first (preserving the prior ordering), then read the overflow keys straight from gmem each pass (no
+      // SMEM reuse), with the walk still snaking for L2 locality.
+      mid();
+      for (offset_t i = 0; i < layout.overflow_chunks; ++i)
+      {
+        const offset_t overflow_idx = stream_is_forward ? i : (layout.overflow_chunks - 1 - i);
+        const offset_t chunk_idx    = layout.part.global_index(layout.overflow_base + overflow_idx);
+        const auto chunk            = get_chunk(chunk_idx, layout.segment_size_off, layout.head_items);
+        generic_apply(chunk);
+        if (!should_continue())
+        {
+          break;
+        }
+      }
+      stream_is_forward = !stream_is_forward;
+    }
+  }
+
+  // Fold every overflow key once in the current ping-pong direction. `Indexed` selects the callable shape: keys-only
+  // (`Indexed == false`) applies `f(key)`; the pair filter (`Indexed == true`) applies `f(key, seg_idx)` with each
+  // key's segment-local index, needed to fetch its value payload from gmem while still reusing the streamed overflow
+  // keys. The index math lives entirely inside the `if constexpr (Indexed)` arms, so it is elided in the keys-only
+  // instantiation. See `run_pass` for the overlap semantics of `mid`; `UnrollFactor` partially unrolls the generic
+  // (gmem fallback) fold loop.
+  template <int UnrollFactor, bool Indexed, typename F, typename Mid>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_dispatch(F&& f, Mid&& mid)
+  {
+    run_pass(
+      [&](int stage, offset_t overflow_idx) {
+        if constexpr (Indexed)
+        {
+          const offset_t base_off =
+            get_chunk(
+              layout.part.global_index(layout.overflow_base + overflow_idx), layout.segment_size_off, layout.head_items)
+              .offset;
+          const auto keys = stage_span(stage, overflow_idx);
+          for_each_chunk_key_indexed<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), base_off, f);
+        }
+        else
+        {
+          const auto keys = stage_span(stage, overflow_idx);
+          for_each_chunk_key<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), f);
+        }
+      },
+      [&](const auto& chunk) {
+        const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
+        _CCCL_PRAGMA_UNROLL(UnrollFactor)
+        for (int j = 0; j < iterations; ++j)
+        {
+          const int local = j * threads_per_block + tid;
+          if (local < chunk.count)
           {
-            const offset_t base_off =
-              agent.get_chunk(part.global_index(overflow_base + overflow_idx), segment_size, head_items).offset;
-            const auto keys = stage_span(stage, overflow_idx);
-            agent.template for_each_chunk_key_indexed<UnrollFactor>(
-              keys.data(), static_cast<int>(keys.size()), base_off, f);
-          }
-          else
-          {
-            const auto keys = stage_span(stage, overflow_idx);
-            agent.template for_each_chunk_key<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), f);
-          }
-        },
-        [&](const auto& chunk) {
-          const int iterations = ::cuda::ceil_div(chunk.count, threads_per_block);
-          _CCCL_PRAGMA_UNROLL(UnrollFactor)
-          for (int j = 0; j < iterations; ++j)
-          {
-            const int local = j * threads_per_block + agent.tid;
-            if (local < chunk.count)
+            if constexpr (Indexed)
             {
-              if constexpr (Indexed)
-              {
-                const offset_t seg_idx = chunk.offset + static_cast<offset_t>(local);
-                f(block_keys_in[static_cast<segment_size_val_t>(seg_idx)], seg_idx);
-              }
-              else
-              {
-                f(block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))]);
-              }
+              const offset_t seg_idx = chunk.offset + static_cast<offset_t>(local);
+              f(layout.block_keys_in[static_cast<segment_size_val_t>(seg_idx)], seg_idx);
+            }
+            else
+            {
+              f(layout.block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))]);
             }
           }
-        },
-        static_cast<Mid&&>(mid),
-        [] {
-          return true;
-        });
-    }
+        }
+      },
+      static_cast<Mid&&>(mid),
+      [] {
+        return true;
+      });
+  }
 
-    // `f(key)` over every overflow key. `UnrollFactor` partially unrolls the generic (gmem fallback) fold loop; callers
-    // pass their clamped items-per-thread.
-    template <int UnrollFactor, typename F, typename Mid>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
-    {
-      process_pass_dispatch<UnrollFactor, /*Indexed=*/false>(static_cast<F&&>(f), static_cast<Mid&&>(mid));
-    }
+  // `f(key)` over every overflow key. `UnrollFactor` partially unrolls the generic (gmem fallback) fold loop; callers
+  // pass their clamped items-per-thread.
+  template <int UnrollFactor, typename F, typename Mid>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f, Mid&& mid)
+  {
+    process_pass_dispatch<UnrollFactor, /*Indexed=*/false>(static_cast<F&&>(f), static_cast<Mid&&>(mid));
+  }
 
-    // Overload with no interleaved work, for the fused first pass where the resident keys are still being streamed in
-    // by the BlockLoadToShared pipeline (rather than already resident in SMEM).
-    template <int UnrollFactor, typename F>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f)
-    {
-      process_pass<UnrollFactor>(static_cast<F&&>(f), [] {});
-    }
+  // Overload with no interleaved work, for the fused first pass where the resident keys are still being streamed in
+  // by the BlockLoadToShared pipeline (rather than already resident in SMEM).
+  template <int UnrollFactor, typename F>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f)
+  {
+    process_pass<UnrollFactor>(static_cast<F&&>(f), [] {});
+  }
 
-    // Like `process_pass`, but applies `f(key, seg_idx)` where `seg_idx` is the key's segment-local index.
-    template <int UnrollFactor, typename F, typename Mid>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_indexed(F&& f, Mid&& mid)
-    {
-      process_pass_dispatch<UnrollFactor, /*Indexed=*/true>(static_cast<F&&>(f), static_cast<Mid&&>(mid));
-    }
-  };
+  // Like `process_pass`, but applies `f(key, seg_idx)` where `seg_idx` is the key's segment-local index.
+  template <int UnrollFactor, typename F, typename Mid>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass_indexed(F&& f, Mid&& mid)
+  {
+    process_pass_dispatch<UnrollFactor, /*Indexed=*/true>(static_cast<F&&>(f), static_cast<Mid&&>(mid));
+  }
 
   // -------------------------------------------------------------------------
   // Per-direction implementation
@@ -1310,7 +1290,6 @@ private:
     identify_candidates_op_t identify_op;
     it_value_t<KeyOutputItItT> block_keys_out;
     key_it_t block_keys_in;
-    overflow_streamer& streamer;
     chunk_partition part;
     out_offset_t k;
     out_offset_t num_back;
@@ -1561,33 +1540,32 @@ private:
     // Overflow chunks. On the block-load path each landed slot folds through `process_tiles` (reusing the TMA
     // pipeline); the generic fallback reads gmem chunk by chunk. `run_pass`'s `should_continue` breaks the stream once
     // the top-k is fully placed. The streaming direction is already correct on entry (preselected in `run`), and the
-    // slots are already primed -- the histogram's first streaming pass primed the same persistent streamer, so
-    // `streamer.is_primed` carries in as `true` and this pass reuses the resident turn-around chunks with no re-prime
-    // (the generic fallback re-reads gmem each pass regardless).
+    // slots are already primed -- the histogram's first streaming pass primed the same persistent stream, so
+    // `agent.stream_is_primed` carries in as `true` and this pass reuses the resident turn-around chunks with no
+    // re-prime (the generic fallback re-reads gmem each pass regardless).
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_overflow()
     {
       // Guards the straddling CTA (the only rank needing scan order): `run` preselected the direction so it enters at
-      // `is_forward == !is_tie_reversed` after the full `num_passes`. The escape disjuncts are the cases where the
-      // streaming direction is moot: no overflow (`overflow_chunks == 0`); a CTA entirely at/below the boundary
+      // `stream_is_forward == !is_tie_reversed` after the full `num_passes`. The escape disjuncts are the cases where
+      // the streaming direction is moot: no overflow (`overflow_chunks == 0`); a CTA entirely at/below the boundary
       // (`is_select_all_cand_cta`, arrival-order atomics); or one with no back scan (`!is_tie_active`). Early stop is
       // subsumed -- it makes every CTA `is_select_all_cand_cta`, so the shorter (possibly mis-parity) pass count never
       // reaches a straddler.
-      _CCCL_ASSERT(streamer.overflow_chunks == 0 || is_select_all_cand_cta || !is_tie_active
-                     || streamer.is_forward == (!is_tie_reversed),
+      _CCCL_ASSERT(agent.layout.overflow_chunks == 0 || is_select_all_cand_cta || !is_tie_active
+                     || agent.stream_is_forward == (!is_tie_reversed),
                    "preselected ping-pong parity mismatch: the straddling CTA entered the deterministic filter with "
                    "the wrong streaming direction");
 
-      streamer.run_pass(
+      agent.run_pass(
         // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
         // `stage_span` returns the slot's aligned-bulk view (a peeled tail suffix is handled by `process_tail_edge`).
         [&](int stage, offset_t overflow_idx) {
-          const auto keys = streamer.stage_span(stage, overflow_idx);
+          const auto keys = agent.stage_span(stage, overflow_idx);
           const offset_t base_off =
-            agent
-              .get_chunk(streamer.part.global_index(streamer.overflow_base + overflow_idx), segment_size_off, head_items)
+            agent.get_chunk(part.global_index(agent.layout.overflow_base + overflow_idx), segment_size_off, head_items)
               .offset;
           // The multi-chunk overflow stream stays on the lazy per-tile boundary detection (`region_is_terminal ==
-          // false`): a stray terminal direct scan here would need the streamer to flag its last chunk, and the saving
+          // false`): a stray terminal direct scan here would need the stream to flag its last chunk, and the saving
           // is one barrier on one tile.
           process_tiles<tie_break_items_streamed, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed>(
             keys.data(), base_off, static_cast<int>(keys.size()), false);
@@ -1712,11 +1690,7 @@ private:
   // perf change over the old cluster-wide `out_cnt`/`out_back_cnt` DSMEM atomics, not a correctness one.
   template <class IdentifyOp, class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void write_nondeterministic_topk(
-    out_offset_t num_kth,
-    IdentifyOp identify_op,
-    KeyOutIt block_keys_out,
-    smem_keys_t resident_keys,
-    overflow_streamer& streamer)
+    out_offset_t num_kth, IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {
     // Store the value for a key written to `block_keys_out[pos]`, fetched from gmem at its segment-local index
     // `seg_idx`. Deriving the per-segment value iterators *inside* the `is_keys_only` guard avoids indexing the null
@@ -1785,7 +1759,7 @@ private:
       const auto write_selected = [&](const key_t& key) {
         sink(key, offset_t{0});
       };
-      // Fold the resident keys as the streamer's `mid` work so they overlap the first overflow reloads. Writes are
+      // Fold the resident keys as the overflow pass's `mid` work so they overlap the first overflow reloads. Writes are
       // order-independent atomics, and resident SMEM slots are disjoint from streaming slots, so `mid` never races.
       const auto fold_resident = [&] {
         if constexpr (use_block_load_to_shared)
@@ -1808,7 +1782,7 @@ private:
         // Scan the persistent boundary edges alongside the resident keys (order-independent atomic writes).
         fold_boundary_edges(layout.head_edge_len_items, layout.tail_edge_len_items, write_selected);
       };
-      streamer.process_pass<tie_break_items_per_thread_floor_clamped>(write_selected, fold_resident);
+      process_pass<tie_break_items_per_thread_floor_clamped>(write_selected, fold_resident);
     }
     else
     {
@@ -1818,7 +1792,7 @@ private:
 
       // Iterate a contiguous run of `count` keys staged in SMEM at `smem`, whose element `local` has segment-local
       // index `base_off + local`. Every source folded here is SMEM (resident slots and the persistent boundary
-      // edges); overflow chunks fold through the streamer's own indexed callback below. Materialize the key into a
+      // edges); overflow chunks fold through the indexed overflow-pass callback below. Materialize the key into a
       // register first: `sink` binds it by `const&` and reads it several times, so passing `smem[local]` directly
       // would re-issue a narrow `LDS` per use instead of reusing the loaded value.
       auto write_run = [&](const key_t* smem, offset_t base_off, int count) {
@@ -1845,7 +1819,7 @@ private:
         }
       };
 
-      // Fold the resident keys (and their values) as the streamer's `mid` work, exactly as in the keys-only path.
+      // Fold the resident keys (and their values) as the overflow pass's `mid` work, exactly as in the keys-only path.
       const auto fold_resident = [&] {
         if constexpr (use_block_load_to_shared)
         {
@@ -1895,8 +1869,8 @@ private:
       };
 
       // Overflow chunks: reuse the streamed keys (the generic fallback re-reads from gmem) and fetch each selected
-      // key's value at index `seg_idx`. The resident keys above fold in as the streamer's `mid` work.
-      streamer.process_pass_indexed<tie_break_items_per_thread_floor_clamped>(sink, fold_resident);
+      // key's value at index `seg_idx`. The resident keys above fold in as the overflow pass's `mid` work.
+      process_pass_indexed<tie_break_items_per_thread_floor_clamped>(sink, fold_resident);
     }
   }
 
@@ -1907,11 +1881,7 @@ private:
   // `det_final_filter`; this member computes that struct's inputs and runs it.
   template <detail::topk::select SelectDirection, class IdentifyOp, class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void write_deterministic_topk(
-    out_offset_t num_kth,
-    IdentifyOp identify_op,
-    KeyOutIt block_keys_out,
-    smem_keys_t resident_keys,
-    overflow_streamer& streamer)
+    out_offset_t num_kth, IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {
     // Early stop is not special-cased: `total_candidates == num_kth` then makes every CTA `is_select_all_cand_cta`.
     //
@@ -1998,7 +1968,6 @@ private:
       identify_op,
       block_keys_out,
       layout.block_keys_in,
-      streamer,
       layout.part,
       k,
       num_back,
@@ -2031,8 +2000,7 @@ private:
   // visibility of the zeroed histogram comes later, from the deferred initial cluster wait in `run_radix_passes` (this
   // whole load runs in that arrive->wait window).
   template <detail::topk::select SelectDirection>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  load_and_histogram_first_pass(overflow_streamer& streamer, smem_keys_t& resident_keys)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(smem_keys_t& resident_keys)
   {
     using extract_bin_op_t   = detail::topk::extract_bin_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
     constexpr int total_bits = int{sizeof(key_t)} * 8;
@@ -2048,8 +2016,9 @@ private:
     {
       if (layout.my_resident_chunks > 0)
       {
-        // Stage mbarriers and the `load_phase` parity are shared with the streamer (no per-chunk token array needed).
-        // Chunks are written densely in slot order from offset 0 and read back in the same order, so the read cursor
+        // Stage mbarriers and the `load_phase` parity are shared with the overflow stream (no per-chunk token array
+        // needed). Chunks are written densely in slot order from offset 0 and read back in the same order, so the read
+        // cursor
         // (`read_off_bytes`) mirrors the write cursor (`next_off_bytes`) as a running prefix sum, avoiding a
         // dynamically-indexed `pending_spans` array that would anchor surrounding state to local memory. Every chunk
         // begins on a `load_align` boundary (zero prefix), so its aligned bulk is `round_down(count,
@@ -2073,7 +2042,7 @@ private:
           {
             return {};
           }
-          // Chunks start after the aligned head on an alignment-multiple stride (mirrors the streamer's `issue_load`).
+          // Chunks start after the aligned head on an alignment-multiple stride (mirrors `issue_load`).
           _CCCL_ASSERT(::cuda::is_aligned(layout.block_keys_base + chunk.offset, load_align_bytes),
                        "resident loader received a chunk with an unaligned start");
           return {layout.block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
@@ -2170,11 +2139,11 @@ private:
       }
     }
 
-    // Fold the overflow chunks into the first-pass histogram, priming the streaming slots in the streamer's initial
+    // Fold the overflow chunks into the first-pass histogram, priming the streaming slots in the stream's initial
     // direction (preselected above; the histogram is order-independent, so the direction only sets up the leftover
-    // parity for the final filter). The streamer reuses the resident load's stage mbarriers (all front-loaded at
+    // parity for the final filter). The overflow stream reuses the resident load's stage mbarriers (all front-loaded at
     // `run` entry); `wait_stage` provides the producer/consumer sync.
-    streamer.process_pass<histogram_items_per_thread_clamped>(add_first_pass);
+    process_pass<histogram_items_per_thread_clamped>(add_first_pass);
 
     const int resident_count = static_cast<int>(resident_keys.size());
     _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= block_tile_capacity,
@@ -2254,10 +2223,10 @@ private:
     // Resident vs. streaming split, decided independently per CTA (CTAs need not agree -- cross-CTA traffic and every
     // cluster barrier is reached uniformly). A CTA whose chunks fit its resident slots (`my_chunks <= full_slots`)
     // keeps them all resident and streams nothing; an overflowing CTA reserves a round-robin streaming region at the
-    // tail of its block_tile and re-streams its overflow chunks from gmem each pass via `streamer`.
+    // tail of its block_tile and re-streams its overflow chunks from gmem each pass via the overflow stream.
     //
     // Boundary edges (the unaligned head prefix on rank 0 and the unaligned tail suffix on the tail owner) cannot use
-    // the aligned TMA streamer, so both are always peeled into the persistent `edge_keys` buffer. The tail chunk's
+    // the aligned TMA stream, so both are always peeled into the persistent `edge_keys` buffer. The tail chunk's
     // aligned bulk is then a normal (possibly partial) aligned chunk that can be resident or streamed like any other;
     // no partial tail chunk is ever kept resident. Peeling both boundaries means streaming needs only `full_slots >=
     // 1`.
@@ -2331,8 +2300,7 @@ private:
   // pinned down (or early stop fires). Folds `kth_key_bits_local` up digit by digit and returns the number of passes
   // that actually ran (`last_pass`), which the final filter uses to size its identify operator.
   template <detail::topk::select SelectDirection>
-  _CCCL_DEVICE _CCCL_FORCEINLINE int
-  run_radix_passes(smem_keys_t resident_keys, overflow_streamer& streamer, key_prefix_t& kth_key_bits_local)
+  _CCCL_DEVICE _CCCL_FORCEINLINE int run_radix_passes(smem_keys_t resident_keys, key_prefix_t& kth_key_bits_local)
   {
     using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
     using identify_candidates_op_t =
@@ -2364,9 +2332,9 @@ private:
           }
         };
 
-        // Resident-chunk histogram, deferred into the streamer so it overlaps the streamer's in-flight first reload
-        // wave (see `process_pass`). The histogram is order-independent, so folding resident keys between the
-        // streamer's load issue and its wait does not change the result.
+        // Resident-chunk histogram, deferred into the overflow stream so it overlaps the stream's in-flight first
+        // reload wave (see `process_pass`). The histogram is order-independent, so folding resident keys between the
+        // stream's load issue and its wait does not change the result.
         const auto fold_resident_hist = [&] {
           if constexpr (use_block_load_to_shared)
           {
@@ -2390,7 +2358,7 @@ private:
         // Re-stream the overflow chunks into this pass's histogram, overlapping the resident-chunk histogram with the
         // first wave of reload bulk copies. Ping-pongs direction and reuses the turn-around chunks left resident by the
         // previous pass.
-        streamer.process_pass<histogram_items_per_thread_clamped>(add_hist, fold_resident_hist);
+        process_pass<histogram_items_per_thread_clamped>(add_hist, fold_resident_hist);
 
         // Fold the persistent boundary edges (loaded once in the first pass) into this pass's histogram, alongside the
         // resident and overflow keys. Keeps every owner's per-bucket counts (the source of its `num_strictly_selected`
@@ -2538,29 +2506,19 @@ private:
     // `run_radix_passes`), so the full key is never broadcast.
     key_prefix_t kth_key_bits_local = {};
 
-    // Persistent streamer for the overflow chunks; a no-op (constructs nothing) when this rank has no overflow.
-    overflow_streamer streamer(
-      *this,
-      layout.block_keys_in,
-      layout.block_keys_base,
-      layout.segment_size_off,
-      layout.head_items,
-      layout.part,
-      layout.my_resident_chunks,
-      layout.overflow_base,
-      static_cast<int>(layout.resident_slots_cap),
-      static_cast<int>(layout.stream_slots),
-      layout.my_chunks);
+    // Size the persistent overflow-streaming window for this segment; a no-op when this rank has no overflow.
+    init_overflow_stream();
 
-    // Preselect the streamer's initial ping-pong direction. A streaming rank flips direction once per histogram pass,
-    // so the leftover after the compile-time `num_passes` passes is `initial ^ (num_passes & 1)`; choosing `initial =
+    // Preselect the streaming ping-pong direction. A streaming rank flips direction once per histogram pass, so the
+    // leftover after the compile-time `num_passes` passes is `initial ^ (num_passes & 1)`; choosing `initial =
     // (!is_tie_reversed) ^ (num_passes & 1)` makes that leftover `== !is_tie_reversed` -- exactly what the
     // deterministic filter's straddling CTA needs to reuse its resident turn-around chunks with no re-prime (see
     // `det_final_filter::process_overflow`; early exit runs fewer passes but then has no straddler, so direction is
-    // moot). Non-deterministic filtering is order-independent, so leave its historical `is_forward` start untouched.
+    // moot). Non-deterministic filtering is order-independent, so leave its historical `stream_is_forward` start
+    // untouched.
     if constexpr (need_determinism)
     {
-      streamer.is_forward = (!is_tie_reversed) ^ ((num_passes & 1) != 0);
+      stream_is_forward = (!is_tie_reversed) ^ ((num_passes & 1) != 0);
     }
 
     // Contiguous resident-key window staged in SMEM (block-load path); read once per radix pass and in the final
@@ -2575,12 +2533,12 @@ private:
     }
     __syncthreads();
 
-    load_and_histogram_first_pass<SelectDirection>(streamer, resident_keys);
+    load_and_histogram_first_pass<SelectDirection>(resident_keys);
 
     // Publish the first pass's staged `edge_keys` and per-rank histogram block-wide before the radix passes read them.
     __syncthreads();
 
-    const int last_pass = run_radix_passes<SelectDirection>(resident_keys, streamer, kth_key_bits_local);
+    const int last_pass = run_radix_passes<SelectDirection>(resident_keys, kth_key_bits_local);
 
     // -----------------------------------------------------------------------
     // Final filter pass: write the top-k keys for this segment. Strictly-
@@ -2605,11 +2563,11 @@ private:
     __syncthreads();
     if constexpr (need_determinism)
     {
-      write_deterministic_topk<SelectDirection>(num_kth, identify_op, block_keys_out, resident_keys, streamer);
+      write_deterministic_topk<SelectDirection>(num_kth, identify_op, block_keys_out, resident_keys);
     }
     else
     {
-      write_nondeterministic_topk(num_kth, identify_op, block_keys_out, resident_keys, streamer);
+      write_nondeterministic_topk(num_kth, identify_op, block_keys_out, resident_keys);
     }
 
     // No cluster barrier after the final filter pass: both filter paths place output via block-local SMEM atomics into
@@ -2775,7 +2733,7 @@ private:
     }
 
     // Segments larger than the resident cluster_tile capacity are still handled -- the overflow chunks are re-streamed
-    // from gmem (see `overflow_streamer`).
+    // from gmem (see the "Overflow streaming" section).
 
     // `k_clamped <= segment_size`, which now fits `out_offset_t`, so this narrowing is safe.
     k = static_cast<out_offset_t>(k_clamped);
