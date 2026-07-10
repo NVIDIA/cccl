@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_histogram.cuh>
+#include <cub/detail/histogram_cache_hash.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/util_arch.cuh>
@@ -37,43 +38,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
-
-// Cache-slot hashing for the direct-atomic SMEM cuckoo / single-probe caches.
-//
-// The slot index must be in [0, slots) where slots == mask + 1 is a power of
-// two. Two multiplicative hash constants are used (primary / secondary) for the
-// two cuckoo probes. The MODE controls how the hash maps to a slot:
-//
-//   CUB_HISTO_CACHE_HASH_MODE == 0 (low-bits): slot = (bin * M) & mask
-//       Uses the LOW log2(slots) bits of the multiplicative product. For an odd
-//       multiplier M, the low k bits of (bin * M) depend ONLY on the low k bits
-//       of `bin` -- multiplicative hashing does no mixing in its low bits. Since
-//       the SMEM bank is `slot & 31`, the bank is effectively the low 5 bits of
-//       `bin`, so structured / clustered bin ids alias onto few banks and the key
-//       loads bank-conflict on the SMEM-bound cache.
-//
-//   CUB_HISTO_CACHE_HASH_MODE == 1 (Fibonacci / high-bits): slot = (bin * M) >> (32 - log2(slots))
-//       Uses the HIGH bits of the product, which ARE well mixed for a good
-//       multiplier (classic Fibonacci hashing). The bank `slot & 31` now comes
-//       from high-entropy bits, breaking the low-bit bank aliasing.
-//
-//   CUB_HISTO_CACHE_HASH_MODE == 2 (xor-fold): slot = ((h >> 15) ^ h) & mask
-//       Folds the high bits into the low bits before masking, so the masked
-//       slot (and its bank) sees mixed bits while keeping a cheap `& mask`.
-//
-// `cache_slot_log2` is log2(slots) == popcount(mask) == 32 - clz(mask) for a
-// power-of-two `slots`. We pass it explicitly (computed once per launch) to keep
-// the hot path free of clz.
-#ifndef CUB_HISTO_CACHE_HASH_MODE
-// Default to Fibonacci high-bits hashing (mode 1). The low-bits `& mask` (mode 0)
-// takes the low log2(slots) bits of the multiplicative product, which for an odd
-// multiplier depend ONLY on the low bits of `bin`; the SMEM bank (slot & 31) is
-// therefore the low 5 bits of `bin`, so clustered / skewed bin distributions alias
-// onto few banks and bank-conflict on the SMEM-bound multi-channel cache. Mode 1
-// uses the well-mixed HIGH bits, breaking that aliasing.
-#  define CUB_HISTO_CACHE_HASH_MODE 1
-#endif
-
 // Set-associativity for the SINGLE-PROBE direct-atomic SMEM cache.
 //
 // The single-probe cache (the `single_probe_cache` probe op of
@@ -127,33 +91,15 @@ _CCCL_DEVICE unsigned long long g_cub_histo_cache_hits   = 0;
 _CCCL_DEVICE unsigned long long g_cub_histo_cache_misses = 0;
 // Extra apply() parameters (thread-local accumulators) and the per-site bumps.
 #  define CUB_HISTO_HITRATE_PARAMS , unsigned long long &hit_acc, unsigned long long &miss_acc
-#  define CUB_HISTO_HITRATE_ARGS , hit_acc, miss_acc
-#  define CUB_HISTO_HIT(c) (hit_acc += static_cast<unsigned long long>(c))
-#  define CUB_HISTO_MISS(c) (miss_acc += static_cast<unsigned long long>(c))
+#  define CUB_HISTO_HITRATE_ARGS   , hit_acc, miss_acc
+#  define CUB_HISTO_HIT(c)         (hit_acc += static_cast<unsigned long long>(c))
+#  define CUB_HISTO_MISS(c)        (miss_acc += static_cast<unsigned long long>(c))
 #else
 #  define CUB_HISTO_HITRATE_PARAMS
 #  define CUB_HISTO_HITRATE_ARGS
-#  define CUB_HISTO_HIT(c) ((void) 0)
+#  define CUB_HISTO_HIT(c)  ((void) 0)
 #  define CUB_HISTO_MISS(c) ((void) 0)
 #endif
-
-_CCCL_DEVICE _CCCL_FORCEINLINE int
-cache_slot_from_hash(unsigned int product, int cache_mask, int cache_slot_log2)
-{
-#if CUB_HISTO_CACHE_HASH_MODE == 1
-  // High-bits (Fibonacci): shift the well-mixed top bits down to the slot range.
-  (void) cache_mask;
-  return static_cast<int>(product >> (32 - cache_slot_log2));
-#elif CUB_HISTO_CACHE_HASH_MODE == 2
-  // XOR-fold high bits into low, then mask.
-  (void) cache_slot_log2;
-  return static_cast<int>(((product >> 15) ^ product) & static_cast<unsigned int>(cache_mask));
-#else
-  // Historical: low bits of the multiplicative product.
-  (void) cache_slot_log2;
-  return static_cast<int>(product & static_cast<unsigned int>(cache_mask));
-#endif
-}
 
 //! @brief Return the underlying native sample pointer for the direct-atomic
 //! sweep kernels' VECTORIZED multi-channel load fast path, or `nullptr` when
@@ -283,7 +229,8 @@ struct fast_divide_by_constant
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int CountLeadingZeros32(::cuda::std::uint32_t x)
   {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return x == 0 ? 32 : __clz(static_cast<int>(x));), (return x == 0 ? 32 : __builtin_clz(x);));
+    NV_IF_ELSE_TARGET(
+      NV_IS_DEVICE, (return x == 0 ? 32 : __clz(static_cast<int>(x));), (return x == 0 ? 32 : __builtin_clz(x);));
   }
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int CeilLog2(UInt d)
@@ -391,8 +338,8 @@ struct fast_divide_by_constant
     {
       NV_IF_ELSE_TARGET(
         NV_IS_DEVICE,
-        (hi = static_cast<UInt>(__umul64hi(static_cast<unsigned long long>(magic),
-                                           static_cast<unsigned long long>(n)));),
+        (hi =
+           static_cast<UInt>(__umul64hi(static_cast<unsigned long long>(magic), static_cast<unsigned long long>(n)));),
         ({
 #if _CCCL_HAS_INT128()
           hi = static_cast<UInt>((static_cast<__uint128_t>(magic) * static_cast<__uint128_t>(n)) >> kBits);
@@ -413,7 +360,8 @@ struct fast_divide_by_constant
     }
     else
     {
-      hi = static_cast<UInt>((static_cast<::cuda::std::uint64_t>(magic) * static_cast<::cuda::std::uint64_t>(n)) >> kBits);
+      hi =
+        static_cast<UInt>((static_cast<::cuda::std::uint64_t>(magic) * static_cast<::cuda::std::uint64_t>(n)) >> kBits);
     }
     return (((n - hi) >> 1) + hi) >> (shift - 1);
   }
@@ -566,19 +514,19 @@ struct Transforms
         return;
       }
 
-      m_first     = first;
-      m_last      = last;
-      m_inv_scale = static_cast<float>(num_bins) / static_cast<float>(last - first);
+      m_first           = first;
+      m_last            = last;
+      m_inv_scale       = static_cast<float>(num_bins) / static_cast<float>(last - first);
       m_have_precompute = true;
 
       // Three-point split at the midpoint bin. Read d_levels[mid] and derive
       // the two half-slopes. If either half is degenerate (non-increasing),
       // fall back to the single-secant guess by setting m_mid_bin = 0, which
       // BinSelect treats as "no split".
-      m_mid_bin      = 0;
-      m_inv_scale_lo = m_inv_scale;
-      m_inv_scale_hi = m_inv_scale;
-      m_mid          = first;
+      m_mid_bin         = 0;
+      m_inv_scale_lo    = m_inv_scale;
+      m_inv_scale_hi    = m_inv_scale;
+      m_mid             = first;
       const int mid_bin = num_bins >> 1;
       if (mid_bin > 0 && mid_bin < num_bins)
       {
@@ -825,8 +773,7 @@ struct Transforms
     //! levels the ladder already loaded in the common verify/1-step cases, and
     //! reloading only on the rare `UpperBound` fallback.
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
-    BinSelect(_SampleT sample, int& bin, bool valid, BracketCacheT& mru) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid, BracketCacheT& mru) const
     {
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
@@ -1047,8 +994,7 @@ struct Transforms
     // `IntArithmeticT` (uint32_t / uint64_t) holds the difference without
     // overflow. For 128-bit and non-integer types, IntArithmeticT == CommonT
     // (or wider), so this is also correct.
-    using FractionStorageT =
-      ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
+    using FractionStorageT = ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
 
     // The integral path replaces a 64-bit divide-by-runtime-constant in
     // `ComputeBin` with a precomputed multiply-high + shift sequence. The
@@ -1258,9 +1204,9 @@ struct Transforms
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
-      using UT                  = ::cuda::std::make_unsigned_t<T>;
-      const IntArithmeticT diff = static_cast<IntArithmeticT>(
-        static_cast<UT>(static_cast<UT>(sample) - static_cast<UT>(min_level)));
+      using UT = ::cuda::std::make_unsigned_t<T>;
+      const IntArithmeticT diff =
+        static_cast<IntArithmeticT>(static_cast<UT>(static_cast<UT>(sample) - static_cast<UT>(min_level)));
       if (scale.fraction.bins_eq_range)
       {
         return static_cast<int>(diff);
@@ -1815,7 +1761,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
 {
   static constexpr histogram_policy hp = current_policy<PolicySelector>();
 
-  namespace cg = ::cooperative_groups;
+  namespace cg        = ::cooperative_groups;
   cg::grid_group grid = cg::this_grid();
 
   const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
@@ -1823,16 +1769,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
   const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
   const unsigned int total_threads   = blocks_per_grid * blockDim.x;
 
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.threads_per_block,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size,
-                         hp.warp_coalesce>;
+  using AgentHistogramPolicyT = AgentHistogramPolicy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.work_stealing,
+    hp.vec_size,
+    hp.warp_coalesce>;
 
   if constexpr (!HybridSplit)
   {
@@ -2116,10 +2062,15 @@ struct cuckoo_cache_probe
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2
-        CUB_HISTO_HITRATE_PARAMS)
+  apply(int* keys,
+        CounterT* counts,
+        CounterT* output,
+        int bin,
+        CounterT contribution,
+        int cache_mask,
+        int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
   {
-    const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
+    const unsigned int hash1 = static_cast<unsigned int>(bin) * cache_primary_hash_multiplier;
     const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
     const int existing_key1  = keys[slot1];
     if (existing_key1 == bin)
@@ -2185,7 +2136,7 @@ struct cuckoo_cache_probe
     else
     {
       // Primary occupied by a different bin: try the secondary slot.
-      const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
+      const unsigned int hash2 = static_cast<unsigned int>(bin) * cache_secondary_hash_multiplier;
       const int slot2          = cache_slot_from_hash(hash2, cache_mask, cache_slot_log2);
       const int existing_key2  = keys[slot2];
       if (existing_key2 == bin)
@@ -2223,10 +2174,15 @@ struct single_probe_cache
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2
-        CUB_HISTO_HITRATE_PARAMS)
+  apply(int* keys,
+        CounterT* counts,
+        CounterT* output,
+        int bin,
+        CounterT contribution,
+        int cache_mask,
+        int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
   {
-    const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
+    const unsigned int hash = static_cast<unsigned int>(bin) * cache_primary_hash_multiplier;
     if constexpr (CUB_HISTO_SINGLE_PROBE_WAYS == 1)
     {
       // Single direct-mapped probe: hash bin to one slot.
@@ -2328,8 +2284,13 @@ struct no_cache_probe
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2
-        CUB_HISTO_HITRATE_PARAMS)
+  apply(int* keys,
+        CounterT* counts,
+        CounterT* output,
+        int bin,
+        CounterT contribution,
+        int cache_mask,
+        int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
   {
     (void) keys;
     (void) counts;
@@ -2439,8 +2400,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   {
     if constexpr (kPrivateSpill)
     {
-      spill_target[ch] =
-        d_private_histograms_wrapper[ch] + static_cast<size_t>(block_id) * num_output_bins_wrapper[ch];
+      spill_target[ch] = d_private_histograms_wrapper[ch] + static_cast<size_t>(block_id) * num_output_bins_wrapper[ch];
     }
     else
     {
@@ -2500,7 +2460,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // path: with one atomic per iteration the kernel is bottlenecked on
   // L1TEX scoreboard dependencies (the atomic-latency stall dominates CPI).
   // ---------------------------------------------------------------------
-  constexpr int unroll = 4;
+  constexpr int unroll       = 4;
   const OffsetT total_pixels = num_rows * num_row_pixels;
 
   // Per-warp atomic coalescing: when multiple lanes in a warp produce
@@ -2583,16 +2543,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // policy flag so CUB_HISTO_FORCE_WARP_COALESCE=0 can disable it everywhere for study.
   constexpr bool kProbeIsNoCache = ::cuda::std::is_same_v<ProbeOp, no_cache_probe>;
   constexpr bool kWarpCoalesce   = kProbeIsNoCache && current_policy<PolicySelector>().warp_coalesce;
-  const int cache_mask  = cache_slots_per_channel - 1;
+  const int cache_mask           = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
   const int cache_slot_log2 = 32 - __clz(cache_mask);
-  const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
-  const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
+  const size_t slots_sz     = static_cast<size_t>(cache_slots_per_channel);
+  const int replica         = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
   extern __shared__ unsigned char s_bin_cache_raw[];
-  int* const s_cache_keys_base       = reinterpret_cast<int*>(s_bin_cache_raw);
-  CounterT* const s_cache_counts_base = reinterpret_cast<CounterT*>(
-    s_bin_cache_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
+  int* const s_cache_keys_base = reinterpret_cast<int*>(s_bin_cache_raw);
+  CounterT* const s_cache_counts_base =
+    reinterpret_cast<CounterT*>(s_bin_cache_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
   // Per-channel shared key base and this warp's replica count base.
   int* s_cache_keys[NumActiveChannels];
   CounterT* s_cache_counts[NumActiveChannels];
@@ -2600,8 +2560,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
     s_cache_keys[ch]   = s_cache_keys_base + static_cast<size_t>(ch) * slots_sz;
-    s_cache_counts[ch] =
-      s_cache_counts_base + (static_cast<size_t>(ch) * kCountReplicas + replica) * slots_sz;
+    s_cache_counts[ch] = s_cache_counts_base + (static_cast<size_t>(ch) * kCountReplicas + replica) * slots_sz;
   }
 
   // Initialize cache: keys = -1 (empty sentinel), all replica counts = 0.
@@ -2689,7 +2648,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // valid lane without duplicating the body.
       auto update = [&](int bin, CounterT contribution) {
         ProbeOp::template apply<CounterT, SpillOp>(
-          s_cache_keys[ch], s_cache_counts[ch], spill_target[ch], bin, contribution, cache_mask,
+          s_cache_keys[ch],
+          s_cache_counts[ch],
+          spill_target[ch],
+          bin,
+          contribution,
+          cache_mask,
           cache_slot_log2 CUB_HISTO_HITRATE_ARGS);
       };
 
@@ -2789,8 +2753,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // sample pointer; otherwise we fall back to the per-channel scalar loop.
       using PixelT            = typename CubVector<SampleValueT, NumChannels>::Type;
       const auto* native_base = SampleNativePointer<SampleValueT>(d_samples);
-      const bool vectorizable = (native_base != nullptr)
-                             && ((reinterpret_cast<size_t>(native_base) & (alignof(PixelT) - 1)) == 0);
+      const bool vectorizable =
+        (native_base != nullptr) && ((reinterpret_cast<size_t>(native_base) & (alignof(PixelT) - 1)) == 0);
       if (vectorizable)
       {
         const PixelT* const pixels = reinterpret_cast<const PixelT*>(native_base);
@@ -2804,7 +2768,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             const bool valid_pixel   = this_pixel < total_pixels;
             // Load the whole pixel (all NumChannels samples) in one transaction;
             // index pixel 0 for past-the-end lanes (discarded via bin = -1).
-            const PixelT pix = pixels[valid_pixel ? this_pixel : OffsetT{0}];
+            const PixelT pix                = pixels[valid_pixel ? this_pixel : OffsetT{0}];
             const SampleValueT* const lanes = reinterpret_cast<const SampleValueT*>(&pix);
 
             // CHANNEL-LEVEL PARALLELISM: classify ALL C channels first, THEN
@@ -3060,16 +3024,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
 {
   static constexpr histogram_policy hp = current_policy<PolicySelector>();
 
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.threads_per_block,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size,
-                         hp.warp_coalesce>;
+  using AgentHistogramPolicyT = AgentHistogramPolicy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.work_stealing,
+    hp.vec_size,
+    hp.warp_coalesce>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
@@ -3095,7 +3059,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int channel = 0; channel < NumActiveChannels; ++channel)
   {
-    output_decode_op[channel] = output_decode_op_wrapper[channel];
+    output_decode_op[channel]     = output_decode_op_wrapper[channel];
     privatized_decode_op[channel] = privatized_decode_op_wrapper[channel];
     output_decode_op[channel].PrecomputeOnDevice();
     privatized_decode_op[channel].PrecomputeOnDevice();
@@ -3121,6 +3085,5 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
 
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
-
 } // namespace detail::histogram
 CUB_NAMESPACE_END

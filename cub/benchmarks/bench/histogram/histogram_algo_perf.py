@@ -39,9 +39,8 @@ import os
 import sys
 import textwrap
 
-import numpy as np
-
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -82,10 +81,22 @@ BINARY_META = {
 ALGO_STYLE = {
     "default": ("#000000", "*", "selected default", "-", 2.2),
     "main": ("#e6194B", "X", "baseline (upstream main)", "-.", 2.2),
-    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv + no cache (gather)", "-", 1.1),
+    "gmem_privatized_nocache": (
+        "#9467bd",
+        "^",
+        "gmem-priv + no cache (gather)",
+        "-",
+        1.1,
+    ),
     "hybrid": ("#e377c2", "P", "hybrid (SMEM+GMEM single-pass)", "--", 1.1),
     "gmem_privatized_cuckoo": ("#1f77b4", "o", "gmem-priv + cuckoo", "--", 1.1),
-    "gmem_privatized_single_probe": ("#17becf", "s", "gmem-priv + single-probe", ":", 1.1),
+    "gmem_privatized_single_probe": (
+        "#17becf",
+        "s",
+        "gmem-priv + single-probe",
+        ":",
+        1.1,
+    ),
     "direct_cuckoo": ("#2ca02c", "D", "direct-atomic + cuckoo", "--", 1.1),
     "direct_single_probe": ("#8c8c00", "P", "direct-atomic + single-probe", ":", 1.1),
     "direct_nocache": ("#ff7f0e", "v", "direct-atomic + no cache", "-", 1.1),
@@ -103,10 +114,34 @@ ALGO_STYLE = {
     # No-warp-coalesce variants (histogram_algo_sweep.py forces these against the
     # .nocoal binaries). Same base color as the coalesce-on kernel, dotted + open
     # marker to read as "the same algorithm with coalescing disabled".
-    "gmem_privatized_nocache__nocoal": ("#9467bd", "1", "gmem-priv gather + no coalesce", ":", 1.3),
-    "direct_nocache__nocoal": ("#ff7f0e", "2", "direct-atomic + no cache + no coalesce", ":", 1.3),
-    "direct_cuckoo__nocoal": ("#2ca02c", "3", "direct-atomic + cuckoo + no coalesce", ":", 1.3),
-    "direct_single_probe__nocoal": ("#8c8c00", "4", "direct-atomic + single-probe + no coalesce", ":", 1.3),
+    "gmem_privatized_nocache__nocoal": (
+        "#9467bd",
+        "1",
+        "gmem-priv gather + no coalesce",
+        ":",
+        1.3,
+    ),
+    "direct_nocache__nocoal": (
+        "#ff7f0e",
+        "2",
+        "direct-atomic + no cache + no coalesce",
+        ":",
+        1.3,
+    ),
+    "direct_cuckoo__nocoal": (
+        "#2ca02c",
+        "3",
+        "direct-atomic + cuckoo + no coalesce",
+        ":",
+        1.3,
+    ),
+    "direct_single_probe__nocoal": (
+        "#8c8c00",
+        "4",
+        "direct-atomic + single-probe + no coalesce",
+        ":",
+        1.3,
+    ),
 }
 # 3-letter tag per algorithm, used to label each point of the `default` series with
 # the algorithm the selector actually picked there. `hybrid` is the smem_split>0
@@ -141,6 +176,46 @@ ALGO_TAG = {
     "smem_privatized:static": "SST",
     "smem_privatized:dynamic": "SDY",
 }
+
+# Canonical style/name used to decode annotations on the black `default` line.
+# A selected-vs-main-only sweep has no forced-algorithm series, so without these
+# proxy entries its SST / SDY / DAS point labels would not appear in the legend.
+SELECTED_TAG_ALGO = {
+    "SST": "smem_static",
+    "SDY": "smem_dynamic",
+    "SMP": "smem_privatized",
+    "HYB": "hybrid",
+    "GPN": "gmem_privatized_nocache",
+    "GPC": "gmem_privatized_cuckoo",
+    "GPS": "gmem_privatized_single_probe",
+    "DAC": "direct_cuckoo",
+    "DAS": "direct_single_probe",
+    "DAN": "direct_nocache",
+}
+
+
+def selected_tag_legend_handles(tags, legend_algos):
+    """Proxy legend handles for selected-point tags not decoded by a drawn series."""
+    decoded = {ALGO_TAG.get(algo) for algo in legend_algos}
+    handles = []
+    for tag, algo in SELECTED_TAG_ALGO.items():
+        if tag not in tags or tag in decoded:
+            continue
+        color, marker, name, _linestyle, _linewidth = ALGO_STYLE[algo]
+        handles.append(
+            plt.Line2D(
+                [0],
+                [0],
+                color=color,
+                marker=marker,
+                linestyle="none",
+                markersize=7,
+                label=f"{tag} — selected default ran {name}",
+            )
+        )
+    return handles
+
+
 # Draw order: reference series last (on top). gmem/direct candidates first.
 ALGO_ORDER = [
     "smem_privatized",
@@ -171,7 +246,7 @@ MIN_PLOT_BINS = 0
 # JSON predates the `_selected` ground-truth map (both the synthesized smem_privatized
 # series and the legacy tag inference prefer `_selected` when present). The real on-chip
 # cap is now a per-arch BYTE budget derived at runtime (dispatch_histogram.cuh:
-# max_dynamic_smem_bins(counter_bytes, channels, optin)), which on B200 admits up to
+# max_dynamic_smem_bins(counter_bytes, channels, device_optin)), which on B200 admits up to
 # ~57344 single-channel bins -- NOT a fixed 16384 -- so this constant is no longer the
 # source of truth, just a best-effort guess for pre-`_selected` data.
 SMEM_PRIVATIZED_MAX_BINS = 16384
@@ -195,6 +270,33 @@ def fmt_bins(b: int) -> str:
     return f"{b // 1024}K" if b % 1024 == 0 else str(b)
 
 
+def shape_to_slug(shape: str) -> str:
+    """Filesystem-safe, lexically-sortable slug for an InputShape axis string.
+
+    The shape NAME (first ':'-token) is kept verbatim; each subsequent knob
+    token is normalized so filenames sort naturally under a plain lexical sort
+    (e.g. Windows Explorer). A fractional entropy/hit-rate knob in [0, 10) is
+    zero-padded to two decimals (`concentrated:0.5` -> `concentrated_0.50`), so
+    that 0.00 < 0.25 < 0.50 < 0.75 < 1.00. Integer-valued tokens (the large
+    sawtooth period/stride/scatter params) pass through unchanged rather than
+    becoming an absurd `8192.00`. Tokens are joined with '_' and ':' never
+    survives, so the result contains no path-illegal characters.
+    """
+    tokens = shape.split(":")
+    out = [tokens[0]]
+    for tok in tokens[1:]:
+        if "." in tok:
+            try:
+                val = float(tok)
+            except ValueError:
+                out.append(tok)  # not a number -- pass through
+            else:
+                out.append(f"{val:.2f}" if 0.0 <= val < 10.0 else tok)
+        else:
+            out.append(tok)  # integer-valued (or non-numeric) token, kept as-is
+    return "_".join(out)
+
+
 def selected_algo_tags(per_algo_cells, sample, elements, shape):
     """Which algorithm the selector's `default` actually launched at each bin, for
     labeling the default series. Returns {bins: 3-letter tag}.
@@ -215,8 +317,14 @@ def selected_algo_tags(per_algo_cells, sample, elements, shape):
 
     # Fallback for legacy JSON: infer from values.
     deflt = per_algo_cells.get("default", {})
-    forced = ["gmem_privatized_nocache", "gmem_privatized_cuckoo", "gmem_privatized_single_probe",
-              "direct_cuckoo", "direct_single_probe", "direct_nocache"]
+    forced = [
+        "gmem_privatized_nocache",
+        "gmem_privatized_cuckoo",
+        "gmem_privatized_single_probe",
+        "direct_cuckoo",
+        "direct_single_probe",
+        "direct_nocache",
+    ]
     for key, dv in deflt.items():
         s, e, b, sh = key.split("|")
         if s != sample or int(e) != elements or sh != shape or dv <= 0:
@@ -246,7 +354,12 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
         pts = []
         for key, gibs in cells.items():
             s, e, b, sh = key.split("|")
-            if s == sample and int(e) == elements and sh == shape and int(b) >= MIN_PLOT_BINS:
+            if (
+                s == sample
+                and int(e) == elements
+                and sh == shape
+                and int(b) >= MIN_PLOT_BINS
+            ):
                 pts.append((int(b), gibs))
         pts.sort()
         if pts:
@@ -271,13 +384,19 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
                 int(b)
                 for key, ran in selected.items()
                 for s, e, b, sh in [key.split("|")]
-                if s == sample and int(e) == elements and sh == shape and ran == "smem_privatized"
+                if s == sample
+                and int(e) == elements
+                and sh == shape
+                and ran == "smem_privatized"
             }
             mask = [j for j, b in enumerate(db) if int(b) in smem_bins]
         else:
             mask = [j for j, b in enumerate(db) if int(b) <= SMEM_PRIVATIZED_MAX_BINS]
         if mask:
-            out["smem_privatized"] = (np.array([db[j] for j in mask]), np.array([dv[j] for j in mask]))
+            out["smem_privatized"] = (
+                np.array([db[j] for j in mask]),
+                np.array([dv[j] for j in mask]),
+            )
     return out
 
 
@@ -312,18 +431,24 @@ def draw_perf(ax, series, title, default_tags=None):
         # range stays legible), otherwise a plain linear scale.
         max_sp = 0.0
         # Every algorithm EXCEPT main, divided by main at the shared bin points.
-        drawn = [a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])]
+        drawn = [
+            a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])
+        ]
         for i, algo in enumerate(drawn):
             color, marker, label, ls, lw = ALGO_STYLE[algo]
             xb, yv = series[algo]
-            pts = [(int(x), y / baseline[int(x)]) for x, y in zip(xb, yv) if int(x) in baseline]
+            pts = [
+                (int(x), y / baseline[int(x)])
+                for x, y in zip(xb, yv)
+                if int(x) in baseline
+            ]
             if not pts:
                 continue
             any_pts = True
             xs = np.array([xpos[p[0]] for p in pts], dtype=float)
             sp = np.array([p[1] for p in pts])
             max_sp = max(max_sp, float(sp.max()))
-            is_ref = (algo == "default")
+            is_ref = algo == "default"
             # Lines drawn first (lower zorder); markers all sit ON TOP (zorder 30+)
             # at the TRUE x, semi-transparent so overlapping points blend visibly
             # (two coincident markers read darker / show both colors) rather than one
@@ -333,35 +458,87 @@ def draw_perf(ax, series, title, default_tags=None):
             # the candidate series it rides on top of remain visible underneath.
             line_alpha = 0.5 if is_ref else 0.85
             mark_alpha = 0.5 if is_ref else 0.6
-            ax.plot(xs, sp, color=color, lw=lw, linestyle=ls, marker="",
-                    alpha=line_alpha, label=label, zorder=(20 if is_ref else 3 + i))
-            ax.plot(xs, sp, color=color, marker=marker, markersize=8 if is_ref else 5.5,
-                    linestyle="none", alpha=mark_alpha,
-                    zorder=(32 if is_ref else 30 + i))
+            ax.plot(
+                xs,
+                sp,
+                color=color,
+                lw=lw,
+                linestyle=ls,
+                marker="",
+                alpha=line_alpha,
+                label=label,
+                zorder=(20 if is_ref else 3 + i),
+            )
+            ax.plot(
+                xs,
+                sp,
+                color=color,
+                marker=marker,
+                markersize=8 if is_ref else 5.5,
+                linestyle="none",
+                alpha=mark_alpha,
+                zorder=(32 if is_ref else 30 + i),
+            )
             # Annotate each default point with the selected algorithm's 3-letter tag.
             # `pts` carries the true bin counts; x position is the categorical slot.
             if is_ref and default_tags:
-                for (b, y) in pts:
+                for b, y in pts:
                     tag = default_tags.get(int(b))
                     if tag:
-                        ax.annotate(tag, (xpos[int(b)], y), textcoords="offset points", xytext=(0, 7),
-                                    ha="center", va="bottom", fontsize=6, fontweight="bold",
-                                    color="#000000", zorder=40)
+                        ax.annotate(
+                            tag,
+                            (xpos[int(b)], y),
+                            textcoords="offset points",
+                            xytext=(0, 7),
+                            ha="center",
+                            va="bottom",
+                            fontsize=6,
+                            fontweight="bold",
+                            color="#000000",
+                            zorder=40,
+                        )
         # Baseline reference: main is 1x by definition. Draw it as the styled main line.
         b_color, _, _, b_ls, b_lw = ALGO_STYLE["main"]
-        ax.axhline(1.0, color=b_color, linestyle=b_ls, lw=b_lw, alpha=1.0,
-                   zorder=19, label="baseline (upstream main), 1×")
+        ax.axhline(
+            1.0,
+            color=b_color,
+            linestyle=b_ls,
+            lw=b_lw,
+            alpha=1.0,
+            zorder=19,
+            label="baseline (upstream main), 1×",
+        )
         # Shade the shipping default's gain over the baseline (between 1x and default).
         if "default" in series and len(series["default"][0]):
             db, dv = series["default"]
-            dpts = sorted((int(x), y / baseline[int(x)]) for x, y in zip(db, dv) if int(x) in baseline)
+            dpts = sorted(
+                (int(x), y / baseline[int(x)])
+                for x, y in zip(db, dv)
+                if int(x) in baseline
+            )
             if dpts:
                 xs = np.array([xpos[p[0]] for p in dpts])
                 hi = np.array([p[1] for p in dpts])
-                ax.fill_between(xs, 1.0, hi, where=(hi >= 1.0), color="#2ca02c", alpha=0.10,
-                                zorder=1, label="_nolegend_")
-                ax.fill_between(xs, hi, 1.0, where=(hi < 1.0), color="#d62728", alpha=0.10,
-                                zorder=1, label="_nolegend_")
+                ax.fill_between(
+                    xs,
+                    1.0,
+                    hi,
+                    where=(hi >= 1.0),
+                    color="#2ca02c",
+                    alpha=0.10,
+                    zorder=1,
+                    label="_nolegend_",
+                )
+                ax.fill_between(
+                    xs,
+                    hi,
+                    1.0,
+                    where=(hi < 1.0),
+                    color="#d62728",
+                    alpha=0.10,
+                    zorder=1,
+                    label="_nolegend_",
+                )
         # Y-scale chosen from the data: log2 ONLY when some series exceeds 2x (a wide
         # dynamic range that a linear axis would crush against the top); otherwise a
         # plain linear scale (more readable when everything sits near 1x). Either way
@@ -372,10 +549,12 @@ def draw_perf(ax, series, title, default_tags=None):
         else:
             ax.set_yscale("linear")
             ax.set_ylabel("speedup vs baseline (×)")
+
         def _mult(v, _):
             if v >= 1:
                 return f"{int(round(v))}×" if abs(v - round(v)) < 1e-6 else f"{v:g}×"
             return f"{v:g}×"
+
         ax.get_yaxis().set_major_formatter(plt.FuncFormatter(_mult))
     else:
         # No baseline for this cell -> absolute GiB/s (log y -- spans orders of magnitude).
@@ -387,9 +566,18 @@ def draw_perf(ax, series, title, default_tags=None):
             xb, yv = series[algo]
             any_pts = True
             is_ref = algo in ("default", "main")
-            ax.plot([xpos[int(x)] for x in xb], yv, color=color, marker=marker,
-                    markersize=10 if is_ref else 6, lw=lw, linestyle=ls,
-                    alpha=1.0 if is_ref else 0.8, label=label, zorder=(20 if is_ref else 3 + i))
+            ax.plot(
+                [xpos[int(x)] for x in xb],
+                yv,
+                color=color,
+                marker=marker,
+                markersize=10 if is_ref else 6,
+                lw=lw,
+                linestyle=ls,
+                alpha=1.0 if is_ref else 0.8,
+                label=label,
+                zorder=(20 if is_ref else 3 + i),
+            )
 
     ax.grid(True, which="both", linestyle=":", alpha=0.4)
     # Categorical ticks: one slot per bin, evenly spaced, labelled with the bin count.
@@ -419,10 +607,17 @@ def draw_hitrate(ax, hr_algo_cells, shape, elements_list, title):
         pts.sort()
         if pts:
             any_pts = True
-            xb = [xpos[p[0]] for p in pts]; yv = [p[1] for p in pts]
-            ax.plot(xb, yv, marker="o", ms=5, lw=1.8,
-                    color=cmap(0.1 + 0.8 * i / max(1, len(elements_list) - 1)),
-                    label=fmt_elements(elements))
+            xb = [xpos[p[0]] for p in pts]
+            yv = [p[1] for p in pts]
+            ax.plot(
+                xb,
+                yv,
+                marker="o",
+                ms=5,
+                lw=1.8,
+                color=cmap(0.1 + 0.8 * i / max(1, len(elements_list) - 1)),
+                label=fmt_elements(elements),
+            )
     ax.grid(True, which="both", linestyle=":", alpha=0.4)
     if all_bins_sorted:
         ax.set_xticks(range(len(all_bins_sorted)))
@@ -432,8 +627,16 @@ def draw_hitrate(ax, hr_algo_cells, shape, elements_list, title):
         ax.set_ylim(-2, 102)
         ax.legend(fontsize=7, title="# elements", title_fontsize=7)
     else:
-        ax.text(0.5, 0.5, "no hit-rate data", ha="center", va="center",
-                transform=ax.transAxes, fontsize=9, color="gray")
+        ax.text(
+            0.5,
+            0.5,
+            "no hit-rate data",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            fontsize=9,
+            color="gray",
+        )
     return any_pts
 
 
@@ -451,11 +654,22 @@ def geomean_perf_series(per_algo_cells, sample, elements, algos, shapes):
         bybin = {}
         for key, gibs in cells.items():
             s, e, b, sh = key.split("|")
-            if s == sample and int(e) == elements and sh in shape_set and int(b) >= MIN_PLOT_BINS and gibs > 0:
+            if (
+                s == sample
+                and int(e) == elements
+                and sh in shape_set
+                and int(b) >= MIN_PLOT_BINS
+                and gibs > 0
+            ):
                 bybin.setdefault(int(b), []).append(gibs)
-        pts = sorted((b, math.exp(sum(map(math.log, v)) / len(v))) for b, v in bybin.items())
+        pts = sorted(
+            (b, math.exp(sum(map(math.log, v)) / len(v))) for b, v in bybin.items()
+        )
         if pts:
-            out[algo] = (np.array([p[0] for p in pts], dtype=float), np.array([p[1] for p in pts]))
+            out[algo] = (
+                np.array([p[0] for p in pts], dtype=float),
+                np.array([p[1] for p in pts]),
+            )
     # Synthesize smem_privatized from the geomean default over the bins where the
     # selector ran smem_privatized (the pick is shape-independent, so the bin set is the
     # union across shapes), mirroring perf_series.
@@ -466,14 +680,21 @@ def geomean_perf_series(per_algo_cells, sample, elements, algos, shapes):
         if selected:
             for key, ran in selected.items():
                 s, e, b, sh = key.split("|")
-                if s == sample and int(e) == elements and sh in shape_set and ran == "smem_privatized":
+                if (
+                    s == sample
+                    and int(e) == elements
+                    and sh in shape_set
+                    and ran == "smem_privatized"
+                ):
                     smem_bins.add(int(b))
         else:
             smem_bins = {int(b) for b in db if int(b) <= SMEM_PRIVATIZED_MAX_BINS}
         pts = [(int(b), v) for b, v in zip(db, dv) if int(b) in smem_bins]
         if pts:
-            out["smem_privatized"] = (np.array([p[0] for p in pts], dtype=float),
-                                      np.array([p[1] for p in pts]))
+            out["smem_privatized"] = (
+                np.array([p[0] for p in pts], dtype=float),
+                np.array([p[1] for p in pts]),
+            )
     return out
 
 
@@ -486,11 +707,15 @@ def geomean_selected_tags(per_algo_cells, sample, elements, shapes):
     for key, ran in selected.items():
         s, e, b, sh = key.split("|")
         if s == sample and int(e) == elements and sh in set(shapes) and ran in ALGO_TAG:
-            tags.setdefault(int(b), ALGO_TAG[ran])  # first shape wins; selector is shape-blind
+            tags.setdefault(
+                int(b), ALGO_TAG[ran]
+            )  # first shape wins; selector is shape-blind
     return tags
 
 
-def render_geomean(binary_label, per_algo_cells, sample, elements_list, algos, shapes, outpath):
+def render_geomean(
+    binary_label, per_algo_cells, sample, elements_list, algos, shapes, outpath
+):
     """One PNG: speedup-vs-#bins for each algorithm, GEOMEAN over all input shapes, one
     panel per element count. Same layout/style as render_one's middle grid, but WITHOUT
     the two input-characterization panels (a geomean is shape-agnostic) and without the
@@ -502,34 +727,49 @@ def render_geomean(binary_label, per_algo_cells, sample, elements_list, algos, s
     # When the perf grid is exactly full (no free cell for the legend, e.g. 6 panels in a
     # 2x3 grid), add a dedicated short bottom ROW for the legend so it never overlaps the
     # panels' x-axis labels. A small height_ratio keeps that row compact.
-    needs_legend_row = (free_slots == 0)
+    needs_legend_row = free_slots == 0
     nrows = perf_rows + (1 if needs_legend_row else 0)
 
-    fig = plt.figure(figsize=(5.4 * ncols, 4.1 * perf_rows + (0.9 if needs_legend_row else 0)))
+    fig = plt.figure(
+        figsize=(5.4 * ncols, 4.1 * perf_rows + (0.9 if needs_legend_row else 0))
+    )
     height_ratios = [4.1] * perf_rows + ([0.9] if needs_legend_row else [])
     gs = fig.add_gridspec(nrows, ncols, height_ratios=height_ratios)
 
     transform, channels = BINARY_META[binary_label]
     head = f"{transform.upper()} · {channels}-channel · {sample}  —  GEOMEAN over {len(shapes)} input shapes"
+    subtitle = (
+        "speedup vs baseline (×, log2) vs #bins per input size — geomean of GiB/s across all "
+        "shapes; one line per algorithm, baseline (upstream main) = 1×; default points tagged "
+        "with the selected algorithm"
+    )
     fig.suptitle(
-        f"{head}\n"
-        f"speedup vs baseline (×, log2) vs #bins per input size — geomean of GiB/s across all "
-        f"shapes; one line per algorithm, baseline (upstream main) = 1×; default points tagged "
-        f"with the selected algorithm",
-        fontsize=12,
+        head + "\n" + "\n".join(textwrap.wrap(subtitle, width=140)), fontsize=12
     )
 
     drawn_algos = set()
+    selected_point_tags = set()
     for i, elements in enumerate(elements_list):
         r, c = i // ncols, i % ncols
         ax = fig.add_subplot(gs[r, c])
         series = geomean_perf_series(per_algo_cells, sample, elements, algos, shapes)
         tags = geomean_selected_tags(per_algo_cells, sample, elements, shapes)
+        selected_point_tags.update(tags.values())
         # Record which series actually produced points (for an honest legend).
         drawn_algos.update(a for a in series if len(series[a][0]))
-        if not draw_perf(ax, series, f"N = {fmt_elements(elements)} elements", default_tags=tags):
-            ax.text(0.5, 0.5, "no data\n(all cells skipped)", ha="center", va="center",
-                    transform=ax.transAxes, fontsize=9, color="gray")
+        if not draw_perf(
+            ax, series, f"N = {fmt_elements(elements)} elements", default_tags=tags
+        ):
+            ax.text(
+                0.5,
+                0.5,
+                "no data\n(all cells skipped)",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=9,
+                color="gray",
+            )
 
     # Legend, in a free grid cell if the perf grid leaves one, otherwise as a figure-level
     # legend below the panels. Only series ACTUALLY drawn (in canonical order), plus the
@@ -537,41 +777,82 @@ def render_geomean(binary_label, per_algo_cells, sample, elements_list, algos, s
     def _legend_label(a):
         tag = ALGO_TAG.get(a)
         return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
+
     legend_algos = [a for a in ALGO_ORDER if a in drawn_algos and a != "main"]
     handles = [
-        plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1],
-                   linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=_legend_label(a))
+        plt.Line2D(
+            [0],
+            [0],
+            color=ALGO_STYLE[a][0],
+            marker=ALGO_STYLE[a][1],
+            linestyle=ALGO_STYLE[a][3],
+            lw=ALGO_STYLE[a][4],
+            label=_legend_label(a),
+        )
         for a in legend_algos
     ]
     if "main" in drawn_algos:  # the 1x baseline reference line
         mc, _mm, _ml, mls, mlw = ALGO_STYLE["main"]
-        handles.append(plt.Line2D([0], [0], color=mc, linestyle=mls, lw=mlw,
-                                  label="BAS — baseline (upstream main), 1×"))
+        handles.append(
+            plt.Line2D(
+                [0],
+                [0],
+                color=mc,
+                linestyle=mls,
+                lw=mlw,
+                label="BAS — baseline (upstream main), 1×",
+            )
+        )
+    handles.extend(selected_tag_legend_handles(selected_point_tags, legend_algos))
     if free_slots > 0:
         # Legend in the first unused panel cell of the last perf row.
         lax = fig.add_subplot(gs[perf_rows - 1, ncols - free_slots])
         lax.axis("off")
-        lax.legend(handles=handles, loc="center", fontsize=10, title="algorithms (tag — name)",
-                   title_fontsize=10, frameon=True)
+        lax.legend(
+            handles=handles,
+            loc="center",
+            fontsize=10,
+            title="algorithms (tag — name)",
+            title_fontsize=10,
+            frameon=True,
+        )
     else:
         # Dedicated bottom legend row spanning all columns -- its own reserved space, so
         # it cannot overlap the panels' "# bins" labels above it.
         lax = fig.add_subplot(gs[perf_rows, :])
         lax.axis("off")
-        lax.legend(handles=handles, loc="center", ncol=min(len(handles), 5), fontsize=9,
-                   title="algorithms (tag — name)", title_fontsize=9, frameon=True)
+        lax.legend(
+            handles=handles,
+            loc="center",
+            ncol=min(len(handles), 5),
+            fontsize=9,
+            title="algorithms (tag — name)",
+            title_fontsize=9,
+            frameon=True,
+        )
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     fig.savefig(outpath, dpi=110, bbox_inches="tight")
     plt.close(fig)
 
 
-def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos, outpath, hr_for_binary=None):
+def render_one(
+    binary_label,
+    per_algo_cells,
+    sample,
+    shape,
+    elements_list,
+    algos,
+    outpath,
+    hr_for_binary=None,
+):
     """One PNG: characterization top row + per-element-count perf grid, and (when
     hit-rate data is supplied) a final row with cuckoo and single-probe cache
     hit-rate vs #bins (one series per #elements)."""
     bins, counts, char_bins = C.char_input(shape)
     hr_for_binary = hr_for_binary or {}
-    has_hr = bool(hr_for_binary.get("direct_cuckoo") or hr_for_binary.get("direct_single_probe"))
+    has_hr = bool(
+        hr_for_binary.get("direct_cuckoo") or hr_for_binary.get("direct_single_probe")
+    )
 
     ncols = 3
     nperf = len(elements_list)
@@ -583,17 +864,24 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
 
     transform, channels = BINARY_META[binary_label]
     blurb = C.SHAPE_BLURB.get(shape, "")
-    head = f"{transform.upper()} · {channels}-channel · {sample}  —  InputShape: {shape}"
+    head = (
+        f"{transform.upper()} · {channels}-channel · {sample}  —  InputShape: {shape}"
+    )
     if blurb:  # only add the parenthetical when a description exists (no empty "()")
         head += f"  ({blurb})"
     head = "\n".join(textwrap.wrap(head, width=120))
-    hr_note = "   bottom row: SMEM-cache hit rate vs #bins (series = #elements)" if has_hr else ""
-    fig.suptitle(
-        f"{head}\n"
+    hr_note = (
+        "   bottom row: I32-representative SMEM-cache hit rate vs #bins (series = #elements)"
+        if has_hr
+        else ""
+    )
+    subtitle = (
         f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})   "
         f"middle: speedup vs baseline (×, log2) vs #bins per input size — one line per algorithm, "
-        f"baseline (upstream main) = 1×; default points tagged with the selected algorithm{hr_note}",
-        fontsize=12,
+        f"baseline (upstream main) = 1×; default points tagged with the selected algorithm{hr_note}"
+    )
+    fig.suptitle(
+        head + "\n" + "\n".join(textwrap.wrap(subtitle, width=140)), fontsize=12
     )
 
     C.draw_distribution(fig.add_subplot(gs[0, 0]), counts, char_bins)
@@ -602,49 +890,103 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     # Draw the per-element-count perf panels FIRST, recording which series actually
     # produced points, so the legend lists only series present in this figure's data.
     drawn_algos = set()
+    selected_point_tags = set()
     for i, elements in enumerate(elements_list):
         r, c = 1 + i // ncols, i % ncols
         ax = fig.add_subplot(gs[r, c])
         series = perf_series(per_algo_cells, sample, elements, shape, algos)
         tags = selected_algo_tags(per_algo_cells, sample, elements, shape)
+        selected_point_tags.update(tags.values())
         drawn_algos.update(a for a in series if len(series[a][0]))
-        if not draw_perf(ax, series, f"N = {fmt_elements(elements)} elements", default_tags=tags):
-            ax.text(0.5, 0.5, "no data\n(all cells skipped)", ha="center", va="center",
-                    transform=ax.transAxes, fontsize=9, color="gray")
+        if not draw_perf(
+            ax, series, f"N = {fmt_elements(elements)} elements", default_tags=tags
+        ):
+            ax.text(
+                0.5,
+                0.5,
+                "no data\n(all cells skipped)",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=9,
+                color="gray",
+            )
 
     # Legend (top-right slot): only series actually drawn above, plus the baseline line.
     # Prefix each entry with its 3-letter tag so the legend decodes the tags annotated on
     # the `default` series points (e.g. a "DAC" on the black line maps to its name here).
     legend_ax = fig.add_subplot(gs[0, 2])
     legend_ax.axis("off")
+
     def _legend_label(a):
         tag = ALGO_TAG.get(a)
         return f"{tag} — {ALGO_STYLE[a][2]}" if tag else ALGO_STYLE[a][2]
+
     legend_algos = [a for a in ALGO_ORDER if a in drawn_algos and a != "main"]
     handles = [
-        plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1],
-                   linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=_legend_label(a))
+        plt.Line2D(
+            [0],
+            [0],
+            color=ALGO_STYLE[a][0],
+            marker=ALGO_STYLE[a][1],
+            linestyle=ALGO_STYLE[a][3],
+            lw=ALGO_STYLE[a][4],
+            label=_legend_label(a),
+        )
         for a in legend_algos
     ]
     if "main" in drawn_algos:
         mc, _mm, _ml, mls, mlw = ALGO_STYLE["main"]
-        handles.append(plt.Line2D([0], [0], color=mc, linestyle=mls, lw=mlw,
-                                  label="BAS — baseline (upstream main), 1×"))
-    legend_ax.legend(handles=handles, loc="center", fontsize=10, title="algorithms (tag — name)",
-                     title_fontsize=10, frameon=True)
+        handles.append(
+            plt.Line2D(
+                [0],
+                [0],
+                color=mc,
+                linestyle=mls,
+                lw=mlw,
+                label="BAS — baseline (upstream main), 1×",
+            )
+        )
+    handles.extend(selected_tag_legend_handles(selected_point_tags, legend_algos))
+    legend_ax.legend(
+        handles=handles,
+        loc="center",
+        fontsize=10,
+        title="algorithms (tag — name)",
+        title_fontsize=10,
+        frameon=True,
+    )
 
     if has_hr:
         hr_row = 1 + perf_rows
-        draw_hitrate(fig.add_subplot(gs[hr_row, 0]), hr_for_binary.get("direct_cuckoo", {}),
-                     shape, elements_list, "cuckoo cache — hit rate vs #bins")
-        draw_hitrate(fig.add_subplot(gs[hr_row, 1]), hr_for_binary.get("direct_single_probe", {}),
-                     shape, elements_list, "single-probe cache — hit rate vs #bins")
+        draw_hitrate(
+            fig.add_subplot(gs[hr_row, 0]),
+            hr_for_binary.get("direct_cuckoo", {}),
+            shape,
+            elements_list,
+            "cuckoo cache — I32 hit rate vs #bins",
+        )
+        draw_hitrate(
+            fig.add_subplot(gs[hr_row, 1]),
+            hr_for_binary.get("direct_single_probe", {}),
+            shape,
+            elements_list,
+            "single-probe cache — I32 hit rate vs #bins",
+        )
         # third column of the hit-rate row: short explainer
-        ax = fig.add_subplot(gs[hr_row, 2]); ax.axis("off")
-        ax.text(0.5, 0.5, "hit = contribution absorbed in the\nSMEM cache (block-scope add)\n"
-                          "miss = spilled to a GMEM atomic\n\n(hit rate is sample-type\nindependent; measured on a\n"
-                          "separate instrumented build)",
-                ha="center", va="center", fontsize=9, color="#333")
+        ax = fig.add_subplot(gs[hr_row, 2])
+        ax.axis("off")
+        ax.text(
+            0.5,
+            0.5,
+            "hit = contribution absorbed in the\nSMEM cache (block-scope add)\n"
+            "miss = spilled to a GMEM atomic\n\n(measured with I32 samples on a\n"
+            "separate instrumented build; RANGE/F64\ncache capacity may differ)",
+            ha="center",
+            va="center",
+            fontsize=9,
+            color="#333",
+        )
 
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     fig.savefig(outpath, dpi=110, bbox_inches="tight")
@@ -652,13 +994,25 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--results", default="sweep_results_6shape.json",
-                    help="per-cell perf sweep JSON (binary -> algo -> 'SampleT|Elements|Bins|InputShape')")
-    ap.add_argument("--hitrate", default="hitrate_results.json",
-                    help="per-cell hit-rate sweep JSON (binary -> algo -> 'Bins|Elements|InputShape' -> {rate}); "
-                         "optional, adds two cache-hit-rate panels per image when present")
-    ap.add_argument("--outdir", default="algo_perf_figs", help="output directory for the per-shape PNGs")
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--results",
+        default="sweep_results_6shape.json",
+        help="per-cell perf sweep JSON (binary -> algo -> 'SampleT|Elements|Bins|InputShape')",
+    )
+    ap.add_argument(
+        "--hitrate",
+        default="hitrate_results.json",
+        help="per-cell hit-rate sweep JSON (binary -> algo -> 'Bins|Elements|InputShape' -> {rate}); "
+        "optional, adds two cache-hit-rate panels per image when present",
+    )
+    ap.add_argument(
+        "--outdir",
+        default="algo_perf_figs",
+        help="output directory for the per-shape PNGs",
+    )
     args = ap.parse_args()
 
     if not os.path.exists(args.results):
@@ -686,7 +1040,9 @@ def main():
         # explicit `smem_static` / `smem_dynamic` series (the low-bin static-vs-dynamic
         # comparison sweep). There the synthesized SMP line is redundant with the
         # measured SST/SDY series (it just traces one of them), so drop it as clutter.
-        has_explicit_smem = ("smem_static" in per_algo_cells) or ("smem_dynamic" in per_algo_cells)
+        has_explicit_smem = ("smem_static" in per_algo_cells) or (
+            "smem_dynamic" in per_algo_cells
+        )
         algos = [
             a
             for a in ALGO_ORDER
@@ -708,18 +1064,31 @@ def main():
             folder = os.path.join(args.outdir, f"{transform}_{channels}_{sample}")
             os.makedirs(folder, exist_ok=True)
             # Render every shape present in the data for this binary.
-            shapes = sorted({k.split("|")[3] for cells in data_cells.values() for k in cells},
-                            key=lambda s: (C.SHAPES.index(s) if s in C.SHAPES else 999, s))
+            shapes = sorted(
+                {k.split("|")[3] for cells in data_cells.values() for k in cells},
+                key=lambda s: (C.SHAPES.index(s) if s in C.SHAPES else 999, s),
+            )
             hr_for_binary = hitrate.get(binary_label, {})
             for shape in shapes:
-                outpath = os.path.join(folder, f"{shape.replace(':', '_')}.png")
-                render_one(binary_label, per_algo_cells, sample, shape, elements, algos, outpath, hr_for_binary)
+                outpath = os.path.join(folder, f"{shape_to_slug(shape)}.png")
+                render_one(
+                    binary_label,
+                    per_algo_cells,
+                    sample,
+                    shape,
+                    elements,
+                    algos,
+                    outpath,
+                    hr_for_binary,
+                )
                 written.append(outpath)
             # One geomean-over-shapes figure per (binary, sample): the shape-agnostic
             # summary, omitting the two per-shape input-characterization panels and the
             # per-shape hit-rate row.
-            geo_path = os.path.join(folder, "_geomean.png")
-            render_geomean(binary_label, per_algo_cells, sample, elements, algos, shapes, geo_path)
+            geo_path = os.path.join(folder, "all_geomean.png")
+            render_geomean(
+                binary_label, per_algo_cells, sample, elements, algos, shapes, geo_path
+            )
             written.append(geo_path)
 
     print(f"Wrote {len(written)} images under {args.outdir}")

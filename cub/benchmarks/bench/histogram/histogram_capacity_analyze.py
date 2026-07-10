@@ -7,11 +7,10 @@
 # verdict is "does spending SMEM (and losing occupancy) pay off, and where".
 import json
 import os
-import sys
 from collections import defaultdict
 
-import numpy as np
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -21,6 +20,7 @@ import matplotlib.pyplot as plt
 DATADIR = os.environ.get("HIST_SWEEP_OUTDIR", ".")
 FIGS = os.path.join(DATADIR, "capacity_analyze_figs")
 os.makedirs(FIGS, exist_ok=True)
+
 
 # B200: 228 KB SMEM/SM. blocks/SM = floor(228KB / per-block-smem).
 def blocks_per_sm(kb_per_block):
@@ -36,7 +36,8 @@ def geomean(xs):
 def analyze_A():
     p = os.path.join(DATADIR, "cache_slots_results.json")
     if not os.path.exists(p):
-        print("[A] no results yet"); return
+        print("[A] no results yet")
+        return
     data = json.load(open(p))
     print("\n==================== SWEEP A: cache slot count ====================")
     # For each binary+algo, geomean GiB/s across cells per requested-slots, but ONLY
@@ -52,8 +53,12 @@ def analyze_A():
             valid = {s: r for s, r in ladder.items() if r["ran_forced"] and r["cells"]}
             if not valid:
                 continue
-            common = set.intersection(*[set(r["cells"]) for r in valid.values()]) if valid else set()
-            order = sorted(valid.keys(), key=lambda s: (0 if s == "auto" else int(s)))
+            common = (
+                set.intersection(*[set(r["cells"]) for r in valid.values()])
+                if valid
+                else set()
+            )
+            order = sorted(valid.keys(), key=lambda s: 0 if s == "auto" else int(s))
             print(f"\n  [{label} / {algo}]  (geomean over {len(common)} common cells)")
             base = None
             for s in order:
@@ -64,8 +69,10 @@ def analyze_A():
                 bps = blocks_per_sm(max(smemkb, 0.001)) if smemkb else "-"
                 if s == "auto":
                     base = gm
-                rel = f"{gm/base*100:5.1f}%" if base else "   -  "
-                print(f"    req={s:>6} launched_slots={ls:>6} smem={smemkb:6.0f}KB ~{bps}blk/SM  geomean={gm:7.1f} GiB/s  vs_auto={rel}")
+                rel = f"{gm / base * 100:5.1f}%" if base else "   -  "
+                print(
+                    f"    req={s:>6} launched_slots={ls:>6} smem={smemkb:6.0f}KB ~{bps}blk/SM  geomean={gm:7.1f} GiB/s  vs_auto={rel}"
+                )
             # N-stratified: does a bigger cache help at SMALL N (unsaturated grid)
             # even if it hurts at large N? Compare the largest forced slots vs auto,
             # per element count.
@@ -76,10 +83,14 @@ def analyze_A():
                     n = int(k.split("|")[1])
                     per_n[n][0].append(valid["auto"]["cells"][k])
                     per_n[n][1].append(valid[big]["cells"][k])
-                print(f"      N-stratified  auto({valid['auto']['launched_slots']}) vs big({valid[big]['launched_slots']}):")
+                print(
+                    f"      N-stratified  auto({valid['auto']['launched_slots']}) vs big({valid[big]['launched_slots']}):"
+                )
                 for n in sorted(per_n):
                     a, b = geomean(per_n[n][0]), geomean(per_n[n][1])
-                    print(f"        N={n:>11}: auto={a:7.1f}  big={b:7.1f}  big/auto={b/a*100 if a else 0:5.1f}%")
+                    print(
+                        f"        N={n:>11}: auto={a:7.1f}  big={b:7.1f}  big/auto={b / a * 100 if a else 0:5.1f}%"
+                    )
     _plot_A(data)
 
 
@@ -98,9 +109,14 @@ def _plot_A(data):
             algo, slots = tag.split("@")
             by_algo[algo][slots] = rec
         fig, ax = plt.subplots(figsize=(9.5, 6))
-        ax.axhline(100.0, color="black", lw=1.2, ls="--", alpha=0.7,
-                   label="status quo (auto sizer) = 100%")
-        any_multi_point = False
+        ax.axhline(
+            100.0,
+            color="black",
+            lw=1.2,
+            ls="--",
+            alpha=0.7,
+            label="status quo (auto sizer) = 100%",
+        )
         for algo, ladder in by_algo.items():
             valid = {s: r for s, r in ladder.items() if r["ran_forced"] and r["cells"]}
             if "auto" not in valid:
@@ -109,7 +125,6 @@ def _plot_A(data):
             if not common:
                 continue
             base = geomean([valid["auto"]["cells"][k] for k in common])
-            auto_slots = valid["auto"]["launched_slots"]
             # Dedupe forced runs by the slot count that ACTUALLY launched; for each
             # distinct launched size keep one (prefer the run whose request == launched,
             # else the smallest request that reached it).
@@ -119,41 +134,68 @@ def _plot_A(data):
                     continue
                 ls = int(r["launched_slots"])
                 req = int(s)
-                prefer = (req == ls)
+                prefer = req == ls
                 if ls not in by_launched or (prefer and not by_launched[ls][0]):
                     by_launched[ls] = (prefer, r)
             pts = sorted(by_launched.items())
             xs = [ls for ls, _ in pts]
-            ys = [geomean([r["cells"][k] for k in common]) / base * 100.0 for _, (_, r) in pts]
+            ys = [
+                geomean([r["cells"][k] for k in common]) / base * 100.0
+                for _, (_, r) in pts
+            ]
             if len(xs) >= 2:
-                line, = ax.plot(xs, ys, marker="o", label=f"{algo}")
+                (line,) = ax.plot(xs, ys, marker="o", label=f"{algo}")
                 # annotate occupancy from the recorded launched smem bytes
                 for ls, (_, r) in pts:
                     smemkb = r["launched_smem_bytes"] / 1024.0
                     yy = geomean([r["cells"][k] for k in common]) / base * 100.0
-                    ax.annotate(f"{smemkb:.0f}KB\n{blocks_per_sm(max(smemkb,0.001))}blk/SM",
-                                (ls, yy), textcoords="offset points", xytext=(0, 8),
-                                ha="center", fontsize=7, color=line.get_color())
+                    ax.annotate(
+                        f"{smemkb:.0f}KB\n{blocks_per_sm(max(smemkb, 0.001))}blk/SM",
+                        (ls, yy),
+                        textcoords="offset points",
+                        xytext=(0, 8),
+                        ha="center",
+                        fontsize=7,
+                        color=line.get_color(),
+                    )
             elif len(xs) == 1:
                 # floor-bound config: a single reachable size. Mark it, don't fake a line.
-                any_multi_point = True
-                ax.scatter(xs, ys, s=70, marker="D", zorder=5, label=f"{algo} (only reachable size)")
+                ax.scatter(
+                    xs,
+                    ys,
+                    s=70,
+                    marker="D",
+                    zorder=5,
+                    label=f"{algo} (only reachable size)",
+                )
                 r = pts[0][1][1]
                 smemkb = r["launched_smem_bytes"] / 1024.0
-                ax.annotate(f"{xs[0]} slots = {smemkb:.0f}KB ({blocks_per_sm(max(smemkb,0.001))}blk/SM)\n"
-                            f"larger sizes exceed the {233472//1024}KB SMEM opt-in -> cannot launch",
-                            (xs[0], ys[0]), textcoords="offset points", xytext=(10, -4),
-                            ha="left", va="center", fontsize=8)
+                ax.annotate(
+                    f"{xs[0]} slots = {smemkb:.0f}KB ({blocks_per_sm(max(smemkb, 0.001))}blk/SM)\n"
+                    f"larger sizes exceed the {233472 // 1024}KB SMEM opt-in -> cannot launch",
+                    (xs[0], ys[0]),
+                    textcoords="offset points",
+                    xytext=(10, -4),
+                    ha="left",
+                    va="center",
+                    fontsize=8,
+                )
         ax.set_xscale("log", base=2)
         ax.set_xlabel("cache slots / channel (actually launched)")
         ax.set_ylabel("throughput vs status-quo auto sizer (%)")
         chan = "multi-channel" if "multi" in label else "single-channel"
-        ax.set_title(f"Lever 1 — high-bin SMEM cache size vs throughput [{label}, {chan}]\n"
-                     f"(relative to the shipped occupancy-preserving auto size; >100% = bigger cache wins)")
+        ax.set_title(
+            f"Lever 1 — high-bin SMEM cache size vs throughput [{label}, {chan}]\n"
+            f"(relative to the shipped occupancy-preserving auto size; >100% = bigger cache wins)"
+        )
         ax.grid(True, which="both", ls=":", alpha=0.5)
         ax.legend(fontsize=8, loc="best")
         fig.tight_layout()
-        fig.savefig(os.path.join(FIGS, f"A_cache_slots_{label}.png"), dpi=120, bbox_inches="tight")
+        fig.savefig(
+            os.path.join(FIGS, f"A_cache_slots_{label}.png"),
+            dpi=120,
+            bbox_inches="tight",
+        )
         plt.close(fig)
 
 
@@ -161,7 +203,8 @@ def _plot_A(data):
 def analyze_B():
     p = os.path.join(DATADIR, "priv_cap_results.json")
     if not os.path.exists(p):
-        print("[B] no results yet"); return
+        print("[B] no results yet")
+        return
     data = json.load(open(p))
     print("\n==================== SWEEP B: privatized SMEM cap ====================")
     # For each (label, bin, sample, N, shape) we want: priv_dynamic GiB/s at each
@@ -173,7 +216,7 @@ def analyze_B():
     # run tells us the set of kernels; we approximate per-cell by requiring the run
     # launched priv_dynamic AND the cell's bin <= cap). High-bin alternatives come
     # from the cap16384 forced runs. cell key = label|sample|N|bins|shape.
-    priv = defaultdict(dict)     # cell -> {cap: gibs}
+    priv = defaultdict(dict)  # cell -> {cap: gibs}
     highbin = defaultdict(dict)  # cell -> {algo: gibs}
     capset = set()
     for tag, rec in data.items():
@@ -192,28 +235,37 @@ def analyze_B():
     caps = sorted(capset)
     # Summary: for each cap, geomean of priv_dynamic over cells where it launched,
     # and the geomean of the high-bin best over those same cells.
-    print(f"\n  priv_dynamic geomean by cap, vs high-bin best (same cells):")
+    print("\n  priv_dynamic geomean by cap, vs high-bin best (same cells):")
     for cap in caps:
         cells = [ck for ck in priv if cap in priv[ck]]
         if not cells:
             continue
         gm_priv = geomean([priv[ck][cap] for ck in cells])
-        gm_high = geomean([max(highbin[ck].values()) for ck in cells if highbin.get(ck)])
+        gm_high = geomean(
+            [max(highbin[ck].values()) for ck in cells if highbin.get(ck)]
+        )
         kb = cap * 4 / 1024.0
-        print(f"    cap={cap:>5} ({kb:3.0f}KB, ~{blocks_per_sm(kb)}blk/SM): priv_dynamic={gm_priv:7.1f}  high-bin_best={gm_high:7.1f}  "
-              f"priv/high={ (gm_priv/gm_high*100 if gm_high else 0):5.1f}%  over {len(cells)} cells")
+        print(
+            f"    cap={cap:>5} ({kb:3.0f}KB, ~{blocks_per_sm(kb)}blk/SM): priv_dynamic={gm_priv:7.1f}  high-bin_best={gm_high:7.1f}  "
+            f"priv/high={(gm_priv / gm_high * 100 if gm_high else 0):5.1f}%  over {len(cells)} cells"
+        )
     # Win/regression count at each cap: priv_dynamic vs high-bin best per cell.
-    print(f"\n  per-cell wins (priv_dynamic > high-bin best) by cap:")
+    print("\n  per-cell wins (priv_dynamic > high-bin best) by cap:")
     for cap in caps:
         cells = [ck for ck in priv if cap in priv[ck] and highbin.get(ck)]
         wins = sum(1 for ck in cells if priv[ck][cap] > max(highbin[ck].values()))
-        print(f"    cap={cap:>5}: {wins}/{len(cells)} cells where priv_dynamic beats the high-bin path it replaces")
+        print(
+            f"    cap={cap:>5}: {wins}/{len(cells)} cells where priv_dynamic beats the high-bin path it replaces"
+        )
 
     # Breakdowns: where does the bigger cap win vs lose? Split priv/high ratio by
     # channel(single|multi), by N, and by shape -- at each cap.
     def ratio_geomean(cells, cap):
-        rs = [priv[ck][cap] / max(highbin[ck].values()) for ck in cells
-              if cap in priv[ck] and highbin.get(ck)]
+        rs = [
+            priv[ck][cap] / max(highbin[ck].values())
+            for ck in cells
+            if cap in priv[ck] and highbin.get(ck)
+        ]
         return geomean(rs) * 100 if rs else 0.0, len(rs)
 
     def split(keyfn, title):
@@ -243,28 +295,54 @@ def _plot_B(priv, highbin, caps):
     vs the high-bin path the shipped 16384-cap falls through to at the same cell
     (per-cell geomean ratio). 100% line = status quo; >100% = the bigger cap wins.
     Overlaid: the per-shape ratio, so the hash_synonym regression vs the
-    powerlaw/zipf wins is visible, not hidden in an aggregate."""
+    power-law wins is visible, not hidden in an aggregate."""
     caps_big = [c for c in caps if c != 16384]
     if not caps_big:
-        plt.close("all"); return
+        plt.close("all")
+        return
     fig, ax = plt.subplots(figsize=(9.5, 6))
-    ax.axhline(100.0, color="black", lw=1.3, ls="--", alpha=0.8, label="status quo (shipped 16384 cap) = 100%")
+    ax.axhline(
+        100.0,
+        color="black",
+        lw=1.3,
+        ls="--",
+        alpha=0.8,
+        label="status quo (shipped 16384 cap) = 100%",
+    )
 
     def ratios(cells, cap):
-        rs = [priv[ck][cap] / max(highbin[ck].values()) for ck in cells
-              if cap in priv[ck] and highbin.get(ck)]
+        rs = [
+            priv[ck][cap] / max(highbin[ck].values())
+            for ck in cells
+            if cap in priv[ck] and highbin.get(ck)
+        ]
         return geomean(rs) * 100 if rs else None
 
     # overall (single-channel; multi can't launch priv_dynamic at these bins)
     allcells = list(priv.keys())
     overall = [ratios(allcells, c) for c in caps_big]
-    ax.plot(caps_big, overall, marker="o", lw=2.6, color="#111", zorder=6, label="overall (single-channel)")
+    ax.plot(
+        caps_big,
+        overall,
+        marker="o",
+        lw=2.6,
+        color="#111",
+        zorder=6,
+        label="overall (single-channel)",
+    )
     for c, y in zip(caps_big, overall):
         if y is None:
             continue
         kb = c * 4 / 1024.0
-        ax.annotate(f"{y:.1f}%\n{kb:.0f}KB·{blocks_per_sm(kb)}blk/SM", (c, y),
-                    textcoords="offset points", xytext=(0, 10), ha="center", fontsize=8, color="#111")
+        ax.annotate(
+            f"{y:.1f}%\n{kb:.0f}KB·{blocks_per_sm(kb)}blk/SM",
+            (c, y),
+            textcoords="offset points",
+            xytext=(0, 10),
+            ha="center",
+            fontsize=8,
+            color="#111",
+        )
     # per-shape overlays
     shapes = sorted({ck.split("|")[4] for ck in priv})
     for sh in shapes:
@@ -274,15 +352,21 @@ def _plot_B(priv, highbin, caps):
             ax.plot(caps_big, ys, marker=".", lw=1.0, alpha=0.75, label=sh)
     ax.set_xscale("log", base=2)
     ax.set_xticks(caps_big)
-    ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda v, _: f"{int(round(v))}"))
+    ax.get_xaxis().set_major_formatter(
+        plt.FuncFormatter(lambda v, _: f"{int(round(v))}")
+    )
     ax.set_xlabel("privatized SMEM cap (bins) — capacity increasing →")
     ax.set_ylabel("priv_dynamic throughput vs status-quo high-bin path (%)")
-    ax.set_title("Lever 2 — larger privatized SMEM cap vs the status quo it replaces\n"
-                 "(per-cell geomean ratio; >100% = the bigger on-chip histogram wins, despite lower occupancy)")
+    ax.set_title(
+        "Lever 2 — larger privatized SMEM cap vs the status quo it replaces\n"
+        "(per-cell geomean ratio; >100% = the bigger on-chip histogram wins, despite lower occupancy)"
+    )
     ax.grid(True, which="both", ls=":", alpha=0.5)
     ax.legend(fontsize=8, ncol=2, loc="best")
     fig.tight_layout()
-    fig.savefig(os.path.join(FIGS, "B_priv_cap_vs_statusquo.png"), dpi=120, bbox_inches="tight")
+    fig.savefig(
+        os.path.join(FIGS, "B_priv_cap_vs_statusquo.png"), dpi=120, bbox_inches="tight"
+    )
     plt.close(fig)
 
 
