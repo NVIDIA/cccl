@@ -25,15 +25,15 @@
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
-#include "util/aot_serialize.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include "util/tuning.h"
 #include "util/types.h"
-#include <cccl/c/aot.h>
 #include <cccl/c/merge_sort.h>
+#include <cccl/c/serialization.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
@@ -676,9 +676,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_MERGE_SORT, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_MERGE_SORT, build_ptr->payload_kind, build_ptr->cc);
   write_type_info(w, build_ptr->key_type);
   write_type_info(w, build_ptr->item_type);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
@@ -706,9 +706,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_MERGE_SORT);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_MERGE_SORT);
 
   const auto key_t  = read_type_info(r);
   const auto item_t = read_type_info(r);
@@ -722,7 +722,7 @@ try
   }
   if (payload_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   std::unique_ptr<cub::detail::merge_sort::policy_selector, decltype(&std::free)> policy(

@@ -111,7 +111,7 @@ CCCL_C_API CUresult cccl_device_unique_by_key_link_ltoir(
 
 // Serializes a populated build_result into a self-describing byte buffer.
 // On success *out_buf points to a heap allocation that the caller must free
-// with cccl_aot_buffer_free, and *out_size holds its length. The build_result
+// with cccl_serialization_buffer_free, and *out_size holds its length. The build_result
 // itself is not modified. CUlibrary/CUkernel handles are not serialized.
 CCCL_C_API CUresult cccl_device_unique_by_key_serialize(
   const cccl_device_unique_by_key_build_result_t* build, void** out_buf, size_t* out_size);

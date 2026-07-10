@@ -30,7 +30,7 @@ struct ReduceByKeyPolicySelector
 };
 // example-end reduce-by-key-policy-selector
 
-C2H_TEST("cub::DeviceReduce::ReduceByKey env-based API with tuning", "[reduce][env]")
+C2H_TEST("cub::DeviceReduce::ReduceByKey accepts a custom policy selector", "[reduce][env]")
 {
   // example-begin reduce-by-key-tuning
   auto d_keys_in        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -63,6 +63,14 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey env-based API with tuning", "[reduce][e
   d_aggregates_out.resize(5);
   CHECK(d_unique_out == expected_keys);
   CHECK(d_aggregates_out == expected_aggregates);
+}
+
+#else // _CCCL_STD_VER >= 2020
+
+// we need a dummy test for C++17, otherwise the return code of the test executable is 2 (not 0)
+C2H_TEST("cub::DeviceReduce::ReduceByKey dummy test", "[reduce][env]")
+{
+  SUCCEED();
 }
 
 #endif // _CCCL_STD_VER >= 2020

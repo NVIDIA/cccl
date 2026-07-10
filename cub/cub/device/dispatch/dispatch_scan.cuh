@@ -140,10 +140,13 @@ struct DeviceScanKernelSource
     return arg;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto lookahead_make_tile_state_kernel_arg(void* ts)
+  CUB_RUNTIME_FUNCTION static constexpr auto
+  lookahead_make_tile_state_kernel_arg(void* ts, ::cuda::std::uint32_t* atomic_counter = nullptr)
   {
     tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
+    ::cuda::std::__construct_at(
+      &arg.lookahead,
+      lookahead_tile_state_arg_t<AccumT>{static_cast<warpspeed::tile_state_t<AccumT>*>(ts), atomic_counter});
     return arg;
   }
 };
@@ -1083,6 +1086,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   OffsetT num_items,
   cudaStream_t stream,
   bool dependent_launch,
+  bool atomic_scheduling,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
@@ -1101,25 +1105,33 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   CUB_DETAIL_STATIC_ISH_ASSERT(lookahead_policy.lookahead_items_per_thread >= 1,
                                "Lookahead scan policy must look ahead at least 1 item per thread");
 
-  const int grid_dim =
+  const int num_tiles =
     static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(lookahead_policy.tile_size())));
+
+  size_t allocation_sizes[2] = {
+    static_cast<size_t>(num_tiles) * kernel_source.lookahead_tile_state_size(), sizeof(::cuda::std::uint32_t)};
+  void* allocations[2] = {};
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
 
   if (d_temp_storage == nullptr)
   {
-    temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.lookahead_tile_state_size();
     return cudaSuccess;
   }
 
-  if (num_items == 0)
-  {
-    return cudaSuccess;
-  }
+  void* d_tile_state                      = allocations[0];
+  ::cuda::std::uint32_t* d_atomic_counter = static_cast<::cuda::std::uint32_t*>(allocations[1]);
 
   int sm_count = 0;
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
   {
     return error;
   }
+
+  const int scan_grid_dim = atomic_scheduling ? (::cuda::std::min) (sm_count, num_tiles) : num_tiles;
   // Maximum dynamic shared memory size that we can use for temporary storage.
   int max_dynamic_smem_size{};
   if (const auto error =
@@ -1127,9 +1139,6 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   {
     return error;
   }
-
-  // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
-  _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.lookahead_tile_state_alignment()), "");
 
   auto scan_kernel                 = kernel_source.ScanKernel();
   [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
@@ -1188,7 +1197,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   // Invoke init kernel
   {
     constexpr auto init_kernel_threads = 128;
-    const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
+    const auto init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
 #  ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
@@ -1200,8 +1209,8 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, dependent_launch)
             .doit(kernel_source.InitKernel(),
-                  kernel_source.lookahead_make_tile_state_kernel_arg(d_temp_storage),
-                  grid_dim)))
+                  kernel_source.lookahead_make_tile_state_kernel_arg(d_tile_state, d_atomic_counter),
+                  num_tiles)))
     {
       return error;
     }
@@ -1223,15 +1232,16 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   {
     const int block_dim = detail::scan::num_total_threads(lookahead_policy);
 #  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
+    _CubLog(
+      "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
 #  endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
-          launcher_factory(grid_dim, block_dim, smem_size, stream, dependent_launch)
+          launcher_factory(scan_grid_dim, block_dim, smem_size, stream, dependent_launch)
             .doit(scan_kernel,
                   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                   THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-                  kernel_source.lookahead_make_tile_state_kernel_arg(d_temp_storage),
+                  kernel_source.lookahead_make_tile_state_kernel_arg(d_tile_state, d_atomic_counter),
                   /* start_tile, unused */ 0,
                   ::cuda::std::move(scan_op),
                   init_value,
@@ -1285,6 +1295,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
   const bool dependent_launch = cc >= ::cuda::compute_capability{9, 0};
   if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::lookahead)
   {
+    const bool atomic_scheduling = cc == ::cuda::compute_capability{9, 0};
     return invoke_lookahead(
       policy_getter,
       d_temp_storage,
@@ -1296,6 +1307,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
       num_items,
       stream,
       dependent_launch,
+      atomic_scheduling,
       kernel_source,
       launcher_factory);
   }

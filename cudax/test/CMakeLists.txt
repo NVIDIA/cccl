@@ -114,12 +114,32 @@ if (
   NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
   OR "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "12.1"
 )
-  cudax_add_catch2_test(test_target cuco
+  cudax_add_catch2_test(test_target cuco.utility.hashers
     cuco/utility/test_hashers.cu
   )
 endif()
 
-cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_and_contains ${cudax_target}
+    cuco/fixed_capacity_map/test_insert_and_contains.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_target}
+    cuco/fixed_capacity_map/test_capacity.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.shared_memory ${cudax_target}
+    cuco/fixed_capacity_map/test_shared_memory.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.key_sentinel ${cudax_target}
+    cuco/fixed_capacity_map/test_key_sentinel.cu
+)
+
+cudax_add_catch2_test(test_target cuco.utility.capacity ${cudax_target}
+    cuco/utility/test_capacity.cu
+)
+
+cudax_add_catch2_test(test_target cuco.hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
 )
 
