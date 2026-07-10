@@ -103,7 +103,7 @@ assert_equal(cuda::stream_ref stream, Buffer& buffer, cuda::std::initializer_lis
 template <typename Buffer, typename Expected>
 _CCCL_HOST_API inline void assert_equal(cuda::stream_ref stream, Buffer& buffer, const Expected& expected)
 {
-  std::vector<int> actual(buffer.size());
+  std::vector<typename Buffer::value_type> actual(buffer.size());
   cuda::copy_bytes(stream, buffer, actual);
   stream.sync();
 
