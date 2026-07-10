@@ -399,8 +399,12 @@ _CCCL_HOST_API inline void __memcpyBatchAsync(
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename _Tp>
+_CCCL_CONCEPT __cu_driver_memsetable = sizeof(_Tp) == 1 || sizeof(_Tp) == 2 || sizeof(_Tp) == 4;
+
+template <typename _Tp>
 _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t __count, ::CUstream __stream)
 {
+  static_assert(__cu_driver_memsetable<_Tp>, "Unsupported type for memset");
   if constexpr (sizeof(_Tp) == 1)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD8Async);
@@ -421,10 +425,6 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t 
     auto __bits             = ::cuda::std::bit_cast<unsigned int>(__value);
     ::cuda::__driver::__call_driver_fn(
       __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
-  }
-  else
-  {
-    static_assert(::cuda::std::__always_false_v<_Tp>, "Unsupported type for memset");
   }
 }
 
