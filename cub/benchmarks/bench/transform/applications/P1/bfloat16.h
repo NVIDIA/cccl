@@ -69,12 +69,12 @@ struct alignas(2) BFloat16
 
 inline __host__ __device__ BFloat16::BFloat16(float value)
 {
-  NV_IF_TARGET(NV_IS_DEVICE,
-               ({
-                 __nv_bfloat16 tmp = __float2bfloat16(value);
-                 x                 = *reinterpret_cast<const unsigned short*>(&tmp);
-               }),
-               ({ x = bf16_detail::round_to_nearest_even(value); }));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                    ({
+                      __nv_bfloat16 tmp = __float2bfloat16(value);
+                      x                 = *reinterpret_cast<const unsigned short*>(&tmp);
+                    }),
+                    ({ x = bf16_detail::round_to_nearest_even(value); }));
 }
 
 inline __host__ __device__ BFloat16::operator float() const
