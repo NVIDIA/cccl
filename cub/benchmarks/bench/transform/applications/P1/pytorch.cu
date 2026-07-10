@@ -35,6 +35,8 @@
 
 #include <cuda/iterator>
 #include <cuda/random>
+#include <cuda/std/algorithm.max.h>
+#include <cuda/std/algorithm.min.h>
 #include <cuda/std/algorithm.transform.h>
 #include <cuda/std/cmath>
 #include <cuda/std/execution>
@@ -600,7 +602,7 @@ try
       d_a,
       n,
       [alpha] __device__(T a, T b, T c) -> T {
-        return pointwise_op_impl<accscalar_t>(a, b, c, alpha, std::multiplies<accscalar_t>());
+        return pointwise_op_impl<accscalar_t>(a, b, c, alpha, cuda::std::multiplies<accscalar_t>());
       },
       s);
 
@@ -782,7 +784,7 @@ try
       [] __device__(T in_) -> T {
         using opmath_t    = opmath_type<T>;
         const opmath_t in = in_;
-        const auto min    = std::min(opmath_t(0), in);
+        const auto min    = cuda::std::min(opmath_t(0), in);
         const auto z      = std::exp(-std::abs(in));
         return min - std::log1p(z);
       },
@@ -921,7 +923,7 @@ try
       [zero, one_sixth, three, six] __device__(T self_val) -> T {
         using opmath_t = opmath_type<T>;
         opmath_t x     = static_cast<opmath_t>(self_val);
-        return x * std::min(std::max(x + three, zero), six) * one_sixth;
+        return x * cuda::std::min(cuda::std::max(x + three, zero), six) * one_sixth;
       },
       s);
 
@@ -943,7 +945,7 @@ try
       [zero, one_sixth, three, six] __device__(T self_val) -> T {
         using opmath_t = opmath_type<T>;
         opmath_t x     = static_cast<opmath_t>(self_val);
-        return std::min<opmath_t>(std::max<opmath_t>(x + three, zero), six) * one_sixth;
+        return cuda::std::min<opmath_t>(cuda::std::max<opmath_t>(x + three, zero), six) * one_sixth;
       },
       s);
 

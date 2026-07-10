@@ -124,8 +124,7 @@ function(add_bench_dir bench_dir)
     target_compile_definitions(${base_bench_target} PRIVATE TUNE_BASE=1)
     target_compile_options(
       ${base_bench_target}
-      PRIVATE
-        "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda;--expt-relaxed-constexpr>"
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
     )
 
     if (CUB_ENABLE_TUNING)
