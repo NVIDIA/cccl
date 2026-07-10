@@ -1730,7 +1730,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           // cooperative launch so the read-back below reflects only this launch.
           // Instrumented build only (CUB_HISTO_TRACK_HITRATE); see kernel_histogram.cuh.
           {
-            const unsigned long long zero = 0;
+            const ::cuda::std::uint64_t zero = 0;
             (void) cudaMemcpyToSymbol(detail::histogram::g_cub_histo_cache_hits, &zero, sizeof(zero));
             (void) cudaMemcpyToSymbol(detail::histogram::g_cub_histo_cache_misses, &zero, sizeof(zero));
           }
@@ -1843,7 +1843,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           if (use_direct_atomic_to_output && !use_no_cache && ::std::getenv("CUB_HISTO_LOG_HITRATE"))
           {
             (void) cudaStreamSynchronize(stream);
-            unsigned long long h = 0, m = 0;
+            ::cuda::std::uint64_t h = 0, m = 0;
             (void) cudaMemcpyFromSymbol(&h, detail::histogram::g_cub_histo_cache_hits, sizeof(h));
             (void) cudaMemcpyFromSymbol(&m, detail::histogram::g_cub_histo_cache_misses, sizeof(m));
             const double rate      = (h + m) ? (static_cast<double>(h) / static_cast<double>(h + m)) : 0.0;

@@ -20,6 +20,8 @@
 #include <cub/util_arch.cuh>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/atomic>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -87,13 +89,13 @@ namespace detail::histogram
 #if CUB_HISTO_TRACK_HITRATE
 // Grid-wide hit / miss accumulators (contribution-weighted). Zeroed by the host
 // before launch and read back after via cudaMemcpyFromSymbol.
-_CCCL_DEVICE unsigned long long g_cub_histo_cache_hits   = 0;
-_CCCL_DEVICE unsigned long long g_cub_histo_cache_misses = 0;
+_CCCL_DEVICE ::cuda::std::uint64_t g_cub_histo_cache_hits   = 0;
+_CCCL_DEVICE ::cuda::std::uint64_t g_cub_histo_cache_misses = 0;
 // Extra apply() parameters (thread-local accumulators) and the per-site bumps.
-#  define CUB_HISTO_HITRATE_PARAMS , unsigned long long &hit_acc, unsigned long long &miss_acc
+#  define CUB_HISTO_HITRATE_PARAMS , ::cuda::std::uint64_t &hit_acc, ::cuda::std::uint64_t &miss_acc
 #  define CUB_HISTO_HITRATE_ARGS   , hit_acc, miss_acc
-#  define CUB_HISTO_HIT(c)         (hit_acc += static_cast<unsigned long long>(c))
-#  define CUB_HISTO_MISS(c)        (miss_acc += static_cast<unsigned long long>(c))
+#  define CUB_HISTO_HIT(c)         (hit_acc += static_cast<::cuda::std::uint64_t>(c))
+#  define CUB_HISTO_MISS(c)        (miss_acc += static_cast<::cuda::std::uint64_t>(c))
 #else
 #  define CUB_HISTO_HITRATE_PARAMS
 #  define CUB_HISTO_HITRATE_ARGS
@@ -2025,6 +2027,31 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
 //! A cache hit/claim bumps a block-scope count; a miss spills one device-scope
 //! atomic to `output[bin]`.
 
+using cache_key_type = ::cuda::std::int32_t;
+
+template <typename T>
+using block_atomic_ref = ::cuda::atomic_ref<T, ::cuda::thread_scope_block>;
+
+template <typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE T cache_atomic_load(T& value)
+{
+  return block_atomic_ref<T>{value}.load(::cuda::memory_order_relaxed);
+}
+
+template <typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void cache_atomic_add(T& value, T contribution)
+{
+  block_atomic_ref<T>{value}.fetch_add(contribution, ::cuda::memory_order_relaxed);
+}
+
+_CCCL_DEVICE _CCCL_FORCEINLINE bool cache_atomic_claim(cache_key_type& key, cache_key_type bin)
+{
+  cache_key_type expected = -1;
+  const bool claimed      = block_atomic_ref<cache_key_type>{key}.compare_exchange_strong(
+    expected, bin, ::cuda::memory_order_relaxed, ::cuda::memory_order_relaxed);
+  return claimed || expected == bin;
+}
+
 //! Spill functors: where a cache MISS (or flush) deposits its contribution. The
 //! probe ops below are templated on one of these so the cache strategy (cuckoo /
 //! single-probe) is orthogonal to the spill target. Two instantiations:
@@ -2033,7 +2060,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
 //!     histogram. This is the "direct atomic" commit; a hot-bin spill contends
 //!     across every block. Used by DeviceHistogramCacheSpillKernel.
 //!
-//!   private_block_spill  -- block-scope atomicAdd_block into THIS block's PRIVATE
+//!   private_block_spill  -- block-scope atomic fetch-add into THIS block's PRIVATE
 //!     GMEM histogram (a per-block slab). Uncontended across blocks; a later
 //!     grid-sync + atomic-free gather merges the slabs into the output. Used by
 //!     the privatized-spill variant of the same kernel.
@@ -2049,7 +2076,8 @@ struct output_atomic_spill
   template <typename OutputCounterT, typename ContributionT>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(OutputCounterT* target, int bin, ContributionT contribution)
   {
-    atomicAdd(&target[bin], static_cast<OutputCounterT>(contribution));
+    ::cuda::atomic_ref<OutputCounterT, ::cuda::thread_scope_device>{target[bin]}.fetch_add(
+      static_cast<OutputCounterT>(contribution), ::cuda::memory_order_relaxed);
   }
 };
 
@@ -2061,7 +2089,8 @@ struct private_block_spill
   template <typename CounterT, typename ContributionT>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(CounterT* target, int bin, ContributionT contribution)
   {
-    atomicAdd_block(&target[bin], static_cast<CounterT>(contribution));
+    ::cuda::atomic_ref<CounterT, ::cuda::thread_scope_block>{target[bin]}.fetch_add(
+      static_cast<CounterT>(contribution), ::cuda::memory_order_relaxed);
   }
 };
 
@@ -2078,7 +2107,7 @@ struct cuckoo_cache_probe
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys,
+  apply(cache_key_type* keys,
         CounterT* counts,
         SpillCounterT* output,
         int bin,
@@ -2086,22 +2115,21 @@ struct cuckoo_cache_probe
         int cache_mask,
         int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
   {
-    const unsigned int hash1 = static_cast<unsigned int>(bin) * cache_primary_hash_multiplier;
-    const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
-    const int existing_key1  = keys[slot1];
+    const ::cuda::std::uint32_t hash1  = static_cast<::cuda::std::uint32_t>(bin) * cache_primary_hash_multiplier;
+    const int slot1                    = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
+    const cache_key_type existing_key1 = cache_atomic_load(keys[slot1]);
     if (existing_key1 == bin)
     {
       // Primary hit: bump cache count.
-      atomicAdd_block(&counts[slot1], contribution);
+      cache_atomic_add(counts[slot1], contribution);
       CUB_HISTO_HIT(contribution);
     }
     else if (existing_key1 == -1)
     {
       // Primary slot empty: try to claim it via CAS.
-      const int prev = atomicCAS(&keys[slot1], -1, bin);
-      if (prev == -1 || prev == bin)
+      if (cache_atomic_claim(keys[slot1], static_cast<cache_key_type>(bin)))
       {
-        atomicAdd_block(&counts[slot1], contribution);
+        cache_atomic_add(counts[slot1], contribution);
         CUB_HISTO_HIT(contribution);
       }
       else if constexpr (DisableSecondProbe)
@@ -2113,20 +2141,19 @@ struct cuckoo_cache_probe
       else
       {
         // Lost the race. Try secondary slot.
-        const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
-        const int slot2          = static_cast<int>(hash2 & cache_mask);
-        const int existing_key2  = keys[slot2];
+        const ::cuda::std::uint32_t hash2  = static_cast<::cuda::std::uint32_t>(bin) * 2246822519u;
+        const int slot2                    = static_cast<int>(hash2 & cache_mask);
+        const cache_key_type existing_key2 = cache_atomic_load(keys[slot2]);
         if (existing_key2 == bin)
         {
-          atomicAdd_block(&counts[slot2], contribution);
+          cache_atomic_add(counts[slot2], contribution);
           CUB_HISTO_HIT(contribution);
         }
         else if (existing_key2 == -1)
         {
-          const int prev2 = atomicCAS(&keys[slot2], -1, bin);
-          if (prev2 == -1 || prev2 == bin)
+          if (cache_atomic_claim(keys[slot2], static_cast<cache_key_type>(bin)))
           {
-            atomicAdd_block(&counts[slot2], contribution);
+            cache_atomic_add(counts[slot2], contribution);
             CUB_HISTO_HIT(contribution);
           }
           else
@@ -2152,20 +2179,19 @@ struct cuckoo_cache_probe
     else
     {
       // Primary occupied by a different bin: try the secondary slot.
-      const unsigned int hash2 = static_cast<unsigned int>(bin) * cache_secondary_hash_multiplier;
-      const int slot2          = cache_slot_from_hash(hash2, cache_mask, cache_slot_log2);
-      const int existing_key2  = keys[slot2];
+      const ::cuda::std::uint32_t hash2  = static_cast<::cuda::std::uint32_t>(bin) * cache_secondary_hash_multiplier;
+      const int slot2                    = cache_slot_from_hash(hash2, cache_mask, cache_slot_log2);
+      const cache_key_type existing_key2 = cache_atomic_load(keys[slot2]);
       if (existing_key2 == bin)
       {
-        atomicAdd_block(&counts[slot2], contribution);
+        cache_atomic_add(counts[slot2], contribution);
         CUB_HISTO_HIT(contribution);
       }
       else if (existing_key2 == -1)
       {
-        const int prev2 = atomicCAS(&keys[slot2], -1, bin);
-        if (prev2 == -1 || prev2 == bin)
+        if (cache_atomic_claim(keys[slot2], static_cast<cache_key_type>(bin)))
         {
-          atomicAdd_block(&counts[slot2], contribution);
+          cache_atomic_add(counts[slot2], contribution);
           CUB_HISTO_HIT(contribution);
         }
         else
@@ -2190,7 +2216,7 @@ struct single_probe_cache
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys,
+  apply(cache_key_type* keys,
         CounterT* counts,
         SpillCounterT* output,
         int bin,
@@ -2198,25 +2224,24 @@ struct single_probe_cache
         int cache_mask,
         int cache_slot_log2 CUB_HISTO_HITRATE_PARAMS)
   {
-    const unsigned int hash = static_cast<unsigned int>(bin) * cache_primary_hash_multiplier;
+    const ::cuda::std::uint32_t hash = static_cast<::cuda::std::uint32_t>(bin) * cache_primary_hash_multiplier;
     if constexpr (CUB_HISTO_SINGLE_PROBE_WAYS == 1)
     {
       // Single direct-mapped probe: hash bin to one slot.
-      const int slot         = cache_slot_from_hash(hash, cache_mask, cache_slot_log2);
-      const int existing_key = keys[slot];
+      const int slot                    = cache_slot_from_hash(hash, cache_mask, cache_slot_log2);
+      const cache_key_type existing_key = cache_atomic_load(keys[slot]);
       if (existing_key == bin)
       {
         // Hit: bump cache count (block-scope atomic, ~10x cheaper).
-        atomicAdd_block(&counts[slot], contribution);
+        cache_atomic_add(counts[slot], contribution);
         CUB_HISTO_HIT(contribution);
       }
       else if (existing_key == -1)
       {
         // Empty: try to claim via CAS.
-        const int prev = atomicCAS_block(&keys[slot], -1, bin);
-        if (prev == -1 || prev == bin)
+        if (cache_atomic_claim(keys[slot], static_cast<cache_key_type>(bin)))
         {
-          atomicAdd_block(&counts[slot], contribution);
+          cache_atomic_add(counts[slot], contribution);
           CUB_HISTO_HIT(contribution);
         }
         else
@@ -2252,9 +2277,9 @@ struct single_probe_cache
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int w = 0; w < CUB_HISTO_SINGLE_PROBE_WAYS; ++w)
       {
-        if (!done && keys[base + w] == bin)
+        if (!done && cache_atomic_load(keys[base + w]) == bin)
         {
-          atomicAdd_block(&counts[base + w], contribution);
+          cache_atomic_add(counts[base + w], contribution);
           CUB_HISTO_HIT(contribution);
           done = true;
         }
@@ -2264,12 +2289,11 @@ struct single_probe_cache
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int w = 0; w < CUB_HISTO_SINGLE_PROBE_WAYS; ++w)
       {
-        if (!done && keys[base + w] == -1)
+        if (!done && cache_atomic_load(keys[base + w]) == -1)
         {
-          const int prev = atomicCAS_block(&keys[base + w], -1, bin);
-          if (prev == -1 || prev == bin)
+          if (cache_atomic_claim(keys[base + w], static_cast<cache_key_type>(bin)))
           {
-            atomicAdd_block(&counts[base + w], contribution);
+            cache_atomic_add(counts[base + w], contribution);
             CUB_HISTO_HIT(contribution);
             done = true;
           }
@@ -2300,7 +2324,7 @@ struct no_cache_probe
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys,
+  apply(cache_key_type* keys,
         CounterT* counts,
         SpillCounterT* output,
         int bin,
@@ -2404,10 +2428,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // output is written, not accumulated, by the Phase-4 gather, so it needs no
   // pre-zero there).
   // ---------------------------------------------------------------------
-  const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
-  const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
-  const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
-  const unsigned int total_threads   = blocks_per_grid * blockDim.x;
+  const ::cuda::std::uint32_t blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
+  const ::cuda::std::uint32_t block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
+  const ::cuda::std::uint32_t tid_global      = block_id * blockDim.x + threadIdx.x;
+  const ::cuda::std::uint32_t total_threads   = blocks_per_grid * blockDim.x;
 
   // Per-channel spill target for THIS block: the shared output, or this block's
   // private slab slice (base + block_id * num_bins). Hoisted once; the hot-path
@@ -2446,7 +2470,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
       const int channel_bins = num_output_bins_wrapper[ch];
-      for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
+      for (::cuda::std::uint32_t bin = tid_global; bin < static_cast<::cuda::std::uint32_t>(channel_bins);
+           bin += total_threads)
       {
         d_output_histograms_wrapper[ch][bin] = 0;
       }
@@ -2519,7 +2544,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // SMEM atomics.
   //
   // `cache_slots_per_channel` is a runtime power of two (mask = slots-1).
-  // The extern __shared__ region holds, per channel, a key array (int)
+  // The extern __shared__ region holds, per channel, an int32_t key array
   // followed by a count array (CounterT): keys for all channels first,
   // then counts for all channels. Two multiplicative-hash probes are
   // retained because the secondary slot raises the hit rate on skewed
@@ -2538,7 +2563,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // each claimed slot and issue one GMEM atomic. Layout in dynamic SMEM: keys
   // for all channels first (`NumActiveChannels * slots` ints), then replicated
   // counts (`NumActiveChannels * kCountReplicas * slots` CounterT). Dispatch
-  // sizes the dynamic SMEM with the same replica factor.
+  // sizes the dynamic SMEM with the same replica factor. The storage remains
+  // ordinary fixed-width integers: initialization is single-writer before the
+  // first block barrier, every concurrent probe access goes through a relaxed
+  // block-scope atomic_ref, and the flush uses ordinary reads after the final
+  // block barrier. No atomic_ref survives across either barrier.
   //
   // R is gated PER NUM_ACTIVE_CHANNELS (compile-time, via cache_tuning::replicas
   // so the kernel and the host sizer share one definition): multi-channel uses
@@ -2563,20 +2592,26 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // (zero runtime branch), still AND-ed with the policy flag so
   // CUB_HISTO_FORCE_WARP_COALESCE=0 can disable it everywhere for study.
   constexpr bool kProbeIsNoCache = ::cuda::std::is_same_v<ProbeOp, no_cache_probe>;
-  constexpr bool kWarpCoalesce =
-    (kProbeIsNoCache || sizeof(CounterT) > sizeof(unsigned int)) && current_policy<PolicySelector>().warp_coalesce;
+  constexpr bool kWarpCoalesce   = (kProbeIsNoCache || sizeof(CounterT) > sizeof(::cuda::std::uint32_t))
+                              && current_policy<PolicySelector>().warp_coalesce;
   const int cache_mask = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
   const int cache_slot_log2 = 32 - __clz(cache_mask);
   const size_t slots_sz     = static_cast<size_t>(cache_slots_per_channel);
   const int replica         = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
-  extern __shared__ unsigned char s_bin_cache_raw[];
-  int* const s_cache_keys_base = reinterpret_cast<int*>(s_bin_cache_raw);
-  CounterT* const s_cache_counts_base =
-    reinterpret_cast<CounterT*>(s_bin_cache_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
+  static_assert(block_atomic_ref<cache_key_type>::required_alignment <= alignof(cache_key_type));
+  static_assert(block_atomic_ref<CounterT>::required_alignment <= alignof(CounterT));
+  constexpr size_t minimum_key_bytes =
+    static_cast<size_t>(NumActiveChannels) * static_cast<size_t>(cache_tuning::slots_floor(NumActiveChannels))
+    * sizeof(cache_key_type);
+  static_assert(minimum_key_bytes % alignof(CounterT) == 0);
+  extern __shared__ __align__(16) unsigned char s_bin_cache_raw[];
+  cache_key_type* const s_cache_keys_base = reinterpret_cast<cache_key_type*>(s_bin_cache_raw);
+  CounterT* const s_cache_counts_base     = reinterpret_cast<CounterT*>(
+    s_bin_cache_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(cache_key_type));
   // Per-channel shared key base and this warp's replica count base.
-  int* s_cache_keys[NumActiveChannels];
+  cache_key_type* s_cache_keys[NumActiveChannels];
   CounterT* s_cache_counts[NumActiveChannels];
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -2586,19 +2621,21 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   }
 
   // Initialize cache: keys = -1 (empty sentinel), all replica counts = 0.
+  // __construct_at begins the integer objects' lifetimes in raw dynamic SMEM;
+  // these are ordinary non-atomic writes, completed before the first barrier.
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
     for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
     {
-      s_cache_keys[ch][slot] = -1;
+      ::cuda::std::__construct_at(s_cache_keys[ch] + slot, cache_key_type{-1});
     }
   }
   {
     const size_t total_count_words = static_cast<size_t>(NumActiveChannels) * kCountReplicas * slots_sz;
     for (size_t i = threadIdx.x; i < total_count_words; i += blockDim.x)
     {
-      s_cache_counts_base[i] = CounterT{0};
+      ::cuda::std::__construct_at(s_cache_counts_base + i, CounterT{0});
     }
   }
   __syncthreads();
@@ -2636,17 +2673,17 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // probe lambda below; reduced into the grid-wide __device__ globals at exit).
   // Only the cached fast path (num_rows == 1) probes the cache; the rare slow
   // path is uncached, so it is not counted (and the benchmark never takes it).
-  unsigned long long hit_acc  = 0;
-  unsigned long long miss_acc = 0;
+  ::cuda::std::uint64_t hit_acc  = 0;
+  ::cuda::std::uint64_t miss_acc = 0;
 #endif
 
   if (num_rows == 1)
   {
     // Pixel sweep parameters: every thread strides over the whole pixel
     // space using `total_threads` (the standard grid-strided loop).
-    const OffsetT step         = static_cast<OffsetT>(total_threads);
-    const OffsetT start        = static_cast<OffsetT>(tid_global);
-    const unsigned int lane_id = threadIdx.x & 0x1f;
+    const OffsetT step                  = static_cast<OffsetT>(total_threads);
+    const OffsetT start                 = static_cast<OffsetT>(tid_global);
+    const ::cuda::std::uint32_t lane_id = threadIdx.x & 0x1f;
 
     // Determine the maximum number of `unroll`-sized chunks any thread
     // in the grid will run, so every thread iterates the same number
@@ -2686,8 +2723,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // byte-identical to the hand-tuned kernel (this kernel is register-pinned).
       if constexpr (kWarpCoalesce)
       {
-        const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-        const int leader         = __ffs(static_cast<int>(peers)) - 1;
+        const ::cuda::std::uint32_t peers = __match_any_sync(0xffffffffu, static_cast<::cuda::std::uint32_t>(bin));
+        const int leader                  = __ffs(static_cast<int>(peers)) - 1;
         if (bin >= 0 && static_cast<int>(lane_id) == leader)
         {
           update(bin, static_cast<CounterT>(__popc(peers)));
@@ -2891,8 +2928,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     // After the sweep, flush every cache slot to the spill target (shared output
     // for output-spill; this block's private slab for private-spill). Each slot's
     // total is the sum of its `kCountReplicas` replicas. The block barrier ensures
-    // every leader's atomicAdd_block has finished before the flush reads the
-    // replicas. For the private-spill variant the flush is block-scope and
+    // every leader's block-scope atomic fetch-add has finished before the flush
+    // reads the replicas. For the private-spill variant the flush is block-scope and
     // uncontended (each block owns its slab slice), so the SpillOp scope applies
     // here too.
     __syncthreads();
@@ -2902,7 +2939,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       CounterT* const ch_counts_base = s_cache_counts_base + static_cast<size_t>(ch) * kCountReplicas * slots_sz;
       for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
       {
-        const int key = s_cache_keys[ch][slot];
+        const cache_key_type key = s_cache_keys[ch][slot];
         if (key >= 0)
         {
           CounterT cnt = CounterT{0};
@@ -2966,7 +3003,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      const unsigned int num_bins_u = static_cast<unsigned int>(num_output_bins_wrapper[ch]);
+      const ::cuda::std::uint32_t num_bins_u = static_cast<::cuda::std::uint32_t>(num_output_bins_wrapper[ch]);
       gather_privatized_slab<CounterT, OutputCounterT>(
         d_output_histograms_wrapper[ch],
         /*out_offset=*/0u,
@@ -2986,11 +3023,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // the benchmark, so hit_acc/miss_acc reflect only the cached fast path.)
   if (hit_acc)
   {
-    atomicAdd(&g_cub_histo_cache_hits, hit_acc);
+    ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{g_cub_histo_cache_hits}.fetch_add(
+      hit_acc, ::cuda::memory_order_relaxed);
   }
   if (miss_acc)
   {
-    atomicAdd(&g_cub_histo_cache_misses, miss_acc);
+    ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{g_cub_histo_cache_misses}.fetch_add(
+      miss_acc, ::cuda::memory_order_relaxed);
   }
 #endif
 
