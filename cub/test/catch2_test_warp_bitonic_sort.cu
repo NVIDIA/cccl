@@ -437,12 +437,12 @@ C2H_TEST("Warp sort on keys-value pairs works",
 
   // Verify results
   const c2h::host_vector<key_type> h_keys_out(d_keys_out);
+  c2h::host_vector<value_type> h_values_out(d_values_out);
+
   REQUIRE(h_keys_in_out == h_keys_out);
 
   sort_values_for_equal_keys(h_keys_in_out.begin(), h_values_in_out.begin(), valid_items, total_warps);
-  sort_values_for_equal_keys(d_keys_out.begin(), d_values_out.begin(), valid_items, total_warps);
-
-  const c2h::host_vector<value_type> h_values_out(d_values_out);
+  sort_values_for_equal_keys(h_keys_out.begin(), h_values_out.begin(), valid_items, total_warps);
   REQUIRE(h_values_in_out == h_values_out);
 }
 
@@ -487,11 +487,11 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
 
   // Verify results
   const c2h::host_vector<key_type> h_keys_out(d_keys_out);
+  c2h::host_vector<value_type> h_values_out(d_values_out);
+
   REQUIRE(h_keys_in_out == h_keys_out);
 
   sort_values_for_equal_keys(h_keys_in_out.begin(), h_values_in_out.begin(), valid_items, total_warps);
-  sort_values_for_equal_keys(d_keys_out.begin(), d_values_out.begin(), valid_items, total_warps);
-
-  const c2h::host_vector<value_type> h_values_out(d_values_out);
+  sort_values_for_equal_keys(h_keys_out.begin(), h_values_out.begin(), valid_items, total_warps);
   REQUIRE(h_values_in_out == h_values_out);
 }
