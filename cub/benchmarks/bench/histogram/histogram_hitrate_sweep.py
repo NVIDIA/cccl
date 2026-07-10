@@ -89,30 +89,66 @@ GENERATOR_CACHE_SLOTS = int(os.environ.get("HIST_HR_CACHE_SLOTS", "0"))
 HITRATE_RE = re.compile(
     r"\[hitrate\] bins=(\d+) ch=(\d+) pixels=(\d+) hits=(\d+) misses=(\d+) rate=([0-9.]+)"
 )
+INPUT_CACHE_RE = re.compile(r"\[input-cache\] slots=(\d+)")
+_CACHE_SLOT_QUERY_RESULTS = {}
 # NVBench may run several warmup/measurement launches per cell; the rate is stable
 # across them (deterministic input), so we keep the LAST line seen per (bins,pixels).
 
 
-def cache_slot_groups(label, elements):
-    """Group cells that require the same generator cache-slot count.
+def query_cache_slots(binexe, elements):
+    """Ask this compiled policy for S without allocating the benchmark input."""
+    key = (str(Path(binexe).resolve()), elements)
+    if key in _CACHE_SLOT_QUERY_RESULTS:
+        return _CACHE_SLOT_QUERY_RESULTS[key]
 
-    The hit-rate pass uses I32 samples. RANGE therefore uses its 4096-slot int
-    kernel while 4*N < INT_MAX and its 8192-slot wide-OffsetT kernel otherwise.
-    EVEN and both multi-channel binaries have one fixed slot count on B200.
-    """
+    cmd = [
+        str(binexe),
+        "--benchmark",
+        "base",
+        "--profile",
+        "--quiet",
+        "--axis",
+        f"SampleT{{ct}}={SAMPLE}",
+        "--axis",
+        f"Elements{{io}}={elements}",
+        "--axis",
+        "Bins=32",
+        "--axis",
+        "InputShape=[concentrated:0.0,concentrated:0.0]",
+    ]
+    env = dict(os.environ)
+    env.pop("CUB_HISTO_INPUT_CACHE_SLOTS", None)
+    env.pop("CUB_HISTO_STALE_SLOTS", None)
+    env["CUB_HISTO_LOG_INPUT_CACHE_SLOTS"] = "1"
+    env["CUB_HISTO_QUERY_INPUT_CACHE_SLOTS_ONLY"] = "1"
+    env["CUB_BENCH_HISTOGRAM_VERIFY"] = "0"
+    result = subprocess.run(
+        cmd,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    slots = {int(match.group(1)) for match in INPUT_CACHE_RE.finditer(result.stderr)}
+    if result.returncode != 0 or len(slots) != 1 or next(iter(slots), 0) <= 0:
+        raise RuntimeError(
+            f"cache-slot query failed for {Path(binexe).name} N={elements}: "
+            f"exit={result.returncode}, slots={sorted(slots)}, stderr={result.stderr[-600:]}"
+        )
+    value = slots.pop()
+    _CACHE_SLOT_QUERY_RESULTS[key] = value
+    return value
+
+
+def cache_slot_groups(binexe, elements):
+    """Group cells by the cache size queried from the compiled policy."""
     if GENERATOR_CACHE_SLOTS > 0:
         return [(GENERATOR_CACHE_SLOTS, list(elements))]
-    if label == "range":
-        groups = {4096: [], 8192: []}
-        for n in elements:
-            slots = 4096 if 4 * n < (1 << 31) - 1 else 8192
-            groups[slots].append(n)
-        return [(slots, values) for slots, values in groups.items() if values]
-    if label == "even":
-        return [(8192, list(elements))]
-    if label.startswith("multi_"):
-        return [(1024, list(elements))]
-    raise ValueError(f"unknown histogram binary label: {label}")
+    groups = {}
+    for n in elements:
+        groups.setdefault(query_cache_slots(binexe, n), []).append(n)
+    return sorted(groups.items())
 
 
 def run(binexe, algo, shape, elements, stale_slots):
@@ -184,7 +220,7 @@ def main():
             algo_results = binary_results.setdefault(algo, {})
             for shape in SHAPES:
                 cells = {}
-                for stale_slots, elements in cache_slot_groups(label, ELEMENTS):
+                for stale_slots, elements in cache_slot_groups(binexe, ELEMENTS):
                     sys.stderr.write(
                         f"[HR] {label} {algo} {shape} slots={stale_slots} "
                         f"elements={elements}\n"

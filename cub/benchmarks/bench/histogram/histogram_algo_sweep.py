@@ -281,34 +281,66 @@ def cell_key(sample: str, elements: int, bins: int, shape: str) -> str:
     return f"{sample}|{elements}|{bins}|{shape}"
 
 
-def cache_slots_for_cell(binary_label: str, sample: str, elements: int) -> int:
-    """Return the real B200 direct-atomic cache size S for this logical cell.
+_INPUT_CACHE_RE = re.compile(r"\[input-cache\] slots=(\d+)")
+_CACHE_SLOT_QUERY_RESULTS: dict[tuple[str, str, int], int] = {}
 
-    Main's stock dispatch has no cache-slot query, so cache-sensitive generators
-    consume this value through CUB_HISTO_INPUT_CACHE_SLOTS. Setting it for branch
-    and main guarantees byte-identical hash-synonym/stale/poison inputs.
+
+def query_cache_slots_for_cell(
+    branch_bin: Path, sample: str, elements: int, timeout: str
+) -> int:
+    """Ask the compiled branch policy for S without allocating the input.
+
+    The returned value is then supplied to both branch and overlaid-main
+    generators, guaranteeing byte-identical cache-sensitive inputs without a
+    duplicated Python model of CUB's occupancy policy.
     """
-    if binary_label.startswith("multi_"):
-        return 1024
-    if binary_label == "even":
-        return 8192
-    if binary_label == "range":
-        sample_bytes = {
-            "I8": 1,
-            "I16": 2,
-            "I32": 4,
-            "I64": 8,
-            "F32": 4,
-            "F64": 8,
-        }.get(sample)
-        if sample_bytes is None:
-            raise ValueError(f"unknown histogram sample label: {sample}")
-        # The histogram facade down-converts its int64 OffsetT to int exactly
-        # while the input's byte extent is < INT_MAX. RANGE's int kernel sizes
-        # to 4096 slots on B200; its wide-OffsetT kernel sizes to 8192.
-        byte_extent = sample_bytes * elements
-        return 4096 if byte_extent < (1 << 31) - 1 else 8192
-    raise ValueError(f"unknown histogram binary label: {binary_label}")
+    key = (str(branch_bin.resolve()), sample, elements)
+    if key in _CACHE_SLOT_QUERY_RESULTS:
+        return _CACHE_SLOT_QUERY_RESULTS[key]
+
+    cmd = [
+        str(branch_bin),
+        "--benchmark",
+        "base",
+        "--profile",
+        "--quiet",
+        "--axis",
+        f"SampleT{{ct}}={sample}",
+        "--axis",
+        f"Elements{{io}}={elements}",
+        "--axis",
+        "Bins=32",
+        "--axis",
+        "InputShape=[concentrated:0.0,concentrated:0.0]",
+    ]
+    env = dict(os.environ)
+    env.pop("CUB_HISTO_INPUT_CACHE_SLOTS", None)
+    env.pop("CUB_HISTO_STALE_SLOTS", None)
+    env["CUB_HISTO_LOG_INPUT_CACHE_SLOTS"] = "1"
+    env["CUB_HISTO_QUERY_INPUT_CACHE_SLOTS_ONLY"] = "1"
+    env["CUB_BENCH_HISTOGRAM_VERIFY"] = "0"
+    result = subprocess.run(
+        cmd,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        timeout=max(30, int(float(timeout))),
+    )
+    slots = {int(match.group(1)) for match in _INPUT_CACHE_RE.finditer(result.stderr)}
+    if result.returncode != 0 or len(slots) != 1 or next(iter(slots), 0) <= 0:
+        raise RuntimeError(
+            f"cache-slot query failed for {branch_bin.name} {sample} N={elements}: "
+            f"exit={result.returncode}, slots={sorted(slots)}, stderr={result.stderr[-600:]}"
+        )
+    value = slots.pop()
+    _CACHE_SLOT_QUERY_RESULTS[key] = value
+    print(
+        f"  queried input cache: {branch_bin.name} {sample} N={elements} -> S={value}",
+        flush=True,
+    )
+    return value
 
 
 # Maps the `[launch] ... ran=X` tag the dispatch emits to the canonical algorithm
@@ -535,8 +567,8 @@ def main():
         selected = algo_cells.setdefault("_selected", {})
         for sample in args.samples:
             for elements in args.elements:
-                cache_slots = args.generator_cache_slots or cache_slots_for_cell(
-                    blabel, sample, elements
+                cache_slots = args.generator_cache_slots or query_cache_slots_for_cell(
+                    branch_bin, sample, elements, args.timeout
                 )
                 for bins in args.bins:
                     multichannel = blabel.startswith("multi")
@@ -657,7 +689,9 @@ def main():
                     for elements in args.elements:
                         cache_slots = (
                             args.generator_cache_slots
-                            or cache_slots_for_cell(blabel, sample, elements)
+                            or query_cache_slots_for_cell(
+                                branch_bin, sample, elements, args.timeout
+                            )
                         )
                         for bins in args.bins:
                             med, _ran, ok, _unsup = run_cell(
