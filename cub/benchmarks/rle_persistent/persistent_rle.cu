@@ -8,7 +8,6 @@
 namespace rle_impl
 {
 namespace ptx = cuda::ptx;
-using u64     = cuda::std::uint64_t;
 
 template <class KeyT, int kIptOverride = 0>
 struct winner_config
@@ -69,7 +68,7 @@ constexpr unsigned kTilePublished = 1u;
 
 struct TilePartialStateT
 {
-  u64 word;
+  cuda::std::uint64_t word;
 
   __device__ __forceinline__ unsigned published_tag() const
   {
@@ -88,14 +87,15 @@ struct TilePartialStateT
 
   static __device__ __forceinline__ TilePartialStateT pack(int run_count, int open_len)
   {
-    return {((u64) kTilePublished << 32) | ((u64) (unsigned) open_len << 16) | (u64) (unsigned) run_count};
+    return {((cuda::std::uint64_t) kTilePublished << 32) | ((cuda::std::uint64_t) (unsigned) open_len << 16)
+            | (cuda::std::uint64_t) (unsigned) run_count};
   }
 };
 
 __device__ __forceinline__ void
 publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, int open_len)
 {
-  cuda::atomic_ref<u64, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
+  cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
   a.store(TilePartialStateT::pack(run_count, open_len).word, cuda::memory_order_relaxed);
 }
 
@@ -103,7 +103,7 @@ publish_state(TilePartialStateT* tile_state_arr, int tile_idx, int run_count, in
 // we do not want to spin here
 __device__ __forceinline__ TilePartialStateT load_state(TilePartialStateT* tile_state_arr, int tile_idx)
 {
-  cuda::atomic_ref<u64, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
+  cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_device> a(tile_state_arr[tile_idx].word);
   return {a.load(cuda::memory_order_relaxed)};
 }
 
@@ -115,11 +115,11 @@ struct PrefixT;
 template <class OffT>
 struct PrefixT<OffT, false>
 {
-  u64 word;
+  cuda::std::uint64_t word;
 
   static __device__ __forceinline__ PrefixT pack(OffT run_count, OffT open_len)
   {
-    return {((u64) (unsigned) open_len << 32) | (unsigned) run_count};
+    return {((cuda::std::uint64_t) (unsigned) open_len << 32) | (unsigned) run_count};
   }
 
   __device__ __forceinline__ OffT run_count() const
@@ -136,12 +136,12 @@ struct PrefixT<OffT, false>
 template <class OffT>
 struct alignas(16) PrefixT<OffT, true>
 {
-  u64 packed_run_count;
-  u64 packed_open_len;
+  cuda::std::uint64_t packed_run_count;
+  cuda::std::uint64_t packed_open_len;
 
   static __device__ __forceinline__ PrefixT pack(OffT run_count, OffT open_len)
   {
-    return {(u64) run_count, (u64) open_len};
+    return {(cuda::std::uint64_t) run_count, (cuda::std::uint64_t) open_len};
   }
 
   __device__ __forceinline__ OffT run_count() const
@@ -580,23 +580,23 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
 
   // STORE --pos_buf_free--> COMPUTE staging (only when kPosBufStages < kStages; if = then it is mapped 1:1)
   // all store warps arrive after they no longer need the data in the pos slot; compute waits before re-staging into it
-  __shared__ u64 pos_buf_free[kPosBufStages];
+  __shared__ cuda::std::uint64_t pos_buf_free[kPosBufStages];
   // LOAD --full--> COMPUTE & POLL
   // COMPUTE(all warps) --computed--> COMPUTE warp0
   // warp0 calculates & publishes this tile's aggregate to the global
   // POLL --prefixed--> STORE
   // STORE --empty--> LOAD & POLL
-  __shared__ u64 full[kStages];
-  __shared__ u64 computed[kStages], prefixed[kStages], empty[kStages];
+  __shared__ cuda::std::uint64_t full[kStages];
+  __shared__ cuda::std::uint64_t computed[kStages], prefixed[kStages], empty[kStages];
   // COMPUTE warp w --staged_warp_tile[w]--> STORE: we arrive per warp tile handoff
   // i.e. store warps start working to drain a warp-tile as soon as ITS positions are staged
   // instead of waiting for all 8 compute warps (warp 0 is always slower!!)
   // The shared metadata store also needs (run counts, first/last heads, tile_id_buf) is covered by `computed`.
-  __shared__ u64 staged_warp_tile[kStages][kNumCompWarps];
+  __shared__ cuda::std::uint64_t staged_warp_tile[kStages][kNumCompWarps];
 
   // try_cancel writes a 16-byte response into clc_resp + completes clc_bar's tx.
   __shared__ __align__(16) uint4 clc_resp;
-  __shared__ u64 clc_bar;
+  __shared__ cuda::std::uint64_t clc_bar;
 
   const int thr_id  = threadIdx.x;
   const int warp_id = thr_id >> 5;
