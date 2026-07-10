@@ -346,16 +346,16 @@ __launch_bounds__(int(
                     OffsetT,
                     StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const FlagsInputIteratorT d_flags,
-    _CCCL_GRID_CONSTANT const SelectedOutputIteratorT d_selected_out,
-    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
+    const InputIteratorT d_in,
+    const FlagsInputIteratorT d_flags,
+    const SelectedOutputIteratorT d_selected_out,
+    const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     SelectOpT select_op,
     EqualityOpT equality_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<
