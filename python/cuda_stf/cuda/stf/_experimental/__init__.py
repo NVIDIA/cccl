@@ -33,6 +33,7 @@ _LAZY_SYMBOLS = {
     "exec_place_resources": "._stf_bindings",
     "green_context_helper": "._stf_bindings",
     "green_ctx_view": "._stf_bindings",
+    "green_places": ".green_places",
     "machine_init": "._stf_bindings",
     "stackable_context": "._stf_bindings",
     "DeviceArray": ".device_array",
@@ -57,6 +58,7 @@ if TYPE_CHECKING:
         stackable_context,
     )
     from .device_array import DeviceArray
+    from .green_places import green_places
     from .task_graph import TaskGraph, task_graph
 
 
@@ -92,6 +94,7 @@ __all__ = [
     "get_stf_include_dir",
     "green_context_helper",
     "green_ctx_view",
+    "green_places",
     "data_place",
     "machine_init",
     "paths",

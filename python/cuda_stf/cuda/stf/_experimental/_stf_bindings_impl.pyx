@@ -120,6 +120,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_exec_place_handle stf_exec_place_host()
     stf_exec_place_handle stf_exec_place_device(int dev_id)
     stf_exec_place_handle stf_exec_place_current_device()
+    stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id)
     stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id)
     void stf_green_context_helper_destroy(stf_green_context_helper_handle h)
     size_t stf_green_context_helper_get_count(stf_green_context_helper_handle h)
@@ -1039,10 +1040,14 @@ cdef class exec_place_resources:
 cdef class exec_place:
     cdef stf_exec_place_handle _h
     cdef stf_exec_place_scope_handle _scope
+    # Keeps externally-owned objects (e.g. a cuda.core Context backing a
+    # from_context place) alive for the lifetime of this place.
+    cdef object _keep_alive
 
     def __cinit__(self):
         self._h = NULL
         self._scope = NULL
+        self._keep_alive = None
 
     def __dealloc__(self):
         if self._scope != NULL:
@@ -1090,6 +1095,39 @@ cdef class exec_place:
         )
         if p._h == NULL:
             raise RuntimeError(f"failed to create green_ctx exec_place for index {view._idx}")
+        return p
+
+    @staticmethod
+    def from_context(ctx, int dev_id=-1):
+        """Create an execution place from an externally-owned CUDA context.
+
+        ``ctx`` is either an integer ``CUcontext`` value or any object
+        exposing the context through a ``handle`` attribute (e.g. a
+        ``cuda.core.Context``, including green contexts created with
+        ``Device.create_context``). ``dev_id`` is the device ordinal of the
+        context, or -1 (default) to derive it from the context.
+
+        The place is non-owning but keeps a reference to ``ctx`` so a
+        backing object (e.g. a cuda.core ``Context``) stays alive for the
+        lifetime of the place. Closing/destroying the context while the
+        place is in use is undefined behavior.
+        """
+        raw = getattr(ctx, "handle", ctx)
+        cdef uintptr_t ctx_value
+        try:
+            ctx_value = <uintptr_t>int(raw)
+        except (TypeError, ValueError):
+            raise TypeError(
+                f"exec_place.from_context expects an int CUcontext value or an object "
+                f"with a 'handle' attribute, got {type(ctx)!r}"
+            )
+        if ctx_value == 0:
+            raise ValueError("exec_place.from_context received a null CUcontext")
+        cdef exec_place p = exec_place.__new__(exec_place)
+        p._h = stf_exec_place_cuda_context(<CUcontext>ctx_value, dev_id)
+        if p._h == NULL:
+            raise RuntimeError(f"failed to create exec_place from CUcontext {ctx_value:#x}")
+        p._keep_alive = ctx
         return p
 
     @staticmethod
