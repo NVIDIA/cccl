@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// NVBench benchmarks for chained elementwise operations put together by Matthias Jouanneaux (DevTech).
-// See also: https://github.com/NVIDIA-dev/cccl_private/issues/639
+// ============================================================================
+// NVBench benchmarks for chained elementwise operations was put together by Matthias Jouanneaux (DevTech). It mimics
+// how pytorch uses element-wise kernels (i.e. cub::DeviceTransform). The main difference to ordinary CCCL benchmarks is
+// the chaining of several operations in the benchmark's critical section. Furthermore, there are 4 types of work loads
+// covering the combinations of few vs. many input buffers and few vs. many instructions in the kernel.
+// For more discussion see: https://github.com/NVIDIA-dev/cccl_private/issues/639
+// ============================================================================
 
 // %RANGE% TUNE_BIF_BIAS bif -16:16:4
 // %RANGE% TUNE_ALGORITHM alg 0:4:1
@@ -300,7 +305,7 @@ using element_types = nvbench::type_list<float, BFloat16>;
 #endif
 
 // ============================================================================
-// chained_eltwise_many_in_many_inst
+// many_inputs_many_instructions
 //
 // div_floor -> div_trunc -> div -> atan2 -> hypot ->
 // xlogy -> xlog1py -> logaddexp -> logaddexp2 -> pow
@@ -308,7 +313,7 @@ using element_types = nvbench::type_list<float, BFloat16>;
 // ============================================================================
 
 template <typename T>
-static void chained_eltwise_many_in_many_inst(nvbench::state& state, nvbench::type_list<T>)
+static void many_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -478,7 +483,7 @@ catch (const std::bad_alloc&)
 }
 
 // ============================================================================
-// chained_eltwise_many_in_few_inst
+// many_inputs_few_instructions
 //
 // mse_loss -> smooth_l1_loss -> huber_loss -> clamp_min ->
 // mul -> add -> addcmul -> lerp(scalar) -> lerp(tensor) -> greater
@@ -486,7 +491,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void chained_eltwise_many_in_few_inst(nvbench::state& state, nvbench::type_list<T>)
+static void many_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -628,7 +633,7 @@ catch (const std::bad_alloc&)
 }
 
 // ============================================================================
-// chained_eltwise_few_in_many_inst
+// few_inputs_many_instructions
 //
 // pow(2.5) -> tanh -> sin -> cos -> softplus ->
 // silu -> mish -> elu -> gelu -> logsigmoid
@@ -636,7 +641,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void chained_eltwise_few_in_many_inst(nvbench::state& state, nvbench::type_list<T>)
+static void few_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -786,7 +791,7 @@ catch (const std::bad_alloc&)
 }
 
 // ============================================================================
-// chained_eltwise_few_in_few_inst
+// few_inputs_few_instructions
 //
 // add(0.5) -> neg -> clamp(-2,1) -> abs -> mul(1.5) ->
 // leaky_relu -> hardswish -> hardshrink -> hardsigmoid -> gt(0)
@@ -794,7 +799,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void chained_eltwise_few_in_few_inst(nvbench::state& state, nvbench::type_list<T>)
+static void few_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -955,22 +960,22 @@ catch (const std::bad_alloc&)
   state.skip("Skipping: out of memory.");
 }
 
-NVBENCH_BENCH_TYPES(chained_eltwise_many_in_many_inst, NVBENCH_TYPE_AXES(element_types))
-  .set_name("chained_eltwise_many_in_many_inst")
+NVBENCH_BENCH_TYPES(many_inputs_many_instructions, NVBENCH_TYPE_AXES(element_types))
+  .set_name("many_inputs_many_instructions")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
-NVBENCH_BENCH_TYPES(chained_eltwise_many_in_few_inst, NVBENCH_TYPE_AXES(element_types))
-  .set_name("chained_eltwise_many_in_few_inst")
+NVBENCH_BENCH_TYPES(many_inputs_few_instructions, NVBENCH_TYPE_AXES(element_types))
+  .set_name("many_inputs_few_instructions")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
-NVBENCH_BENCH_TYPES(chained_eltwise_few_in_many_inst, NVBENCH_TYPE_AXES(element_types))
-  .set_name("chained_eltwise_few_in_many_inst")
+NVBENCH_BENCH_TYPES(few_inputs_many_instructions, NVBENCH_TYPE_AXES(element_types))
+  .set_name("few_inputs_many_instructions")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
-NVBENCH_BENCH_TYPES(chained_eltwise_few_in_few_inst, NVBENCH_TYPE_AXES(element_types))
-  .set_name("chained_eltwise_few_in_few_inst")
+NVBENCH_BENCH_TYPES(few_inputs_few_instructions, NVBENCH_TYPE_AXES(element_types))
+  .set_name("few_inputs_few_instructions")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
