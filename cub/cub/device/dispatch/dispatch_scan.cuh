@@ -504,7 +504,7 @@ struct DispatchScan
       return cudaSuccess;
     }
 
-    void* d_tile_state = allocations[0];
+    void* const d_tile_state = allocations[0];
 
     int sm_count = 0;
     if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
