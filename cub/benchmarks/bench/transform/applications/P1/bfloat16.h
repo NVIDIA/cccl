@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include <cuda_bf16.h>
+
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 
 #include <nvbench/type_strings.cuh>
@@ -67,8 +70,11 @@ struct alignas(2) BFloat16
 inline __host__ __device__ BFloat16::BFloat16(float value)
 {
   NV_IF_TARGET(NV_IS_DEVICE,
-               (x = __bfloat16_as_ushort(__float2bfloat16(value));),
-               (x = bf16_detail::round_to_nearest_even(value);));
+               ({
+                 __nv_bfloat16 tmp = __float2bfloat16(value);
+                 x                 = *reinterpret_cast<const unsigned short*>(&tmp);
+               }),
+               ({ x = bf16_detail::round_to_nearest_even(value); }));
 }
 
 inline __host__ __device__ BFloat16::operator float() const
