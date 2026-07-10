@@ -79,7 +79,7 @@ matrix; keep for provenance, do not ship.
 ### 2c. Capacity / hit-rate sweeps (on `histogram-smem-capacity-exploration`)
 | script | role | matrix |
 |---|---|---|
-| `autocuda/sweep_hitrate.py` | **pass-2** hit-rate sweep using `-DCUB_HISTO_TRACK_HITRATE=1` binaries; parses `[hitrate] … hits/misses/rate` per cached launch. Single SampleT (rate is sample-type-independent). → `hitrate_results.json` | cuckoo + single_probe × bins × elements × shapes |
+| `autocuda/sweep_hitrate.py` | **pass-1** hit-rate sweep using `-DCUB_HISTO_TRACK_HITRATE=1` binaries; parses `[hitrate] … hits/misses/rate` per cached launch. Measures each SampleT because kernel occupancy can change cache capacity. → `hitrate_results.json` | cuckoo + single_probe × SampleT × bins × elements × shapes |
 | `smem_capacity_explore/sweep_cache_slots.py` | **Lever A**: sweep per-block cache SLOT count (`CUB_HISTO_FORCE_SLOTS`) past the auto-sizer. | algos {cuckoo,single_probe} × slot counts × bins × elements |
 | `smem_capacity_explore/sweep_priv_cap.py` | **Lever B**: larger privatized-SMEM cap variant binaries (cap16384…49152) vs the high-bin path they'd replace. | cap variants × bins × elements |
 | `smem_capacity_explore/build_hitrate_variants.sh` | surgical relink of the 4 benches with `-DCUB_HISTO_TRACK_HITRATE=1` → `*.hitrate` binaries. |

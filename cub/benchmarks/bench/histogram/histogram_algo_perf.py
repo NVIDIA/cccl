@@ -587,21 +587,38 @@ def draw_perf(ax, series, title, default_tags=None):
     return any_pts
 
 
-def draw_hitrate(ax, hr_algo_cells, shape, elements_list, title):
+def _hitrate_key_parts(key):
+    """Return (sample, bins, elements, shape); accept legacy I32-only keys."""
+    parts = key.split("|")
+    if len(parts) == 4:
+        return parts
+    if len(parts) == 3:
+        bins, elements, shape = parts
+        return "I32", bins, elements, shape
+    raise ValueError(f"invalid hit-rate key: {key!r}")
+
+
+def draw_hitrate(ax, hr_algo_cells, sample, shape, elements_list, title):
     """Cache hit rate (%) vs #bins, one series per #elements. hr_algo_cells is
-    keyed 'Bins|Elements|InputShape' -> {rate,hits,misses}."""
+    keyed 'SampleT|Bins|Elements|InputShape' -> {rate,hits,misses}. Legacy
+    three-field keys are treated as I32-only."""
     ax.set_title(title, fontsize=9)
     ax.set_xlabel("# bins")
     ax.set_ylabel("cache hit rate (%)")
     any_pts = False
     cmap = plt.cm.viridis
     # CATEGORICAL x-axis (evenly spaced), matching draw_perf: map each bin to a slot index.
-    all_bins_sorted = sorted({int(k.split("|")[0]) for k in hr_algo_cells})
+    matching = [
+        (key, rec, _hitrate_key_parts(key))
+        for key, rec in hr_algo_cells.items()
+        if _hitrate_key_parts(key)[0] == sample
+    ]
+    all_bins_sorted = sorted({int(parts[1]) for _key, _rec, parts in matching})
     xpos = {b: i for i, b in enumerate(all_bins_sorted)}
     for i, elements in enumerate(elements_list):
         pts = []
-        for key, rec in hr_algo_cells.items():
-            b, e, sh = key.split("|")
+        for _key, rec, parts in matching:
+            _sample, b, e, sh = parts
             if int(e) == elements and sh == shape:
                 pts.append((int(b), rec["rate"] * 100.0))
         pts.sort()
@@ -850,8 +867,12 @@ def render_one(
     hit-rate vs #bins (one series per #elements)."""
     bins, counts, char_bins = C.char_input(shape)
     hr_for_binary = hr_for_binary or {}
-    has_hr = bool(
-        hr_for_binary.get("direct_cuckoo") or hr_for_binary.get("direct_single_probe")
+
+    def has_sample(cells):
+        return any(_hitrate_key_parts(key)[0] == sample for key in cells)
+
+    has_hr = has_sample(hr_for_binary.get("direct_cuckoo", {})) or has_sample(
+        hr_for_binary.get("direct_single_probe", {})
     )
 
     ncols = 3
@@ -871,7 +892,7 @@ def render_one(
         head += f"  ({blurb})"
     head = "\n".join(textwrap.wrap(head, width=120))
     hr_note = (
-        "   bottom row: I32-representative SMEM-cache hit rate vs #bins (series = #elements)"
+        f"   bottom row: {sample} SMEM-cache hit rate vs #bins (series = #elements)"
         if has_hr
         else ""
     )
@@ -962,16 +983,18 @@ def render_one(
         draw_hitrate(
             fig.add_subplot(gs[hr_row, 0]),
             hr_for_binary.get("direct_cuckoo", {}),
+            sample,
             shape,
             elements_list,
-            "cuckoo cache — I32 hit rate vs #bins",
+            f"cuckoo cache — {sample} hit rate vs #bins",
         )
         draw_hitrate(
             fig.add_subplot(gs[hr_row, 1]),
             hr_for_binary.get("direct_single_probe", {}),
+            sample,
             shape,
             elements_list,
-            "single-probe cache — I32 hit rate vs #bins",
+            f"single-probe cache — {sample} hit rate vs #bins",
         )
         # third column of the hit-rate row: short explainer
         ax = fig.add_subplot(gs[hr_row, 2])
@@ -980,8 +1003,8 @@ def render_one(
             0.5,
             0.5,
             "hit = contribution absorbed in the\nSMEM cache (block-scope add)\n"
-            "miss = spilled to a GMEM atomic\n\n(measured with I32 samples on a\n"
-            "separate instrumented build; RANGE/F64\ncache capacity may differ)",
+            "miss = spilled to a GMEM atomic\n\n(measured with the figure's SampleT\n"
+            "and counter-width-specific\ninstrumented build)",
             ha="center",
             va="center",
             fontsize=9,
@@ -1005,7 +1028,8 @@ def main():
     ap.add_argument(
         "--hitrate",
         default="hitrate_results.json",
-        help="per-cell hit-rate sweep JSON (binary -> algo -> 'Bins|Elements|InputShape' -> {rate}); "
+        help="per-cell hit-rate sweep JSON "
+        "(binary -> algo -> 'SampleT|Bins|Elements|InputShape' -> {rate}); "
         "optional, adds two cache-hit-rate panels per image when present",
     )
     ap.add_argument(

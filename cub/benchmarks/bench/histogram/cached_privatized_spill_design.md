@@ -162,7 +162,7 @@ that sizing is right for either kernel is an open question (see Cache sizing bel
 
 Add `algorithm::gmem_privatized_cuckoo` / `…_single_probe` and a `select_algorithm`
 rule scoped to the tier below. When selected, dispatch allocates the same
-`num_blocks × num_bins × sizeof(CounterT)` private-histogram temp storage that
+`num_blocks × num_bins × sizeof(LocalCounterT)` private-histogram temp storage that
 `gmem_priv_gather` uses, plus the cache's dynamic-SMEM reservation. No new sizing
 logic; the combiner and `smem_split` are template arguments threaded through the
 existing `GmemPrivatized` launch path.
