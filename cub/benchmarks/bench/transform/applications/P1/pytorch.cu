@@ -966,20 +966,20 @@ catch (const std::bad_alloc&)
 
 NVBENCH_BENCH_TYPES(many_inputs_many_instructions, NVBENCH_TYPE_AXES(element_types))
   .set_name("many_inputs_many_instructions")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
 NVBENCH_BENCH_TYPES(many_inputs_few_instructions, NVBENCH_TYPE_AXES(element_types))
   .set_name("many_inputs_few_instructions")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
 NVBENCH_BENCH_TYPES(few_inputs_many_instructions, NVBENCH_TYPE_AXES(element_types))
   .set_name("few_inputs_many_instructions")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
 NVBENCH_BENCH_TYPES(few_inputs_few_instructions, NVBENCH_TYPE_AXES(element_types))
   .set_name("few_inputs_few_instructions")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
