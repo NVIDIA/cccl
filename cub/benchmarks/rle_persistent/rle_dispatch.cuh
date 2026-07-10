@@ -2,7 +2,7 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <algorithm>
+#include <cuda/std/algorithm>
 
 #include "persistent_rle.cu"
 
@@ -44,7 +44,7 @@ inline cudaError_t persistent_rle_encode(
   size_t cub_bytes = 0;
   cub::DeviceRunLengthEncode::Encode(nullptr, cub_bytes, d_keys, d_unique, d_counts, d_num_runs, num_items, stream);
   const size_t pers_bytes = (size_t) rle_state_tiles<Config>((long long) num_items) * sizeof(TilePartialStateT);
-  const size_t required   = std::max(cub_bytes, pers_bytes);
+  const size_t required   = cuda::std::max(cub_bytes, pers_bytes);
   if (d_temp_storage == nullptr)
   {
     temp_storage_bytes = required;
