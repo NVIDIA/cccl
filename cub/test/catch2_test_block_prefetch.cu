@@ -97,7 +97,7 @@ C2H_TEST("BlockPrefetch is a no-op for CacheModifiedInputIterator", "[prefetch][
   constexpr cub::detail::LoadPrefetch level = c2h::get<0, TestType>::value;
 
   const int num_items = GENERATE_COPY(7, 200, take(3, random(1, 1024)));
-  CAPTURE(num_items);
+  CAPTURE(num_items, threads_in_block, level);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input);
@@ -113,7 +113,7 @@ C2H_TEST("BlockPrefetch is safe with thrust vector iterators", "[prefetch][block
   constexpr int threads_in_block = 128;
 
   const int num_items = GENERATE_COPY(7, 200, take(3, random(1, 1024)));
-  CAPTURE(num_items);
+  CAPTURE(num_items, threads_in_block);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input);
@@ -136,7 +136,7 @@ C2H_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]",
   constexpr cub::detail::LoadPrefetch level = c2h::get<0, TestType>::value;
 
   const int num_items = GENERATE_COPY(7, 200, take(3, random(1, 1024)));
-  CAPTURE(num_items);
+  CAPTURE(num_items, threads_in_block, level);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(2), d_input);
@@ -164,7 +164,7 @@ C2H_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", c2h:
   // bulk_l2 aligns the base down to 16 B and extends the size to compensate; walk the base across a 16 B window.
   const int offset    = GENERATE(0, 1, 2, 3, 4, 5, 7, 8, 15);
   const int num_items = GENERATE(1, 33, 512);
-  CAPTURE(offset, num_items);
+  CAPTURE(offset, num_items, threads_in_block);
 
   c2h::device_vector<type> d_storage(num_items + offset, thrust::no_init);
   c2h::gen(C2H_SEED(1), d_storage);
@@ -182,7 +182,7 @@ C2H_TEST("BlockPrefetch honors a non-default stride", "[prefetch][block]")
   constexpr int threads_in_block = 64;
 
   const int num_items = GENERATE(1, 100, 777);
-  CAPTURE(num_items);
+  CAPTURE(num_items, threads_in_block);
 
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), d_input);
