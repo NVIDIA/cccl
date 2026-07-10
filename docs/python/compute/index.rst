@@ -285,8 +285,8 @@ payload on other GPUs with the same compute capability; each GPU still receives
 its own loaded native state. An explicit ahead-of-time build behaves the same
 way across same-compute-capability GPUs. Set the intended current CUDA device
 before invoking an algorithm, and pass arrays — and a stream — that belong to
-that device; the stream selects a queue on the current device but never selects
-the device itself.
+that device; currently, the stream selects a queue on the current device and
+does not select the device itself.
 
 .. _cuda.compute.free_threading:
 
@@ -412,13 +412,20 @@ The same argument-matching rules described above for the object-based API apply
 to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
 when invoking it must match those used when it was originally built.
 
+Blobs are versioned and self-describing, but they are not a long-term storage
+format: compatibility across ``cuda-cccl`` versions is not guaranteed, and
+loading a blob produced by a different version may be rejected with a clear
+error. Persist the inputs needed to rebuild (or re-serialize) rather than
+relying on old blobs surviving an upgrade.
+
 The same threading rules also apply: like any other reusable algorithm object,
 a deserialized algorithm must be used by one thread at a time unless access is
 externally serialized (see :ref:`Free-threaded Python <cuda.compute.free_threading>`).
 For concurrent use, call :func:`deserialize <cuda.compute.algorithms.deserialize>`
 in each thread — reconstruction performs no recompilation, so per-thread
-deserialization from one shared blob is cheap. Each deserialized object holds
-its own copy of the native build state and loads it independently.
+deserialization from one shared blob is cheap. (Currently each deserialized
+object loads its native build state independently; a future release may share
+that state behind the scenes.)
 
 .. _cuda.compute.ahead_of_time_compilation:
 
