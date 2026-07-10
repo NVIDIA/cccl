@@ -26,6 +26,7 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/atomic>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -421,7 +422,8 @@ struct AgentHistogram
 
         if (output_bin >= 0)
         {
-          atomicAdd(&d_output_histograms[ch][output_bin], static_cast<OutputCounterT>(count));
+          ::cuda::atomic_ref<OutputCounterT, ::cuda::thread_scope_device>{d_output_histograms[ch][output_bin]}
+            .fetch_add(static_cast<OutputCounterT>(count), ::cuda::memory_order_relaxed);
         }
       }
     }
