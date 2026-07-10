@@ -1310,9 +1310,10 @@ private:
   // `run_filter`; `write_deterministic_topk` computes `st` and calls `run_filter(st)`. See `write_deterministic_topk`
   // for the front/back placement scheme. All methods are `_CCCL_FORCEINLINE`.
 
-  // For each key written to `block_keys_out[pos]`, load the associated input value at the key's segment-local index
-  // `seg_idx` from gmem and store it at the same slot. Compiled out (and never dereferences the null value iterators)
-  // in keys-only builds; `segment_id` is loop-invariant, so the per-segment iterators hoist out of the writes.
+  // Shared by both final filters: for each key written to `block_keys_out[pos]`, load the associated input value at the
+  // key's segment-local index `seg_idx` from gmem and store it at the same slot. Compiled out (and never dereferences
+  // the null value iterators) in keys-only builds; `segment_id` is loop-invariant, so the per-segment iterators hoist
+  // out of the writes.
   _CCCL_DEVICE _CCCL_FORCEINLINE void final_filter_write_value(out_offset_t pos, offset_t seg_idx)
   {
     if constexpr (!is_keys_only)
@@ -1697,29 +1698,180 @@ private:
     }
   }
 
-  // Non-deterministic final filter: strictly-selected keys fill the front `[0, num_selected)`, the first `num_kth`
-  // candidates (arrival order) fill the back. The combined cross-CTA scan gives this block disjoint front/back bases
-  // (`sel_prefix`/`cand_prefix`); placement then uses block-local SMEM atomics since output order is not preserved. A
-  // perf change over the old cluster-wide `out_cnt`/`out_back_cnt` DSMEM atomics, not a correctness one.
+  // ---------------------------------------------------------------------------
+  // Non-deterministic final filter
+  // ---------------------------------------------------------------------------
+  // The sweep helpers below are named agent methods over a `nondet_filter_state` (`st`); `k`, `segment_id`, and
+  // `layout.*` are read from the agent. `write_nondeterministic_topk` computes `st` and drives the sweeps (see
+  // `nondet_place` for the per-key front/back placement). All methods are `_CCCL_FORCEINLINE`.
+  template <class IdentifyOp, class KeyOutIt>
+  struct nondet_filter_state
+  {
+    IdentifyOp identify_op;
+    KeyOutIt block_keys_out;
+    out_offset_t num_kth;
+    offset_t sel_prefix;
+    offset_t cand_prefix;
+    smem_keys_t resident_keys;
+  };
+
+  // Classify one key and place it: strictly-selected keys go to the front (`sel_prefix` + a block-local atomic); the
+  // first `num_kth` candidates (arrival order) go to the back (`cand_prefix` + a block-local atomic), later candidates
+  // are dropped. In pair mode each written key additionally pulls its value from gmem at `seg_idx`; keys-only elides
+  // that and passes a dummy `seg_idx`.
+  template <class IdentifyOp, class KeyOutIt>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  nondet_place(const nondet_filter_state<IdentifyOp, KeyOutIt>& st, const key_t& key, [[maybe_unused]] offset_t seg_idx)
+  {
+    const auto res = st.identify_op(key);
+    if (res == detail::topk::candidate_class::selected)
+    {
+      const out_offset_t pos =
+        static_cast<out_offset_t>(st.sel_prefix + atomicAdd(&temp_storage.front_local_cnt, offset_t{1}));
+      st.block_keys_out[pos] = key;
+      if constexpr (!is_keys_only)
+      {
+        final_filter_write_value(pos, seg_idx);
+      }
+    }
+    else if (res == detail::topk::candidate_class::candidate)
+    {
+      const out_offset_t back_pos =
+        static_cast<out_offset_t>(st.cand_prefix + atomicAdd(&temp_storage.back_local_cnt, offset_t{1}));
+      if (back_pos < st.num_kth)
+      {
+        const out_offset_t pos = k - 1 - back_pos;
+        st.block_keys_out[pos] = key;
+        if constexpr (!is_keys_only)
+        {
+          final_filter_write_value(pos, seg_idx);
+        }
+      }
+    }
+  }
+
+  // Fold a contiguous run of `count` keys staged in SMEM at `smem`, whose element `local` has segment-local index
+  // `base_off + local` (pair mode needs that index for the value fetch). Materialize each key into a register first:
+  // `nondet_place` reads it more than once, so indexing `smem[local]` per use would re-issue a narrow `LDS`.
+  template <class IdentifyOp, class KeyOutIt>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  nondet_write_run(const nondet_filter_state<IdentifyOp, KeyOutIt>& st, const key_t* smem, offset_t base_off, int count)
+  {
+    const int iterations = ::cuda::ceil_div(count, threads_per_block);
+    _CCCL_PRAGMA_UNROLL(tie_break_items_per_thread_clamped)
+    for (int j = 0; j < iterations; ++j)
+    {
+      const int local = j * threads_per_block + tid;
+      if (local < count)
+      {
+        const key_t key = smem[local];
+        nondet_place(st, key, base_off + static_cast<offset_t>(local));
+      }
+    }
+  }
+
+  // Fold a boundary edge (fewer than `load_align_items` items) with a plain block-stride loop rather than the
+  // tiled/unrolled `nondet_write_run` used for the potentially large resident bulks.
+  template <class IdentifyOp, class KeyOutIt>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void nondet_write_edge(
+    const nondet_filter_state<IdentifyOp, KeyOutIt>& st, const key_t* smem, offset_t base_off, int count)
+  {
+    for (int local = tid; local < count; local += threads_per_block)
+    {
+      const key_t key = smem[local];
+      nondet_place(st, key, base_off + static_cast<offset_t>(local));
+    }
+  }
+
+  // Fold this rank's resident keys (and, in pair mode, their values) as the overflow pass's `mid` work so they overlap
+  // the first overflow reloads. Writes are order-independent atomics and resident SMEM slots are disjoint from the
+  // streaming slots, so this never races the overflow apply. Keys-only drives the index-free traversal with a dummy
+  // `seg_idx`; pair mode recovers each key's segment-local index via `nondet_write_run`/`nondet_write_edge`.
+  template <class IdentifyOp, class KeyOutIt>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void nondet_fold_resident(const nondet_filter_state<IdentifyOp, KeyOutIt>& st)
+  {
+    if constexpr (is_keys_only)
+    {
+      const auto write_selected = [&](const key_t& key) {
+        nondet_place(st, key, offset_t{0});
+      };
+      if constexpr (use_block_load_to_shared)
+      {
+        for_each_chunk_key<tie_break_items_per_thread_floor_clamped>(
+          st.resident_keys.data(), static_cast<int>(st.resident_keys.size()), write_selected);
+      }
+      else
+      {
+        for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
+        {
+          const offset_t chunk_idx = layout.part.global_index(local_chunk);
+          const auto chunk         = get_chunk(chunk_idx, layout.segment_size_off, layout.head_items);
+          for_each_chunk_key<tie_break_items_per_thread_floor_clamped>(
+            ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes),
+            static_cast<int>(chunk.count),
+            write_selected);
+        }
+      }
+      // Order-independent atomic writes, so the persistent boundary edges fold in alongside the resident keys.
+      fold_boundary_edges(layout.head_edge_len_items, layout.tail_edge_len_items, write_selected);
+    }
+    else
+    {
+      if constexpr (use_block_load_to_shared)
+      {
+        // Resident keys are densely packed in slot order (aligned bulks only), so a running cursor recovers per-chunk
+        // spans. Only the global-last chunk can be partial (its unaligned suffix is peeled into `edge_keys` and folded
+        // below), so iterate the aligned bulk (`round_down(count, load_align_items)`), not `chunk.count`.
+        key_t* const resident_ptr = st.resident_keys.data();
+        int cursor_items          = 0;
+        for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
+        {
+          const auto chunk = get_chunk(
+            layout.part.global_index(layout.resident_base + local_chunk), layout.segment_size_off, layout.head_items);
+          const int bulk_count_items = static_cast<int>(
+            ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items)));
+          nondet_write_run(st, resident_ptr + cursor_items, chunk.offset, bulk_count_items);
+          cursor_items += bulk_count_items;
+        }
+      }
+      else
+      {
+        for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
+        {
+          const auto chunk =
+            get_chunk(layout.part.global_index(local_chunk), layout.segment_size_off, layout.head_items);
+          nondet_write_run(st,
+                           ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes),
+                           chunk.offset,
+                           chunk.count);
+        }
+      }
+      // Fold the persistent boundary edges with their segment-local indices: the head prefix starts at index 0, the
+      // peeled tail suffix at `segment_size - tail_edge_len_items`.
+      if constexpr (use_block_load_to_shared)
+      {
+        if (layout.head_edge_len_items > 0)
+        {
+          nondet_write_edge(st, temp_storage.edge_keys, offset_t{0}, layout.head_edge_len_items);
+        }
+        if (layout.tail_edge_len_items > 0)
+        {
+          nondet_write_edge(st,
+                            temp_storage.edge_keys + head_edge_cap_items,
+                            layout.segment_size_off - static_cast<offset_t>(layout.tail_edge_len_items),
+                            layout.tail_edge_len_items);
+        }
+      }
+    }
+  }
+
+  // Non-deterministic final filter driver. The combined cross-CTA scan gives this block disjoint front/back bases
+  // (`sel_prefix`/`cand_prefix`); `nondet_place` then places each key with block-local SMEM atomics (output order not
+  // preserved). A perf change over the old cluster-wide `out_cnt`/`out_back_cnt` DSMEM atomics, not a correctness one.
   template <class IdentifyOp, class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void write_nondeterministic_topk(
     out_offset_t num_kth, IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {
-    // Store the value for a key written to `block_keys_out[pos]`, fetched from gmem at its segment-local index
-    // `seg_idx`. Deriving the per-segment value iterators *inside* the `is_keys_only` guard avoids indexing the null
-    // `cub::NullType**` value-iterators-of-iterators in keys-only builds; `segment_id` is loop-invariant, so they hoist
-    // out of the writes.
-    [[maybe_unused]] const auto write_value = [&](out_offset_t pos, offset_t seg_idx) {
-      if constexpr (!is_keys_only)
-      {
-        _CCCL_ASSERT(pos < k && seg_idx < layout.segment_size_off,
-                     "value write must land in the top-k output and read inside the segment");
-        auto block_vals_in  = d_value_segments_it[segment_id];
-        auto block_vals_out = d_value_segments_out_it[segment_id];
-        block_vals_out[pos] = block_vals_in[static_cast<segment_size_val_t>(seg_idx)];
-      }
-    };
-
     const bool participates = !layout.is_idle_rank && (cluster_rank != layout.leader_rank);
     const offset_t my_sel   = participates ? temp_storage.num_strictly_selected : offset_t{0};
     const offset_t my_cand  = participates ? temp_storage.my_candidates : offset_t{0};
@@ -1733,157 +1885,30 @@ private:
                    <= static_cast<::cuda::std::uint64_t>(k),
                  "selected prefix must fit before the tie-back output region");
 
-    // Placement sink shared by both value modes: strictly-selected keys go to the front (`sel_prefix` + a block-local
-    // atomic), the first `num_kth` candidates (arrival order) to the back; output order is not preserved. In pair
-    // mode each written key additionally pulls its value from gmem at `seg_idx`. Keys-only elides that write via the
-    // `if constexpr` below and drives the sink from index-free traversals, passing a dummy `seg_idx` that goes
-    // unread.
-    const auto sink = [&](const key_t& key, [[maybe_unused]] offset_t seg_idx) {
-      const auto res = identify_op(key);
-      if (res == detail::topk::candidate_class::selected)
-      {
-        const out_offset_t pos =
-          static_cast<out_offset_t>(sel_prefix + atomicAdd(&temp_storage.front_local_cnt, offset_t{1}));
-        block_keys_out[pos] = key;
-        if constexpr (!is_keys_only)
-        {
-          write_value(pos, seg_idx);
-        }
-      }
-      else if (res == detail::topk::candidate_class::candidate)
-      {
-        const out_offset_t back_pos =
-          static_cast<out_offset_t>(cand_prefix + atomicAdd(&temp_storage.back_local_cnt, offset_t{1}));
-        if (back_pos < num_kth)
-        {
-          const out_offset_t pos = k - 1 - back_pos;
-          block_keys_out[pos]    = key;
-          if constexpr (!is_keys_only)
-          {
-            write_value(pos, seg_idx);
-          }
-        }
-      }
-    };
+    nondet_filter_state<IdentifyOp, KeyOutIt> st{
+      identify_op, block_keys_out, num_kth, sel_prefix, cand_prefix, resident_keys};
 
+    // `f` folds each overflow key; `mid` folds the resident keys + boundary edges, overlapping the first overflow
+    // reloads. Keys-only passes a dummy `seg_idx`; pair mode recovers each key's index for its value fetch.
     if constexpr (is_keys_only)
     {
-      // Keys-only: no value payload, so drive the sink through the index-free traversal with a dummy `seg_idx`.
-      const auto write_selected = [&](const key_t& key) {
-        sink(key, offset_t{0});
-      };
-      // Fold the resident keys as the overflow pass's `mid` work so they overlap the first overflow reloads. Writes are
-      // order-independent atomics, and resident SMEM slots are disjoint from streaming slots, so `mid` never races.
-      const auto fold_resident = [&] {
-        if constexpr (use_block_load_to_shared)
-        {
-          for_each_chunk_key<tie_break_items_per_thread_floor_clamped>(
-            resident_keys.data(), static_cast<int>(resident_keys.size()), write_selected);
-        }
-        else
-        {
-          for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
-          {
-            const offset_t chunk_idx = layout.part.global_index(local_chunk);
-            const auto chunk         = get_chunk(chunk_idx, layout.segment_size_off, layout.head_items);
-            for_each_chunk_key<tie_break_items_per_thread_floor_clamped>(
-              ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes),
-              static_cast<int>(chunk.count),
-              write_selected);
-          }
-        }
-        // Scan the persistent boundary edges alongside the resident keys (order-independent atomic writes).
-        fold_boundary_edges(layout.head_edge_len_items, layout.tail_edge_len_items, write_selected);
-      };
-      process_pass<tie_break_items_per_thread_floor_clamped>(write_selected, fold_resident);
+      process_pass<tie_break_items_per_thread_floor_clamped>(
+        [&](const key_t& key) {
+          nondet_place(st, key, offset_t{0});
+        },
+        [&] {
+          nondet_fold_resident(st);
+        });
     }
     else
     {
-      // Pair (key + value) path: the shared `sink` above additionally stores each written key's value (fetched from
-      // gmem at its `seg_idx`). Unlike keys-only, the traversal must recover each key's segment-local index, so it
-      // folds resident/edge keys through `write_run` (below) and overflow keys through `process_pass_indexed`.
-
-      // Iterate a contiguous run of `count` keys staged in SMEM at `smem`, whose element `local` has segment-local
-      // index `base_off + local`. Every source folded here is SMEM (resident slots and the persistent boundary
-      // edges); overflow chunks fold through the indexed overflow-pass callback below. Materialize the key into a
-      // register first: `sink` binds it by `const&` and reads it several times, so passing `smem[local]` directly
-      // would re-issue a narrow `LDS` per use instead of reusing the loaded value.
-      auto write_run = [&](const key_t* smem, offset_t base_off, int count) {
-        const int iterations = ::cuda::ceil_div(count, threads_per_block);
-        _CCCL_PRAGMA_UNROLL(tie_break_items_per_thread_clamped)
-        for (int j = 0; j < iterations; ++j)
-        {
-          const int local = j * threads_per_block + tid;
-          if (local < count)
-          {
-            const key_t key = smem[local];
-            sink(key, base_off + static_cast<offset_t>(local));
-          }
-        }
-      };
-
-      // Boundary edges span fewer than `load_align_items` items, so fold them with a plain block-stride loop rather
-      // than the tiled/unrolled `write_run` used for the (potentially large) resident bulks.
-      const auto write_edge = [&](const key_t* smem, offset_t base_off, int count) {
-        for (int local = tid; local < count; local += threads_per_block)
-        {
-          const key_t key = smem[local];
-          sink(key, base_off + static_cast<offset_t>(local));
-        }
-      };
-
-      // Fold the resident keys (and their values) as the overflow pass's `mid` work, exactly as in the keys-only path.
-      const auto fold_resident = [&] {
-        if constexpr (use_block_load_to_shared)
-        {
-          // Resident keys are densely packed in slot order (aligned bulks only), so a running cursor recovers
-          // per-chunk spans. Only the global-last chunk can be partial (its unaligned suffix is peeled into
-          // `edge_keys` and folded below), so iterate the aligned bulk (`round_down(count, load_align_items)`), not
-          // `chunk.count`.
-          key_t* const resident_ptr = resident_keys.data();
-          int cursor_items          = 0;
-          for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
-          {
-            const auto chunk = get_chunk(
-              layout.part.global_index(layout.resident_base + local_chunk), layout.segment_size_off, layout.head_items);
-            const offset_t base_off    = chunk.offset;
-            const int bulk_count_items = static_cast<int>(
-              ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items)));
-            write_run(resident_ptr + cursor_items, base_off, bulk_count_items);
-            cursor_items += bulk_count_items;
-          }
-        }
-        else
-        {
-          for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
-          {
-            const auto chunk =
-              get_chunk(layout.part.global_index(local_chunk), layout.segment_size_off, layout.head_items);
-            const offset_t base_off = chunk.offset;
-            write_run(
-              ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes), base_off, chunk.count);
-          }
-        }
-        // Scan the persistent boundary edges with their segment-local indices: the head prefix starts at index 0, the
-        // peeled tail suffix at `segment_size - tail_edge_len_items`. Value fetched per key.
-        if constexpr (use_block_load_to_shared)
-        {
-          if (layout.head_edge_len_items > 0)
-          {
-            write_edge(temp_storage.edge_keys, offset_t{0}, layout.head_edge_len_items);
-          }
-          if (layout.tail_edge_len_items > 0)
-          {
-            write_edge(temp_storage.edge_keys + head_edge_cap_items,
-                       layout.segment_size_off - static_cast<offset_t>(layout.tail_edge_len_items),
-                       layout.tail_edge_len_items);
-          }
-        }
-      };
-
-      // Overflow chunks: reuse the streamed keys (the generic fallback re-reads from gmem) and fetch each selected
-      // key's value at index `seg_idx`. The resident keys above fold in as the overflow pass's `mid` work.
-      process_pass_indexed<tie_break_items_per_thread_floor_clamped>(sink, fold_resident);
+      process_pass_indexed<tie_break_items_per_thread_floor_clamped>(
+        [&](const key_t& key, offset_t seg_idx) {
+          nondet_place(st, key, seg_idx);
+        },
+        [&] {
+          nondet_fold_resident(st);
+        });
     }
   }
 
