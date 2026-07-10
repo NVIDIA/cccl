@@ -108,7 +108,7 @@ TEST_FUNC constexpr void test_corner_cases()
   test_mul_overflow<int, int, int>(int_min, -1, int_min, true);
   test_mul_overflow<int, int, int>(int_min, int_min, 0, true);
   test_mul_overflow<unsigned int, int, int>(2, int_max, static_cast<uint32_t>(int_max) * 2u, false);
-  test_mul_overflow<unsigned int, int, int>(uint_max, 2u, uint_max - 1, true);
+  test_mul_overflow<unsigned int, unsigned int, unsigned int>(uint_max, 2ull, uint_max - 1ull, true);
 
   // 2. Explicit wider Result type
   test_mul_overflow<long long, int, int>(int_min, -1, int64_t{int_min} * (-1ll), false);
@@ -145,11 +145,11 @@ TEST_FUNC constexpr void test_corner_cases()
     uint128_max, static_cast<__uint128_t>(2), uint128_max - 1, true);
   test_mul_overflow<__uint128_t, __uint128_t, __uint128_t>(
     uint128_max, static_cast<__uint128_t>(0), static_cast<__uint128_t>(0), false);
-  test_mul_overflow<__uint128_t, long long, __uint128_t>(
+  test_mul_overflow<__uint128_t, unsigned long long, __uint128_t>(
     ~0ull,
     static_cast<__uint128_t>(5) << 100,
     (static_cast<__uint128_t>(0xffffffb000000000ULL) << 64) | static_cast<__uint128_t>(0),
-    false);
+    true);
 #endif // _CCCL_HAS_INT128()
 }
 
