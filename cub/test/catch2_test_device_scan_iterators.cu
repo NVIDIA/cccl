@@ -178,7 +178,7 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
       // device reference and cause a segfault if the detail::InputValue is convert-constructed
       // from the future value below.
       auto d_initial_value = cuda::make_device_buffer<init_value_t>(
-        cuda::stream_ref{cudaStream_t{}}, cuda::devices[0], /*__size=*/1, init_value);
+        cuda::stream_ref{cudaStream_t{}}, cuda::devices[0], /*__size=*/1, static_cast<init_value_t>(init_value));
 
       using device_buffer_t = decltype(d_initial_value);
       using future_t = cub::FutureValue<typename device_buffer_t::value_type, typename device_buffer_t::iterator>;
