@@ -56,7 +56,7 @@ enum class __pool_attr_settable : bool
 template <::cudaMemPoolAttr _Attr,
           typename _Type,
           __pool_attr_settable _Settable,
-          typename _StorageType = _Type>
+          typename _StorageType>
 struct __pool_attr_impl
 {
   using type = _Type;
@@ -68,7 +68,7 @@ struct __pool_attr_impl
 
   [[nodiscard]] _CCCL_HOST_API type operator()(::cudaMemPool_t __pool) const
   {
-    auto __value = ::cuda::__driver::__mempoolGetAttribute<_StorageType>(
+    const auto __value = ::cuda::__driver::__mempoolGetAttribute<_StorageType>(
       __pool, static_cast<::CUmemPool_attribute>(_Attr));
     return static_cast<type>(__value);
   }
@@ -137,7 +137,7 @@ struct __pool_attr<::cudaMemPoolAttrExportHandleTypes>
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrLocationId>
-    : __pool_attr_impl<::cudaMemPoolAttrLocationId, int, __pool_attr_settable{false}>
+    : __pool_attr_impl<::cudaMemPoolAttrLocationId, int, __pool_attr_settable{false}, int>
 {};
 
 template <>
@@ -151,7 +151,7 @@ struct __pool_attr<::cudaMemPoolAttrLocationType>
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrMaxPoolSize>
-    : __pool_attr_impl<::cudaMemPoolAttrMaxPoolSize, ::cuuint64_t, __pool_attr_settable{false}>
+    : __pool_attr_impl<::cudaMemPoolAttrMaxPoolSize, ::cuuint64_t, __pool_attr_settable{false}, ::cuuint64_t>
 {};
 
 template <>
@@ -160,14 +160,13 @@ struct __pool_attr<::cudaMemPoolAttrHwDecompressEnabled>
 {};
 #  endif // _CCCL_CTK_AT_LEAST(13, 3)
 
-inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __attr, size_t __value)
+inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __attr, ::cuuint64_t __value)
 {
   if (__value != 0)
   {
     _CCCL_THROW(::std::invalid_argument, "This attribute can't be set to a non-zero value.");
   }
-  ::cuuint64_t __value_copy = static_cast<::cuuint64_t>(__value);
-  ::cuda::__driver::__mempoolSetAttribute(__pool, __attr, &__value_copy);
+  ::cuda::__driver::__mempoolSetAttribute(__pool, __attr, &__value);
 }
 
 template <>

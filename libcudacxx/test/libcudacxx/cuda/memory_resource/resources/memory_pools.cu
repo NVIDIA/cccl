@@ -126,7 +126,8 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
 
 #if _CCCL_CTK_AT_LEAST(13, 3)
 template <typename PoolType>
-static void check_creation_attributes(PoolType& pool, cuda::memory_pool_properties props, int current_device)
+static void
+check_creation_attributes(const PoolType& pool, const cuda::memory_pool_properties props, const int current_device)
 {
   auto expected_allocation_type = ::cudaMemAllocationTypePinned;
   auto expected_location_type   = ::cudaMemLocationTypeDevice;
@@ -148,42 +149,43 @@ static void check_creation_attributes(PoolType& pool, cuda::memory_pool_properti
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-  CHECK(pool.attribute(cuda::memory_pool_attributes::allocation_type) == expected_allocation_type);
-  CHECK(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
-  CHECK(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
-  CHECK(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
-  CHECK(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
-  CHECK(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::allocation_type) == expected_allocation_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
+  REQUIRE(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
 }
 
 #  if _CCCL_HAS_EXCEPTIONS()
+template <typename PoolType, typename Attr>
+static void check_creation_attribute_is_read_only(PoolType& pool, const Attr attr)
+{
+  const auto value = pool.attribute(attr);
+  try
+  {
+    pool.set_attribute(attr, value);
+    CHECK(false);
+  }
+  catch (const ::std::invalid_argument& err)
+  {
+    CHECK(strcmp(err.what(), "This attribute can't be set") == 0);
+  }
+  catch (...)
+  {
+    CHECK(false);
+  }
+}
+
 template <typename PoolType>
 static void check_creation_attributes_are_read_only(PoolType& pool)
 {
-  CHECK_THROWS_AS(
-    pool.set_attribute(
-      cuda::memory_pool_attributes::allocation_type, pool.attribute(cuda::memory_pool_attributes::allocation_type)),
-    std::invalid_argument);
-  CHECK_THROWS_AS(
-    pool.set_attribute(cuda::memory_pool_attributes::export_handle_types,
-                       pool.attribute(cuda::memory_pool_attributes::export_handle_types)),
-    std::invalid_argument);
-  CHECK_THROWS_AS(
-    pool.set_attribute(cuda::memory_pool_attributes::location_id,
-                       pool.attribute(cuda::memory_pool_attributes::location_id)),
-    std::invalid_argument);
-  CHECK_THROWS_AS(
-    pool.set_attribute(
-      cuda::memory_pool_attributes::location_type, pool.attribute(cuda::memory_pool_attributes::location_type)),
-    std::invalid_argument);
-  CHECK_THROWS_AS(
-    pool.set_attribute(
-      cuda::memory_pool_attributes::max_pool_size, pool.attribute(cuda::memory_pool_attributes::max_pool_size)),
-    std::invalid_argument);
-  CHECK_THROWS_AS(
-    pool.set_attribute(cuda::memory_pool_attributes::hw_decompress_enabled,
-                       pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled)),
-    std::invalid_argument);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::allocation_type);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::export_handle_types);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::location_id);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::location_type);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::max_pool_size);
+  check_creation_attribute_is_read_only(pool, cuda::memory_pool_attributes::hw_decompress_enabled);
 }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 #endif // _CCCL_CTK_AT_LEAST(13, 3)
@@ -602,9 +604,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
     }
 
 #if _CCCL_CTK_AT_LEAST(13, 3) && _CCCL_HAS_EXCEPTIONS()
-    { // CUDA 13.3 creation attributes
-      check_creation_attributes_are_read_only(pool);
-    }
+    check_creation_attributes_are_read_only(pool);
 #endif // _CCCL_CTK_AT_LEAST(13, 3) && _CCCL_HAS_EXCEPTIONS()
 
     // Free the last allocation
