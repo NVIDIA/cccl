@@ -25,11 +25,11 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -62,12 +62,12 @@ using deterministic_num_items_t = typename deterministic_num_items<KernelNumItem
 // to the grid the host would have computed had it been able to read the problem size. Must be used consistently by
 // both reduction passes.
 template <typename PolicySelector, typename NumItemsT>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int
 deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size) noexcept
 {
-  constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
+  constexpr ReducePassPolicy policy = detail::current_policy<PolicySelector>().multi_tile;
   constexpr int tile_size           = policy.threads_per_block * policy.items_per_thread;
-  const NumItemsT num_tiles         = ::cuda::ceil_div(num_items, static_cast<NumItemsT>(tile_size));
+  const NumItemsT num_tiles         = ::cuda::ceil_div(num_items, NumItemsT{tile_size});
   return static_cast<int>(::cuda::std::min(static_cast<NumItemsT>(launched_grid_size), num_tiles));
 }
 
@@ -125,7 +125,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   // A 64-bit deferred problem size is consumed in a single launch that loops over 32-bit chunks in the kernel.
   using num_items_t = deterministic_num_items_t<KernelNumItemsT>;
 
-  const num_items_t num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<num_items_t>(kernel_num_items);
+  const num_items_t num_items = detail::parameter_from_device<num_items_t>(kernel_num_items);
 
   // The worst-case grid of a deferred problem size is trimmed to the blocks that receive at least one tile. Both the
   // early exit and the loop stride must use the trimmed grid so that the remaining blocks cover the whole input.
@@ -136,7 +136,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
     }
     else
     {
-      return deferred_reduce_grid_size<PolicySelector>(num_items, reduce_grid_size);
+      return detail::reduce::deferred_reduce_grid_size<PolicySelector>(num_items, reduce_grid_size);
     }
   }();
 
@@ -181,16 +181,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
     // TODO(NaderAlAwar): The chunk body is intentionally duplicated from the 32-bit loop below because extracting it
     // into a device function changes the SASS of the immediate instantiations. Changes here must also be applied to
     // the copy below.
-    constexpr num_items_t num_items_per_chunk = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-    // Subtracting the actual chunk size keeps the countdown exact, so it cannot wrap for unsigned problem sizes.
-    for (num_items_t remaining = num_items; remaining > 0;)
+    constexpr auto num_items_per_chunk = num_items_t{::cuda::std::numeric_limits<int>::max()};
+    for (num_items_t remaining = num_items; remaining != 0;)
     {
-      const int chunk_num_items = static_cast<int>(::cuda::std::min(remaining, num_items_per_chunk));
+      const auto chunk_num_items = static_cast<int>(::cuda::std::min(remaining, num_items_per_chunk));
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (unsigned i = tid; i < static_cast<unsigned>(chunk_num_items); i += (n_threads * items_per_thread))
       {
         ftype items[items_per_thread] = {};
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < items_per_thread; j++)
         {
           const unsigned idx = i + j * n_threads;
@@ -224,6 +224,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
       }
 
       d_in += chunk_num_items;
+      // chunk_num_items == min(remaining, num_items_per_chunk) <= remaining, so the countdown lands exactly on zero
+      // and cannot wrap when num_items_t is unsigned.
       remaining -= chunk_num_items;
     }
   }
@@ -408,10 +410,10 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                             _CCCL_GRID_CONSTANT const InitValueT init,
                                                             TransformOpT transform_op)
 {
-  using actual_num_items_t = deterministic_num_items_t<KernelNumItemsT>;
-  const actual_num_items_t actual_num_items =
-    CUB_NS_QUALIFIER::detail::parameter_from_device<actual_num_items_t>(kernel_num_items);
-  const int num_items = deferred_reduce_grid_size<PolicySelector>(actual_num_items, first_pass_grid_size);
+  using actual_num_items_t                  = deterministic_num_items_t<KernelNumItemsT>;
+  const actual_num_items_t actual_num_items = detail::parameter_from_device<actual_num_items_t>(kernel_num_items);
+  const int num_items =
+    detail::reduce::deferred_reduce_grid_size<PolicySelector>(actual_num_items, first_pass_grid_size);
 
   constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
   constexpr int threads_per_block   = policy.threads_per_block;

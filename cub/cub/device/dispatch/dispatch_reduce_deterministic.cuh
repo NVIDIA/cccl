@@ -27,9 +27,9 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/argument>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
@@ -175,7 +175,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   KernelLauncherFactory launcher_factory)
 {
   // Immediate chunk sizes are passed to the kernels as-is; deferred problem sizes are read on device.
-  using num_items_kernel_t = CUB_NS_QUALIFIER::detail::parameter_from_host_t<int, OffsetT>;
+  using num_items_kernel_t = detail::parameter_from_host_t<int, OffsetT>;
 
   int sm_count;
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
