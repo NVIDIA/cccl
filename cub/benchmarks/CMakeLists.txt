@@ -91,6 +91,20 @@ function(add_bench target_name bench_name bench_src)
       cccl.nvbench_helper
       nvbench::main
   )
+
+  if (
+    CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+    AND "${bench_src}" MATCHES "/transform/tile/"
+  )
+    target_compile_options(
+      ${bench_target}
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>"
+    )
+    target_compile_definitions(
+      ${bench_target}
+      PRIVATE _CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+    )
+  endif()
 endfunction()
 
 function(add_bench_dir bench_dir)
