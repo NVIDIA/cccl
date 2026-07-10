@@ -1,6 +1,11 @@
 #include <thrust/execution_policy.h>
 #include <thrust/generate.h>
 
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/stream>
+
 #include <unittest/unittest.h>
 
 template <typename T>
@@ -13,37 +18,37 @@ struct return_value
       : val(v)
   {}
 
-  _CCCL_HOST_DEVICE T operator()()
+  _CCCL_HOST_DEVICE T operator()() const
   {
     return val;
   }
 };
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator, typename Function>
-__global__ void generate_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Function f)
+struct generate_kernel
 {
-  thrust::generate(exec, first, last, f);
-}
+  template <typename ExecutionPolicy, typename Result, typename Function>
+  __device__ void operator()(ExecutionPolicy exec, Result result, Function f) const
+  {
+    thrust::generate(exec, result.begin(), result.end(), f);
+  }
+};
 
 template <typename T, typename ExecutionPolicy>
 void TestGenerateDevice(ExecutionPolicy exec, const size_t n)
 {
-  thrust::host_vector<T> h_result(n);
-  thrust::device_vector<T> d_result(n);
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  T value = 13;
-  return_value<T> f(value);
+  auto result = cuda::make_device_buffer<T>(stream, device, n, cuda::no_init);
 
-  thrust::generate(h_result.begin(), h_result.end(), f);
+  const T value{13};
+  const auto f = return_value<T>{value};
 
-  generate_kernel<<<1, 1>>>(exec, d_result.begin(), d_result.end(), f);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  cuda::launch(stream, test_runtime::single_thread_config(), generate_kernel{}, exec, result, f);
+  stream.sync();
 
-  ASSERT_EQUAL(h_result, d_result);
+  test_runtime::assert_filled(stream, result, value);
 }
 
 template <typename T>
@@ -63,53 +68,46 @@ DECLARE_VARIABLE_UNITTEST(TestGenerateDeviceDevice);
 
 void TestGenerateCudaStreams()
 {
-  thrust::device_vector<int> result(5);
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  int value = 13;
+  auto result = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
-  return_value<int> f(value);
+  const int value = 13;
+  const auto f    = return_value<int>{value};
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
+  thrust::generate(thrust::cuda::par.on(stream.get()), result.begin(), result.end(), f);
+  stream.sync();
 
-  thrust::generate(thrust::cuda::par.on(s), result.begin(), result.end(), f);
-  cudaStreamSynchronize(s);
-
-  ASSERT_EQUAL(result[0], value);
-  ASSERT_EQUAL(result[1], value);
-  ASSERT_EQUAL(result[2], value);
-  ASSERT_EQUAL(result[3], value);
-  ASSERT_EQUAL(result[4], value);
-
-  cudaStreamDestroy(s);
+  test_runtime::assert_equal(stream, result, {13, 13, 13, 13, 13});
 }
 DECLARE_UNITTEST(TestGenerateCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator, typename Size, typename Function>
-__global__ void generate_n_kernel(ExecutionPolicy exec, Iterator first, Size n, Function f)
+struct generate_n_kernel
 {
-  thrust::generate_n(exec, first, n, f);
-}
+  template <typename ExecutionPolicy, typename Result, typename Function>
+  __device__ void operator()(ExecutionPolicy exec, Result result, Function f) const
+  {
+    thrust::generate_n(exec, result.begin(), result.size(), f);
+  }
+};
 
 template <typename T, typename ExecutionPolicy>
 void TestGenerateNDevice(ExecutionPolicy exec, const size_t n)
 {
-  thrust::host_vector<T> h_result(n);
-  thrust::device_vector<T> d_result(n);
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  T value = 13;
-  return_value<T> f(value);
+  auto result = cuda::make_device_buffer<T>(stream, device, n, cuda::no_init);
 
-  thrust::generate_n(h_result.begin(), h_result.size(), f);
+  const T value{13};
+  const auto f = return_value<T>{value};
 
-  generate_n_kernel<<<1, 1>>>(exec, d_result.begin(), d_result.size(), f);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  cuda::launch(stream, test_runtime::single_thread_config(), generate_n_kernel{}, exec, result, f);
+  stream.sync();
 
-  ASSERT_EQUAL(h_result, d_result);
+  test_runtime::assert_filled(stream, result, value);
 }
 
 template <typename T>
@@ -129,24 +127,17 @@ DECLARE_VARIABLE_UNITTEST(TestGenerateNDeviceDevice);
 
 void TestGenerateNCudaStreams()
 {
-  thrust::device_vector<int> result(5);
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  int value = 13;
+  auto result = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
 
-  return_value<int> f(value);
+  const int value = 13;
+  const auto f    = return_value<int>{value};
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
+  thrust::generate_n(thrust::cuda::par.on(stream.get()), result.begin(), result.size(), f);
+  stream.sync();
 
-  thrust::generate_n(thrust::cuda::par.on(s), result.begin(), result.size(), f);
-  cudaStreamSynchronize(s);
-
-  ASSERT_EQUAL(result[0], value);
-  ASSERT_EQUAL(result[1], value);
-  ASSERT_EQUAL(result[2], value);
-  ASSERT_EQUAL(result[3], value);
-  ASSERT_EQUAL(result[4], value);
-
-  cudaStreamDestroy(s);
+  test_runtime::assert_equal(stream, result, {13, 13, 13, 13, 13});
 }
 DECLARE_UNITTEST(TestGenerateNCudaStreams);

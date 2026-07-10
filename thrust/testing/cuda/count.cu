@@ -1,30 +1,37 @@
 #include <thrust/count.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/stream>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator, typename T, typename Iterator2>
-__global__ void count_kernel(ExecutionPolicy exec, Iterator first, Iterator last, T value, Iterator2 result)
+struct count_kernel
 {
-  *result = thrust::count(exec, first, last, value);
-}
+  template <typename ExecutionPolicy, typename Input, typename T, typename Expected>
+  __device__ void operator()(ExecutionPolicy exec, Input data, T value, Expected expected) const
+  {
+    const auto result = thrust::count(exec, data.begin(), data.end(), value);
+    TEST_ASSERT_DEVICE(result == expected);
+  }
+};
 
 template <typename T, typename ExecutionPolicy>
 void TestCountDevice(ExecutionPolicy exec, const size_t n)
 {
-  thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
-  thrust::device_vector<T> d_data = h_data;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  thrust::device_vector<size_t> d_result(1);
+  auto h_data = test_runtime::random_samples_buffer<T>(stream, n);
+  auto d_data = cuda::make_device_buffer<T>(stream, device, h_data);
 
-  size_t h_result = thrust::count(h_data.begin(), h_data.end(), T(5));
+  const auto expected = thrust::count(h_data.begin(), h_data.end(), T{5});
 
-  count_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), T(5), d_result.begin());
-  cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
-
-  ASSERT_EQUAL(h_result, d_result[0]);
+  cuda::launch(stream, test_runtime::single_thread_config(), count_kernel{}, exec, d_data, T{5}, expected);
+  stream.sync();
 }
 
 template <typename T>
@@ -41,12 +48,6 @@ void TestCountDeviceDevice(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestCountDeviceDevice);
 
-template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename Iterator2>
-__global__ void count_if_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predicate pred, Iterator2 result)
-{
-  *result = thrust::count_if(exec, first, last, pred);
-}
-
 template <typename T>
 struct greater_than_five
 {
@@ -56,20 +57,30 @@ struct greater_than_five
   }
 };
 
+struct count_if_kernel
+{
+  template <typename ExecutionPolicy, typename Input, typename Predicate, typename Expected>
+  __device__ void operator()(ExecutionPolicy exec, Input data, Predicate pred, Expected expected) const
+  {
+    const auto result = thrust::count_if(exec, data.begin(), data.end(), pred);
+    TEST_ASSERT_DEVICE(result == expected);
+  }
+};
+
 template <typename T, typename ExecutionPolicy>
 void TestCountIfDevice(ExecutionPolicy exec, const size_t n)
 {
-  thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
-  thrust::device_vector<T> d_data = h_data;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  thrust::device_vector<size_t> d_result(1);
+  auto h_data = test_runtime::random_samples_buffer<T>(stream, n);
+  auto d_data = cuda::make_device_buffer<T>(stream, device, h_data);
 
-  size_t h_result = thrust::count_if(h_data.begin(), h_data.end(), greater_than_five<T>());
-  count_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), greater_than_five<T>(), d_result.begin());
-  cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  const auto expected = thrust::count_if(h_data.begin(), h_data.end(), greater_than_five<T>{});
 
-  ASSERT_EQUAL(h_result, d_result[0]);
+  cuda::launch(
+    stream, test_runtime::single_thread_config(), count_if_kernel{}, exec, d_data, greater_than_five<T>{}, expected);
+  stream.sync();
 }
 
 template <typename T>
@@ -89,15 +100,16 @@ DECLARE_VARIABLE_UNITTEST(TestCountIfDeviceDevice);
 
 void TestCountCudaStreams()
 {
-  thrust::device_vector<int> data{1, 1, 0, 0, 1};
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
+  auto data   = cuda::make_device_buffer<int>(stream, device, {1, 1, 0, 0, 1});
+  auto policy = thrust::cuda::par.on(stream.get());
 
-  ASSERT_EQUAL(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 0), 2);
-  ASSERT_EQUAL(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 1), 3);
-  ASSERT_EQUAL(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 2), 0);
+  ASSERT_EQUAL(thrust::count(policy, data.begin(), data.end(), 0), 2);
+  ASSERT_EQUAL(thrust::count(policy, data.begin(), data.end(), 1), 3);
+  ASSERT_EQUAL(thrust::count(policy, data.begin(), data.end(), 2), 0);
 
-  cudaStreamDestroy(s);
+  stream.sync();
 }
 DECLARE_UNITTEST(TestCountCudaStreams);
