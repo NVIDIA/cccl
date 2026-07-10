@@ -1640,21 +1640,18 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const int persistent_capacity    = persistent_sm_occupancy * sm_count;
       const int direct_atomic_capacity = direct_atomic_sm_occupancy * sm_count;
       const bool persistent_fits       = (persistent_sm_occupancy > 0) && (num_thread_blocks <= persistent_capacity);
-      // The OUTPUT-spill direct-atomic kernel distributes work via a pure grid-stride
-      // loop, so ANY co-resident block count is correct -- it does NOT need the grid to
-      // reach `num_thread_blocks`; it only needs a positive co-resident capacity (the
-      // grid is clamped to `direct_atomic_capacity` below). This matters for wide
-      // counters: an 8-byte counter inflates the cache's per-CTA SMEM, lowering
-      // occupancy so `direct_atomic_capacity < num_thread_blocks` -- which previously
-      // failed `selected_fits` and fell through to the (now error-returning) high-bin
-      // guard, so multi-channel 64-bit high-bin histograms could not launch at all. The
-      // PRIVATE-spill and gather paths still need the strict fit: their per-block slabs
-      // are sized for exactly `num_thread_blocks` and the kernel indexes them by
-      // block_id, so the co-resident grid must actually be that large.
-      const bool direct_atomic_needs_full_grid = use_private_spill;
-      const bool direct_atomic_fits            = (direct_atomic_sm_occupancy > 0)
-                                   && (!direct_atomic_needs_full_grid || num_thread_blocks <= direct_atomic_capacity);
-      const bool selected_fits = use_direct_atomic_to_output ? direct_atomic_fits : persistent_fits;
+      // Both cache-spill kernels distribute input through a pure grid-stride loop, so
+      // ANY positive co-resident block count is correct. This includes private spill:
+      // its Phase-1 zero and Phase-4 gather use the ACTUAL `gridDim` as the number of
+      // slabs. `num_thread_blocks` only sizes the temporary allocation, making it an
+      // upper bound on a private-spill grid rather than a required exact grid size.
+      // This distinction matters when the facade selects a wide-OffsetT kernel for a
+      // large input: the extra registers can lower the cache kernel from two resident
+      // blocks/SM to one even though the gather kernel used to size the allocation
+      // still admits two. Requiring the allocation-sized grid then rejected a valid
+      // launch with cudaErrorNotSupported.
+      const bool direct_atomic_fits = (direct_atomic_sm_occupancy > 0);
+      const bool selected_fits      = use_direct_atomic_to_output ? direct_atomic_fits : persistent_fits;
 
       // Grid size for the direct-atomic kernels. Unlike the gather-merge
       // kernel, the direct-atomic cuckoo / single-probe kernels distribute work
@@ -1670,18 +1667,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // that would process zero pixels) and never shrinking below the sweep
       // grid.
       dim3 direct_atomic_grid_dims = persistent_grid_dims;
-      // Private-spill must NOT resize the grid: its per-block slab is sized for exactly
-      // `num_thread_blocks` (= persistent_grid_dims), and the kernel indexes/gathers
-      // slabs by `block_id < blocks_per_grid`, so a different grid would read/write past
-      // the slab. The OUTPUT-spill variant has no such constraint (grid-stride loop,
-      // any block count correct), so we set its grid to the direct-atomic kernel's OWN
-      // co-resident capacity, clamped to the available work and floored at 1. This both
-      // GROWS the grid past the (lower) gather-sized num_thread_blocks to hide
-      // SMEM-atomic latency, and SHRINKS it to fit when a wide counter lowers the
-      // cache kernel's occupancy below num_thread_blocks (the multi-channel 64-bit case)
-      // -- a cooperative launch requires the grid to be co-resident, so it must not
-      // exceed `direct_atomic_capacity`.
-      if (use_direct_atomic_to_output && !use_private_spill && direct_atomic_capacity > 0)
+      // Set the direct-atomic grid to the active kernel's OWN co-resident capacity,
+      // clamped to useful work and floored at 1. Output spill may grow beyond the
+      // gather-sized `num_thread_blocks` because it has no slab. Private spill may
+      // shrink but must not grow beyond `num_thread_blocks`, because that is the number
+      // of slabs reserved in temporary storage. The private-spill kernel zeros,
+      // indexes, and gathers only `gridDim` slabs, so every smaller grid is in-bounds.
+      if (use_direct_atomic_to_output && direct_atomic_capacity > 0)
       {
         // Upper bound on useful blocks for the grid-stride direct-atomic kernel:
         // one thread per pixel needs ceil(total_pixels / block_size) blocks;
@@ -1693,6 +1685,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         const long long work_tiles =
           (total_pixels_ll + direct_atomic_threads_per_block - 1) / direct_atomic_threads_per_block;
         long long target = static_cast<long long>(direct_atomic_capacity);
+        if (use_private_spill && target > num_thread_blocks)
+        {
+          target = num_thread_blocks;
+        }
         if (target > work_tiles)
         {
           target = work_tiles; // no point launching blocks with no pixels
