@@ -237,11 +237,11 @@ struct custom_char3
 {
   constexpr custom_char3() = default;
 
-  TEST_FUNC constexpr custom_char3(int v) noexcept
+  TEST_FUNC custom_char3(int v) noexcept
   {
-    const auto u = static_cast<::cuda::std::int16_t>(v);
+    const auto u = static_cast<cuda::std::int16_t>(v);
 
-    ::cuda::std::memcpy(data, &u, sizeof(u));
+    cuda::std::memcpy(data, &u, sizeof(u));
   }
 
   TEST_FUNC constexpr friend bool operator==(const custom_char3& lhs, const custom_char3& rhs) noexcept
