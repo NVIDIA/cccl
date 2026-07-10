@@ -2197,7 +2197,7 @@ struct single_probe_cache
       else if (existing_key == -1)
       {
         // Empty: try to claim via CAS.
-        const int prev = atomicCAS(&keys[slot], -1, bin);
+        const int prev = atomicCAS_block(&keys[slot], -1, bin);
         if (prev == -1 || prev == bin)
         {
           atomicAdd_block(&counts[slot], contribution);
@@ -2250,7 +2250,7 @@ struct single_probe_cache
       {
         if (!done && keys[base + w] == -1)
         {
-          const int prev = atomicCAS(&keys[base + w], -1, bin);
+          const int prev = atomicCAS_block(&keys[base + w], -1, bin);
           if (prev == -1 || prev == bin)
           {
             atomicAdd_block(&counts[base + w], contribution);
@@ -2534,15 +2534,19 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // identical to an unreplicated cache.
   constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
   // Warp-coalesce is a PER-KERNEL decision, not a single global flag. Measured on B200
-  // (run_2026-06-15_coalesce, I32+F64, 14 shapes): the __match_any_sync pre-merge HELPS
-  // the no-cache probe (no SMEM cache to absorb per-lane atomics, so lane-merging is the
-  // only contention relief: off/on 0.17-0.70x) but HURTS the cuckoo / single-probe caches
-  // in BOTH entropy classes (off/on 1.41-1.50x -- the cache already absorbs the atomics,
-  // so the match is pure dependent-stall overhead). So: coalesce ON for no_cache_probe,
-  // OFF for the cache probes. Compile-time (zero runtime branch), still AND-ed with the
-  // policy flag so CUB_HISTO_FORCE_WARP_COALESCE=0 can disable it everywhere for study.
+  // with 32-bit counters (run_2026-06-15_coalesce, I32+F64 samples, 14 shapes): the
+  // __match_any_sync pre-merge HELPS the no-cache probe (no SMEM cache to absorb per-lane
+  // atomics, so lane-merging is the only contention relief: off/on 0.17-0.70x) but HURTS
+  // the cuckoo / single-probe caches (off/on 1.41-1.50x). That result does not transfer to
+  // wider counters: on SM100, ptxas lowers an unused-result shared u32 increment to the
+  // warp-combining ATOMS.POPC.INC.32 instruction, whereas a shared u64 add becomes a
+  // contended ATOMS.CAST.SPIN.64 retry loop. The cached wide-counter path therefore needs
+  // the explicit pre-merge that the u32 instruction supplies in hardware. Compile-time
+  // (zero runtime branch), still AND-ed with the policy flag so
+  // CUB_HISTO_FORCE_WARP_COALESCE=0 can disable it everywhere for study.
   constexpr bool kProbeIsNoCache = ::cuda::std::is_same_v<ProbeOp, no_cache_probe>;
-  constexpr bool kWarpCoalesce   = kProbeIsNoCache && current_policy<PolicySelector>().warp_coalesce;
+  constexpr bool kWarpCoalesce =
+    (kProbeIsNoCache || sizeof(CounterT) > sizeof(unsigned int)) && current_policy<PolicySelector>().warp_coalesce;
   const int cache_mask           = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
