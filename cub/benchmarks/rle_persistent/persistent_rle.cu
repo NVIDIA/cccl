@@ -3,8 +3,6 @@
 #include <cuda/std/complex>
 #include <cuda/std/cstdint>
 
-#include <algorithm>
-
 #include <cuda_runtime_api.h>
 
 namespace rle_impl
