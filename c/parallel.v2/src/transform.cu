@@ -51,10 +51,10 @@ try
 #if CCCL_OS(WINDOWS)
   build_ptr->first_call_state = nullptr;
 #endif
-  std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
-  std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
-  const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
-  const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
+  const std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
+  const std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
+  const char* const cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
+  const char* const ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
 #if CCCL_OS(WINDOWS)
   auto first_call_state = std::make_unique<cccl::detail::first_call_gate>();
@@ -105,10 +105,10 @@ try
 #if CCCL_OS(WINDOWS)
   build_ptr->first_call_state = nullptr;
 #endif
-  std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
-  std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
-  const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
-  const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
+  const std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
+  const std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
+  const char* const cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
+  const char* const ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
 #if CCCL_OS(WINDOWS)
   auto first_call_state = std::make_unique<cccl::detail::first_call_gate>();
@@ -194,7 +194,7 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  auto fn = reinterpret_cast<unary_transform_fn_t>(build.transform_fn);
+  const auto fn = reinterpret_cast<unary_transform_fn_t>(build.transform_fn);
 #if CCCL_OS(WINDOWS)
   if (!build.first_call_state)
   {
@@ -232,7 +232,7 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  auto fn = reinterpret_cast<binary_transform_fn_t>(build.transform_fn);
+  const auto fn = reinterpret_cast<binary_transform_fn_t>(build.transform_fn);
 #if CCCL_OS(WINDOWS)
   if (!build.first_call_state)
   {
