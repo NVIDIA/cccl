@@ -66,22 +66,22 @@ namespace cuda::experimental
     _CCCL_TRIVIAL_API int32_t __internal_fp64emu_round_to_i32 (bool __sign, uint64_t __sig) noexcept
     {
         const int32_t __sat = __sign ? (int32_t)0x80000000 : (int32_t)0x7FFFFFFF;
-        uint32_t __roundIncrement = 0x800;
+        uint32_t __round_increment = 0x800;
         if constexpr (_Rm != __fpemu_rounding::rn)
         {
-            __roundIncrement = 0;
+            __round_increment = 0;
             const bool __toward_inf = __sign ? (_Rm == __fpemu_rounding::rd)
                                          : (_Rm == __fpemu_rounding::ru);
-            if (__toward_inf) __roundIncrement = 0xFFF;
+            if (__toward_inf) __round_increment = 0xFFF;
         }
-        uint32_t __roundBits = (uint32_t)(__sig & 0xFFF);
-        __sig += __roundIncrement;
+        uint32_t __round_bits = (uint32_t)(__sig & 0xFFF);
+        __sig += __round_increment;
         if (__sig & 0xFFFFF00000000000ULL) return __sat;
 
         uint32_t __sig32 = (uint32_t)(__sig >> 12);
         if constexpr (_Rm == __fpemu_rounding::rn)
         {
-            if (__roundBits == 0x800) __sig32 &= ~(uint32_t)1;
+            if (__round_bits == 0x800) __sig32 &= ~(uint32_t)1;
         }
         uint32_t __uz = __sign ? (uint32_t)(0u - __sig32) : __sig32;
         int32_t __z = (int32_t)__uz;
@@ -95,36 +95,36 @@ namespace cuda::experimental
     {
         if (__sign) return 0; // any negative real saturates to 0
 
-        uint32_t __roundIncrement = (_Rm == __fpemu_rounding::rn) ? 0x800
+        uint32_t __round_increment = (_Rm == __fpemu_rounding::rn) ? 0x800
                                 : (_Rm == __fpemu_rounding::ru) ? 0xFFF : 0;
-        uint32_t __roundBits = (uint32_t)(__sig & 0xFFF);
-        __sig += __roundIncrement;
+        uint32_t __round_bits = (uint32_t)(__sig & 0xFFF);
+        __sig += __round_increment;
         if (__sig & 0xFFFFF00000000000ULL) return 0xFFFFFFFFu;
 
         uint32_t __z = (uint32_t)(__sig >> 12);
         if constexpr (_Rm == __fpemu_rounding::rn)
         {
-            if (__roundBits == 0x800) __z &= ~(uint32_t)1;
+            if (__round_bits == 0x800) __z &= ~(uint32_t)1;
         }
         return __z;
     }
 
     /// @brief Round (sig : sigExtra) to int64 (CUDA saturation).
     template<__fpemu_rounding _Rm>
-    _CCCL_TRIVIAL_API int64_t __internal_fp64emu_round_to_i64 (bool __sign, uint64_t __sig, uint64_t __sigExtra) noexcept
+    _CCCL_TRIVIAL_API int64_t __internal_fp64emu_round_to_i64 (bool __sign, uint64_t __sig, uint64_t __sig_extra) noexcept
     {
         const int64_t __sat = __sign ? (int64_t)0x8000000000000000ULL
                                      : (int64_t)0x7FFFFFFFFFFFFFFFULL;
         bool __increment;
         if constexpr (_Rm == __fpemu_rounding::rn)
         {
-            __increment = (__sigExtra >= 0x8000000000000000ULL);
+            __increment = (__sig_extra >= 0x8000000000000000ULL);
         }
         else
         {
             const bool __toward_inf = __sign ? (_Rm == __fpemu_rounding::rd)
                                          : (_Rm == __fpemu_rounding::ru);
-            __increment = (__sigExtra != 0) && __toward_inf;
+            __increment = (__sig_extra != 0) && __toward_inf;
         }
         if (__increment)
         {
@@ -132,7 +132,7 @@ namespace cuda::experimental
             if (!__sig) return __sat;
             if constexpr (_Rm == __fpemu_rounding::rn)
             {
-                if (__sigExtra == 0x8000000000000000ULL) __sig &= ~(uint64_t)1;
+                if (__sig_extra == 0x8000000000000000ULL) __sig &= ~(uint64_t)1;
             }
         }
         uint64_t __uz = __sign ? (uint64_t)(0ULL - __sig) : __sig;
@@ -143,18 +143,18 @@ namespace cuda::experimental
 
     /// @brief Round (sig : sigExtra) to uint64 (CUDA saturation).
     template<__fpemu_rounding _Rm>
-    _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_round_to_ui64 (bool __sign, uint64_t __sig, uint64_t __sigExtra) noexcept
+    _CCCL_TRIVIAL_API uint64_t __internal_fp64emu_round_to_ui64 (bool __sign, uint64_t __sig, uint64_t __sig_extra) noexcept
     {
         if (__sign) return 0; // any negative real saturates to 0
 
         bool __increment;
         if constexpr (_Rm == __fpemu_rounding::rn)
         {
-            __increment = (__sigExtra >= 0x8000000000000000ULL);
+            __increment = (__sig_extra >= 0x8000000000000000ULL);
         }
         else
         {
-            __increment = (_Rm == __fpemu_rounding::ru) && (__sigExtra != 0);
+            __increment = (_Rm == __fpemu_rounding::ru) && (__sig_extra != 0);
         }
         if (__increment)
         {
@@ -162,112 +162,117 @@ namespace cuda::experimental
             if (!__sig) return 0xFFFFFFFFFFFFFFFFULL;
             if constexpr (_Rm == __fpemu_rounding::rn)
             {
-                if (__sigExtra == 0x8000000000000000ULL) __sig &= ~(uint64_t)1;
+                if (__sig_extra == 0x8000000000000000ULL) __sig &= ~(uint64_t)1;
             }
         }
         return __sig;
     }
 
+    /// @brief Convert a fp64 to an int32
     template<__fpemu_rounding _Rm  = __fpemu_rounding::rz>
     _CCCL_TRIVIAL_API  int32_t __internal_fp64emu_fpbits64_to_int (__fpbits64 __x) noexcept
     {
         const bool    __sign = ((uint64_t)__x >> 63) != 0;
         const int32_t __exp  = (int32_t)(((uint64_t)__x >> _CCCL_FP64_MANT_BITS) & 0x7FF);
-        uint64_t      __sig  = (uint64_t)__x & __fpemu_MANTISSA_MASK;
+        uint64_t      __sig  = (uint64_t)__x & __fpemu_mantissa_mask;
 
         if (__exp == 0x7FF && __sig) return (int32_t)0x80000000; // NaN -> integer indefinite
 
         if (__exp) __sig |= _CCCL_FPEMU_HIDDEN_64;
-        int32_t __shiftDist = 0x427 - __exp;
-        if (__shiftDist > 0) __sig = __internal_fp64emu_shr_jam64(__sig, (uint32_t)__shiftDist);
+        int32_t __shift_dist = 0x427 - __exp;
+        if (__shift_dist > 0) __sig = __internal_fp64emu_shr_jam64(__sig, (uint32_t)__shift_dist);
         return __internal_fp64emu_round_to_i32<_Rm>(__sign, __sig);
     } // __internal_fp64emu_fpbits64_to_int
 
+    /// @brief Convert a fp64 to an uint32
     template<__fpemu_rounding _Rm  = __fpemu_rounding::rz>
     _CCCL_TRIVIAL_API  uint32_t __internal_fp64emu_fpbits64_to_uint (__fpbits64 __x) noexcept
     {
         const bool    __sign = ((uint64_t)__x >> 63) != 0;
         const int32_t __exp  = (int32_t)(((uint64_t)__x >> _CCCL_FP64_MANT_BITS) & 0x7FF);
-        uint64_t      __sig  = (uint64_t)__x & __fpemu_MANTISSA_MASK;
+        uint64_t      __sig  = (uint64_t)__x & __fpemu_mantissa_mask;
 
         if (__exp == 0x7FF && __sig) return 0x80000000u; // NaN -> integer indefinite
 
         if (__exp) __sig |= _CCCL_FPEMU_HIDDEN_64;
-        int32_t __shiftDist = 0x427 - __exp;
-        if (__shiftDist > 0) __sig = __internal_fp64emu_shr_jam64(__sig, (uint32_t)__shiftDist);
+        int32_t __shift_dist = 0x427 - __exp;
+        if (__shift_dist > 0) __sig = __internal_fp64emu_shr_jam64(__sig, (uint32_t)__shift_dist);
         return __internal_fp64emu_round_to_ui32<_Rm>(__sign, __sig);
     } // __internal_fp64emu_fpbits64_to_uint
 
+    /// @brief Convert a fp64 to an int64
     template<__fpemu_rounding _Rm  = __fpemu_rounding::rz>
     _CCCL_TRIVIAL_API  int64_t __internal_fp64emu_fpbits64_to_ll (__fpbits64 __x) noexcept
     {
         const bool    __sign = ((uint64_t)__x >> 63) != 0;
         const int32_t __exp  = (int32_t)(((uint64_t)__x >> _CCCL_FP64_MANT_BITS) & 0x7FF);
-        uint64_t      __sig  = (uint64_t)__x & __fpemu_MANTISSA_MASK;
+        uint64_t      __sig  = (uint64_t)__x & __fpemu_mantissa_mask;
 
         if (__exp == 0x7FF && __sig) return (int64_t)0x8000000000000000ULL; // NaN -> integer indefinite
 
         if (__exp) __sig |= _CCCL_FPEMU_HIDDEN_64;
-        int32_t __shiftDist = 0x433 - __exp;
+        int32_t __shift_dist = 0x433 - __exp;
         uint64_t __sig_int, __sig_extra;
-        if (__shiftDist <= 0)
+        if (__shift_dist <= 0)
         {
-            if (__shiftDist < -11) return __sign ? (int64_t)0x8000000000000000ULL
+            if (__shift_dist < -11) return __sign ? (int64_t)0x8000000000000000ULL
                                              : (int64_t)0x7FFFFFFFFFFFFFFFULL;
-            __sig_int   = __sig << (-__shiftDist);
+            __sig_int   = __sig << (-__shift_dist);
             __sig_extra = 0;
         }
-        else if (__shiftDist < 64)
+        else if (__shift_dist < 64)
         {
-            __sig_int   = __sig >> __shiftDist;
-            __sig_extra = __sig << (-__shiftDist & 63);
+            __sig_int   = __sig >> __shift_dist;
+            __sig_extra = __sig << (-__shift_dist & 63);
         }
         else
         {
             __sig_int   = 0;
-            __sig_extra = (__shiftDist == 64) ? __sig : (uint64_t)(__sig != 0);
+            __sig_extra = (__shift_dist == 64) ? __sig : (uint64_t)(__sig != 0);
         }
         return __internal_fp64emu_round_to_i64<_Rm>(__sign, __sig_int, __sig_extra);
     } // __internal_fp64emu_fpbits64_to_ll
 
+    /// @brief Convert a fp64 to an uint64
     template<__fpemu_rounding _Rm  = __fpemu_rounding::rz>
     _CCCL_TRIVIAL_API  uint64_t __internal_fp64emu_fpbits64_to_ull (__fpbits64 __x) noexcept
     {
         const bool    __sign = ((uint64_t)__x >> 63) != 0;
         const int32_t __exp  = (int32_t)(((uint64_t)__x >> _CCCL_FP64_MANT_BITS) & 0x7FF);
-        uint64_t      __sig  = (uint64_t)__x & __fpemu_MANTISSA_MASK;
+        uint64_t      __sig  = (uint64_t)__x & __fpemu_mantissa_mask;
 
         if (__exp == 0x7FF && __sig) return 0x8000000000000000ULL; // NaN -> integer indefinite
 
         if (__exp) __sig |= _CCCL_FPEMU_HIDDEN_64;
-        int32_t __shiftDist = 0x433 - __exp;
+        int32_t __shift_dist = 0x433 - __exp;
         uint64_t __sig_int, __sig_extra;
-        if (__shiftDist <= 0)
+        if (__shift_dist <= 0)
         {
             // Negative saturates to 0; positive out-of-range to UINT64_MAX.
-            if (__shiftDist < -11) return __sign ? 0ULL : 0xFFFFFFFFFFFFFFFFULL;
-            __sig_int   = __sig << (-__shiftDist);
+            if (__shift_dist < -11) return __sign ? 0ULL : 0xFFFFFFFFFFFFFFFFULL;
+            __sig_int   = __sig << (-__shift_dist);
             __sig_extra = 0;
         }
-        else if (__shiftDist < 64)
+        else if (__shift_dist < 64)
         {
-            __sig_int   = __sig >> __shiftDist;
-            __sig_extra = __sig << (-__shiftDist & 63);
+            __sig_int   = __sig >> __shift_dist;
+            __sig_extra = __sig << (-__shift_dist & 63);
         }
         else
         {
             __sig_int   = 0;
-            __sig_extra = (__shiftDist == 64) ? __sig : (uint64_t)(__sig != 0);
+            __sig_extra = (__shift_dist == 64) ? __sig : (uint64_t)(__sig != 0);
         }
         return __internal_fp64emu_round_to_ui64<_Rm>(__sign, __sig_int, __sig_extra);
     } // __internal_fp64emu_fpbits64_to_ull
 
+    /// @brief Convert a fp64 to a float
     _CCCL_TRIVIAL_API  float __internal_fp64emu_fpbits64_to_float (__fpbits64 __x) noexcept
     {
         uint64_t __bits = (uint64_t)__x;
         uint32_t __sign = (uint32_t)(__bits >> 63) << 31;
         int32_t  __exp  = (int32_t)((__bits >> _CCCL_FP64_MANT_BITS) & 0x7FF);
-        uint64_t __frac = __bits & __fpemu_MANTISSA_MASK;
+        uint64_t __frac = __bits & __fpemu_mantissa_mask;
 
         if (__exp == 0x7FF) 
         {
@@ -289,13 +294,13 @@ namespace cuda::experimental
             return __fpemu_bit_cast<float>(__sign | 0x7F800000u);
 
         // Number of mantissa bits to discard: 52 - 23 = 29
-        constexpr int32_t __DROP = _CCCL_FP64_MANT_BITS - _CCCL_FP32_MANT_BITS;
+        constexpr int32_t __drop = _CCCL_FP64_MANT_BITS - _CCCL_FP32_MANT_BITS;
 
         if (__e_f > 0) 
         {
-            uint64_t __half  = 1ULL << (__DROP - 1);
-            uint64_t __trail = __sig & ((1ULL << __DROP) - 1);
-            uint32_t __sig24 = (uint32_t)(__sig >> __DROP);
+            uint64_t __half  = 1ULL << (__drop - 1);
+            uint64_t __trail = __sig & ((1ULL << __drop) - 1);
+            uint32_t __sig24 = (uint32_t)(__sig >> __drop);
 
             if (__trail > __half || (__trail == __half && (__sig24 & 1))) 
             {
@@ -314,7 +319,7 @@ namespace cuda::experimental
         } // if (e_f > 0)
 
         // Subnormal float output (e_f <= 0)
-        int32_t __total_shift = __DROP + 1 - __e_f;
+        int32_t __total_shift = __drop + 1 - __e_f;
 
         if (__total_shift >= 54)
             return __fpemu_bit_cast<float>(__sign);
@@ -330,6 +335,7 @@ namespace cuda::experimental
         return __fpemu_bit_cast<float>(__sign | __sig_sub);
     } // __internal_fp64emu_fpbits64_to_float
 
+    /// @brief Convert a float to a fp64
     _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_float_to_fpbits64  (float __x) noexcept
     {
         uint32_t __bits = __fpemu_bit_cast<uint32_t>(__x);
@@ -363,8 +369,8 @@ namespace cuda::experimental
         return (__fpbits64)(__sign | (__d_exp << _CCCL_FP64_MANT_BITS) | __d_frac);
     } // __internal_fp64emu_float_to_fpbits64
 
-    _CCCL_TRIVIAL_API 
-    __fpbits64 __internal_fp64emu_int_to_fpbits64  (int32_t __x) noexcept  
+    /// @brief Convert a int32 to a fp64
+    _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_int_to_fpbits64  (int32_t __x) noexcept  
     { 
         if (__x == 0) return (__fpbits64)0;
 
@@ -373,46 +379,46 @@ namespace cuda::experimental
 
         int32_t __nz        = __internal_clz((int)__abs_x);
         uint64_t __exp      = (uint64_t)(_CCCL_FP64_BIAS + 31 - __nz);
-        uint64_t __mantissa = ((uint64_t)__abs_x << (21 + __nz)) & __fpemu_MANTISSA_MASK;
+        uint64_t __mantissa = ((uint64_t)__abs_x << (21 + __nz)) & __fpemu_mantissa_mask;
 
         return (__fpbits64)(__sign | (__exp << _CCCL_FP64_MANT_BITS) | __mantissa);
     } // __internal_fp64emu_int_to_fpbits64
 
-    _CCCL_TRIVIAL_API 
-    __fpbits64 __internal_fp64emu_uint_to_fpbits64 (uint32_t __x) noexcept 
+    /// @brief Convert a uint32 to a fp64
+    _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_uint_to_fpbits64 (uint32_t __x) noexcept 
     { 
         if (__x == 0) return (__fpbits64)0;
 
         int32_t __nz        = __internal_clz((int)__x);
         uint64_t __exp      = (uint64_t)(_CCCL_FP64_BIAS + 31 - __nz);
-        uint64_t __mantissa = ((uint64_t)__x << (21 + __nz)) & __fpemu_MANTISSA_MASK;
+        uint64_t __mantissa = ((uint64_t)__x << (21 + __nz)) & __fpemu_mantissa_mask;
 
         return (__fpbits64)((__exp << _CCCL_FP64_MANT_BITS) | __mantissa);
     } // __internal_fp64emu_uint_to_fpbits64
 
-    _CCCL_TRIVIAL_API 
-    __fpbits64 __internal_fp64emu_ll_to_fpbits64   (int64_t __x) noexcept  
+    /// @brief Convert a int64 to a fp64
+    _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ll_to_fpbits64   (int64_t __x) noexcept  
     { 
         if (__x == 0) return (__fpbits64)0;
 
         uint64_t __sign = (__x < 0) ? (1ULL << 63) : 0ULL;
-        uint64_t __absA = (__x < 0) ? -(uint64_t)__x : (uint64_t)__x;
+        uint64_t __abs_a = (__x < 0) ? -(uint64_t)__x : (uint64_t)__x;
 
-        int32_t __nz = __internal_clzll((int64_t)__absA);
+        int32_t __nz = __internal_clzll((int64_t)__abs_a);
         int32_t __exp = _CCCL_FP64_BIAS + 63 - __nz;
 
         if (__nz >= 11) 
         {
             // <= 53 significant bits: exact
-            uint64_t __mantissa = (__absA << (__nz - 11)) & __fpemu_MANTISSA_MASK;
+            uint64_t __mantissa = (__abs_a << (__nz - 11)) & __fpemu_mantissa_mask;
             return (__fpbits64)(__sign | ((uint64_t)__exp << _CCCL_FP64_MANT_BITS) | __mantissa);
         }
 
         // > 53 significant bits: round to nearest even
         int32_t __shift  = 11 - __nz;
         uint64_t __half  = 1ULL << (__shift - 1);
-        uint64_t __trail = __absA & ((1ULL << __shift) - 1);
-        uint64_t __sig53 = __absA >> __shift;
+        uint64_t __trail = __abs_a & ((1ULL << __shift) - 1);
+        uint64_t __sig53 = __abs_a >> __shift;
 
         if (__trail > __half || (__trail == __half && (__sig53 & 1))) 
         {
@@ -420,12 +426,12 @@ namespace cuda::experimental
             if (__sig53 >> 53) { __sig53 >>= 1; __exp++; }
         }
 
-        uint64_t __mantissa = __sig53 & __fpemu_MANTISSA_MASK;
+        uint64_t __mantissa = __sig53 & __fpemu_mantissa_mask;
         return (__fpbits64)(__sign | ((uint64_t)__exp << _CCCL_FP64_MANT_BITS) | __mantissa);
     } // __internal_fp64emu_ll_to_fpbits64
 
-    _CCCL_TRIVIAL_API 
-    __fpbits64 __internal_fp64emu_ull_to_fpbits64  (uint64_t __x) noexcept 
+    /// @brief Convert a uint64 to a fp64
+    _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_ull_to_fpbits64  (uint64_t __x) noexcept 
     {
         if (__x == 0) return (__fpbits64)0;
 
@@ -435,7 +441,7 @@ namespace cuda::experimental
         if (__nz >= 11) 
         {
             // <= 53 significant bits: exact
-            uint64_t __mantissa = (__x << (__nz - 11)) & __fpemu_MANTISSA_MASK;
+            uint64_t __mantissa = (__x << (__nz - 11)) & __fpemu_mantissa_mask;
             return (__fpbits64)(((uint64_t)__exp << _CCCL_FP64_MANT_BITS) | __mantissa);
         }
 
@@ -451,7 +457,7 @@ namespace cuda::experimental
             if (__sig53 >> 53) { __sig53 >>= 1; __exp++; }
         }
 
-        uint64_t __mantissa = __sig53 & __fpemu_MANTISSA_MASK;
+        uint64_t __mantissa = __sig53 & __fpemu_mantissa_mask;
         return (__fpbits64)(((uint64_t)__exp << _CCCL_FP64_MANT_BITS) | __mantissa);
     } // __internal_fp64emu_ull_to_fpbits64
 
@@ -466,7 +472,6 @@ namespace cuda::experimental
     { 
         return __fpemu_bit_cast<__fpbits64>(__x);
     }
-
 
     _CCCL_TRIVIAL_API uint64_t   __internal_fp64emu_fpbits64_unpacked_cast_ull (__fpbits64_unpacked __x) noexcept 
     { 
@@ -521,8 +526,8 @@ namespace cuda::experimental
     // cores (shr_jam64 + round_to_*) are shared with the packed path, so results
     // match bit-for-bit (incl. NaN->indefinite and inf/overflow saturation).
     // ------------------------------------------------------------------------
-    static constexpr int32_t __FP64EMU_CVT_NAN_EXP = 0x0007ff00;
-    static constexpr int32_t __FP64EMU_CVT_INF_EXP = 0x00007ff0;
+    static constexpr int32_t __fp64emu_cvt_nan_exp = 0x0007ff00;
+    static constexpr int32_t __fp64emu_cvt_inf_exp = 0x00007ff0;
 
     template<__fpemu_rounding _Rm   = __fpemu_rounding::def,
              fpemu_accuracy   _Acc  = fpemu_accuracy::def>
@@ -530,11 +535,11 @@ namespace cuda::experimental
     {
         const bool    __sign = (__x.sign != 0);
         const int32_t __exp  = (int32_t)__x.exponent;
-        if (__exp == __FP64EMU_CVT_NAN_EXP) return (int32_t)0x80000000;                       // NaN -> indefinite
-        if (__exp == __FP64EMU_CVT_INF_EXP) return __sign ? (int32_t)0x80000000 : (int32_t)0x7FFFFFFF;
+        if (__exp == __fp64emu_cvt_nan_exp) return (int32_t)0x80000000;                       // NaN -> indefinite
+        if (__exp == __fp64emu_cvt_inf_exp) return __sign ? (int32_t)0x80000000 : (int32_t)0x7FFFFFFF;
         uint64_t __sig = __x.mantissa >> EXTRA_BITS;   // 53-bit significand (implicit at 52), 0 for zero
-        int32_t  __shiftDist = 0x427 - __exp;
-        if (__shiftDist > 0) __sig = __internal_fp64emu_shr_jam64(__sig, (uint32_t)__shiftDist);
+        int32_t  __shift_dist = 0x427 - __exp;
+        if (__shift_dist > 0) __sig = __internal_fp64emu_shr_jam64(__sig, (uint32_t)__shift_dist);
         return __internal_fp64emu_round_to_i32<_Rm>(__sign, __sig);
     }
     template<__fpemu_rounding _Rm   = __fpemu_rounding::def,
@@ -543,11 +548,11 @@ namespace cuda::experimental
     {
         const bool    __sign = (__x.sign != 0);
         const int32_t __exp  = (int32_t)__x.exponent;
-        if (__exp == __FP64EMU_CVT_NAN_EXP) return 0x80000000u;                               // NaN -> indefinite
-        if (__exp == __FP64EMU_CVT_INF_EXP) return __sign ? 0u : 0xFFFFFFFFu;
+        if (__exp == __fp64emu_cvt_nan_exp) return 0x80000000u;                               // NaN -> indefinite
+        if (__exp == __fp64emu_cvt_inf_exp) return __sign ? 0u : 0xFFFFFFFFu;
         uint64_t __sig = __x.mantissa >> EXTRA_BITS;
-        int32_t  __shiftDist = 0x427 - __exp;
-        if (__shiftDist > 0) __sig = __internal_fp64emu_shr_jam64(__sig, (uint32_t)__shiftDist);
+        int32_t  __shift_dist = 0x427 - __exp;
+        if (__shift_dist > 0) __sig = __internal_fp64emu_shr_jam64(__sig, (uint32_t)__shift_dist);
         return __internal_fp64emu_round_to_ui32<_Rm>(__sign, __sig);
     }
 
@@ -557,28 +562,28 @@ namespace cuda::experimental
     {
         const bool    __sign = (__x.sign != 0);
         const int32_t __exp  = (int32_t)__x.exponent;
-        if (__exp == __FP64EMU_CVT_NAN_EXP) return (int64_t)0x8000000000000000ULL;            // NaN -> indefinite
-        if (__exp == __FP64EMU_CVT_INF_EXP) return __sign ? (int64_t)0x8000000000000000ULL
+        if (__exp == __fp64emu_cvt_nan_exp) return (int64_t)0x8000000000000000ULL;            // NaN -> indefinite
+        if (__exp == __fp64emu_cvt_inf_exp) return __sign ? (int64_t)0x8000000000000000ULL
                                                       : (int64_t)0x7FFFFFFFFFFFFFFFULL;
         uint64_t __sig = __x.mantissa >> EXTRA_BITS;
-        int32_t  __shiftDist = 0x433 - __exp;
+        int32_t  __shift_dist = 0x433 - __exp;
         uint64_t __sig_int, __sig_extra;
-        if (__shiftDist <= 0)
+        if (__shift_dist <= 0)
         {
-            if (__shiftDist < -11) return __sign ? (int64_t)0x8000000000000000ULL
+            if (__shift_dist < -11) return __sign ? (int64_t)0x8000000000000000ULL
                                              : (int64_t)0x7FFFFFFFFFFFFFFFULL;
-            __sig_int   = __sig << (-__shiftDist);
+            __sig_int   = __sig << (-__shift_dist);
             __sig_extra = 0;
         }
-        else if (__shiftDist < 64)
+        else if (__shift_dist < 64)
         {
-            __sig_int   = __sig >> __shiftDist;
-            __sig_extra = __sig << (-__shiftDist & 63);
+            __sig_int   = __sig >> __shift_dist;
+            __sig_extra = __sig << (-__shift_dist & 63);
         }
         else
         {
             __sig_int   = 0;
-            __sig_extra = (__shiftDist == 64) ? __sig : (uint64_t)(__sig != 0);
+            __sig_extra = (__shift_dist == 64) ? __sig : (uint64_t)(__sig != 0);
         }
         return __internal_fp64emu_round_to_i64<_Rm>(__sign, __sig_int, __sig_extra);
     }
@@ -589,26 +594,26 @@ namespace cuda::experimental
     {
         const bool    __sign = (__x.sign != 0);
         const int32_t __exp  = (int32_t)__x.exponent;
-        if (__exp == __FP64EMU_CVT_NAN_EXP) return 0x8000000000000000ULL;                     // NaN -> indefinite
-        if (__exp == __FP64EMU_CVT_INF_EXP) return __sign ? 0ULL : 0xFFFFFFFFFFFFFFFFULL;
+        if (__exp == __fp64emu_cvt_nan_exp) return 0x8000000000000000ULL;                     // NaN -> indefinite
+        if (__exp == __fp64emu_cvt_inf_exp) return __sign ? 0ULL : 0xFFFFFFFFFFFFFFFFULL;
         uint64_t __sig = __x.mantissa >> EXTRA_BITS;
-        int32_t  __shiftDist = 0x433 - __exp;
+        int32_t  __shift_dist = 0x433 - __exp;
         uint64_t __sig_int, __sig_extra;
-        if (__shiftDist <= 0)
+        if (__shift_dist <= 0)
         {
-            if (__shiftDist < -11) return __sign ? 0ULL : 0xFFFFFFFFFFFFFFFFULL;
-            __sig_int   = __sig << (-__shiftDist);
+            if (__shift_dist < -11) return __sign ? 0ULL : 0xFFFFFFFFFFFFFFFFULL;
+            __sig_int   = __sig << (-__shift_dist);
             __sig_extra = 0;
         }
-        else if (__shiftDist < 64)
+        else if (__shift_dist < 64)
         {
-            __sig_int   = __sig >> __shiftDist;
-            __sig_extra = __sig << (-__shiftDist & 63);
+            __sig_int   = __sig >> __shift_dist;
+            __sig_extra = __sig << (-__shift_dist & 63);
         }
         else
         {
             __sig_int   = 0;
-            __sig_extra = (__shiftDist == 64) ? __sig : (uint64_t)(__sig != 0);
+            __sig_extra = (__shift_dist == 64) ? __sig : (uint64_t)(__sig != 0);
         }
         return __internal_fp64emu_round_to_ui64<_Rm>(__sign, __sig_int, __sig_extra);
     }
@@ -660,9 +665,6 @@ namespace cuda::experimental
         __fpbits64 __x_packed = __internal_fp64emu_ll_to_fpbits64(__x);
         return __internal_fp64emu_unpack(__x_packed);
     }
-
-
-
 
 // ============================================================================
 // Builtin declarations/implementations for conversion operations

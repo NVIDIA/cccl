@@ -46,8 +46,6 @@
 
 namespace cuda::experimental
 {
-
-
     /**
      * @brief v1.0 Emulation of double-precision multiplication for FPEMU
      *
@@ -147,7 +145,7 @@ namespace cuda::experimental
         __is_impl_bit = (__man_c_32x2.x[1] >= 0x08000000);
 
         //Calculate exponent
-        __exp_c = __exp_a + __exp_b - (__fpemu_BIAS+1) + __is_impl_bit;
+        __exp_c = __exp_a + __exp_b - (__fpemu_bias+1) + __is_impl_bit;
 
         //Calculate SIGN
         __is_sign_c = __is_sign_a ^ __is_sign_b;
@@ -450,7 +448,7 @@ namespace cuda::experimental
         // (Model 1 subsumption) with no range parameter -- range stays internal to
         // the pack/unpack, never threaded through the core. For mid/low the lean
         // (FTZ/DAZ) boundary handling lives in the mid/low pack/unpack, not here.
-        constexpr int32_t __NAN_EXP = 0x0007ff00;
+        constexpr int32_t __nan_exp = 0x0007ff00;
 
         const uint32_t __sign_ab = __a.sign ^ __b.sign;
         __fpbits64_unpacked __r;
@@ -464,14 +462,14 @@ namespace cuda::experimental
             __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__b.mantissa);
             __uint32x4 __prod   = __mul_128<__acc_used>(__a_32x2, __b_32x2);
 
-            int32_t __exponent_ab = (int32_t)__a.exponent + (int32_t)__b.exponent - (int32_t)__fpemu_BIAS;
+            int32_t __exponent_ab = (int32_t)__a.exponent + (int32_t)__b.exponent - (int32_t)__fpemu_bias;
             // mul_nzeros == 1 when the leading product bit landed one place low
             // (significand in [1,2) rather than [2,4)); normalize the implicit bit
             // to position 61 in the high word.
             int __mul_nzeros = __prod.hi.x[1] < 0x08000000;
-            int32_t __E = __exponent_ab - __mul_nzeros + 1;
+            int32_t __e = __exponent_ab - __mul_nzeros + 1;
             // Full range: inf*0 -> NaN (inf*finite -> inf rides the exponent band).
-            if (__E == (int32_t)__fpemu_INF_ZERO) __E = __NAN_EXP;
+            if (__e == (int32_t)__fpemu_inf_zero) __e = __nan_exp;
 
             const int __sh = (11 - EXTRA_BITS) + __mul_nzeros;  // 2 or 3
             // 64-bit normalization (no __uint128_t). Shift the high 64 bits up by
@@ -483,7 +481,7 @@ namespace cuda::experimental
             uint64_t __hi_n   = (__hi << __sh) | (__lo >> (64 - __sh));
             uint64_t __sticky = ((__lo << __sh) != 0) ? 1u : 0u;
             __r.sign     = __sign_ab;
-            __r.exponent = static_cast<uint32_t>(__E);
+            __r.exponent = static_cast<uint32_t>(__e);
             __r.mantissa = __hi_n | __sticky;
             return __r;
         }
@@ -503,16 +501,16 @@ namespace cuda::experimental
             __uint32x2 __b_32x2 = __fpemu_bit_cast<__uint32x2>(__b.mantissa);
             __uint32x2 __hi = __mul_64<__acc_used>(__a_32x2, __b_32x2);
 
-            int32_t __exponent_ab = (int32_t)__a.exponent + (int32_t)__b.exponent - (int32_t)__fpemu_BIAS;
+            int32_t __exponent_ab = (int32_t)__a.exponent + (int32_t)__b.exponent - (int32_t)__fpemu_bias;
             int __mul_nzeros = __hi.x[1] < 0x08000000;
-            int32_t __E = __exponent_ab - __mul_nzeros + 1;
+            int32_t __e = __exponent_ab - __mul_nzeros + 1;
             // inf*0 -> NaN: dead on the lean def/fast boundary (no INF magic), so
             // gate it out of the hot exponent chain. Kept only for full (cr).
-            if (__E == (int32_t)__fpemu_INF_ZERO) __E = __NAN_EXP;
+            if (__e == (int32_t)__fpemu_inf_zero) __e = __nan_exp;
 
             uint64_t __m = __fpemu_bit_cast<uint64_t>(__hi) << (11 - EXTRA_BITS + __mul_nzeros);
             __r.sign     = __sign_ab;
-            __r.exponent = static_cast<uint32_t>(__E);
+            __r.exponent = static_cast<uint32_t>(__e);
             __r.mantissa = __m;
             return __r;
         }
@@ -541,12 +539,12 @@ namespace cuda::experimental
             // in the cr convention (E = exponent_ab + binade) so the inf*0 -> NaN
             // fold is identical to cr; inf/overflow/subnormal are deferred to pack.
             int32_t  __binade      = (__pbits >= _CCCL_FP32_TWO) ? 1 : 0;
-            int32_t  __exponent_ab = __exp_a + __exp_b - (int32_t)__fpemu_BIAS;
-            int32_t  __E           = __exponent_ab + __binade;
+            int32_t  __exponent_ab = __exp_a + __exp_b - (int32_t)__fpemu_bias;
+            int32_t  __e           = __exponent_ab + __binade;
             uint32_t __result_mant = __pbits & _CCCL_FP32_MANT_MASK;
             // inf*0 -> NaN: dead on the lean def/fast boundary; gate it off the hot
             // path (kept only for full / cr).
-            if (__E == (int32_t)__fpemu_INF_ZERO) __E = __NAN_EXP;
+            if (__e == (int32_t)__fpemu_inf_zero) __e = __nan_exp;
 
             // Re-expand the 24-bit fp32 significand back to the universal scale.
             uint64_t __sig = ((uint64_t)((1u << _CCCL_FP32_MANT_BITS) | __result_mant)) << 38;
@@ -557,7 +555,7 @@ namespace cuda::experimental
             // NAN_EXP above and the pack overrides the mantissa to NaN.
             if (__a.mantissa == 0 || __b.mantissa == 0) __sig = 0;
             __r.sign     = __sign_ab;
-            __r.exponent = static_cast<uint32_t>(__E);
+            __r.exponent = static_cast<uint32_t>(__e);
             __r.mantissa = __sig;
             return __r;
         }

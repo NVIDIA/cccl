@@ -42,15 +42,13 @@
 
 namespace cuda::experimental
 {
-
-
     // ------------------------------------------------------------------------
     // Bit-level helpers (IEEE-754 binary64 layout). No SoftFloat dependency;
     // the comparison logic mirrors SoftFloat's f64_eq / f64_lt / f64_le.
     // ------------------------------------------------------------------------
 
     // Magnitude mask: all bits except the sign bit.
-    static constexpr __fpbits64 __FP64EMU_CMP_ABS_MASK = _CCCL_FPEMU_ABS_64;
+    static constexpr __fpbits64 __fp64emu_cmp_abs_mask = _CCCL_FPEMU_ABS_64;
 
     /// @brief True if the bit pattern encodes a NaN (max exponent, nonzero mantissa).
     _CCCL_TRIVIAL_API
@@ -69,7 +67,7 @@ namespace cuda::experimental
             return false;
         }
         // Equal bit patterns, or both are zero (+0 / -0 ignore the sign bit).
-        return (__x == __y) || (((__x | __y) & __FP64EMU_CMP_ABS_MASK) == 0);
+        return (__x == __y) || (((__x | __y) & __fp64emu_cmp_abs_mask) == 0);
     } // __internal_fp64emu_cmp_eq
 
     /// @brief IEEE-754 less-than. Unordered (NaN) compares false.
@@ -85,7 +83,7 @@ namespace cuda::experimental
         // Different signs: x < y only if x is negative and not both zero.
         // Same sign: ordering of magnitudes, inverted when both are negative.
         return (__sign_x != __sign_y)
-            ? (__sign_x && (((__x | __y) & __FP64EMU_CMP_ABS_MASK) != 0))
+            ? (__sign_x && (((__x | __y) & __fp64emu_cmp_abs_mask) != 0))
             : ((__x != __y) && (__sign_x ^ (__x < __y)));
     } // __internal_fp64emu_cmp_lt
 
@@ -100,7 +98,7 @@ namespace cuda::experimental
         const bool __sign_x = (__x >> 63) != 0;
         const bool __sign_y = (__y >> 63) != 0;
         return (__sign_x != __sign_y)
-            ? (__sign_x || (((__x | __y) & __FP64EMU_CMP_ABS_MASK) == 0))
+            ? (__sign_x || (((__x | __y) & __fp64emu_cmp_abs_mask) == 0))
             : ((__x == __y) || (__sign_x ^ (__x < __y)));
     } // __internal_fp64emu_cmp_le
 
@@ -123,12 +121,12 @@ namespace cuda::experimental
         //     +0 / -0 differ only in the sign field.
         // eq and lt are the primitives; le/ne/gt/ge derive from them and inherit the
         // IEEE unordered (NaN) semantics for free.
-        static constexpr int32_t __FP64EMU_UNP_NAN_EXP = 0x0007ff00;
+        static constexpr int32_t __fp64emu_unp_nan_exp = 0x0007ff00;
 
         _CCCL_TRIVIAL_API
         bool __internal_fp64emu_unp_is_nan (__fpbits64_unpacked __u) noexcept
         {
-            return static_cast<int32_t>(__u.exponent) == __FP64EMU_UNP_NAN_EXP;
+            return static_cast<int32_t>(__u.exponent) == __fp64emu_unp_nan_exp;
         }
         _CCCL_TRIVIAL_API
         bool __internal_fp64emu_unp_is_zero (__fpbits64_unpacked __u) noexcept
@@ -201,8 +199,6 @@ namespace cuda::experimental
             return !__internal_fp64emu_cmp_eq_unpacked(__x, __y);
         }
  
-
-
 // ============================================================================
 // Builtin declarations/implementations for comparison operations
 // ============================================================================

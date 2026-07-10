@@ -67,7 +67,7 @@
 #endif
 
 // The prologue/epilogue pair and the standard-library include are skipped in
-// __CUDA_LIBDEVICE__ builds (they are not libdevice-safe). The namespace and the
+// __CUDA_LIBDEVICE__ builds. The namespace and the
 // enum below are plain C++ and are always emitted so the braces stay balanced and
 // the emulation cores (which take fpemu_accuracy as a template parameter) can see
 // it in every build.

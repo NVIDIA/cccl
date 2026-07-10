@@ -322,12 +322,12 @@ enum struct __fpemu_rounding
     //constexpr uint64_t bitwidth = (MANTISSA_WIDTH + EXTRA_BITS);
     /* Exponent bias is 2^(11-1) -1 */    
     /* fp64 mantissa is 52 */
-    constexpr uint64_t __fpemu_MANTISSA_WIDTH = 52;
-    constexpr uint64_t __fpemu_EXPONENT_MASK  = _CCCL_FPEMU_EXP_64;
-    constexpr uint64_t __fpemu_MANTISSA_MASK  = _CCCL_FPEMU_MANT_64;
-    constexpr uint32_t __fpemu_EXTRA_BITS     = 9;
-    constexpr uint32_t __fpemu_BIAS           = 1023;
-    constexpr uint32_t __fpemu_INF_ZERO       = 0x00007ff0 - __fpemu_BIAS - 2048 - 1 + 0xC;; // - 128
+    constexpr uint64_t __fpemu_mantissa_width = 52;
+    constexpr uint64_t __fpemu_exponent_mask  = _CCCL_FPEMU_EXP_64;
+    constexpr uint64_t __fpemu_mantissa_mask  = _CCCL_FPEMU_MANT_64;
+    constexpr uint32_t __fpemu_extra_bits     = 9;
+    constexpr uint32_t __fpemu_bias           = 1023;
+    constexpr uint32_t __fpemu_inf_zero       = 0x00007ff0 - __fpemu_bias - 2048 - 1 + 0xC;; // - 128
 
     /*
     // by default route fpemu's internal bit-casts through
@@ -350,9 +350,9 @@ enum struct __fpemu_rounding
     #if defined __DO_NOT_USE_MEMCPY__
         for (unsigned __i = 0U; __i < sizeof(_Tp); __i++)
         {
-            unsigned char * __ptrSRC = __i + (unsigned char *)(&__value);
-            unsigned char * __ptrDST = __i + (unsigned char *)(&__dst);
-            *__ptrDST = *__ptrSRC;
+            unsigned char * __ptr_src = __i + (unsigned char *)(&__value);
+            unsigned char * __ptr_dst = __i + (unsigned char *)(&__dst);
+            *__ptr_dst = *__ptr_src;
         }
     #else
         #if !defined(__CUDA_LIBDEVICE__)
@@ -1045,7 +1045,7 @@ enum struct __fpemu_rounding
         //Set implicit-bit for normal numbers
         if (!__is_zero_exp) __man32x2.x[1] |= ( 1 << 20 );
 
-        __man32x2 = __shl_64(__man32x2, __fpemu_EXTRA_BITS);
+        __man32x2 = __shl_64(__man32x2, __fpemu_extra_bits);
         return __man32x2;
     } //__unpack_mant
 
@@ -1128,8 +1128,8 @@ enum struct __fpemu_rounding
         if constexpr (_Acc == fpemu_accuracy::high)
         {
             __is_nan =
-                __exp >= (0x000047ff - __fpemu_BIAS - 52 - 1) ||     //NAN * x && NAN + x
-                __exp == (0x000017ff - __fpemu_BIAS - 52 - 1) ||     //INF * 0
+                __exp >= (0x000047ff - __fpemu_bias - 52 - 1) ||     //NAN * x && NAN + x
+                __exp == (0x000017ff - __fpemu_bias - 52 - 1) ||     //INF * 0
                 (__exp == 0x000017ff - 64 && __zero_mantissa); //INF + (-INF)
 
         }
@@ -1146,7 +1146,7 @@ enum struct __fpemu_rounding
         bool __is_inf = false;
         if constexpr (_Acc == fpemu_accuracy::high)
         {
-            __is_inf = (__exp >= (0x000017ff - __fpemu_BIAS - 52 - 1)) && !__is_nan;
+            __is_inf = (__exp >= (0x000017ff - __fpemu_bias - 52 - 1)) && !__is_nan;
         }
         // Check for exact zero result
         if ( __zero_mantissa && __exp < 0x000007ff) __exp = 0;
@@ -1300,7 +1300,7 @@ enum struct __fpemu_rounding
     _CCCL_TRIVIAL_API __uint32x2 __round (__uint32x2 __man, const int __shift, bool __sign = false) noexcept
     {
         uint64_t __man64 = __fpemu_bit_cast<uint64_t>(__man);
-        const int __rshift = __fpemu_EXTRA_BITS + __shift;
+        const int __rshift = __fpemu_extra_bits + __shift;
         const uint64_t __round_bit = 1ULL << (__rshift - 1);
         const uint64_t __sticky_mask = (__round_bit << 1) - 1;
         const uint64_t __tie_mask    = (__round_bit << 2) - 1;

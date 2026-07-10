@@ -163,7 +163,7 @@ __fpbits64 __internal_fp64emu_pack(__fpbits64_unpacked __x) noexcept
     __uint32x2 __mantissa32 = __fpemu_bit_cast<__uint32x2>(__x.mantissa);
     __mantissa32 = __round<_Rm>(__mantissa32, 0, __sign);
 
-    const bool __is_nan = (__exponent >= (int)(0x0007ff00 - __fpemu_BIAS - 2048 - 1 - 128 + 0xC));
+    const bool __is_nan = (__exponent >= (int)(0x0007ff00 - __fpemu_bias - 2048 - 1 - 128 + 0xC));
 
     if (__mantissa32.x[0] == 0 && __mantissa32.x[1] == 0 && __exponent < 0x000007ff)
     {

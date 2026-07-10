@@ -37,8 +37,6 @@
  * floating point units.
  */
 
-//#define __FP64EMU_ADD_OUTPUT_INF__         0
-//#define __FP64EMU_ADD_USE_CARRY_BIT__      0
 #define _CCCL_FP64EMU_DADD_FTZ              0
 #define _CCCL_FP64EMU_DADD_OUTPUT_INF       0
 #define _CCCL_FP64EMU_DADD_USE_CARRY_BIT    0
@@ -51,8 +49,6 @@
 
 namespace cuda::experimental
 {
-
-
     /**
      * @brief Unpacked double-precision addition for FPEMU
      *
@@ -512,7 +508,7 @@ namespace cuda::experimental
      * inf/nan and over/underflow all flow through the universal full-range pack.
      */
     template<fpemu_accuracy   _Acc   = fpemu_accuracy::def,
-             bool               _IsSub = false>
+             bool             _IsSub = false>
     _CCCL_TRIVIAL_API
     __fpbits64_unpacked __internal_fp64emu_dadd_unpacked(__fpbits64_unpacked __a,
                                                          __fpbits64_unpacked __b) noexcept
@@ -521,8 +517,8 @@ namespace cuda::experimental
         constexpr fpemu_accuracy   __acc_used   = (__acc_forced != fpemu_accuracy::unset) ? __acc_forced : _Acc;
 
         // Inf/Nan exponent magics produced by the universal unpack.
-        constexpr uint32_t __INF_EXP = 0x00007ff0u;
-        constexpr int32_t  __NAN_EXP = 0x0007ff00;
+        constexpr uint32_t __inf_exp = 0x00007ff0u;
+        constexpr int32_t  __nan_exp = 0x0007ff00;
 
         if constexpr (__acc_used == fpemu_accuracy::high ||
                       __acc_used == fpemu_accuracy::mid)
@@ -559,9 +555,9 @@ namespace cuda::experimental
             // unpack/pack boundary, so the inf+/-inf -> NaN fold is always live.
             // Unpacked cores always run on the fully-accurate full-range boundary,
             // so the inf+/-inf -> NaN fold is always live.
-            if (__a.exponent == __INF_EXP && __b.exponent == __INF_EXP && (__is_sign_a != __is_sign_b))
+            if (__a.exponent == __inf_exp && __b.exponent == __inf_exp && (__is_sign_a != __is_sign_b))
             {
-                __exp_a = __NAN_EXP;
+                __exp_a = __nan_exp;
             }
 
             // Operand sign handling: negate each operand by its OWN sign, then read the
@@ -654,7 +650,7 @@ namespace cuda::experimental
             // the top 23 fraction bits at positions 60..38 (implicit bit at 61),
             // and the fp32 sum is re-expressed as a universal intermediate
             // (implicit bit at 61) that the universal pack finalizes.
-            (void)__NAN_EXP;
+            (void)__nan_exp;
             int32_t  __exp_a  = (int32_t)__a.exponent;
             int32_t  __exp_b  = (int32_t)__b.exponent;
             uint32_t __sign_a = __a.sign;
@@ -746,7 +742,7 @@ namespace cuda::experimental
              bool                _IsSub = false>
     _CCCL_TRIVIAL_API
     __fpbits64 __internal_fp64emu_dadd(__fpbits64 __x, 
-                                          __fpbits64 __y) noexcept
+                                       __fpbits64 __y) noexcept
     {
         // Forced parameters for the addition operation
         constexpr fpemu_accuracy   __acc_forced = fpemu_accuracy::_CCCL_FPEMU_ADD_METHOD;
@@ -841,16 +837,13 @@ _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_low_dadd  (__fpb
 namespace cuda::experimental
 {
 
- 
-
-
 // ============================================================================
 // API (merged from fp64emu_dadd_api.hpp)
 // ============================================================================
     // Default API implementation
     template<fpemu_accuracy _Acc>  
     _CCCL_API fpemu<double, _Acc> operator+ (const fpemu<double, _Acc>& __x, 
-                                                    const fpemu<double, _Acc>& __y) noexcept
+                                             const fpemu<double, _Acc>& __y) noexcept
     {
         if      constexpr (_Acc == fpemu_accuracy::high) { return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_high_dadd_rn(__x.bits, __y.bits)); }
         else if constexpr (_Acc == fpemu_accuracy::mid)  { return fpemu<double, _Acc>(__fpbits64_construct, __fp64emu_mid_dadd_rn(__x.bits, __y.bits)); }
@@ -894,7 +887,7 @@ namespace cuda::experimental
     // Operator+ for unpacked addition
     template<fpemu_accuracy _Acc>  
     _CCCL_DEVICE_API fpemu_unpacked<double, _Acc> operator+ (const fpemu_unpacked<double, _Acc>& __x, 
-                                                                    const fpemu_unpacked<double, _Acc>& __y) noexcept
+                                                             const fpemu_unpacked<double, _Acc>& __y) noexcept
     {
         if      constexpr (_Acc == fpemu_accuracy::high) { return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_high_dadd(__x.bits, __y.bits)); }
         else if constexpr (_Acc == fpemu_accuracy::mid)  { return fpemu_unpacked<double, _Acc>(__fpbits64_construct, __fp64emu_unpacked_mid_dadd(__x.bits, __y.bits)); }

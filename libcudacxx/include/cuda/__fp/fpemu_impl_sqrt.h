@@ -122,6 +122,16 @@ extern "C" float  sqrtf(float __x) noexcept;   // host seed for the reciprocal-s
     _CCCL_TRIVIAL_API
     __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits64_unpacked __x) noexcept ;
 
+    /**
+     * @brief Square root of a double-precision floating point number
+     * 
+     * This function computes the square root of a double-precision floating point number.
+     * It works by splitting the number into sign, exponent, and mantissa, normalizing the mantissa,
+     * and then computing the square root of the mantissa.
+     * 
+     * @param __x The double-precision floating point number to compute the square root of
+     * @return The square root of the double-precision floating point number
+     */
     template<__fpemu_rounding    _Rm  = __fpemu_rounding::def, 
              fpemu_accuracy      _Acc = fpemu_accuracy::def>
     _CCCL_TRIVIAL_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x) noexcept
@@ -148,19 +158,19 @@ extern "C" float  sqrtf(float __x) noexcept;   // host seed for the reciprocal-s
         if (__exp_x == 0x7FF)
         {
             if (__mant_x)  return (__fpbits64)(__ui64_x | _CCCL_FPEMU_QNAN_BIT_64);   // NaN -> quiet NaN
-            if (!__sign_x) return (__fpbits64)__ui64_x;                            // +inf -> +inf
-            return (__fpbits64)_CCCL_FPEMU_DEFNAN_64;                          // sqrt(-inf) -> NaN
+            if (!__sign_x) return (__fpbits64)__ui64_x;                               // +inf -> +inf
+            return (__fpbits64)_CCCL_FPEMU_DEFNAN_64;                                 // sqrt(-inf) -> NaN
         }
         if (__sign_x)
         {
             if (!(__exp_x | (int32_t)(__mant_x != 0))) return (__fpbits64)__ui64_x;   // -0 -> -0
-            return (__fpbits64)_CCCL_FPEMU_DEFNAN_64;                          // sqrt(negative) -> NaN
+            return (__fpbits64)_CCCL_FPEMU_DEFNAN_64;                                 // sqrt(negative) -> NaN
         }
         if (!__exp_x)
         {
-            if (!__mant_x) return (__fpbits64)__ui64_x;                             // +0 -> +0
+            if (!__mant_x) return (__fpbits64)__ui64_x;                               // +0 -> +0
 
-            int __mant_shft = __internal_clzll((int64_t)__mant_x) - 11;           // normalize subnormal
+            int __mant_shft = __internal_clzll((int64_t)__mant_x) - 11;               // normalize subnormal
 
             __exp_x   = 1 - __mant_shft;
             __mant_x  = __mant_x << __mant_shft;
@@ -197,33 +207,32 @@ extern "C" float  sqrtf(float __x) noexcept;   // host seed for the reciprocal-s
     #endif // _CCCL_FPEMU_PACKED_VIA_UNPACKED
     } // __internal_fp64emu_dsqrt
 
-    // Unpacked operation
+    /**
+     * @brief Square root of a double-precision floating point number
+     * 
+     * This function computes the square root of a double-precision floating point number.
+     * It works by splitting the number into sign, exponent, and mantissa, normalizing the mantissa,
+     * and then computing the square root of the mantissa.
+     * 
+     * @param __x The double-precision floating point number to compute the square root of
+     * @return The square root of the double-precision floating point number
+     */
     template<fpemu_accuracy   _Acc = fpemu_accuracy::def>
     _CCCL_TRIVIAL_API
     __fpbits64_unpacked __internal_fp64emu_dsqrt_unpacked(__fpbits64_unpacked __x) noexcept
     {
-        // ---- True unpacked square root --------------------------------------
-        // Operates directly on the fully-accurate unpacked operand (no operand
-        // pack, no legacy packed kernel). The full unpack already normalized
-        // denormals and encoded inf/nan, so the significand is mantissa>>EXTRA_BITS
-        // (implicit bit at 52) and the exponent is the IEEE-biased value (same as
-        // the packed core's post-normalization exponent, so the parity bit and the
-        // halved result exponent are identical). The proven fixed-point
-        // reciprocal-sqrt root is computed exactly as the packed core, then
-        // expressed on the universal unpacked scale (implicit bit at 61, sticky LSB)
-        // so the full pack performs the single correctly-rounded finalization.
-        // sqrt is correctly rounded for every accuracy level (no mid/low variant).
-        constexpr int32_t __NAN_EXP = 0x0007ff00;
-        constexpr int32_t __INF_EXP = 0x00007ff0;
+
+        constexpr int32_t __nan_exp = 0x0007ff00;
+        constexpr int32_t __inf_exp = 0x00007ff0;
 
         const int32_t __exp_x  = (int32_t)__x.exponent;
         const bool    __sign_x = (__x.sign != 0);
         const bool    __zero_x = (__x.mantissa == 0);
 
         // Special operands (canonical packed result, then unpack -- rare path).
-        if (__exp_x == __NAN_EXP)
+        if (__exp_x == __nan_exp)
             return __internal_fp64emu_unpack((__fpbits64)_CCCL_FPEMU_DEFNAN_64);
-        if (__exp_x == __INF_EXP)
+        if (__exp_x == __inf_exp)
         {
             if (!__sign_x) return __internal_fp64emu_unpack((__fpbits64)_CCCL_FPEMU_INF_64); // +inf -> +inf
             return __internal_fp64emu_unpack((__fpbits64)_CCCL_FPEMU_DEFNAN_64);           // sqrt(-inf) -> NaN

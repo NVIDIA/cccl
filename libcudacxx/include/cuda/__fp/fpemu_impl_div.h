@@ -135,15 +135,17 @@ namespace cuda::experimental
                                                          __fpbits64_unpacked __y) noexcept ;
 
     /**
-     * @brief Divide two __fpbits64
+     * @brief Divide two double-precision floating point numbers
      * 
-     * This function divides two __fpbits64.
+     * This function divides two double-precision floating point numbers.
+     * It works by splitting the numbers into sign, exponent, and mantissa, normalizing the mantissa,
+     * and then computing the division of the mantissa.
      * 
-     * @param x The first __fpbits64
-     * @param y The second __fpbits64
+     * @param __x The first double-precision floating point number
+     * @param __y The second double-precision floating point number
      * @return The result of the division
      */
-    template<__fpemu_rounding    _Rm  = __fpemu_rounding::def, 
+    template<__fpemu_rounding _Rm  = __fpemu_rounding::def, 
              fpemu_accuracy   _Acc = fpemu_accuracy::def>
     _CCCL_TRIVIAL_API
     __fpbits64 __internal_fp64emu_ddiv(__fpbits64 __x, 
@@ -247,13 +249,16 @@ namespace cuda::experimental
     #endif // _CCCL_FPEMU_PACKED_VIA_UNPACKED
     } // __internal_fp64emu_ddiv
 
+
     /**
-     * @brief Divide two __fpbits64_unpacked
+     * @brief Divide two double-precision floating point numbers
      * 
-     * This function divides two __fpbits64_unpacked.
+     * This function divides two double-precision floating point numbers.
+     * It works by splitting the numbers into sign, exponent, and mantissa, normalizing the mantissa,
+     * and then computing the division of the mantissa.
      * 
-     * @param x The first __fpbits64_unpacked
-     * @param y The second __fpbits64_unpacked
+     * @param __x The first double-precision floating point number
+     * @param __y The second double-precision floating point number
      * @return The result of the division
      */
     template<fpemu_accuracy   _Acc = fpemu_accuracy::def>
@@ -272,16 +277,16 @@ namespace cuda::experimental
         // sticky LSB) so the full pack does the single correctly-rounded
         // finalization (subnormal / overflow / rounding). Division has no def/fast
         // arithmetic variant -- the quotient is correctly rounded for every method.
-        constexpr int32_t __NAN_EXP = 0x0007ff00;
-        constexpr int32_t __INF_EXP = 0x00007ff0;
+        constexpr int32_t __nan_exp = 0x0007ff00;
+        constexpr int32_t __inf_exp = 0x00007ff0;
 
         const int32_t __exp_x  = (int32_t)__x.exponent;
         const int32_t __exp_y  = (int32_t)__y.exponent;
         const bool    __sign_z = ((__x.sign != 0) ^ (__y.sign != 0));
         const uint64_t __sign_bit = (uint64_t)__sign_z << 63;
 
-        const bool __nan_x  = (__exp_x == __NAN_EXP), __nan_y  = (__exp_y == __NAN_EXP);
-        const bool __inf_x  = (__exp_x == __INF_EXP), __inf_y  = (__exp_y == __INF_EXP);
+        const bool __nan_x  = (__exp_x == __nan_exp), __nan_y  = (__exp_y == __nan_exp);
+        const bool __inf_x  = (__exp_x == __inf_exp), __inf_y  = (__exp_y == __inf_exp);
         const bool __zero_x = (__x.mantissa == 0),  __zero_y = (__y.mantissa == 0);
 
         // Special operands: build the canonical packed result and unpack it (rare,

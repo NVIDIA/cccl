@@ -77,8 +77,8 @@ extern "C" double fma(double __x, double __y, double __z) noexcept;
         // flows to the full pack (no FTZ, correct subnormal + min_normal round-up).
 
         // Inf/Nan exponent magics produced by the universal unpack.
-        constexpr uint32_t __INF_EXP = 0x00007ff0u;
-        constexpr int32_t  __NAN_EXP = 0x0007ff00;
+        constexpr uint32_t __inf_exp = 0x00007ff0u;
+        constexpr int32_t  __nan_exp = 0x0007ff00;
 
         __fpbits64_unpacked __r;
         __uint128_t __mantissa_ab;
@@ -95,7 +95,7 @@ extern "C" double fma(double __x, double __y, double __z) noexcept;
 
         // Exponents/signs (read with explicit signedness: the public field is
         // uint32 but the core needs signed arithmetic for subnormal exponents).
-        int32_t __exponent_ab = (int32_t)__a.exponent + (int32_t)__b.exponent - (int32_t)__fpemu_BIAS;
+        int32_t __exponent_ab = (int32_t)__a.exponent + (int32_t)__b.exponent - (int32_t)__fpemu_bias;
         int32_t __exponent_c  = (int32_t)__c.exponent;
         int32_t __sign_ab     = (int32_t)(__a.sign ^ __b.sign);
         int32_t __sign_c      = (int32_t)__c.sign;
@@ -112,16 +112,16 @@ extern "C" double fma(double __x, double __y, double __z) noexcept;
 
         {
             // Check if a or b is inf and c is inf and sign_ab != sign_c then return NaN
-            if ((__a.exponent == __INF_EXP || __b.exponent == __INF_EXP) && __c.exponent == __INF_EXP && __sign_ab != __sign_c)
+            if ((__a.exponent == __inf_exp || __b.exponent == __inf_exp) && __c.exponent == __inf_exp && __sign_ab != __sign_c)
             {
-                __exponent_ab_new = __NAN_EXP;
+                __exponent_ab_new = __nan_exp;
             }
         }
 
         // Check if exponent_ab_new is INF_ZERO then return NaN
-        if (__exponent_ab_new == (int32_t)__fpemu_INF_ZERO) 
+        if (__exponent_ab_new == (int32_t)__fpemu_inf_zero) 
         { 
-            __exponent_ab_new = __NAN_EXP;
+            __exponent_ab_new = __nan_exp;
         }
 
         //ADD START:
@@ -246,8 +246,6 @@ extern "C" double fma(double __x, double __y, double __z) noexcept;
                 }
         }
     } // __internal_fp64emu_fma
-
-
 
 // ============================================================================
 // Builtin declarations/implementations for FMA operations
