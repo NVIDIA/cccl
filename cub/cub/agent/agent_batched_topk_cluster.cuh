@@ -1344,32 +1344,15 @@ private:
     return is_front_done && is_back_done;
   }
 
-  // Emit one back/tie candidate: if its `global_rank` (arrival- or scan-ordered by the caller) is a winner it lands
-  // in the top-k output at slot `k-1-global_rank`, with its value pulled from segment-local index `seg_idx`; ranks at
-  // or past `num_back` are losers and dropped (a no-op). Forced-inline so it folds into the hot back-placement loops;
-  // the caller keeps any counter side effects (e.g. the `back_local_cnt` atomic) in the `global_rank` argument so they
-  // still run for every candidate.
-  template <detail::topk::select SelectDirection>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  emit_back_one(const det_filter_state<SelectDirection>& st, offset_t global_rank, const key_t& key, offset_t seg_idx)
-  {
-    if (global_rank < static_cast<offset_t>(st.num_back))
-    {
-      const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-      st.block_keys_out[out] = key;
-      final_filter_write_value(out, seg_idx);
-    }
-  }
-
-  // Process a flat span of `count` keys in scan order, tiled by `threads_per_block * Items`. `FromSmem` selects the
-  // key source: the SMEM buffer `smem_src` (indexed by the folded in-region position) or gmem `block_keys_in`
-  // (indexed by the segment-local index `seg_base + folded`). `Reversed` walks the span high-to-low. Strictly-
-  // selected keys go to the front via a SMEM atomic (offset by `st.sel_prefix`); candidates go to the back (see the
-  // per-tile logic). `region_is_terminal` marks this region as the CTA's last, so its last tile -- if ties are
-  // unresolved -- holds the boundary and scans directly. `st.running` carries across tiles/regions. No per-tile early-
-  // exit or barrier here except the lazy-scan `else` branch; early exit is decided at critical points via
-  // `final_filter_should_stop`.
-  template <int Items, bool FromSmem, bool Reversed, detail::topk::select SelectDirection>
+  // Process a flat span of `count` keys in scan order, tiled by `threads_per_block * ItemsPerThread`. `FromSmem`
+  // selects the key source: the SMEM buffer `smem_src` (indexed by the folded in-region position) or gmem
+  // `block_keys_in` (indexed by the segment-local index `seg_base + folded`). `Reversed` walks the span high-to-low.
+  // Strictly-selected keys go to the front via a SMEM atomic (offset by `st.sel_prefix`); candidates go to the back
+  // (see the per-tile logic). `region_is_terminal` marks this region as the CTA's last, so its last tile -- if ties are
+  // unresolved -- holds the boundary and scans directly. `st.running` carries across tiles/regions. The only explicit
+  // per-tile `__syncthreads()` are in the lazy-scan `else` branch (block scans elsewhere synchronize internally); early
+  // exit is decided at critical points via `final_filter_should_stop`.
+  template <int ItemsPerThread, bool FromSmem, bool Reversed, detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_tiles(
     det_filter_state<SelectDirection>& st,
     [[maybe_unused]] const key_t* smem_src,
@@ -1383,21 +1366,20 @@ private:
                    && static_cast<offset_t>(count) <= layout.segment_size_off - seg_base
                    && (!FromSmem || count == 0 || smem_src != nullptr),
                  "process_tiles: region must be a valid in-segment source span");
-    constexpr int items = Items;
-    constexpr int tile  = threads_per_block * items;
-    for (int tile_base = 0; tile_base < count; tile_base += tile)
+    constexpr int tile_size = threads_per_block * ItemsPerThread;
+    for (int tile_base = 0; tile_base < count; tile_base += tile_size)
     {
-      key_t keys[items];
-      offset_t flags[items];
-      detail::topk::candidate_class cls[items];
-      bool is_valid[items];
+      key_t keys[ItemsPerThread];
+      offset_t flags[ItemsPerThread];
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < items; ++i)
+      for (int i = 0; i < ItemsPerThread; ++i)
       {
-        const int pos = tile_base + tid * items + i;
-        is_valid[i]   = pos < count;
-        flags[i]      = offset_t{0};
-        if (is_valid[i])
+        const int pos = tile_base + tid * ItemsPerThread + i;
+        // Zero-init doubles as the out-of-range/non-candidate mask -- only in-range candidates set it below, so the
+        // back-placement loops gate on `flags[i]` alone. Validity (`pos < count`) and the selected class are cheap
+        // recomputed on the loaded key, not cached per item.
+        flags[i] = offset_t{0};
+        if (pos < count)
         {
           // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
           // local read and the segment-local value index.
@@ -1411,21 +1393,20 @@ private:
             keys[i] =
               layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
           }
-          cls[i]   = st.identify_op(keys[i]);
-          flags[i] = (cls[i] == detail::topk::candidate_class::candidate) ? offset_t{1} : offset_t{0};
+          flags[i] = (st.identify_op(keys[i]) == detail::topk::candidate_class::candidate) ? offset_t{1} : offset_t{0};
         }
       }
 
       // Strictly-selected keys go to this block's front slice via a block-local SMEM atomic offset by `st.sel_prefix`.
       // The per-block slices (disjoint by `st.sel_prefix`) together fill `[0, num_selected)`. Candidates never fold in
-      // here -- they always route through the back below, even on early stop.
+      // here -- they always route through the back below, even on early stop. The `&&` short-circuits so `identify_op`
+      // only touches in-range (loaded) keys.
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < items; ++i)
+      for (int i = 0; i < ItemsPerThread; ++i)
       {
-        const bool is_front_key = is_valid[i] && (cls[i] == detail::topk::candidate_class::selected);
-        if (is_front_key)
+        const int pos = tile_base + tid * ItemsPerThread + i;
+        if (pos < count && st.identify_op(keys[i]) == detail::topk::candidate_class::selected)
         {
-          const int pos          = tile_base + tid * items + i;
           const offset_t local   = atomicAdd(&temp_storage.front_local_cnt, offset_t{1});
           const out_offset_t out = static_cast<out_offset_t>(st.sel_prefix + local);
           const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
@@ -1434,45 +1415,58 @@ private:
         }
       }
 
-      // Back/tie placement (only while this CTA still has unresolved ties). Three block-uniform sub-paths:
+      // Back/tie placement (only while this CTA still has unresolved ties). A candidate whose global rank is below
+      // `num_back` lands in the top-k output at slot `k-1-rank`; higher ranks are dropped. Three block-uniform
+      // sub-paths assign that rank:
       //   * is_select_all_cand_cta -- every candidate wins: arrival-order SMEM atomics, no scan, no barrier.
       //   * terminal tile -- the straddling CTA's last tile necessarily holds the boundary: scan it directly.
       //   * other tiles   -- straddling CTA, boundary not yet known: place in arrival order, then `B1` to read the
       //                      counter and, on the crossing tile only, overwrite the arrival slots in index order.
       if (st.is_tie_active)
       {
-        const bool is_terminal_tile = region_is_terminal && (tile_base + tile >= count);
+        const bool is_terminal_tile = region_is_terminal && (tile_base + tile_size >= count);
 
-        // Arrival-order placement: each candidate grabs the next block-local back slot via an atomic. Used where the
-        // winning slot set is provisional (select-all, or the lazy path before the K-boundary is known).
+        // Arrival-order placement: each candidate grabs the next back rank via an atomic on `back_local_cnt` (added to
+        // `cand_prefix`); the atomic must advance for every candidate, win or lose. Arrival order is acceptable because
+        // either every candidate wins (select-all) or these slots are overwritten in index order later (lazy path).
         const auto emit_arrival = [&] {
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int i = 0; i < items; ++i)
+          for (int i = 0; i < ItemsPerThread; ++i)
           {
-            if (is_valid[i] && flags[i] != offset_t{0})
+            if (flags[i] != offset_t{0})
             {
-              const int pos = tile_base + tid * items + i;
-              emit_back_one(st,
-                            st.cand_prefix + atomicAdd(&temp_storage.back_local_cnt, offset_t{1}),
-                            keys[i],
-                            seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos));
+              const int pos              = tile_base + tid * ItemsPerThread + i;
+              const offset_t global_rank = st.cand_prefix + atomicAdd(&temp_storage.back_local_cnt, offset_t{1});
+              if (global_rank < static_cast<offset_t>(st.num_back))
+              {
+                const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+                const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
+                st.block_keys_out[out] = keys[i];
+                final_filter_write_value(out, seg_idx);
+              }
             }
           }
         };
-        // Index-ordered placement into slots based at `base`: a block scan assigns each candidate a deterministic
-        // slot by its in-tile rank. Returns the tile's candidate total. Used on the boundary-crossing tile.
+        // Index-ordered placement: a block scan assigns each candidate a deterministic rank (`base` plus its in-tile
+        // position). Returns the tile's candidate total. Used on the boundary-crossing tile.
         const auto emit_indexed = [&](offset_t base) -> offset_t {
-          offset_t excl[items];
+          offset_t excl[ItemsPerThread];
           offset_t tile_total = 0;
           block_scan_t(temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int i = 0; i < items; ++i)
+          for (int i = 0; i < ItemsPerThread; ++i)
           {
-            if (is_valid[i] && flags[i] != offset_t{0})
+            if (flags[i] != offset_t{0})
             {
-              const int pos = tile_base + tid * items + i;
-              emit_back_one(
-                st, base + excl[i], keys[i], seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos));
+              const offset_t global_rank = base + excl[i];
+              if (global_rank < static_cast<offset_t>(st.num_back))
+              {
+                const int pos          = tile_base + tid * ItemsPerThread + i;
+                const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+                const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
+                st.block_keys_out[out] = keys[i];
+                final_filter_write_value(out, seg_idx);
+              }
             }
           }
           return tile_total;
@@ -1507,8 +1501,8 @@ private:
             st.is_tie_active = false;
           }
           // Trailing barrier for the lazy-scan path only: separate this tile's `placed` read (B1 above) from the
-          // next tile's `back_local_cnt` atomic. The other sub-paths write disjoint slots and need no per-tile
-          // barrier.
+          // next tile's `back_local_cnt` atomic. The other sub-paths write disjoint slots and need no additional
+          // explicit barrier.
           __syncthreads();
         }
       }
