@@ -92,13 +92,6 @@ __device__ __forceinline__ scalar_t div_floor_floating(scalar_t a, scalar_t b)
   return floordiv;
 }
 
-// pow_ (native/cuda/Pow.cuh:40)
-template <typename Base_type, typename Exp_type>
-__device__ __forceinline__ Base_type pow_(Base_type base, Exp_type exp)
-{
-  return ::pow(base, exp);
-}
-
 // is_lerp_weight_small + lerp (native/Lerp.h:11,21)
 template <typename scalar_t>
 __device__ __forceinline__ bool is_lerp_weight_small(scalar_t weight)
@@ -474,7 +467,7 @@ try
       d_b,
       n,
       [] __device__(T base, T exp) -> T {
-        return pow_(base, exp);
+        return cuda::std::pow(base, exp);
       },
       s);
   });
@@ -678,7 +671,7 @@ try
       d_a,
       n,
       [=] __device__(T base) -> T {
-        return pow_(base, exp_val);
+        return cuda::std::pow(base, exp_val);
       },
       s);
 
