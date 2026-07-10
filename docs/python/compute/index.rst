@@ -331,6 +331,11 @@ reusable algorithm object in each thread (for example, the object returned by
 :func:`make_reduce_into <cuda.compute.algorithms.make_reduce_into>`). If multiple
 threads share one of these objects, serialize access to that object.
 
+The examples below additionally use CuPy for device arrays. CuPy is not part
+of the ``minimal`` extras, so install it separately (``pip install
+cupy-cuda13x`` or ``cupy-cuda12x``; free-threaded Linux wheels are available
+starting with CuPy 14.1).
+
 .. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/free_threading/direct_api.py
    :language: python
    :start-after: # example-begin
