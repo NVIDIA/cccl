@@ -26,14 +26,14 @@ struct my_policy_hub
   // from Policy500 of the CUB scan-by-key tunings
   struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
-    using ScanByKeyPolicyT = cub::detail::agent_scan_by_key_policy<
-      128,
-      6,
-      BLOCK_LOAD_WARP_TRANSPOSE,
-      LOAD_CA,
-      BLOCK_SCAN_WARP_SCANS,
-      BLOCK_STORE_WARP_TRANSPOSE,
-      cub::detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
+    using ScanByKeyPolicyT =
+      AgentScanByKeyPolicy<128,
+                           6,
+                           BLOCK_LOAD_WARP_TRANSPOSE,
+                           LOAD_CA,
+                           BLOCK_SCAN_WARP_SCANS,
+                           BLOCK_STORE_WARP_TRANSPOSE,
+                           cub::detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 };
 
