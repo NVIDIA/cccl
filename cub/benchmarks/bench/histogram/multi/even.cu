@@ -107,6 +107,12 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     OffsetT>(static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(num_channels)
              * static_cast<unsigned long long>(elements));
 #endif
+  bench_log_input_cache_slots(cache_slots);
+  if (bench_input_cache_slot_query_only())
+  {
+    state.skip("input cache-slot query only");
+    return;
+  }
   thrust::device_vector<SampleT> input = generate_histogram_input_even<SampleT>(
     shape,
     elements * num_channels,
