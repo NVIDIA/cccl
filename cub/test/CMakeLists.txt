@@ -16,7 +16,9 @@ cccl_get_cudatoolkit()
 cccl_get_nvtx()
 
 set(build_nvrtc_tests ON)
-if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+# MSVC segfaults, https://github.com/NVIDIA/cccl/issues/9612
+set(unsupported_nvrtc_host_compilers NVHPC MSVC)
+if (CMAKE_CXX_COMPILER_ID IN_LIST unsupported_nvrtc_host_compilers)
   set(build_nvrtc_tests OFF)
 endif()
 

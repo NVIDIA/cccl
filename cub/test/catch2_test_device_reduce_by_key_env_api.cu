@@ -65,4 +65,14 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts a custom policy selector", "[re
   CHECK(d_aggregates_out == expected_aggregates);
 }
 
+#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER < 2020 vvv
+
+// The env-based API requires C++20 (the policy selector uses designated initializers).
+// Register a passing placeholder so the test binary is not empty in earlier dialects,
+// which Catch2 would otherwise report as a failure ("No tests ran").
+C2H_TEST("cub::DeviceReduce::ReduceByKey env-based API placeholder (requires C++20)", "[reduce][env]")
+{
+  SUCCEED();
+}
+
 #endif // _CCCL_STD_VER >= 2020

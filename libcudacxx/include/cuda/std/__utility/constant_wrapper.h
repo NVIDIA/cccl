@@ -74,7 +74,7 @@ private:
 template <class _Tp, size_t _Extent>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES __cw_fixed_value(_Tp (&)[_Extent]) -> __cw_fixed_value<_Tp[_Extent]>;
 
-template <__cw_fixed_value _Xp, class = typename decltype(__cw_fixed_value(_Xp))::type>
+template <__cw_fixed_value _Xp, class = typename remove_cvref_t<decltype(_Xp)>::type>
 struct __constant_wrapper;
 
 template <class _Tp, class = void>
