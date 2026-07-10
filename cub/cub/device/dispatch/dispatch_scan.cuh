@@ -491,7 +491,7 @@ struct DispatchScan
     const int grid_dim =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
 
-    size_t allocation_sizes[1] = {static_cast<size_t>(grid_dim) * kernel_source.lookahead_tile_state_size()};
+    size_t allocation_sizes[1] = {static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size()};
     void* allocations[1]       = {};
     if (const auto error =
           CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
