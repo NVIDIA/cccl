@@ -1308,12 +1308,11 @@ private:
     }
 
     // Uniform "all placed" predicate: true once this block has emitted all `my_front` strictly-selected keys and
-    // resolved its ties. The leading barrier makes the counter reads block-wide (and resynchronizes lanes that raced
-    // ahead through the barrier-free tiles). Polled only at critical points -- between regions and before each
-    // streaming bulk copy -- never per tile.
+    // resolved its ties. Callers must `__syncthreads()` first (the counter reads are block-wide and must resynchronize
+    // lanes that raced ahead through the barrier-free tiles). Polled only at critical points -- between regions and
+    // before each streaming bulk copy -- never per tile.
     _CCCL_DEVICE _CCCL_FORCEINLINE bool should_stop()
     {
-      __syncthreads();
       // Each region is visited at most once, so neither counter can pass this CTA's exact selected/candidate totals.
       _CCCL_ASSERT(agent.temp_storage.front_local_cnt <= static_cast<offset_t>(my_front)
                      && agent.temp_storage.back_local_cnt <= my_cand_count,
@@ -1558,9 +1557,10 @@ private:
         },
         // No interleaved resident work: the deterministic filter folds its resident span separately.
         [] {},
-        // Checked before each refill bulk copy: break the stream once the whole top-k is placed. `should_stop`'s
-        // barrier also resynchronizes the lanes that drifted through the just-folded chunk's barrier-free tiles.
+        // Break the stream once the whole top-k is placed. The barrier makes the counter reads block-wide and resyncs
+        // lanes that drifted through the just-folded chunk's barrier-free tiles (polled before each refill copy).
         [&] {
+          __syncthreads();
           return !should_stop();
         });
     }
@@ -1606,6 +1606,9 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void run_filter()
     {
       const auto step = [&](auto&& region) {
+        // Barrier before polling: makes the placement-counter reads block-wide and resynchronizes lanes that raced
+        // ahead through the previous region's barrier-free tiles.
+        __syncthreads();
         if (!should_stop())
         {
           region();
@@ -1703,7 +1706,6 @@ private:
       }
     };
 
-    __syncthreads();
     const bool participates = !is_idle_rank && (cluster_rank != leader_rank);
     const offset_t my_sel   = participates ? temp_storage.num_strictly_selected : offset_t{0};
     const offset_t my_cand  = participates ? temp_storage.my_candidates : offset_t{0};
@@ -1911,9 +1913,6 @@ private:
     const out_offset_t num_back     = num_kth; // all candidates go to the back; the front holds only selected keys
     const out_offset_t num_selected = k - num_back; // front region
 
-    // Publish the last pass's `num_strictly_selected`/`my_candidates` (written by the owning lane after the final
-    // cluster barrier) block-wide before they feed the scan and `front_count`.
-    __syncthreads();
     const bool participates = !is_idle_rank && (cluster_rank != leader_rank);
     const offset_t my_sel   = participates ? temp_storage.num_strictly_selected : offset_t{0};
     const offset_t my_cand  = participates ? temp_storage.my_candidates : offset_t{0};
@@ -2018,9 +2017,9 @@ private:
   // Fused first pass: load this rank's resident chunks into the block_tile, stage the persistent boundary edges into
   // `edge_keys`, and fold every key (resident + edges + overflow) into pass 0's histogram in the same sweep (pass 0
   // needs no candidate filtering). Publishes the resident span as `resident_keys` for the later passes and the final
-  // filter; ends on a `__syncthreads()` that makes `edge_keys` and the block-local histogram visible within the block.
-  // Cross-CTA visibility of the zeroed histogram comes later, from the deferred initial cluster wait in
-  // `run_radix_passes` (this whole load runs in that arrive->wait window).
+  // filter. The caller's `__syncthreads()` makes `edge_keys` and the block-local histogram block-visible; cross-CTA
+  // visibility of the zeroed histogram comes later, from the deferred initial cluster wait in `run_radix_passes` (this
+  // whole load runs in that arrive->wait window).
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(
     const chunk_partition& part,
@@ -2152,8 +2151,6 @@ private:
     // Stage the persistent boundary edges into `edge_keys` and fold them into the first pass in the same sweep (see
     // `stage_and_fold_edge`: each thread folds keys it just wrote, so no barrier is needed here). The head prefix
     // (rank 0) precedes chunk 0; the peeled tail suffix (tail owner, always when unaligned) trails the last chunk.
-    // The `__syncthreads()` below publishes `edge_keys` for the later passes and the final filter (which read it via
-    // `fold_edges` after a barrier).
     if constexpr (use_block_load_to_shared)
     {
       if (head_edge_len_items > 0)
@@ -2181,7 +2178,6 @@ private:
     const int resident_count = static_cast<int>(resident_keys.size());
     _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= block_tile_capacity,
                  "Dynamic shared memory block_tile is too small");
-    __syncthreads();
   }
 
   // Per-segment, per-rank geometry computed once at the top of `run`: the head-aligned chunking, the effective
@@ -2647,6 +2643,9 @@ private:
       streamer,
       resident_keys);
 
+    // Publish the first pass's staged `edge_keys` and per-rank histogram block-wide before the radix passes read them.
+    __syncthreads();
+
     const int last_pass = run_radix_passes<SelectDirection>(
       cluster_rank,
       layout.leader_rank,
@@ -2682,6 +2681,9 @@ private:
     // trailing digits as smaller and erroneously reject candidates that share the identified prefix.
     identify_candidates_op_t identify_op(&kth_key_bits_local, last_pass, total_bits, decomposer_t{});
 
+    // Publish the final pass's per-rank `num_strictly_selected`/`my_candidates` (written by one lane after the last
+    // cluster barrier) block-wide before the final-filter scan below reads them.
+    __syncthreads();
     if constexpr (need_determinism)
     {
       write_deterministic_topk<SelectDirection>(
