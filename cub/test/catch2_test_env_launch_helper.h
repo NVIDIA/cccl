@@ -101,6 +101,8 @@ struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
 
 struct stream_registry_factory_t
 {
+  static constexpr bool force_device_kernel_emission = true;
+
   CUB_RUNTIME_FUNCTION kernel_launcher_t
   operator()(dim3 grid, dim3 block, size_t shared_mem, cudaStream_t stream, bool dependent_launch = false) const
   {
@@ -108,6 +110,27 @@ struct stream_registry_factory_t
                    REQUIRE(stream == get_stream_registry_factory_state()->m_stream);
                  }));
     return kernel_launcher_t(grid, block, shared_mem, stream, dependent_launch);
+  }
+
+  template <typename Kernel, typename... Args>
+  CUB_RUNTIME_FUNCTION cudaError_t doit_cooperative(
+    dim3 grid, dim3 block, size_t shared_mem, cudaStream_t stream, Kernel kernel, Args const&... args) const
+  {
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   auto* state = get_stream_registry_factory_state();
+                   if (state->m_stream)
+                   {
+                     REQUIRE(stream == state->m_stream);
+                   }
+                   void* kernel_ptr = const_cast<void*>(reinterpret_cast<const void*>(kernel));
+                   if (!state->m_kernels.empty()
+                       && cuda::std::find(state->m_kernels.begin(), state->m_kernels.end(), kernel_ptr)
+                            == state->m_kernels.end())
+                   {
+                     FAIL("Kernel is not allowed: " << c2h::type_name<Kernel>());
+                   }
+                 }));
+    return cub::detail::TripleChevronFactory{}.doit_cooperative(grid, block, shared_mem, stream, kernel, args...);
   }
 
   CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& version)

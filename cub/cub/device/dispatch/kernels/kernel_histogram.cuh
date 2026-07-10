@@ -167,9 +167,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE const SampleValueT* SampleNativePointer(SampleIte
 //! @param blocks_per_grid Number of co-resident blocks.
 //! @param tid_global   Global thread id within the cooperative grid.
 //! @param total_threads Total threads in the cooperative grid.
-template <typename CounterT>
+template <typename CounterT, typename OutputCounterT = CounterT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void gather_privatized_slab(
-  CounterT* out,
+  OutputCounterT* out,
   unsigned int out_offset,
   const CounterT* slab_base,
   unsigned int slab_stride,
@@ -180,10 +180,10 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void gather_privatized_slab(
 {
   for (unsigned int i = tid_global; i < count; i += total_threads)
   {
-    CounterT total = 0;
+    OutputCounterT total = 0;
     for (unsigned int b = 0; b < blocks_per_grid; ++b)
     {
-      total += slab_base[static_cast<size_t>(b) * slab_stride + i];
+      total += static_cast<OutputCounterT>(slab_base[static_cast<size_t>(b) * slab_stride + i]);
     }
     out[out_offset + i] = total;
   }
@@ -1362,8 +1362,8 @@ struct Transforms
 //! @tparam NumActiveChannels
 //!   Number of channels actively being histogrammed
 //!
-//! @tparam CounterT
-//!   Integer type for counting sample occurrences per histogram bin
+//! @tparam OutputCounterT
+//!   Integer type of the final output histogram bins
 //!
 //! @tparam OffsetT
 //!   Signed integer type for global offsets
@@ -1372,17 +1372,17 @@ struct Transforms
 //!   Number of output histogram bins per channel
 //!
 //! @param d_output_histograms_wrapper
-//!   Histogram counter data having logical dimensions `CounterT[NUM_ACTIVE_CHANNELS][num_bins.array[CHANNEL]]`
+//!   Histogram counter data having logical dimensions `OutputCounterT[NUM_ACTIVE_CHANNELS][num_bins.array[CHANNEL]]`
 //!
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
-template <typename PolicySelector, int NumActiveChannels, typename CounterT, typename OffsetT>
+template <typename PolicySelector, int NumActiveChannels, typename OutputCounterT, typename OffsetT>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
-  ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+  ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
   [[maybe_unused]] static constexpr HistogramPolicy policy = current_policy<PolicySelector>();
@@ -1436,7 +1436,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //!   The input iterator type. @iterator.
 //!
 //! @tparam CounterT
-//!   Integer type for counting sample occurrences per histogram bin
+//!   Integer type for per-block privatized histogram bins
 //!
 //! @tparam PrivatizedDecodeOpT
 //!   The transform operator type for determining privatized counter indices from samples,
@@ -1448,6 +1448,9 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //!
 //! @tparam OffsetT
 //!   Integer type for global offsets
+//!
+//! @tparam OutputCounterT
+//!   Integer type for final output histogram bins. May be wider than `CounterT`.
 //!
 //! @param d_samples
 //!   Input data to reduce
@@ -1494,7 +1497,8 @@ template <typename PolicySelector,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          typename OutputCounterT = CounterT>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -1552,7 +1556,7 @@ __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
@@ -1592,7 +1596,9 @@ __launch_bounds__(int(PrivatizedSmemBins > 0 ? current_policy<PolicySelector>().
                    CounterT,
                    PrivatizedDecodeOpT,
                    OutputDecodeOpT,
-                   OffsetT>;
+                   OffsetT,
+                   /* UseDynamicSmemHistogram = */ false,
+                   OutputCounterT>;
 
   // Shared memory for AgentHistogram
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
@@ -1733,7 +1739,8 @@ template <typename PolicySelector,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool HybridSplit = false>
+          bool HybridSplit        = false,
+          typename OutputCounterT = CounterT>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -1742,7 +1749,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
@@ -1817,7 +1824,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
                      CounterT,
                      PrivatizedDecodeOpT,
                      OutputDecodeOpT,
-                     OffsetT>;
+                     OffsetT,
+                     /* UseDynamicSmemHistogram = */ false,
+                     OutputCounterT>;
 
     __shared__ typename AgentHistogramT::TempStorage temp_storage;
 
@@ -1871,7 +1880,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
       for (int ch = 0; ch < NumActiveChannels; ++ch)
       {
         const unsigned int num_bins_u = static_cast<unsigned int>(num_privatized_bins_wrapper[ch]);
-        gather_privatized_slab<CounterT>(
+        gather_privatized_slab<CounterT, OutputCounterT>(
           d_output_histograms_wrapper[ch],
           /*out_offset=*/0u,
           d_privatized_base[ch],
@@ -1904,7 +1913,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
                      PrivatizedDecodeOpT,
                      OutputDecodeOpT,
                      OffsetT,
-                     /* UseDynamicSmemHistogram = */ true>;
+                     /* UseDynamicSmemHistogram = */ true,
+                     OutputCounterT>;
 
     __shared__ typename AgentHistogramT::TempStorage temp_storage;
 
@@ -1972,7 +1982,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      CounterT* d_out                             = d_output_histograms_wrapper[ch];
+      OutputCounterT* d_out                       = d_output_histograms_wrapper[ch];
       const CounterT* __restrict__ primary_base   = d_primary_base[ch];
       const CounterT* __restrict__ secondary_base = d_secondary_base[ch];
       const unsigned int split_u                  = static_cast<unsigned int>(smem_split);
@@ -1981,12 +1991,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
 
       for (unsigned int bin = tid_global; bin < total_bins; bin += total_threads)
       {
-        CounterT total = 0;
+        OutputCounterT total = 0;
         if (bin < split_u)
         {
           for (unsigned int b = 0; b < blocks_per_grid; ++b)
           {
-            total += primary_base[b * split_u + bin];
+            total += static_cast<OutputCounterT>(primary_base[b * split_u + bin]);
           }
           d_out[bin] = total;
         }
@@ -1995,7 +2005,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
           const unsigned int gbin = bin - split_u;
           for (unsigned int b = 0; b < blocks_per_grid; ++b)
           {
-            total += secondary_base[b * sec_u + gbin];
+            total += static_cast<OutputCounterT>(secondary_base[b * sec_u + gbin]);
           }
           d_out[bin] = total;
         }
@@ -2033,19 +2043,25 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
 //! probe body is identical for both; only the atomic scope differs.
 struct output_atomic_spill
 {
-  template <typename CounterT>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(CounterT* target, int bin, CounterT contribution)
+  template <typename CounterT, typename OutputCounterT>
+  using target_type = OutputCounterT;
+
+  template <typename OutputCounterT, typename ContributionT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(OutputCounterT* target, int bin, ContributionT contribution)
   {
-    atomicAdd(&target[bin], contribution);
+    atomicAdd(&target[bin], static_cast<OutputCounterT>(contribution));
   }
 };
 
 struct private_block_spill
 {
-  template <typename CounterT>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(CounterT* target, int bin, CounterT contribution)
+  template <typename CounterT, typename OutputCounterT>
+  using target_type = CounterT;
+
+  template <typename CounterT, typename ContributionT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(CounterT* target, int bin, ContributionT contribution)
   {
-    atomicAdd_block(&target[bin], contribution);
+    atomicAdd_block(&target[bin], static_cast<CounterT>(contribution));
   }
 };
 
@@ -2060,11 +2076,11 @@ struct private_block_spill
 template <bool DisableSecondProbe = false>
 struct cuckoo_cache_probe
 {
-  template <typename CounterT, typename SpillOp = output_atomic_spill>
+  template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
   apply(int* keys,
         CounterT* counts,
-        CounterT* output,
+        SpillCounterT* output,
         int bin,
         CounterT contribution,
         int cache_mask,
@@ -2172,11 +2188,11 @@ struct cuckoo_cache_probe
 //! counts where the cache holds almost nothing.
 struct single_probe_cache
 {
-  template <typename CounterT, typename SpillOp = output_atomic_spill>
+  template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
   apply(int* keys,
         CounterT* counts,
-        CounterT* output,
+        SpillCounterT* output,
         int bin,
         CounterT contribution,
         int cache_mask,
@@ -2282,11 +2298,11 @@ struct single_probe_cache
 //! the `GmemPrivatized<NoCache>` family (= `gmem_priv_gather` / `hybrid`).
 struct no_cache_probe
 {
-  template <typename CounterT, typename SpillOp = output_atomic_spill>
+  template <typename CounterT, typename SpillOp = output_atomic_spill, typename SpillCounterT = CounterT>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
   apply(int* keys,
         CounterT* counts,
-        CounterT* output,
+        SpillCounterT* output,
         int bin,
         CounterT contribution,
         int cache_mask,
@@ -2346,8 +2362,9 @@ template <typename PolicySelector,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          typename ProbeOp = cuckoo_cache_probe<>,
-          typename SpillOp = output_atomic_spill>
+          typename ProbeOp        = cuckoo_cache_probe<>,
+          typename SpillOp        = output_atomic_spill,
+          typename OutputCounterT = CounterT>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -2355,7 +2372,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramCacheSpillKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
     _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
     _CCCL_GRID_CONSTANT const OffsetT num_rows,
@@ -2378,6 +2395,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // cache miss can hit ANY bin, so each block's slab must be full-size
   // (num_bins), giving a num_blocks * num_bins footprint (see design doc).
   constexpr bool kPrivateSpill = ::cuda::std::is_same_v<SpillOp, private_block_spill>;
+  using SpillCounterT          = typename SpillOp::template target_type<CounterT, OutputCounterT>;
 
   // ---------------------------------------------------------------------
   // Phase 1: zero the spill destination via a grid-wide stride loop. For the
@@ -2394,7 +2412,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // Per-channel spill target for THIS block: the shared output, or this block's
   // private slab slice (base + block_id * num_bins). Hoisted once; the hot-path
   // probe and the flush both spill through it.
-  CounterT* spill_target[NumActiveChannels];
+  SpillCounterT* spill_target[NumActiveChannels];
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
@@ -2547,7 +2565,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   constexpr bool kProbeIsNoCache = ::cuda::std::is_same_v<ProbeOp, no_cache_probe>;
   constexpr bool kWarpCoalesce =
     (kProbeIsNoCache || sizeof(CounterT) > sizeof(unsigned int)) && current_policy<PolicySelector>().warp_coalesce;
-  const int cache_mask           = cache_slots_per_channel - 1;
+  const int cache_mask = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
   const int cache_slot_log2 = 32 - __clz(cache_mask);
@@ -2651,7 +2669,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // warp_coalesce knob can drive it once per peer group (leader) or once per
       // valid lane without duplicating the body.
       auto update = [&](int bin, CounterT contribution) {
-        ProbeOp::template apply<CounterT, SpillOp>(
+        ProbeOp::template apply<CounterT, SpillOp, SpillCounterT>(
           s_cache_keys[ch],
           s_cache_counts[ch],
           spill_target[ch],
@@ -2949,7 +2967,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
       const unsigned int num_bins_u = static_cast<unsigned int>(num_output_bins_wrapper[ch]);
-      gather_privatized_slab<CounterT>(
+      gather_privatized_slab<CounterT, OutputCounterT>(
         d_output_histograms_wrapper[ch],
         /*out_offset=*/0u,
         d_private_histograms_wrapper[ch],
@@ -3006,7 +3024,8 @@ template <typename PolicySelector,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          typename OutputCounterT = CounterT>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -3016,7 +3035,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<OutputCounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
@@ -3048,7 +3067,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
                    PrivatizedDecodeOpT,
                    OutputDecodeOpT,
                    OffsetT,
-                   /* UseDynamicSmemHistogram = */ true>;
+                   /* UseDynamicSmemHistogram = */ true,
+                   OutputCounterT>;
 
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
 

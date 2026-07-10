@@ -43,6 +43,7 @@
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
@@ -57,6 +58,24 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
+template <typename PolicySelector, typename OutputCounterT, typename = void>
+struct local_counter
+{
+  using type = OutputCounterT;
+};
+
+template <typename PolicySelector, typename OutputCounterT>
+struct local_counter<PolicySelector, OutputCounterT, ::cuda::std::void_t<typename PolicySelector::local_counter_type>>
+{
+  using type = typename PolicySelector::local_counter_type;
+};
+
+//! Counter type used by per-block SMEM/cache/private storage. Tuning selectors
+//! may opt into a narrower local counter without changing DeviceHistogram's
+//! public output type; legacy selectors retain the output counter type.
+template <typename PolicySelector, typename OutputCounterT>
+using local_counter_t = typename local_counter<PolicySelector, OutputCounterT>::type;
+
 // Maximum number of bins per channel for which we will use a privatized smem strategy
 static constexpr int max_privatized_smem_bins = 256;
 
@@ -374,15 +393,19 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename LevelT,
           typename OffsetT,
-          typename SampleT>
+          typename SampleT,
+          typename OutputCounterT = CounterT>
 struct DeviceHistogramKernelSource
 {
+  static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
+                "The output histogram counter must be at least as wide as the local counter");
+
   using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
 
   template <typename PolicyT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramInitKernel()
   {
-    return &DeviceHistogramInitKernel<PolicyT, NUM_ACTIVE_CHANNELS, CounterT, OffsetT>;
+    return &DeviceHistogramInitKernel<PolicyT, NUM_ACTIVE_CHANNELS, OutputCounterT, OffsetT>;
   }
 
   /// Returns the default histogram sweep kernel that receives pre-initialized decode operators from the host.
@@ -398,7 +421,8 @@ struct DeviceHistogramKernelSource
       CounterT,
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
-      OffsetT>;
+      OffsetT,
+      OutputCounterT>;
   }
 
   /// Host-init dynamic-SMEM, NON-staging variant: merges each block's dyn-SMEM
@@ -416,7 +440,8 @@ struct DeviceHistogramKernelSource
       CounterT,
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
-      OffsetT>;
+      OffsetT,
+      OutputCounterT>;
   }
 
   /// Host-init FUSED HYBRID single-pass dynamic-SMEM staging+combine sweep kernel. Eliminates
@@ -439,7 +464,8 @@ struct DeviceHistogramKernelSource
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
       OffsetT,
-      /*HybridSplit=*/true>;
+      /*HybridSplit=*/true,
+      OutputCounterT>;
   }
 
   /// Pure-gather member of the unified GmemPrivatized kernel (HybridSplit=false,
@@ -459,7 +485,8 @@ struct DeviceHistogramKernelSource
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
       OffsetT,
-      /*HybridSplit=*/false>;
+      /*HybridSplit=*/false,
+      OutputCounterT>;
   }
 
   /// The cooperative CacheSpillKernel<Combiner, SpillOp> family (cuckoo / single-probe /
@@ -485,7 +512,8 @@ struct DeviceHistogramKernelSource
       OutputDecodeOpT,
       OffsetT,
       ProbeOp,
-      SpillOp>;
+      SpillOp,
+      OutputCounterT>;
   }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
@@ -608,18 +636,25 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE int size_direct_a
 // CUB_HISTO_DEBUG_SLOTS prints for a real launch. Used by the histogram benchmark's
 // stale_resident input generator to size its working set to the ACTUAL cache. Returns
 // the slot floor if the device queries fail.
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  bool IsEven,
-  typename SampleT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  typename SampleIteratorT = SampleT*,
-  typename KernelSource =
-    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          bool IsEven,
+          typename SampleT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          typename OutputCounterT  = CounterT,
+          typename SampleIteratorT = SampleT*,
+          typename KernelSource    = DeviceHistogramKernelSource<
+               NUM_CHANNELS,
+               NUM_ACTIVE_CHANNELS,
+               SampleIteratorT,
+               CounterT,
+               LevelT,
+               OffsetT,
+               SampleT,
+               OutputCounterT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN int
 query_direct_atomic_cache_slots(KernelSource kernel_source = {}, KernelLauncherFactory launcher_factory = {})
 {
@@ -729,15 +764,32 @@ template <int NUM_CHANNELS,
           typename SampleT,
           typename CounterT,
           typename LevelT,
-          typename OffsetT>
+          typename OffsetT,
+          typename OutputCounterT = CounterT>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN int
 query_direct_atomic_cache_slots_for_extent(unsigned long long byte_extent)
 {
   if (sizeof(OffsetT) > sizeof(int) && byte_extent < static_cast<unsigned long long>(INT_MAX))
   {
-    return query_direct_atomic_cache_slots<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, IsEven, SampleT, CounterT, LevelT, int>();
+    return query_direct_atomic_cache_slots<
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      IsEven,
+      SampleT,
+      CounterT,
+      LevelT,
+      int,
+      OutputCounterT>();
   }
-  return query_direct_atomic_cache_slots<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, IsEven, SampleT, CounterT, LevelT, OffsetT>();
+  return query_direct_atomic_cache_slots<
+    NUM_CHANNELS,
+    NUM_ACTIVE_CHANNELS,
+    IsEven,
+    SampleT,
+    CounterT,
+    LevelT,
+    OffsetT,
+    OutputCounterT>();
 }
 
 // This `dispatch<>` is the HOST-INIT histogram sweep dispatcher: it receives
@@ -806,6 +858,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // `cache_slots_per_channel`; only the probe op differs.
   int direct_atomic_cache_mode = 0)
 {
+  using LocalCounterT = local_counter_t<PolicySelector, CounterT>;
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
@@ -1041,11 +1095,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   GridQueue<int> tile_queue(allocations[NUM_ALLOCATIONS - 1]);
 
   // Wrap arrays so we can pass them by-value to the kernel
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
+  ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper;
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper;
 
-  auto* typed_allocations = reinterpret_cast<CounterT**>(allocations);
+  auto* typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
   ::cuda::std::copy(typed_allocations, typed_allocations + NUM_ACTIVE_CHANNELS, d_privatized_histograms_wrapper.begin());
 
   auto minus_one = ::cuda::proclaim_return_type<int>([](int levels) {
@@ -1125,10 +1179,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             SampleIteratorT,
-            CounterT,
+            LocalCounterT,
             privatized_decode_op_t,
             output_decode_op_t,
-            OffsetT><<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
+            OffsetT,
+            /*HybridSplit=*/false,
+            CounterT><<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
             d_samples,
             num_output_bins_wrapper,
             num_privatized_bins_wrapper,
@@ -1454,11 +1510,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             SampleIteratorT,
-            CounterT,
+            LocalCounterT,
             privatized_decode_op_t,
             output_decode_op_t,
             OffsetT,
-            cuckoo_cache_probe<>>
+            cuckoo_cache_probe<>,
+            output_atomic_spill,
+            CounterT>
             <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
               d_samples,
               num_output_bins_wrapper,
@@ -1474,11 +1532,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             SampleIteratorT,
-            CounterT,
+            LocalCounterT,
             privatized_decode_op_t,
             output_decode_op_t,
             OffsetT,
-            single_probe_cache>
+            single_probe_cache,
+            output_atomic_spill,
+            CounterT>
             <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
               d_samples,
               num_output_bins_wrapper,
@@ -1496,11 +1556,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             SampleIteratorT,
-            CounterT,
+            LocalCounterT,
             privatized_decode_op_t,
             output_decode_op_t,
             OffsetT,
-            cuckoo_cache_probe</*DisableSecondProbe=*/true>>
+            cuckoo_cache_probe</*DisableSecondProbe=*/true>,
+            output_atomic_spill,
+            CounterT>
             <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
               d_samples,
               num_output_bins_wrapper,
@@ -1719,7 +1781,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           // hybrid-only trailing ones (d_secondary, smem_split, secondary_size) are
           // unused here but MUST be physically present — cudaLaunchCooperativeKernel
           // marshals positionally and ignores C++ defaults.
-          ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> gather_no_secondary{};
+          ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS> gather_no_secondary{};
           int gather_zero_split     = 0;
           int gather_zero_secondary = 0;
           coop_status               = launcher_factory.doit_cooperative(
@@ -2090,17 +2152,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
   KernelLauncherFactory launcher_factory = {})
 {
   constexpr int kPrivatizedSmemBins = kDynamicSmemKernelTagBins;
+  using LocalCounterT               = local_counter_t<PolicySelector, CounterT>;
 
   // The hybrid kernel stages a PRIMARY range of low bins in dyn-SMEM and the secondary
   // tail in per-block GMEM. The primary size (`hybrid_split_bin`) is byte-derived for
   // the actual counter width, NOT the frozen template `kSplitBin` (which assumed a
   // 4-byte counter -- 49152 bins -> 192 KiB -- and overflowed the per-CTA SMEM cap at
   // an 8-byte counter, crashing the launch). `kSplitBin` is now only an UPPER BOUND on
-  // the primary; the launch SMEM is `hybrid_split_bin * sizeof(CounterT) * channels`,
+  // the primary; the launch SMEM is `hybrid_split_bin * sizeof(LocalCounterT) * channels`,
   // which fits the opt-in cap by construction. Clamp also to max_num_output_bins - 1 so
   // the GMEM secondary tail is non-empty (the hybrid requires both regions).
   int hybrid_split_bin =
-    hybrid_smem_split_bins(int(sizeof(CounterT)), NUM_ACTIVE_CHANNELS, query_device_optin_smem_bytes());
+    hybrid_smem_split_bins(int(sizeof(LocalCounterT)), NUM_ACTIVE_CHANNELS, query_device_optin_smem_bytes());
   if (hybrid_split_bin > kSplitBin)
   {
     hybrid_split_bin = kSplitBin; // template upper bound (the tuned/measured primary size)
@@ -2140,7 +2203,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
   }
 
   // dyn-SMEM bytes per block: per-channel hybrid_split_bin counters (byte-derived).
-  const int dyn_smem_bytes_for_staging = int(sizeof(CounterT)) * hybrid_split_bin * NUM_ACTIVE_CHANNELS;
+  const int dyn_smem_bytes_for_staging = int(sizeof(LocalCounterT)) * hybrid_split_bin * NUM_ACTIVE_CHANNELS;
 
   // Calculate occupancy and grid size.
   int fused_sm_occupancy       = 0;
@@ -2167,16 +2230,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       SampleIteratorT,
-      CounterT,
+      LocalCounterT,
       InnerPrivatizedDecodeOpT,
       OutputDecodeOpT,
       OffsetT,
-      /*HybridSplit=*/true><<<1, 1, 0, stream>>>(
+      /*HybridSplit=*/true,
+      CounterT><<<1, 1, 0, stream>>>(
       d_samples,
       ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>{},
       ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>{},
       ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
-      ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
+      ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS>{},
       ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>{},
       ::cuda::std::array<InnerPrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>{},
       num_row_pixels,
@@ -2185,7 +2249,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
       int{},
       GridQueue<int>{nullptr},
       int{},
-      ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
+      ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS>{},
       int{},
       int{});
   }
@@ -2234,8 +2298,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
   }
 
   // Allocate per-block staging slabs:
-  //   primary slab:   num_thread_blocks * NUM_ACTIVE_CHANNELS * hybrid_split_bin * sizeof(CounterT)
-  //   secondary slab: num_thread_blocks * NUM_ACTIVE_CHANNELS * hybrid_secondary_size * sizeof(CounterT)
+  //   primary slab:   num_thread_blocks * NUM_ACTIVE_CHANNELS * hybrid_split_bin * sizeof(LocalCounterT)
+  //   secondary slab: num_thread_blocks * NUM_ACTIVE_CHANNELS * hybrid_secondary_size * sizeof(LocalCounterT)
   //   queue counter:  GridQueue<int>::AllocationSize()
   const size_t primary_slab_bytes_per_channel =
     size_t(num_thread_blocks) * size_t(hybrid_split_bin) * size_t(kernel_source.CounterSize());
@@ -2262,12 +2326,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybr
     return cudaSuccess;
   }
 
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_primary_staging_array{};
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_secondary_staging_array{};
+  ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS> d_primary_staging_array{};
+  ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS> d_secondary_staging_array{};
   for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
   {
-    d_primary_staging_array[ch]   = static_cast<CounterT*>(allocations[ch]);
-    d_secondary_staging_array[ch] = static_cast<CounterT*>(allocations[ch + NUM_ACTIVE_CHANNELS]);
+    d_primary_staging_array[ch]   = static_cast<LocalCounterT*>(allocations[ch]);
+    d_secondary_staging_array[ch] = static_cast<LocalCounterT*>(allocations[ch + NUM_ACTIVE_CHANNELS]);
   }
   GridQueue<int> tile_queue(allocations[NUM_ACTIVE_CHANNELS * 2]);
 
@@ -2455,6 +2519,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
+  using LocalCounterT = local_counter_t<PolicySelector, CounterT>;
+
   // Experimental sweep hook: CUB_HISTO_FORCE_ALGO overrides `select_algorithm`'s
   // pick so EVERY algorithm can be measured at EVERY cell (apples-to-apples per
   // cell), not just the one the selector happens to choose. Accepted values:
@@ -2574,7 +2640,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       // __shared__ to the runtime bin count instead). So only take the static kernel when
       // the counter is 4 bytes; wider counters route <=256 through the dynamic kernel,
       // which is both correct and the measured-faster path there.
-      const bool counter_prefers_static = (sizeof(CounterT) <= 4);
+      const bool counter_prefers_static = (sizeof(LocalCounterT) <= 4);
       const bool use_static_smem =
         (force_smem_kind == 2) ? false
         : (force_smem_kind == 1)
@@ -2731,19 +2797,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
   return cudaErrorInvalidValue; // unreachable
 }
 
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  typename SampleIteratorT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  bool IsByteSample,
-  typename PolicySelector,
-  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename KernelSource =
-    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          bool IsByteSample,
+          typename PolicySelector,
+          typename SampleT      = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+          typename KernelSource = DeviceHistogramKernelSource<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            SampleIteratorT,
+            local_counter_t<PolicySelector, CounterT>,
+            LevelT,
+            OffsetT,
+            SampleT,
+            CounterT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -2760,6 +2832,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using LocalCounterT = local_counter_t<PolicySelector, CounterT>;
+
   if constexpr (IsByteSample)
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
@@ -2842,8 +2916,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     features.is_even             = false;
     features.num_bins            = max_num_output_bins;
     features.num_pixels          = static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
-    features.on_chip_bin_cap     = resolve_on_chip_bin_cap(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
-    features.hybrid_split_bins   = resolve_hybrid_split_bins(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
+    features.on_chip_bin_cap     = resolve_on_chip_bin_cap(int{sizeof(LocalCounterT)}, NUM_ACTIVE_CHANNELS);
+    features.hybrid_split_bins   = resolve_hybrid_split_bins(int{sizeof(LocalCounterT)}, NUM_ACTIVE_CHANNELS);
     const algorithm algo         = select_algorithm<false>(features);
 
     return CubDebug((dispatch_by_algorithm<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
@@ -2869,19 +2943,25 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   return cudaSuccess;
 }
 
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  typename SampleIteratorT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  bool IsByteSample,
-  typename PolicySelector,
-  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename KernelSource =
-    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          bool IsByteSample,
+          typename PolicySelector,
+          typename SampleT      = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+          typename KernelSource = DeviceHistogramKernelSource<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            SampleIteratorT,
+            local_counter_t<PolicySelector, CounterT>,
+            LevelT,
+            OffsetT,
+            SampleT,
+            CounterT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -2899,6 +2979,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using LocalCounterT = local_counter_t<PolicySelector, CounterT>;
+
   if constexpr (IsByteSample)
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
@@ -3005,8 +3087,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     features.is_even             = true;
     features.num_bins            = max_num_output_bins;
     features.num_pixels          = static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
-    features.on_chip_bin_cap     = resolve_on_chip_bin_cap(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
-    features.hybrid_split_bins   = resolve_hybrid_split_bins(int{sizeof(CounterT)}, NUM_ACTIVE_CHANNELS);
+    features.on_chip_bin_cap     = resolve_on_chip_bin_cap(int{sizeof(LocalCounterT)}, NUM_ACTIVE_CHANNELS);
+    features.hybrid_split_bins   = resolve_hybrid_split_bins(int{sizeof(LocalCounterT)}, NUM_ACTIVE_CHANNELS);
     const algorithm algo         = select_algorithm<false>(features);
 
     return CubDebug((dispatch_by_algorithm<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(

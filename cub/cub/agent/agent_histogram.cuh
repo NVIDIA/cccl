@@ -70,22 +70,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void warp_coalesce_atomic(int lane_id, int bin, A
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
-    (if constexpr (WarpCoalesce) {
-       const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-       const int leader         = __ffs(static_cast<int>(peers)) - 1;
-       if (bin >= 0 && lane_id == leader)
-       {
-         apply(bin, __popc(peers));
-       }
-     } else {
-       if (bin >= 0)
-       {
-         apply(bin, 1);
-       }
-     }),
-    (// Pre-SM70: no warp-coalesce primitive; each valid lane applies its own.
-     (void) lane_id;
-     if (bin >= 0) { apply(bin, 1); }));
+    (
+      if constexpr (WarpCoalesce) {
+        const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+        const int leader         = __ffs(static_cast<int>(peers)) - 1;
+        if (bin >= 0 && lane_id == leader)
+        {
+          apply(bin, __popc(peers));
+        }
+      } else {
+        if (bin >= 0)
+        {
+          apply(bin, 1);
+        }
+      }),
+    ( // Pre-SM70: no warp-coalesce primitive; each valid lane applies its own.
+      (void) lane_id; if (bin >= 0) { apply(bin, 1); }));
 }
 } // namespace detail::histogram
 
@@ -257,7 +257,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!   Random-access input iterator type for reading samples
 //!
 //! @tparam CounterT
-//!   Integer type for counting sample occurrences per histogram bin
+//!   Integer type for per-block privatized histogram bins
 //!
 //! @tparam PrivatizedDecodeOpT
 //!   The transform operator type for determining privatized counter indices from samples, one for
@@ -279,6 +279,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!   When true, `_TempStorage::histograms` becomes a per-channel pointer array initialized
 //!   from a caller-supplied extern shared-memory base pointer; all accumulate / init / store
 //!   paths still index `histograms[ch][bin]` and remain unchanged.
+//!
+//! @tparam OutputCounterT
+//!   Integer type for final output histogram bins. May be wider than `CounterT`.
 template <typename AgentHistogramPolicyT,
           int PrivatizedSmemBins,
           int NumChannels,
@@ -288,7 +291,8 @@ template <typename AgentHistogramPolicyT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool UseDynamicSmemHistogram = false>
+          bool UseDynamicSmemHistogram = false,
+          typename OutputCounterT      = CounterT>
 struct AgentHistogram
 {
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
@@ -330,8 +334,8 @@ struct AgentHistogram
   // __shared__ memory allocated by the caller's kernel launch (via the third
   // triple-chevron parameter, with `cudaFuncSetAttribute(cudaFuncAttributeMaxDynamicSharedMemorySize, ...)`
   // set so the launch is permitted to use more than the 48 KB ptxas default).
-  using HistogramsStorageT =
-    ::cuda::std::_If<UseDynamicSmemHistogram, CounterT* [NumActiveChannels], CounterT[NumActiveChannels][PrivatizedSmemBins + 1]>;
+  using HistogramsStorageT = ::cuda::std::
+    _If<UseDynamicSmemHistogram, CounterT* [NumActiveChannels], CounterT[NumActiveChannels][PrivatizedSmemBins + 1]>;
 
   struct _TempStorage
   {
@@ -357,7 +361,7 @@ struct AgentHistogram
   const int* num_output_bins; // one for each channel
   const int* num_privatized_bins; // one for each channel
   CounterT* d_privatized_histograms[NumActiveChannels]; // one for each channel
-  CounterT** d_output_histograms; // in global memory
+  OutputCounterT** d_output_histograms; // final output, in global memory
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
                                            // channel
   const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each
@@ -414,7 +418,7 @@ struct AgentHistogram
 
         if (output_bin >= 0)
         {
-          atomicAdd(&d_output_histograms[ch][output_bin], count);
+          atomicAdd(&d_output_histograms[ch][output_bin], static_cast<OutputCounterT>(count));
         }
       }
     }
@@ -544,8 +548,7 @@ struct AgentHistogram
           for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
           {
             bins[pixel] = -1;
-            privatized_decode_op[ch].template BinSelect<load_modifier>(
-              samples[pixel][ch], bins[pixel], is_valid[pixel]);
+            privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
           }
         }
 
@@ -775,12 +778,7 @@ struct AgentHistogram
   //! Hybrid mode ConsumeTiles - even-share variant.
   template <bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTilesHybrid(
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    int,
-    GridQueue<int>,
-    ::cuda::std::false_type)
+    OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
   {
     for (int row = blockIdx.y; row < num_rows; row += gridDim.y)
     {
@@ -813,14 +811,11 @@ struct AgentHistogram
     const size_t row_bytes   = sizeof(SampleT) * row_stride_samples;
 
     const bool vec_aligned_rows =
-      (NumChannels == 1) && (samples_per_thread % vec_size == 0)
-      && ((size_t(d_native_samples) & vec_mask) == 0)
+      (NumChannels == 1) && (samples_per_thread % vec_size == 0) && ((size_t(d_native_samples) & vec_mask) == 0)
       && ((num_rows == 1) || ((row_bytes & vec_mask) == 0));
 
     const bool pixel_aligned_rows =
-      (NumChannels > 1)
-      && ((size_t(d_native_samples) & pixel_mask) == 0)
-      && ((row_bytes & pixel_mask) == 0);
+      (NumChannels > 1) && ((size_t(d_native_samples) & pixel_mask) == 0) && ((row_bytes & pixel_mask) == 0);
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -881,8 +876,8 @@ struct AgentHistogram
       if constexpr (sizeof(CounterT) == 4 && alignof(CounterT) == 4)
       {
         const int vec_count = hybrid_secondary_size >> 2;
-        uint4* const ptr4 = reinterpret_cast<uint4*>(d_hybrid_secondary_histograms[ch]);
-        const uint4 zero4 = {0u, 0u, 0u, 0u};
+        uint4* const ptr4   = reinterpret_cast<uint4*>(d_hybrid_secondary_histograms[ch]);
+        const uint4 zero4   = {0u, 0u, 0u, 0u};
         for (int i = threadIdx.x; i < vec_count; i += threads_per_block)
         {
           ptr4[i] = zero4;
@@ -921,9 +916,9 @@ struct AgentHistogram
     {
       if constexpr (sizeof(CounterT) == 4 && alignof(CounterT) == 4)
       {
-        const int vec_count = hybrid_split_bin >> 2;
+        const int vec_count     = hybrid_split_bin >> 2;
         const uint4* const src4 = reinterpret_cast<const uint4*>(temp_storage.histograms[ch]);
-        uint4* const dst4 = reinterpret_cast<uint4*>(d_privatized_histograms[ch]);
+        uint4* const dst4       = reinterpret_cast<uint4*>(d_privatized_histograms[ch]);
         for (int i = threadIdx.x; i < vec_count; i += threads_per_block)
         {
           dst4[i] = src4[i];
@@ -1179,7 +1174,7 @@ struct AgentHistogram
     SampleIteratorT d_samples,
     const int* num_output_bins,
     const int* num_privatized_bins,
-    CounterT** d_output_histograms,
+    OutputCounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
     const OutputDecodeOpT* output_decode_op,
     const PrivatizedDecodeOpT* privatized_decode_op)
@@ -1222,7 +1217,7 @@ struct AgentHistogram
     SampleIteratorT d_samples,
     const int* num_output_bins,
     const int* num_privatized_bins,
-    CounterT** d_output_histograms,
+    OutputCounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
     const OutputDecodeOpT* output_decode_op,
     const PrivatizedDecodeOpT* privatized_decode_op,
@@ -1284,7 +1279,7 @@ struct AgentHistogram
     SampleIteratorT d_samples,
     const int* num_output_bins,
     const int* num_privatized_bins,
-    CounterT** d_output_histograms,
+    OutputCounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
     CounterT** d_secondary_histograms,
     const OutputDecodeOpT* output_decode_op,
@@ -1304,23 +1299,20 @@ struct AgentHistogram
       , hybrid_split_bin(hybrid_split_bin_arg)
       , hybrid_secondary_size(hybrid_secondary_size_arg)
   {
-    static_assert(UseDynamicSmemHistogram,
-                  "Hybrid AgentHistogram constructor requires UseDynamicSmemHistogram=true.");
+    static_assert(UseDynamicSmemHistogram, "Hybrid AgentHistogram constructor requires UseDynamicSmemHistogram=true.");
 
     const int blockId = (blockIdx.y * gridDim.x) + blockIdx.x;
 
     // Initialize per-channel per-block primary GMEM staging slab pointers (sized for hybrid_split_bin).
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      this->d_privatized_histograms[ch] =
-        d_privatized_histograms[ch] + (blockId * hybrid_split_bin_arg);
+      this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + (blockId * hybrid_split_bin_arg);
     }
 
     // Initialize per-channel per-block secondary GMEM slab pointers (sized for hybrid_secondary_size).
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      this->d_hybrid_secondary_histograms[ch] =
-        d_secondary_histograms[ch] + (blockId * hybrid_secondary_size_arg);
+      this->d_hybrid_secondary_histograms[ch] = d_secondary_histograms[ch] + (blockId * hybrid_secondary_size_arg);
     }
 
     // Initialize per-channel SMEM pointers from the extern __shared__ base. Channels are laid

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Per-binary histogram sweep with incremental postprocessing: sweep one binary
-# (even_single, range_single, even_multi, range_multi), merge its perf data + run
-# its hit-rate pass, then regenerate figures -- so partial results land after each
-# binary instead of only at the very end.
+# Histogram sweep with hit-rate-first collection and incremental performance
+# postprocessing. Collect hit rates for every binary before starting performance;
+# then sweep one binary (even_single, range_single, even_multi, range_multi), merge
+# its perf data, and regenerate figures so partial results land after each binary.
 #
 # Usage: run from the worktree root.
 #   bash cub/benchmarks/bench/histogram/run_perbinary_sweep.sh <run_tag> [extra sweep args...]
@@ -33,6 +33,16 @@ echo "=== [$(date +%H:%M:%S)] characterization figures ==="
 HIST_SWEEP_OUTDIR="$OUT" "$PY" "$HERE/histogram_input_characterization.py" --outdir "$OUT/input_shape_figs" >/dev/null 2>&1 || true
 
 MERGED="$OUT/algo_sweep_full.json"
+
+# Hit-rate instrumentation is independent of the performance JSON. Run every
+# hit-rate leg first so even an interrupted long performance sweep leaves complete
+# hit-rate panels ready for all performance data collected so far.
+for B in even range multi_even multi_range; do
+  echo "=== [$(date +%H:%M:%S)] HIT-RATE PASS: $B ==="
+  HIST_SWEEP_OUTDIR="$OUT" HIST_BENCH_BINDIR="$BRANCH_BIN" \
+    "$PY" "$HERE/histogram_hitrate_sweep.py" "$B" || true
+done
+
 # Order: do single-channel even/range first (faster, no 1G/2G skip), then multi.
 for B in even range multi_even multi_range; do
   PARTIAL="$OUT/partial_${B}.json"
@@ -43,10 +53,6 @@ for B in even range multi_even multi_range; do
     --elements "${ELEMENTS_ARGS[@]}" --shapes "${SHAPES_ARGS[@]}" \
     --repeats 3 --min-time 0.02 --timeout 180 --out "$PARTIAL" "$@"
   if [[ ! -s "$PARTIAL" ]]; then echo "!! $B produced no JSON; skipping"; continue; fi
-
-  echo "=== [$(date +%H:%M:%S)] HIT-RATE PASS: $B ==="
-  HIST_SWEEP_OUTDIR="$OUT" HIST_BENCH_BINDIR="$BRANCH_BIN" \
-    "$PY" "$HERE/histogram_hitrate_sweep.py" "$B" || true
 
   # Merge this binary's perf data into the cumulative MERGED file.
   "$PY" - "$MERGED" "$PARTIAL" <<'PYMERGE'

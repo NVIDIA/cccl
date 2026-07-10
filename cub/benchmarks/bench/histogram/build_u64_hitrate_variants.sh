@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Build the 4 histogram benches with BOTH the hit-rate instrumentation
-# (-DCUB_HISTO_TRACK_HITRATE=1) AND the 64-bit counter/offset widths
-# (-DTUNE_CounterT='unsigned long long' -DTUNE_OffsetT='long long') into
-# *.hitrate.u64 binaries. These let the hit-rate sweep measure cache hit rate at
-# the 64-bit counter width -- which differs from the 4-byte rate because the cache
-# slot count is byte-budget / (sizeof(int) + replicas*CounterSize()), so a wider
-# counter fits FEWER slots and hits less. (The 4-byte rates in the main run's
-# hitrate_results.json are therefore NOT reusable for the u64 figures.)
+# (-DCUB_HISTO_TRACK_HITRATE=1), u32 local counters, and u64 global counters/offsets
+# (-DTUNE_LocalCounterT='unsigned int' -DTUNE_GlobalCounterT='unsigned long long'
+#  -DTUNE_OffsetT='long long') into
+# *.hitrate.u64 binaries. Local cache counts remain 32-bit, while the 64-bit output
+# type and large-input extent may still change kernel occupancy and the queried slot
+# count. Measure this variant directly rather than reusing rates from the narrow-output
+# binary.
 #
 # Surgical recompile + relink against the prebuilt nvbench objects, same recipe as
 # build_hitrate_variants.sh and build_u64_variants.sh. DO NOT run while a benchmark
@@ -16,24 +16,27 @@ set -euo pipefail
 BUILD=$(cd "${HIST_BENCH_BUILD:-build/autocuda/cub-benchmark}" && pwd)
 CMDS=/tmp/hist_u64_cmds.json
 LABELS="even range multi_even multi_range"
-COUNTER="${TUNE_COUNTER:-unsigned long long}"
+LEGACY_COUNTER="${TUNE_COUNTER:-}"
+LOCAL_COUNTER="${TUNE_LOCAL_COUNTER:-${LEGACY_COUNTER:-unsigned int}}"
+GLOBAL_COUNTER="${TUNE_GLOBAL_COUNTER:-${LEGACY_COUNTER:-unsigned long long}}"
 OFFSET="${TUNE_OFFSET:-long long}"
 cd "$BUILD"
 for L in $LABELS; do
   OUT="bin/cub.bench.histogram.${L}.base.hitrate.u64"
   OBJ="/tmp/hist_${L}_hitrate_u64.o"
-  echo "  compile+link $L (TRACK_HITRATE=1, CounterT=$COUNTER OffsetT=$OFFSET) -> $OUT"
+  echo "  compile+link $L (TRACK_HITRATE=1, LocalCounter=$LOCAL_COUNTER GlobalCounter=$GLOBAL_COUNTER OffsetT=$OFFSET) -> $OUT"
   rm -f "$OBJ"
-  L="$L" OBJ="$OBJ" OUT="$OUT" BUILD="$BUILD" CMDS="$CMDS" COUNTER="$COUNTER" OFFSET="$OFFSET" python3 - <<'PY'
+  L="$L" OBJ="$OBJ" OUT="$OUT" BUILD="$BUILD" CMDS="$CMDS" \
+    LOCAL_COUNTER="$LOCAL_COUNTER" GLOBAL_COUNTER="$GLOBAL_COUNTER" OFFSET="$OFFSET" python3 - <<'PY'
 import json, os, subprocess, shlex, sys
 L=os.environ['L']; obj=os.environ['OBJ']; out=os.environ['OUT']; build=os.environ['BUILD']
-counter=os.environ['COUNTER']; offset=os.environ['OFFSET']
+local_counter=os.environ['LOCAL_COUNTER']; global_counter=os.environ['GLOBAL_COUNTER']; offset=os.environ['OFFSET']
 m=json.load(open(os.environ['CMDS']))
 toks=shlex.split(m[L]['cmd'])
 i=toks.index('-o'); toks[i+1]=obj
-# Inject all three defines right after the nvcc token (command may be ccache-prefixed).
+# Inject instrumentation plus the three type defines after nvcc (the command may be ccache-prefixed).
 nvcc_i=next(j for j,t in enumerate(toks) if t.endswith('nvcc'))
-defines=['-DCUB_HISTO_TRACK_HITRATE=1', f'-DTUNE_CounterT={counter}', f'-DTUNE_OffsetT={offset}']
+defines=['-DCUB_HISTO_TRACK_HITRATE=1', f'-DTUNE_LocalCounterT={local_counter}', f'-DTUNE_GlobalCounterT={global_counter}', f'-DTUNE_OffsetT={offset}']
 toks=toks[:nvcc_i+1] + defines + toks[nvcc_i+1:]
 r=subprocess.run(toks, cwd=build)
 if r.returncode!=0: sys.exit(f'compile {L} hitrate.u64 failed')
@@ -48,4 +51,5 @@ r=subprocess.run(link, cwd=build)
 if r.returncode!=0: sys.exit(f'link {L} hitrate.u64 failed')
 PY
 done
-echo "=== u64 hitrate variants: ==="; ls -la bin/*.hitrate.u64 2>/dev/null | awk '{print $5,$9}'
+echo "=== u64 hitrate variants: ==="
+find bin -maxdepth 1 -type f -name '*.hitrate.u64' -printf '%s %p\n' | sort

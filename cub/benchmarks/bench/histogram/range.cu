@@ -19,8 +19,8 @@
 // %RANGE% TUNE_LOAD_ALGORITHM_ID laid 0:2:1
 // %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
 
-template <typename SampleT, typename CounterT, typename OffsetT>
-static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
+template <typename SampleT, typename LocalCounterT, typename GlobalCounterT, typename OffsetT>
+static void range(nvbench::state& state, nvbench::type_list<SampleT, LocalCounterT, GlobalCounterT, OffsetT>)
 {
   const auto shape     = parse_input_shape(state.get_string("InputShape"));
   const auto elements  = state.get_int64("Elements{io}");
@@ -76,9 +76,15 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
 #if defined(CUB_HISTO_BENCH_DISABLE_CACHE_QUERY)
   const int64_t cache_slots = 0;
 #else
-  const int64_t cache_slots = cub::detail::histogram::
-    query_direct_atomic_cache_slots_for_extent<1, 1, /*IsEven=*/false, SampleT, CounterT, SampleT, OffsetT>(
-      static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(elements));
+  const int64_t cache_slots = cub::detail::histogram::query_direct_atomic_cache_slots_for_extent<
+    1,
+    1,
+    /*IsEven=*/false,
+    SampleT,
+    LocalCounterT,
+    SampleT,
+    OffsetT,
+    GlobalCounterT>(static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(elements));
 #endif
   bench_log_input_cache_slots(cache_slots);
   if (bench_input_cache_slot_query_only())
@@ -89,14 +95,14 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
 
   thrust::device_vector<SampleT> input = generate_histogram_input_range<SampleT>(
     shape, elements, static_cast<int>(num_bins), d_levels, /*seed=*/42, cache_slots);
-  thrust::device_vector<CounterT> hist(num_bins);
+  thrust::device_vector<GlobalCounterT> hist(num_bins);
 
-  SampleT* d_input      = thrust::raw_pointer_cast(input.data());
-  CounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
+  SampleT* d_input            = thrust::raw_pointer_cast(input.data());
+  GlobalCounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
 
   state.add_element_count(elements);
   state.add_global_memory_reads<SampleT>(elements);
-  state.add_global_memory_writes<CounterT>(num_bins);
+  state.add_global_memory_writes<GlobalCounterT>(num_bins);
 
   // Warmup + correctness check: run HistogramRange once outside
   // `state.exec`, checking the dispatch return code, then verify that the
@@ -105,26 +111,23 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   // Skipped when CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
   if (bench_correctness_checks_enabled())
   {
-    thrust::fill(hist.begin(), hist.end(), CounterT{0});
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
+    thrust::fill(hist.begin(), hist.end(), GlobalCounterT{0});
     bench_check_cuda(
       cub::DeviceHistogram::HistogramRange(
-        d_temp_storage, temp_storage_bytes, d_input, d_histogram, num_levels, d_levels, static_cast<OffsetT>(elements)),
-      "warmup HistogramRange temp-size");
-    thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
-    d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
-    bench_check_cuda(
-      cub::DeviceHistogram::HistogramRange(
-        d_temp_storage, temp_storage_bytes, d_input, d_histogram, num_levels, d_levels, static_cast<OffsetT>(elements)),
+        d_input,
+        d_histogram,
+        num_levels,
+        d_levels,
+        static_cast<OffsetT>(elements),
+        cuda::execution::tune(bench_policy_selector<SampleT, LocalCounterT, 1, 1, false>{})),
       "warmup HistogramRange");
     bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
 
-    std::vector<thrust::device_vector<CounterT>> opt_hists_d;
+    std::vector<thrust::device_vector<GlobalCounterT>> opt_hists_d;
     opt_hists_d.emplace_back(std::move(hist));
     std::vector<thrust::device_vector<SampleT>> d_levels_per_channel;
     d_levels_per_channel.emplace_back(std::move(levels));
-    bench_verify_histogram_range<1, 1, SampleT, CounterT, OffsetT>(
+    bench_verify_histogram_range<1, 1, SampleT, GlobalCounterT, OffsetT>(
       input, opt_hists_d, d_levels_per_channel, static_cast<OffsetT>(elements), "range");
     hist        = std::move(opt_hists_d[0]);
     d_histogram = thrust::raw_pointer_cast(hist.data());
@@ -145,13 +148,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
                cudaCtxResetPersistingL2Cache();
                timer.start();
                auto env = cub_bench_env(
-                 alloc,
-                 launch
-#if !TUNE_BASE
-                 ,
-                 cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
-#endif // !TUNE_BASE
-               );
+                 alloc, launch, cuda::execution::tune(bench_policy_selector<SampleT, LocalCounterT, 1, 1, false>{}));
                _CCCL_TRY_CUDA_API(
                  cub::DeviceHistogram::HistogramRange,
                  "HistogramRange failed",
@@ -165,13 +162,21 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
              });
 }
 
-// CounterT / OffsetT are overridable (like TUNE_SampleT below) so a build variant can
-// instantiate the 64-bit-counter / 64-bit-offset configuration for the large-input
-// characterization sweep. A 64-bit OffsetT is required for >2^31 elements.
-#ifdef TUNE_CounterT
-using counter_types = nvbench::type_list<TUNE_CounterT>;
+// Local and global counter widths are independent axes. TUNE_CounterT remains a
+// compatibility fallback that selects the historical same-width configuration.
+#ifdef TUNE_LocalCounterT
+using local_counter_types = nvbench::type_list<TUNE_LocalCounterT>;
+#elif defined(TUNE_CounterT)
+using local_counter_types = nvbench::type_list<TUNE_CounterT>;
 #else
-using counter_types = nvbench::type_list<int32_t>;
+using local_counter_types = nvbench::type_list<int32_t>;
+#endif
+#ifdef TUNE_GlobalCounterT
+using global_counter_types = nvbench::type_list<TUNE_GlobalCounterT>;
+#elif defined(TUNE_CounterT)
+using global_counter_types = nvbench::type_list<TUNE_CounterT>;
+#else
+using global_counter_types = nvbench::type_list<int32_t>;
 #endif
 #ifdef TUNE_OffsetT
 using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
@@ -185,9 +190,10 @@ using sample_types = nvbench::type_list<TUNE_SampleT>;
 using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
 #endif // TUNE_SampleT
 
-NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
+NVBENCH_BENCH_TYPES(range,
+                    NVBENCH_TYPE_AXES(sample_types, local_counter_types, global_counter_types, some_offset_types))
   .set_name("base")
-  .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"SampleT{ct}", "LocalCounter{ct}", "GlobalCounter{ct}", "OffsetT{ct}"})
   .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
   .add_int64_axis("Bins", {32, 100, 2000, 16384, 60000, 2097152})
   // One `concentrated` shape swept across entropy (1.0=uniform, 0.5=spike,

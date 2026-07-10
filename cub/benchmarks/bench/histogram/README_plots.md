@@ -42,6 +42,12 @@ characterization (top row, drawn by the shared functions above so it matches the
 characterization figures exactly) and, below, GiB/s vs #bins — one connect-the-dots
 line per algorithm, per element count.
 
+The benchmark binaries expose separate `LocalCounter{ct}` and
+`GlobalCounter{ct}` type axes. `LocalCounter` controls per-block SMEM caches,
+privatized histograms, and staging slabs; `GlobalCounter` controls the final
+output histogram. Large-input variants use a 32-bit local counter with a 64-bit
+global counter, while legacy `TUNE_CounterT` builds retain same-width behavior.
+
 > Note: if you change an InputShape's generator in `histogram_inputs.cuh` (e.g. the
 > `concentrated:1.0` uniform endpoint was changed from a sequential ramp to an
 > exact-count Feistel shuffle), the perf JSON's column for that shape is stale until
@@ -114,11 +120,14 @@ elements. The instrumentation is **zero-cost when the macro is off** (no extra
 register-pinned kernel); the host reads the grid-wide totals back via
 `cudaMemcpyFromSymbol` and prints `[hitrate] ...` under `CUB_HISTO_LOG_HITRATE=1`.
 
-Because the readback adds overhead, the parameter space is swept **twice**: once
-with the normal binaries for performance (`sweep_results.json`), and once with the
-`*.hitrate` binaries for hit rate (`hitrate_results.json`). The hit-rate pass uses
+Because the readback adds overhead, the parameter space is swept **twice**: first
+with the `*.hitrate` binaries for hit rate (`hitrate_results.json`), then with the
+normal binaries for performance (`sweep_results.json`). Running hit rate first
+ensures that an interrupted long performance sweep can still render complete
+hit-rate panels for every finished performance leg. The hit-rate pass uses
 NVBench `--profile` (one measured launch per cell — hit/miss counts are
-deterministic) and a single sample type (hit rate is sample-type-independent). When
+deterministic) and measures both plotted sample types: SampleT can change kernel
+occupancy and therefore cache capacity, so I32 hit rates must not be reused for F64. When
 `--hitrate` is supplied, each per-shape image gains a bottom row: **cuckoo hit-rate
 vs #bins** and **single-probe hit-rate vs #bins**, each with **#elements as series**.
 

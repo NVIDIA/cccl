@@ -22,7 +22,6 @@
 #include <vector>
 
 #if !TUNE_BASE
-
 #  if TUNE_LOAD == 0
 #    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
 #  elif TUNE_LOAD == 1
@@ -48,12 +47,28 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 #  else
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
 #  endif // TUNE_LOAD_ALGORITHM_ID
+#endif // !TUNE_BASE
 
-template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
+// The environment API normally derives every internal counter from the output
+// counter type. Histogram benchmarks need to exercise the high-count design where
+// per-block/on-chip accumulation stays narrow while the final output is wide. The
+// selector's nested alias is consumed by CUB's environment dispatch; older/default
+// selectors without the alias continue to fall back to the output counter type.
+//
+// Keep this selector active for TUNE_BASE too. Otherwise a base benchmark with
+// LocalCounterT != GlobalCounterT would silently take the output type for local
+// accumulation, making the LocalCounter axis decorative rather than functional.
+template <typename SampleT, typename LocalCounterT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, bool IsEven>
 struct bench_policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> cub::HistogramPolicy
+  using local_counter_type = LocalCounterT;
+
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
+#if TUNE_BASE
+    return cub::detail::histogram::
+      policy_selector_from_types<SampleT, LocalCounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, IsEven>{}(cc);
+#else // TUNE_BASE
     constexpr cub::BlockLoadAlgorithm load_algorithm =
       (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
@@ -68,9 +83,9 @@ struct bench_policy_selector
             MEM_PREFERENCE,
             TUNE_WORK_STEALING,
             2048}; // TODO(bgruber): make tunable
+#endif // TUNE_BASE
   }
 };
-#endif // !TUNE_BASE
 
 // Lower bound of the bench's level range. For signed integer SampleT we use
 // `numeric_limits<SampleT>::min()` so the level range spans the full type;
@@ -137,9 +152,10 @@ int64_t max_representable_bins()
 // independent on-device reference computed with `thrust::for_each` + global
 // `atomicAdd`. The host-side sum is checked for negative counters and uint64_t
 // accumulation overflow. Comparing each sum to the expected count is necessary
-// because the optimized and reference histograms use the same CounterT and can
-// otherwise overflow identically. The verifier is invoked once per benchmark
-// cell, outside NVBench's timed region, so it does not contribute to the
+// because the optimized and reference histograms use the same GlobalCounterT and
+// can otherwise overflow identically. This deliberately validates the final output
+// width independently of the benchmark's LocalCounter axis. The verifier is invoked
+// once per benchmark cell, outside NVBench's timed region, so it does not contribute to the
 // reported bandwidth. The reference does not share any kernels with
 // `cub::DeviceHistogram`, so a bug that leaves the optimized histogram shaped
 // correctly but counted incorrectly is still caught.
