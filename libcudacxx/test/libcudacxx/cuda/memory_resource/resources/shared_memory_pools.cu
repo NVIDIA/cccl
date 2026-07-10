@@ -50,7 +50,7 @@ PoolType construct_shared_pool(cuda::memory_pool_properties props = {})
 
 #if _CCCL_CTK_AT_LEAST(13, 3)
 template <typename PoolType>
-void check_shared_pool_creation_attributes(PoolType& pool, cuda::memory_pool_properties props)
+void check_shared_pool_creation_attributes(const PoolType& pool, const cuda::memory_pool_properties props)
 {
   auto expected_allocation_type = ::cudaMemAllocationTypePinned;
   auto expected_location_type   = ::cudaMemLocationTypeDevice;
@@ -72,12 +72,12 @@ void check_shared_pool_creation_attributes(PoolType& pool, cuda::memory_pool_pro
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-  CHECK(pool.attribute(cuda::memory_pool_attributes::allocation_type) == expected_allocation_type);
-  CHECK(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
-  CHECK(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
-  CHECK(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
-  CHECK(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
-  CHECK(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::allocation_type) == expected_allocation_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
+  REQUIRE(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 3)
 
