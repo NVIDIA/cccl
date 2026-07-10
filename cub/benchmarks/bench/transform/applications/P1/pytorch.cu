@@ -483,8 +483,8 @@ template <typename T>
 struct normal_gen
 {
   float mean, stddev;
-  int offset;
-  __host__ __device__ T operator()(int idx) const
+  int64_t offset;
+  __host__ __device__ T operator()(int64_t idx) const
   {
     thrust::default_random_engine rng;
     thrust::random::normal_distribution<float> dist(mean, stddev);
@@ -493,14 +493,14 @@ struct normal_gen
   }
 };
 
-template <typename T, typename OffsetT>
-void fill_normal(thrust::device_vector<T>& v, OffsetT n, int buf_idx)
+template <typename T>
+void fill_normal(thrust::device_vector<T>& v, int64_t n, int buf_idx)
 {
   v.resize(n);
-  thrust::transform(thrust::counting_iterator<int>(0),
-                    thrust::counting_iterator<int>(n),
+  thrust::transform(thrust::counting_iterator<int64_t>(0),
+                    thrust::counting_iterator<int64_t>(n),
                     v.begin(),
-                    normal_gen<T>{0.0f, 1.0f, buf_idx * static_cast<int>(n)});
+                    normal_gen<T>{0.0f, 1.0f, buf_idx * n});
 }
 
 // ============================================================================
@@ -508,7 +508,7 @@ void fill_normal(thrust::device_vector<T>& v, OffsetT n, int buf_idx)
 // ============================================================================
 
 template <typename... Inputs, typename Output, typename TransformOp>
-void transform(::cuda::std::tuple<Inputs...> inputs, Output output, int n, TransformOp op, cudaStream_t stream)
+void transform(::cuda::std::tuple<Inputs...> inputs, Output output, int64_t n, TransformOp op, cudaStream_t stream)
 {
   auto env = cuda::std::execution::env{
     ::cuda::stream_ref{stream}
@@ -521,7 +521,7 @@ void transform(::cuda::std::tuple<Inputs...> inputs, Output output, int n, Trans
 }
 
 template <typename Input, typename Output, typename TransformOp>
-void transform(Input input, Output output, int n, TransformOp op, cudaStream_t stream)
+void transform(Input input, Output output, int64_t n, TransformOp op, cudaStream_t stream)
 {
   transform(::cuda::std::make_tuple(input), output, n, op, stream);
 }
@@ -536,11 +536,6 @@ using element_types = nvbench::type_list<TUNE_T>;
 using element_types = nvbench::type_list<float, BFloat16>;
 #endif
 
-// note: pytorch always uses int for offset type
-// but be careful not to use too large of a range for the Elements axis,
-// otherwise, we will run into overflows.
-using pytorch_offset_types = nvbench::type_list<int>;
-
 // ============================================================================
 // chained_eltwise_many_in_many_inst
 //
@@ -549,11 +544,11 @@ using pytorch_offset_types = nvbench::type_list<int>;
 // 11 inputs, 10 binary ops
 // ============================================================================
 
-template <typename T, typename OffsetT>
-static void chained_eltwise_many_in_many_inst(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T>
+static void chained_eltwise_many_in_many_inst(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  const auto n = static_cast<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = state.get_int64("Elements{io}");
 
   constexpr int num_in = 11;
   thrust::device_vector<T> in[num_in];
@@ -561,7 +556,7 @@ try
   {
     fill_normal(in[i], n, i);
   }
-  thrust::device_vector<T> tmpA(n), tmpB(n);
+  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
 
   T* d_in[num_in];
   for (int i = 0; i < num_in; i++)
@@ -572,15 +567,15 @@ try
   T* d_b = thrust::raw_pointer_cast(tmpB.data());
 
   state.add_element_count(n);
-  state.add_global_memory_reads<T>(20L * int64_t{n});
-  state.add_global_memory_writes<T>(10L * int64_t{n});
+  state.add_global_memory_reads<T>(20L * n);
+  state.add_global_memory_writes<T>(10L * n);
 
   // logaddexp2 captures inv_log_2 — native/cuda/LogAddExpKernel.cu:272
   using opmath_t       = opmath_type<T>;
   const auto inv_log_2 = static_cast<opmath_t>(1.0 / 0.693147180559945309417232121458176);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
-    auto s = launch.get_stream().get_stream();
+    const auto s = launch.get_stream().get_stream();
 
     // div_floor: native/cuda/BinaryDivFloorKernel.cu:72, helper c10/util/generic_math.h:34
     transform(
@@ -727,11 +722,11 @@ catch (const std::bad_alloc&)
 // 13 inputs, 8 binary ops + 2 ternary ops
 // ============================================================================
 
-template <typename T, typename OffsetT>
-static void chained_eltwise_many_in_few_inst(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T>
+static void chained_eltwise_many_in_few_inst(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  const auto n = static_cast<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = state.get_int64("Elements{io}");
 
   constexpr int num_in = 13;
   thrust::device_vector<T> in[num_in];
@@ -739,7 +734,7 @@ try
   {
     fill_normal(in[i], n, i);
   }
-  thrust::device_vector<T> tmpA(n), tmpB(n);
+  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
 
   T* d_in[num_in];
   for (int i = 0; i < num_in; i++)
@@ -751,20 +746,20 @@ try
 
   // 8 binary (16 reads) + 2 ternary (6 reads) = 22 reads, 10 writes
   state.add_element_count(n);
-  state.add_global_memory_reads<T>(22L * int64_t{n});
-  state.add_global_memory_writes<T>(10L * int64_t{n});
+  state.add_global_memory_reads<T>(22L * n);
+  state.add_global_memory_writes<T>(10L * n);
 
   // Captured scalar parameters, matching how ATen sets them up before gpu_kernel
   using opmath_t = opmath_type<T>;
   T beta_val(1.0); // smooth_l1: scalar_t beta_val(beta)
   T delta_val(1.0); // huber: scalar_t delta_val(delta)
   // note: opmath_type is same as at::acc_type<scalar_t, true> here
-  using accscalar_t = opmath_type<T>; // addcmul: at::acc_type<scalar_t, true>
-  auto alpha        = accscalar_t(1); // addcmul: value.to<accscalar_t>()
-  auto weight_val   = opmath_t(4.0); // lerp scalar: weight.to<opmath_t>()
+  using accscalar_t     = opmath_type<T>; // addcmul: at::acc_type<scalar_t, true>
+  const auto alpha      = accscalar_t(1); // addcmul: value.to<accscalar_t>()
+  const auto weight_val = opmath_t(4.0); // lerp scalar: weight.to<opmath_t>()
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
-    auto s = launch.get_stream().get_stream();
+    const auto s = launch.get_stream().get_stream();
 
     // mse_loss: native/cuda/BinaryMiscOpsKernels.cu:37
     transform(
@@ -877,35 +872,35 @@ catch (const std::bad_alloc&)
 // 1 input, 10 unary ops
 // ============================================================================
 
-template <typename T, typename OffsetT>
-static void chained_eltwise_few_in_many_inst(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T>
+static void chained_eltwise_few_in_many_inst(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  const auto n = static_cast<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = state.get_int64("Elements{io}");
 
-  thrust::device_vector<T> input(n);
+  thrust::device_vector<T> input(n, thrust::no_init);
   fill_normal(input, n, 0);
-  thrust::device_vector<T> tmpA(n), tmpB(n);
+  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
 
   T* d_in = thrust::raw_pointer_cast(input.data());
   T* d_a  = thrust::raw_pointer_cast(tmpA.data());
   T* d_b  = thrust::raw_pointer_cast(tmpB.data());
 
   state.add_element_count(n);
-  state.add_global_memory_reads<T>(10L * int64_t{n});
-  state.add_global_memory_writes<T>(10L * int64_t{n});
+  state.add_global_memory_reads<T>(10L * n);
+  state.add_global_memory_writes<T>(10L * n);
 
   // Captured scalar parameters
-  using opmath_t     = opmath_type<T>;
-  const auto exp_val = T(2.5); // pow: exp_scalar.to<scalar_t>()
-  auto beta          = opmath_t(1); // softplus: beta_.to<opmath_t>()
-  auto threshold     = opmath_t(20); // softplus: threshold_.to<opmath_t>()
-  auto negcoef       = opmath_t(1) * opmath_t(1); // elu: alpha * scale
-  auto poscoef       = opmath_t(1); // elu: scale
-  auto negiptcoef    = opmath_t(1); // elu: input_scale
+  using opmath_t        = opmath_type<T>;
+  const auto exp_val    = T(2.5); // pow: exp_scalar.to<scalar_t>()
+  const auto beta       = opmath_t(1); // softplus: beta_.to<opmath_t>()
+  const auto threshold  = opmath_t(20); // softplus: threshold_.to<opmath_t>()
+  const auto negcoef    = opmath_t(1) * opmath_t(1); // elu: alpha * scale
+  const auto poscoef    = opmath_t(1); // elu: scale
+  const auto negiptcoef = opmath_t(1); // elu: input_scale
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
-    auto s = launch.get_stream().get_stream();
+    const auto s = launch.get_stream().get_stream();
 
     // pow(scalar=2.5): native/cuda/PowKernel.cu:163, helper native/cuda/Pow.cuh:40
     transform(
@@ -1035,23 +1030,23 @@ catch (const std::bad_alloc&)
 // 1 input, 10 unary ops
 // ============================================================================
 
-template <typename T, typename OffsetT>
-static void chained_eltwise_few_in_few_inst(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T>
+static void chained_eltwise_few_in_few_inst(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  const auto n = static_cast<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = state.get_int64("Elements{io}");
 
-  thrust::device_vector<T> input(n);
+  thrust::device_vector<T> input(n, thrust::no_init);
   fill_normal(input, n, 0);
-  thrust::device_vector<T> tmpA(n), tmpB(n);
+  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
 
   T* d_in = thrust::raw_pointer_cast(input.data());
   T* d_a  = thrust::raw_pointer_cast(tmpA.data());
   T* d_b  = thrust::raw_pointer_cast(tmpB.data());
 
   state.add_element_count(n);
-  state.add_global_memory_reads<T>(10L * int64_t{n});
-  state.add_global_memory_writes<T>(10L * int64_t{n});
+  state.add_global_memory_reads<T>(10L * n);
+  state.add_global_memory_writes<T>(10L * n);
 
   // Captured scalar parameters
   using opmath_t = opmath_type<T>;
@@ -1065,7 +1060,7 @@ try
   const auto mul_scalar = opmath_t(1.5);
 
   // leaky_relu: native/cuda/ActivationLeakyReluKernel.cu:31
-  auto negval = opmath_t(0.01); // negval_.to<opmath_t>()
+  const auto negval = opmath_t(0.01); // negval_.to<opmath_t>()
 
   // hardswish: native/cuda/ActivationHardswishKernel.cu:25
   const opmath_t zero(0.0f);
@@ -1074,13 +1069,13 @@ try
   const opmath_t six(6.0f);
 
   // hardshrink: native/cuda/ActivationHardshrinkKernel.cu:29
-  auto lambd = T(0.5); // value.to<scalar_t>()
+  const auto lambd = T(0.5); // value.to<scalar_t>()
 
   // gt scalar: native/cuda/CompareKernels.cu:47
   const T rhs(0);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
-    auto s = launch.get_stream().get_stream();
+    const auto s = launch.get_stream().get_stream();
 
     // add(scalar, alpha=1): native/ufunc/add.h:14
     transform(d_in, d_a, n, CUDAFunctorOnSelf_add<T>(T(0.5), T(1)), s);
@@ -1197,22 +1192,22 @@ catch (const std::bad_alloc&)
   state.skip("Skipping: out of memory.");
 }
 
-NVBENCH_BENCH_TYPES(chained_eltwise_many_in_many_inst, NVBENCH_TYPE_AXES(element_types, pytorch_offset_types))
+NVBENCH_BENCH_TYPES(chained_eltwise_many_in_many_inst, NVBENCH_TYPE_AXES(element_types))
   .set_name("chained_eltwise_many_in_many_inst")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
-NVBENCH_BENCH_TYPES(chained_eltwise_many_in_few_inst, NVBENCH_TYPE_AXES(element_types, pytorch_offset_types))
+NVBENCH_BENCH_TYPES(chained_eltwise_many_in_few_inst, NVBENCH_TYPE_AXES(element_types))
   .set_name("chained_eltwise_many_in_few_inst")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
-NVBENCH_BENCH_TYPES(chained_eltwise_few_in_many_inst, NVBENCH_TYPE_AXES(element_types, pytorch_offset_types))
+NVBENCH_BENCH_TYPES(chained_eltwise_few_in_many_inst, NVBENCH_TYPE_AXES(element_types))
   .set_name("chained_eltwise_few_in_many_inst")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
-NVBENCH_BENCH_TYPES(chained_eltwise_few_in_few_inst, NVBENCH_TYPE_AXES(element_types, pytorch_offset_types))
+NVBENCH_BENCH_TYPES(chained_eltwise_few_in_few_inst, NVBENCH_TYPE_AXES(element_types))
   .set_name("chained_eltwise_few_in_few_inst")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
