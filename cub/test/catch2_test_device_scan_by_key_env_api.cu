@@ -148,7 +148,7 @@ struct ScanByKeyPolicySelector
 };
 // example-end exclusive-sum-by-key-policy-selector
 
-C2H_TEST("cub::DeviceScan::ExclusiveSumByKey env-based API with tuning", "[scan][by_key][env]")
+C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts a custom policy selector", "[scan][by_key][env]")
 {
   // example-begin exclusive-sum-by-key-tuning
   auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};

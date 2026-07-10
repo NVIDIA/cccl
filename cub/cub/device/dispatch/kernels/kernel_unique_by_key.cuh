@@ -271,8 +271,8 @@ __launch_bounds__(
   __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
 
   // Get temporary storage
-  typename agent_unique_by_key_t::TempStorage& temp_storage =
-    vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem, (blockIdx.x * gridDim.y) + blockIdx.y);
+  typename agent_unique_by_key_t::TempStorage& temp_storage = vsmem_helper_t::get_temp_storage(
+    static_temp_storage, vsmem, (blockIdx.x * gridDim.y) + blockIdx.y); // NOLINT(bugprone-misplaced-widening-cast)
 
   // Process tiles
   agent_unique_by_key_t(temp_storage, d_keys_in, d_values_in, d_keys_out, d_values_out, equality_op, num_items)

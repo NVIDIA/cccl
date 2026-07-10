@@ -10,16 +10,18 @@ from typing import Callable
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
-from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._cccl_interop import set_cccl_iterator_state
+from .._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-class _ThreeWayPartition:
+class _ThreeWayPartition(Serializable):
     __slots__ = [
-        "build_result",
+        "build_results",
+        "loaded_build_result",
         "d_in_cccl",
         "d_first_part_out_cccl",
         "d_second_part_out_cccl",
@@ -28,6 +30,17 @@ class _ThreeWayPartition:
         "select_first_part_op_cccl",
         "select_second_part_op_cccl",
     ]
+
+    __serialization_schema__ = (
+        ("d_in_cccl", ITER),
+        ("d_first_part_out_cccl", ITER),
+        ("d_second_part_out_cccl", ITER),
+        ("d_unselected_out_cccl", ITER),
+        ("d_num_selected_out_cccl", ITER),
+        ("select_first_part_op_cccl", OP),
+        ("select_second_part_op_cccl", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceThreeWayPartitionBuildResult)),
+    )
 
     def __init__(
         self,
@@ -38,6 +51,7 @@ class _ThreeWayPartition:
         d_num_selected_out: DeviceArrayLike | IteratorT,
         select_first_part_op: OpAdapter,
         select_second_part_op: OpAdapter,
+        compute_capability=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_first_part_out_cccl = cccl.to_cccl_output_iter(d_first_part_out)
@@ -54,7 +68,8 @@ class _ThreeWayPartition:
             (value_type,), types.uint8
         )
 
-        self.build_result = call_build(
+        # Active build result, bound at __call__ from build_results (see resolve_build_result).
+        self.build_results = cccl.build_for_ccs(
             _bindings.DeviceThreeWayPartitionBuildResult,
             self.d_in_cccl,
             self.d_first_part_out_cccl,
@@ -63,6 +78,7 @@ class _ThreeWayPartition:
             self.d_num_selected_out_cccl,
             self.select_first_part_op_cccl,
             self.select_second_part_op_cccl,
+            compute_capability=compute_capability,
         )
 
     def __call__(
@@ -79,6 +95,9 @@ class _ThreeWayPartition:
         num_items: int,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_first_part_out_cccl, d_first_part_out)
         set_cccl_iterator_state(self.d_second_part_out_cccl, d_second_part_out)
@@ -99,7 +118,7 @@ class _ThreeWayPartition:
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = protocols.get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -125,6 +144,7 @@ def make_three_way_partition(
     d_num_selected_out: DeviceArrayLike | IteratorT,
     select_first_part_op: Operator,
     select_second_part_op: Operator,
+    compute_capability=None,
 ):
     """
     Computes a device-wide three-way partition using the specified unary ``select_first_part_op`` and ``select_second_part_op`` operators.
@@ -150,6 +170,11 @@ def make_three_way_partition(
             The signature is ``(T) -> uint8``, where ``T`` is the input data type.
             Returns 1 (selected) or 0 (not selected).
             Can reference device arrays as globals/closures - they will be automatically captured.
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform the three-way partition
@@ -165,6 +190,7 @@ def make_three_way_partition(
         d_num_selected_out,
         first_op_adapter,
         second_op_adapter,
+        compute_capability=compute_capability,
     )
 
 

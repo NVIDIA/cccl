@@ -84,7 +84,7 @@ int main()
   {
     for (int j = 0; j < n; j++)
     {
-      data[i * N + j] = dist(rng);
+      data[static_cast<std::size_t>(i) * N + j] = dist(rng);
     }
   }
 
@@ -96,7 +96,7 @@ int main()
     std::cout << " ";
     for (int j = 0; j < N; j++)
     {
-      std::cout << data[i * N + j] << " ";
+      std::cout << data[(static_cast<std::size_t>(i) * N) + j] << " ";
     }
     std::cout << "\n";
   }

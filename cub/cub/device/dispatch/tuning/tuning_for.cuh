@@ -66,7 +66,7 @@ struct policy_selector
 // TODO(bgruber): remove once we publish the tuning API
 struct policy_hub_t
 {
-  struct policy_500_t : ChainedPolicy<500, policy_500_t, policy_500_t>
+  struct policy_500_t : detail::chained_policy<500, policy_500_t, policy_500_t>
   {
     using for_policy_t = policy_t<256, 2>;
   };

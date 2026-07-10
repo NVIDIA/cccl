@@ -87,7 +87,7 @@ struct BatchedCopyPolicySelector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceCopy::Batched env-based API with tuning", "[copy][env]")
+C2H_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][env]")
 {
   // example-begin copy-batched-tuning
   // 3 contiguous ranges copied via Batched API with custom tuning
