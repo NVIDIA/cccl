@@ -1,45 +1,38 @@
-#include <thrust/extrema.h>
-#include <thrust/functional.h>
-#include <thrust/iterator/discard_iterator.h>
+#include <thrust/execution_policy.h>
 #include <thrust/set_operations.h>
-#include <thrust/sort.h>
+
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/stream>
 
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Iterator3, typename Iterator4>
-__global__ void set_intersection_kernel(
-  ExecutionPolicy exec,
-  Iterator1 first1,
-  Iterator1 last1,
-  Iterator2 first2,
-  Iterator2 last2,
-  Iterator3 result1,
-  Iterator4 result2)
+struct set_intersection_kernel
 {
-  *result2 = thrust::set_intersection(exec, first1, last1, first2, last2, result1);
-}
+  template <typename ExecutionPolicy, typename Input1, typename Input2, typename Output>
+  __device__ void operator()(ExecutionPolicy exec, Input1 a, Input2 b, Output result) const
+  {
+    const auto end = thrust::set_intersection(exec, a.begin(), a.end(), b.begin(), b.end(), result.begin());
+    TEST_ASSERT_DEVICE(end == result.end());
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestSetIntersectionDevice(ExecutionPolicy exec)
 {
-  using Vector   = thrust::device_vector<int>;
-  using Iterator = Vector::iterator;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector a{0, 2, 4}, b{0, 3, 3, 4};
+  auto a      = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
+  auto b      = cuda::make_device_buffer<int>(stream, device, {0, 3, 3, 4});
+  auto result = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
 
-  Vector ref{0, 4};
-  Vector result(2);
-  thrust::device_vector<Iterator> end_vec(1);
+  cuda::launch(stream, test_runtime::single_thread_config(), set_intersection_kernel{}, exec, a, b, result);
+  stream.sync();
 
-  set_intersection_kernel<<<1, 1>>>(exec, a.begin(), a.end(), b.begin(), b.end(), result.begin(), end_vec.begin());
-  cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
-
-  Iterator end = end_vec.front();
-
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  test_runtime::assert_equal(stream, result, {0, 4});
 }
 
 void TestSetIntersectionDeviceSeq()
@@ -64,26 +57,20 @@ DECLARE_UNITTEST(TestSetIntersectionDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestSetIntersectionCudaStreams(ExecutionPolicy policy)
 {
-  using Vector   = thrust::device_vector<int>;
-  using Iterator = Vector::iterator;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector a{0, 2, 4}, b{0, 3, 3, 4};
+  auto a      = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
+  auto b      = cuda::make_device_buffer<int>(stream, device, {0, 3, 3, 4});
+  auto result = cuda::make_device_buffer<int>(stream, device, 2, cuda::no_init);
 
-  Vector ref{0, 4};
-  Vector result(2);
+  const auto streampolicy = policy.on(stream.get());
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
-
-  auto streampolicy = policy.on(s);
-
-  Iterator end = thrust::set_intersection(streampolicy, a.begin(), a.end(), b.begin(), b.end(), result.begin());
-  cudaStreamSynchronize(s);
+  const auto end = thrust::set_intersection(streampolicy, a.begin(), a.end(), b.begin(), b.end(), result.begin());
+  stream.sync();
 
   ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
-
-  cudaStreamDestroy(s);
+  test_runtime::assert_equal(stream, result, {0, 4});
 }
 
 void TestSetIntersectionCudaStreamsSync()
