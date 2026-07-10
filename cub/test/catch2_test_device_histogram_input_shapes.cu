@@ -13,30 +13,38 @@
 #include <thrust/host_vector.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <map>
+#include <numeric>
 #include <vector>
 
 // The generator header lives in the benchmarks tree; include it by relative
 // path. It is self-contained (thrust + cuda/std only), so this is safe.
 #include "../benchmarks/bench/histogram/histogram_inputs.cuh"
-
 #include <c2h/catch2_test_helper.h>
 
 namespace
 {
-
-// Generate an EVEN input for `spec` and return the per-bin counts, recomputed
-// from the sample values with the same formula CUB uses.
+// Generate an EVEN input for `spec` and recover the bin index of every sample
+// with the same formula CUB uses.
 template <class SampleT>
-std::vector<long long>
-bin_counts_even(const ShapeSpec& spec, int64_t n, int num_bins, SampleT lower, SampleT upper, uint64_t seed = 42)
+std::vector<int> bin_indices_even(
+  const ShapeSpec& spec,
+  int64_t n,
+  int num_bins,
+  SampleT lower,
+  SampleT upper,
+  uint64_t seed         = 42,
+  int64_t cache_slots   = 0,
+  int64_t sample_stride = 1)
 {
   thrust::device_vector<SampleT> d_input =
-    generate_histogram_input_even<SampleT>(spec, n, num_bins, lower, upper, seed);
+    generate_histogram_input_even<SampleT>(spec, n, num_bins, lower, upper, seed, cache_slots, sample_stride);
   thrust::host_vector<SampleT> h_input = d_input;
 
-  std::vector<long long> counts(num_bins, 0);
+  std::vector<int> bins;
+  bins.reserve(static_cast<std::size_t>(n));
   const double L     = static_cast<double>(lower);
   const double U     = static_cast<double>(upper);
   const double scale = static_cast<double>(num_bins) / (U - L);
@@ -53,10 +61,35 @@ bin_counts_even(const ShapeSpec& spec, int64_t n, int num_bins, SampleT lower, S
     }
     if (bin >= 0)
     {
-      ++counts[bin];
+      bins.push_back(bin);
     }
   }
+  return bins;
+}
+
+std::vector<long long> bin_counts(const std::vector<int>& bins, int num_bins, int stride = 1, int offset = 0)
+{
+  std::vector<long long> counts(num_bins, 0);
+  for (std::size_t i = static_cast<std::size_t>(offset); i < bins.size(); i += static_cast<std::size_t>(stride))
+  {
+    ++counts[static_cast<std::size_t>(bins[i])];
+  }
   return counts;
+}
+
+// Generate an EVEN input for `spec` and return its per-bin counts.
+template <class SampleT>
+std::vector<long long> bin_counts_even(
+  const ShapeSpec& spec,
+  int64_t n,
+  int num_bins,
+  SampleT lower,
+  SampleT upper,
+  uint64_t seed         = 42,
+  int64_t cache_slots   = 0,
+  int64_t sample_stride = 1)
+{
+  return bin_counts(bin_indices_even(spec, n, num_bins, lower, upper, seed, cache_slots, sample_stride), num_bins);
 }
 
 double normalized_entropy_counts(const std::vector<long long>& counts, int64_t n)
@@ -89,10 +122,24 @@ long long top_count(const std::vector<long long>& counts)
   return *std::max_element(counts.begin(), counts.end());
 }
 
-constexpr int64_t N = 200000;
+std::vector<int> top_bin_indices(const std::vector<long long>& counts, int count)
+{
+  std::vector<int> indices(counts.size());
+  std::iota(indices.begin(), indices.end(), 0);
+  std::partial_sort(indices.begin(), indices.begin() + count, indices.end(), [&](int lhs, int rhs) {
+    if (counts[static_cast<std::size_t>(lhs)] != counts[static_cast<std::size_t>(rhs)])
+    {
+      return counts[static_cast<std::size_t>(lhs)] > counts[static_cast<std::size_t>(rhs)];
+    }
+    return lhs < rhs;
+  });
+  indices.resize(static_cast<std::size_t>(count));
+  return indices;
+}
+
+constexpr int64_t N  = 200000;
 constexpr int32_t LO = 0;
 constexpr int32_t HI = 4096; // bin width 1 at B=4096; >1 below that
-
 } // namespace
 
 C2H_TEST("histogram input: concentrated endpoints are exact", "[histogram][input_shapes]")
@@ -101,8 +148,8 @@ C2H_TEST("histogram input: concentrated endpoints are exact", "[histogram][input
 
   // entropy 1.0 -> uniform: every bin within a few % of N/num_bins.
   {
-    auto counts        = bin_counts_even<int32_t>(parse_input_shape("concentrated:1.0"), N, num_bins, LO, HI);
-    const double mean  = static_cast<double>(N) / num_bins;
+    auto counts       = bin_counts_even<int32_t>(parse_input_shape("concentrated:1.0"), N, num_bins, LO, HI);
+    const double mean = static_cast<double>(N) / num_bins;
     REQUIRE(nonzero_bins(counts) == num_bins);
     for (long long c : counts)
     {
@@ -126,7 +173,7 @@ C2H_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][
   double prev_share = -1.0;
   for (double e : {1.0, 0.75, 0.5, 0.25, 0.0})
   {
-    auto counts        = bin_counts_even<int32_t>(parse_input_shape("concentrated:" + std::to_string(e)), N, num_bins, LO, HI);
+    auto counts = bin_counts_even<int32_t>(parse_input_shape("concentrated:" + std::to_string(e)), N, num_bins, LO, HI);
     const double share = static_cast<double>(top_count(counts)) / N;
     if (prev_share >= 0.0)
     {
@@ -181,7 +228,7 @@ C2H_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][i
   double prev_top = -1.0;
   for (double e : {0.8, 0.6, 0.4, 0.2})
   {
-    auto counts        = bin_counts_even<int32_t>(parse_input_shape("powerlaw:" + std::to_string(e)), N, num_bins, LO, HI);
+    auto counts = bin_counts_even<int32_t>(parse_input_shape("powerlaw:" + std::to_string(e)), N, num_bins, LO, HI);
     std::vector<long long> sorted(counts);
     std::sort(sorted.rbegin(), sorted.rend());
     const double top1 = static_cast<double>(sorted[0]) / N;
@@ -190,46 +237,106 @@ C2H_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][i
   }
 }
 
-C2H_TEST("histogram input: capacity_cliff active set tracks the knob", "[histogram][input_shapes]")
+C2H_TEST("histogram input: powerlaw has stable rank weights and literal bin placement", "[histogram][input_shapes]")
 {
-  // num_bins large enough that the active set fits below it.
-  const int num_bins = 16384;
-  // Default => kAdversarialCacheSlots + 1 distinct equiprobable bins.
+  // These are literal output-bin contracts, deliberately NOT computed with
+  // scatter_bin(). A change to the shared scatter helper must not silently
+  // remap the power-law warm set again.
+  const std::array<int, 8> expected_pow2{42, 41, 40, 39, 38, 37, 36, 35};
+  const std::array<int, 8> expected_decimal{42, 89, 36, 83, 30, 77, 24, 71};
+
+  for (const auto& test : {std::pair{256, expected_pow2}, std::pair{100, expected_decimal}})
   {
-    auto counts = bin_counts_even<int32_t>(parse_input_shape("capacity_cliff"), N * 4, num_bins, LO, 16384);
-    // Sampling N*4 over slots+1 bins: expect ~ all of them populated.
-    const int nz = nonzero_bins(counts);
-    REQUIRE(nz > kAdversarialCacheSlots / 2); // a large active set, near capacity
-    REQUIRE(nz <= kAdversarialCacheSlots + 1);
+    const int num_bins            = test.first;
+    const std::vector<double> pmf = build_pmf(parse_input_shape("powerlaw:0.5"), num_bins, /*seed=*/42, 0);
+    for (int rank = 0; rank < static_cast<int>(test.second.size()); ++rank)
+    {
+      const int expected_bin = test.second[static_cast<std::size_t>(rank)];
+      REQUIRE(pmf[static_cast<std::size_t>(expected_bin)] > 0.0);
+      if (rank > 0)
+      {
+        REQUIRE(pmf[static_cast<std::size_t>(test.second[static_cast<std::size_t>(rank - 1)])]
+                > pmf[static_cast<std::size_t>(expected_bin)]);
+      }
+    }
   }
-  // Knob 0.25 => ~1024 active bins (a quarter of capacity).
+
+  struct fingerprint
   {
-    const int num_bins2 = 4096;
-    auto counts = bin_counts_even<int32_t>(parse_input_shape("capacity_cliff:0.25"), N * 4, num_bins2, LO, 4096);
-    const int nz = nonzero_bins(counts);
-    REQUIRE(nz > 256);
-    REQUIRE(nz <= 1100);
+    double entropy;
+    double exponent;
+    double top_share;
+  };
+  for (const fingerprint fp :
+       {fingerprint{0.75, 1.0495426693985075, 0.1841284718868535},
+        fingerprint{0.50, 1.4799203229256670, 0.3922707569591881},
+        fingerprint{0.25, 2.1519418618806565, 0.6574873803199386}})
+  {
+    const double exponent             = solve_powerlaw_exponent(256, fp.entropy);
+    const std::vector<double> weights = ranked_powerlaw(256, exponent);
+    REQUIRE(std::abs(exponent - fp.exponent) < 1e-12);
+    REQUIRE(std::abs(weights.front() - fp.top_share) < 1e-12);
+    REQUIRE(std::abs(normalized_entropy(weights) - fp.entropy) < 1e-12);
+  }
+
+  REQUIRE(
+    build_pmf(parse_input_shape("powerlaw"), 256, 42, 0) == build_pmf(parse_input_shape("powerlaw:0.5"), 256, 42, 0));
+}
+
+C2H_TEST("histogram input: every interleaved channel preserves powerlaw placement", "[histogram][input_shapes]")
+{
+  constexpr int channels = 4;
+  constexpr int samples  = 100000;
+  constexpr int num_bins = 256;
+  const std::array<int, 8> expected{42, 41, 40, 39, 38, 37, 36, 35};
+  const std::vector<int> bins = bin_indices_even<int32_t>(
+    parse_input_shape("powerlaw:0.25"),
+    channels * samples,
+    num_bins,
+    /*lower=*/0,
+    /*upper=*/num_bins,
+    /*seed=*/42,
+    /*cache_slots=*/0,
+    /*sample_stride=*/channels);
+
+  for (int channel = 0; channel < channels; ++channel)
+  {
+    const std::vector<long long> counts = bin_counts(bins, num_bins, channels, channel);
+    REQUIRE(std::accumulate(counts.begin(), counts.end(), 0ll) == samples);
+    const std::vector<int> top = top_bin_indices(counts, static_cast<int>(expected.size()));
+    REQUIRE(std::equal(top.begin(), top.end(), expected.begin(), expected.end()));
+    REQUIRE(std::abs(normalized_entropy_counts(counts, samples) - 0.25) < 0.01);
   }
 }
 
-C2H_TEST("histogram input: stale_resident has a cold prefix and a dominant hot bin", "[histogram][input_shapes]")
+C2H_TEST("histogram input: stale_resident stays in its upper working-set window", "[histogram][input_shapes]")
 {
-  const int num_bins = 16384;
-  // n must exceed the cold prefix (kAdversarialCacheSlots) so a hot bulk exists.
-  auto counts = bin_counts_even<int32_t>(parse_input_shape("stale_resident"), N, num_bins, LO, 16384);
-  // Cold prefix touches ~kAdversarialCacheSlots distinct bins once each.
-  REQUIRE(nonzero_bins(counts) > kAdversarialCacheSlots / 2);
-  // One hot bin dominates (the bulk), far above the single-visit cold bins.
-  const double top = static_cast<double>(top_count(counts)) / N;
-  REQUIRE(top > 0.5);
+  constexpr int64_t cache_slots = 8192;
+  constexpr int64_t samples     = 800000;
+  for (const int num_bins : {65536, 60000})
+  {
+    const auto counts = bin_counts_even<int32_t>(
+      parse_input_shape("stale_resident:0.5"), samples, num_bins, /*lower=*/0, /*upper=*/num_bins, 42, cache_slots);
+    const int span  = static_cast<int>(stale_working_set(0.5, cache_slots, num_bins));
+    const int first = num_bins - span;
+
+    REQUIRE(span == 16384);
+    REQUIRE(counts[0] == 0);
+    REQUIRE(std::all_of(counts.begin(), counts.begin() + first, [](long long count) {
+      return count == 0;
+    }));
+    REQUIRE(nonzero_bins(counts) > 16000);
+    REQUIRE(nonzero_bins(counts) <= span);
+    REQUIRE(static_cast<double>(top_count(counts)) / samples < 0.001);
+  }
 }
 
 C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "[histogram][input_shapes]")
 {
   const int num_bins = 256;
-  const int phases   = 4;
+  const int phases   = 8;
   thrust::device_vector<int32_t> d_input =
-    generate_histogram_input_even<int32_t>(parse_input_shape("temporal_phases:" + std::to_string(phases)), N, num_bins, LO, HI);
+    generate_histogram_input_even<int32_t>(parse_input_shape("temporal_phases:0.10:8"), N, num_bins, LO, HI);
   thrust::host_vector<int32_t> h = d_input;
 
   const double scale = static_cast<double>(num_bins) / (static_cast<double>(HI) - static_cast<double>(LO));
@@ -241,18 +348,36 @@ C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "
     for (int64_t i = p * per; i < (p + 1) * per; ++i)
     {
       int bin = static_cast<int>(static_cast<double>(h[i]) * scale);
-      if (bin >= num_bins) bin = num_bins - 1;
+      if (bin >= num_bins)
+      {
+        bin = num_bins - 1;
+      }
       ++c[bin];
     }
-    int best = -1; long long bestc = -1;
-    for (auto& kv : c) { if (kv.second > bestc) { bestc = kv.second; best = kv.first; } }
+    int best        = -1;
+    long long bestc = -1;
+    for (auto& kv : c)
+    {
+      if (kv.second > bestc)
+      {
+        bestc = kv.second;
+        best  = kv.first;
+      }
+    }
     phase_mode.push_back(best);
   }
-  // Adjacent phases must have different hot bins.
+  const std::vector<int> expected{42, 10, 234, 202, 170, 138, 106, 74};
+  REQUIRE(phase_mode == expected);
+
+  REQUIRE(bin_indices_even<int32_t>(parse_input_shape("temporal_phases"), N, num_bins, LO, HI)
+          == bin_indices_even<int32_t>(parse_input_shape("temporal_phases:0.10:8"), N, num_bins, LO, HI));
+
+  std::sort(phase_mode.begin(), phase_mode.end());
   for (int p = 1; p < phases; ++p)
   {
-    REQUIRE(phase_mode[p] != phase_mode[p - 1]);
+    REQUIRE(phase_mode[p] - phase_mode[p - 1] == num_bins / phases);
   }
+  REQUIRE(phase_mode.front() + num_bins - phase_mode.back() == num_bins / phases);
 }
 
 C2H_TEST("histogram input: strided_sweep is flat in distribution but ordered", "[histogram][input_shapes]")
@@ -262,6 +387,162 @@ C2H_TEST("histogram input: strided_sweep is flat in distribution but ordered", "
   // A stride coprime to num_bins visits every bin near-equally.
   REQUIRE(nonzero_bins(counts) == num_bins);
   REQUIRE(normalized_entropy_counts(counts, N) > 0.98);
+}
+
+C2H_TEST("histogram input: every interleaved ordering channel visits the full support", "[histogram][input_shapes]")
+{
+  constexpr int channels = 4;
+  constexpr int num_bins = 256;
+  constexpr int samples  = 65536;
+
+  for (const char* shape : {"concentrated:1.0", "strided_sweep", "sawtooth"})
+  {
+    const std::vector<int> bins = bin_indices_even<int32_t>(
+      parse_input_shape(shape),
+      channels * samples,
+      num_bins,
+      /*lower=*/0,
+      /*upper=*/num_bins,
+      /*seed=*/42,
+      /*cache_slots=*/0,
+      /*sample_stride=*/channels);
+    for (int channel = 0; channel < channels; ++channel)
+    {
+      const std::vector<long long> counts = bin_counts(bins, num_bins, channels, channel);
+      REQUIRE(nonzero_bins(counts) == num_bins);
+      REQUIRE(*std::min_element(counts.begin(), counts.end()) == samples / num_bins);
+      REQUIRE(*std::max_element(counts.begin(), counts.end()) == samples / num_bins);
+    }
+  }
+}
+
+C2H_TEST("histogram input: scattered sawtooth has a stable upper-window support", "[histogram][input_shapes]")
+{
+  constexpr int period = 8192;
+  const std::array<int, 8> expected_prefix{16383, 9806, 11421, 13036, 14651, 16266, 9689, 11304};
+  const std::vector<int> bins = bin_indices_even<int32_t>(
+    parse_input_shape("sawtooth:8192:2654435761:1"),
+    period,
+    /*num_bins=*/16384,
+    /*lower=*/0,
+    /*upper=*/16384);
+  REQUIRE(std::equal(expected_prefix.begin(), expected_prefix.end(), bins.begin()));
+  REQUIRE(*std::min_element(bins.begin(), bins.end()) == 8192);
+  REQUIRE(*std::max_element(bins.begin(), bins.end()) == 16383);
+  REQUIRE(nonzero_bins(bin_counts(bins, 16384)) == period);
+
+  constexpr int channels            = 4;
+  const std::vector<int> multi_bins = bin_indices_even<int32_t>(
+    parse_input_shape("sawtooth:8192:2654435761:1"),
+    channels * period,
+    /*num_bins=*/16384,
+    /*lower=*/0,
+    /*upper=*/16384,
+    /*seed=*/42,
+    /*cache_slots=*/0,
+    /*sample_stride=*/channels);
+  for (int channel = 0; channel < channels; ++channel)
+  {
+    const auto counts = bin_counts(multi_bins, 16384, channels, channel);
+    REQUIRE(nonzero_bins(counts) == period);
+    REQUIRE(std::all_of(counts.begin(), counts.begin() + 8192, [](long long count) {
+      return count == 0;
+    }));
+  }
+
+  const std::vector<int> decimal_bins = bin_indices_even<int32_t>(
+    parse_input_shape("sawtooth:8192:2654435761:1"),
+    period,
+    /*num_bins=*/60000,
+    /*lower=*/0,
+    /*upper=*/60000);
+  REQUIRE(*std::min_element(decimal_bins.begin(), decimal_bins.end()) == 60000 - period);
+  REQUIRE(*std::max_element(decimal_bins.begin(), decimal_bins.end()) == 59999);
+  REQUIRE(nonzero_bins(bin_counts(decimal_bins, 60000)) == period);
+}
+
+C2H_TEST("histogram input: hash_synonym uses one real primary cache slot", "[histogram][input_shapes]")
+{
+  constexpr int num_bins          = 32768;
+  constexpr int cache_slots       = 1024;
+  constexpr int64_t samples       = 400000;
+  const std::vector<int> synonyms = find_hash_synonyms(num_bins, cache_slots, /*seed=*/42);
+  REQUIRE(synonyms.size() == kHashSynonymCount);
+  const int target_slot =
+    benchmark_cache_slot(synonyms.front(), cache_slots, cub::detail::histogram::cache_primary_hash_multiplier);
+  for (const int bin : synonyms)
+  {
+    REQUIRE(
+      benchmark_cache_slot(bin, cache_slots, cub::detail::histogram::cache_primary_hash_multiplier) == target_slot);
+  }
+
+  const std::vector<double> pmf = build_pmf(parse_input_shape("hash_synonym"), num_bins, 42, cache_slots);
+  double hot_mass               = 0.0;
+  for (const int bin : synonyms)
+  {
+    hot_mass += pmf[static_cast<std::size_t>(bin)];
+  }
+  REQUIRE(std::abs(hot_mass - (0.9 + 0.1 * kHashSynonymCount / num_bins)) < 1e-12);
+
+  const auto counts = bin_counts_even<int32_t>(
+    parse_input_shape("hash_synonym"), samples, num_bins, /*lower=*/0, /*upper=*/num_bins, 42, cache_slots);
+  std::vector<int> observed = top_bin_indices(counts, kHashSynonymCount);
+  std::vector<int> expected = synonyms;
+  std::sort(observed.begin(), observed.end());
+  std::sort(expected.begin(), expected.end());
+  REQUIRE(observed == expected);
+}
+
+C2H_TEST("histogram input: poison blockers occupy both real cache candidates", "[histogram][input_shapes]")
+{
+  constexpr int num_bins    = 32768;
+  constexpr int cache_slots = 8192;
+  const poison_bin_set bins = find_poison_bins(num_bins, cache_slots);
+  REQUIRE(bins.valid);
+  REQUIRE(benchmark_cache_slot(bins.blocker0, cache_slots, cub::detail::histogram::cache_primary_hash_multiplier)
+          == benchmark_cache_slot(bins.poison, cache_slots, cub::detail::histogram::cache_primary_hash_multiplier));
+  REQUIRE(benchmark_cache_slot(bins.blocker1, cache_slots, cub::detail::histogram::cache_primary_hash_multiplier)
+          == benchmark_cache_slot(bins.poison, cache_slots, cub::detail::histogram::cache_secondary_hash_multiplier));
+}
+
+C2H_TEST("histogram input: poison schedule follows explicit channel layout", "[histogram][input_shapes]")
+{
+  constexpr int num_bins = 32768;
+
+  {
+    constexpr int cache_slots   = 1024;
+    constexpr int samples       = 400000;
+    const poison_bin_set poison = find_poison_bins(num_bins, cache_slots);
+    REQUIRE(poison.valid);
+    const auto counts = bin_counts_even<int32_t>(
+      parse_input_shape("poison"),
+      samples,
+      num_bins,
+      /*lower=*/0,
+      /*upper=*/num_bins,
+      /*seed=*/42,
+      cache_slots,
+      /*sample_stride=*/1);
+    REQUIRE(counts[static_cast<std::size_t>(poison.poison)] == samples - kPoisonSingleClaimPrefix);
+  }
+
+  {
+    constexpr int channels      = 4;
+    constexpr int cache_slots   = 8192;
+    constexpr int samples       = 400000;
+    const poison_bin_set poison = find_poison_bins(num_bins, cache_slots);
+    REQUIRE(poison.valid);
+    const auto counts = bin_counts_even<int32_t>(
+      parse_input_shape("poison"),
+      channels * samples,
+      num_bins,
+      /*lower=*/0,
+      /*upper=*/num_bins,
+      /*seed=*/42,
+      cache_slots,
+      /*sample_stride=*/channels);
+    REQUIRE(counts[static_cast<std::size_t>(poison.poison)] == channels * samples - kPoisonMultiClaimPrefix);
+  }
 }
 
 C2H_TEST("histogram input: RANGE path maps bins into level intervals", "[histogram][input_shapes]")

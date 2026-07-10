@@ -20,14 +20,14 @@ One figure per InputShape, three panels:
   straight line, a single hot bin one point over an empty floor, `hash_synonym` a
   few high points over a flat floor. Reveals the shape regardless of bin count.
 - **position of values** — bin index vs position in the input sequence. Ordering
-  shapes (`temporal_phases`, `stale_resident`, `sawtooth`) show their structure here;
+  shapes (`temporal_phases:0.10`, `stale_resident`, `sawtooth`) show their structure here;
   `concentrated:1.0` (uniform) is a random scatter.
 
 Each shape is drawn at its **natural bin count** (`CHAR_BINS_BY_SHAPE`), not one
 global value: the i.i.d. distribution shapes put their hot bin at `seed % num_bins`
 (= 42), so at a few hundred bins it sits visibly off zero (at 16384 bins it would
 read as "pinned to 0"); the cache-adversarial shapes need bins > 4096 to show their
-structure (hash_synonym's 4096-spaced synonyms; stale_resident's 4096-bin prefix).
+structure (hash_synonym's real primary-slot collision group; stale_resident's working set).
 
 ```
 python histogram_input_characterization.py --outdir histogram_input_figs
@@ -89,7 +89,7 @@ With that, the sweep compares **all** swept shapes by default (no restriction).
 If instead you point `--main-bin-dir` at UNMODIFIED upstream-main binaries (whose
 generators differ for `concentrated:*` / `stale_resident`, and which lack
 `sawtooth`), restrict the comparison to the generator-identical subset:
-`--main-comparable-shapes powerlaw:0.5 zipf:1.0 hash_synonym temporal_phases strided_sweep`.
+`--main-comparable-shapes powerlaw:0.5 strided_sweep`.
 
 ```
 python histogram_algo_sweep.py \

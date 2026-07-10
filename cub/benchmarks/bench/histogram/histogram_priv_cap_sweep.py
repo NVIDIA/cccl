@@ -23,8 +23,7 @@ from pathlib import Path
 # Privatized-cap variant binaries (built by build_cap_variants.sh) + the stock
 # baseline. Override with HIST_BENCH_BINDIR. Outputs go to $HIST_SWEEP_OUTDIR
 # (default: cwd) so this tracked script never writes results into the source tree.
-BINDIR = Path(os.environ.get("HIST_BENCH_BINDIR",
-                             "build/autocuda/cub-benchmark/bin"))
+BINDIR = Path(os.environ.get("HIST_BENCH_BINDIR", "build/autocuda/cub-benchmark/bin"))
 OUT = Path(os.environ.get("HIST_SWEEP_OUTDIR", ".")) / "priv_cap_results.json"
 
 # (cap value, binary suffix). 16384 = stock baseline binary (no suffix).
@@ -32,14 +31,25 @@ CAPS = [16384, 24576, 32768, 49152]  # 16384 = shipped baseline (stock binary)
 # label -> (stock baseline binary name [dotted], variant base name [underscored,
 # as emitted by build_cap_variants.sh]). The cap variants are named with
 # underscores (filesystem-safe); the stock binaries keep the dotted nvbench names.
-BINARIES = [("even", "cub.bench.histogram.even.base", "cub.bench.histogram.even.base"),
-            ("range", "cub.bench.histogram.range.base", "cub.bench.histogram.range.base"),
-            ("multi_even", "cub.bench.histogram.multi.even.base", "cub.bench.histogram.multi_even.base"),
-            ("multi_range", "cub.bench.histogram.multi.range.base", "cub.bench.histogram.multi_range.base")]
+BINARIES = [
+    ("even", "cub.bench.histogram.even.base", "cub.bench.histogram.even.base"),
+    ("range", "cub.bench.histogram.range.base", "cub.bench.histogram.range.base"),
+    (
+        "multi_even",
+        "cub.bench.histogram.multi.even.base",
+        "cub.bench.histogram.multi_even.base",
+    ),
+    (
+        "multi_range",
+        "cub.bench.histogram.multi.range.base",
+        "cub.bench.histogram.multi_range.base",
+    ),
+]
 
 
 def binary_name(stock, variant_base, cap):
     return stock if cap == 16384 else f"{variant_base}.cap{cap}"
+
 
 # Bins spanning the privatized region the larger caps bring on-chip (24576..49152)
 # AND high-bin counts above every cap (65536..1048576), so the high-bin algorithms
@@ -47,8 +57,17 @@ def binary_name(stock, variant_base, cap):
 # cap route to priv_dynamic (natural selection); the rest fall to the high-bin path.
 BINS = [16384, 24576, 32768, 49152, 65536, 131072, 262144, 524288, 1048576]
 # Same 9-shape set as the main sweep (was missing temporal_phases + sawtooth).
-SHAPES = ["concentrated:1.0", "concentrated:0.25", "concentrated:0.0", "powerlaw:0.5",
-          "zipf", "temporal_phases", "sawtooth", "stale_resident", "hash_synonym"]
+SHAPES = [
+    "concentrated:1.0",
+    "concentrated:0.25",
+    "concentrated:0.0",
+    "powerlaw:0.5",
+    "poison",
+    "temporal_phases:0.10",
+    "sawtooth",
+    "stale_resident",
+    "hash_synonym",
+]
 # Full N range: the capacity/occupancy tradeoff is N-dependent (small N = grid
 # unsaturated, occupancy ~free; large N = saturated, occupancy costly).
 ELEMENTS = [1048576, 16777216, 67108864, 268435456, 1073741824, 2000000000]
@@ -60,26 +79,56 @@ ELEMENTS = [1048576, 16777216, 67108864, 268435456, 1073741824, 2000000000]
 #     cap16384 binary (where B > 16384, so forcing works) -- one run per algo.
 # So for each cap-variant we run only the natural (unforced) selection; for the
 # baseline we additionally force each high-bin algo.
-ALGOS_BASELINE_FORCE = ["direct_atomic_cuckoo", "direct_atomic_single_probe",
-                        "direct_atomic_no_cache", "gmem_priv_gather", "hybrid_single_pass"]
+ALGOS_BASELINE_FORCE = [
+    "direct_atomic_cuckoo",
+    "direct_atomic_single_probe",
+    "direct_atomic_no_cache",
+    "gmem_priv_gather",
+    "hybrid_single_pass",
+]
 
 LAUNCH_RE = re.compile(r"\[launch\].*->\s*([a-z_]+)")
 
 
 def run(binexe, algo):
-    cmd = [str(binexe), "--benchmark", "base",
-           "--axis", "SampleT{ct}=[I32,F64]",
-           "--axis", "Elements{io}=[" + ",".join(str(e) for e in ELEMENTS) + "]",
-           "--axis", "Bins=[" + ",".join(str(b) for b in BINS) + "]",
-           "--axis", "InputShape=[" + ",".join(SHAPES) + "]",
-           "--min-samples", "3", "--min-time", "0.01", "--timeout", "12", "--csv", "stdout", "--quiet"]
+    cmd = [
+        str(binexe),
+        "--benchmark",
+        "base",
+        "--axis",
+        "SampleT{ct}=[I32,F64]",
+        "--axis",
+        "Elements{io}=[" + ",".join(str(e) for e in ELEMENTS) + "]",
+        "--axis",
+        "Bins=[" + ",".join(str(b) for b in BINS) + "]",
+        "--axis",
+        "InputShape=[" + ",".join(SHAPES) + "]",
+        "--min-samples",
+        "3",
+        "--min-time",
+        "0.01",
+        "--timeout",
+        "12",
+        "--csv",
+        "stdout",
+        "--quiet",
+    ]
     env = dict(os.environ)
     if algo is not None:  # None = natural selection (no force)
         env["CUB_HISTO_FORCE_ALGO"] = algo
     env["CUB_HISTO_LOG_LAUNCH"] = "1"
-    p = subprocess.run(cmd, check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    p = subprocess.run(
+        cmd,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
     if p.returncode != 0:
-        sys.stderr.write(f"[B] {Path(binexe).name} {algo} exit={p.returncode}\n{p.stderr[-800:]}\n")
+        sys.stderr.write(
+            f"[B] {Path(binexe).name} {algo} exit={p.returncode}\n{p.stderr[-800:]}\n"
+        )
         return {}, set()
     launched = set(LAUNCH_RE.findall(p.stderr))
     cells = {}
@@ -90,11 +139,14 @@ def run(binexe, algo):
         if not raw:
             continue
         try:
-            gibs = float(raw) / (1024.0 ** 3)
+            gibs = float(raw) / (1024.0**3)
         except ValueError:
             continue
         if gibs > 0:
-            key = "|".join(row.get(k, "") for k in ("SampleT{ct}", "Elements{io}", "Bins", "InputShape"))
+            key = "|".join(
+                row.get(k, "")
+                for k in ("SampleT{ct}", "Elements{io}", "Bins", "InputShape")
+            )
             cells[key] = gibs
     return cells, launched
 
@@ -112,8 +164,13 @@ def main():
             tag = f"cap{cap}|{label}|natural"
             sys.stderr.write(f"[B] {tag}\n")
             cells, launched = run(binexe, None)
-            results[tag] = {"cap": cap, "label": label, "algo": "natural",
-                            "launched": sorted(launched), "cells": cells}
+            results[tag] = {
+                "cap": cap,
+                "label": label,
+                "algo": "natural",
+                "launched": sorted(launched),
+                "cells": cells,
+            }
             # On the baseline (cap16384) binary, also force each high-bin algo so we
             # have the alternatives for bins in (16384, 49152] that the larger caps
             # bring on-chip. (Forcing only fires for bins > 16384 here.)
@@ -122,8 +179,13 @@ def main():
                     tag = f"cap{cap}|{label}|{algo}"
                     sys.stderr.write(f"[B] {tag}\n")
                     cells, launched = run(binexe, algo)
-                    results[tag] = {"cap": cap, "label": label, "algo": algo,
-                                    "launched": sorted(launched), "cells": cells}
+                    results[tag] = {
+                        "cap": cap,
+                        "label": label,
+                        "algo": algo,
+                        "launched": sorted(launched),
+                        "cells": cells,
+                    }
     OUT.write_text(json.dumps(results, indent=1))
     sys.stderr.write(f"[B] wrote {OUT}\n")
     return 0

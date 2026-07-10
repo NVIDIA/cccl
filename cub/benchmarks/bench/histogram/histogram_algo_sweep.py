@@ -47,7 +47,6 @@ import os
 import re
 import statistics
 import subprocess
-import sys
 from io import StringIO
 from pathlib import Path
 
@@ -76,7 +75,9 @@ def git_commit_for_path(path) -> str:
     try:
         sha = subprocess.run(
             ["git", "-C", str(path), "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if sha.returncode != 0:
             return "unknown"
@@ -84,13 +85,16 @@ def git_commit_for_path(path) -> str:
         # Note whether that work tree had uncommitted changes when swept.
         dirty = subprocess.run(
             ["git", "-C", str(path), "status", "--porcelain", "--untracked-files=no"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if dirty.returncode == 0 and dirty.stdout.strip():
             commit += "-dirty"
         return commit or "unknown"
     except (OSError, subprocess.SubprocessError):
         return "unknown"
+
 
 # Forced high-bin algorithms (env values for CUB_HISTO_FORCE_ALGO). "" == the
 # selector's own pick, recorded under the "default" key. `main` is handled
@@ -119,20 +123,26 @@ def git_commit_for_path(path) -> str:
 # the launch tag does not encode) and selects the .nocoal binary in run_cell. hybrid is
 # NOT coalesce-affected (AccumulatePixelsHybrid has no __match_any_sync), so it has no
 # __nocoal variant.
-_COALESCE_AFFECTED = ["gmem_privatized_nocache", "direct_nocache", "direct_cuckoo", "direct_single_probe"]
+_COALESCE_AFFECTED = [
+    "gmem_privatized_nocache",
+    "direct_nocache",
+    "direct_cuckoo",
+    "direct_single_probe",
+]
 FORCED_HIGH_BIN_ALGOS = (
-    ["hybrid"]
-    + _COALESCE_AFFECTED
-    + [a + "__nocoal" for a in _COALESCE_AFFECTED]
+    ["hybrid"] + _COALESCE_AFFECTED + [a + "__nocoal" for a in _COALESCE_AFFECTED]
 )
 FORCED_LOW_BIN_ALGOS = ["smem_static", "smem_dynamic"]
-FORCED_ALGOS = [""] + FORCED_HIGH_BIN_ALGOS + FORCED_LOW_BIN_ALGOS  # "" == default (selector)
+FORCED_ALGOS = (
+    [""] + FORCED_HIGH_BIN_ALGOS + FORCED_LOW_BIN_ALGOS
+)  # "" == default (selector)
 ALGO_KEY = {"": "default"}  # env value -> JSON key; others map to themselves.
 
 
 def _base_algo(akey: str) -> str:
     """Strip the `__nocoal` marker to get the CUB_HISTO_FORCE_ALGO value / launch-tag base."""
-    return akey[:-len("__nocoal")] if akey.endswith("__nocoal") else akey
+    return akey[: -len("__nocoal")] if akey.endswith("__nocoal") else akey
+
 
 # The exact `[launch] ... ran=X` tag each forced request must produce to count as
 # "actually ran the requested algorithm". Both GmemPrivatized<NoCache> members report
@@ -200,19 +210,29 @@ def _forced_algo_applicable(akey: str, bins: int, multichannel: bool) -> bool:
     return True
 
 
+# Which forced-algo env values `algos_for_bin` may emit. None (default) = no restriction
+# (historical behaviour). An empty set => `default`-only (selected-vs-baseline). Set from
+# --forced-algos in main().
+FORCED_ALGO_FILTER = None
+
+
 def algos_for_bin(bins: int) -> list:
     """The forced-algo env values to measure at this bin count (besides `default`, which
     is always measured). Two regimes, possibly overlapping at neither end of the grid:
       - LOW-BIN  (bins <= MAX_STATIC_BINS): the smem static-vs-dynamic comparison.
       - HIGH-BIN (bins >= HIGH_BIN_THRESHOLD): the off-chip candidates. Between the two
         (e.g. 2048..16384) only `default` is recorded -- smem_privatized is the lone
-        competitive algorithm there and the forced columns would be no-ops or losers."""
+        competitive algorithm there and the forced columns would be no-ops or losers.
+    FORCED_ALGO_FILTER (from --forced-algos) further restricts; `default` ("") always kept."""
     algos = [""]
     if bins <= MAX_STATIC_BINS:
         algos += FORCED_LOW_BIN_ALGOS
     if bins >= HIGH_BIN_THRESHOLD:
         algos += FORCED_HIGH_BIN_ALGOS
+    if FORCED_ALGO_FILTER is not None:
+        algos = [a for a in algos if a == "" or a in FORCED_ALGO_FILTER]
     return algos
+
 
 # Default sweep grid. Bin counts straddle the SMEM tier (<=4096), the gather tier
 # (8192..65535), and the direct-atomic tiers (>=65536 cuckoo, >=262144 noprobe2).
@@ -229,14 +249,15 @@ DEFAULT_SHAPES = [
     "concentrated:0.25",
     "concentrated:0.0",
     "powerlaw:0.75",
-    "powerlaw:0.5",
     "powerlaw:0.25",
-    "zipf:1.0",
     "hash_synonym",
-    "stale_resident",
-    "temporal_phases",
+    "stale_resident:0.5",
+    "stale_resident:0.25",
+    "temporal_phases:0.10",
     "strided_sweep",
     "sawtooth",
+    "poison",
+    "sawtooth:8192:2654435761:1",
 ]
 
 # InputShape generators comparable against the `main` series. This is now ALL
@@ -250,7 +271,7 @@ DEFAULT_SHAPES = [
 # Empty set (the default) means "no restriction -- compare every swept shape".
 # If you instead point --main-bin-dir at UNMODIFIED upstream-main binaries, set
 # this to the generator-identical subset to avoid an apples-to-oranges plot:
-#   {"powerlaw:0.5", "zipf:1.0", "hash_synonym", "temporal_phases", "strided_sweep"}
+#   {"powerlaw:0.25", "strided_sweep"}
 # (the others changed generator on the branch: concentrated:* reweighted,
 # concentrated:1.0 reordered, stale_resident reparametrized; sawtooth is branch-only).
 MAIN_COMPARABLE_SHAPES: set[str] = set()
@@ -258,6 +279,36 @@ MAIN_COMPARABLE_SHAPES: set[str] = set()
 
 def cell_key(sample: str, elements: int, bins: int, shape: str) -> str:
     return f"{sample}|{elements}|{bins}|{shape}"
+
+
+def cache_slots_for_cell(binary_label: str, sample: str, elements: int) -> int:
+    """Return the real B200 direct-atomic cache size S for this logical cell.
+
+    Main's stock dispatch has no cache-slot query, so cache-sensitive generators
+    consume this value through CUB_HISTO_INPUT_CACHE_SLOTS. Setting it for branch
+    and main guarantees byte-identical hash-synonym/stale/poison inputs.
+    """
+    if binary_label.startswith("multi_"):
+        return 1024
+    if binary_label == "even":
+        return 8192
+    if binary_label == "range":
+        sample_bytes = {
+            "I8": 1,
+            "I16": 2,
+            "I32": 4,
+            "I64": 8,
+            "F32": 4,
+            "F64": 8,
+        }.get(sample)
+        if sample_bytes is None:
+            raise ValueError(f"unknown histogram sample label: {sample}")
+        # The histogram facade down-converts its int64 OffsetT to int exactly
+        # while the input's byte extent is < INT_MAX. RANGE's int kernel sizes
+        # to 4096 slots on B200; its wide-OffsetT kernel sizes to 8192.
+        byte_extent = sample_bytes * elements
+        return 4096 if byte_extent < (1 << 31) - 1 else 8192
+    raise ValueError(f"unknown histogram binary label: {binary_label}")
 
 
 # Maps the `[launch] ... ran=X` tag the dispatch emits to the canonical algorithm
@@ -275,10 +326,23 @@ def _ran_algo_from_stderr(stderr: str):
     rans = {m.group(3) for m in _LAUNCH_RE.finditer(stderr)}
     if len(rans) == 1:
         return next(iter(rans))
-    return None  # 0 (no tag) or >1 (mixed -- shouldn't happen for a single-bin invocation)
+    return (
+        None  # 0 (no tag) or >1 (mixed -- shouldn't happen for a single-bin invocation)
+    )
 
 
-def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min_time, timeout):
+def run_cell(
+    binary_path,
+    algo_env,
+    sample,
+    elements,
+    bins,
+    cache_slots,
+    shapes,
+    repeats,
+    min_time,
+    timeout,
+):
     """Run one NVBench invocation (all `shapes` in one go) `repeats` times; return
     {shape: median_gibps}, ran_algo, ok_bool. `ran_algo` is the canonical algorithm
     the dispatch ACTUALLY launched (from the CUB_HISTO_LOG_LAUNCH tag), so the caller
@@ -286,24 +350,38 @@ def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min
     single binary call sweeps the InputShape axis, so we pass the whole shape list."""
     env = dict(os.environ)
     env["CUB_HISTO_LOG_LAUNCH"] = "1"  # emit the per-launch "[launch] ... ran=X" tag
+    env["CUB_HISTO_INPUT_CACHE_SLOTS"] = str(cache_slots)
     env.pop("CUB_HISTO_FORCE_ALGO", None)
     env.pop("CUB_HISTO_FORCE_SMEM", None)
     if algo_env in ("smem_static", "smem_dynamic"):
         # Low-bin static-vs-dynamic privatized-SMEM comparison: routed via FORCE_SMEM.
-        env["CUB_HISTO_FORCE_SMEM"] = algo_env[len("smem_"):]  # "static" / "dynamic"
+        env["CUB_HISTO_FORCE_SMEM"] = algo_env[len("smem_") :]  # "static" / "dynamic"
     elif algo_env:
         env["CUB_HISTO_FORCE_ALGO"] = algo_env
     # NVBench rejects range syntax for a single string-axis value, so always pass
     # >= 2 shapes; callers ensure that (we sweep the full shape list at once).
     shape_axis = "[" + ",".join(shapes) + "]"
     cmd = [
-        str(binary_path), "--benchmark", "base",
-        "--axis", f"SampleT{{ct}}={sample}",
-        "--axis", f"Elements{{io}}=[{elements}]",
-        "--axis", f"Bins=[{bins}]",
-        "--axis", f"InputShape={shape_axis}",
-        "--min-samples", str(repeats), "--min-time", str(min_time),
-        "--timeout", str(timeout), "--csv", "stdout", "--quiet",
+        str(binary_path),
+        "--benchmark",
+        "base",
+        "--axis",
+        f"SampleT{{ct}}={sample}",
+        "--axis",
+        f"Elements{{io}}=[{elements}]",
+        "--axis",
+        f"Bins=[{bins}]",
+        "--axis",
+        f"InputShape={shape_axis}",
+        "--min-samples",
+        str(repeats),
+        "--min-time",
+        str(min_time),
+        "--timeout",
+        str(timeout),
+        "--csv",
+        "stdout",
+        "--quiet",
     ]
     per_shape = {}
     ran_algo = None
@@ -327,36 +405,94 @@ def run_cell(binary_path, algo_env, sample, elements, bins, shapes, repeats, min
             bw = r.get("GlobalMem BW (bytes/sec)", "")
             if bw:
                 per_shape.setdefault(r["InputShape"], []).append(float(bw) / 1024**3)
-    return {sh: statistics.median(v) for sh, v in per_shape.items() if v}, ran_algo, True, False
+    return (
+        {sh: statistics.median(v) for sh, v in per_shape.items() if v},
+        ran_algo,
+        True,
+        False,
+    )
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--branch-bin-dir", default="build/autocuda/cub-benchmark/bin",
-                    help="dir with this branch's cub.bench.histogram.*.base binaries (force hook present)")
-    ap.add_argument("--main-bin-dir", default="",
-                    help="dir with upstream main's cub.bench.histogram.*.base binaries (default dispatch only); "
-                         "omit to skip the main baseline column")
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--branch-bin-dir",
+        default="build/autocuda/cub-benchmark/bin",
+        help="dir with this branch's cub.bench.histogram.*.base binaries (force hook present)",
+    )
+    ap.add_argument(
+        "--main-bin-dir",
+        default="",
+        help="dir with upstream main's cub.bench.histogram.*.base binaries (default dispatch only); "
+        "omit to skip the main baseline column",
+    )
     ap.add_argument("--out", default="sweep_results.json", help="output per-cell JSON")
     ap.add_argument("--bins", type=int, nargs="+", default=DEFAULT_BINS)
     ap.add_argument("--elements", type=int, nargs="+", default=DEFAULT_ELEMENTS)
-    ap.add_argument("--samples", nargs="+", default=DEFAULT_SAMPLES, help="SampleT axis values, e.g. I32 F64")
+    ap.add_argument(
+        "--samples",
+        nargs="+",
+        default=DEFAULT_SAMPLES,
+        help="SampleT axis values, e.g. I32 F64",
+    )
     ap.add_argument("--shapes", nargs="+", default=DEFAULT_SHAPES)
-    ap.add_argument("--binaries", nargs="+", default=list(BINARIES), choices=list(BINARIES))
-    ap.add_argument("--binary-suffix", default="",
-                    help="appended to the bench target name for BOTH branch and main bins "
-                         "(default '' -> cub.bench.histogram.<b>.base; e.g. '.u64' selects the "
-                         "64-bit-counter variant cub.bench.histogram.<b>.base.u64). One unified "
-                         "driver covers the I32, low-bin static/dynamic, and 64-bit-counter sweeps.")
+    ap.add_argument(
+        "--binaries", nargs="+", default=list(BINARIES), choices=list(BINARIES)
+    )
+    ap.add_argument(
+        "--binary-suffix",
+        default="",
+        help="appended to the bench target name for BOTH branch and main bins "
+        "(default '' -> cub.bench.histogram.<b>.base; e.g. '.u64' selects the "
+        "64-bit-counter variant cub.bench.histogram.<b>.base.u64). One unified "
+        "driver covers the I32, low-bin static/dynamic, and 64-bit-counter sweeps.",
+    )
+    ap.add_argument(
+        "--generator-cache-slots",
+        type=int,
+        default=0,
+        help="override the cache-slot count supplied to cache-sensitive input generators "
+        "for every cell in this invocation; required for build variants whose CounterT "
+        "width differs from the default 32-bit dispatch assumptions",
+    )
     ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--min-time", default="0.02")
     ap.add_argument("--timeout", default="120")
-    ap.add_argument("--main-comparable-shapes", nargs="*", default=None,
-                    help="restrict the `main` baseline to these shapes (use when --main-bin-dir is "
-                         "UNMODIFIED upstream main, whose generators differ). Default: all swept shapes "
-                         "(correct when the main binaries carry this branch's generators -- see "
-                         "MAIN_COMPARABLE_SHAPES).")
+    ap.add_argument(
+        "--main-comparable-shapes",
+        nargs="*",
+        default=None,
+        help="restrict the `main` baseline to these shapes (use when --main-bin-dir is "
+        "UNMODIFIED upstream main, whose generators differ). Default: all swept shapes "
+        "(correct when the main binaries carry this branch's generators -- see "
+        "MAIN_COMPARABLE_SHAPES).",
+    )
+    ap.add_argument(
+        "--forced-algos",
+        nargs="+",
+        default=None,
+        metavar="ALGO",
+        help="forced-algo columns besides `default` (selector) and `main` baseline "
+        "(both always recorded). 'all' (default) = every regime-appropriate forced "
+        "algo; 'none' = selected-vs-baseline only; or an explicit list.",
+    )
     args = ap.parse_args()
+
+    global FORCED_ALGO_FILTER
+    if args.forced_algos is None or args.forced_algos == ["all"]:
+        FORCED_ALGO_FILTER = None
+    elif args.forced_algos == ["none"]:
+        FORCED_ALGO_FILTER = set()
+    else:
+        valid = set(FORCED_HIGH_BIN_ALGOS + FORCED_LOW_BIN_ALGOS)
+        bad = [a for a in args.forced_algos if a not in valid]
+        if bad:
+            raise SystemExit(
+                f"--forced-algos: unknown {bad}; choose from {sorted(valid)} or all/none"
+            )
+        FORCED_ALGO_FILTER = set(args.forced_algos)
 
     branch_dir = Path(args.branch_bin_dir)
     main_dir = Path(args.main_bin_dir) if args.main_bin_dir else None
@@ -383,10 +519,14 @@ def main():
     results: dict[str, dict[str, dict[str, float]]] = {}
     total_calls = 0
     for blabel in args.binaries:
-        target = BINARIES[blabel] + args.binary_suffix  # "" (default .base) or e.g. ".u64"
+        target = (
+            BINARIES[blabel] + args.binary_suffix
+        )  # "" (default .base) or e.g. ".u64"
         branch_bin = branch_dir / target
         if not branch_bin.exists():
-            print(f"!! missing branch binary {branch_bin}; skipping {blabel}", flush=True)
+            print(
+                f"!! missing branch binary {branch_bin}; skipping {blabel}", flush=True
+            )
             continue
         algo_cells: dict[str, dict[str, float]] = {}
         # Ground-truth record of which algorithm the selector `default` actually
@@ -395,6 +535,9 @@ def main():
         selected = algo_cells.setdefault("_selected", {})
         for sample in args.samples:
             for elements in args.elements:
+                cache_slots = args.generator_cache_slots or cache_slots_for_cell(
+                    blabel, sample, elements
+                )
                 for bins in args.bins:
                     multichannel = blabel.startswith("multi")
                     # Forced algos for this bin (low-bin smem static/dynamic and/or
@@ -402,8 +545,14 @@ def main():
                     # where it can structurally run -- skipping a cell where dispatch
                     # would return cudaErrorNotSupported (which the bench escalates to a
                     # FATAL abort, not a fallback). `default` ("") is always kept.
-                    algos = [a for a in algos_for_bin(bins)
-                             if a == "" or _forced_algo_applicable(ALGO_KEY.get(a, a), bins, multichannel)]
+                    algos = [
+                        a
+                        for a in algos_for_bin(bins)
+                        if a == ""
+                        or _forced_algo_applicable(
+                            ALGO_KEY.get(a, a), bins, multichannel
+                        )
+                    ]
                     for algo_env in algos:
                         akey = ALGO_KEY.get(algo_env, algo_env)
                         # `*__nocoal` keys force their BASE algo (the kernel is identical;
@@ -415,15 +564,30 @@ def main():
                         # stock binary (e.g. ".u64"), so the 64-bit leg finds
                         # `<bin>.base.nocoal.u64`, not the 32-bit `<bin>.base.nocoal`.
                         cell_bin = (
-                            branch_dir / (BINARIES[blabel] + ".nocoal" + args.binary_suffix)
+                            branch_dir
+                            / (BINARIES[blabel] + ".nocoal" + args.binary_suffix)
                             if akey.endswith("__nocoal")
-                            else branch_bin)
+                            else branch_bin
+                        )
                         if akey.endswith("__nocoal") and not cell_bin.exists():
-                            print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                  f"{akey:28} SKIP (no {cell_bin.name})", flush=True)
+                            print(
+                                f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                f"{akey:28} SKIP (no {cell_bin.name})",
+                                flush=True,
+                            )
                             continue
-                        med, ran, ok, unsupported = run_cell(cell_bin, force_env, sample, elements, bins,
-                                                             args.shapes, args.repeats, args.min_time, args.timeout)
+                        med, ran, ok, unsupported = run_cell(
+                            cell_bin,
+                            force_env,
+                            sample,
+                            elements,
+                            bins,
+                            cache_slots,
+                            args.shapes,
+                            args.repeats,
+                            args.min_time,
+                            args.timeout,
+                        )
                         total_calls += 1
                         if not ok:
                             # A FORCED algo that returns "operation not supported" is being
@@ -432,9 +596,16 @@ def main():
                             # NOT crashing: record it as a DROP, like a launch-tag mismatch.
                             # `default` (algo_env == "") must always run, so an unsupported
                             # there is a real ABORT. A non-unsupported failure is an ABORT.
-                            label = "DROP (unsupported)" if (unsupported and algo_env) else "ABORT"
-                            print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                  f"{akey:28} {label}", flush=True)
+                            label = (
+                                "DROP (unsupported)"
+                                if (unsupported and algo_env)
+                                else "ABORT"
+                            )
+                            print(
+                                f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                f"{akey:28} {label}",
+                                flush=True,
+                            )
                             continue
                         # DROP a forced cell whose requested algorithm did NOT actually
                         # run -- the dispatch silently substituted a different one (e.g.
@@ -450,19 +621,30 @@ def main():
                             base = _base_algo(akey)
                             expected = EXPECTED_RAN.get(base, base)
                             if ran != expected:
-                                print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                      f"{akey:28} DROP (ran={ran})", flush=True)
+                                print(
+                                    f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                    f"{akey:28} DROP (ran={ran})",
+                                    flush=True,
+                                )
                                 continue
                         else:
                             if ran is not None:
                                 for sh in med:
                                     selected[cell_key(sample, elements, bins, sh)] = ran
                         for sh, v in med.items():
-                            algo_cells.setdefault(akey, {})[cell_key(sample, elements, bins, sh)] = v
-                        line = "  ".join(f"{sh.split(':')[0][:5]}={med[sh]:.0f}" for sh in sorted(med))
+                            algo_cells.setdefault(akey, {})[
+                                cell_key(sample, elements, bins, sh)
+                            ] = v
+                        line = "  ".join(
+                            f"{sh.split(':')[0][:5]}={med[sh]:.0f}"
+                            for sh in sorted(med)
+                        )
                         tagnote = f" ran={ran}" if not algo_env else ""
-                        print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                              f"{akey:28}{tagnote} {line}", flush=True)
+                        print(
+                            f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                            f"{akey:28}{tagnote} {line}",
+                            flush=True,
+                        )
             # main baseline column for this sample: default dispatch only, computed
             # ONCE per sample over the full elements x bins grid. (This block lives at
             # the `for sample` level, NOT inside `for elements` -- when it was nested in
@@ -473,31 +655,62 @@ def main():
                 main_bin = main_dir / target
                 if main_bin.exists():
                     for elements in args.elements:
+                        cache_slots = (
+                            args.generator_cache_slots
+                            or cache_slots_for_cell(blabel, sample, elements)
+                        )
                         for bins in args.bins:
-                            med, _ran, ok, _unsup = run_cell(main_bin, "", sample, elements, bins,
-                                                             main_shapes, args.repeats, args.min_time, args.timeout)
+                            med, _ran, ok, _unsup = run_cell(
+                                main_bin,
+                                "",
+                                sample,
+                                elements,
+                                bins,
+                                cache_slots,
+                                main_shapes,
+                                args.repeats,
+                                args.min_time,
+                                args.timeout,
+                            )
                             total_calls += 1
                             if not ok:
-                                print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                      f"{'main':28} ABORT", flush=True)
+                                print(
+                                    f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                    f"{'main':28} ABORT",
+                                    flush=True,
+                                )
                                 continue
                             for sh, v in med.items():
-                                algo_cells.setdefault("main", {})[cell_key(sample, elements, bins, sh)] = v
-                            line = "  ".join(f"{sh.split(':')[0][:5]}={med[sh]:.0f}" for sh in sorted(med))
-                            print(f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
-                                  f"{'main':28}      {line}", flush=True)
+                                algo_cells.setdefault("main", {})[
+                                    cell_key(sample, elements, bins, sh)
+                                ] = v
+                            line = "  ".join(
+                                f"{sh.split(':')[0][:5]}={med[sh]:.0f}"
+                                for sh in sorted(med)
+                            )
+                            print(
+                                f"  {blabel:11} {sample} N={elements:>10} bins={bins:>8} "
+                                f"{'main':28}      {line}",
+                                flush=True,
+                            )
                 else:
-                    print(f"!! missing main binary {main_bin}; no main column for {blabel}", flush=True)
+                    print(
+                        f"!! missing main binary {main_bin}; no main column for {blabel}",
+                        flush=True,
+                    )
         results[blabel] = algo_cells
 
     # Provenance: pin this run's numbers to the exact source the binaries were built
     # from. Top-level `_meta` key (consumers skip "_"-prefixed keys -- not a binary).
     results["_meta"] = {
         "branch_commit": git_commit_for_path(args.branch_bin_dir),
-        "main_commit": git_commit_for_path(args.main_bin_dir) if args.main_bin_dir else None,
+        "main_commit": git_commit_for_path(args.main_bin_dir)
+        if args.main_bin_dir
+        else None,
         "branch_bin_dir": args.branch_bin_dir,
         "main_bin_dir": args.main_bin_dir or None,
         "binary_suffix": args.binary_suffix or None,
+        "generator_cache_slots": args.generator_cache_slots or None,
         "binaries": list(args.binaries),
         "samples": list(args.samples),
         "bins": list(args.bins),
@@ -508,7 +721,10 @@ def main():
     with open(args.out, "w") as fh:
         json.dump(results, fh, indent=1)
     bc = results["_meta"]["branch_commit"]
-    print(f"\nwrote {args.out} ({total_calls} benchmark invocations; branch_commit={bc})", flush=True)
+    print(
+        f"\nwrote {args.out} ({total_calls} benchmark invocations; branch_commit={bc})",
+        flush=True,
+    )
 
 
 if __name__ == "__main__":
