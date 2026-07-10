@@ -32,10 +32,7 @@ void TestFillDevice(ExecutionPolicy exec, size_t n)
   auto data     = cuda::make_device_buffer<T>(stream, device, expected);
 
   const auto run_fill = [&](size_t first, size_t last, T value) {
-    for (size_t i = first; i < last; ++i)
-    {
-      expected[i] = value;
-    }
+    thrust::fill(expected.begin() + first, expected.begin() + last, value);
 
     cuda::launch(stream, test_runtime::single_thread_config(), fill_kernel{}, exec, data, first, last, value);
     stream.sync();
@@ -84,10 +81,7 @@ void TestFillNDevice(ExecutionPolicy exec, size_t n)
   auto data     = cuda::make_device_buffer<T>(stream, device, expected);
 
   const auto run_fill_n = [&](size_t first, size_t count, T value) {
-    for (size_t i = first; i < first + count; ++i)
-    {
-      expected[i] = value;
-    }
+    thrust::fill_n(expected.begin() + first, count, value);
 
     cuda::launch(stream, test_runtime::single_thread_config(), fill_n_kernel{}, exec, data, first, count, value);
     stream.sync();
