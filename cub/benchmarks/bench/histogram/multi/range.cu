@@ -82,30 +82,88 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   SampleT* d_levels_g = thrust::raw_pointer_cast(levels_g.data());
   SampleT* d_levels_b = thrust::raw_pointer_cast(levels_b.data());
 
-  thrust::device_vector<CounterT> hist_r(num_bins);
-  thrust::device_vector<CounterT> hist_g(num_bins);
-  thrust::device_vector<CounterT> hist_b(num_bins);
-  thrust::device_vector<SampleT> input = generate_histogram_input_range<SampleT>(
-    shape, elements * num_channels, static_cast<int>(num_bins), d_levels_r);
+  // Keep all channel outputs in one allocation and choose their base addresses
+  // deliberately. With a power-of-two bin count, tightly packed channel chunks
+  // have a power-of-two byte stride (1 MiB at 262144 int32 bins), which can send
+  // each channel's spill atomics to the same subset of L2 partitions. Align each
+  // completed chunk to a 128-byte cache line, then add three cache lines of
+  // padding. The odd, non-power-of-two three-line phase shift breaks that stride
+  // resonance while keeping every output cache-line aligned. Padding is outside
+  // the ranges passed to CUB and is therefore not part of the benchmark output.
+  constexpr std::size_t cache_line_bytes      = 128;
+  constexpr std::size_t channel_padding_lines = 3;
+  static_assert(cache_line_bytes % sizeof(CounterT) == 0);
+  static_assert((channel_padding_lines & (channel_padding_lines - 1)) != 0);
+  constexpr std::size_t counters_per_cache_line  = cache_line_bytes / sizeof(CounterT);
+  constexpr std::size_t channel_padding_counters = channel_padding_lines * counters_per_cache_line;
 
-  SampleT* d_input        = thrust::raw_pointer_cast(input.data());
-  CounterT* d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
-  CounterT* d_histogram_g = thrust::raw_pointer_cast(hist_g.data());
-  CounterT* d_histogram_b = thrust::raw_pointer_cast(hist_b.data());
+  // MultiHistogramRange permits each channel to have a different number of
+  // levels. Build the layout from each channel's own level count rather than
+  // assuming that all chunks have the red channel's size.
+  const cuda::std::array<std::size_t, num_active_channels> histogram_bins{
+    static_cast<std::size_t>(num_levels_r - 1),
+    static_cast<std::size_t>(num_levels_g - 1),
+    static_cast<std::size_t>(num_levels_b - 1)};
+  cuda::std::array<std::size_t, num_active_channels> histogram_offsets{};
+  std::size_t histogram_storage_size = 0;
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    histogram_offsets[channel] = histogram_storage_size;
+    histogram_storage_size += histogram_bins[channel];
+    if (channel + 1 < num_active_channels)
+    {
+      histogram_storage_size =
+        ((histogram_storage_size + counters_per_cache_line - 1) / counters_per_cache_line) * counters_per_cache_line
+        + channel_padding_counters;
+    }
+  }
+  thrust::device_vector<CounterT> histogram_storage(histogram_storage_size);
+  // Per-block direct-atomic SMEM cache slot count S for the multi-channel RANGE path,
+  // queried from CUB's occupancy sizer so hash_synonym, stale_resident, and poison
+  // track the ACTUAL cache. Byte extent = sizeof(SampleT) *
+  // num_channels * elements (the row stride the facade uses) so the int vs wide-OffsetT
+  // kernel matches the dispatch at this N.
+#if defined(CUB_HISTO_BENCH_DISABLE_CACHE_QUERY)
+  const int64_t cache_slots = 0;
+#else
+  const int64_t cache_slots = cub::detail::histogram::query_direct_atomic_cache_slots_for_extent<
+    num_channels,
+    num_active_channels,
+    /*IsEven=*/false,
+    SampleT,
+    CounterT,
+    SampleT,
+    OffsetT>(static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(num_channels)
+             * static_cast<unsigned long long>(elements));
+#endif
+  thrust::device_vector<SampleT> input = generate_histogram_input_range<SampleT>(
+    shape,
+    elements * num_channels,
+    static_cast<int>(num_bins),
+    d_levels_r,
+    /*seed=*/42,
+    cache_slots,
+    /*sample_stride=*/num_channels);
+
+  SampleT* d_input              = thrust::raw_pointer_cast(input.data());
+  CounterT* d_histogram_storage = thrust::raw_pointer_cast(histogram_storage.data());
+  const cuda::std::array<CounterT*, num_active_channels> d_histograms{
+    d_histogram_storage + histogram_offsets[0],
+    d_histogram_storage + histogram_offsets[1],
+    d_histogram_storage + histogram_offsets[2]};
 
   state.add_element_count(elements);
   state.add_global_memory_reads<SampleT>(elements * num_active_channels);
-  state.add_global_memory_writes<CounterT>(num_bins * num_active_channels);
+  state.add_global_memory_writes<CounterT>(histogram_bins[0] + histogram_bins[1] + histogram_bins[2]);
 
   // Warmup + correctness check: run MultiHistogramRange once outside
   // `state.exec`, checking the dispatch return code, then verify each
-  // channel's histogram bin-by-bin against an independent reference.
+  // channel's histogram sums to the channel's input sample count and matches
+  // an independent reference bin-by-bin.
   // Skipped when CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
   if (bench_correctness_checks_enabled())
   {
-    thrust::fill(hist_r.begin(), hist_r.end(), CounterT{0});
-    thrust::fill(hist_g.begin(), hist_g.end(), CounterT{0});
-    thrust::fill(hist_b.begin(), hist_b.end(), CounterT{0});
+    thrust::fill(histogram_storage.begin(), histogram_storage.end(), CounterT{0});
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
     bench_check_cuda(
@@ -113,7 +171,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
         d_temp_storage,
         temp_storage_bytes,
         d_input,
-        cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+        d_histograms,
         cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
         cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
         static_cast<OffsetT>(elements))),
@@ -125,7 +183,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
         d_temp_storage,
         temp_storage_bytes,
         d_input,
-        cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+        d_histograms,
         cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
         cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
         static_cast<OffsetT>(elements))),
@@ -133,27 +191,24 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
 
     std::vector<thrust::device_vector<CounterT>> opt_hists_d;
-    opt_hists_d.emplace_back(std::move(hist_r));
-    opt_hists_d.emplace_back(std::move(hist_g));
-    opt_hists_d.emplace_back(std::move(hist_b));
+    opt_hists_d.reserve(num_active_channels);
+    for (int channel = 0; channel < num_active_channels; ++channel)
+    {
+      const auto first = histogram_storage.begin() + histogram_offsets[channel];
+      opt_hists_d.emplace_back(first, first + histogram_bins[channel]);
+    }
     std::vector<thrust::device_vector<SampleT>> d_levels_per_channel;
     d_levels_per_channel.emplace_back(std::move(levels_r));
     d_levels_per_channel.emplace_back(std::move(levels_g));
     d_levels_per_channel.emplace_back(std::move(levels_b));
     bench_verify_histogram_range<num_channels, num_active_channels, SampleT, CounterT, OffsetT>(
       input, opt_hists_d, d_levels_per_channel, static_cast<OffsetT>(elements), "multi.range");
-    hist_r        = std::move(opt_hists_d[0]);
-    hist_g        = std::move(opt_hists_d[1]);
-    hist_b        = std::move(opt_hists_d[2]);
-    d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
-    d_histogram_g = thrust::raw_pointer_cast(hist_g.data());
-    d_histogram_b = thrust::raw_pointer_cast(hist_b.data());
-    levels_r      = std::move(d_levels_per_channel[0]);
-    levels_g      = std::move(d_levels_per_channel[1]);
-    levels_b      = std::move(d_levels_per_channel[2]);
-    d_levels_r    = thrust::raw_pointer_cast(levels_r.data());
-    d_levels_g    = thrust::raw_pointer_cast(levels_g.data());
-    d_levels_b    = thrust::raw_pointer_cast(levels_b.data());
+    levels_r   = std::move(d_levels_per_channel[0]);
+    levels_g   = std::move(d_levels_per_channel[1]);
+    levels_b   = std::move(d_levels_per_channel[2]);
+    d_levels_r = thrust::raw_pointer_cast(levels_r.data());
+    d_levels_g = thrust::raw_pointer_cast(levels_g.data());
+    d_levels_b = thrust::raw_pointer_cast(levels_b.data());
   }
 
   caching_allocator_t alloc;
@@ -179,7 +234,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
                  (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>),
                  "MultiHistogramRange failed",
                  d_input,
-                 cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+                 d_histograms,
                  cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
                  cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
                  static_cast<OffsetT>(elements),
@@ -222,9 +277,9 @@ NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_o
      "concentrated:0.5",
      "concentrated:0.0",
      "powerlaw:0.5",
-     "zipf:1.0",
      "hash_synonym",
-     "stale_resident",
-     "temporal_phases",
+     "stale_resident:0.5",
+     "stale_resident:0.25",
+     "temporal_phases:0.10",
      "strided_sweep",
      "sawtooth"});

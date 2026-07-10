@@ -68,8 +68,21 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   thrust::device_vector<SampleT> levels = h_levels;
   SampleT* d_levels                     = thrust::raw_pointer_cast(levels.data());
 
-  thrust::device_vector<SampleT> input =
-    generate_histogram_input_range<SampleT>(shape, elements, static_cast<int>(num_bins), d_levels);
+  // Per-block direct-atomic SMEM cache slot count S, queried from CUB's occupancy
+  // sizer so hash_synonym, stale_resident, and poison track the ACTUAL cache.
+  // Single-channel RANGE path (IsEven=false uses the SearchTransform
+  // kernel). RANGE's slot count DEPENDS on OffsetT (int -> 4096, int64 -> 8192 on B200),
+  // so query with the extent so the SAME kernel the dispatch launches at this N is sized.
+#if defined(CUB_HISTO_BENCH_DISABLE_CACHE_QUERY)
+  const int64_t cache_slots = 0;
+#else
+  const int64_t cache_slots = cub::detail::histogram::
+    query_direct_atomic_cache_slots_for_extent<1, 1, /*IsEven=*/false, SampleT, CounterT, SampleT, OffsetT>(
+      static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(elements));
+#endif
+
+  thrust::device_vector<SampleT> input = generate_histogram_input_range<SampleT>(
+    shape, elements, static_cast<int>(num_bins), d_levels, /*seed=*/42, cache_slots);
   thrust::device_vector<CounterT> hist(num_bins);
 
   SampleT* d_input      = thrust::raw_pointer_cast(input.data());
@@ -80,8 +93,9 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   state.add_global_memory_writes<CounterT>(num_bins);
 
   // Warmup + correctness check: run HistogramRange once outside
-  // `state.exec`, checking the dispatch return code, then verify the
-  // produced histogram bin-by-bin against an independent reference.
+  // `state.exec`, checking the dispatch return code, then verify that the
+  // histogram sums to the input sample count and matches an independent
+  // reference bin-by-bin.
   // Skipped when CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
   if (bench_correctness_checks_enabled())
   {
@@ -90,25 +104,13 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     size_t temp_storage_bytes = 0;
     bench_check_cuda(
       cub::DeviceHistogram::HistogramRange(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_input,
-        d_histogram,
-        num_levels,
-        d_levels,
-        static_cast<OffsetT>(elements)),
+        d_temp_storage, temp_storage_bytes, d_input, d_histogram, num_levels, d_levels, static_cast<OffsetT>(elements)),
       "warmup HistogramRange temp-size");
     thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
     bench_check_cuda(
       cub::DeviceHistogram::HistogramRange(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_input,
-        d_histogram,
-        num_levels,
-        d_levels,
-        static_cast<OffsetT>(elements)),
+        d_temp_storage, temp_storage_bytes, d_input, d_histogram, num_levels, d_levels, static_cast<OffsetT>(elements)),
       "warmup HistogramRange");
     bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
 
@@ -191,9 +193,9 @@ NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_o
      "concentrated:0.5",
      "concentrated:0.0",
      "powerlaw:0.5",
-     "zipf:1.0",
      "hash_synonym",
-     "stale_resident",
-     "temporal_phases",
+     "stale_resident:0.5",
+     "stale_resident:0.25",
+     "temporal_phases:0.10",
      "strided_sweep",
      "sawtooth"});

@@ -37,8 +37,23 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   const SampleT lower_level = get_lower_level<SampleT>();
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  thrust::device_vector<SampleT> input =
-    generate_histogram_input_even<SampleT>(shape, elements, static_cast<int>(num_bins), lower_level, upper_level);
+  // Per-block direct-atomic SMEM cache slot count S, queried from CUB's occupancy
+  // sizer so hash_synonym, stale_resident, and poison track the ACTUAL cache.
+  // Single-channel EVEN path; LevelT == SampleT, CounterT == counter type.
+  // The byte extent selects the int vs wide-OffsetT kernel the dispatch will launch at
+  // this N (row_stride_bytes == sizeof(SampleT) * elements for a single channel).
+#if defined(CUB_HISTO_BENCH_DISABLE_CACHE_QUERY)
+  // An overlaid stock-main baseline has no direct-atomic cache query. The sweep
+  // supplies the branch's queried value through CUB_HISTO_INPUT_CACHE_SLOTS.
+  const int64_t cache_slots = 0;
+#else
+  const int64_t cache_slots = cub::detail::histogram::
+    query_direct_atomic_cache_slots_for_extent<1, 1, /*IsEven=*/true, SampleT, CounterT, SampleT, OffsetT>(
+      static_cast<unsigned long long>(sizeof(SampleT)) * static_cast<unsigned long long>(elements));
+#endif
+
+  thrust::device_vector<SampleT> input = generate_histogram_input_even<SampleT>(
+    shape, elements, static_cast<int>(num_bins), lower_level, upper_level, /*seed=*/42, cache_slots);
   thrust::device_vector<CounterT> hist(num_bins);
 
   SampleT* d_input      = thrust::raw_pointer_cast(input.data());
@@ -49,10 +64,11 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   state.add_global_memory_writes<CounterT>(num_bins);
 
   // Warmup + correctness check: run HistogramEven once outside `state.exec`,
-  // checking the dispatch return code, then verify the produced histogram
-  // bin-by-bin against an independent reference. A failure here throws
-  // before any timed iteration runs, so a silent dispatch failure or a
-  // sample-loss bug can't inflate the measured bandwidth. Skipped when
+  // checking the dispatch return code, then verify that the histogram sums
+  // to the input sample count and matches an independent reference bin-by-bin.
+  // A failure here aborts before any timed iteration runs, so a silent dispatch
+  // failure, counter overflow, or sample-loss bug can't inflate the measured
+  // bandwidth. Skipped when
   // CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
   if (bench_correctness_checks_enabled())
   {
@@ -88,13 +104,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     std::vector<thrust::device_vector<CounterT>> opt_hists_d;
     opt_hists_d.emplace_back(std::move(hist));
     bench_verify_histogram_even<1, 1, SampleT, CounterT, OffsetT>(
-      input,
-      opt_hists_d,
-      static_cast<OffsetT>(elements),
-      static_cast<int>(num_bins),
-      lower_level,
-      upper_level,
-      "even");
+      input, opt_hists_d, static_cast<OffsetT>(elements), static_cast<int>(num_bins), lower_level, upper_level, "even");
     hist        = std::move(opt_hists_d[0]);
     d_histogram = thrust::raw_pointer_cast(hist.data());
   }
@@ -168,9 +178,9 @@ NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_of
      "concentrated:0.5",
      "concentrated:0.0",
      "powerlaw:0.5",
-     "zipf:1.0",
      "hash_synonym",
-     "stale_resident",
-     "temporal_phases",
+     "stale_resident:0.5",
+     "stale_resident:0.25",
+     "temporal_phases:0.10",
      "strided_sweep",
      "sawtooth"});

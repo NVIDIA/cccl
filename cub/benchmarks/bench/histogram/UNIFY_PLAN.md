@@ -128,7 +128,7 @@ but NOT in the current kernels** — they live only on `histogram-smem-capacity-
 
 ### Input-shape catalogue (13 characterized; 9 swept for perf)
 `concentrated:{1.0,0.75,0.5,0.25,0.0}` (entropy ramp), `powerlaw:{0.75,0.5,0.25}`,
-`zipf`, `temporal_phases`, `stale_resident`, `hash_synonym`, `sawtooth`.
+the legacy 1/rank alias, `temporal_phases:0.10`, `stale_resident`, `hash_synonym`, `sawtooth`.
 (`capacity_cliff` was dropped on the branch; `strided_sweep` swept but minor.)
 
 ---
@@ -228,7 +228,7 @@ code. Recommendation: keep on `best` for provenance, exclude from any `main` PR.
 
 ## 7. Decisions needed from reviewer
 1. Scope of `best`: confirm = `cached-privatized-spill` ∪ `histogram-smem-capacity-exploration`
-   (incl. re-ported hit-rate). 
+   (incl. re-ported hit-rate).
 2. Should the regenerated figures use the **richer 6-element matrix** (matching the
    old figures) or the current 2-element matrix? (6× is ~3× the sweep time.)
 3. Backport target: a single `backport/hist-viz-tooling` PR to `main` (B3 + vetted

@@ -26,6 +26,8 @@
 // are independent) and ORDERING shapes (the pathology lives in the sequence
 // order, so they are generated positionally).
 
+#include <cub/detail/histogram_cache_hash.cuh>
+
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/tabulate.h>
@@ -34,6 +36,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -44,53 +47,61 @@
 
 enum class InputShape
 {
-  concentrated,   // spike-slab family. KNOB = target normalized entropy in
-                  // [0,1]: 1.0 = uniform, 0.0 = constant (single bin), in
-                  // between = one hot bin over a uniform floor. Sweeping the
-                  // knob reproduces (and generalizes) the old Entropy sweep --
-                  // continuously, and with the hot bin scattered off zero.
-  powerlaw,       // decaying warm set (many hot bins). KNOB = target normalized
-                  // entropy in [0,1]; the rank exponent is solved to hit it.
-                  // Independent of the concentrated knob.
-  zipf,           // decaying warm set with a classic exponent. KNOB = exponent
-                  // s >= 0 (default 1.0).
-  hash_synonym,   // hot bins all collide on one cache slot. KNOB = hot share
-                  // in [0,1] (default 0.9).
-  stale_resident, // a cold working set, swept cyclically, that recurs in every
-                  // block but overflows the SMEM cache so it cannot stay resident
-                  // (thrashes it). KNOB = working-set size as a multiple of cache
-                  // slots (default 2.0 => twice the slots, overflowing the cache).
-  temporal_phases,// the hot bin steps to a new location across phases. KNOB =
-                  // number of phases (default 8).
-  strided_sweep,  // bin = stride*i % B (minimal temporal locality). KNOB =
-                  // stride (default a large prime).
-  sawtooth,       // bin = i % period: a monotonic ramp 0..period-1 that resets
-                  // periodically (sequential locality over a bounded working
-                  // set). KNOB = ramp period in bins (default = num_bins => one
-                  // full 0..B-1 sweep, the classic sawtooth).
+  concentrated, // spike-slab family. KNOB = target normalized entropy in
+                // [0,1]: 1.0 = uniform, 0.0 = constant (single bin), in
+                // between = one hot bin over a uniform floor. Sweeping the
+                // knob reproduces (and generalizes) the old Entropy sweep --
+                // continuously, and with the hot bin scattered off zero.
+  powerlaw, // decaying warm set (many hot bins). KNOB = target normalized
+            // entropy in [0,1]; the rank exponent is solved to hit it.
+            // Independent of the concentrated knob.
+  hash_synonym, // hot bins all collide on one cache slot. KNOB = hot share
+                // in [0,1] (default 0.9).
+  stale_resident, // a cold working set of W distinct bins that recurs in every
+                  // block, sized against the per-block no-eviction SMEM cache of S
+                  // slots to yield a controllable hit rate. KNOB = target cache hit
+                  // rate in (0,1] (default 0.5); W is solved from S so the measured
+                  // rate tracks the knob (see stale_working_set()).
+  poison, // prime the cache slots probed by one poison bin, then hammer
+          // that bin so every steady-state update spills to one globally
+          // contended output counter. No knob.
+  temporal_phases, // the hot bin steps to a new location across 8 phases. KNOB =
+                   // fraction of uniformly random samples in [0,1] (default 0.10).
+                   // Optional KNOB2 = number of phases (default 8).
+  strided_sweep, // bin = stride*i % B (minimal temporal locality). KNOB =
+                 // stride (default a large prime).
+  sawtooth, // bin = scatter((stride*i) % period): a configurable ramp over
+            // a bounded working set. KNOBS = period:stride:scatter, with
+            // defaults num_bins:1:0 (the classic monotonic sawtooth).
 };
 
-// A shape plus an optional knob value. `has_knob == false` means "use the
-// shape's default". The knob's meaning is shape-specific (see the enum).
+// A shape plus up to three optional knob values. Most shapes use only `knob`;
+// sawtooth uses all three for period:stride:scatter. A false `has_knob*` flag
+// means "use that parameter's default".
 struct ShapeSpec
 {
   InputShape shape;
   double knob    = 0.0;
   bool has_knob  = false;
+  double knob2   = 0.0;
+  bool has_knob2 = false;
+  double knob3   = 0.0;
+  bool has_knob3 = false;
 };
 
-// kAdversarialCacheSlots mirrors the SMEM cuckoo-cache capacity in
-// tuning_histogram.cuh; it is a benchmark *probe* and never affects
-// correctness. TODO: wire to the policy's actual slot count rather than
-// hardcoding, so the adversarial shapes track the cache as it is tuned.
+// Single-channel fallback used only when a cache-sensitive shape is called by a
+// legacy benchmark that cannot query the dispatch policy. Current benchmarks pass
+// the actual runtime slot count from query_direct_atomic_cache_slots_for_extent.
 constexpr int kAdversarialCacheSlots = 4096;
 constexpr int kHashSynonymCount      = 32; // number of colliding bins
 
-// Parse an InputShape axis value of the form "name" or "name:knob".
+// Parse an InputShape axis value of the form "name" or "name:knob[:knob2[:knob3]]".
 //   "concentrated:1.0"    -> uniform (entropy 1.0)
 //   "concentrated:0.5"    -> a single hot bin over a floor (was "spike")
 //   "concentrated:0.0"    -> a single bin gets 100% (was "constant")
 //   "powerlaw:0.3"        -> power law at target entropy 0.3
+//   "temporal_phases:0.10" -> 10% uniformly random samples in each of 8 phases
+//   "sawtooth:8192:2654435761:1" -> strided, scattered 8192-bin ramp
 // There is deliberately ONE concentrated shape spanning uniform<->constant via
 // its entropy knob -- no separate uniform/constant/spike names.
 inline ShapeSpec parse_input_shape(const std::string& spec)
@@ -100,20 +111,63 @@ inline ShapeSpec parse_input_shape(const std::string& spec)
   const auto colon = spec.find(':');
   if (colon != std::string::npos)
   {
-    name        = spec.substr(0, colon);
-    out.knob    = std::stod(spec.substr(colon + 1));
-    out.has_knob = true;
+    name                  = spec.substr(0, colon);
+    double* knob_values[] = {&out.knob, &out.knob2, &out.knob3};
+    bool* knob_flags[]    = {&out.has_knob, &out.has_knob2, &out.has_knob3};
+    std::size_t begin     = colon + 1;
+    for (std::size_t param = 0;; ++param)
+    {
+      if (param >= 3)
+      {
+        throw std::runtime_error("Too many InputShape parameters: " + spec);
+      }
+      const std::size_t end = spec.find(':', begin);
+      *knob_values[param]   = std::stod(spec.substr(begin, end - begin));
+      *knob_flags[param]    = true;
+      if (end == std::string::npos)
+      {
+        break;
+      }
+      begin = end + 1;
+    }
   }
 
-  if (name == "concentrated") { out.shape = InputShape::concentrated; }
-  else if (name == "powerlaw") { out.shape = InputShape::powerlaw; }
-  else if (name == "zipf")     { out.shape = InputShape::zipf; }
-  else if (name == "hash_synonym")    { out.shape = InputShape::hash_synonym; }
-  else if (name == "stale_resident")  { out.shape = InputShape::stale_resident; }
-  else if (name == "temporal_phases") { out.shape = InputShape::temporal_phases; }
-  else if (name == "strided_sweep")   { out.shape = InputShape::strided_sweep; }
-  else if (name == "sawtooth")         { out.shape = InputShape::sawtooth; }
-  else { throw std::runtime_error("Unknown InputShape: " + spec); }
+  if (name == "concentrated")
+  {
+    out.shape = InputShape::concentrated;
+  }
+  else if (name == "powerlaw")
+  {
+    out.shape = InputShape::powerlaw;
+  }
+  else if (name == "hash_synonym")
+  {
+    out.shape = InputShape::hash_synonym;
+  }
+  else if (name == "stale_resident")
+  {
+    out.shape = InputShape::stale_resident;
+  }
+  else if (name == "poison")
+  {
+    out.shape = InputShape::poison;
+  }
+  else if (name == "temporal_phases")
+  {
+    out.shape = InputShape::temporal_phases;
+  }
+  else if (name == "strided_sweep")
+  {
+    out.shape = InputShape::strided_sweep;
+  }
+  else if (name == "sawtooth")
+  {
+    out.shape = InputShape::sawtooth;
+  }
+  else
+  {
+    throw std::runtime_error("Unknown InputShape: " + spec);
+  }
   return out;
 }
 
@@ -124,10 +178,12 @@ inline double knob_or(const ShapeSpec& s, double default_value)
   return s.has_knob ? s.knob : default_value;
 }
 
-// A large prime > every bins-axis value; multiplying bin ranks by it modulo
-// num_bins is a bijection (a cheap fixed permutation), used to SCATTER hot bins
-// across the array so the mode is never forced to bin 0.
-constexpr uint64_t kScatterPrime = 2147483647ull; // 2^31 - 1, prime
+// A large prime greater than every bins-axis value. It is coprime to every
+// supported bin count, so the affine map below is a permutation. On the common
+// power-of-two axes it is congruent to -1. Bounded working sets use the separate
+// upper_window_bin mapping and therefore cannot be remapped by this constant.
+constexpr uint64_t kScatterPrime      = 2147483647ull; // 2^31 - 1, prime
+constexpr uint64_t kChannelSeedStride = 0xD1B54A32D192ED03ull;
 
 // ---------------------------------------------------------------------------
 // Per-element uniform draw: splitmix64 finalizer on a decorrelated key, mapped
@@ -152,12 +208,21 @@ __host__ __device__ inline int scatter_bin(uint64_t rank, int num_bins, uint64_t
   return static_cast<int>((rank * kScatterPrime + offset) % static_cast<uint64_t>(num_bins));
 }
 
+// Map a bounded rank range [0, span) into the contiguous upper-bin window
+// [num_bins-span, num_bins). This is deliberately independent of scatter_bin:
+// changing the global rank permutation must not move bounded sawtooth or
+// stale-resident supports, and this remains correct for non-power-of-two bins.
+__host__ __device__ inline int upper_window_bin(uint64_t rank, int num_bins)
+{
+  return num_bins - 1 - static_cast<int>(rank);
+}
+
 // First index `i` in [0, n) with `val < cdf[i]` (upper-bound binary search).
 // Local host/device implementation so this header has no device-only deps
 // (cub::UpperBound is _CCCL_DEVICE only and we need a host path for tests).
 __host__ __device__ inline int upper_bound_cdf(const double* cdf, int n, double val)
 {
-  int lo = 0;
+  int lo  = 0;
   int len = n;
   while (len > 0)
   {
@@ -266,13 +331,17 @@ struct cdf_sample_functor
   const double* cdf; // inclusive prefix sum over bins, cdf[num_bins-1] == 1
   int num_bins;
   uint64_t seed;
+  uint64_t sample_stride;
   Mapper mapper;
 
   template <class I>
   __host__ __device__ SampleT operator()(I i) const
   {
-    const double u = u01_from_hash(element_key(static_cast<uint64_t>(i), seed));
-    int bin        = upper_bound_cdf(cdf, num_bins, u);
+    const uint64_t index   = static_cast<uint64_t>(i);
+    const uint64_t channel = index % sample_stride;
+    const uint64_t sample  = index / sample_stride;
+    const double u         = u01_from_hash(element_key(sample, seed + channel * kChannelSeedStride));
+    int bin                = upper_bound_cdf(cdf, num_bins, u);
     if (bin >= num_bins)
     {
       bin = num_bins - 1;
@@ -281,42 +350,92 @@ struct cdf_sample_functor
   }
 };
 
-// strided_sweep: bin = stride*i % num_bins.
+// strided_sweep: every interleaved channel independently follows
+// bin = stride*sample % num_bins.
 template <class SampleT, class Mapper>
 struct strided_functor
 {
   int num_bins;
   uint64_t stride;
+  uint64_t sample_stride;
   Mapper mapper;
 
   template <class I>
   __host__ __device__ SampleT operator()(I i) const
   {
-    int bin = static_cast<int>((static_cast<uint64_t>(i) * stride) % static_cast<uint64_t>(num_bins));
+    const uint64_t sample = static_cast<uint64_t>(i) / sample_stride;
+    int bin               = static_cast<int>((sample * stride) % static_cast<uint64_t>(num_bins));
     return mapper(bin);
   }
 };
 
-// sawtooth: bin = i % period. A monotonically increasing ramp that resets to 0
-// every `period` elements -- sequential access over a bounded working set, with
-// a periodic discontinuity. With period == num_bins this is exactly the uniform
-// round-robin tiling (the concentrated:1.0 endpoint); smaller periods confine
-// the sweep to a `period`-bin window (e.g. period <= cache slots stays cache
-// resident, period just over it thrashes).
+// sawtooth: rank = stride*i % period, optionally scattered across the bin array.
+// The default stride=1, scatter=false path is a monotonically increasing ramp
+// that resets to 0 every `period` elements. With period == num_bins this is
+// exactly the uniform round-robin tiling (the concentrated:1.0 endpoint);
+// smaller periods confine the sweep to a `period`-bin window. A non-unit stride
+// changes the visitation order. With scatter=true, the caller maps each rank
+// into a contiguous upper-bin window, avoiding a wrapped low-bin tail without
+// changing cardinality or visitation order. Every interleaved channel follows
+// the full sequence independently.
 template <class SampleT, class Mapper>
 struct sawtooth_functor
 {
   uint64_t period;
+  int num_bins;
+  uint64_t stride;
+  uint64_t sample_stride;
+  bool scatter;
   Mapper mapper;
 
   template <class I>
   __host__ __device__ SampleT operator()(I i) const
   {
-    return mapper(static_cast<int>(static_cast<uint64_t>(i) % period));
+    const uint64_t sample = static_cast<uint64_t>(i) / sample_stride;
+    const uint64_t rank   = (sample * stride) % period;
+    const int bin         = scatter ? upper_window_bin(rank, num_bins) : static_cast<int>(rank);
+    return mapper(bin);
   }
 };
 
-// temporal_phases: contiguous phases, each hammering one scattered bin.
+// poison: each power-of-two sample window starts with a short claim phase that
+// alternates two blocker bins, then hammers one poison bin for the rest of the
+// window. The blocker bins are selected on the host so their PRIMARY cache
+// hashes occupy the poison bin's primary and secondary candidate slots. Once
+// those immutable slots are claimed, the poison bin cannot enter either the
+// direct single-probe or two-probe cuckoo cache and permanently spills.
+//
+// `sample_stride` is 1 for single-channel inputs and 4 for the interleaved RGBA
+// multi-channel inputs. Dividing by it before selecting a blocker makes every
+// active channel alternate between BOTH blocker bins rather than pinning each
+// channel to one blocker based on `i % 4`.
+template <class SampleT, class Mapper>
+struct poison_functor
+{
+  int blocker_bin0;
+  int blocker_bin1;
+  int poison_bin;
+  uint64_t window_mask;
+  uint64_t claim_prefix;
+  uint64_t sample_stride;
+  bool enabled;
+  Mapper mapper;
+
+  template <class I>
+  __host__ __device__ SampleT operator()(I i) const
+  {
+    const uint64_t index = static_cast<uint64_t>(i);
+    if (enabled && (index & window_mask) < claim_prefix)
+    {
+      const int bin = ((index / sample_stride) & 1ull) ? blocker_bin1 : blocker_bin0;
+      return mapper(bin);
+    }
+    return mapper(poison_bin);
+  }
+};
+
+// temporal_phases: contiguous phases, each centered on one evenly spaced bin,
+// with a tunable fraction of samples replaced by uniform random-bin noise.
 template <class SampleT, class Mapper>
 struct phases_functor
 {
@@ -324,18 +443,50 @@ struct phases_functor
   int num_phases;
   uint64_t n;
   uint64_t offset;
+  double noise;
+  uint64_t seed;
+  uint64_t sample_stride;
   Mapper mapper;
 
   template <class I>
   __host__ __device__ SampleT operator()(I i) const
   {
-    uint64_t phase = (static_cast<uint64_t>(i) * static_cast<uint64_t>(num_phases)) / n;
+    const uint64_t index       = static_cast<uint64_t>(i);
+    const uint64_t channel     = index % sample_stride;
+    const uint64_t sample      = index / sample_stride;
+    const uint64_t stream_n    = (n + sample_stride - 1 - channel) / sample_stride;
+    const uint64_t stream_seed = seed + channel * kChannelSeedStride;
+    if (noise > 0.0)
+    {
+      // Independent hashes choose whether this sample is noise and, if so, its
+      // uniformly random bin. At noise=0 the historical pure-phase path remains
+      // byte-identical; at noise=1 every sample is random.
+      constexpr uint64_t select_salt = 0x74656D706F72616Cull; // "temporal"
+      constexpr uint64_t value_salt  = 0x6A69747465725661ull; // "jitterVa"
+      const double select            = u01_from_hash(element_key(sample, stream_seed ^ select_salt));
+      if (select < noise)
+      {
+        const double u      = u01_from_hash(element_key(sample, stream_seed ^ value_salt));
+        uint64_t random_bin = static_cast<uint64_t>(u * static_cast<double>(num_bins));
+        if (random_bin >= static_cast<uint64_t>(num_bins))
+        {
+          random_bin = static_cast<uint64_t>(num_bins - 1);
+        }
+        return mapper(static_cast<int>(random_bin));
+      }
+    }
+
+    uint64_t phase = (sample * static_cast<uint64_t>(num_phases)) / stream_n;
     if (phase >= static_cast<uint64_t>(num_phases))
     {
       phase = static_cast<uint64_t>(num_phases) - 1;
     }
-    // Spread phases across the bin array, scattered off zero.
-    int bin = scatter_bin(phase * (static_cast<uint64_t>(num_bins) / static_cast<uint64_t>(num_phases) + 1), num_bins, offset);
+    // Place P phase ranks as evenly as possible across B bins. Computing the
+    // product before the division avoids the accumulated error from repeatedly
+    // adding floor(B/P)+1. The affine permutation changes their visitation order
+    // and rotates them off zero without changing the even spacing when P divides B.
+    const uint64_t rank = (phase * static_cast<uint64_t>(num_bins)) / static_cast<uint64_t>(num_phases);
+    const int bin       = scatter_bin(rank, num_bins, offset);
     return mapper(bin);
   }
 };
@@ -349,8 +500,8 @@ struct phases_functor
 __host__ __device__ inline uint64_t feistel_mix(uint64_t x, uint64_t k)
 {
   uint64_t z = x + k + 0x9E3779B97F4A7C15ull;
-  z         = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-  z         = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+  z          = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+  z          = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
   return z ^ (z >> 31);
 }
 
@@ -365,9 +516,9 @@ __host__ __device__ inline uint64_t permute_index(uint64_t i, uint64_t n, uint64
   {
     ++bits; // bits == ceil(log2(n)) for n >= 2
   }
-  const int half        = (bits + 1) / 2;
-  const uint64_t mask    = (half >= 64) ? ~0ull : ((1ull << half) - 1ull);
-  uint64_t x             = i;
+  const int half      = (bits + 1) / 2;
+  const uint64_t mask = (half >= 64) ? ~0ull : ((1ull << half) - 1ull);
+  uint64_t x          = i;
   do
   {
     uint64_t l = (x >> half) & mask;
@@ -396,42 +547,64 @@ struct shuffled_uniform_functor
   uint64_t n;
   int num_bins;
   uint64_t seed;
+  uint64_t sample_stride;
   Mapper mapper;
 
   template <class I>
   __host__ __device__ SampleT operator()(I i) const
   {
-    const uint64_t j = permute_index(static_cast<uint64_t>(i), n, seed);
+    const uint64_t index    = static_cast<uint64_t>(i);
+    const uint64_t channel  = index % sample_stride;
+    const uint64_t sample   = index / sample_stride;
+    const uint64_t stream_n = (n + sample_stride - 1 - channel) / sample_stride;
+    const uint64_t j        = permute_index(sample, stream_n, seed + channel * kChannelSeedStride);
     return mapper(static_cast<int>(j % static_cast<uint64_t>(num_bins)));
   }
 };
 
-// stale_resident: a cold WORKING SET of `span` distinct bins (sized as a multiple
-// of the SMEM cache capacity via the cover knob), scattered across the bin array
-// and swept CYCLICALLY. The same `span` keys recur in every block/tile -- so the
-// per-block cache is hit by them on every block -- but when span > cache slots the
-// set cannot stay resident: each key is evicted before it comes around again, so
-// the cache yields ~no benefit (the keys are "stale residents" that thrash it).
-// span <= slots fits and caches well; the default (cover=2 => 2*slots) overflows
-// it. The cyclic SEQUENTIAL reuse (each key revisited at a fixed stride apart) is
-// what makes the cache's capacity boundary actually show. The cyclic counter advances
-// by a large odd stride so a thread's grid-strided positions still walk distinct
-// keys (it does not alias the launch's grid stride).
+// stale_resident: a cold WORKING SET of `span` (= W) distinct bins in a stable
+// upper-bin window, accessed so that EVERY block (whatever its grid-strided slice of the
+// input) sees the full working set. It is sized against the per-block no-eviction SMEM
+// cache of S slots (W from stale_working_set) to yield a controllable hit rate: the
+// cache claims a slot for the FIRST bin that reaches it (a hit for all of that bin's
+// accesses) and every other bin that hashes to that occupied slot permanently misses
+// (spilling to GMEM). With W > S only a fraction of bins can own a slot, so the hit
+// rate falls predictably as W grows -- there is NO eviction and nothing "thrashes".
+//
+// The per-element key is a well-mixed UNIFORM hash of the per-channel sample index,
+// NOT a cyclic `i % span` counter: the hit rate is a PER-BLOCK property (each block
+// has its own S-slot cache), and under a grid-stride launch a cyclic counter aliases
+// the stride and hands each block only a gcd(total_threads, span)-reduced fraction of the span --
+// inflating the measured hit rate. A uniform draw guarantees each block sees all `span`
+// distinct keys (for the benchmark's N >> W). Access ORDER does not affect a
+// no-eviction cache's hit rate (only the distinct-key set and its slot collisions do),
+// so the uniform draw is both faithful to the model and robust to launch geometry.
 template <class SampleT, class Mapper>
 struct stale_functor
 {
   int num_bins;
-  uint64_t span; // size of the cold working set (number of distinct bins)
-  uint64_t offset;
+  uint64_t span; // size of the cold working set (number of distinct bins), = W
+  uint64_t seed;
+  uint64_t sample_stride;
   Mapper mapper;
 
   template <class I>
   __host__ __device__ SampleT operator()(I i) const
   {
-    // Position -> which cold key. A large odd multiplier decorrelates the key
-    // index from the grid-stride launch geometry while still cycling [0, span).
-    const uint64_t k = (static_cast<uint64_t>(i) * 2654435761ull) % span;
-    const int bin    = scatter_bin(k, num_bins, offset); // scatter across the array
+    // Uniform key in [0, span): a well-mixed hash of the per-channel sample
+    // index, so any grid-strided per-block slice still covers all `span` keys
+    // approximately uniformly.
+    const uint64_t index       = static_cast<uint64_t>(i);
+    const uint64_t channel     = index % sample_stride;
+    const uint64_t sample      = index / sample_stride;
+    const uint64_t stream_seed = seed + channel * kChannelSeedStride;
+    const double u             = u01_from_hash(element_key(sample, stream_seed ^ 0x5ADE57A1E00FF5E7ull));
+    uint64_t k                 = static_cast<uint64_t>(u * static_cast<double>(span));
+    if (k >= span)
+    {
+      k = span - 1; // guard the u==1-epsilon corner
+    }
+    const int bin = upper_window_bin(k, num_bins);
     return mapper(bin);
   }
 };
@@ -565,17 +738,112 @@ inline std::vector<double> solve_softmax_pmf(int num_bins, double target, uint64
 // Defaults applied when the axis value supplies no knob.
 constexpr double kDefaultConcentratedEntropy = 0.5; // bare "concentrated"
 constexpr double kDefaultPowerlawEntropy     = 0.5; // bare "powerlaw"
-constexpr double kDefaultZipfExponent        = 1.0; // bare "zipf"
 constexpr double kDefaultHashSynonymHotShare = 0.9; // bare "hash_synonym"
-constexpr int kDefaultTemporalPhases         = 8;   // bare "temporal_phases"
+constexpr double kDefaultTemporalNoise       = 0.10; // bare "temporal_phases"
+constexpr int kDefaultTemporalPhases         = 8;
+constexpr double kDefaultStaleHitRate        = 0.5; // bare "stale_resident"
 constexpr uint64_t kDefaultStridedStride     = 9973ull; // bare "strided_sweep"
 // bare "sawtooth" => period 0 sentinel, resolved to num_bins at generation time.
-constexpr uint64_t kDefaultSawtoothPeriod    = 0ull;
+constexpr uint64_t kDefaultSawtoothPeriod = 0ull;
+constexpr uint64_t kDefaultSawtoothStride = 1ull;
+constexpr bool kDefaultSawtoothScatter    = false;
+
+// B200 poison schedule. A direct-atomic launch has up to 303104 sample/pixel
+// threads (single-channel RANGE and the 4-sample/pixel multi paths; EVEN uses
+// 227328). These claim prefixes cover every thread's first (u=0) access, so every
+// warp claims both blocker bins before it can reach a poison sample. Repeating
+// the phase once per minimum-size 2^24-pixel benchmark window keeps the shape
+// valid for persistent grid-stride launches at every larger N.
+constexpr uint64_t kPoisonSingleWindow      = 1ull << 24;
+constexpr uint64_t kPoisonSingleClaimPrefix = 5ull << 16; // > 303104 samples
+constexpr uint64_t kPoisonMultiWindow       = 1ull << 26; // 4 * 2^24 interleaved samples
+constexpr uint64_t kPoisonMultiClaimPrefix  = 5ull << 18; // > 4 * 303104 samples
+
+// Resolve the cache size supplied by the compiled dispatch policy. The generic
+// environment override keeps generator overlays byte-identical to the branch when
+// benchmarking an upstream binary without the query hook. Honor the former
+// stale-specific name as a compatibility fallback for existing run drivers.
+inline int64_t resolve_input_cache_slots(int64_t cache_slots)
+{
+  const char* env = std::getenv("CUB_HISTO_INPUT_CACHE_SLOTS");
+  if (env == nullptr)
+  {
+    env = std::getenv("CUB_HISTO_STALE_SLOTS");
+  }
+  if (env != nullptr)
+  {
+    const long long forced = std::atoll(env);
+    if (forced > 0)
+    {
+      return static_cast<int64_t>(forced);
+    }
+  }
+  return cache_slots;
+}
+
+// Host-side use of the cache's actual source-of-truth hash function and constants.
+// `cache_slot_from_hash` is shared with the device probe implementation, so changing
+// CUB_HISTO_CACHE_HASH_MODE or either multiplier automatically changes this generator.
+inline int benchmark_cache_slot(int bin, int slots, uint32_t multiplier)
+{
+  if (slots <= 0 || (slots & (slots - 1)) != 0)
+  {
+    throw std::runtime_error("Histogram input cache slots must be a positive power of two");
+  }
+  int slot_log2 = 0;
+  for (int value = slots; value > 1; value >>= 1)
+  {
+    ++slot_log2;
+  }
+  const uint32_t product = static_cast<uint32_t>(bin) * multiplier;
+  return cub::detail::histogram::cache_slot_from_hash(product, slots - 1, slot_log2);
+}
+
+// Find up to kHashSynonymCount real synonyms of one PRIMARY cache slot. Choose a
+// maximally populated slot (ties broken deterministically from `seed`) so small B/S
+// ratios still exercise as many colliding keys as the bin domain permits.
+inline std::vector<int> find_hash_synonyms(int num_bins, int slots, uint64_t seed)
+{
+  std::vector<int> occupancy(static_cast<std::size_t>(slots), 0);
+  for (int bin = 0; bin < num_bins; ++bin)
+  {
+    const int slot = benchmark_cache_slot(bin, slots, cub::detail::histogram::cache_primary_hash_multiplier);
+    ++occupancy[static_cast<std::size_t>(slot)];
+  }
+
+  int max_occupancy = 0;
+  for (const int count : occupancy)
+  {
+    max_occupancy = std::max(max_occupancy, count);
+  }
+  const int start = static_cast<int>(seed % static_cast<uint64_t>(slots));
+  int target_slot = start;
+  for (int delta = 0; delta < slots; ++delta)
+  {
+    const int slot = (start + delta) & (slots - 1);
+    if (occupancy[static_cast<std::size_t>(slot)] == max_occupancy)
+    {
+      target_slot = slot;
+      break;
+    }
+  }
+
+  std::vector<int> synonyms;
+  synonyms.reserve(static_cast<std::size_t>(std::min(kHashSynonymCount, max_occupancy)));
+  for (int bin = 0; bin < num_bins && static_cast<int>(synonyms.size()) < kHashSynonymCount; ++bin)
+  {
+    if (benchmark_cache_slot(bin, slots, cub::detail::histogram::cache_primary_hash_multiplier) == target_slot)
+    {
+      synonyms.push_back(bin);
+    }
+  }
+  return synonyms;
+}
 
 // Build the per-bin pmf for an i.i.d. distribution shape, honoring the spec's
 // knob. Hot ranks are scattered across bins via scatter_bin() so the mode is
 // not forced to bin 0.
-inline std::vector<double> build_pmf(const ShapeSpec& spec, int num_bins, uint64_t seed)
+inline std::vector<double> build_pmf(const ShapeSpec& spec, int num_bins, uint64_t seed, int64_t cache_slots)
 {
   std::vector<double> pmf(num_bins, 0.0);
   const uint64_t offset = seed % static_cast<uint64_t>(num_bins);
@@ -616,30 +884,17 @@ inline std::vector<double> build_pmf(const ShapeSpec& spec, int num_bins, uint64
       }
       break;
     }
-    case InputShape::zipf: {
-      const double s              = knob_or(spec, kDefaultZipfExponent);
-      const std::vector<double> w = ranked_powerlaw(num_bins, s);
-      for (int r = 0; r < num_bins; ++r)
-      {
-        pmf[scatter_bin(static_cast<uint64_t>(r), num_bins, offset)] = w[r];
-      }
-      break;
-    }
     case InputShape::hash_synonym: {
-      // KNOB = hot share. kHashSynonymCount bins that all collide on one cache
-      // slot share the hot traffic; the rest is uniform background.
+      // KNOB = hot share. Up to kHashSynonymCount bins that ACTUALLY collide on
+      // one primary cache slot share the hot traffic; the rest is uniform
+      // background. S comes from the compiled policy's runtime query.
       const double hot_share = knob_or(spec, kDefaultHashSynonymHotShare);
-      const int slot         = static_cast<int>(offset % static_cast<uint64_t>(kAdversarialCacheSlots));
-      std::vector<int> syn;
-      for (int k = 0; k < kHashSynonymCount; ++k)
+      if (cache_slots <= 0)
       {
-        const int b = slot + k * kAdversarialCacheSlots;
-        if (b < num_bins)
-        {
-          syn.push_back(b);
-        }
+        throw std::runtime_error("hash_synonym requires the runtime histogram cache-slot count");
       }
-      const double bg = (1.0 - hot_share) / num_bins;
+      const std::vector<int> syn = find_hash_synonyms(num_bins, static_cast<int>(cache_slots), seed);
+      const double bg            = (1.0 - hot_share) / num_bins;
       for (int b = 0; b < num_bins; ++b)
       {
         pmf[b] = bg;
@@ -664,10 +919,189 @@ inline std::vector<double> build_pmf(const ShapeSpec& spec, int num_bins, uint64
   return pmf;
 }
 
+struct poison_bin_set
+{
+  int blocker0 = 0;
+  int blocker1 = 0;
+  int poison   = 0;
+  bool valid   = false;
+};
+
+// Find a poison bin P and blocker bins A/B such that
+//
+//   primary_slot(A) == primary_slot(P)
+//   primary_slot(B) == secondary_slot(P).
+//
+// A/B therefore occupy both immutable cuckoo candidates before P arrives; A
+// alone also poisons the direct-mapped single-probe cache. At the >=262144-bin
+// gated-cuckoo tier the secondary probe is compiled out, so the same A remains
+// sufficient and B is harmless. The high-bin sweep has at least four bins per
+// cache slot (B >= 32768, S <= 8192), making a solution plentiful. For B <= S
+// poison is not a meaningful capacity adversary, and the caller deliberately
+// falls back to a valid constant input.
+inline poison_bin_set find_poison_bins(int num_bins, int slots)
+{
+  poison_bin_set result{};
+  result.poison = num_bins > 0 ? num_bins - 1 : 0;
+  if (num_bins <= slots || slots <= 0 || (slots & (slots - 1)) != 0)
+  {
+    return result;
+  }
+
+  // Keep two representatives per primary slot. One may be P itself; the other
+  // is then its blocker. One representative is enough for P's distinct
+  // secondary slot because a bin cannot belong to two different primary slots.
+  std::vector<int> owner0(static_cast<std::size_t>(slots), -1);
+  std::vector<int> owner1(static_cast<std::size_t>(slots), -1);
+  for (int bin = 0; bin < num_bins; ++bin)
+  {
+    const int slot = benchmark_cache_slot(bin, slots, cub::detail::histogram::cache_primary_hash_multiplier);
+    if (owner0[slot] == -1)
+    {
+      owner0[slot] = bin;
+    }
+    else if (owner1[slot] == -1)
+    {
+      owner1[slot] = bin;
+    }
+  }
+
+  // Prefer a high poison bin, but search all bins so unusual B/S combinations
+  // still get a valid construction whenever one exists.
+  for (int poison = num_bins - 1; poison >= 0; --poison)
+  {
+    const int primary_slot = benchmark_cache_slot(poison, slots, cub::detail::histogram::cache_primary_hash_multiplier);
+    const int secondary_slot =
+      benchmark_cache_slot(poison, slots, cub::detail::histogram::cache_secondary_hash_multiplier);
+    const int blocker0 = (owner0[primary_slot] == poison) ? owner1[primary_slot] : owner0[primary_slot];
+    if (blocker0 < 0)
+    {
+      continue;
+    }
+
+    // If both poison hashes name the same slot, one blocker fills both roles.
+    const int blocker1 = (secondary_slot == primary_slot) ? blocker0 : owner0[secondary_slot];
+    if (blocker1 < 0)
+    {
+      continue;
+    }
+
+    result.blocker0 = blocker0;
+    result.blocker1 = blocker1;
+    result.poison   = poison;
+    result.valid    = true;
+    return result;
+  }
+  return result;
+}
+
+// stale_resident working-set size W for a target cache hit rate X against S no-eviction
+// slots.
+//
+// MECHANISM. The per-block SMEM cache has S slots and never evicts: the FIRST distinct
+// bin to reach a slot claims it (all of that bin's accesses then hit block-scope), and
+// every OTHER bin that hashes to the same slot permanently misses (spills to GMEM). With
+// W equiprobable distinct bins, the fraction of accesses that hit equals the fraction of
+// the W bins that own a slot.
+//
+// CALIBRATED LAW (measured -- do NOT assume the naive occupancy curve). One might expect
+// the random balls-into-bins hit rate H = (S/W)(1 - (1-1/S)^W) ~= (1-e^{-r})/r, r=W/S.
+// That is WRONG here: the bins are scattered by an AFFINE map (scatter_bin: bin =
+// multiplier*rank + offset mod num_bins) and then hashed to slots by the cache's
+// MULTIPLICATIVE Fibonacci hash, and that composition spreads the W ranks across the S
+// slots ANTI-collisively -- far more evenly than independent random draws. Measured on
+// B200 (hit-rate-instrumented direct_single_probe AND direct_cuckoo, converged large-N,
+// bins 32768..1048576, I32+F64, S in {1024,4096,8192}; see the run_2026-07-07
+// calibration). Two robust facts:
+//
+//   1. The curve is a function of r = W/S ONLY (S-invariant to <1% across all three S).
+//   2. Once the set overflows the cache (r >~ 1.34, i.e. X <~ 0.744) the hit rate is
+//
+//          H(W)  ==  S / W        (perfect spread),
+//
+//      measured accurate to <1% over the whole ADVERSARIAL range -- e.g. W=2S -> 0.50,
+//      W=4S -> 0.25, W=1.33S -> 0.75. So for the target range that matters we invert
+//      exactly: W = round(S / X).
+//
+// Below r ~= 1.34 (near-resident, X > 0.744) the rate bends up toward 1.0 (a finite
+// anti-collisive cache still suffers a few birthday collisions, so it never quite
+// reaches 1.0 until the set is far smaller than S). S/X would UNDERSHOOT there, so we
+// invert the MEASURED near-resident curve via the small S-invariant table below
+// (kStaleNearRate/kStaleNearR), continuous with S/X at the X=0.744 seam.
+//
+// NOTE the hit rate is a converged / large-N property: at small N a block processes too
+// few pixels to see all W distinct keys (coupon-collector under-coverage), so the rate
+// runs high; it settles onto this law once N >> W (true for the benchmark's element grid
+// at the bins these cached kernels run). The knob targets that converged rate.
+
+// Measured near-resident branch, r = W/S vs hit rate (S-invariant; B200, converged N).
+// rate DEScending, r AScending. Seam point (0.744, 1.344) coincides with S/X.
+inline constexpr double kStaleNearRate[] = {1.000, 0.990, 0.944, 0.888, 0.800, 0.744};
+inline constexpr double kStaleNearR[]    = {0.300, 0.519, 0.697, 0.898, 1.126, 1.344};
+inline constexpr int kStaleNearN         = 6;
+
+inline uint64_t stale_working_set(double target_hit_rate, int64_t cache_slots, int num_bins)
+{
+  const double S = static_cast<double>(cache_slots > 0 ? cache_slots : 1);
+  double X       = target_hit_rate;
+  // Clamp into the achievable interval; X->0 diverges, and X at/above the finite cache's
+  // collision ceiling is pinned to the smallest tabulated working set.
+  if (X > 0.999)
+  {
+    X = 0.999;
+  }
+  if (X < 1e-3)
+  {
+    X = 1e-3;
+  }
+
+  double r; // = W / S
+  constexpr double kStaleSpreadX = 0.744; // seam: at/below here rate == S/W exactly
+  if (X <= kStaleSpreadX)
+  {
+    r = 1.0 / X; // perfect-spread inverse, W = S / X
+  }
+  else
+  {
+    // Invert the measured near-resident table: find X in kStaleNearRate (descending) and
+    // linearly interpolate the corresponding r. Above the top sample (X > ~0.99) pin to
+    // the smallest tabulated r (the collision ceiling); the arrays bracket otherwise.
+    if (X >= kStaleNearRate[0])
+    {
+      r = kStaleNearR[0];
+    }
+    else
+    {
+      r = kStaleNearR[kStaleNearN - 1];
+      for (int i = 0; i < kStaleNearN - 1; ++i)
+      {
+        // Descending: kStaleNearRate[i] >= X > kStaleNearRate[i+1].
+        if (X <= kStaleNearRate[i] && X > kStaleNearRate[i + 1])
+        {
+          const double t = (kStaleNearRate[i] - X) / (kStaleNearRate[i] - kStaleNearRate[i + 1]);
+          r              = kStaleNearR[i] + t * (kStaleNearR[i + 1] - kStaleNearR[i]);
+          break;
+        }
+      }
+    }
+  }
+
+  int64_t w_int = static_cast<int64_t>(std::llround(r * S));
+  if (w_int < 1)
+  {
+    w_int = 1;
+  }
+  if (w_int > num_bins)
+  {
+    w_int = num_bins; // cannot have more distinct bins than exist
+  }
+  return static_cast<uint64_t>(w_int);
+}
+
 inline bool is_ordering_shape(InputShape shape)
 {
   return shape == InputShape::stale_resident || shape == InputShape::temporal_phases
-      || shape == InputShape::strided_sweep || shape == InputShape::sawtooth;
+      || shape == InputShape::strided_sweep || shape == InputShape::sawtooth || shape == InputShape::poison;
 }
 
 // ---------------------------------------------------------------------------
@@ -675,11 +1109,23 @@ inline bool is_ordering_shape(InputShape shape)
 // `n` samples according to `spec`.
 // ---------------------------------------------------------------------------
 template <class SampleT, class OffsetT, class Mapper>
-thrust::device_vector<SampleT>
-generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mapper, uint64_t seed)
+thrust::device_vector<SampleT> generate_shape_impl(
+  const ShapeSpec& spec,
+  OffsetT n,
+  int num_bins,
+  Mapper mapper,
+  uint64_t seed,
+  int64_t cache_slots,
+  int64_t sample_stride)
 {
+  if (sample_stride <= 0)
+  {
+    throw std::runtime_error("Histogram input sample stride must be positive");
+  }
   thrust::device_vector<SampleT> out(static_cast<std::size_t>(n));
-  const uint64_t offset = seed % static_cast<uint64_t>(num_bins);
+  const uint64_t offset              = seed % static_cast<uint64_t>(num_bins);
+  const int64_t resolved_cache_slots = resolve_input_cache_slots(cache_slots);
+  const uint64_t stream_stride       = static_cast<uint64_t>(sample_stride);
 
   // Exact-uniform endpoint: every bin gets exactly n/num_bins (+-1) samples, in
   // a pseudo-random sequence order (a Feistel permutation of the round-robin
@@ -689,7 +1135,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mappe
   // noise / empty bins when bins ~= elements).
   if (spec.shape == InputShape::concentrated && spec.has_knob && spec.knob >= 1.0)
   {
-    shuffled_uniform_functor<SampleT, Mapper> fn{static_cast<uint64_t>(n), num_bins, seed, mapper};
+    shuffled_uniform_functor<SampleT, Mapper> fn{static_cast<uint64_t>(n), num_bins, seed, stream_stride, mapper};
     thrust::tabulate(out.begin(), out.end(), fn);
     return out;
   }
@@ -697,7 +1143,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mappe
   if (!is_ordering_shape(spec.shape))
   {
     // Distribution shape: host pmf -> inclusive CDF -> device -> inverse-CDF sample.
-    std::vector<double> pmf = build_pmf(spec, num_bins, seed);
+    std::vector<double> pmf = build_pmf(spec, num_bins, seed, resolved_cache_slots);
     thrust::host_vector<double> h_cdf(num_bins);
     double acc = 0.0;
     for (int b = 0; b < num_bins; ++b)
@@ -705,9 +1151,10 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mappe
       acc += pmf[b];
       h_cdf[b] = acc;
     }
-    h_cdf[num_bins - 1] = 1.0; // guard against fp drift on the last bin
+    h_cdf[num_bins - 1]                 = 1.0; // guard against fp drift on the last bin
     thrust::device_vector<double> d_cdf = h_cdf;
-    cdf_sample_functor<SampleT, Mapper> fn{thrust::raw_pointer_cast(d_cdf.data()), num_bins, seed, mapper};
+    cdf_sample_functor<SampleT, Mapper> fn{
+      thrust::raw_pointer_cast(d_cdf.data()), num_bins, seed, stream_stride, mapper};
     thrust::tabulate(out.begin(), out.end(), fn);
     return out;
   }
@@ -716,39 +1163,80 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mappe
   {
     case InputShape::strided_sweep: {
       // KNOB = stride.
-      const uint64_t stride =
-        spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : kDefaultStridedStride;
-      strided_functor<SampleT, Mapper> fn{num_bins, stride, mapper};
+      const uint64_t stride = spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : kDefaultStridedStride;
+      strided_functor<SampleT, Mapper> fn{num_bins, stride, stream_stride, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;
     }
     case InputShape::sawtooth: {
-      // KNOB = ramp period in bins; 0 (the default) means a full num_bins sweep.
+      // KNOBS = period:stride:scatter. A zero/default period means a full
+      // num_bins sweep; the other defaults preserve the classic monotonic ramp.
       const uint64_t requested =
         spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : kDefaultSawtoothPeriod;
       const uint64_t period =
-        (requested == 0) ? static_cast<uint64_t>(num_bins)
-                         : std::min(requested, static_cast<uint64_t>(num_bins));
-      sawtooth_functor<SampleT, Mapper> fn{period, mapper};
+        (requested == 0) ? static_cast<uint64_t>(num_bins) : std::min(requested, static_cast<uint64_t>(num_bins));
+      const uint64_t stride = spec.has_knob2 ? static_cast<uint64_t>(std::llround(spec.knob2)) : kDefaultSawtoothStride;
+      const bool scatter    = spec.has_knob3 ? (std::llround(spec.knob3) != 0) : kDefaultSawtoothScatter;
+      sawtooth_functor<SampleT, Mapper> fn{period, num_bins, stride, stream_stride, scatter, mapper};
+      thrust::tabulate(out.begin(), out.end(), fn);
+      break;
+    }
+    case InputShape::poison: {
+      // A literal "fill all S slots, then poison" construction cannot meet the
+      // shape's near-zero-hit goal at the smallest measured N: every empty-slot
+      // claim is instrumented as a hit, so on B200 single-channel N=2^24 would
+      // have at least 296 blocks * 8192 claims / 2^24 = 14.45% hits. Instead,
+      // occupy exactly the poison bin's candidate slot(s): one blocker for the
+      // single-probe / gated-cuckoo path, plus one for full two-probe cuckoo.
+      // This is sufficient because cache keys are immutable after their claim.
+      //
+      // The periodic claim prefix covers every block's u=0 indices. Each warp's
+      // u=0 inputs alternate both blockers before that warp reaches u=1 poison
+      // inputs, avoiding a scheduling race in which P could claim an empty slot.
+      // The resulting claim fraction is exactly 1.953125% for N >= 2^24 pixels,
+      // with every remaining contribution forced to the same device-scope
+      // output atomic.
+      const int64_t slots = (resolved_cache_slots > 0) ? resolved_cache_slots : kAdversarialCacheSlots;
+
+      const bool multi_layout     = stream_stride > 1;
+      const uint64_t window       = multi_layout ? kPoisonMultiWindow : kPoisonSingleWindow;
+      const uint64_t claim_prefix = multi_layout ? kPoisonMultiClaimPrefix : kPoisonSingleClaimPrefix;
+      const poison_bin_set bins   = (slots < num_bins) ? find_poison_bins(num_bins, static_cast<int>(slots))
+                                                       : poison_bin_set{0, 0, num_bins - 1, false};
+      poison_functor<SampleT, Mapper> fn{
+        bins.blocker0, bins.blocker1, bins.poison, window - 1, claim_prefix, stream_stride, bins.valid, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;
     }
     case InputShape::temporal_phases: {
-      // KNOB = number of phases.
-      const int requested = spec.has_knob ? static_cast<int>(std::llround(spec.knob)) : kDefaultTemporalPhases;
+      // KNOB = uniform-random noise fraction in [0,1]; optional KNOB2 = phases.
+      const double noise  = std::max(0.0, std::min(knob_or(spec, kDefaultTemporalNoise), 1.0));
+      const int requested = spec.has_knob2 ? static_cast<int>(std::llround(spec.knob2)) : kDefaultTemporalPhases;
       const int phases    = std::max(1, std::min(requested, num_bins));
-      phases_functor<SampleT, Mapper> fn{num_bins, phases, static_cast<uint64_t>(n), offset, mapper};
+      phases_functor<SampleT, Mapper> fn{
+        num_bins, phases, static_cast<uint64_t>(n), offset, noise, seed, stream_stride, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;
     }
     case InputShape::stale_resident: {
-      // KNOB = cold working-set size as a multiple of cache slots (default 2.0 =>
-      // twice the slots, so it overflows and thrashes a per-block cache). The set
-      // recurs in every block but cannot stay resident when span > slots.
-      const double cover  = knob_or(spec, 2.0);
-      const int64_t want  = static_cast<int64_t>(std::llround(cover * kAdversarialCacheSlots));
-      const uint64_t span = static_cast<uint64_t>(std::max<int64_t>(1, std::min<int64_t>(want, num_bins)));
-      stale_functor<SampleT, Mapper> fn{num_bins, span, offset, mapper};
+      // KNOB = target cache HIT RATE in (0,1] (default 0.5). The working set of W
+      // distinct bins is solved from the ACTUAL per-block cache slot count S
+      // (`cache_slots`, queried at runtime from CUB's occupancy sizer and passed in;
+      // falls back to the single-channel floor if unavailable) so the MEASURED hit
+      // rate tracks the knob: W = stale_working_set(X, S). Larger W (lower X) means
+      // more bins competing for the S no-eviction slots, so more permanent misses.
+      const double target = knob_or(spec, kDefaultStaleHitRate);
+      // Slot count S that sizes the working set. Normally the caller passes the value
+      // queried from CUB's occupancy sizer (`cache_slots`).
+      // CUB_HISTO_INPUT_CACHE_SLOTS overrides it with a fixed S so a build WITHOUT
+      // the query hook (e.g. the stock-`main` baseline binary, whose dispatch has no
+      // direct-atomic cache) can
+      // generate the byte-IDENTICAL working set the branch used -- keeping the shape
+      // apples-to-apples across the two dispatch variants. Falls back to the passed
+      // value, then the single-channel floor.
+      const int64_t slots = (resolved_cache_slots > 0) ? resolved_cache_slots : kAdversarialCacheSlots;
+      const uint64_t span = stale_working_set(target, slots, num_bins);
+      stale_functor<SampleT, Mapper> fn{num_bins, span, seed, stream_stride, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;
     }
@@ -761,19 +1249,41 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int num_bins, Mapper mappe
 // ---------------------------------------------------------------------------
 // Public entry points -- drop-in replacements for the legacy generate() call.
 // ---------------------------------------------------------------------------
+// `cache_slots` is the per-block direct-atomic SMEM cache slot count S used to size the
+// hash_synonym primary collisions, the stale_resident working set, and poison's
+// blocker bins; pass the value from
+// cub::detail::histogram::query_direct_atomic_cache_slots (0 or negative => legacy
+// fallbacks where available). It is ignored by every other shape.
+// `sample_stride` describes interleaved multi-channel storage (1 for single,
+// 4 for RGBA); every channel receives an independent full shape rather than a
+// strided subset. Both layout parameters are trailing defaults so legacy
+// callers remain source-compatible.
 template <class SampleT, class OffsetT>
 thrust::device_vector<SampleT> generate_histogram_input_even(
-  const ShapeSpec& spec, OffsetT n, int num_bins, SampleT lower, SampleT upper, uint64_t seed = 42)
+  const ShapeSpec& spec,
+  OffsetT n,
+  int num_bins,
+  SampleT lower,
+  SampleT upper,
+  uint64_t seed         = 42,
+  int64_t cache_slots   = 0,
+  int64_t sample_stride = 1)
 {
   const double w = (static_cast<double>(upper) - static_cast<double>(lower)) / static_cast<double>(num_bins);
   even_bin_to_value<SampleT> mapper{static_cast<double>(lower), w, lower, upper};
-  return generate_shape_impl<SampleT, OffsetT>(spec, n, num_bins, mapper, seed);
+  return generate_shape_impl<SampleT, OffsetT>(spec, n, num_bins, mapper, seed, cache_slots, sample_stride);
 }
 
 template <class SampleT, class OffsetT>
 thrust::device_vector<SampleT> generate_histogram_input_range(
-  const ShapeSpec& spec, OffsetT n, int num_bins, const SampleT* d_levels, uint64_t seed = 42)
+  const ShapeSpec& spec,
+  OffsetT n,
+  int num_bins,
+  const SampleT* d_levels,
+  uint64_t seed         = 42,
+  int64_t cache_slots   = 0,
+  int64_t sample_stride = 1)
 {
   range_bin_to_value<SampleT> mapper{d_levels, num_bins};
-  return generate_shape_impl<SampleT, OffsetT>(spec, n, num_bins, mapper, seed);
+  return generate_shape_impl<SampleT, OffsetT>(spec, n, num_bins, mapper, seed, cache_slots, sample_stride);
 }
