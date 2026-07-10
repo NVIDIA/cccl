@@ -129,8 +129,10 @@ TEST_FUNC constexpr void test_corner_cases()
   test_mul_overflow<int8_t, signed char, unsigned long>(
     static_cast<signed char>(17), static_cast<unsigned long>(14), static_cast<int8_t>(-18), true);
 
+#if _CCCL_HAS_INT128()
   // 5. __uint128_t
-  const auto uint128_max = ~static_cast<__uint128_t>(0);
+  constexpr auto uint128_max = cuda::std::numeric_limits<__uint128_t>::max();
+
   test_mul_overflow<__uint128_t, __uint128_t, __uint128_t>(3, 4, 12, false);
   test_mul_overflow<__uint128_t, __uint128_t, __uint128_t>(
     static_cast<__uint128_t>(~0ull), // 2^64 - 1
@@ -148,6 +150,7 @@ TEST_FUNC constexpr void test_corner_cases()
     static_cast<__uint128_t>(5) << 100,
     (static_cast<__uint128_t>(0xffffffb000000000ULL) << 64) | static_cast<__uint128_t>(0),
     false);
+#endif // _CCCL_HAS_INT128()
 }
 
 using TypeList = cuda::std::tuple<
