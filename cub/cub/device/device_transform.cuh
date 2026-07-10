@@ -15,12 +15,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 #include <cub/util_namespace.cuh>
-
-#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
-#  include <cub/device/dispatch/dispatch_transform_tile.cuh>
-#endif
 
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
@@ -106,25 +101,6 @@ struct DeviceTransform
     }
 
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
-
-#if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
-    // Opt-in tile path. When the (Op, T, NumInputs) combo is trait-eligible and the device is sm_80+, we check the
-    // alignment/divisibility preconditions at runtime and route to the tile kernel; we fall through to the standard
-    // CUB dispatch below if they do not hold (CUB's kernels handle the unaligned/tail case, so this is a graceful
-    // fallback, not an error). device_supports_tile() enforces the sm_80+ hardware floor at runtime; below it (or if
-    // the capability query fails) we fall through to the standard CUB dispatch.
-    if constexpr (StableAddress == detail::transform::requires_stable_address::no
-                  && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
-                  && detail::transform::tile::
-                    tile_dispatch_eligible_v<TransformOp, RandomAccessIteratorOut, RandomAccessIteratorsIn...>)
-    {
-      if (detail::transform::tile::device_supports_tile()
-          && detail::transform::tile::runtime_preconditions_valid(inputs, output, static_cast<offset_t>(num_items)))
-      {
-        return detail::transform::tile::dispatch<TransformOp>(inputs, output, static_cast<offset_t>(num_items), stream);
-      }
-    }
-#endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 
     using tuning_env =
       ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
