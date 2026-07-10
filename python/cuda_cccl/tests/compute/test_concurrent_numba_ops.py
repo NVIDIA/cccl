@@ -18,9 +18,9 @@ descriptor machinery stay correct under concurrent entry.
 import concurrent.futures
 import threading
 
-import cupy as cp
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import (
@@ -31,6 +31,7 @@ from cuda.compute import (
     make_reduce_into,
     make_unary_transform,
 )
+from cuda.core import Device
 
 pytestmark = pytest.mark.no_verify_sass(
     reason="Concurrency tests intentionally run concurrent workers."
@@ -67,7 +68,7 @@ def _run_threaded(workers):
 
 def _reduce_with_temp(reducer, **kwargs):
     temp_storage_bytes = reducer(temp_storage=None, **kwargs)
-    temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    temp_storage = DeviceArray.empty(temp_storage_bytes, np.uint8)
     return reducer(temp_storage=temp_storage, **kwargs)
 
 
@@ -105,10 +106,13 @@ def test_concurrent_distinct_python_ops_build_storm():
             op = _make_clamped_max_op(k)
             h_in = np.arange(num_items, dtype=np.int64) + worker_id
             h_init = np.array([0], dtype=np.int64)
-            d_in = cp.asarray(h_in)
-            d_out = cp.empty(1, dtype=np.int64)
+            d_in = DeviceArray.from_numpy(h_in)
+            d_out = DeviceArray.empty(1, np.int64)
 
             def thread(barrier):
+                # cuda.core device state is per-thread; initialize explicitly
+                # rather than relying on DeviceArray-construction side effects.
+                Device().set_current()
                 barrier.wait()
                 reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init)
                 returned_reducers[worker_id] = reducer
@@ -120,8 +124,8 @@ def test_concurrent_distinct_python_ops_build_storm():
                     h_init=h_init,
                     num_items=num_items,
                 )
-                cp.cuda.runtime.deviceSynchronize()
-                assert int(d_out.get()[0]) == k
+                Device().sync()
+                assert int(d_out.copy_to_host()[0]) == k
 
             return thread
 
@@ -150,10 +154,13 @@ def test_concurrent_shared_python_op_coalesces():
         def make_thread(worker_id):
             h_in = np.arange(num_items, dtype=np.int32) + worker_id + iteration
             h_init = np.array([worker_id], dtype=np.int32)
-            d_in = cp.asarray(h_in)
-            d_out = cp.empty(1, dtype=np.int32)
+            d_in = DeviceArray.from_numpy(h_in)
+            d_out = DeviceArray.empty(1, np.int32)
 
             def thread(barrier):
+                # cuda.core device state is per-thread; initialize explicitly
+                # rather than relying on DeviceArray-construction side effects.
+                Device().set_current()
                 barrier.wait()
                 reducer = make_reduce_into(
                     d_in=d_in, d_out=d_out, op=add, h_init=h_init
@@ -167,8 +174,8 @@ def test_concurrent_shared_python_op_coalesces():
                     h_init=h_init,
                     num_items=num_items,
                 )
-                cp.cuda.runtime.deviceSynchronize()
-                assert int(d_out.get()[0]) == int(h_in.sum()) + worker_id
+                Device().sync()
+                assert int(d_out.copy_to_host()[0]) == int(h_in.sum()) + worker_id
 
             return thread
 
@@ -201,9 +208,12 @@ def test_concurrent_transform_iterator_return_type_inference():
             k = np.int32(worker_id + 1 + iteration * THREADS)
             op = _make_scale_op(k)
             h_init = np.array([0], dtype=np.int32)
-            d_out = cp.empty(1, dtype=np.int32)
+            d_out = DeviceArray.empty(1, np.int32)
 
             def thread(barrier):
+                # cuda.core device state is per-thread; initialize explicitly
+                # rather than relying on DeviceArray-construction side effects.
+                Device().set_current()
                 barrier.wait()
                 # Inference widens int32 * int32-closure to an int64 value type;
                 # the int64-iterator/int32-accumulator mix is a supported,
@@ -220,9 +230,9 @@ def test_concurrent_transform_iterator_return_type_inference():
                     h_init=h_init,
                     num_items=num_items,
                 )
-                cp.cuda.runtime.deviceSynchronize()
+                Device().sync()
                 expected = sum(i * int(k) for i in range(num_items))
-                assert int(d_out.get()[0]) == expected
+                assert int(d_out.copy_to_host()[0]) == expected
 
             return thread
 
@@ -251,19 +261,22 @@ def test_concurrent_stateful_closure_ops_isolate_state():
 
         def make_thread(worker_id):
             offset = worker_id * 10 + iteration
-            d_offset = cp.array([offset], dtype=np.int32)
+            d_offset = DeviceArray.from_numpy(np.array([offset], dtype=np.int32))
             op = make_adder(d_offset)
             h_in = np.arange(num_items, dtype=np.int32)
-            d_in = cp.asarray(h_in)
-            d_out = cp.empty_like(d_in)
+            d_in = DeviceArray.from_numpy(h_in)
+            d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
 
             def thread(barrier):
+                # cuda.core device state is per-thread; initialize explicitly
+                # rather than relying on DeviceArray-construction side effects.
+                Device().set_current()
                 barrier.wait()
                 transformer = make_unary_transform(d_in=d_in, d_out=d_out, op=op)
                 returned_transformers[worker_id] = transformer
                 transformer(d_in=d_in, d_out=d_out, op=op, num_items=num_items)
-                cp.cuda.runtime.deviceSynchronize()
-                np.testing.assert_array_equal(d_out.get(), h_in + offset)
+                Device().sync()
+                np.testing.assert_array_equal(d_out.copy_to_host(), h_in + offset)
 
             return thread
 
@@ -294,8 +307,10 @@ def test_concurrent_gpu_struct_reduce():
     # non-coalescing lru_caches in _jit.py that mutate numba's global
     # registries, so racing it cold from four threads is a separate library
     # hardening question, not this test's target.
-    warm_in = cp.zeros((1, 2), dtype=np.int32).view(MinMax.dtype)
-    warm_out = cp.empty(1, MinMax.dtype)
+    warm_in = DeviceArray.from_numpy(
+        np.zeros((1, 2), dtype=np.int32).view(MinMax.dtype)
+    )
+    warm_out = DeviceArray.empty(1, MinMax.dtype)
     cuda.compute.reduce_into(
         d_in=warm_in,
         d_out=warm_out,
@@ -303,7 +318,7 @@ def test_concurrent_gpu_struct_reduce():
         h_init=MinMax(info.max, info.min),
         num_items=1,
     )
-    cp.cuda.runtime.deviceSynchronize()
+    Device().sync()
 
     for iteration in range(ITERATIONS):
         cuda.compute.clear_all_caches()
@@ -317,11 +332,14 @@ def test_concurrent_gpu_struct_reduce():
                 ],
                 axis=1,
             )
-            d_in = cp.asarray(h_pairs).view(MinMax.dtype)
-            d_out = cp.empty(1, MinMax.dtype)
+            d_in = DeviceArray.from_numpy(h_pairs.view(MinMax.dtype))
+            d_out = DeviceArray.empty(1, MinMax.dtype)
             h_init = MinMax(info.max, info.min)
 
             def thread(barrier):
+                # cuda.core device state is per-thread; initialize explicitly
+                # rather than relying on DeviceArray-construction side effects.
+                Device().set_current()
                 barrier.wait()
                 cuda.compute.reduce_into(
                     d_in=d_in,
@@ -330,8 +348,8 @@ def test_concurrent_gpu_struct_reduce():
                     h_init=h_init,
                     num_items=num_items,
                 )
-                cp.cuda.runtime.deviceSynchronize()
-                result = d_out.get()
+                Device().sync()
+                result = d_out.copy_to_host()
                 assert int(result["min_val"][0]) == int(h_pairs[:, 0].min())
                 assert int(result["max_val"][0]) == int(h_pairs[:, 1].max())
 

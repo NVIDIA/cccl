@@ -21,6 +21,7 @@ import threading
 
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 
 import cuda.compute._cccl_interop as cccl_interop
 from cuda.compute import (
@@ -44,6 +45,8 @@ from cuda.compute._cccl_interop import (
 from cuda.compute._target_cc import target_cc
 from cuda.compute.iterators import CountingIterator, TransformIterator
 from cuda.compute.types import from_numpy_dtype
+from cuda.core import Device
+from cuda.core.system import get_num_devices
 
 try:
     from cuda.compute._build_info import USING_V2
@@ -675,7 +678,6 @@ def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
 
 
 def test_compile_only_then_lazy_load_and_execute():
-    cp = pytest.importorskip("cupy")
     cc = current_device_cc_key()
 
     # Single-cc compile-only build (no fused load) for the current device.
@@ -683,18 +685,17 @@ def test_compile_only_then_lazy_load_and_execute():
     assert not reducer.build_results[cc]._loaded
 
     h = np.arange(1024, dtype=np.int32)
-    d_in = cp.asarray(h)
-    d_out = cp.empty_like(d_in)
-    reducer(d_in=d_in, d_out=d_out, op=_add_one, num_items=d_in.size)
-    cp.cuda.runtime.deviceSynchronize()
+    d_in = DeviceArray.from_numpy(h)
+    d_out = DeviceArray.empty(h.shape, h.dtype)
+    reducer(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    Device().sync()
 
     # First call lazily loaded the current-device build result and ran correctly.
     assert reducer.build_results[cc]._loaded
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
 def test_multi_cc_loads_only_the_current_device_build_result():
-    cp = pytest.importorskip("cupy")
     # This test executes kernels, so it legitimately needs a GPU; ensure the
     # current device's cc is one of the built arches.
     cc = current_device_cc_key()
@@ -708,31 +709,30 @@ def test_multi_cc_loads_only_the_current_device_build_result():
     loaded = deserialize(blob)
 
     h = np.arange(256, dtype=np.int32)
-    d_in = cp.asarray(h)
-    d_out = cp.empty_like(d_in)
-    loaded(d_in=d_in, d_out=d_out, op=_add_one, num_items=d_in.size)
-    cp.cuda.runtime.deviceSynchronize()
+    d_in = DeviceArray.from_numpy(h)
+    d_out = DeviceArray.empty(h.shape, h.dtype)
+    loaded(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    Device().sync()
 
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
     # Only the current device's build result is loaded; the other stays lazy.
     assert loaded.build_results[cc]._loaded
     assert not loaded.build_results[other]._loaded
 
 
 def test_fused_fast_path_unchanged_when_no_cc_given():
-    cp = pytest.importorskip("cupy")
     h = np.arange(512, dtype=np.int32)
-    d_in = cp.asarray(h)
-    d_out = cp.empty_like(d_in)
+    d_in = DeviceArray.from_numpy(h)
+    d_out = DeviceArray.empty(h.shape, h.dtype)
 
     # compute_capability omitted -> single, already-loaded build result (fused build).
     builder = make_unary_transform(d_in=d_in, d_out=d_out, op=_add_one)
     (only,) = builder.build_results.values()
     assert only._loaded  # fused build already loaded the kernels
 
-    builder(d_in=d_in, d_out=d_out, op=_add_one, num_items=d_in.size)
-    cp.cuda.runtime.deviceSynchronize()
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    builder(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    Device().sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
 # ----------------------------------------------------------------------------
@@ -749,13 +749,10 @@ def _same_cc_device_pair():
     when a second device resolves the same cc entry that another device
     already owns, which requires two devices of equal compute capability.
     """
-    cp = pytest.importorskip("cupy")
     by_cc = {}
-    for device_id in range(cp.cuda.runtime.getDeviceCount()):
-        props = cp.cuda.runtime.getDeviceProperties(device_id)
-        by_cc.setdefault(cc_to_key((props["major"], props["minor"])), []).append(
-            device_id
-        )
+    for device_id in range(get_num_devices()):
+        major, minor = Device(device_id).compute_capability
+        by_cc.setdefault(cc_to_key((int(major), int(minor))), []).append(device_id)
     for cc_key, device_ids in by_cc.items():
         if len(device_ids) >= 2:
             return cc_key, device_ids[0], device_ids[1]
@@ -763,7 +760,6 @@ def _same_cc_device_pair():
 
 
 def test_second_device_loads_via_clone_without_recompiling():
-    cp = pytest.importorskip("cupy")
     pair = _same_cc_device_pair()
     if pair is None:
         pytest.skip("requires two devices with the same compute capability")
@@ -772,19 +768,22 @@ def test_second_device_loads_via_clone_without_recompiling():
     transformer = _make_transform(cc_key)
     h = np.arange(512, dtype=np.int32)
 
-    with cp.cuda.Device(device_a):
-        d_in = cp.asarray(h)
-        d_out = cp.empty_like(d_in)
-        transformer(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
-        cp.cuda.runtime.deviceSynchronize()
-        np.testing.assert_array_equal(d_out.get(), h + 1)
+    first_device = Device(device_a)
+    first_device.set_current()
+    d_in = DeviceArray.from_numpy(h, device=first_device)
+    d_out = DeviceArray.empty(h.shape, h.dtype, device=first_device)
+    transformer(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    first_device.sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
-    with cp.cuda.Device(device_b):
-        d_in_b = cp.asarray(h)
-        d_out_b = cp.empty_like(d_in_b)
-        transformer(d_in=d_in_b, d_out=d_out_b, op=_add_one, num_items=h.size)
-        cp.cuda.runtime.deviceSynchronize()
-        np.testing.assert_array_equal(d_out_b.get(), h + 1)
+    second_device = Device(device_b)
+    second_device.set_current()
+    d_in_b = DeviceArray.from_numpy(h, device=second_device)
+    d_out_b = DeviceArray.empty(h.shape, h.dtype, device=second_device)
+    second_device.set_current()
+    transformer(d_in=d_in_b, d_out=d_out_b, op=_add_one, num_items=h.size)
+    second_device.sync()
+    np.testing.assert_array_equal(d_out_b.copy_to_host(), h + 1)
 
     collection = transformer.build_results
     loaded_a = collection._loaded_results[(cc_key, device_a)]
@@ -797,7 +796,6 @@ def test_second_device_loads_via_clone_without_recompiling():
 
 
 def test_deserialized_wrapper_runs_on_both_devices():
-    cp = pytest.importorskip("cupy")
     pair = _same_cc_device_pair()
     if pair is None:
         pytest.skip("requires two devices with the same compute capability")
@@ -810,12 +808,14 @@ def test_deserialized_wrapper_runs_on_both_devices():
     # Run on device_b FIRST so a non-zero ordinal claims canonical ownership,
     # then device_a exercises the clone path from a non-zero owner.
     for device_id in (device_b, device_a):
-        with cp.cuda.Device(device_id):
-            d_in = cp.asarray(h)
-            d_out = cp.empty_like(d_in)
-            restored(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
-            cp.cuda.runtime.deviceSynchronize()
-            np.testing.assert_array_equal(d_out.get(), h + 1)
+        device = Device(device_id)
+        device.set_current()
+        d_in = DeviceArray.from_numpy(h, device=device)
+        d_out = DeviceArray.empty(h.shape, h.dtype, device=device)
+        device.set_current()
+        restored(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+        device.sync()
+        np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
     collection = restored.build_results
     loaded_b = collection._loaded_results[(cc_key, device_b)]
@@ -839,7 +839,6 @@ def test_serialize_while_other_threads_execute():
     load take the same per-cc source lock; compute never mutates the fields
     serialize reads. Every produced blob must be identical and usable.
     """
-    cp = pytest.importorskip("cupy")
     cc = current_device_cc_key()
 
     # int16 keeps this specialization's cache key distinct from every other
@@ -862,13 +861,13 @@ def test_serialize_while_other_threads_execute():
     def worker():
         wrapper = make_wrapper()
         shared_collections.append(wrapper.build_results)
-        d_in = cp.asarray(h)
-        d_out = cp.empty_like(d_in)
+        d_in = DeviceArray.from_numpy(h)
+        d_out = DeviceArray.empty(h.shape, h.dtype)
         barrier.wait()
         for _ in range(iterations):
             wrapper(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
-            cp.cuda.runtime.deviceSynchronize()
-            np.testing.assert_array_equal(d_out.get(), h + 1)
+            Device().sync()
+            np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         futures = [executor.submit(worker) for _ in range(n_workers)]
@@ -883,11 +882,11 @@ def test_serialize_while_other_threads_execute():
     assert len(set(blobs)) == 1
 
     restored = deserialize(blobs[0])
-    d_in = cp.asarray(h)
-    d_out = cp.empty_like(d_in)
+    d_in = DeviceArray.from_numpy(h)
+    d_out = DeviceArray.empty(h.shape, h.dtype)
     restored(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
-    cp.cuda.runtime.deviceSynchronize()
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    Device().sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
 def test_double_serialize_roundtrip_is_stable_and_executes():
@@ -898,7 +897,6 @@ def test_double_serialize_roundtrip_is_stable_and_executes():
     to the identical bytes both before and after it has been loaded and
     executed, and the second reconstruction must still run correctly.
     """
-    cp = pytest.importorskip("cupy")
     cc = current_device_cc_key()
 
     blob1 = serialize(_make_transform(cc))
@@ -910,27 +908,26 @@ def test_double_serialize_roundtrip_is_stable_and_executes():
     # leak nothing into the blob.
     loaded = deserialize(blob1)
     h = np.arange(256, dtype=np.int32)
-    d_in = cp.asarray(h)
-    d_out = cp.empty_like(d_in)
+    d_in = DeviceArray.from_numpy(h)
+    d_out = DeviceArray.empty(h.shape, h.dtype)
     loaded(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
-    cp.cuda.runtime.deviceSynchronize()
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    Device().sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
     blob2 = serialize(loaded)
     assert blob2 == blob1
 
     second = deserialize(blob2)
-    d_out.fill(0)
+    d_out.copy_from_host(np.zeros_like(h))
     second(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
-    cp.cuda.runtime.deviceSynchronize()
-    np.testing.assert_array_equal(d_out.get(), h + 1)
+    Device().sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
 def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     """Real-GPU check of the default-path payload donor (see the fake-based
     test_default_build_second_same_cc_device_clones_from_donor for the
     protocol): the second same-cc device must never run a native build."""
-    cp = pytest.importorskip("cupy")
     pair = _same_cc_device_pair()
     if pair is None:
         pytest.skip("requires two devices with the same compute capability")
@@ -939,25 +936,28 @@ def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     # uint8 keeps this specialization's cache key distinct from other tests.
     h = np.arange(256, dtype=np.uint8)
 
-    with cp.cuda.Device(device_a):
-        d_in = cp.asarray(h)
-        d_out = cp.empty_like(d_in)
-        w_a = make_unary_transform(d_in=d_in, d_out=d_out, op=_add_one)
-        w_a(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
-        cp.cuda.runtime.deviceSynchronize()
-        np.testing.assert_array_equal(d_out.get(), h + 1)
+    first_device = Device(device_a)
+    first_device.set_current()
+    d_in = DeviceArray.from_numpy(h, device=first_device)
+    d_out = DeviceArray.empty(h.shape, h.dtype, device=first_device)
+    w_a = make_unary_transform(d_in=d_in, d_out=d_out, op=_add_one)
+    w_a(d_in=d_in, d_out=d_out, op=_add_one, num_items=h.size)
+    first_device.sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
     def _no_native_build(*args, **kwargs):
         raise AssertionError("second same-cc device must clone, not rebuild")
 
     monkeypatch.setattr(cccl_interop, "call_build", _no_native_build)
-    with cp.cuda.Device(device_b):
-        d_in_b = cp.asarray(h)
-        d_out_b = cp.empty_like(d_in_b)
-        w_b = make_unary_transform(d_in=d_in_b, d_out=d_out_b, op=_add_one)
-        w_b(d_in=d_in_b, d_out=d_out_b, op=_add_one, num_items=h.size)
-        cp.cuda.runtime.deviceSynchronize()
-        np.testing.assert_array_equal(d_out_b.get(), h + 1)
+    second_device = Device(device_b)
+    second_device.set_current()
+    d_in_b = DeviceArray.from_numpy(h, device=second_device)
+    d_out_b = DeviceArray.empty(h.shape, h.dtype, device=second_device)
+    second_device.set_current()
+    w_b = make_unary_transform(d_in=d_in_b, d_out=d_out_b, op=_add_one)
+    w_b(d_in=d_in_b, d_out=d_out_b, op=_add_one, num_items=h.size)
+    second_device.sync()
+    np.testing.assert_array_equal(d_out_b.copy_to_host(), h + 1)
 
     # Distinct per-device collections and loaded results; shared payload.
     assert w_b.build_results is not w_a.build_results

@@ -13,6 +13,9 @@ from typing import Callable
 
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
+
+from cuda.core import Device
 
 pytestmark = [
     pytest.mark.free_threading,
@@ -45,7 +48,7 @@ def _assert_gil_disabled(where: str) -> None:
 def _require_free_threaded_python() -> None:
     if not _is_free_threaded_build():
         pytest.skip("requires a free-threaded CPython build")
-    _assert_gil_disabled("before importing cuda.compute")
+    _assert_gil_disabled("at free-threaded test start")
 
 
 def _require_serialization_backend() -> None:
@@ -56,38 +59,25 @@ def _require_serialization_backend() -> None:
 
 
 @pytest.fixture
-def compute_modules():
+def compute_module():
     _require_free_threaded_python()
-
-    import cupy as cp
-
-    _assert_gil_disabled("after importing cupy")
 
     import cuda.compute as cc
 
     _assert_gil_disabled("after importing cuda.compute")
     cc.clear_all_caches()
     try:
-        yield cp, cc
+        yield cc
     finally:
         cc.clear_all_caches()
 
 
-class _CudaStream:
-    def __init__(self, stream):
-        self.stream = stream
-
-    def __cuda_stream__(self):
-        return (0, self.stream.ptr)
-
-    @property
-    def ptr(self):
-        return self.stream.ptr
-
-
-def _make_stream(cp):
-    stream = cp.cuda.Stream()
-    return stream, _CudaStream(stream)
+def _make_stream():
+    # cuda.core streams implement __cuda_stream__, so one object serves both
+    # as the allocation/synchronization handle and the per-call stream arg.
+    device = Device()
+    device.set_current()
+    return device.create_stream()
 
 
 def _run_threaded(workers: list[Callable[[threading.Barrier], None]]) -> None:
@@ -116,9 +106,9 @@ def _run_threaded(workers: list[Callable[[threading.Barrier], None]]) -> None:
     _assert_gil_disabled("after concurrent cuda.compute operations")
 
 
-def _call_with_temp(cp, algorithm, **kwargs):
+def _call_with_temp(algorithm, **kwargs):
     temp_storage_bytes = algorithm(temp_storage=None, **kwargs)
-    temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    temp_storage = DeviceArray.empty(temp_storage_bytes, dtype=np.uint8)
     return algorithm(temp_storage=temp_storage, **kwargs)
 
 
@@ -158,16 +148,16 @@ class _AlgorithmCase:
         return self.name
 
 
-def _run_thread_local_algorithm_case(cp, cc, case: _AlgorithmCase) -> None:
-    warm_algorithm = case.make_shared(cp, cc)
+def _run_thread_local_algorithm_case(cc, case: _AlgorithmCase) -> None:
+    warm_algorithm = case.make_shared(cc)
 
-    warm_worker = case.make_worker(cp, cc, worker_id=0, iteration=-1)
-    case.run(cp, cc, warm_algorithm, warm_worker)
-    case.check(cp, cc, warm_worker)
+    warm_worker = case.make_worker(cc, worker_id=0, iteration=-1)
+    case.run(cc, warm_algorithm, warm_worker)
+    case.check(cc, warm_worker)
 
     for iteration in range(STRESS_ITERATIONS):
         worker_state = [
-            case.make_worker(cp, cc, worker_id=worker_id, iteration=iteration)
+            case.make_worker(cc, worker_id=worker_id, iteration=iteration)
             for worker_id in range(STRESS_THREADS)
         ]
         returned_algorithms = [None] * STRESS_THREADS
@@ -175,10 +165,10 @@ def _run_thread_local_algorithm_case(cp, cc, case: _AlgorithmCase) -> None:
         def make_thread(worker_id, worker):
             def thread(barrier):
                 barrier.wait()
-                algorithm = case.make_shared(cp, cc)
+                algorithm = case.make_shared(cc)
                 returned_algorithms[worker_id] = algorithm
-                case.run(cp, cc, algorithm, worker)
-                case.check(cp, cc, worker)
+                case.run(cc, algorithm, worker)
+                case.check(cc, worker)
 
             return thread
 
@@ -198,16 +188,14 @@ def _run_thread_local_algorithm_case(cp, cc, case: _AlgorithmCase) -> None:
         )
 
 
-def _make_reduce_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_reduce_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in = np.arange(64, dtype=np.int32) + worker_id * 101 + iteration
     h_init = np.array([7 + worker_id], dtype=np.int32)
-    with stream:
-        d_in = cp.asarray(h_in)
-        d_out = cp.empty(1, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(1, dtype=np.int32)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_in": h_in,
         "d_in": d_in,
         "d_out": d_out,
@@ -215,8 +203,8 @@ def _make_reduce_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_reduce_shared(cp, cc):
-    worker = _make_reduce_worker(cp, cc, 0, -1)
+def _make_reduce_shared(cc):
+    worker = _make_reduce_worker(cc, 0, -1)
     return cc.make_reduce_into(
         d_in=worker["d_in"],
         d_out=worker["d_out"],
@@ -225,89 +213,84 @@ def _make_reduce_shared(cp, cc):
     )
 
 
-def _run_reduce(cp, cc, reducer, worker):
+def _run_reduce(cc, reducer, worker):
     _call_with_temp(
-        cp,
         reducer,
         d_in=worker["d_in"],
         d_out=worker["d_out"],
         op=cc.OpKind.PLUS,
         h_init=worker["h_init"],
         num_items=worker["h_in"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_reduce(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_reduce(cc, worker):
+    worker["stream"].sync()
     expected = worker["h_in"].sum(dtype=np.int64) + int(worker["h_init"][0])
-    assert int(worker["d_out"].get()[0]) == int(expected)
+    assert int(worker["d_out"].copy_to_host()[0]) == int(expected)
 
 
-def _make_unary_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_unary_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in = np.arange(32, dtype=np.int32) + worker_id * 17 + iteration
-    with stream:
-        d_in = cp.asarray(h_in)
-        d_out = cp.empty_like(d_in)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_in": h_in,
         "d_in": d_in,
         "d_out": d_out,
     }
 
 
-def _make_unary_shared(cp, cc):
-    worker = _make_unary_worker(cp, cc, 0, -1)
+def _make_unary_shared(cc):
+    worker = _make_unary_worker(cc, 0, -1)
     return cc.make_unary_transform(
         d_in=worker["d_in"], d_out=worker["d_out"], op=cc.OpKind.NEGATE
     )
 
 
-def _make_unary_for_worker(cp, cc, worker):
+def _make_unary_for_worker(cc, worker):
     return cc.make_unary_transform(
         d_in=worker["d_in"], d_out=worker["d_out"], op=cc.OpKind.NEGATE
     )
 
 
-def _run_unary(cp, cc, transformer, worker):
+def _run_unary(cc, transformer, worker):
     transformer(
         d_in=worker["d_in"],
         d_out=worker["d_out"],
         op=cc.OpKind.NEGATE,
         num_items=worker["h_in"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _run_unary_empty(cp, cc, transformer, worker):
+def _run_unary_empty(cc, transformer, worker):
     transformer(
         d_in=worker["d_in"],
         d_out=worker["d_out"],
         op=cc.OpKind.NEGATE,
         num_items=0,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_unary(cp, cc, worker):
-    worker["stream"].synchronize()
-    np.testing.assert_array_equal(worker["d_out"].get(), -worker["h_in"])
+def _check_unary(cc, worker):
+    worker["stream"].sync()
+    np.testing.assert_array_equal(worker["d_out"].copy_to_host(), -worker["h_in"])
 
 
-def _make_binary_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_binary_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in1 = np.arange(32, dtype=np.int32) + worker_id * 13
     h_in2 = np.arange(32, dtype=np.int32) + iteration * 7
-    with stream:
-        d_in1 = cp.asarray(h_in1)
-        d_in2 = cp.asarray(h_in2)
-        d_out = cp.empty_like(d_in1)
+    d_in1 = DeviceArray.from_numpy(h_in1)
+    d_in2 = DeviceArray.from_numpy(h_in2)
+    d_out = DeviceArray.empty(h_in1.shape, h_in1.dtype)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_in1": h_in1,
         "h_in2": h_in2,
         "d_in1": d_in1,
@@ -316,8 +299,8 @@ def _make_binary_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_binary_shared(cp, cc):
-    worker = _make_binary_worker(cp, cc, 0, -1)
+def _make_binary_shared(cc):
+    worker = _make_binary_worker(cc, 0, -1)
     return cc.make_binary_transform(
         d_in1=worker["d_in1"],
         d_in2=worker["d_in2"],
@@ -326,7 +309,7 @@ def _make_binary_shared(cp, cc):
     )
 
 
-def _make_binary_for_worker(cp, cc, worker):
+def _make_binary_for_worker(cc, worker):
     return cc.make_binary_transform(
         d_in1=worker["d_in1"],
         d_in2=worker["d_in2"],
@@ -335,45 +318,43 @@ def _make_binary_for_worker(cp, cc, worker):
     )
 
 
-def _run_binary(cp, cc, transformer, worker):
+def _run_binary(cc, transformer, worker):
     transformer(
         d_in1=worker["d_in1"],
         d_in2=worker["d_in2"],
         d_out=worker["d_out"],
         op=cc.OpKind.PLUS,
         num_items=worker["h_in1"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _run_binary_empty(cp, cc, transformer, worker):
+def _run_binary_empty(cc, transformer, worker):
     transformer(
         d_in1=worker["d_in1"],
         d_in2=worker["d_in2"],
         d_out=worker["d_out"],
         op=cc.OpKind.PLUS,
         num_items=0,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_binary(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_binary(cc, worker):
+    worker["stream"].sync()
     np.testing.assert_array_equal(
-        worker["d_out"].get(), worker["h_in1"] + worker["h_in2"]
+        worker["d_out"].copy_to_host(), worker["h_in1"] + worker["h_in2"]
     )
 
 
-def _make_scan_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_scan_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in = np.arange(1, 33, dtype=np.int32) + worker_id + iteration
     h_init = np.array([3 + worker_id], dtype=np.int32)
-    with stream:
-        d_in = cp.asarray(h_in)
-        d_out = cp.empty_like(d_in)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_in": h_in,
         "h_init": h_init,
         "d_in": d_in,
@@ -381,8 +362,8 @@ def _make_scan_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_exclusive_scan_shared(cp, cc):
-    worker = _make_scan_worker(cp, cc, 0, -1)
+def _make_exclusive_scan_shared(cc):
+    worker = _make_scan_worker(cc, 0, -1)
     return cc.make_exclusive_scan(
         d_in=worker["d_in"],
         d_out=worker["d_out"],
@@ -391,8 +372,8 @@ def _make_exclusive_scan_shared(cp, cc):
     )
 
 
-def _make_inclusive_scan_shared(cp, cc):
-    worker = _make_scan_worker(cp, cc, 0, -1)
+def _make_inclusive_scan_shared(cc):
+    worker = _make_scan_worker(cc, 0, -1)
     return cc.make_inclusive_scan(
         d_in=worker["d_in"],
         d_out=worker["d_out"],
@@ -401,47 +382,44 @@ def _make_inclusive_scan_shared(cp, cc):
     )
 
 
-def _run_scan(cp, cc, scanner, worker):
+def _run_scan(cc, scanner, worker):
     _call_with_temp(
-        cp,
         scanner,
         d_in=worker["d_in"],
         d_out=worker["d_out"],
         op=cc.OpKind.PLUS,
         init_value=worker["h_init"],
         num_items=worker["h_in"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_exclusive_scan(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_exclusive_scan(cc, worker):
+    worker["stream"].sync()
     expected = np.empty_like(worker["h_in"])
     expected[0] = worker["h_init"][0]
     expected[1:] = worker["h_init"][0] + np.cumsum(worker["h_in"][:-1])
-    np.testing.assert_array_equal(worker["d_out"].get(), expected)
+    np.testing.assert_array_equal(worker["d_out"].copy_to_host(), expected)
 
 
-def _check_inclusive_scan(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_inclusive_scan(cc, worker):
+    worker["stream"].sync()
     expected = worker["h_init"][0] + np.cumsum(worker["h_in"])
-    np.testing.assert_array_equal(worker["d_out"].get(), expected)
+    np.testing.assert_array_equal(worker["d_out"].copy_to_host(), expected)
 
 
-def _make_segmented_reduce_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_segmented_reduce_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in = np.arange(1, 17, dtype=np.int32) + worker_id * 3 + iteration
     h_start_offsets = np.array([0, 3, 8, 12], dtype=np.int32)
     h_end_offsets = np.array([3, 8, 12, 16], dtype=np.int32)
     h_init = np.array([worker_id], dtype=np.int32)
-    with stream:
-        d_in = cp.asarray(h_in)
-        d_out = cp.empty(len(h_start_offsets), dtype=np.int32)
-        d_start_offsets = cp.asarray(h_start_offsets)
-        d_end_offsets = cp.asarray(h_end_offsets)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(len(h_start_offsets), dtype=np.int32)
+    d_start_offsets = DeviceArray.from_numpy(h_start_offsets)
+    d_end_offsets = DeviceArray.from_numpy(h_end_offsets)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_in": h_in,
         "h_start_offsets": h_start_offsets,
         "h_end_offsets": h_end_offsets,
@@ -453,8 +431,8 @@ def _make_segmented_reduce_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_segmented_reduce_shared(cp, cc):
-    worker = _make_segmented_reduce_worker(cp, cc, 0, -1)
+def _make_segmented_reduce_shared(cc):
+    worker = _make_segmented_reduce_worker(cc, 0, -1)
     return cc.make_segmented_reduce(
         d_in=worker["d_in"],
         d_out=worker["d_out"],
@@ -465,9 +443,8 @@ def _make_segmented_reduce_shared(cp, cc):
     )
 
 
-def _run_segmented_reduce(cp, cc, reducer, worker):
+def _run_segmented_reduce(cc, reducer, worker):
     _call_with_temp(
-        cp,
         reducer,
         d_in=worker["d_in"],
         d_out=worker["d_out"],
@@ -476,12 +453,12 @@ def _run_segmented_reduce(cp, cc, reducer, worker):
         end_offsets_in=worker["d_end_offsets"],
         op=cc.OpKind.PLUS,
         h_init=worker["h_init"],
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_segmented_reduce(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_segmented_reduce(cc, worker):
+    worker["stream"].sync()
     expected = np.array(
         [
             worker["h_in"][start:end].sum() + worker["h_init"][0]
@@ -489,11 +466,11 @@ def _check_segmented_reduce(cp, cc, worker):
         ],
         dtype=np.int32,
     )
-    np.testing.assert_array_equal(worker["d_out"].get(), expected)
+    np.testing.assert_array_equal(worker["d_out"].copy_to_host(), expected)
 
 
-def _make_histogram_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_histogram_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     lower = np.float32(worker_id * 10)
     upper = np.float32(lower + 8)
     h_samples = np.array(
@@ -510,12 +487,10 @@ def _make_histogram_worker(cp, cc, worker_id, iteration):
     h_num_levels = np.array([5], dtype=np.int32)
     h_lower = np.array([lower], dtype=np.float32)
     h_upper = np.array([upper], dtype=np.float32)
-    with stream:
-        d_samples = cp.asarray(h_samples)
-        d_histogram = cp.zeros(h_num_levels[0] - 1, dtype=np.int32)
+    d_samples = DeviceArray.from_numpy(h_samples)
+    d_histogram = DeviceArray.from_numpy(np.zeros(h_num_levels[0] - 1, dtype=np.int32))
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_samples": h_samples,
         "h_num_levels": h_num_levels,
         "h_lower": h_lower,
@@ -525,8 +500,8 @@ def _make_histogram_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_histogram_shared(cp, cc):
-    worker = _make_histogram_worker(cp, cc, 0, -1)
+def _make_histogram_shared(cc):
+    worker = _make_histogram_worker(cc, 0, -1)
     return cc.make_histogram_even(
         d_samples=worker["d_samples"],
         d_histogram=worker["d_histogram"],
@@ -537,11 +512,12 @@ def _make_histogram_shared(cp, cc):
     )
 
 
-def _run_histogram(cp, cc, histogrammer, worker):
-    with worker["stream"]:
-        worker["d_histogram"].fill(0)
+def _run_histogram(cc, histogrammer, worker):
+    worker["d_histogram"].copy_from_host(
+        np.zeros(worker["h_num_levels"][0] - 1, dtype=np.int32),
+        stream=worker["stream"],
+    )
     _call_with_temp(
-        cp,
         histogrammer,
         d_samples=worker["d_samples"],
         d_histogram=worker["d_histogram"],
@@ -549,33 +525,31 @@ def _run_histogram(cp, cc, histogrammer, worker):
         h_lower_level=worker["h_lower"],
         h_upper_level=worker["h_upper"],
         num_samples=worker["h_samples"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_histogram(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_histogram(cc, worker):
+    worker["stream"].sync()
     expected, _ = np.histogram(
         worker["h_samples"],
         bins=int(worker["h_num_levels"][0] - 1),
         range=(float(worker["h_lower"][0]), float(worker["h_upper"][0])),
     )
     np.testing.assert_array_equal(
-        worker["d_histogram"].get(), expected.astype(np.int32)
+        worker["d_histogram"].copy_to_host(), expected.astype(np.int32)
     )
 
 
-def _make_binary_search_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_binary_search_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_data = np.array([90, 70, 50, 30, 10], dtype=np.int32) - worker_id
     h_values = np.array([95, 70, 45, 10, 5], dtype=np.int32) - worker_id
-    with stream:
-        d_data = cp.asarray(h_data)
-        d_values = cp.asarray(h_values)
-        d_out = cp.empty(h_values.size, dtype=np.uintp)
+    d_data = DeviceArray.from_numpy(h_data)
+    d_values = DeviceArray.from_numpy(h_values)
+    d_out = DeviceArray.empty(h_values.size, dtype=np.uintp)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_data": h_data,
         "h_values": h_values,
         "d_data": d_data,
@@ -584,8 +558,8 @@ def _make_binary_search_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_lower_bound_shared(cp, cc):
-    worker = _make_binary_search_worker(cp, cc, 0, -1)
+def _make_lower_bound_shared(cc):
+    worker = _make_binary_search_worker(cc, 0, -1)
     return cc.make_lower_bound(
         d_data=worker["d_data"],
         d_values=worker["d_values"],
@@ -594,8 +568,8 @@ def _make_lower_bound_shared(cp, cc):
     )
 
 
-def _make_upper_bound_shared(cp, cc):
-    worker = _make_binary_search_worker(cp, cc, 0, -1)
+def _make_upper_bound_shared(cc):
+    worker = _make_binary_search_worker(cc, 0, -1)
     return cc.make_upper_bound(
         d_data=worker["d_data"],
         d_values=worker["d_values"],
@@ -604,7 +578,7 @@ def _make_upper_bound_shared(cp, cc):
     )
 
 
-def _make_lower_bound_for_worker(cp, cc, worker):
+def _make_lower_bound_for_worker(cc, worker):
     return cc.make_lower_bound(
         d_data=worker["d_data"],
         d_values=worker["d_values"],
@@ -613,7 +587,7 @@ def _make_lower_bound_for_worker(cp, cc, worker):
     )
 
 
-def _make_upper_bound_for_worker(cp, cc, worker):
+def _make_upper_bound_for_worker(cc, worker):
     return cc.make_upper_bound(
         d_data=worker["d_data"],
         d_values=worker["d_values"],
@@ -622,7 +596,7 @@ def _make_upper_bound_for_worker(cp, cc, worker):
     )
 
 
-def _run_binary_search(cp, cc, searcher, worker):
+def _run_binary_search(cc, searcher, worker):
     searcher(
         d_data=worker["d_data"],
         num_items=worker["h_data"].size,
@@ -630,11 +604,11 @@ def _run_binary_search(cp, cc, searcher, worker):
         num_values=worker["h_values"].size,
         d_out=worker["d_out"],
         comp=cc.OpKind.GREATER,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _run_binary_search_empty(cp, cc, searcher, worker):
+def _run_binary_search_empty(cc, searcher, worker):
     searcher(
         d_data=worker["d_data"],
         num_items=worker["h_data"].size,
@@ -642,35 +616,37 @@ def _run_binary_search_empty(cp, cc, searcher, worker):
         num_values=0,
         d_out=worker["d_out"],
         comp=cc.OpKind.GREATER,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_lower_bound(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_lower_bound(cc, worker):
+    worker["stream"].sync()
     expected = np.searchsorted(-worker["h_data"], -worker["h_values"], side="left")
-    np.testing.assert_array_equal(worker["d_out"].get(), expected.astype(np.uintp))
+    np.testing.assert_array_equal(
+        worker["d_out"].copy_to_host(), expected.astype(np.uintp)
+    )
 
 
-def _check_upper_bound(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_upper_bound(cc, worker):
+    worker["stream"].sync()
     expected = np.searchsorted(-worker["h_data"], -worker["h_values"], side="right")
-    np.testing.assert_array_equal(worker["d_out"].get(), expected.astype(np.uintp))
+    np.testing.assert_array_equal(
+        worker["d_out"].copy_to_host(), expected.astype(np.uintp)
+    )
 
 
-def _make_select_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_select_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in = np.array(
         [True, False, worker_id % 2 == 0, True, False, iteration % 2 == 0],
         dtype=np.bool_,
     )
-    with stream:
-        d_in = cp.asarray(h_in)
-        d_out = cp.empty_like(d_in)
-        d_count = cp.empty(2, dtype=np.uint64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_count = DeviceArray.empty(2, dtype=np.uint64)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_in": h_in,
         "d_in": d_in,
         "d_out": d_out,
@@ -678,8 +654,8 @@ def _make_select_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_select_shared(cp, cc):
-    worker = _make_select_worker(cp, cc, 0, -1)
+def _make_select_shared(cc):
+    worker = _make_select_worker(cc, 0, -1)
     return cc.make_select(
         d_in=worker["d_in"],
         d_out=worker["d_out"],
@@ -688,53 +664,53 @@ def _make_select_shared(cp, cc):
     )
 
 
-def _run_select(cp, cc, selector, worker):
+def _run_select(cc, selector, worker):
     _call_with_temp(
-        cp,
         selector,
         d_in=worker["d_in"],
         d_out=worker["d_out"],
         d_num_selected_out=worker["d_count"],
         cond=cc.OpKind.IDENTITY,
         num_items=worker["h_in"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_select(cp, cc, worker):
-    worker["stream"].synchronize()
-    count = int(worker["d_count"].get()[0])
+def _check_select(cc, worker):
+    worker["stream"].sync()
+    count = int(worker["d_count"].copy_to_host()[0])
     expected = worker["h_in"][worker["h_in"]]
     assert count == expected.size
-    np.testing.assert_array_equal(worker["d_out"].get()[:count], expected)
+    np.testing.assert_array_equal(worker["d_out"].copy_to_host()[:count], expected)
 
 
-def _make_three_way_shared(cp, cc):
-    worker = _make_select_worker(cp, cc, 0, -1)
-    d_unselected = cp.empty_like(worker["d_in"])
+def _make_three_way_shared(cc):
+    worker = _make_select_worker(cc, 0, -1)
+    d_unselected = DeviceArray.empty(worker["h_in"].shape, worker["h_in"].dtype)
     return cc.make_three_way_partition(
         d_in=worker["d_in"],
         d_first_part_out=worker["d_out"],
         d_second_part_out=d_unselected,
-        d_unselected_out=cp.empty_like(worker["d_in"]),
+        d_unselected_out=DeviceArray.empty(worker["h_in"].shape, worker["h_in"].dtype),
         d_num_selected_out=worker["d_count"],
         select_first_part_op=cc.OpKind.IDENTITY,
         select_second_part_op=cc.OpKind.LOGICAL_NOT,
     )
 
 
-def _make_three_way_worker(cp, cc, worker_id, iteration):
-    worker = _make_select_worker(cp, cc, worker_id, iteration)
-    stream = worker["stream"]
-    with stream:
-        worker["d_second_out"] = cp.empty_like(worker["d_in"])
-        worker["d_unselected"] = cp.empty_like(worker["d_in"])
+def _make_three_way_worker(cc, worker_id, iteration):
+    worker = _make_select_worker(cc, worker_id, iteration)
+    worker["d_second_out"] = DeviceArray.empty(
+        worker["h_in"].shape, worker["h_in"].dtype
+    )
+    worker["d_unselected"] = DeviceArray.empty(
+        worker["h_in"].shape, worker["h_in"].dtype
+    )
     return worker
 
 
-def _run_three_way(cp, cc, partitioner, worker):
+def _run_three_way(cc, partitioner, worker):
     _call_with_temp(
-        cp,
         partitioner,
         d_in=worker["d_in"],
         d_first_part_out=worker["d_out"],
@@ -744,42 +720,40 @@ def _run_three_way(cp, cc, partitioner, worker):
         select_first_part_op=cc.OpKind.IDENTITY,
         select_second_part_op=cc.OpKind.LOGICAL_NOT,
         num_items=worker["h_in"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_three_way(cp, cc, worker):
-    worker["stream"].synchronize()
-    counts = worker["d_count"].get()
+def _check_three_way(cc, worker):
+    worker["stream"].sync()
+    counts = worker["d_count"].copy_to_host()
     true_count = int(np.count_nonzero(worker["h_in"]))
     false_count = int(worker["h_in"].size - true_count)
     assert int(counts[0]) == true_count
     assert int(counts[1]) == false_count
     np.testing.assert_array_equal(
-        worker["d_out"].get()[:true_count], np.ones(true_count, dtype=np.bool_)
+        worker["d_out"].copy_to_host()[:true_count], np.ones(true_count, dtype=np.bool_)
     )
     np.testing.assert_array_equal(
-        worker["d_second_out"].get()[:false_count],
+        worker["d_second_out"].copy_to_host()[:false_count],
         np.zeros(false_count, dtype=np.bool_),
     )
 
 
-def _make_unique_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_unique_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     base = worker_id * 10 + iteration
     h_keys = np.array(
         [base, base, base + 1, base + 2, base + 2, base + 3], dtype=np.int32
     )
     h_items = np.arange(h_keys.size, dtype=np.int32) + worker_id * 100
-    with stream:
-        d_in_keys = cp.asarray(h_keys)
-        d_in_items = cp.asarray(h_items)
-        d_out_keys = cp.empty_like(d_in_keys)
-        d_out_items = cp.empty_like(d_in_items)
-        d_count = cp.empty(1, dtype=np.int32)
+    d_in_keys = DeviceArray.from_numpy(h_keys)
+    d_in_items = DeviceArray.from_numpy(h_items)
+    d_out_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
+    d_out_items = DeviceArray.empty(h_items.shape, h_items.dtype)
+    d_count = DeviceArray.empty(1, dtype=np.int32)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_keys": h_keys,
         "h_items": h_items,
         "d_in_keys": d_in_keys,
@@ -790,8 +764,8 @@ def _make_unique_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_unique_shared(cp, cc):
-    worker = _make_unique_worker(cp, cc, 0, -1)
+def _make_unique_shared(cc):
+    worker = _make_unique_worker(cc, 0, -1)
     return cc.make_unique_by_key(
         d_in_keys=worker["d_in_keys"],
         d_in_items=worker["d_in_items"],
@@ -802,9 +776,8 @@ def _make_unique_shared(cp, cc):
     )
 
 
-def _run_unique(cp, cc, uniquer, worker):
+def _run_unique(cc, uniquer, worker):
     _call_with_temp(
-        cp,
         uniquer,
         d_in_keys=worker["d_in_keys"],
         d_in_items=worker["d_in_items"],
@@ -813,33 +786,35 @@ def _run_unique(cp, cc, uniquer, worker):
         d_out_num_selected=worker["d_count"],
         op=cc.OpKind.EQUAL_TO,
         num_items=worker["h_keys"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_unique(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_unique(cc, worker):
+    worker["stream"].sync()
     selected = np.concatenate(([True], worker["h_keys"][1:] != worker["h_keys"][:-1]))
     expected_keys = worker["h_keys"][selected]
     expected_items = worker["h_items"][selected]
-    count = int(worker["d_count"].get()[0])
+    count = int(worker["d_count"].copy_to_host()[0])
     assert count == expected_keys.size
-    np.testing.assert_array_equal(worker["d_out_keys"].get()[:count], expected_keys)
-    np.testing.assert_array_equal(worker["d_out_items"].get()[:count], expected_items)
+    np.testing.assert_array_equal(
+        worker["d_out_keys"].copy_to_host()[:count], expected_keys
+    )
+    np.testing.assert_array_equal(
+        worker["d_out_items"].copy_to_host()[:count], expected_items
+    )
 
 
-def _make_merge_sort_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_merge_sort_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_keys = np.array([5, 1, 3, 1, 4, 2], dtype=np.int32) + worker_id * 10
     h_values = np.arange(h_keys.size, dtype=np.int32) + iteration * 100
-    with stream:
-        d_in_keys = cp.asarray(h_keys)
-        d_in_values = cp.asarray(h_values)
-        d_out_keys = cp.empty_like(d_in_keys)
-        d_out_values = cp.empty_like(d_in_values)
+    d_in_keys = DeviceArray.from_numpy(h_keys)
+    d_in_values = DeviceArray.from_numpy(h_values)
+    d_out_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
+    d_out_values = DeviceArray.empty(h_values.shape, h_values.dtype)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_keys": h_keys,
         "h_values": h_values,
         "d_in_keys": d_in_keys,
@@ -849,8 +824,8 @@ def _make_merge_sort_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_merge_sort_shared(cp, cc):
-    worker = _make_merge_sort_worker(cp, cc, 0, -1)
+def _make_merge_sort_shared(cc):
+    worker = _make_merge_sort_worker(cc, 0, -1)
     return cc.make_merge_sort(
         d_in_keys=worker["d_in_keys"],
         d_in_values=worker["d_in_values"],
@@ -860,9 +835,8 @@ def _make_merge_sort_shared(cp, cc):
     )
 
 
-def _run_merge_sort(cp, cc, sorter, worker):
+def _run_merge_sort(cc, sorter, worker):
     _call_with_temp(
-        cp,
         sorter,
         d_in_keys=worker["d_in_keys"],
         d_in_values=worker["d_in_values"],
@@ -870,31 +844,31 @@ def _run_merge_sort(cp, cc, sorter, worker):
         d_out_values=worker["d_out_values"],
         op=cc.OpKind.LESS,
         num_items=worker["h_keys"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_merge_sort(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_merge_sort(cc, worker):
+    worker["stream"].sync()
     order = np.argsort(worker["h_keys"], kind="stable")
-    np.testing.assert_array_equal(worker["d_out_keys"].get(), worker["h_keys"][order])
     np.testing.assert_array_equal(
-        worker["d_out_values"].get(), worker["h_values"][order]
+        worker["d_out_keys"].copy_to_host(), worker["h_keys"][order]
+    )
+    np.testing.assert_array_equal(
+        worker["d_out_values"].copy_to_host(), worker["h_values"][order]
     )
 
 
-def _make_radix_sort_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_radix_sort_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_keys = np.array([7, 3, 5, 3, 1, 9], dtype=np.uint32) + np.uint32(worker_id * 11)
     h_values = np.arange(h_keys.size, dtype=np.int32) + iteration * 10
-    with stream:
-        d_in_keys = cp.asarray(h_keys)
-        d_tmp_keys = cp.empty_like(d_in_keys)
-        d_in_values = cp.asarray(h_values)
-        d_tmp_values = cp.empty_like(d_in_values)
+    d_in_keys = DeviceArray.from_numpy(h_keys)
+    d_tmp_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
+    d_in_values = DeviceArray.from_numpy(h_values)
+    d_tmp_values = DeviceArray.empty(h_values.shape, h_values.dtype)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_keys": h_keys,
         "h_values": h_values,
         "keys": cc.DoubleBuffer(d_in_keys, d_tmp_keys),
@@ -902,8 +876,8 @@ def _make_radix_sort_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_radix_sort_shared(cp, cc):
-    worker = _make_radix_sort_worker(cp, cc, 0, -1)
+def _make_radix_sort_shared(cc):
+    worker = _make_radix_sort_worker(cc, 0, -1)
     return cc.make_radix_sort(
         d_in_keys=worker["keys"],
         d_out_keys=None,
@@ -913,47 +887,44 @@ def _make_radix_sort_shared(cp, cc):
     )
 
 
-def _run_radix_sort(cp, cc, sorter, worker):
+def _run_radix_sort(cc, sorter, worker):
     _call_with_temp(
-        cp,
         sorter,
         d_in_keys=worker["keys"],
         d_out_keys=None,
         d_in_values=worker["values"],
         d_out_values=None,
         num_items=worker["h_keys"].size,
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_radix_sort(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_radix_sort(cc, worker):
+    worker["stream"].sync()
     order = np.argsort(worker["h_keys"], kind="stable")
     np.testing.assert_array_equal(
-        worker["keys"].current().get(), worker["h_keys"][order]
+        worker["keys"].current().copy_to_host(), worker["h_keys"][order]
     )
     np.testing.assert_array_equal(
-        worker["values"].current().get(), worker["h_values"][order]
+        worker["values"].current().copy_to_host(), worker["h_values"][order]
     )
     assert worker["keys"].selector == worker["values"].selector
 
 
-def _make_segmented_sort_worker(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _make_segmented_sort_worker(cc, worker_id, iteration):
+    stream = _make_stream()
     h_keys = np.array([4, 2, 3, 8, 6, 7, 1, 5], dtype=np.int32) + worker_id * 13
     h_values = np.arange(h_keys.size, dtype=np.int32) + iteration * 100
     h_start_offsets = np.array([0, 3, 6], dtype=np.int32)
     h_end_offsets = np.array([3, 6, 8], dtype=np.int32)
-    with stream:
-        d_in_keys = cp.asarray(h_keys)
-        d_tmp_keys = cp.empty_like(d_in_keys)
-        d_in_values = cp.asarray(h_values)
-        d_tmp_values = cp.empty_like(d_in_values)
-        d_start_offsets = cp.asarray(h_start_offsets)
-        d_end_offsets = cp.asarray(h_end_offsets)
+    d_in_keys = DeviceArray.from_numpy(h_keys)
+    d_tmp_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
+    d_in_values = DeviceArray.from_numpy(h_values)
+    d_tmp_values = DeviceArray.empty(h_values.shape, h_values.dtype)
+    d_start_offsets = DeviceArray.from_numpy(h_start_offsets)
+    d_end_offsets = DeviceArray.from_numpy(h_end_offsets)
     return {
         "stream": stream,
-        "cuda_stream": cuda_stream,
         "h_keys": h_keys,
         "h_values": h_values,
         "h_start_offsets": h_start_offsets,
@@ -965,8 +936,8 @@ def _make_segmented_sort_worker(cp, cc, worker_id, iteration):
     }
 
 
-def _make_segmented_sort_shared(cp, cc):
-    worker = _make_segmented_sort_worker(cp, cc, 0, -1)
+def _make_segmented_sort_shared(cc):
+    worker = _make_segmented_sort_worker(cc, 0, -1)
     return cc.make_segmented_sort(
         d_in_keys=worker["keys"],
         d_out_keys=None,
@@ -978,9 +949,8 @@ def _make_segmented_sort_shared(cp, cc):
     )
 
 
-def _run_segmented_sort(cp, cc, sorter, worker):
+def _run_segmented_sort(cc, sorter, worker):
     _call_with_temp(
-        cp,
         sorter,
         d_in_keys=worker["keys"],
         d_out_keys=None,
@@ -990,20 +960,24 @@ def _run_segmented_sort(cp, cc, sorter, worker):
         num_segments=worker["h_start_offsets"].size,
         start_offsets_in=worker["d_start_offsets"],
         end_offsets_in=worker["d_end_offsets"],
-        stream=worker["cuda_stream"],
+        stream=worker["stream"],
     )
 
 
-def _check_segmented_sort(cp, cc, worker):
-    worker["stream"].synchronize()
+def _check_segmented_sort(cc, worker):
+    worker["stream"].sync()
     expected_keys, expected_values = _selected_segments(
         worker["h_keys"],
         worker["h_values"],
         worker["h_start_offsets"],
         worker["h_end_offsets"],
     )
-    np.testing.assert_array_equal(worker["keys"].current().get(), expected_keys)
-    np.testing.assert_array_equal(worker["values"].current().get(), expected_values)
+    np.testing.assert_array_equal(
+        worker["keys"].current().copy_to_host(), expected_keys
+    )
+    np.testing.assert_array_equal(
+        worker["values"].current().copy_to_host(), expected_values
+    )
     assert worker["keys"].selector == worker["values"].selector
 
 
@@ -1108,46 +1082,74 @@ SHARED_ALGORITHM_CASES = [
 ]
 
 
-def test_free_threaded_import_keeps_gil_disabled(compute_modules):
-    cp, cc = compute_modules
+def test_free_threaded_import_keeps_gil_disabled(compute_module):
+    """True first-import smoke for the PR's headline claim.
 
-    h_in = np.arange(8, dtype=np.int32)
-    d_in = cp.asarray(h_in)
-    d_out = cp.empty(1, dtype=np.int32)
-    h_init = np.array([0], dtype=np.int32)
+    Asserting around imports in this process cannot guarantee ordering:
+    sibling test modules import cuda.compute and cuda.core at collection time.
+    A fresh interpreter gives the assert -> import -> assert bracket genuine
+    first-import semantics.
+    """
+    import os
+    import subprocess
 
-    cc.reduce_into(
-        d_in=d_in,
-        d_out=d_out,
-        num_items=h_in.size,
-        op=cc.OpKind.PLUS,
-        h_init=h_init,
+    del compute_module  # only used to gate on a free-threaded build
+
+    tests_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    code = f"""
+import sys
+
+assert not sys._is_gil_enabled(), "the GIL is enabled at interpreter start"
+sys.path.insert(0, {tests_dir!r})
+from _utils.device_array import DeviceArray
+
+assert not sys._is_gil_enabled(), "the GIL is enabled after importing the device-array utility"
+import numpy as np
+
+import cuda.compute as cc
+
+assert not sys._is_gil_enabled(), "the GIL is enabled after importing cuda.compute"
+h_in = np.arange(8, dtype=np.int32)
+d_in = DeviceArray.from_numpy(h_in)
+d_out = DeviceArray.empty(1, dtype=np.int32)
+h_init = np.array([0], dtype=np.int32)
+cc.reduce_into(d_in=d_in, d_out=d_out, num_items=h_in.size, op=cc.OpKind.PLUS, h_init=h_init)
+assert int(d_out.copy_to_host()[0]) == int(h_in.sum())
+assert not sys._is_gil_enabled(), "the GIL is enabled after running a cuda.compute operation"
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        timeout=600,
     )
-
-    assert int(d_out.get()[0]) == int(h_in.sum())
-    _assert_gil_disabled("after running cuda.compute smoke operation")
-
-
-@pytest.mark.parametrize("case", SHARED_ALGORITHM_CASES, ids=str)
-def test_thread_local_algorithm_objects_share_build_result(compute_modules, case):
-    cp, cc = compute_modules
-
-    _run_thread_local_algorithm_case(cp, cc, case)
+    assert result.returncode == 0, (
+        f"first-import GIL smoke subprocess failed (exit {result.returncode})\n"
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+    _assert_gil_disabled("after the first-import smoke subprocess")
 
 
 @pytest.mark.parametrize("case", SHARED_ALGORITHM_CASES, ids=str)
-def test_concurrent_deserialize_and_execute(compute_modules, case):
-    cp, cc = compute_modules
+def test_thread_local_algorithm_objects_share_build_result(compute_module, case):
+    cc = compute_module
+
+    _run_thread_local_algorithm_case(cc, case)
+
+
+@pytest.mark.parametrize("case", SHARED_ALGORITHM_CASES, ids=str)
+def test_concurrent_deserialize_and_execute(compute_module, case):
+    cc = compute_module
     _require_serialization_backend()
 
-    source_algorithm = case.make_shared(cp, cc)
+    source_algorithm = case.make_shared(cc)
     blob = cc.serialize(source_algorithm)
-    device_id = cp.cuda.Device().id
+    device_id = Device().device_id
     _assert_gil_disabled("after serializing a cuda.compute algorithm")
 
     for iteration in range(STRESS_ITERATIONS):
         workers = [
-            case.make_worker(cp, cc, worker_id=worker_id, iteration=iteration)
+            case.make_worker(cc, worker_id=worker_id, iteration=iteration)
             for worker_id in range(STRESS_THREADS)
         ]
         algorithms = [None] * STRESS_THREADS
@@ -1155,19 +1157,19 @@ def test_concurrent_deserialize_and_execute(compute_modules, case):
 
         def make_thread(worker_id, worker):
             def thread(barrier):
-                with cp.cuda.Device(device_id):
-                    barrier.wait()
-                    try:
-                        algorithm = cc.deserialize(blob)
-                        algorithms[worker_id] = algorithm
-                        # Force the independently deserialized build results to
-                        # perform their first native loads concurrently.
-                        execute_barrier.wait(timeout=60)
-                        case.run(cp, cc, algorithm, worker)
-                        case.check(cp, cc, worker)
-                    except BaseException:
-                        execute_barrier.abort()
-                        raise
+                Device(device_id).set_current()
+                barrier.wait()
+                try:
+                    algorithm = cc.deserialize(blob)
+                    algorithms[worker_id] = algorithm
+                    # Force the independently deserialized build results to
+                    # perform their first native loads concurrently.
+                    execute_barrier.wait(timeout=60)
+                    case.run(cc, algorithm, worker)
+                    case.check(cc, worker)
+                except BaseException:
+                    execute_barrier.abort()
+                    raise
 
             return thread
 
@@ -1185,18 +1187,16 @@ def test_concurrent_deserialize_and_execute(compute_modules, case):
         )
 
 
-def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_modules):
-    cp, cc = compute_modules
+def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_module):
+    cc = compute_module
     _require_serialization_backend()
-
-    from cuda.core import Device
 
     device = Device()
     target_cc = tuple(device.compute_capability)
     proxy_in = cc.ProxyArray(np.int32)
     proxy_out = cc.ProxyArray(np.int32)
     workers = [
-        _make_unary_worker(cp, cc, worker_id=worker_id, iteration=0)
+        _make_unary_worker(cc, worker_id=worker_id, iteration=0)
         for worker_id in range(STRESS_THREADS)
     ]
     algorithms = [None] * STRESS_THREADS
@@ -1204,22 +1204,22 @@ def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_modules
 
     def make_thread(worker_id, worker):
         def thread(barrier):
-            with cp.cuda.Device(device.device_id):
-                barrier.wait()
-                try:
-                    algorithm = cc.make_unary_transform(
-                        d_in=proxy_in,
-                        d_out=proxy_out,
-                        op=cc.OpKind.NEGATE,
-                        compute_capability=target_cc,
-                    )
-                    algorithms[worker_id] = algorithm
-                    execute_barrier.wait(timeout=60)
-                    _run_unary(cp, cc, algorithm, worker)
-                    _check_unary(cp, cc, worker)
-                except BaseException:
-                    execute_barrier.abort()
-                    raise
+            Device(device.device_id).set_current()
+            barrier.wait()
+            try:
+                algorithm = cc.make_unary_transform(
+                    d_in=proxy_in,
+                    d_out=proxy_out,
+                    op=cc.OpKind.NEGATE,
+                    compute_capability=target_cc,
+                )
+                algorithms[worker_id] = algorithm
+                execute_barrier.wait(timeout=60)
+                _run_unary(cc, algorithm, worker)
+                _check_unary(cc, worker)
+            except BaseException:
+                execute_barrier.abort()
+                raise
 
         return thread
 
@@ -1233,11 +1233,9 @@ def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_modules
     assert _get_build_result(algorithms[0])._loaded
 
 
-def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_modules):
-    cp, cc = compute_modules
+def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_module):
+    cc = compute_module
     _require_serialization_backend()
-
-    from cuda.core import Device
 
     device = Device()
     target_cc = tuple(device.compute_capability)
@@ -1252,7 +1250,7 @@ def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_modules)
     blob = cc.serialize(source_algorithm)
 
     workers = [
-        _make_unary_worker(cp, cc, worker_id=worker_id, iteration=0)
+        _make_unary_worker(cc, worker_id=worker_id, iteration=0)
         for worker_id in range(STRESS_THREADS)
     ]
     algorithms = [None] * STRESS_THREADS
@@ -1260,18 +1258,18 @@ def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_modules)
 
     def make_thread(worker_id, worker):
         def thread(barrier):
-            with cp.cuda.Device(device.device_id):
-                barrier.wait()
-                try:
-                    algorithm = cc.deserialize(blob)
-                    algorithms[worker_id] = algorithm
-                    assert not _get_build_result(algorithm)._loaded
-                    execute_barrier.wait(timeout=60)
-                    _run_unary(cp, cc, algorithm, worker)
-                    _check_unary(cp, cc, worker)
-                except BaseException:
-                    execute_barrier.abort()
-                    raise
+            Device(device.device_id).set_current()
+            barrier.wait()
+            try:
+                algorithm = cc.deserialize(blob)
+                algorithms[worker_id] = algorithm
+                assert not _get_build_result(algorithm)._loaded
+                execute_barrier.wait(timeout=60)
+                _run_unary(cc, algorithm, worker)
+                _check_unary(cc, worker)
+            except BaseException:
+                execute_barrier.abort()
+                raise
 
         return thread
 
@@ -1287,7 +1285,7 @@ def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_modules)
 
 
 def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
-    compute_modules,
+    compute_module,
 ):
     """Concurrent per-thread use of a genuine multi-arch blob.
 
@@ -1296,10 +1294,8 @@ def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
     resolves the current device's entry out of a multi-entry collection. The
     entry for the other arch must stay lazy in every thread.
     """
-    cp, cc = compute_modules
+    cc = compute_module
     _require_serialization_backend()
-
-    from cuda.core import Device
 
     device = Device()
     cc_major, cc_minor = device.compute_capability
@@ -1333,7 +1329,7 @@ def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
     blob = cc.serialize(source_algorithm)
 
     workers = [
-        _make_unary_worker(cp, cc, worker_id=worker_id, iteration=0)
+        _make_unary_worker(cc, worker_id=worker_id, iteration=0)
         for worker_id in range(STRESS_THREADS)
     ]
     algorithms = [None] * STRESS_THREADS
@@ -1341,17 +1337,17 @@ def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
 
     def make_thread(worker_id, worker):
         def thread(barrier):
-            with cp.cuda.Device(device.device_id):
-                barrier.wait()
-                try:
-                    algorithm = cc.deserialize(blob)
-                    algorithms[worker_id] = algorithm
-                    execute_barrier.wait(timeout=60)
-                    _run_unary(cp, cc, algorithm, worker)
-                    _check_unary(cp, cc, worker)
-                except BaseException:
-                    execute_barrier.abort()
-                    raise
+            Device(device.device_id).set_current()
+            barrier.wait()
+            try:
+                algorithm = cc.deserialize(blob)
+                algorithms[worker_id] = algorithm
+                execute_barrier.wait(timeout=60)
+                _run_unary(cc, algorithm, worker)
+                _check_unary(cc, worker)
+            except BaseException:
+                execute_barrier.abort()
+                raise
 
         return thread
 
@@ -1366,11 +1362,11 @@ def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
         assert not algorithm.build_results[other_key]._loaded
 
 
-def test_free_threaded_deserialize_diagnostics_are_thread_local(compute_modules):
-    cp, cc = compute_modules
+def test_free_threaded_deserialize_diagnostics_are_thread_local(compute_module):
+    cc = compute_module
     _require_serialization_backend()
 
-    source_algorithm = _make_reduce_shared(cp, cc)
+    source_algorithm = _make_reduce_shared(cc)
     blob = cc.serialize(source_algorithm)
     c_magic = b"CCCLSER1"
     c_header_offset = blob.find(c_magic)
@@ -1416,39 +1412,39 @@ def test_free_threaded_deserialize_diagnostics_are_thread_local(compute_modules)
             assert expected_message in error
 
 
-def _cache_miss_reduce(cp, cc, worker_id, iteration):
-    worker = _make_reduce_worker(cp, cc, worker_id, iteration)
+def _cache_miss_reduce(cc, worker_id, iteration):
+    worker = _make_reduce_worker(cc, worker_id, iteration)
     reducer = cc.make_reduce_into(
         d_in=worker["d_in"],
         d_out=worker["d_out"],
         op=cc.OpKind.PLUS,
         h_init=worker["h_init"],
     )
-    _run_reduce(cp, cc, reducer, worker)
-    _check_reduce(cp, cc, worker)
+    _run_reduce(cc, reducer, worker)
+    _check_reduce(cc, worker)
     return reducer
 
 
-def _cache_miss_unary_transform(cp, cc, worker_id, iteration):
-    worker = _make_unary_worker(cp, cc, worker_id, iteration)
+def _cache_miss_unary_transform(cc, worker_id, iteration):
+    worker = _make_unary_worker(cc, worker_id, iteration)
     transformer = cc.make_unary_transform(
         d_in=worker["d_in"], d_out=worker["d_out"], op=cc.OpKind.NEGATE
     )
-    _run_unary(cp, cc, transformer, worker)
-    _check_unary(cp, cc, worker)
+    _run_unary(cc, transformer, worker)
+    _check_unary(cc, worker)
     return transformer
 
 
-def _cache_miss_binary_transform(cp, cc, worker_id, iteration):
-    worker = _make_binary_worker(cp, cc, worker_id, iteration)
+def _cache_miss_binary_transform(cc, worker_id, iteration):
+    worker = _make_binary_worker(cc, worker_id, iteration)
     transformer = cc.make_binary_transform(
         d_in1=worker["d_in1"],
         d_in2=worker["d_in2"],
         d_out=worker["d_out"],
         op=cc.OpKind.PLUS,
     )
-    _run_binary(cp, cc, transformer, worker)
-    _check_binary(cp, cc, worker)
+    _run_binary(cc, transformer, worker)
+    _check_binary(cc, worker)
     return transformer
 
 
@@ -1457,8 +1453,8 @@ def _cache_miss_binary_transform(cp, cc, worker_id, iteration):
     [_cache_miss_reduce, _cache_miss_unary_transform, _cache_miss_binary_transform],
     ids=["reduce", "unary_transform", "binary_transform"],
 )
-def test_same_key_factory_cache_miss_storm(compute_modules, factory):
-    cp, cc = compute_modules
+def test_same_key_factory_cache_miss_storm(compute_module, factory):
+    cc = compute_module
 
     for iteration in range(STRESS_ITERATIONS):
         cc.clear_all_caches()
@@ -1467,7 +1463,7 @@ def test_same_key_factory_cache_miss_storm(compute_modules, factory):
         def make_thread(worker_id):
             def thread(barrier):
                 barrier.wait()
-                returned_objects[worker_id] = factory(cp, cc, worker_id, iteration)
+                returned_objects[worker_id] = factory(cc, worker_id, iteration)
 
             return thread
 
@@ -1477,83 +1473,77 @@ def test_same_key_factory_cache_miss_storm(compute_modules, factory):
         assert len({id(_get_build_result(obj)) for obj in returned_objects}) == 1
 
 
-def _storm_reduce_int32(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _storm_reduce_int32(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in = np.arange(64, dtype=np.int32) + worker_id + iteration
     h_init = np.array([worker_id], dtype=np.int32)
-    with stream:
-        d_in = cp.asarray(h_in)
-        d_out = cp.empty(1, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(1, dtype=np.int32)
     reducer = cc.make_reduce_into(
         d_in=d_in, d_out=d_out, op=cc.OpKind.PLUS, h_init=h_init
     )
     _call_with_temp(
-        cp,
         reducer,
         d_in=d_in,
         d_out=d_out,
         op=cc.OpKind.PLUS,
         h_init=h_init,
         num_items=h_in.size,
-        stream=cuda_stream,
+        stream=stream,
     )
-    stream.synchronize()
-    assert int(d_out.get()[0]) == int(h_in.sum()) + int(h_init[0])
+    stream.sync()
+    assert int(d_out.copy_to_host()[0]) == int(h_in.sum()) + int(h_init[0])
     return reducer
 
 
-def _storm_reduce_float64(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _storm_reduce_float64(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in = np.arange(64, dtype=np.float64) + worker_id + iteration
     h_init = np.array([worker_id], dtype=np.float64)
-    with stream:
-        d_in = cp.asarray(h_in)
-        d_out = cp.empty(1, dtype=np.float64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(1, dtype=np.float64)
     reducer = cc.make_reduce_into(
         d_in=d_in, d_out=d_out, op=cc.OpKind.PLUS, h_init=h_init
     )
     _call_with_temp(
-        cp,
         reducer,
         d_in=d_in,
         d_out=d_out,
         op=cc.OpKind.PLUS,
         h_init=h_init,
         num_items=h_in.size,
-        stream=cuda_stream,
+        stream=stream,
     )
-    stream.synchronize()
-    assert float(d_out.get()[0]) == float(h_in.sum()) + float(h_init[0])
+    stream.sync()
+    assert float(d_out.copy_to_host()[0]) == float(h_in.sum()) + float(h_init[0])
     return reducer
 
 
-def _storm_unary_transform_int64(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _storm_unary_transform_int64(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in = np.arange(64, dtype=np.int64) + worker_id + iteration
-    with stream:
-        d_in = cp.asarray(h_in)
-        d_out = cp.empty_like(d_in)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
     transformer = cc.make_unary_transform(d_in=d_in, d_out=d_out, op=cc.OpKind.NEGATE)
     transformer(
         d_in=d_in,
         d_out=d_out,
         op=cc.OpKind.NEGATE,
         num_items=h_in.size,
-        stream=cuda_stream,
+        stream=stream,
     )
-    stream.synchronize()
-    np.testing.assert_array_equal(d_out.get(), -h_in)
+    stream.sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), -h_in)
     return transformer
 
 
-def _storm_binary_transform_float32(cp, cc, worker_id, iteration):
-    stream, cuda_stream = _make_stream(cp)
+def _storm_binary_transform_float32(cc, worker_id, iteration):
+    stream = _make_stream()
     h_in1 = np.arange(64, dtype=np.float32) + worker_id
     h_in2 = np.arange(64, dtype=np.float32) + iteration
-    with stream:
-        d_in1 = cp.asarray(h_in1)
-        d_in2 = cp.asarray(h_in2)
-        d_out = cp.empty_like(d_in1)
+    d_in1 = DeviceArray.from_numpy(h_in1)
+    d_in2 = DeviceArray.from_numpy(h_in2)
+    d_out = DeviceArray.empty(h_in1.shape, h_in1.dtype)
     transformer = cc.make_binary_transform(
         d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=cc.OpKind.PLUS
     )
@@ -1563,10 +1553,10 @@ def _storm_binary_transform_float32(cp, cc, worker_id, iteration):
         d_out=d_out,
         op=cc.OpKind.PLUS,
         num_items=h_in1.size,
-        stream=cuda_stream,
+        stream=stream,
     )
-    stream.synchronize()
-    np.testing.assert_array_equal(d_out.get(), h_in1 + h_in2)
+    stream.sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in1 + h_in2)
     return transformer
 
 
@@ -1578,7 +1568,7 @@ _DISTINCT_KEY_STORM_FACTORIES = [
 ]
 
 
-def test_distinct_key_cold_build_storm(compute_modules):
+def test_distinct_key_cold_build_storm(compute_module):
     """Force truly concurrent native compilations.
 
     Same-key storms coalesce through _cache_single_flight to a single builder
@@ -1586,7 +1576,7 @@ def test_distinct_key_cold_build_storm(compute_modules):
     (different algorithms and dtypes) elect one builder per worker, running
     NVRTC/nvJitLink (v1) or HostJIT (v2) compilations genuinely in parallel.
     """
-    cp, cc = compute_modules
+    cc = compute_module
 
     for iteration in range(DISTINCT_KEY_STORM_ITERATIONS):
         cc.clear_all_caches()
@@ -1595,7 +1585,7 @@ def test_distinct_key_cold_build_storm(compute_modules):
         def make_thread(worker_id, factory):
             def thread(barrier):
                 barrier.wait()
-                returned_objects[worker_id] = factory(cp, cc, worker_id, iteration)
+                returned_objects[worker_id] = factory(cc, worker_id, iteration)
 
             return thread
 
@@ -1611,8 +1601,8 @@ def test_distinct_key_cold_build_storm(compute_modules):
         assert len(build_ids) == len(_DISTINCT_KEY_STORM_FACTORIES)
 
 
-def test_shared_raw_op_object_direct_algorithm_stress(compute_modules):
-    cp, cc = compute_modules
+def test_shared_raw_op_object_direct_algorithm_stress(compute_module):
+    cc = compute_module
 
     from cuda.compute._cpp_compile import compile_cpp_op_code
     from cuda.compute.op import RawOp
@@ -1629,12 +1619,11 @@ def test_shared_raw_op_object_direct_algorithm_stress(compute_modules):
         returned_reducers = [None] * STRESS_THREADS
 
         def make_thread(worker_id):
-            stream, cuda_stream = _make_stream(cp)
+            stream = _make_stream()
             h_in = np.arange(32, dtype=np.int32) + worker_id * 31 + iteration
             h_init = np.array([worker_id + 5], dtype=np.int32)
-            with stream:
-                d_in = cp.asarray(h_in)
-                d_out = cp.empty(1, dtype=np.int32)
+            d_in = DeviceArray.from_numpy(h_in)
+            d_out = DeviceArray.empty(1, dtype=np.int32)
 
             def thread(barrier):
                 barrier.wait()
@@ -1646,18 +1635,17 @@ def test_shared_raw_op_object_direct_algorithm_stress(compute_modules):
                 )
                 returned_reducers[worker_id] = reducer
                 _call_with_temp(
-                    cp,
                     reducer,
                     d_in=d_in,
                     d_out=d_out,
                     op=shared_op,
                     h_init=h_init,
                     num_items=h_in.size,
-                    stream=cuda_stream,
+                    stream=stream,
                 )
-                stream.synchronize()
+                stream.sync()
                 expected = int(h_in.sum(dtype=np.int64) + h_init[0])
-                assert int(d_out.get()[0]) == expected
+                assert int(d_out.copy_to_host()[0]) == expected
 
             return thread
 
@@ -1695,11 +1683,11 @@ class _ColdTransformCase:
         return self.name
 
 
-def _run_cold_transform_native_cache_case(cp, cc, case: _ColdTransformCase) -> None:
+def _run_cold_transform_native_cache_case(cc, case: _ColdTransformCase) -> None:
     for iteration in range(STRESS_ITERATIONS):
         cc.clear_all_caches()
         workers = [
-            case.make_worker(cp, cc, worker_id=worker_id, iteration=iteration)
+            case.make_worker(cc, worker_id=worker_id, iteration=iteration)
             for worker_id in range(TRANSFORM_NATIVE_CACHE_THREADS)
         ]
         returned_algorithms = [None] * TRANSFORM_NATIVE_CACHE_THREADS
@@ -1711,15 +1699,15 @@ def _run_cold_transform_native_cache_case(cp, cc, case: _ColdTransformCase) -> N
             def thread(barrier):
                 barrier.wait()
                 try:
-                    algorithm = case.make_transformer(cp, cc, worker)
+                    algorithm = case.make_transformer(cc, worker)
                     returned_algorithms[worker_id] = algorithm
                 except BaseException:
                     execute_barrier.abort()
                     raise
 
                 execute_barrier.wait(timeout=60)
-                case.run(cp, cc, algorithm, worker)
-                case.check(cp, cc, worker)
+                case.run(cc, algorithm, worker)
+                case.check(cc, worker)
 
             return thread
 
@@ -1756,10 +1744,10 @@ def _run_cold_transform_native_cache_case(cp, cc, case: _ColdTransformCase) -> N
     ],
     ids=str,
 )
-def test_cold_transform_native_cache_initialization_stress(compute_modules, case):
-    cp, cc = compute_modules
+def test_cold_transform_native_cache_initialization_stress(compute_module, case):
+    cc = compute_module
 
-    _run_cold_transform_native_cache_case(cp, cc, case)
+    _run_cold_transform_native_cache_case(cc, case)
 
 
 @dataclass(frozen=True)
@@ -1775,11 +1763,11 @@ class _V2FirstCallCase:
         return self.name
 
 
-def _run_v2_first_call_gate_case(cp, cc, case: _V2FirstCallCase) -> None:
+def _run_v2_first_call_gate_case(cc, case: _V2FirstCallCase) -> None:
     for iteration in range(STRESS_ITERATIONS):
         cc.clear_all_caches()
         workers = [
-            case.make_worker(cp, cc, worker_id=worker_id, iteration=iteration)
+            case.make_worker(cc, worker_id=worker_id, iteration=iteration)
             for worker_id in range(TRANSFORM_NATIVE_CACHE_THREADS)
         ]
         returned_algorithms = [None] * TRANSFORM_NATIVE_CACHE_THREADS
@@ -1790,18 +1778,18 @@ def _run_v2_first_call_gate_case(cp, cc, case: _V2FirstCallCase) -> None:
             def thread(barrier):
                 barrier.wait()
                 try:
-                    algorithm = case.make_algorithm(cp, cc, worker)
+                    algorithm = case.make_algorithm(cc, worker)
                     returned_algorithms[worker_id] = algorithm
                     algorithms_built_barrier.wait(timeout=60)
 
                     # Empty calls return before CUB initializes its static launch
                     # configuration and therefore must not complete the gate.
                     if worker_id == 0:
-                        case.run_empty(cp, cc, algorithm, worker)
+                        case.run_empty(cc, algorithm, worker)
 
                     nonempty_call_barrier.wait(timeout=60)
-                    case.run(cp, cc, algorithm, worker)
-                    case.check(cp, cc, worker)
+                    case.run(cc, algorithm, worker)
+                    case.check(cc, worker)
                 except BaseException:
                     algorithms_built_barrier.abort()
                     nonempty_call_barrier.abort()
@@ -1860,13 +1848,11 @@ _V2_FIRST_CALL_CASES = [
 
 def _run_concurrent_cold_llvm_initialization():
     """Body of test_v2_concurrent_cold_llvm_initialization, run in a fresh process."""
-    import cupy as cp
-
     import cuda.compute as cc
 
     cc.clear_all_caches()
     workers = [
-        case.make_worker(cp, cc, worker_id=worker_id, iteration=0)
+        case.make_worker(cc, worker_id=worker_id, iteration=0)
         for worker_id, case in enumerate(_V2_FIRST_CALL_CASES)
     ]
     returned_algorithms = [None] * len(_V2_FIRST_CALL_CASES)
@@ -1875,10 +1861,10 @@ def _run_concurrent_cold_llvm_initialization():
     def make_thread(worker_id, case, worker):
         def thread():
             build_barrier.wait(timeout=60)
-            algorithm = case.make_algorithm(cp, cc, worker)
+            algorithm = case.make_algorithm(cc, worker)
             returned_algorithms[worker_id] = algorithm
-            case.run(cp, cc, algorithm, worker)
-            case.check(cp, cc, worker)
+            case.run(cc, algorithm, worker)
+            case.check(cc, worker)
 
         return thread
 
@@ -1916,15 +1902,20 @@ def test_v2_concurrent_cold_llvm_initialization():
     # LLVM target registration is process-wide and only cold once, so earlier
     # tests in this pytest process would leave it warm and this test would no
     # longer exercise concurrent *cold* initialization. Run the storm in a
-    # fresh interpreter regardless of what already ran here.
+    # fresh interpreter regardless of what already ran here. The tests root
+    # must be on sys.path for the _utils.device_array import (pytest's
+    # pythonpath setting does not apply to a raw subprocess).
+    compute_dir = os.path.dirname(os.path.abspath(__file__))
+    tests_dir = os.path.dirname(compute_dir)
     code = (
-        "import sys; sys.path.insert(0, ''); "
+        "import sys; "
+        f"sys.path.insert(0, {tests_dir!r}); "
+        f"sys.path.insert(0, {compute_dir!r}); "
         "import test_free_threading_stress as m; "
         "m._run_concurrent_cold_llvm_initialization()"
     )
     result = subprocess.run(
         [sys.executable, "-c", code],
-        cwd=os.path.dirname(os.path.abspath(__file__)),
         capture_output=True,
         text=True,
         timeout=600,
@@ -1937,28 +1928,28 @@ def test_v2_concurrent_cold_llvm_initialization():
 
 
 @pytest.mark.parametrize("case", _V2_FIRST_CALL_CASES, ids=str)
-def test_v2_first_call_gate_stress(compute_modules, case):
-    cp, cc = compute_modules
+def test_v2_first_call_gate_stress(compute_module, case):
+    cc = compute_module
 
     from cuda.compute._build_info import USING_V2
 
     if not USING_V2:
         pytest.skip("requires the C Parallel v2 backend")
 
-    _run_v2_first_call_gate_case(cp, cc, case)
+    _run_v2_first_call_gate_case(cc, case)
 
 
-def _iterator_counting(cp, cc):
+def _iterator_counting(cc):
     return cc.CountingIterator(np.int32(0)), np.dtype(np.int32), 32, sum(range(32))
 
 
-def _iterator_constant(cp, cc):
+def _iterator_constant(cc):
     return cc.ConstantIterator(np.int32(5)), np.dtype(np.int32), 32, 32 * 5
 
 
-def _iterator_cache_modified(cp, cc):
+def _iterator_cache_modified(cc):
     h_in = np.arange(32, dtype=np.int32)
-    d_in = cp.asarray(h_in)
+    d_in = DeviceArray.from_numpy(h_in)
     return (
         cc.CacheModifiedInputIterator(d_in, "stream"),
         h_in.dtype,
@@ -1967,17 +1958,17 @@ def _iterator_cache_modified(cp, cc):
     )
 
 
-def _iterator_reverse(cp, cc):
+def _iterator_reverse(cc):
     h_in = np.arange(32, dtype=np.int32)
-    d_in = cp.asarray(h_in)
+    d_in = DeviceArray.from_numpy(h_in)
     return cc.ReverseIterator(d_in), h_in.dtype, h_in.size, int(h_in.sum())
 
 
-def _iterator_permutation(cp, cc):
+def _iterator_permutation(cc):
     h_values = np.arange(32, dtype=np.int32)
     h_indices = np.arange(31, -1, -1, dtype=np.int32)
-    d_values = cp.asarray(h_values)
-    d_indices = cp.asarray(h_indices)
+    d_values = DeviceArray.from_numpy(h_values)
+    d_indices = DeviceArray.from_numpy(h_indices)
     return (
         cc.PermutationIterator(d_values, d_indices),
         h_values.dtype,
@@ -1986,7 +1977,7 @@ def _iterator_permutation(cp, cc):
     )
 
 
-def _iterator_shuffle(cp, cc):
+def _iterator_shuffle(cc):
     num_items = 32
     return (
         cc.ShuffleIterator(num_items, seed=1234),
@@ -1996,7 +1987,7 @@ def _iterator_shuffle(cp, cc):
     )
 
 
-def _iterator_transform(cp, cc):
+def _iterator_transform(cc):
     from cuda.compute import types
     from cuda.compute._cpp_compile import compile_cpp_op_code
     from cuda.compute.op import RawOp
@@ -2034,10 +2025,12 @@ ITERATOR_FACTORIES = [
     ITERATOR_FACTORIES,
     ids=lambda fn: fn.__name__.removeprefix("_iterator_"),
 )
-def test_shared_iterator_object_stress(compute_modules, make_iterator):
-    cp, cc = compute_modules
+def test_shared_iterator_object_stress(compute_module, make_iterator):
+    cc = compute_module
 
-    cp.cuda.Device().synchronize()
+    device = Device()
+    device.set_current()
+    device.sync()
 
     for iteration in range(STRESS_ITERATIONS):
         cc.clear_all_caches()
@@ -2045,13 +2038,12 @@ def test_shared_iterator_object_stress(compute_modules, make_iterator):
         # Op construction (guarded by IteratorBase._op_lock) is only racy while
         # the per-instance caches are cold, so a fresh instance re-arms that
         # first-construction race on each pass instead of only once per test.
-        shared_iterator, dtype, num_items, expected_sum = make_iterator(cp, cc)
+        shared_iterator, dtype, num_items, expected_sum = make_iterator(cc)
 
         def make_thread(worker_id):
-            stream, cuda_stream = _make_stream(cp)
+            stream = _make_stream()
             h_init = np.array([worker_id], dtype=dtype)
-            with stream:
-                d_out = cp.empty(1, dtype=dtype)
+            d_out = DeviceArray.empty(1, dtype=dtype)
 
             def thread(barrier):
                 barrier.wait()
@@ -2062,42 +2054,40 @@ def test_shared_iterator_object_stress(compute_modules, make_iterator):
                     h_init=h_init,
                 )
                 _call_with_temp(
-                    cp,
                     reducer,
                     d_in=shared_iterator,
                     d_out=d_out,
                     op=cc.OpKind.PLUS,
                     h_init=h_init,
                     num_items=num_items,
-                    stream=cuda_stream,
+                    stream=stream,
                 )
-                stream.synchronize()
-                assert int(d_out.get()[0]) == int(expected_sum + h_init[0])
+                stream.sync()
+                assert int(d_out.copy_to_host()[0]) == int(expected_sum + h_init[0])
 
             return thread
 
         _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
 
 
-def test_runtime_ownership_isolation(compute_modules):
-    cp, cc = compute_modules
+def test_runtime_ownership_isolation(compute_module):
+    cc = compute_module
 
     def make_thread(worker_id):
         def thread(barrier):
             barrier.wait()
-            stream, cuda_stream = _make_stream(cp)
+            stream = _make_stream()
             h_in = np.arange(16, dtype=np.int32) + worker_id * 10
             h_init = np.array([worker_id], dtype=np.int32)
 
-            with stream:
-                d_in = cp.asarray(h_in)
-                d_reduce_out = cp.empty(1, dtype=np.int32)
-                d_scan_out = cp.empty_like(d_in)
-                d_transform_out = cp.empty_like(d_in)
-                d_hist = cp.zeros(4, dtype=np.int32)
-                h_keys = np.array([3, 1, 2, 1], dtype=np.uint32) + worker_id
-                d_keys_in = cp.asarray(h_keys)
-                d_keys_tmp = cp.empty_like(d_keys_in)
+            d_in = DeviceArray.from_numpy(h_in)
+            d_reduce_out = DeviceArray.empty(1, dtype=np.int32)
+            d_scan_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+            d_transform_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+            d_hist = DeviceArray.from_numpy(np.zeros(4, dtype=np.int32))
+            h_keys = np.array([3, 1, 2, 1], dtype=np.uint32) + worker_id
+            d_keys_in = DeviceArray.from_numpy(h_keys)
+            d_keys_tmp = DeviceArray.empty(h_keys.shape, h_keys.dtype)
 
             cc.reduce_into(
                 d_in=d_in,
@@ -2105,7 +2095,7 @@ def test_runtime_ownership_isolation(compute_modules):
                 num_items=h_in.size,
                 op=cc.OpKind.PLUS,
                 h_init=h_init,
-                stream=cuda_stream,
+                stream=stream,
             )
             cc.exclusive_scan(
                 d_in=d_in,
@@ -2113,14 +2103,14 @@ def test_runtime_ownership_isolation(compute_modules):
                 op=cc.OpKind.PLUS,
                 init_value=h_init,
                 num_items=h_in.size,
-                stream=cuda_stream,
+                stream=stream,
             )
             cc.unary_transform(
                 d_in=d_in,
                 d_out=d_transform_out,
                 op=cc.OpKind.NEGATE,
                 num_items=h_in.size,
-                stream=cuda_stream,
+                stream=stream,
             )
             cc.histogram_even(
                 d_samples=d_in,
@@ -2129,7 +2119,7 @@ def test_runtime_ownership_isolation(compute_modules):
                 lower_level=np.int32(worker_id * 10),
                 upper_level=np.int32(worker_id * 10 + 16),
                 num_samples=h_in.size,
-                stream=cuda_stream,
+                stream=stream,
             )
             keys = cc.DoubleBuffer(d_keys_in, d_keys_tmp)
             cc.radix_sort(
@@ -2137,20 +2127,22 @@ def test_runtime_ownership_isolation(compute_modules):
                 d_out_keys=None,
                 d_in_values=None,
                 d_out_values=None,
-                num_items=d_keys_in.size,
+                num_items=h_keys.size,
                 order=cc.SortOrder.ASCENDING,
-                stream=cuda_stream,
+                stream=stream,
             )
 
-            stream.synchronize()
-            assert int(d_reduce_out.get()[0]) == int(h_in.sum() + worker_id)
+            stream.sync()
+            assert int(d_reduce_out.copy_to_host()[0]) == int(h_in.sum() + worker_id)
             expected_scan = np.empty_like(h_in)
             expected_scan[0] = worker_id
             expected_scan[1:] = worker_id + np.cumsum(h_in[:-1])
-            np.testing.assert_array_equal(d_scan_out.get(), expected_scan)
-            np.testing.assert_array_equal(d_transform_out.get(), -h_in)
-            assert int(d_hist.sum().get()) == h_in.size
-            np.testing.assert_array_equal(keys.current().get(), np.sort(h_keys))
+            np.testing.assert_array_equal(d_scan_out.copy_to_host(), expected_scan)
+            np.testing.assert_array_equal(d_transform_out.copy_to_host(), -h_in)
+            assert int(d_hist.copy_to_host().sum()) == h_in.size
+            np.testing.assert_array_equal(
+                keys.current().copy_to_host(), np.sort(h_keys)
+            )
 
         return thread
 
