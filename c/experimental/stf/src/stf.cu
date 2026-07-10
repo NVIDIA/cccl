@@ -219,6 +219,17 @@ stf_exec_place_handle stf_exec_place_current_device(void)
   }));
 }
 
+stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id)
+{
+  if (ctx == nullptr)
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([ctx, dev_id] {
+    return new exec_place(exec_place::cuda_context(ctx, dev_id));
+  }));
+}
+
 stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id)
 {
 #if _CCCL_CTK_AT_LEAST(12, 4)

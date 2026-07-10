@@ -12,6 +12,7 @@ set(places_fail_tests exec_place_scope_data_place_fail.cu)
 set(
   places_unittested_headers
   cuda/experimental/__places/places.cuh
+  cuda/experimental/__places/exec/cuda_context.cuh
   cuda/experimental/__places/exec/green_context.cuh
   cuda/experimental/__places/partitions/blocked_partition.cuh
   cuda/experimental/__places/partitions/cyclic_shape.cuh
