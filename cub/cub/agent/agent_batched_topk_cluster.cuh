@@ -1344,6 +1344,72 @@ private:
     return is_front_done && is_back_done;
   }
 
+  // Arrival-order back placement for one tile: each candidate advances `back_local_cnt` (win or lose); the returned
+  // count offset by `cand_prefix` is its back rank. A winner (rank below `num_back`) lands at output slot `k-1-rank`;
+  // higher ranks are dropped. Arrival order is acceptable because either every candidate wins (select-all) or, on the
+  // lazy path, only the boundary-crossing tile is later overwritten in index order (earlier tiles are all winners).
+  template <bool Reversed, int ItemsPerThread, detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void emit_arrival(
+    det_filter_state<SelectDirection>& st,
+    const key_t (&keys)[ItemsPerThread],
+    const offset_t (&flags)[ItemsPerThread],
+    offset_t seg_base,
+    int count,
+    int tile_base)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      if (flags[i] != offset_t{0})
+      {
+        const int pos              = tile_base + tid * ItemsPerThread + i;
+        const offset_t global_rank = st.cand_prefix + atomicAdd(&temp_storage.back_local_cnt, offset_t{1});
+        if (global_rank < static_cast<offset_t>(st.num_back))
+        {
+          const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+          const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
+          st.block_keys_out[out] = keys[i];
+          final_filter_write_value(out, seg_idx);
+        }
+      }
+    }
+  }
+
+  // Index-ordered back placement for one tile: a block scan gives each candidate a deterministic rank (`base` plus the
+  // count of preceding candidates in the tile). Placement rule matches `emit_arrival`. Returns the tile's candidate
+  // total. Used where the K-boundary falls in this tile (terminal tile, or the lazy path's crossing tile).
+  template <bool Reversed, int ItemsPerThread, detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE offset_t emit_indexed(
+    det_filter_state<SelectDirection>& st,
+    const key_t (&keys)[ItemsPerThread],
+    offset_t (&flags)[ItemsPerThread],
+    offset_t seg_base,
+    int count,
+    int tile_base,
+    offset_t base)
+  {
+    offset_t excl[ItemsPerThread];
+    offset_t tile_total = 0;
+    block_scan_t(temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      if (flags[i] != offset_t{0})
+      {
+        const offset_t global_rank = base + excl[i];
+        if (global_rank < static_cast<offset_t>(st.num_back))
+        {
+          const int pos          = tile_base + tid * ItemsPerThread + i;
+          const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+          const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
+          st.block_keys_out[out] = keys[i];
+          final_filter_write_value(out, seg_idx);
+        }
+      }
+    }
+    return tile_total;
+  }
+
   // Process a flat span of `count` keys in scan order, tiled by `threads_per_block * ItemsPerThread`. `FromSmem`
   // selects the key source: the SMEM buffer `smem_src` (indexed by the folded in-region position) or gmem
   // `block_keys_in` (indexed by the segment-local index `seg_base + folded`). `Reversed` walks the span high-to-low.
@@ -1415,9 +1481,8 @@ private:
         }
       }
 
-      // Back/tie placement (only while this CTA still has unresolved ties). A candidate whose global rank is below
-      // `num_back` lands in the top-k output at slot `k-1-rank`; higher ranks are dropped. Three block-uniform
-      // sub-paths assign that rank:
+      // Back/tie placement (only while this CTA still has unresolved ties). Three block-uniform sub-paths pick the
+      // candidate rank (see `emit_arrival`/`emit_indexed` for the shared rank->slot rule):
       //   * is_select_all_cand_cta -- every candidate wins: arrival-order SMEM atomics, no scan, no barrier.
       //   * terminal tile -- the straddling CTA's last tile necessarily holds the boundary: scan it directly.
       //   * other tiles   -- straddling CTA, boundary not yet known: place in arrival order, then `B1` to read the
@@ -1426,65 +1491,19 @@ private:
       {
         const bool is_terminal_tile = region_is_terminal && (tile_base + tile_size >= count);
 
-        // Arrival-order placement: each candidate grabs the next back rank via an atomic on `back_local_cnt` (added to
-        // `cand_prefix`); the atomic must advance for every candidate, win or lose. Arrival order is acceptable because
-        // either every candidate wins (select-all) or these slots are overwritten in index order later (lazy path).
-        const auto emit_arrival = [&] {
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int i = 0; i < ItemsPerThread; ++i)
-          {
-            if (flags[i] != offset_t{0})
-            {
-              const int pos              = tile_base + tid * ItemsPerThread + i;
-              const offset_t global_rank = st.cand_prefix + atomicAdd(&temp_storage.back_local_cnt, offset_t{1});
-              if (global_rank < static_cast<offset_t>(st.num_back))
-              {
-                const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-                const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
-                st.block_keys_out[out] = keys[i];
-                final_filter_write_value(out, seg_idx);
-              }
-            }
-          }
-        };
-        // Index-ordered placement: a block scan assigns each candidate a deterministic rank (`base` plus its in-tile
-        // position). Returns the tile's candidate total. Used on the boundary-crossing tile.
-        const auto emit_indexed = [&](offset_t base) -> offset_t {
-          offset_t excl[ItemsPerThread];
-          offset_t tile_total = 0;
-          block_scan_t(temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int i = 0; i < ItemsPerThread; ++i)
-          {
-            if (flags[i] != offset_t{0})
-            {
-              const offset_t global_rank = base + excl[i];
-              if (global_rank < static_cast<offset_t>(st.num_back))
-              {
-                const int pos          = tile_base + tid * ItemsPerThread + i;
-                const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-                const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
-                st.block_keys_out[out] = keys[i];
-                final_filter_write_value(out, seg_idx);
-              }
-            }
-          }
-          return tile_total;
-        };
-
         if (st.is_select_all_cand_cta)
         {
-          emit_arrival();
+          emit_arrival<Reversed>(st, keys, flags, seg_base, count, tile_base);
         }
         else if (is_terminal_tile)
         {
           // Straddling CTA's last tile necessarily holds the boundary: scan it directly in index order.
-          st.running += emit_indexed(st.running);
+          st.running += emit_indexed<Reversed>(st, keys, flags, seg_base, count, tile_base, st.running);
           st.is_tie_active = false;
         }
         else
         {
-          emit_arrival();
+          emit_arrival<Reversed>(st, keys, flags, seg_base, count, tile_base);
           // B1: order the arrival global writes ahead of the index-order overwrite (same boundary slots) and make
           // the counter read race-free and block-uniform.
           __syncthreads();
@@ -1493,7 +1512,7 @@ private:
           {
             // Boundary tile: overwrite this tile's arrival slots `{k-1-st.running, ...}` with the index-ordered winners
             // (identical slot set, different candidate->slot mapping).
-            emit_indexed(st.running);
+            emit_indexed<Reversed>(st, keys, flags, seg_base, count, tile_base, st.running);
           }
           st.running = st.cand_prefix + placed;
           if (st.running >= static_cast<offset_t>(st.num_back))
