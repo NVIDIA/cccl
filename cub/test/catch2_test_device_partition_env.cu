@@ -412,7 +412,8 @@ C2H_TEST("Test ThreeWayPartitionPolicy properties", "[partition][device]")
     .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
     .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    .lookback_delay    = cub::LookbackDelayPolicy{
+         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -456,7 +457,8 @@ C2H_TEST("Test PartitionPolicy properties", "[partition][device]")
     .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
     .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
     .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-    .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    .lookback_delay    = cub::LookbackDelayPolicy{
+         .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
