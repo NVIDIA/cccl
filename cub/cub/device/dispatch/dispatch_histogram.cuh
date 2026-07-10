@@ -191,10 +191,10 @@ enum class algorithm : unsigned char
   // auto-selected (the high-bin region routes to direct_single_probe).
   gmem_privatized_nocache,
 
-  // (The proposed gmem_privatized_{cuckoo,single_probe} cache+private-spill members were
-  // removed: a full-matrix sweep measured them never best nor within 2% of best on any
-  // cell, so they were pure dispatch surface. The gather (gmem_privatized_nocache) and the
-  // direct-atomic caches cover everything they could.)
+  // Single-probe SMEM cache with block-private GMEM spill and an atomic-free
+  // gather. Forced-only for benchmark characterization; the selector never
+  // returns it.
+  gmem_privatized_single_probe,
 };
 
 // Inputs to the selector. Every value used to make a dispatch decision must
@@ -2528,8 +2528,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
   //   direct_cuckoo     -> direct-atomic cuckoo cache, output spill
   //   direct_single_probe -> direct-atomic single-probe cache, output spill
   //   gmem_priv_gather  -> per-block GMEM-privatized + gather (no cache)
-  //   priv_cuckoo       -> cuckoo cache + private_block_spill (PROPOSAL)
-  //   priv_single_probe -> single-probe cache + private_block_spill (PROPOSAL)
+  //   gmem_privatized_single_probe (or legacy priv_single_probe)
+  //                      -> single-probe cache + private_block_spill
   // The priv_* and direct_* values route to the PRIVATIZED_SMEM_BINS==0 case; the
   // deeper `dispatch<>` hook reads the same env var to pick the exact kernel
   // (cache variant + spill policy). Off by default -> normal dispatch unchanged.
@@ -2579,6 +2579,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
                    else if (::std::strcmp(env, "direct_single_probe") == 0)
                    {
                      algo = algorithm::direct_single_probe;
+                   }
+                   else if (::std::strcmp(env, "gmem_privatized_single_probe") == 0
+                            || ::std::strcmp(env, "priv_single_probe") == 0)
+                   {
+                     algo = algorithm::gmem_privatized_single_probe;
                    }
                  }
                }));
@@ -2755,21 +2760,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
     }
     case algorithm::direct_nocache:
     case algorithm::direct_cuckoo:
-    case algorithm::direct_single_probe: {
+    case algorithm::direct_single_probe:
+    case algorithm::gmem_privatized_single_probe: {
       // CacheSpillKernel<Combiner> family, PRIVATIZED_SMEM_BINS=0. The deeper dispatch<>
       // picks the kernel from `direct_atomic_cache_mode`, which encodes the combiner
       // (cuckoo / single-probe / no-cache); the spill is always device-scope to the
-      // shared output (the private-spill modes 3/4 of the removed gmem_privatized_*
-      // members are gone):
+      // shared output or a block-private GMEM slab:
       //   0 -> cuckoo,       output spill   (direct_cuckoo)
       //   1 -> single-probe, output spill   (direct_single_probe)
       //   2 -> no-cache,     output spill   (direct_nocache)
+      //   4 -> single-probe, private spill  (gmem_privatized_single_probe)
       // kForceDirect: these are explicit direct-atomic choices, so dispatch<> runs
       // the direct-atomic kernel UNCONDITIONALLY (no bin-count veto) -- a forced or
       // selected direct_cuckoo therefore actually runs cuckoo at any high-bin count.
       constexpr int PRIVATIZED_SMEM_BINS = 0;
       const int direct_atomic_cache_mode =
-        (algo == algorithm::direct_cuckoo) ? 0
+        (algo == algorithm::gmem_privatized_single_probe) ? 4
+        : (algo == algorithm::direct_cuckoo)              ? 0
         : (algo == algorithm::direct_single_probe)
           ? 1
           : /* algorithm::direct_nocache */ 2;

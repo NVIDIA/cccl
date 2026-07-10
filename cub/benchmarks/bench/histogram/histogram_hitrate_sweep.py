@@ -103,7 +103,7 @@ SAMPLES = _env_list("HIST_HR_SAMPLES", ["I32", "F64"])
 # direct_atomic_* spellings are no longer recognized -> forcing would silently
 # no-op and report no cached launch). These keys are also what histogram_algo_perf.py
 # reads for the hit-rate panels.
-ALGOS = ["direct_cuckoo", "direct_single_probe"]
+ALGOS = os.environ.get("HIST_HR_ALGOS", "direct_cuckoo direct_single_probe").split()
 GENERATOR_CACHE_SLOTS = int(os.environ.get("HIST_HR_CACHE_SLOTS", "0"))
 
 HITRATE_RE = re.compile(
@@ -298,13 +298,20 @@ def main():
         binary_provenance = results.setdefault("_meta", {}).setdefault(
             "binary_provenance", {}
         )
-        previous = binary_provenance.get(label)
+        variant = _HR_SUFFIX or "default"
+        label_provenance = binary_provenance.setdefault(label, {})
+        # Backward-compatible upgrade from the former one-record-per-label schema.
+        if "hitrate_binary" in label_provenance:
+            label_provenance = {"default": label_provenance}
+            binary_provenance[label] = label_provenance
+        previous = label_provenance.get(variant)
         if previous is not None and previous != provenance:
             raise RuntimeError(
-                f"refusing to merge hit-rate data from different binaries for {label}: "
+                f"refusing to merge hit-rate data from different binaries for "
+                f"{label}/{variant}: "
                 f"previous={previous}, current={provenance}"
             )
-        binary_provenance[label] = provenance
+        label_provenance[variant] = provenance
         binary_results = results.setdefault(label, {})
         for algo in ALGOS:
             algo_results = binary_results.setdefault(algo, {})

@@ -93,11 +93,17 @@ ALGO_STYLE = {
     "gmem_privatized_single_probe": (
         "#17becf",
         "s",
-        "gmem-priv + single-probe",
+        "GMEM-privatized + single-probe SMEM cache",
         ":",
         1.1,
     ),
-    "direct_cuckoo": ("#2ca02c", "D", "direct-atomic + cuckoo", "--", 1.1),
+    "direct_cuckoo": (
+        "#2ca02c",
+        "D",
+        "direct-atomic + cuckoo SMEM cache",
+        "--",
+        1.1,
+    ),
     "direct_single_probe": ("#8c8c00", "P", "direct-atomic + single-probe", ":", 1.1),
     "direct_nocache": ("#ff7f0e", "v", "direct-atomic + no cache", "-", 1.1),
     # Privatized-SMEM kernel. The CUB_HISTO_FORCE_ALGO hook does not force it (and
@@ -863,17 +869,24 @@ def render_one(
     hr_for_binary=None,
 ):
     """One PNG: characterization top row + per-element-count perf grid, and (when
-    hit-rate data is supplied) a final row with cuckoo and single-probe cache
-    hit-rate vs #bins (one series per #elements)."""
+    hit-rate data is supplied) a final row for each available cache algorithm
+    (one series per #elements)."""
     bins, counts, char_bins = C.char_input(shape)
     hr_for_binary = hr_for_binary or {}
 
     def has_sample(cells):
         return any(_hitrate_key_parts(key)[0] == sample for key in cells)
 
-    has_hr = has_sample(hr_for_binary.get("direct_cuckoo", {})) or has_sample(
-        hr_for_binary.get("direct_single_probe", {})
-    )
+    hitrate_algos = [
+        algo
+        for algo in (
+            "direct_cuckoo",
+            "gmem_privatized_single_probe",
+            "direct_single_probe",
+        )
+        if has_sample(hr_for_binary.get(algo, {}))
+    ][:2]
+    has_hr = bool(hitrate_algos)
 
     ncols = 3
     nperf = len(elements_list)
@@ -980,22 +993,17 @@ def render_one(
 
     if has_hr:
         hr_row = 1 + perf_rows
-        draw_hitrate(
-            fig.add_subplot(gs[hr_row, 0]),
-            hr_for_binary.get("direct_cuckoo", {}),
-            sample,
-            shape,
-            elements_list,
-            f"cuckoo cache — {sample} hit rate vs #bins",
-        )
-        draw_hitrate(
-            fig.add_subplot(gs[hr_row, 1]),
-            hr_for_binary.get("direct_single_probe", {}),
-            sample,
-            shape,
-            elements_list,
-            f"single-probe cache — {sample} hit rate vs #bins",
-        )
+        for column, algo in enumerate(hitrate_algos):
+            draw_hitrate(
+                fig.add_subplot(gs[hr_row, column]),
+                hr_for_binary.get(algo, {}),
+                sample,
+                shape,
+                elements_list,
+                f"{ALGO_TAG[algo]} — {ALGO_STYLE[algo][2]}\n{sample} hit rate vs #bins",
+            )
+        for column in range(len(hitrate_algos), 2):
+            fig.add_subplot(gs[hr_row, column]).axis("off")
         # third column of the hit-rate row: short explainer
         ax = fig.add_subplot(gs[hr_row, 2])
         ax.axis("off")
@@ -1003,7 +1011,9 @@ def render_one(
             0.5,
             0.5,
             "hit = contribution absorbed in the\nSMEM cache (block-scope add)\n"
-            "miss = spilled to a GMEM atomic\n\n(measured with the figure's SampleT\n"
+            "DAC miss = device-scope output atomic\n"
+            "GPS miss = block-private GMEM add,\nthen atomic-free gather\n\n"
+            "(measured with the figure's SampleT\n"
             "and counter-width-specific\ninstrumented build)",
             ha="center",
             va="center",
