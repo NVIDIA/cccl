@@ -245,10 +245,11 @@ struct agent_batched_topk_cluster
   // `leader_rank` computed in `run`.
   static constexpr bool is_scan_descending = !(need_determinism && !is_tie_reversed);
 
-  // The deterministic final scan visits chunks in global-index order and bails early (`should_stop`), so keeping the
-  // *first-visited* chunks resident lets it skip re-reading the streamed overflow. Ascending visits low indices first
-  // (the default low-resident split); descending (prefer-larger) visits high indices first, so we flip the split to
-  // keep the high-index chunks resident (see `run`), restoring symmetry. Never set on the non-deterministic path.
+  // The deterministic final scan visits chunks in global-index order and bails early (`final_filter_should_stop`), so
+  // keeping the *first-visited* chunks resident lets it skip re-reading the streamed overflow. Ascending visits low
+  // indices first (the default low-resident split); descending (prefer-larger) visits high indices first, so we flip
+  // the split to keep the high-index chunks resident (see `run`), restoring symmetry. Never set on the
+  // non-deterministic path.
   static constexpr bool is_residency_reversed = need_determinism && is_tie_reversed;
 
   // Segments at or below this size that also fit resident in one CTA take the single-CTA fast path (see
@@ -1272,40 +1273,27 @@ private:
     return temp_storage.prefix_pair;
   }
 
-  // Deterministic final-filter driver. The `run()`-local tie-break state (counts, prefixes, region extents, and the
-  // mutable `running`/`is_tie_active` scan cursor) is hoisted here so the per-region index-ordered sweeps are named
-  // member functions instead of a nest of `[&]` lambdas. Constructed once per `run()` in the deterministic branch. Kept
-  // an aggregate (no user constructor) so its members are initialized positionally at the single call site.
-  //
-  // Codegen: methods are `_CCCL_FORCEINLINE`; the resident window is carried as a `smem_keys_t` view
-  // (`resident_front`).
+  // Deterministic final-filter state: the `run()`-local tie-break values (counts, prefixes, region extents) plus the
+  // mutable `running`/`is_tie_active` scan cursor, bundled into one POD so the flattened filter methods below take a
+  // single `st` argument instead of ~16. A deterministic-path-only local of `write_deterministic_topk`; never
+  // instantiated on the non-deterministic path. Segment-invariant inputs (`segment_id`, `k`, and the `layout.*`
+  // geometry) are read from the agent directly rather than duplicated here. `resident_front` carries the resident
+  // window as a `smem_keys_t` view.
   template <detail::topk::select SelectDirection>
-  struct det_final_filter
+  struct det_filter_state
   {
-    using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
+    using identify_op_t = detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
 
-    agent_batched_topk_cluster& agent;
-    num_segments_val_t segment_id;
-    identify_candidates_op_t identify_op;
+    identify_op_t identify_op;
     it_value_t<KeyOutputItItT> block_keys_out;
-    key_it_t block_keys_in;
-    chunk_partition part;
-    out_offset_t k;
     out_offset_t num_back;
     out_offset_t my_front;
     offset_t sel_prefix;
     offset_t cand_prefix;
     offset_t my_cand_count;
-    offset_t resident_base;
-    offset_t my_resident_chunks;
-    offset_t segment_size_off;
-    offset_t head_items;
     offset_t front_seg_base;
     smem_keys_t resident_front;
     int front_count;
-    int head_edge_len_items;
-    int tail_edge_len_items;
     bool is_select_all_cand_cta;
     bool is_resident_terminal;
     bool is_head_edge_terminal;
@@ -1313,354 +1301,379 @@ private:
     // Mutable per-invocation tie-break scan cursor.
     offset_t running;
     bool is_tie_active;
+  };
 
-    // For each key written to `block_keys_out[pos]`, load the associated input value at the key's segment-local index
-    // `seg_idx` from gmem and store it at the same slot. Compiled out (and never dereferences the null value iterators)
-    // in keys-only builds; `segment_id` is loop-invariant, so the per-segment iterators hoist out of the writes.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void write_value(out_offset_t pos, offset_t seg_idx) const
+  // ---------------------------------------------------------------------------
+  // Deterministic final filter
+  // ---------------------------------------------------------------------------
+  // The per-region index-ordered sweeps below are named agent methods over a `det_filter_state` (`st`), driven by
+  // `run_filter`; `write_deterministic_topk` computes `st` and calls `run_filter(st)`. See `write_deterministic_topk`
+  // for the front/back placement scheme. All methods are `_CCCL_FORCEINLINE`.
+
+  // For each key written to `block_keys_out[pos]`, load the associated input value at the key's segment-local index
+  // `seg_idx` from gmem and store it at the same slot. Compiled out (and never dereferences the null value iterators)
+  // in keys-only builds; `segment_id` is loop-invariant, so the per-segment iterators hoist out of the writes.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void final_filter_write_value(out_offset_t pos, offset_t seg_idx)
+  {
+    if constexpr (!is_keys_only)
     {
-      if constexpr (!is_keys_only)
-      {
-        _CCCL_ASSERT(pos < k && seg_idx < segment_size_off,
-                     "value write must land in the top-k output and read inside the segment");
-        auto block_vals_in  = agent.d_value_segments_it[segment_id];
-        auto block_vals_out = agent.d_value_segments_out_it[segment_id];
-        block_vals_out[pos] = block_vals_in[static_cast<segment_size_val_t>(seg_idx)];
-      }
+      _CCCL_ASSERT(pos < k && seg_idx < layout.segment_size_off,
+                   "value write must land in the top-k output and read inside the segment");
+      auto block_vals_in  = d_value_segments_it[segment_id];
+      auto block_vals_out = d_value_segments_out_it[segment_id];
+      block_vals_out[pos] = block_vals_in[static_cast<segment_size_val_t>(seg_idx)];
     }
+  }
 
-    // Uniform "all placed" predicate: true once this block has emitted all `my_front` strictly-selected keys and
-    // resolved its ties. Callers must `__syncthreads()` first (the counter reads are block-wide and must resynchronize
-    // lanes that raced ahead through the barrier-free tiles). Polled only at critical points -- between regions and
-    // before each streaming bulk copy -- never per tile.
-    _CCCL_DEVICE _CCCL_FORCEINLINE bool should_stop()
+  // Uniform "all placed" predicate: true once this block has emitted all `my_front` strictly-selected keys and
+  // resolved its ties. Callers must `__syncthreads()` first (the counter reads are block-wide and must resynchronize
+  // lanes that raced ahead through the barrier-free tiles). Polled only at critical points -- between regions and
+  // before each streaming bulk copy -- never per tile.
+  template <detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool final_filter_should_stop(const det_filter_state<SelectDirection>& st)
+  {
+    // Each region is visited at most once, so neither counter can pass this CTA's exact selected/candidate totals.
+    _CCCL_ASSERT(temp_storage.front_local_cnt <= static_cast<offset_t>(st.my_front)
+                   && temp_storage.back_local_cnt <= st.my_cand_count,
+                 "final-filter placement counters exceeded this CTA's assigned work");
+    const bool is_front_done = temp_storage.front_local_cnt >= static_cast<offset_t>(st.my_front);
+    // Straddling/above CTAs finish the back when `is_tie_active` clears; an `is_select_all_cand_cta` (which never
+    // clears it) finishes once all `my_cand_count` of its candidates are placed.
+    const bool is_back_done = !st.is_tie_active || (temp_storage.back_local_cnt >= st.my_cand_count);
+    return is_front_done && is_back_done;
+  }
+
+  // Emit one back/tie candidate: if its `global_rank` (arrival- or scan-ordered by the caller) is a winner it lands
+  // in the top-k output at slot `k-1-global_rank`, with its value pulled from segment-local index `seg_idx`; ranks at
+  // or past `num_back` are losers and dropped (a no-op). Forced-inline so it folds into the hot back-placement loops;
+  // the caller keeps any counter side effects (e.g. the `back_local_cnt` atomic) in the `global_rank` argument so they
+  // still run for every candidate.
+  template <detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  emit_back_one(const det_filter_state<SelectDirection>& st, offset_t global_rank, const key_t& key, offset_t seg_idx)
+  {
+    if (global_rank < static_cast<offset_t>(st.num_back))
     {
-      // Each region is visited at most once, so neither counter can pass this CTA's exact selected/candidate totals.
-      _CCCL_ASSERT(agent.temp_storage.front_local_cnt <= static_cast<offset_t>(my_front)
-                     && agent.temp_storage.back_local_cnt <= my_cand_count,
-                   "final-filter placement counters exceeded this CTA's assigned work");
-      const bool is_front_done = agent.temp_storage.front_local_cnt >= static_cast<offset_t>(my_front);
-      // Straddling/above CTAs finish the back when `is_tie_active` clears; an `is_select_all_cand_cta` (which never
-      // clears it) finishes once all `my_cand_count` of its candidates are placed.
-      const bool is_back_done = !is_tie_active || (agent.temp_storage.back_local_cnt >= my_cand_count);
-      return is_front_done && is_back_done;
+      const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
+      st.block_keys_out[out] = key;
+      final_filter_write_value(out, seg_idx);
     }
+  }
 
-    // Emit one back/tie candidate: if its `global_rank` (arrival- or scan-ordered by the caller) is a winner it lands
-    // in the top-k output at slot `k-1-global_rank`, with its value pulled from segment-local index `seg_idx`; ranks at
-    // or past `num_back` are losers and dropped (a no-op). Forced-inline with explicit args (no capture) so it folds
-    // into the hot back-placement loops with no extra live ranges; the caller keeps any counter side effects (e.g.
-    // the `back_local_cnt` atomic) in the `global_rank` argument so they still run for every candidate.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void emit_back_one(offset_t global_rank, const key_t& key, offset_t seg_idx)
+  // Process a flat span of `count` keys in scan order, tiled by `threads_per_block * Items`. `FromSmem` selects the
+  // key source: the SMEM buffer `smem_src` (indexed by the folded in-region position) or gmem `block_keys_in`
+  // (indexed by the segment-local index `seg_base + folded`). `Reversed` walks the span high-to-low. Strictly-
+  // selected keys go to the front via a SMEM atomic (offset by `st.sel_prefix`); candidates go to the back (see the
+  // per-tile logic). `region_is_terminal` marks this region as the CTA's last, so its last tile -- if ties are
+  // unresolved -- holds the boundary and scans directly. `st.running` carries across tiles/regions. No per-tile early-
+  // exit or barrier here except the lazy-scan `else` branch; early exit is decided at critical points via
+  // `final_filter_should_stop`.
+  template <int Items, bool FromSmem, bool Reversed, detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_tiles(
+    det_filter_state<SelectDirection>& st,
+    [[maybe_unused]] const key_t* smem_src,
+    offset_t seg_base,
+    int count,
+    bool region_is_terminal)
+  {
+    // The SMEM-source clause is exempt when reading from gmem (`FromSmem == false`, the generic overflow fallback
+    // passes `nullptr`) or for an empty tile.
+    _CCCL_ASSERT(count >= 0 && seg_base <= layout.segment_size_off
+                   && static_cast<offset_t>(count) <= layout.segment_size_off - seg_base
+                   && (!FromSmem || count == 0 || smem_src != nullptr),
+                 "process_tiles: region must be a valid in-segment source span");
+    constexpr int items = Items;
+    constexpr int tile  = threads_per_block * items;
+    for (int tile_base = 0; tile_base < count; tile_base += tile)
     {
-      if (global_rank < static_cast<offset_t>(num_back))
+      key_t keys[items];
+      offset_t flags[items];
+      detail::topk::candidate_class cls[items];
+      bool is_valid[items];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < items; ++i)
       {
-        const out_offset_t out = static_cast<out_offset_t>(k - 1) - static_cast<out_offset_t>(global_rank);
-        block_keys_out[out]    = key;
-        write_value(out, seg_idx);
-      }
-    }
-
-    // Process a flat span of `count` keys in scan order, tiled by `threads_per_block * Items`. `FromSmem` selects the
-    // key source: the SMEM buffer `smem_src` (indexed by the folded in-region position) or gmem `block_keys_in`
-    // (indexed by the segment-local index `seg_base + folded`). `Reversed` walks the span high-to-low. Strictly-
-    // selected keys go to the front via a SMEM atomic (offset by `sel_prefix`); candidates go to the back (see the
-    // per-tile logic). `region_is_terminal` marks this region as the CTA's last, so its last tile -- if ties are
-    // unresolved -- holds the boundary and scans directly. `running` carries across tiles/regions. No per-tile early-
-    // exit or barrier here except the lazy-scan `else` branch; early exit is decided at critical points via
-    // `should_stop`.
-    template <int Items, bool FromSmem, bool Reversed>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    process_tiles([[maybe_unused]] const key_t* smem_src, offset_t seg_base, int count, bool region_is_terminal)
-    {
-      // A non-negative span inside the segment, with a valid SMEM source when read from SMEM (the generic overflow
-      // fallback passes `nullptr` with `FromSmem == false`).
-      _CCCL_ASSERT(
-        count >= 0 && seg_base <= segment_size_off && static_cast<offset_t>(count) <= segment_size_off - seg_base
-          && (!FromSmem || count == 0 || smem_src != nullptr),
-        "process_tiles: region must be a valid in-segment source span");
-      constexpr int items = Items;
-      constexpr int tile  = threads_per_block * items;
-      for (int tile_base = 0; tile_base < count; tile_base += tile)
-      {
-        key_t keys[items];
-        offset_t flags[items];
-        detail::topk::candidate_class cls[items];
-        bool is_valid[items];
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < items; ++i)
+        const int pos = tile_base + tid * items + i;
+        is_valid[i]   = pos < count;
+        flags[i]      = offset_t{0};
+        if (is_valid[i])
         {
-          const int pos = tile_base + agent.tid * items + i;
-          is_valid[i]   = pos < count;
-          flags[i]      = offset_t{0};
-          if (is_valid[i])
+          // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
+          // local read and the segment-local value index.
+          const int folded_pos = Reversed ? (count - 1 - pos) : pos;
+          if constexpr (FromSmem)
           {
-            // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
-            // local read and the segment-local value index.
-            const int folded_pos = Reversed ? (count - 1 - pos) : pos;
-            if constexpr (FromSmem)
-            {
-              keys[i] = smem_src[folded_pos];
-            }
-            else
-            {
-              keys[i] = block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
-            }
-            cls[i]   = identify_op(keys[i]);
-            flags[i] = (cls[i] == detail::topk::candidate_class::candidate) ? offset_t{1} : offset_t{0};
-          }
-        }
-
-        // Strictly-selected keys go to this block's front slice via a block-local SMEM atomic offset by `sel_prefix`.
-        // The per-block slices (disjoint by `sel_prefix`) together fill `[0, num_selected)`. Candidates never fold in
-        // here -- they always route through the back below, even on early stop.
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < items; ++i)
-        {
-          const bool is_front_key = is_valid[i] && (cls[i] == detail::topk::candidate_class::selected);
-          if (is_front_key)
-          {
-            const int pos          = tile_base + agent.tid * items + i;
-            const offset_t local   = atomicAdd(&agent.temp_storage.front_local_cnt, offset_t{1});
-            const out_offset_t out = static_cast<out_offset_t>(sel_prefix + local);
-            const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
-            block_keys_out[out]    = keys[i];
-            write_value(out, seg_idx);
-          }
-        }
-
-        // Back/tie placement (only while this CTA still has unresolved ties). Three block-uniform sub-paths:
-        //   * is_select_all_cand_cta -- every candidate wins: arrival-order SMEM atomics, no scan, no barrier.
-        //   * terminal tile -- the straddling CTA's last tile necessarily holds the boundary: scan it directly.
-        //   * other tiles   -- straddling CTA, boundary not yet known: place in arrival order, then `B1` to read the
-        //                      counter and, on the crossing tile only, overwrite the arrival slots in index order.
-        if (is_tie_active)
-        {
-          const bool is_terminal_tile = region_is_terminal && (tile_base + tile >= count);
-
-          // Arrival-order placement: each candidate grabs the next block-local back slot via an atomic. Used where the
-          // winning slot set is provisional (select-all, or the lazy path before the K-boundary is known).
-          const auto emit_arrival = [&] {
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int i = 0; i < items; ++i)
-            {
-              if (is_valid[i] && flags[i] != offset_t{0})
-              {
-                const int pos = tile_base + agent.tid * items + i;
-                emit_back_one(cand_prefix + atomicAdd(&agent.temp_storage.back_local_cnt, offset_t{1}),
-                              keys[i],
-                              seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos));
-              }
-            }
-          };
-          // Index-ordered placement into slots based at `base`: a block scan assigns each candidate a deterministic
-          // slot by its in-tile rank. Returns the tile's candidate total. Used on the boundary-crossing tile.
-          const auto emit_indexed = [&](offset_t base) -> offset_t {
-            offset_t excl[items];
-            offset_t tile_total = 0;
-            block_scan_t(agent.temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int i = 0; i < items; ++i)
-            {
-              if (is_valid[i] && flags[i] != offset_t{0})
-              {
-                const int pos = tile_base + agent.tid * items + i;
-                emit_back_one(
-                  base + excl[i], keys[i], seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos));
-              }
-            }
-            return tile_total;
-          };
-
-          if (is_select_all_cand_cta)
-          {
-            emit_arrival();
-          }
-          else if (is_terminal_tile)
-          {
-            // Straddling CTA's last tile necessarily holds the boundary: scan it directly in index order.
-            running += emit_indexed(running);
-            is_tie_active = false;
+            keys[i] = smem_src[folded_pos];
           }
           else
           {
-            emit_arrival();
-            // B1: order the arrival global writes ahead of the index-order overwrite (same boundary slots) and make
-            // the counter read race-free and block-uniform.
-            __syncthreads();
-            const offset_t placed = agent.temp_storage.back_local_cnt;
-            if ((cand_prefix + placed) > static_cast<offset_t>(num_back))
-            {
-              // Boundary tile: overwrite this tile's arrival slots `{k-1-running, ...}` with the index-ordered winners
-              // (identical slot set, different candidate->slot mapping).
-              emit_indexed(running);
-            }
-            running = cand_prefix + placed;
-            if (running >= static_cast<offset_t>(num_back))
-            {
-              is_tie_active = false;
-            }
-            // Trailing barrier for the lazy-scan path only: separate this tile's `placed` read (B1 above) from the
-            // next tile's `back_local_cnt` atomic. The other sub-paths write disjoint slots and need no per-tile
-            // barrier.
-            __syncthreads();
+            keys[i] =
+              layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
           }
+          cls[i]   = st.identify_op(keys[i]);
+          flags[i] = (cls[i] == detail::topk::candidate_class::candidate) ? offset_t{1} : offset_t{0};
         }
       }
-    }
 
-    // Resident-front region. Direction is the compile-time `is_residency_reversed` (== `is_tie_reversed` in
-    // deterministic mode): ascending walks the low-index window forward, descending walks the high-index window
-    // (`resident_base`) in reverse, so a single `process_tiles` call per span with the index folded at compile time
-    // replaces the old fwd/rev pair.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_resident()
-    {
-      if constexpr (use_block_load_to_shared)
+      // Strictly-selected keys go to this block's front slice via a block-local SMEM atomic offset by `st.sel_prefix`.
+      // The per-block slices (disjoint by `st.sel_prefix`) together fill `[0, num_selected)`. Candidates never fold in
+      // here -- they always route through the back below, even on early stop.
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < items; ++i)
       {
-        // Whole contiguous resident span staged in SMEM.
-        process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/is_residency_reversed>(
-          resident_front.data(), front_seg_base, front_count, is_resident_terminal);
-      }
-      else
-      {
-        const int resident_chunk_count = static_cast<int>(my_resident_chunks);
-        for (int slot = 0; slot < resident_chunk_count; ++slot)
+        const bool is_front_key = is_valid[i] && (cls[i] == detail::topk::candidate_class::selected);
+        if (is_front_key)
         {
-          const int local_slot     = is_residency_reversed ? (resident_chunk_count - 1 - slot) : slot;
-          const offset_t chunk_idx = part.global_index(resident_base + static_cast<offset_t>(local_slot));
-          const auto chunk         = agent.get_chunk(chunk_idx, segment_size_off, head_items);
-          // Generic multi-chunk resident loop reads the chunk's SMEM slot; never the terminal-tile fast path (the lazy
-          // per-tile boundary detection handles any boundary), so pass `false`.
-          process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/is_residency_reversed>(
-            ::cuda::ptr_rebind<key_t>(agent.key_slots + local_slot * ChunkBytes), chunk.offset, chunk.count, false);
+          const int pos          = tile_base + tid * items + i;
+          const offset_t local   = atomicAdd(&temp_storage.front_local_cnt, offset_t{1});
+          const out_offset_t out = static_cast<out_offset_t>(st.sel_prefix + local);
+          const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
+          st.block_keys_out[out] = keys[i];
+          final_filter_write_value(out, seg_idx);
         }
       }
-    }
 
-    // Overflow chunks. On the block-load path each landed slot folds through `process_tiles` (reusing the TMA
-    // pipeline); the generic fallback reads gmem chunk by chunk. `run_pass`'s `should_continue` breaks the stream once
-    // the top-k is fully placed. The streaming direction is already correct on entry (preselected in `run`), and the
-    // slots are already primed -- the histogram's first streaming pass primed the same persistent stream, so
-    // `agent.stream_is_primed` carries in as `true` and this pass reuses the resident turn-around chunks with no
-    // re-prime (the generic fallback re-reads gmem each pass regardless).
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_overflow()
-    {
-      // Guards the straddling CTA (the only rank needing scan order): `run` preselected the direction so it enters at
-      // `stream_is_forward == !is_tie_reversed` after the full `num_passes`. The escape disjuncts are the cases where
-      // the streaming direction is moot: no overflow (`overflow_chunks == 0`); a CTA entirely at/below the boundary
-      // (`is_select_all_cand_cta`, arrival-order atomics); or one with no back scan (`!is_tie_active`). Early stop is
-      // subsumed -- it makes every CTA `is_select_all_cand_cta`, so the shorter (possibly mis-parity) pass count never
-      // reaches a straddler.
-      _CCCL_ASSERT(agent.layout.overflow_chunks == 0 || is_select_all_cand_cta || !is_tie_active
-                     || agent.stream_is_forward == (!is_tie_reversed),
-                   "preselected ping-pong parity mismatch: the straddling CTA entered the deterministic filter with "
-                   "the wrong streaming direction");
-
-      agent.run_pass(
-        // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
-        // `stage_span` returns the slot's aligned-bulk view (a peeled tail suffix is handled by `process_tail_edge`).
-        [&](int stage, offset_t overflow_idx) {
-          const auto keys = agent.stage_span(stage, overflow_idx);
-          const offset_t base_off =
-            agent.get_chunk(part.global_index(agent.layout.overflow_base + overflow_idx), segment_size_off, head_items)
-              .offset;
-          // The multi-chunk overflow stream stays on the lazy per-tile boundary detection (`region_is_terminal ==
-          // false`): a stray terminal direct scan here would need the stream to flag its last chunk, and the saving
-          // is one barrier on one tile.
-          process_tiles<tie_break_items_streamed, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed>(
-            keys.data(), base_off, static_cast<int>(keys.size()), false);
-        },
-        // Generic fallback: read the overflow chunk straight from gmem (full count; the fallback never peels a tail).
-        [&](const auto& chunk) {
-          // FromSmem=false: `smem_src` is unread, so pass nullptr.
-          process_tiles<tie_break_items_streamed, /*FromSmem=*/false, /*Reversed=*/is_tie_reversed>(
-            nullptr, chunk.offset, chunk.count, false);
-        },
-        // No interleaved resident work: the deterministic filter folds its resident span separately.
-        [] {},
-        // Break the stream once the whole top-k is placed. The barrier makes the counter reads block-wide and resyncs
-        // lanes that drifted through the just-folded chunk's barrier-free tiles (polled before each refill copy).
-        [&] {
-          __syncthreads();
-          return !should_stop();
-        });
-    }
-
-    // Fold one persistent boundary edge (head prefix or peeled tail suffix), both staged in `edge_keys`. A no-op on the
-    // generic fallback (which reads boundary items straight from gmem) and for a zero-length edge. An edge spans fewer
-    // than `load_align_items` items (it fits in its `edge_keys` slot), so it runs `process_tiles` at unroll factor 1
-    // (non-unrolled) instead of the wider tie-break unroll the potentially large resident/overflow regions use.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_edge(const key_t* keys, offset_t seg_base, int count, bool is_terminal)
-    {
-      if constexpr (use_block_load_to_shared)
+      // Back/tie placement (only while this CTA still has unresolved ties). Three block-uniform sub-paths:
+      //   * is_select_all_cand_cta -- every candidate wins: arrival-order SMEM atomics, no scan, no barrier.
+      //   * terminal tile -- the straddling CTA's last tile necessarily holds the boundary: scan it directly.
+      //   * other tiles   -- straddling CTA, boundary not yet known: place in arrival order, then `B1` to read the
+      //                      counter and, on the crossing tile only, overwrite the arrival slots in index order.
+      if (st.is_tie_active)
       {
-        _CCCL_ASSERT(count >= 0 && count <= head_edge_cap_items, "a boundary edge must fit in its edge_keys slot");
-        process_tiles<1, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed>(keys, seg_base, count, is_terminal);
-      }
-    }
+        const bool is_terminal_tile = region_is_terminal && (tile_base + tile >= count);
 
-    // Head prefix edge (rank 0): the segment's lowest indices `[0, head_edge_len_items)`, staged at `edge_keys` (base
-    // 0). In global-index order it is the leading region (ascending) / trailing region (descending); a non-head rank or
-    // empty prefix is a no-op.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_head_edge()
-    {
-      process_edge(agent.temp_storage.edge_keys, offset_t{0}, head_edge_len_items, is_head_edge_terminal);
-    }
+        // Arrival-order placement: each candidate grabs the next block-local back slot via an atomic. Used where the
+        // winning slot set is provisional (select-all, or the lazy path before the K-boundary is known).
+        const auto emit_arrival = [&] {
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int i = 0; i < items; ++i)
+          {
+            if (is_valid[i] && flags[i] != offset_t{0})
+            {
+              const int pos = tile_base + tid * items + i;
+              emit_back_one(st,
+                            st.cand_prefix + atomicAdd(&temp_storage.back_local_cnt, offset_t{1}),
+                            keys[i],
+                            seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos));
+            }
+          }
+        };
+        // Index-ordered placement into slots based at `base`: a block scan assigns each candidate a deterministic
+        // slot by its in-tile rank. Returns the tile's candidate total. Used on the boundary-crossing tile.
+        const auto emit_indexed = [&](offset_t base) -> offset_t {
+          offset_t excl[items];
+          offset_t tile_total = 0;
+          block_scan_t(temp_storage.scan_storage).ExclusiveSum(flags, excl, tile_total);
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int i = 0; i < items; ++i)
+          {
+            if (is_valid[i] && flags[i] != offset_t{0})
+            {
+              const int pos = tile_base + tid * items + i;
+              emit_back_one(
+                st, base + excl[i], keys[i], seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos));
+            }
+          }
+          return tile_total;
+        };
 
-    // Peeled tail suffix edge (tail owner): the segment's highest indices, staged at `edge_keys + head_edge_cap_items`
-    // (base `segment_size - tail_edge_len_items`). In global-index order it is the trailing region (ascending) /
-    // leading region (descending); an aligned or non-owned tail is a no-op.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void process_tail_edge()
-    {
-      process_edge(agent.temp_storage.edge_keys + head_edge_cap_items,
-                   segment_size_off - static_cast<offset_t>(tail_edge_len_items),
-                   tail_edge_len_items,
-                   is_tail_edge_terminal);
-    }
-
-    // Drive the four regions in global-index order (ascending, or descending under `is_tie_reversed`), bailing between
-    // regions once `should_stop` reports the whole top-k placed. The two orders share the resident->overflow middle and
-    // only swap which boundary edge leads: ascending is head, resident, overflow, tail; descending reverses the edges.
-    // Both visit resident before overflow, so `should_stop` can skip re-streaming the overflow once the top-k is
-    // placed; `is_residency_reversed` keeps the first-visited (high-index) chunks resident in the descending order so
-    // this holds.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void run_filter()
-    {
-      const auto step = [&](auto&& region) {
-        // Barrier before polling: makes the placement-counter reads block-wide and resynchronizes lanes that raced
-        // ahead through the previous region's barrier-free tiles.
-        __syncthreads();
-        if (!should_stop())
+        if (st.is_select_all_cand_cta)
         {
-          region();
+          emit_arrival();
         }
-      };
-      if constexpr (is_tie_reversed)
-      {
-        process_tail_edge();
-      }
-      else
-      {
-        process_head_edge();
-      }
-      step([&] {
-        process_resident();
-      });
-      step([&] {
-        process_overflow();
-      });
-      step([&] {
-        if constexpr (is_tie_reversed)
+        else if (is_terminal_tile)
         {
-          process_head_edge();
+          // Straddling CTA's last tile necessarily holds the boundary: scan it directly in index order.
+          st.running += emit_indexed(st.running);
+          st.is_tie_active = false;
         }
         else
         {
-          process_tail_edge();
+          emit_arrival();
+          // B1: order the arrival global writes ahead of the index-order overwrite (same boundary slots) and make
+          // the counter read race-free and block-uniform.
+          __syncthreads();
+          const offset_t placed = temp_storage.back_local_cnt;
+          if ((st.cand_prefix + placed) > static_cast<offset_t>(st.num_back))
+          {
+            // Boundary tile: overwrite this tile's arrival slots `{k-1-st.running, ...}` with the index-ordered winners
+            // (identical slot set, different candidate->slot mapping).
+            emit_indexed(st.running);
+          }
+          st.running = st.cand_prefix + placed;
+          if (st.running >= static_cast<offset_t>(st.num_back))
+          {
+            st.is_tie_active = false;
+          }
+          // Trailing barrier for the lazy-scan path only: separate this tile's `placed` read (B1 above) from the
+          // next tile's `back_local_cnt` atomic. The other sub-paths write disjoint slots and need no per-tile
+          // barrier.
+          __syncthreads();
         }
-      });
+      }
     }
-  };
+  }
+
+  // Resident-front region. Direction is the compile-time `is_residency_reversed` (== `is_tie_reversed` in
+  // deterministic mode): ascending walks the low-index window forward, descending walks the high-index window
+  // (`resident_base`) in reverse, so a single `process_tiles` call per span with the index folded at compile time
+  // replaces the old fwd/rev pair.
+  template <detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_resident(det_filter_state<SelectDirection>& st)
+  {
+    if constexpr (use_block_load_to_shared)
+    {
+      // Whole contiguous resident span staged in SMEM.
+      process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/is_residency_reversed>(
+        st, st.resident_front.data(), st.front_seg_base, st.front_count, st.is_resident_terminal);
+    }
+    else
+    {
+      const int resident_chunk_count = static_cast<int>(layout.my_resident_chunks);
+      for (int slot = 0; slot < resident_chunk_count; ++slot)
+      {
+        const int local_slot     = is_residency_reversed ? (resident_chunk_count - 1 - slot) : slot;
+        const offset_t chunk_idx = layout.part.global_index(layout.resident_base + static_cast<offset_t>(local_slot));
+        const auto chunk         = get_chunk(chunk_idx, layout.segment_size_off, layout.head_items);
+        // Generic multi-chunk resident loop reads the chunk's SMEM slot; never the terminal-tile fast path (the lazy
+        // per-tile boundary detection handles any boundary), so pass `false`.
+        process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/is_residency_reversed>(
+          st, ::cuda::ptr_rebind<key_t>(key_slots + local_slot * ChunkBytes), chunk.offset, chunk.count, false);
+      }
+    }
+  }
+
+  // Overflow chunks. On the block-load path each landed slot folds through `process_tiles` (reusing the TMA
+  // pipeline); the generic fallback reads gmem chunk by chunk. `run_pass`'s `should_continue` breaks the stream once
+  // the top-k is fully placed. The streaming direction is already correct on entry (preselected in `run`), and the
+  // slots are already primed -- the histogram's first streaming pass primed the same persistent stream, so
+  // `stream_is_primed` carries in as `true` and this pass reuses the resident turn-around chunks with no re-prime (the
+  // generic fallback re-reads gmem each pass regardless).
+  template <detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_overflow(det_filter_state<SelectDirection>& st)
+  {
+    // Guards the straddling CTA (the only rank needing scan order): `run` preselected the direction so it enters at
+    // `stream_is_forward == !is_tie_reversed` after the full `num_passes`. The escape disjuncts are the cases where
+    // the streaming direction is moot: no overflow (`overflow_chunks == 0`); a CTA entirely at/below the boundary
+    // (`is_select_all_cand_cta`, arrival-order atomics); or one with no back scan (`!is_tie_active`). Early stop is
+    // subsumed -- it makes every CTA `is_select_all_cand_cta`, so the shorter (possibly mis-parity) pass count never
+    // reaches a straddler.
+    _CCCL_ASSERT(layout.overflow_chunks == 0 || st.is_select_all_cand_cta || !st.is_tie_active
+                   || stream_is_forward == (!is_tie_reversed),
+                 "preselected ping-pong parity mismatch: the straddling CTA entered the deterministic filter with "
+                 "the wrong streaming direction");
+
+    run_pass(
+      // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
+      // `stage_span` returns the slot's aligned-bulk view (a peeled tail suffix is handled by `process_tail_edge`).
+      [&](int stage, offset_t overflow_idx) {
+        const auto keys = stage_span(stage, overflow_idx);
+        const offset_t base_off =
+          get_chunk(
+            layout.part.global_index(layout.overflow_base + overflow_idx), layout.segment_size_off, layout.head_items)
+            .offset;
+        // The multi-chunk overflow stream stays on the lazy per-tile boundary detection (`region_is_terminal ==
+        // false`): a stray terminal direct scan here would need the stream to flag its last chunk, and the saving
+        // is one barrier on one tile.
+        process_tiles<tie_break_items_streamed, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed>(
+          st, keys.data(), base_off, static_cast<int>(keys.size()), false);
+      },
+      // Generic fallback: read the overflow chunk straight from gmem (full count; the fallback never peels a tail).
+      [&](const auto& chunk) {
+        // FromSmem=false: `smem_src` is unread, so pass nullptr.
+        process_tiles<tie_break_items_streamed, /*FromSmem=*/false, /*Reversed=*/is_tie_reversed>(
+          st, nullptr, chunk.offset, chunk.count, false);
+      },
+      // No interleaved resident work: the deterministic filter folds its resident span separately.
+      [] {},
+      // Break the stream once the whole top-k is placed. The barrier makes the counter reads block-wide and resyncs
+      // lanes that drifted through the just-folded chunk's barrier-free tiles (polled before each refill copy).
+      [&] {
+        __syncthreads();
+        return !final_filter_should_stop(st);
+      });
+  }
+
+  // Fold one persistent boundary edge (head prefix or peeled tail suffix), both staged in `edge_keys`. A no-op on the
+  // generic fallback (which reads boundary items straight from gmem) and for a zero-length edge. An edge spans fewer
+  // than `load_align_items` items (it fits in its `edge_keys` slot), so it runs `process_tiles` at unroll factor 1
+  // (non-unrolled) instead of the wider tie-break unroll the potentially large resident/overflow regions use.
+  template <detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  process_edge(det_filter_state<SelectDirection>& st, const key_t* keys, offset_t seg_base, int count, bool is_terminal)
+  {
+    if constexpr (use_block_load_to_shared)
+    {
+      _CCCL_ASSERT(count >= 0 && count <= head_edge_cap_items, "a boundary edge must fit in its edge_keys slot");
+      process_tiles<1, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed>(st, keys, seg_base, count, is_terminal);
+    }
+  }
+
+  // Head prefix edge (rank 0): the segment's lowest indices `[0, head_edge_len_items)`, staged at `edge_keys` (base
+  // 0). In global-index order it is the leading region (ascending) / trailing region (descending); a non-head rank or
+  // empty prefix is a no-op.
+  template <detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_head_edge(det_filter_state<SelectDirection>& st)
+  {
+    process_edge(st, temp_storage.edge_keys, offset_t{0}, layout.head_edge_len_items, st.is_head_edge_terminal);
+  }
+
+  // Peeled tail suffix edge (tail owner): the segment's highest indices, staged at `edge_keys + head_edge_cap_items`
+  // (base `segment_size - tail_edge_len_items`). In global-index order it is the trailing region (ascending) /
+  // leading region (descending); an aligned or non-owned tail is a no-op.
+  template <detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_tail_edge(det_filter_state<SelectDirection>& st)
+  {
+    process_edge(st,
+                 temp_storage.edge_keys + head_edge_cap_items,
+                 layout.segment_size_off - static_cast<offset_t>(layout.tail_edge_len_items),
+                 layout.tail_edge_len_items,
+                 st.is_tail_edge_terminal);
+  }
+
+  // Drive the four regions in global-index order (ascending, or descending under `is_tie_reversed`), bailing between
+  // regions once `final_filter_should_stop` reports the whole top-k placed. The two orders share the resident->overflow
+  // middle and only swap which boundary edge leads: ascending is head, resident, overflow, tail; descending reverses
+  // the edges. Both visit resident before overflow, so the stop check can skip re-streaming the overflow once the
+  // top-k is placed; `is_residency_reversed` keeps the first-visited (high-index) chunks resident in the descending
+  // order so this holds.
+  template <detail::topk::select SelectDirection>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void run_filter(det_filter_state<SelectDirection>& st)
+  {
+    const auto step = [&](auto&& region) {
+      // Barrier before polling: makes the placement-counter reads block-wide and resynchronizes lanes that raced
+      // ahead through the previous region's barrier-free tiles.
+      __syncthreads();
+      if (!final_filter_should_stop(st))
+      {
+        region();
+      }
+    };
+    if constexpr (is_tie_reversed)
+    {
+      process_tail_edge(st);
+    }
+    else
+    {
+      process_head_edge(st);
+    }
+    step([&] {
+      process_resident(st);
+    });
+    step([&] {
+      process_overflow(st);
+    });
+    step([&] {
+      if constexpr (is_tie_reversed)
+      {
+        process_head_edge(st);
+      }
+      else
+      {
+        process_tail_edge(st);
+      }
+    });
+  }
 
   // Fold the persistent boundary edges into `apply` (head prefix on rank 0; peeled tail suffix on the tail owner),
   // reading the keys already staged in `edge_keys`. Used by the histogram passes and the non-deterministic final
@@ -1877,8 +1890,8 @@ private:
   // Deterministic final filter: strictly-selected keys fill the front via a SMEM atomic (offset by `sel_prefix`);
   // candidates fill the back -- arrival-order atomics away from the K-boundary, an index-ordered BlockScan only on the
   // single boundary-crossing (straddling) CTA. A combined cross-CTA scan gives this block its disjoint front/back
-  // bases and lets it detect whether all/none/some of its candidates win. The heavy lifting lives in
-  // `det_final_filter`; this member computes that struct's inputs and runs it.
+  // bases and lets it detect whether all/none/some of its candidates win. This member computes the `det_filter_state`
+  // inputs and hands them to `run_filter`, which drives the per-region sweeps.
   template <detail::topk::select SelectDirection, class IdentifyOp, class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void write_deterministic_topk(
     out_offset_t num_kth, IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
@@ -1958,39 +1971,28 @@ private:
         ? get_chunk(layout.part.global_index(layout.resident_base), layout.segment_size_off, layout.head_items).offset
         : offset_t{0};
 
-    // Positional aggregate init in declaration order. The last two initializers seed the tie-break cursor: `running`
-    // at this CTA's exclusive back prefix (candidates owned by preceding CTAs), `is_tie_active` at
+    // Positional aggregate init in `det_filter_state` declaration order. The last two initializers seed the tie-break
+    // cursor: `running` at this CTA's exclusive back prefix (candidates owned by preceding CTAs), `is_tie_active` at
     // `!is_select_no_cand_cta` -- true unless this is a select-no-candidates CTA (empty back region, or all of this
     // CTA's candidates sort past the boundary).
-    det_final_filter<SelectDirection> filt{
-      *this,
-      segment_id,
+    det_filter_state<SelectDirection> st{
       identify_op,
       block_keys_out,
-      layout.block_keys_in,
-      layout.part,
-      k,
       num_back,
       my_front,
       sel_prefix,
       cand_prefix,
       my_cand_count,
-      layout.resident_base,
-      layout.my_resident_chunks,
-      layout.segment_size_off,
-      layout.head_items,
       front_seg_base,
       resident_keys,
       front_count,
-      layout.head_edge_len_items,
-      layout.tail_edge_len_items,
       is_select_all_cand_cta,
       is_resident_terminal,
       is_head_edge_terminal,
       is_tail_edge_terminal,
       cand_prefix,
       !is_select_no_cand_cta};
-    filt.run_filter();
+    run_filter(st);
   }
 
   // Fused first pass: load this rank's resident chunks into the block_tile, stage the persistent boundary edges into
@@ -2513,7 +2515,7 @@ private:
     // leftover after the compile-time `num_passes` passes is `initial ^ (num_passes & 1)`; choosing `initial =
     // (!is_tie_reversed) ^ (num_passes & 1)` makes that leftover `== !is_tie_reversed` -- exactly what the
     // deterministic filter's straddling CTA needs to reuse its resident turn-around chunks with no re-prime (see
-    // `det_final_filter::process_overflow`; early exit runs fewer passes but then has no straddler, so direction is
+    // `process_overflow`; early exit runs fewer passes but then has no straddler, so direction is
     // moot). Non-deterministic filtering is order-independent, so leave its historical `stream_is_forward` start
     // untouched.
     if constexpr (need_determinism)
