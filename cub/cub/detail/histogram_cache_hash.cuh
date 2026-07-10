@@ -5,6 +5,8 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/std/cstdint>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,22 +27,23 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
-inline constexpr unsigned int cache_primary_hash_multiplier   = 2654435761u;
-inline constexpr unsigned int cache_secondary_hash_multiplier = 2246822519u;
+inline constexpr ::cuda::std::uint32_t cache_primary_hash_multiplier   = 2654435761u;
+inline constexpr ::cuda::std::uint32_t cache_secondary_hash_multiplier = 2246822519u;
 
 // Map a 32-bit multiplicative hash product into [0, cache_mask + 1), where the
 // slot count is a power of two and cache_slot_log2 is its base-2 logarithm.
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int cache_slot_from_hash(unsigned int product, int cache_mask, int cache_slot_log2)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
+cache_slot_from_hash(::cuda::std::uint32_t product, int cache_mask, int cache_slot_log2)
 {
 #if CUB_HISTO_CACHE_HASH_MODE == 1
   (void) cache_mask;
   return static_cast<int>(product >> (32 - cache_slot_log2));
 #elif CUB_HISTO_CACHE_HASH_MODE == 2
   (void) cache_slot_log2;
-  return static_cast<int>(((product >> 15) ^ product) & static_cast<unsigned int>(cache_mask));
+  return static_cast<int>(((product >> 15) ^ product) & static_cast<::cuda::std::uint32_t>(cache_mask));
 #else
   (void) cache_slot_log2;
-  return static_cast<int>(product & static_cast<unsigned int>(cache_mask));
+  return static_cast<int>(product & static_cast<::cuda::std::uint32_t>(cache_mask));
 #endif
 }
 } // namespace detail::histogram
