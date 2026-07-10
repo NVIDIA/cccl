@@ -217,6 +217,8 @@ enum class address_space
 //! @return `true` if the pointer is from the specified address space, `false` otherwise.
 [[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const void* __ptr, address_space __space) noexcept
 {
+  // The debug assertions intentionally differ but compile out in release builds.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if (__space == address_space::shared)
   {
     _CCCL_ASSERT(::cuda::device::__is_smem_valid_ptr(__ptr), "invalid pointer");
@@ -225,6 +227,7 @@ enum class address_space
   {
     _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
   }
+  // NOLINTEND(bugprone-branch-clone)
   return ::cuda::device::__internal_is_address_from(__ptr, __space);
 }
 

@@ -33,8 +33,10 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
@@ -51,19 +53,46 @@ enum class ScanAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algorithm)
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] constexpr const char* to_string(ScanAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case ScanAlgorithm::lookback:
-      return os << "ScanAlgorithm::lookback";
+      return "ScanAlgorithm::lookback";
     case ScanAlgorithm::lookahead:
-      return os << "ScanAlgorithm::lookahead";
+      return "ScanAlgorithm::lookahead";
     default:
-      return os << "ScanAlgorithm::<unknown>";
+      return "<unknown ScanAlgorithm>";
   }
 }
+} // namespace detail
 #endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::ScanAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::ScanAlgorithm& algo, FmtCtx& ctx) const
+  {
+    const auto str = CUB_NS_QUALIFIER::detail::to_string(algo);
+    return formatter<const CharT*, CharT>::format(str, ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for the lookback scan algorithm in @ref DeviceScan.
 struct ScanLookbackPolicy
@@ -561,13 +590,13 @@ struct policy_hub
   static constexpr BlockStoreAlgorithm scan_transposed_store =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
     using ScanPolicyT =
       agent_scan_policy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
+  struct Policy520 : detail::chained_policy<520, Policy520, Policy500>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
     using ScanPolicyT =
@@ -582,7 +611,7 @@ struct policy_hub
 
   struct Policy600
       : DefaultPolicy
-      , ChainedPolicy<600, Policy600, Policy520>
+      , detail::chained_policy<600, Policy600, Policy520>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
@@ -600,7 +629,7 @@ struct policy_hub
   template <typename Tuning>
   _CCCL_HOST_DEVICE static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
 
-  struct Policy750 : ChainedPolicy<750, Policy750, Policy600>
+  struct Policy750 : detail::chained_policy<750, Policy750, Policy600>
   {
     // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy600
     template <typename Tuning,
@@ -630,7 +659,7 @@ struct policy_hub
       decltype(select_agent_policy750<sm75_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>>, InputValueT>(0));
   };
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy750>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy750>
   {
     using ScanPolicyT =
       decltype(select_agent_policy<sm80_tuning<classify_type<AccumT>,
@@ -641,15 +670,15 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ScanPolicyT = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy900
     template <typename Tuning,
@@ -978,6 +1007,11 @@ struct policy_selector
 
       return get_sm100_fallback_lookahead_policy();
     }
+    if (cc >= ::cuda::compute_capability{9, 0} && require_stable_reduction_order)
+    {
+      // TODO(srinivasyadav18): tune for Hopper, using Blackwell default tunings for now.
+      return get_sm100_fallback_lookahead_policy();
+    }
     return {};
   }
 
@@ -1027,9 +1061,9 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
   {
     // we first try to get the valid lookahead implementation. if we can't run it, fall back to the old scan impl.
-    // For stable reduction order (fp + plus), lookahead can only be used on sm_100+, Older arches fall back to classic
+    // For stable reduction order (fp + plus), lookahead can only be used on sm_90+, Older arches fall back to classic
     // lookback stable reduction order implementation below.
-    if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{10, 0})
+    if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{9, 0})
     {
       auto lookahead_policy_opt = get_lookahead_policy(cc);
       if (lookahead_policy_opt && can_use_lookahead(cc, *lookahead_policy_opt))

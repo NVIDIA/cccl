@@ -1,8 +1,15 @@
 import builtins
+from collections.abc import Generator
 
-import cupy as cp
 import numpy as np
 import pytest
+
+from cuda.core import Device, Stream
+
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
 
 check_ldl_stl_in_sass = False
 
@@ -37,15 +44,15 @@ def input_array(request):
             low_inclusive, high_exclusive = 0, 8
         else:
             low_inclusive, high_exclusive = -5, 6
-        array = cp.random.randint(
+        array = np.random.randint(
             low=low_inclusive, high=high_exclusive, size=sample_size, dtype=dtype
         )
     elif np.issubdtype(dtype, np.floating):
         # For floating-point types, use np.random.random and cast to the required dtype
-        array = cp.random.random(sample_size).astype(dtype)
+        array = np.random.random(sample_size).astype(dtype)
     elif np.issubdtype(dtype, np.complexfloating):
         # For complex types, generate random real and imaginary parts
-        packed = cp.random.random(2 * sample_size)
+        packed = np.random.random(2 * sample_size)
         real_part = packed[:sample_size]
         imag_part = packed[sample_size:]
         array = (real_part + 1j * imag_part).astype(dtype)
@@ -65,29 +72,19 @@ def floating_array(request):
     sample_size = 1000
 
     # Generate random floating-point values
-    array = cp.random.random(sample_size).astype(dtype)
+    array = np.random.random(sample_size).astype(dtype)
     return array
 
 
-class Stream:
-    """
-    Simple cupy stream wrapper that implements the __cuda_stream__ protocol.
-    """
-
-    def __init__(self, cp_stream):
-        self.cp_stream = cp_stream
-
-    def __cuda_stream__(self):
-        return (0, self.cp_stream.ptr)
-
-    @property
-    def ptr(self):
-        return self.cp_stream.ptr
-
-
 @pytest.fixture(scope="function")
-def cuda_stream() -> Stream:
-    return Stream(cp.cuda.Stream())
+def cuda_stream() -> Generator[Stream, None, None]:
+    device = Device()
+    device.set_current()
+    stream = device.create_stream()
+    try:
+        yield stream
+    finally:
+        stream.close()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -124,7 +121,12 @@ def raise_on_numba_import(monkeypatch):
 
 
 def pytest_collection_modifyitems(config, items):
+    serialization_skip = pytest.mark.skip(
+        reason="serialization not supported on v2 (HostJIT) backend"
+    )
     for item in items:
         if item.get_closest_marker("no_numba"):
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
+        if USING_V2 and item.get_closest_marker("serialization"):
+            item.add_marker(serialization_skip)

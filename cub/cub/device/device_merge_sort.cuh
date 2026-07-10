@@ -86,8 +86,11 @@ CUB_NAMESPACE_BEGIN
  *   CustomLess());
  * @endcode
  *
- * @par Tuning
  * @rst
+ *
+ * Tuning
+ * +++++++++++++++++++++++++++++++++++++++++++++
+ *
  * All algorithms in DeviceMergeSort that accept an environment can be tuned by passing a custom :ref:`policy selector
  * <cub-policy-selectors>` that returns a @ref MergeSortPolicy, as shown in the example below:
  *

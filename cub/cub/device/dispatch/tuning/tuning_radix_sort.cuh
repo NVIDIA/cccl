@@ -24,6 +24,8 @@
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/optional>
 
@@ -37,19 +39,45 @@ enum class RadixSortAlgorithm
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algorithm)
+namespace detail
 {
-  switch (algorithm)
+[[nodiscard]] constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
+{
+  switch (algo)
   {
     case RadixSortAlgorithm::multi_pass:
-      return os << "RadixSortAlgorithm::multi_pass";
+      return "RadixSortAlgorithm::multi_pass";
     case RadixSortAlgorithm::onesweep:
-      return os << "RadixSortAlgorithm::onesweep";
+      return "RadixSortAlgorithm::onesweep";
     default:
-      return os << "RadixSortAlgorithm::unknown(" << static_cast<int>(algorithm) << ")";
+      return "<unknown RadixSortAlgorithm>";
   }
 }
+} // namespace detail
 #endif // _CCCL_HOSTED()
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::RadixSortAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::RadixSortAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for the histogram pass of @ref DeviceRadixSort (used by the onesweep algorithm).
 struct RadixSortHistogramPolicy
@@ -59,14 +87,14 @@ struct RadixSortHistogramPolicy
 
   //! The number of private histogram partitions in shared memory each histogram is split during counting to reduce the
   //! contention of atomic operations
-  int num_private_partitions;
+  int private_partitions;
   int radix_bits; //!< Number of bits per radix digit
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const RadixSortHistogramPolicy& lhs, const RadixSortHistogramPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.num_private_partitions == rhs.num_private_partitions && lhs.radix_bits == rhs.radix_bits;
+        && lhs.private_partitions == rhs.private_partitions && lhs.radix_bits == rhs.radix_bits;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -78,10 +106,9 @@ struct RadixSortHistogramPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortHistogramPolicy& p)
   {
-    return os
-        << "RadixSortHistogramPolicy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .num_private_partitions = " << p.num_private_partitions
-        << ", .radix_bits = " << p.radix_bits << " }";
+    return os << "RadixSortHistogramPolicy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << ", .private_partitions = " << p.private_partitions
+              << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -125,7 +152,7 @@ struct RadixSortOnesweepPolicy
   //! The number of private histogram partitions in shared memory each histogram is split during the ranking phase to
   //! reduce the contention of atomic operations. Ignored if @p rank_algorithm is not one of
   //! RADIX_RANK_MATCH_EARLY_COUNTS_*
-  int rank_num_private_partitions;
+  int rank_private_partitions;
 
   int radix_bits; //!< Number of bits per radix digit
 
@@ -134,8 +161,8 @@ struct RadixSortOnesweepPolicy
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.store_algorithm == rhs.store_algorithm && lhs.rank_algorithm == rhs.rank_algorithm
-        && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.rank_num_private_partitions == rhs.rank_num_private_partitions && lhs.radix_bits == rhs.radix_bits;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.rank_private_partitions == rhs.rank_private_partitions
+        && lhs.radix_bits == rhs.radix_bits;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -151,8 +178,7 @@ struct RadixSortOnesweepPolicy
         << "RadixSortOnesweepPolicy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .store_algorithm = " << p.store_algorithm
         << ", .rank_algorithm = " << p.rank_algorithm << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .rank_num_private_partitions = " << p.rank_num_private_partitions << ", .radix_bits = " << p.radix_bits
-        << " }";
+        << ", .rank_private_partitions = " << p.rank_private_partitions << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -278,7 +304,7 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
   RadixSortStoreAlgorithm store_algorithm,
   RadixRankAlgorithm rank_algorithm,
   BlockScanAlgorithm scan_algorithm,
-  int rank_num_private_partitions,
+  int rank_private_partitions,
   int radix_bits) -> RadixSortOnesweepPolicy
 {
   const auto scaled = scale_reg_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
@@ -288,7 +314,7 @@ _CCCL_HOST_DEVICE_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
     store_algorithm,
     rank_algorithm,
     scan_algorithm,
-    rank_num_private_partitions,
+    rank_private_partitions,
     radix_bits};
 }
 
@@ -1011,7 +1037,7 @@ struct policy_hub
   //------------------------------------------------------------------------------
 
   /// SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1103,7 +1129,7 @@ struct policy_hub
   };
 
   /// SM60 (GP100)
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 6.9B 32b keys/s (Quadro P100)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1196,7 +1222,7 @@ struct policy_hub
   };
 
   /// SM61 (GP104)
-  struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
+  struct Policy610 : detail::chained_policy<610, Policy610, Policy600>
   {
     static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1289,7 +1315,7 @@ struct policy_hub
   };
 
   /// SM62 (Tegra, less RF)
-  struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
+  struct Policy620 : detail::chained_policy<620, Policy620, Policy610>
   {
     static constexpr int PRIMARY_RADIX_BITS  = 5;
     static constexpr int ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1;
@@ -1364,7 +1390,7 @@ struct policy_hub
   };
 
   /// SM70 (GV100)
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
+  struct Policy700 : detail::chained_policy<700, Policy700, Policy620>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1458,7 +1484,7 @@ struct policy_hub
   };
 
   /// SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy700>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1673,12 +1699,12 @@ struct policy_hub
   };
 
   struct Policy900
-      : ChainedPolicy<900, Policy900, Policy800>
+      : detail::chained_policy<900, Policy900, Policy800>
       , OnesweepSmallKeyTunedPolicy<sm90_small_key_tuning<sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>>
   {};
 
   struct Policy1000
-      : ChainedPolicy<1000, Policy1000, Policy900>
+      : detail::chained_policy<1000, Policy1000, Policy900>
       , OnesweepSmallKeyTunedPolicy<
           sm100_small_key_tuning<ValueT, sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>>
   {};
