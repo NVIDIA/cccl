@@ -72,10 +72,10 @@ struct alignas(_Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
 
 template <typename AccumT>
 _CCCL_DEVICE_API void
-storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT aggr, int index)
+storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT aggr, int index, int num_tiles)
 {
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
-  _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
+  _CCCL_ASSERT(index >= 0 && index < num_tiles, "Reading out of bounds tile state");
 
   if constexpr (sizeof(tile_state_t<AccumT>) <= cub::detail::warpspeed::max_native_atomic_size()
                 && ::cuda::is_trivially_copyable_v<tile_state_t<AccumT>>)
@@ -99,10 +99,10 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
 }
 
 template <typename AccumT>
-_CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index)
+_CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index, int num_tiles)
 {
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
-  _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
+  _CCCL_ASSERT(index >= 0 && index < num_tiles, "Reading out of bounds tile state");
 
   tile_state_t<AccumT> res;
   if constexpr (sizeof(tile_state_t<AccumT>) <= cub::detail::warpspeed::max_native_atomic_size()
@@ -149,14 +149,15 @@ _CCCL_DEVICE_API void warpLoadLookahead(
   tile_state_t<AccumT> (&outTileStates)[numTileStatesPerThread],
   tile_state_t<AccumT>* ptrTileStates,
   int idxTileCur,
-  int idxTileNext)
+  int idxTileNext,
+  int num_tiles)
 {
   for (int i = 0; i < numTileStatesPerThread; ++i)
   {
     const int idxTileLookahead = idxTileCur + 32 * i + laneIdx;
     if (idxTileLookahead < idxTileNext)
     {
-      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookahead);
+      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookahead, num_tiles);
     }
     else
     {
@@ -182,7 +183,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   const int idxTilePrev,
   const AccumT aggrExclusiveCtaPrev,
   const int idxTileNext,
-  ScanOpT& scan_op)
+  ScanOpT& scan_op,
+  const int num_tiles)
 {
   const int laneIdx                                       = static_cast<int>(specialRegisters.laneIdx);
   [[maybe_unused]] const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
@@ -198,7 +200,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
-    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
+    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {
@@ -266,7 +268,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   int& idxTilePrev,
   AccumT& aggrExclusiveCtaPrev,
   const int idxTileNext,
-  ScanOpT& scan_op)
+  ScanOpT& scan_op,
+  const int num_tiles)
 {
   const int laneIdx                      = static_cast<int>(specialRegisters.laneIdx);
   const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
@@ -282,7 +285,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
-    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
+    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {

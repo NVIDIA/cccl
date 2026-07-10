@@ -536,7 +536,7 @@ since the names of the reported parameters in the variant are derived from these
 The variant ``ipt_19.tpb_512``, which stands for 19 items per thread (``ipt``) and 512 threads per block (``tpb``),
 was thus compiled with ``-DTUNE_ITEMS_PER_THREAD=19 -DTUNE_THREADS_PER_BLOCK=512``.
 The meaning of these values is specific to the benchmark definition,
-and we have to check the benchmark’s source code for how they are applied.
+and we have to check the benchmark's source code for how they are applied.
 Equally named tuning parameters may not translate to different benchmarks (please double check).
 
 As a user of CUB, such a new set of tuning parameters (i.e. a variant) can then be used to define a policy selector,
@@ -555,7 +555,7 @@ as :ref:`sketched above <cub-tuning-infra-authoring-benchmarks>`:
     }
   };
 
-The default tunings defined inside CUB’s source use the same infrastructure
+The default tunings defined inside CUB's source use the same infrastructure
 but should only be changed and extended by the CCCL maintainers.
 All default tunings are found in the :code:`cub/device/dispatch/tuning/tuning_*.cuh` headers, organized by algorithm.
 CUB's policy selectors are highly parameterized on type information and traits of the input arguments to CUB algorithms

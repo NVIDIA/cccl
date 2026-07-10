@@ -147,12 +147,12 @@ private:
 public:
   //! @brief Constructs an open addressing implementation with the given capacity.
   _CCCL_HOST_API __open_addressing_impl(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     __size_type __capacity,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme,
-    _MemoryResource __mr,
-    ::cuda::stream_ref __stream)
+    const _ProbingScheme& __probing_scheme)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
@@ -166,13 +166,13 @@ public:
   //! @brief Constructs an open addressing implementation with capacity derived from desired load
   //! factor.
   _CCCL_HOST_API __open_addressing_impl(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     __size_type __n,
     double __desired_load_factor,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme,
-    _MemoryResource __mr,
-    ::cuda::stream_ref __stream)
+    const _ProbingScheme& __probing_scheme)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
@@ -185,13 +185,13 @@ public:
 
   //! @brief Constructs an open addressing implementation with erasure support.
   _CCCL_HOST_API __open_addressing_impl(
+    ::cuda::stream_ref __stream,
+    _MemoryResource __mr,
     __size_type __capacity,
     __value_type __empty_slot_sentinel,
     __key_type __erased_key_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme,
-    _MemoryResource __mr,
-    ::cuda::stream_ref __stream)
+    const _ProbingScheme& __probing_scheme)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__erased_key_sentinel}
       , __predicate{__pred}
@@ -234,7 +234,7 @@ public:
 
   //! @brief Inserts keys in `[first, last)` and returns the number of successful insertions.
   template <class _InputIt, class _Ref>
-  _CCCL_HOST_API __size_type insert(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
+  _CCCL_HOST_API __size_type insert(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -262,7 +262,7 @@ public:
   //!
   //! @throws cuda_error if the insert operation fails to launch
   template <class _InputIt, class _Ref>
-  _CCCL_HOST_API void insert_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
+  _CCCL_HOST_API void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -291,7 +291,7 @@ public:
   //! @throws cuda_error if the query operation fails to launch
   template <class _InputIt, class _OutputIt, class _Ref>
   _CCCL_HOST_API void contains_async(
-    _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream) const
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref) const
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)

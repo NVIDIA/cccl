@@ -44,6 +44,7 @@ struct agent_merge_sort_policy
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
@@ -102,7 +103,7 @@ struct policy_hub
 {
   using KeyT = it_value_t<KeyIteratorT>;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,
@@ -116,7 +117,7 @@ struct policy_hub
 #if defined(_NVHPC_CUDA)
   using Policy520 = Policy500;
 #else
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
+  struct Policy520 : detail::chained_policy<520, Policy520, Policy500>
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<512,
@@ -127,7 +128,7 @@ struct policy_hub
   };
 #endif
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy520>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy520>
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,

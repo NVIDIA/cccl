@@ -114,16 +114,16 @@ struct SegmentedSortSubWarpMergeSortPolicy
 struct SegmentedSortPolicy
 {
   SegmentedSortRadixSortPolicy large_segment; //!< Policy used for segments sorted via radix sort
-  SegmentedSortSubWarpMergeSortPolicy small_segment; //!< Policy used for the smallest segments
   SegmentedSortSubWarpMergeSortPolicy medium_segment; //!< Policy used for medium-sized segments
+  SegmentedSortSubWarpMergeSortPolicy small_segment; //!< Policy used for the smallest segments
   int partitioning_threshold; //!< Number of segments above which different algorithms will be used for different size
                               //!< buckets
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const SegmentedSortPolicy& lhs, const SegmentedSortPolicy& rhs) noexcept
   {
-    return lhs.large_segment == rhs.large_segment && lhs.small_segment == rhs.small_segment
-        && lhs.medium_segment == rhs.medium_segment && lhs.partitioning_threshold == rhs.partitioning_threshold;
+    return lhs.large_segment == rhs.large_segment && lhs.medium_segment == rhs.medium_segment
+        && lhs.small_segment == rhs.small_segment && lhs.partitioning_threshold == rhs.partitioning_threshold;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -136,7 +136,7 @@ struct SegmentedSortPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedSortPolicy& p)
   {
     return os << "SegmentedSortPolicy { .large_segment = " << p.large_segment
-              << ", .small_segment = " << p.small_segment << ", .medium_segment = " << p.medium_segment
+              << ", .medium_segment = " << p.medium_segment << ", .small_segment = " << p.small_segment
               << ", .partitioning_threshold = " << p.partitioning_threshold << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -196,9 +196,9 @@ struct policy_selector
       return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
+        SegmentedSortSubWarpMergeSortPolicy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
         SegmentedSortSubWarpMergeSortPolicy{
           256, large_items ? 8 : 2, small_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
-        SegmentedSortSubWarpMergeSortPolicy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
         500};
     }
 
@@ -210,9 +210,9 @@ struct policy_selector
       return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
+        SegmentedSortSubWarpMergeSortPolicy{256, 32, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
         SegmentedSortSubWarpMergeSortPolicy{
           256, keys_only ? 4 : 2, small_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
-        SegmentedSortSubWarpMergeSortPolicy{256, 32, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -224,9 +224,9 @@ struct policy_selector
       return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
+        SegmentedSortSubWarpMergeSortPolicy{256, 32, medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         SegmentedSortSubWarpMergeSortPolicy{
           256, keys_only ? 4 : 8, small_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
-        SegmentedSortSubWarpMergeSortPolicy{256, 32, medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -237,9 +237,9 @@ struct policy_selector
       return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 16, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_RAKING_MEMOIZE, radix_bits),
-        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         SegmentedSortSubWarpMergeSortPolicy{
           256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -250,9 +250,9 @@ struct policy_selector
       return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         SegmentedSortSubWarpMergeSortPolicy{
           256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -263,9 +263,9 @@ struct policy_selector
       return SegmentedSortPolicy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MATCH, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         SegmentedSortSubWarpMergeSortPolicy{
           256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -275,8 +275,8 @@ struct policy_selector
     return SegmentedSortPolicy{
       __make_scaled_segmented_radix_sort_policy(
         256, 16, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_RAKING_MEMOIZE, radix_bits),
-      SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
       SegmentedSortSubWarpMergeSortPolicy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+      SegmentedSortSubWarpMergeSortPolicy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
       300};
   }
 };
@@ -405,7 +405,7 @@ struct policy_hub
   using DominantT                = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
   static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -438,7 +438,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -471,7 +471,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
+  struct Policy610 : detail::chained_policy<610, Policy610, Policy600>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -504,7 +504,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
+  struct Policy620 : detail::chained_policy<620, Policy620, Policy610>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 5 : 4;
@@ -537,7 +537,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
+  struct Policy700 : detail::chained_policy<700, Policy700, Policy620>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = sizeof(KeyT) > 1 ? 6 : 4;
@@ -570,7 +570,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy700>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int PARTITIONING_THRESHOLD = 500;
@@ -601,7 +601,7 @@ struct policy_hub
                                        LOAD_DEFAULT>;
   };
 
-  struct Policy860 : ChainedPolicy<860, Policy860, Policy800>
+  struct Policy860 : detail::chained_policy<860, Policy860, Policy800>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int PARTITIONING_THRESHOLD = 500;
