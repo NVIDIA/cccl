@@ -535,10 +535,6 @@ __launch_bounds__(Config::kNumThreads, 1) __global__ void persistent_rle(
   OffT num_items,
   int num_tiles)
 {
-  // KeyT envelope: kSlotPad = 16/sizeof(KeyT) needs the size to DIVIDE the 16B TMA quantum (pow2
-  // <= 16), and the key ring is carved from the 16B-aligned dynamic smem base. Exotic key types
-  // (CUB accepts any trivially-copyable size via its untuned generic policy) must be routed to
-  // stock cub::Encode by the dispatch shell instead of instantiating this kernel.
   static_assert(16 % sizeof(KeyT) == 0, "KeyT size must be a power of two <= 16");
   static_assert(alignof(KeyT) <= 16, "Alignment <= 16");
   constexpr int kIPT                     = Config::kIPT;
