@@ -20,7 +20,7 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // stmatrix.sync.aligned.m8n8.x1.shared.b16 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m8n8.x1.shared.b16 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::std::int16_t*, const cuda::std::uint32_t (&)[1])>(cuda::ptx::stmatrix_m8n8));));
 #endif // __cccl_ptx_isa >= 780
@@ -29,7 +29,7 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // stmatrix.sync.aligned.m8n8.x2.shared.b16 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m8n8.x2.shared.b16 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::std::int16_t*, const cuda::std::uint32_t (&)[2])>(cuda::ptx::stmatrix_m8n8));));
 #endif // __cccl_ptx_isa >= 780
@@ -38,7 +38,7 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // stmatrix.sync.aligned.m8n8.x4.shared.b16 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m8n8.x4.shared.b16 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::std::int16_t*, const cuda::std::uint32_t (&)[4])>(cuda::ptx::stmatrix_m8n8));));
 #endif // __cccl_ptx_isa >= 780
@@ -47,7 +47,7 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // stmatrix.sync.aligned.m8n8.x1.trans.shared.b16 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m8n8.x1.trans.shared.b16 [gmem_ptr], input_var;
         * fn_ptr++ =
           reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int16_t*, const cuda::std::uint32_t (&)[1])>(
             cuda::ptx::stmatrix_m8n8_trans));));
@@ -57,7 +57,7 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // stmatrix.sync.aligned.m8n8.x2.trans.shared.b16 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m8n8.x2.trans.shared.b16 [gmem_ptr], input_var;
         * fn_ptr++ =
           reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int16_t*, const cuda::std::uint32_t (&)[2])>(
             cuda::ptx::stmatrix_m8n8_trans));));
@@ -67,7 +67,7 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // stmatrix.sync.aligned.m8n8.x4.trans.shared.b16 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m8n8.x4.trans.shared.b16 [gmem_ptr], input_var;
         * fn_ptr++ =
           reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int16_t*, const cuda::std::uint32_t (&)[4])>(
             cuda::ptx::stmatrix_m8n8_trans));));
@@ -77,78 +77,78 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103a,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_107a,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120a,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121a,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100f,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103f,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_107f,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110f,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120f,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121f,
     (
-        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[1])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
@@ -158,78 +158,78 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103a,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_107a,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120a,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121a,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100f,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103f,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_107f,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110f,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120f,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121f,
     (
-        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[2])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
@@ -239,78 +239,78 @@ __global__ void test_stmatrix(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103a,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_107a,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120a,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121a,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100f,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103f,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_107f,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110f,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120f,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121f,
     (
-        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input;
+        // stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [gmem_ptr], input_var;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::std::int8_t*, const cuda::std::uint32_t (&)[4])>(
           cuda::ptx::stmatrix_m16n8_trans));));
 
