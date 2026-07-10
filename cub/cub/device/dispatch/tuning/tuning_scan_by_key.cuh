@@ -942,13 +942,13 @@ struct policy_hub
       max_input_bytes <= 8 ? 6 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<128,
-                           items_per_thread,
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_CA,
-                           BLOCK_SCAN_WARP_SCANS,
-                           BLOCK_STORE_WARP_TRANSPOSE,
-                           default_reduce_by_key_delay_constructor_t<AccumT, int>>;
+      agent_scan_by_key_policy<128,
+                               items_per_thread,
+                               BLOCK_LOAD_WARP_TRANSPOSE,
+                               LOAD_CA,
+                               BLOCK_SCAN_WARP_SCANS,
+                               BLOCK_STORE_WARP_TRANSPOSE,
+                               default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
   template <CacheLoadModifier LoadModifier, typename DelayConstructurValueT>
@@ -959,13 +959,13 @@ struct policy_hub
       max_input_bytes <= 8 ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<256,
-                           items_per_thread,
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LoadModifier,
-                           BLOCK_SCAN_WARP_SCANS,
-                           BLOCK_STORE_WARP_TRANSPOSE,
-                           default_reduce_by_key_delay_constructor_t<DelayConstructurValueT, int>>;
+      agent_scan_by_key_policy<256,
+                               items_per_thread,
+                               BLOCK_LOAD_WARP_TRANSPOSE,
+                               LoadModifier,
+                               BLOCK_SCAN_WARP_SCANS,
+                               BLOCK_STORE_WARP_TRANSPOSE,
+                               default_reduce_by_key_delay_constructor_t<DelayConstructurValueT, int>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy520
@@ -979,13 +979,13 @@ struct policy_hub
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
   static auto select_agent_policy(int)
-    -> AgentScanByKeyPolicy<Tuning::threads,
-                            Tuning::items,
-                            Tuning::load_algorithm,
-                            LOAD_DEFAULT,
-                            BLOCK_SCAN_WARP_SCANS,
-                            Tuning::store_algorithm,
-                            typename Tuning::delay_constructor>;
+    -> agent_scan_by_key_policy<Tuning::threads,
+                                Tuning::items,
+                                Tuning::load_algorithm,
+                                LOAD_DEFAULT,
+                                BLOCK_SCAN_WARP_SCANS,
+                                Tuning::store_algorithm,
+                                typename Tuning::delay_constructor>;
 
   template <typename Tuning>
   // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?
@@ -1014,13 +1014,13 @@ struct policy_hub
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     static auto select_agent_policy100(int)
-      -> AgentScanByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              Tuning::load_modifier,
-                              BLOCK_SCAN_WARP_SCANS,
-                              Tuning::store_algorithm,
-                              typename Tuning::delay_constructor>;
+      -> agent_scan_by_key_policy<Tuning::threads,
+                                  Tuning::items,
+                                  Tuning::load_algorithm,
+                                  Tuning::load_modifier,
+                                  BLOCK_SCAN_WARP_SCANS,
+                                  Tuning::store_algorithm,
+                                  typename Tuning::delay_constructor>;
 
     template <typename Tuning>
     // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?

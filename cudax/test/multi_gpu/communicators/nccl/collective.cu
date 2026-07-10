@@ -19,14 +19,14 @@
 
 #include <vector>
 
-#include "nccl_test_helpers.cuh"
+#include <nccl_test_common.h>
 
 namespace
 {
 constexpr cuda::std::int32_t ROOT_RANK = 0;
 } // namespace
 
-NCCL_COMM_TEST("nccl_communicator_ref all_reduce sum")
+MULTI_GPU_TEST("nccl_communicator_ref all_reduce sum", )
 {
   auto streams = nccl_test_util::make_streams();
 
@@ -69,7 +69,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce sum")
   }
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref all_reduce maximum")
+MULTI_GPU_TEST("nccl_communicator_ref all_reduce maximum", )
 {
   auto streams = nccl_test_util::make_streams();
 
@@ -112,7 +112,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_reduce maximum")
   }
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref reduce sum to root 0")
+MULTI_GPU_TEST("nccl_communicator_ref reduce sum to root 0", )
 {
   auto streams = nccl_test_util::make_streams();
 
@@ -150,7 +150,7 @@ NCCL_COMM_TEST("nccl_communicator_ref reduce sum to root 0")
   REQUIRE_THAT(actual, Equals(expected));
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref broadcast from root 0")
+MULTI_GPU_TEST("nccl_communicator_ref broadcast from root 0", )
 {
   auto streams = nccl_test_util::make_streams();
 
@@ -192,7 +192,7 @@ NCCL_COMM_TEST("nccl_communicator_ref broadcast from root 0")
   }
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref all_gather")
+MULTI_GPU_TEST("nccl_communicator_ref all_gather", )
 {
   auto streams = nccl_test_util::make_streams();
 
@@ -241,7 +241,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_gather")
   }
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref gather_v to root 0")
+MULTI_GPU_TEST("nccl_communicator_ref gather_v to root 0", )
 {
   auto streams = nccl_test_util::make_streams();
 
@@ -308,7 +308,7 @@ NCCL_COMM_TEST("nccl_communicator_ref gather_v to root 0")
   REQUIRE_THAT(actual, Equals(expected));
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref all_to_all_v")
+MULTI_GPU_TEST("nccl_communicator_ref all_to_all_v", )
 {
   auto streams = nccl_test_util::make_streams();
 
@@ -379,7 +379,7 @@ NCCL_COMM_TEST("nccl_communicator_ref all_to_all_v")
 
 #if NCCL_VERSION_CODE >= NCCL_VERSION(2, 28, 0)
 
-NCCL_COMM_TEST("nccl_communicator_ref gather to root 0")
+MULTI_GPU_TEST("nccl_communicator_ref gather to root", )
 {
   auto streams = nccl_test_util::make_streams();
 
@@ -424,7 +424,7 @@ NCCL_COMM_TEST("nccl_communicator_ref gather to root 0")
   REQUIRE_THAT(actual, Equals(expected));
 }
 
-NCCL_COMM_TEST("nccl_communicator_ref all_to_all")
+MULTI_GPU_TEST("nccl_communicator_ref all_to_all", )
 {
   auto streams = nccl_test_util::make_streams();
 

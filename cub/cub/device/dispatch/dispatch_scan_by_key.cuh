@@ -138,7 +138,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 {
   static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
 
-  using scan_by_key_policy_t = AgentScanByKeyPolicy<
+  using scan_by_key_policy_t = agent_scan_by_key_policy<
     policy.threads_per_block,
     policy.items_per_thread,
     policy.load_algorithm,

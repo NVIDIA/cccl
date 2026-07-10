@@ -262,6 +262,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        DeviceReduceByKey
  *
+ * Deprecated [Since 3.5]
+ *
  * @tparam KeysInputIteratorT
  *   Random-access input iterator type for keys
  *

@@ -20,6 +20,7 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_
   // __sem == sem_sc (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.sc.cta; // 1." : : : "memory");
@@ -32,6 +33,7 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_
   {
     asm volatile("fence.sc.sys; // 1." : : : "memory");
   }
+  // NOLINTEND(bugprone-branch-clone)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_fence_is_not_supported_before_SM_70__();
@@ -81,6 +83,7 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::s
   // __sem == sem_acq_rel (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.acq_rel.cta; // 1." : : : "memory");
@@ -93,6 +96,7 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::s
   {
     asm volatile("fence.acq_rel.sys; // 1." : : : "memory");
   }
+  // NOLINTEND(bugprone-branch-clone)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_fence_is_not_supported_before_SM_70__();
