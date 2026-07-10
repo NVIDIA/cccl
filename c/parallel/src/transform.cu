@@ -36,9 +36,9 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
-#include "util/aot_serialize.h"
 #include "util/nvjitlink.h"
-#include <cccl/c/aot.h>
+#include "util/serialization.h"
+#include <cccl/c/serialization.h>
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
@@ -907,9 +907,9 @@ try
   *out_buf  = nullptr;
   *out_size = 0;
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_writer w;
-  write_header(w, CCCL_AOT_ALGO_TRANSFORM, build_ptr->payload_kind, build_ptr->cc);
+  write_header(w, CCCL_SERIALIZATION_ALGO_TRANSFORM, build_ptr->payload_kind, build_ptr->cc);
   w.write_pod<int32_t>(build_ptr->loaded_bytes_per_iteration);
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
@@ -933,9 +933,9 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  using namespace cccl::aot;
+  using namespace cccl::serialization;
   buffer_reader r{buf, size};
-  const auto h = read_and_validate_header(r, CCCL_AOT_ALGO_TRANSFORM);
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_TRANSFORM);
 
   const int32_t loaded_bpi = r.read_pod<int32_t>();
 
@@ -948,7 +948,7 @@ try
   }
   if (payload_size == 0)
   {
-    throw std::runtime_error("aot blob: empty payload");
+    throw std::runtime_error("serialization blob: empty payload");
   }
 
   // transform's runtime_policy is heap-allocated with malloc/free (not new/delete)
@@ -963,14 +963,14 @@ try
   const uint64_t policy_size = r.read_pod<uint64_t>();
   if (policy_size == 0 || policy_size > r.remaining())
   {
-    throw std::runtime_error("aot blob: invalid transform policy size");
+    throw std::runtime_error("serialization blob: invalid transform policy size");
   }
   {
     static constexpr uint64_t kPolicy1Size = sizeof(cub::detail::transform::policy_selector<1>);
     static constexpr uint64_t kPolicy2Size = sizeof(cub::detail::transform::policy_selector<2>);
     if (policy_size != kPolicy1Size && policy_size != kPolicy2Size)
     {
-      throw std::runtime_error(std::format("aot blob: unrecognized transform policy size ({})", policy_size));
+      throw std::runtime_error(std::format("serialization blob: unrecognized transform policy size ({})", policy_size));
     }
   }
   std::unique_ptr<void, free_deleter> policy(std::malloc(static_cast<size_t>(policy_size)));

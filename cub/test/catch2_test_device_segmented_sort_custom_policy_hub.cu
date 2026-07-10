@@ -22,7 +22,7 @@ template <typename KeyT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB segmented sort tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = 6;

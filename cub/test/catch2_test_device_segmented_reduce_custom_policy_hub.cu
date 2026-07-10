@@ -3,7 +3,7 @@
 
 // TODO(bgruber): drop this test with CCCL 4.0 when we drop the segmented reduce dispatcher
 
-// disable deprecation warnings for AgentReducePolicy
+// disable deprecation warnings for DispatchSegmentedReduce and AgentReducePolicy
 #define CCCL_IGNORE_DEPRECATED_API
 
 #include "insert_nested_NVTX_range_guard.h"
@@ -19,14 +19,11 @@
 
 using namespace cub;
 
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the segmented reduce dispatcher after publishing the
-// tuning API
-
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB segmented reduce tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ReducePolicy          = AgentReducePolicy<256, 20, AccumT, 4, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG>;
     using SingleTilePolicy      = ReducePolicy;
