@@ -92,8 +92,62 @@ TEST_FUNC constexpr bool test_type()
       static_cast<Res>(cuda::std::numeric_limits<L>::max()) << 2,
       sizeof(L) >= sizeof(Res));
   }
-
   return true;
+}
+
+TEST_FUNC constexpr void test_corner_cases()
+{
+  constexpr auto int_max  = cuda::std::numeric_limits<int>::max();
+  constexpr auto int_min  = cuda::std::numeric_limits<int>::min();
+  constexpr auto uint_max = cuda::std::numeric_limits<unsigned>::max();
+
+  // 1. Boundary edge-cases
+  test_mul_overflow<int, int, int>(int_min, 0, 0, false);
+  test_mul_overflow<int, int, int>(0, int_max, 0, false);
+  test_mul_overflow<int, int, int>(-1, int_min, int_min, true);
+  test_mul_overflow<int, int, int>(int_min, -1, int_min, true);
+  test_mul_overflow<int, int, int>(int_min, int_min, 0, true);
+  test_mul_overflow<unsigned int, int, int>(2, int_max, static_cast<uint32_t>(int_max) * 2u, false);
+  test_mul_overflow<unsigned int, int, int>(uint_max, 2u, uint_max - 1, true);
+
+  // 2. Explicit wider Result type
+  test_mul_overflow<long long, int, int>(int_min, -1, int64_t{int_min} * (-1ll), false);
+  test_mul_overflow<int64_t, int32_t, int32_t>(
+    int_min, int_min, static_cast<int64_t>(int_min) * static_cast<int64_t>(int_min), false);
+  test_mul_overflow<int64_t, int32_t, int32_t>(
+    static_cast<int32_t>(uint_max), static_cast<int32_t>(uint_max), static_cast<int64_t>(uint_max * uint_max), false);
+  test_mul_overflow<uint64_t, uint32_t, uint32_t>(
+    uint_max, uint_max, static_cast<uint64_t>(uint_max) * static_cast<uint64_t>(uint_max), false);
+  test_mul_overflow<int64_t, uint32_t, uint32_t>(uint_max, uint_max, -8589934591, true);
+
+  // 3. Both operands negative, large magnitude (non-overflow and overflow)
+  test_mul_overflow<int, int, int>(-40000, -50000, 2000000000, false);
+  test_mul_overflow<int, int, int>(-50000, -50000, -1794967296, true);
+
+  // 4. Overflow from downcasting
+  test_mul_overflow<int8_t, int32_t, int32_t>(1000, 1000, static_cast<int8_t>(64), true);
+  test_mul_overflow<int8_t, signed char, unsigned long>(
+    static_cast<signed char>(17), static_cast<unsigned long>(14), static_cast<int8_t>(-18), true);
+
+  // 5. __uint128_t
+  const auto uint128_max = ~static_cast<__uint128_t>(0);
+  test_mul_overflow<__uint128_t, __uint128_t, __uint128_t>(3, 4, 12, false);
+  test_mul_overflow<__uint128_t, __uint128_t, __uint128_t>(
+    static_cast<__uint128_t>(~0ull), // 2^64 - 1
+    static_cast<__uint128_t>(1ull) << 63, // 2^63
+    (static_cast<__uint128_t>(0x7fffffffffffffffULL) << 64) | static_cast<__uint128_t>(0x8000000000000000ULL),
+    false);
+  test_mul_overflow<__uint128_t, __uint128_t, __uint128_t>(
+    static_cast<__uint128_t>(1) << 100, static_cast<__uint128_t>(1) << 100, static_cast<__uint128_t>(0), true);
+  test_mul_overflow<__uint128_t, __uint128_t, __uint128_t>(
+    uint128_max, static_cast<__uint128_t>(2), uint128_max - 1, true);
+  test_mul_overflow<__uint128_t, __uint128_t, __uint128_t>(
+    uint128_max, static_cast<__uint128_t>(0), static_cast<__uint128_t>(0), false);
+  test_mul_overflow<__uint128_t, long long, __uint128_t>(
+    ~0ull,
+    static_cast<__uint128_t>(5) << 100,
+    (static_cast<__uint128_t>(0xffffffb000000000ULL) << 64) | static_cast<__uint128_t>(0),
+    false);
 }
 
 using TypeList = cuda::std::tuple<
@@ -102,7 +156,7 @@ using TypeList = cuda::std::tuple<
   short,
   unsigned short,
   int,
-  unsigned long,
+  unsigned int,
   long,
   unsigned long,
   long long,
@@ -117,11 +171,11 @@ using TypeList = cuda::std::tuple<
 using TypeListIndexSeq = cuda::std::make_index_sequence<cuda::std::tuple_size_v<TypeList>>;
 
 template <class... Ts, cuda::std::size_t... Is>
-TEST_FUNC constexpr void test(cuda::std::index_sequence<Is...>)
+TEST_FUNC constexpr void test_exhaustive(cuda::std::index_sequence<Is...>)
 {
   if constexpr (sizeof...(Ts) < 3)
   {
-    (test<Ts..., cuda::std::tuple_element_t<Is, TypeList>>(TypeListIndexSeq{}), ...);
+    (test_exhaustive<Ts..., cuda::std::tuple_element_t<Is, TypeList>>(TypeListIndexSeq{}), ...);
   }
   else
   {
@@ -132,6 +186,7 @@ TEST_FUNC constexpr void test(cuda::std::index_sequence<Is...>)
 
 int main(int arg, char** argv)
 {
-  test(TypeListIndexSeq{});
+  test_exhaustive(TypeListIndexSeq{});
+  test_corner_cases();
   return 0;
 }
