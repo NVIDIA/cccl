@@ -3,10 +3,11 @@
 
 // ============================================================================
 // NVBench benchmarks for chained elementwise operations was put together by Matthias Jouanneaux (DevTech). It mimics
-// how pytorch uses element-wise kernels (i.e. cub::DeviceTransform). The main difference to ordinary CCCL benchmarks is
-// the chaining of several operations in the benchmark's critical section. Furthermore, there are 4 types of work loads
-// covering the combinations of few vs. many input buffers and few vs. many instructions in the kernel.
-// For more discussion see: https://github.com/NVIDIA-dev/cccl_private/issues/639
+// how pytorch uses element-wise kernels (i.e. cub::DeviceTransform) and also tries to preserve pytorch's operators and
+// utility types. The main difference to ordinary CCCL benchmarks is the chaining of several operations in the
+// benchmark's critical section. Furthermore, there are 4 types of work loads covering the combinations of few vs. many
+// input buffers and few vs. many instructions in the kernel. For more discussion see:
+// https://github.com/NVIDIA-dev/cccl_private/issues/639
 // ============================================================================
 
 // %RANGE% TUNE_BIF_BIAS bif -16:16:4
