@@ -11,8 +11,9 @@
 //! Histogram strategy (block-private accumulation, then DSMEM merge into the leader):
 //!   1. Every block lays out `hist[num_buckets]` at the same offset in its own
 //!      shared memory. Each block accumulates a block-private histogram using
-//!      shared-space `red` reductions (cheap, SMEM-local): cta scope for
-//!      non-leaders, cluster scope for the leader (see `hist_inc`).
+//!      cluster-scope shared-space `red` reductions (cheap, SMEM-local), so the
+//!      leader's adds stay mutually atomic with the DSMEM folds below (see
+//!      `hist_inc`).
 //!   2. After a cluster-wide barrier, every non-leader block walks its
 //!      histogram and folds its bucket counts into the leader block's `hist`
 //!      via cluster-scope DSMEM atomics. The leader's `hist` therefore plays
@@ -56,10 +57,11 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_down.h>
-#include <cuda/__cmath/round_up.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__memcpy_async/elect_one.h>
+#include <cuda/__memory/align_up.h>
+#include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -331,6 +333,10 @@ struct agent_batched_topk_cluster
   static constexpr int load_align_items = smem_layout_t::load_align_items;
   static constexpr int slot_alignment   = smem_layout_t::slot_alignment;
 
+  // (pointer, count) carrier for a contiguous run of SMEM-staged keys, used only where the length must travel with the
+  // base across call boundaries (the resident window and the streamer's per-stage view); elsewhere: `key_t*` + count.
+  using smem_keys_t = ::cuda::std::span<key_t>;
+
   // Tie-break unroll for the deterministic filter's streamed overflow, which feeds `process_tiles` one chunk slot at a
   // time: clamp items so the tile (`threads_per_block * items`) stays within a chunk, bounding the per-tile early-exit
   // to <= chunk granularity. Resident/edge regions keep the full `tie_break_items_per_thread_clamped`. Floors at 1.
@@ -420,96 +426,23 @@ struct agent_batched_topk_cluster
   // head_edge_cap_items)`.
   static constexpr int head_edge_cap_items = load_align_items;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE key_t* slot_keys_unpadded(int slot) const
-  {
-    return reinterpret_cast<key_t*>(key_slots + slot * ChunkBytes);
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int span_size(::cuda::std::span<key_t> keys) const
-  {
-    const int count = static_cast<int>(::cuda::std::size(keys));
-    _CCCL_ASSERT(static_cast<::cuda::std::size_t>(count) == ::cuda::std::size(keys),
-                 "Resident key span length must fit in int");
-    return count;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
-  aligned_head_items(const key_t* base, offset_t segment_size) const
-  {
-    const auto base_addr = reinterpret_cast<::cuda::std::uintptr_t>(base);
-    const auto rem       = base_addr % static_cast<::cuda::std::uintptr_t>(load_align_bytes);
-    const auto bytes =
-      (rem == 0) ? ::cuda::std::uintptr_t{0} : static_cast<::cuda::std::uintptr_t>(load_align_bytes) - rem;
-    const auto items = static_cast<offset_t>(bytes / static_cast<::cuda::std::uintptr_t>(sizeof(key_t)));
-    return (::cuda::std::min) (items, segment_size);
-  }
-
-  // Number of aligned chunks covering the segment. The unaligned head prefix (`head_items`) is handled as a separate
-  // edge, not a chunk, so the aligned region `[head_items, segment_size)` chunks uniformly at `chunk_items` (a segment
-  // lying entirely before the first boundary has no chunks). `head_items == 0` (aligned base or generic fallback) is
-  // then plain uniform chunking from offset 0.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t num_chunks(offset_t segment_size, offset_t head_items) const
-  {
-    const offset_t aligned_items = (segment_size > head_items) ? (segment_size - head_items) : offset_t{0};
-    return static_cast<offset_t>(::cuda::ceil_div(aligned_items, offset_t{chunk_items}));
-  }
-
   struct chunk_desc
   {
     offset_t offset;
     int count;
   };
 
-  // Chunk `chunk_idx` of the aligned region: it begins on a `load_align` boundary (`head_items + chunk_idx *
-  // chunk_items`, with `head_items` itself aligning the base), so every chunk has a zero prefix and only the last chunk
-  // can carry an unaligned suffix (the segment's trailing `< load_align_items` items).
+  // Chunk `chunk_idx` of the aligned region, beginning on a `load_align` boundary (`head_items + chunk_idx *
+  // chunk_items`, with `head_items` aligning the base and `chunk_items` a multiple of `load_align_items`): so every
+  // chunk has a zero prefix and only the last chunk can carry an unaligned suffix (its trailing `< load_align_items`
+  // items). A chunk's aligned bulk (what the guard-free TMA path copies) is `round_down(count, load_align_items)`
+  // (`== count` for interior chunks); the tail's `count - bulk` remainder is peeled into `edge_keys`.
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_desc
   get_chunk(offset_t chunk_idx, offset_t segment_size, offset_t head_items) const
   {
     const offset_t offset    = head_items + chunk_idx * offset_t{chunk_items};
     const offset_t remaining = segment_size - offset;
     return {offset, static_cast<int>((::cuda::std::min) (remaining, offset_t{chunk_items}))};
-  }
-
-  // Splits a chunk into its unaligned front edge, aligned interior (bulk), and unaligned back edge, relative to the
-  // gmem base. The interior begins and ends on a `load_align` boundary so it can be loaded with the aligned,
-  // guard-free BlockLoadToShared path; the edges (each `< load_align_items` items) are staged via
-  // `stage_and_fold_edge`. The head prefix is peeled as a separate edge before chunking, so a `get_chunk` chunk begins
-  // on a boundary (zero prefix) and only the last chunk (tail) carries a nonzero suffix.
-  struct chunk_split
-  {
-    offset_t prefix;
-    offset_t bulk;
-    offset_t suffix;
-  };
-
-  template <typename PtrT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_split split_chunk(PtrT base, const chunk_desc chunk) const
-  {
-    const auto align_bytes   = static_cast<::cuda::std::uintptr_t>(load_align_bytes);
-    const auto begin         = reinterpret_cast<::cuda::std::uintptr_t>(base + chunk.offset);
-    const auto end           = begin + static_cast<::cuda::std::uintptr_t>(chunk.count) * sizeof(key_t);
-    const auto aligned_begin = ::cuda::round_up(begin, align_bytes);
-    const auto aligned_end   = ::cuda::round_down(end, align_bytes);
-    if (aligned_begin > aligned_end)
-    {
-      // The chunk lies strictly between two load_align boundaries (no aligned point inside): the whole chunk is an
-      // unaligned edge, attributed entirely to the front edge. `get_chunk` chunks begin on a boundary (the head is
-      // peeled separately), so this only guards a degenerate sub-`load_align` chunk. A tail always begins on a
-      // boundary, so it takes the `aligned_begin <= aligned_end` path below and its unaligned remainder is the suffix.
-      return {static_cast<offset_t>(chunk.count), offset_t{0}, offset_t{0}};
-    }
-    const offset_t prefix = static_cast<offset_t>((aligned_begin - begin) / sizeof(key_t));
-    const offset_t bulk   = static_cast<offset_t>((aligned_end - aligned_begin) / sizeof(key_t));
-    return {prefix, bulk, static_cast<offset_t>(chunk.count) - prefix - bulk};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
-  num_rank_chunks(offset_t chunks, unsigned int cluster_rank, unsigned int cluster_blocks) const
-  {
-    return (cluster_rank < chunks)
-           ? static_cast<offset_t>((chunks - 1 - cluster_rank) / cluster_blocks + 1)
-           : offset_t{0};
   }
 
   // Assignment of the cluster's global chunk indices `[0, chunks)` to its CTAs. A rank owns `count` chunks; its i-th
@@ -551,9 +484,13 @@ struct agent_batched_topk_cluster
     }
     else
     {
-      return {static_cast<offset_t>(cluster_rank),
-              static_cast<offset_t>(cluster_blocks),
-              num_rank_chunks(chunks, cluster_rank, cluster_blocks)};
+      // Strided count: rank `cluster_rank` owns the global indices `cluster_rank, cluster_rank + cluster_blocks, ...`
+      // that stay `< chunks`, i.e. `ceil((chunks - cluster_rank) / cluster_blocks)`, written as
+      // `(chunks - 1 - cluster_rank) / cluster_blocks + 1` for exact integer arithmetic. The `cluster_rank >= chunks`
+      // guard (rank owns nothing) keeps the subtraction from underflowing the unsigned `offset_t`.
+      const offset_t count =
+        (cluster_rank < chunks) ? static_cast<offset_t>((chunks - 1 - cluster_rank) / cluster_blocks + 1) : offset_t{0};
+      return {static_cast<offset_t>(cluster_rank), static_cast<offset_t>(cluster_blocks), count};
     }
   }
 
@@ -587,7 +524,7 @@ struct agent_batched_topk_cluster
   // with its atomic instead of hoisting the whole load wave ahead. `Unroll` is the caller's clamped (floor) items per
   // thread, so the sub-tile remainder is handled by a single non-unrolled fused block-stride loop bounded by the count.
   template <int Unroll, typename Apply>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key_impl(const key_t* data, int chunk_count, Apply&& apply) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key_impl(const key_t* keys, int chunk_count, Apply&& apply) const
   {
     constexpr int tile   = Unroll * threads_per_block;
     const int tid        = static_cast<int>(threadIdx.x);
@@ -600,7 +537,7 @@ struct agent_batched_topk_cluster
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Unroll; ++i)
       {
-        regs[i] = data[tile_base + i * threads_per_block + tid];
+        regs[i] = keys[tile_base + i * threads_per_block + tid];
       }
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Unroll; ++i)
@@ -614,14 +551,14 @@ struct agent_batched_topk_cluster
     _CCCL_PRAGMA_NOUNROLL()
     for (int local = full_tiles + tid; local < chunk_count; local += threads_per_block)
     {
-      apply(data[local], local);
+      apply(keys[local], local);
     }
   }
 
   template <int Unroll, typename F>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key(::cuda::std::span<key_t> chunk_keys, F&& f) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key(const key_t* chunk_keys, int count, F&& f) const
   {
-    for_each_chunk_key_impl<Unroll>(::cuda::std::data(chunk_keys), span_size(chunk_keys), [&](const key_t& key, int) {
+    for_each_chunk_key_impl<Unroll>(chunk_keys, count, [&](const key_t& key, int) {
       f(key);
     });
   }
@@ -631,26 +568,11 @@ struct agent_batched_topk_cluster
   // payload from gmem, so overflow keys can be reused from the streaming SMEM pipeline instead of re-read from gmem.
   template <int Unroll, typename F>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  for_each_chunk_key_indexed(::cuda::std::span<key_t> chunk_keys, offset_t base_off, F&& f) const
+  for_each_chunk_key_indexed(const key_t* chunk_keys, int count, offset_t base_off, F&& f) const
   {
-    for_each_chunk_key_impl<Unroll>(
-      ::cuda::std::data(chunk_keys), span_size(chunk_keys), [&](const key_t& key, int local) {
-        f(key, base_off + static_cast<offset_t>(local));
-      });
-  }
-
-  // A bulk in the block_tile as a 32-bit shared address + length. A spilled 32-bit shared address (rebuilt with
-  // `__cvta_shared_to_generic`) keeps the key reads `LDS`; a spilled 64-bit generic pointer would demote them to `LD`.
-  struct shared_bulk
-  {
-    ::cuda::std::uint32_t smem32;
-    int len;
-  };
-
-  // Rebuild a bulk's span from its 32-bit shared address at the point of use (spill-proof `LDS`).
-  [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<key_t> bulk_span(shared_bulk b)
-  {
-    return {reinterpret_cast<key_t*>(__cvta_shared_to_generic(b.smem32)), static_cast<::cuda::std::size_t>(b.len)};
+    for_each_chunk_key_impl<Unroll>(chunk_keys, count, [&](const key_t& key, int local) {
+      f(key, base_off + static_cast<offset_t>(local));
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -797,34 +719,28 @@ private:
   }
 
   // ---------------------------------------------------------------------------
-  // Block-private histogram atomics (shared-space `red` via cuda::ptx-style inline PTX)
+  // Block-private histogram atomics (shared-space `red` via inline PTX)
   // ---------------------------------------------------------------------------
-  // A builtin `atomicAdd(&temp_storage.hist[bucket], 1)` compiles to a generic atomic (`ATOM.E`) whose 64-bit base is
-  // spilled and reloaded (`LDL.64`) at every update across this huge agent. A shared-space `red` instead addresses with
-  // the 32-bit shared address (no base to spill). Shared atomics only allow cta/cluster scope, which is exactly right:
-  // every writer of a given `hist` is in the same cluster. `red` (no return) matches the discarded `atomicAdd` result.
+  // The per-key histogram update is the hottest path. A builtin `atomicAdd(&temp_storage.hist[bucket], 1)` lowers to
+  // the same warp-aggregated shared atomic (`ATOMS.POPC.INC.32`), but recomputes `&hist[bucket]` from the 64-bit
+  // generic base of `temp_storage` on every key; the inline `red` adds a pre-hoisted 32-bit shared base instead
+  // (measured ~3-4% fewer total instructions across this huge agent).
 
-  // The 32-bit shared address of `hist[0]`. Hoisted once per histogram region so the per-key address math is a pure
-  // 32-bit add; recomputing it per key would reload the 64-bit generic base of `temp_storage` from the stack.
+  // The 32-bit shared address of `hist[0]`, hoisted once per histogram region so the per-key update stays a pure
+  // 32-bit add.
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t hist_base32() const
   {
     return static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(temp_storage.hist));
   }
 
-  // Increment this block's own histogram bucket by one via its 32-bit shared address. The leader (rank 0) also receives
-  // remote folds from the other cluster blocks (Step 2, `hist_fold_remote`), so its add must be cluster-scoped to be
-  // mutually atomic with them; non-leaders only touch their own `hist` before the fold, so cta scope suffices.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void hist_inc(::cuda::std::uint32_t base32, int bucket, bool is_leader)
+  // Increment this block's own histogram bucket by one, at cluster scope so it stays mutually atomic with the DSMEM
+  // folds peers push into the leader's `hist` (Step 2, `hist_fold_remote`). Cluster and cta scope lower to identical
+  // shared-atomic SASS here, so applying it unconditionally (non-leaders, lone CTA) costs nothing and drops the leader
+  // branch.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void hist_inc(::cuda::std::uint32_t base32, int bucket)
   {
     const ::cuda::std::uint32_t addr = base32 + static_cast<::cuda::std::uint32_t>(bucket) * sizeof(offset_t);
-    if (is_leader)
-    {
-      asm volatile("red.relaxed.cluster.shared::cta.add.u32 [%0], 1;" : : "r"(addr) : "memory");
-    }
-    else
-    {
-      asm volatile("red.relaxed.cta.shared::cta.add.u32 [%0], 1;" : : "r"(addr) : "memory");
-    }
+    asm volatile("red.relaxed.cluster.shared::cta.add.u32 [%0], 1;" : : "r"(addr) : "memory");
   }
 
   // Step 2: a non-leader folds one bucket into the leader's histogram through DSMEM. `own_bucket_addr32` is the
@@ -859,35 +775,6 @@ private:
     ::cuda::std::uint32_t remote;
     asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote) : "r"(own), "r"(target_rank));
     asm volatile("red.relaxed.cluster.shared::cluster.add.u64 [%0], %1;" : : "r"(remote), "l"(v) : "memory");
-  }
-
-  // Block-local SMEM atomics for the final filter: `front_local_inc`/`back_local_inc` hand out this block's next
-  // front/back output slot (pre-increment value), `add_local_selected` accumulates its strictly-selected count across
-  // passes. Each addresses the 32-bit shared slot directly (like `hist_inc`) to dodge the generic-atomic base spill of
-  // `atomicAdd(&shared)`, at cta scope since every writer of a block's counter lives in that block.
-  _CCCL_DEVICE _CCCL_FORCEINLINE offset_t front_local_inc()
-  {
-    const ::cuda::std::uint32_t addr =
-      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.front_local_cnt));
-    offset_t old;
-    asm volatile("atom.relaxed.cta.shared::cta.add.u32 %0, [%1], 1;" : "=r"(old) : "r"(addr) : "memory");
-    return old;
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE offset_t back_local_inc()
-  {
-    const ::cuda::std::uint32_t addr =
-      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.back_local_cnt));
-    offset_t old;
-    asm volatile("atom.relaxed.cta.shared::cta.add.u32 %0, [%1], 1;" : "=r"(old) : "r"(addr) : "memory");
-    return old;
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void add_local_selected(offset_t count)
-  {
-    const ::cuda::std::uint32_t addr =
-      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.num_strictly_selected));
-    asm volatile("red.relaxed.cta.shared::cta.add.u32 [%0], %1;" : : "r"(addr), "r"(count) : "memory");
   }
 
   // Parallel prefix sum (cub::BlockScan) over the leader's merged histogram
@@ -1001,39 +888,33 @@ private:
                    "streaming depth exceeds the overflow chunk count");
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE offset_t chunk_index_of(offset_t overflow_idx) const
-    {
-      return part.global_index(overflow_base + overflow_idx);
-    }
-
     _CCCL_DEVICE _CCCL_FORCEINLINE void issue_load(int stage, offset_t overflow_idx)
     {
-      const offset_t chunk_idx = chunk_index_of(overflow_idx);
+      const offset_t chunk_idx = part.global_index(overflow_base + overflow_idx);
       const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
-      // Every chunk begins on a `load_align` boundary (zero prefix), so the guard-free aligned (TMA bulk) path applies.
-      // The global-last chunk's unaligned suffix is always peeled into `edge_keys`, so streaming just its aligned bulk
-      // excludes it. For every interior chunk `bulk == count`.
-      const auto split = agent.split_chunk(block_keys_base, chunk);
-      _CCCL_ASSERT(split.prefix == offset_t{0}, "overflow streamer received a chunk with an unaligned start");
+      // Every chunk begins on a `load_align` boundary, so the guard-free aligned (TMA bulk) path applies. The global-
+      // last chunk's unaligned suffix is always peeled into `edge_keys`, so streaming just its aligned bulk excludes
+      // it. For every interior chunk `bulk == count`.
+      const offset_t bulk =
+        ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items));
+      _CCCL_ASSERT(::cuda::is_aligned(block_keys_base + chunk.offset, load_align_bytes),
+                   "overflow streamer received a chunk with an unaligned start");
       char* const dst = agent.key_slots + (stream_slot_base + stage) * ChunkBytes;
-      const ::cuda::std::span<const key_t> src{
-        block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(split.bulk)};
+      const ::cuda::std::span<const key_t> src{block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
       agent.issue_bulk_copy(stage, dst, src);
       inflight_mask |= (::cuda::std::uint32_t{1} << stage);
     }
 
-    // Rebuild the shared span for the chunk currently resident in `stage`'s slot without storing per-stage state: the
-    // slot address is a pure function of `stage` and the length is recomputed from `overflow_idx`, so there is no
-    // spillable `pending[]` array (see `bulk_span`). Returns the aligned bulk only (the always-peeled tail suffix is
-    // excluded).
-    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<key_t>
-    stage_span(int stage, offset_t overflow_idx) const
+    // Shared-memory view of the chunk currently resident in `stage`'s slot without storing per-stage state: the slot
+    // index is a pure function of `stage` and the length is recomputed from `overflow_idx`, so there is no spillable
+    // `pending[]` array. Returns the aligned bulk only (the always-peeled tail suffix is excluded).
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE smem_keys_t stage_span(int stage, offset_t overflow_idx) const
     {
-      char* const dst  = agent.key_slots + (stream_slot_base + stage) * ChunkBytes;
-      const auto chunk = agent.get_chunk(chunk_index_of(overflow_idx), segment_size, head_items);
-      const auto split = agent.split_chunk(block_keys_base, chunk);
-      return agent.bulk_span(
-        {static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(dst)), static_cast<int>(split.bulk)});
+      const auto chunk = agent.get_chunk(part.global_index(overflow_base + overflow_idx), segment_size, head_items);
+      return smem_keys_t(
+        ::cuda::ptr_rebind<key_t>(agent.key_slots + (stream_slot_base + stage) * ChunkBytes),
+        static_cast<int>(
+          ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items))));
     }
 
     // Shared driver for one overflow pass. `block_apply(stage, overflow_idx)` folds the chunk `overflow_idx` resident
@@ -1156,7 +1037,7 @@ private:
         for (offset_t i = 0; i < overflow_chunks; ++i)
         {
           const offset_t overflow_idx = is_forward ? i : (overflow_chunks - 1 - i);
-          const offset_t chunk_idx    = chunk_index_of(overflow_idx);
+          const offset_t chunk_idx    = part.global_index(overflow_base + overflow_idx);
           const auto chunk            = agent.get_chunk(chunk_idx, segment_size, head_items);
           generic_apply(chunk);
           if (!should_continue())
@@ -1181,12 +1062,16 @@ private:
         [&](int stage, offset_t overflow_idx) {
           if constexpr (Indexed)
           {
-            const offset_t base_off = agent.get_chunk(chunk_index_of(overflow_idx), segment_size, head_items).offset;
-            agent.template for_each_chunk_key_indexed<UnrollFactor>(stage_span(stage, overflow_idx), base_off, f);
+            const offset_t base_off =
+              agent.get_chunk(part.global_index(overflow_base + overflow_idx), segment_size, head_items).offset;
+            const auto keys = stage_span(stage, overflow_idx);
+            agent.template for_each_chunk_key_indexed<UnrollFactor>(
+              keys.data(), static_cast<int>(keys.size()), base_off, f);
           }
           else
           {
-            agent.template for_each_chunk_key<UnrollFactor>(stage_span(stage, overflow_idx), f);
+            const auto keys = stage_span(stage, overflow_idx);
+            agent.template for_each_chunk_key<UnrollFactor>(keys.data(), static_cast<int>(keys.size()), f);
           }
         },
         [&](const auto& chunk) {
@@ -1350,9 +1235,8 @@ private:
   // member functions instead of a nest of `[&]` lambdas. Constructed once per `run()` in the deterministic branch. Kept
   // an aggregate (no user constructor) so its members are initialized positionally at the single call site.
   //
-  // Codegen: methods are `_CCCL_FORCEINLINE` and no SMEM key pointer is stored -- the resident window is carried as its
-  // 32-bit shared address (`resident_smem32`) and rebuilt with `__cvta_shared_to_generic` at use, so the reads stay
-  // `LDS` (see the `resident_smem32` note in `run`).
+  // Codegen: methods are `_CCCL_FORCEINLINE`; the resident window is carried as a `smem_keys_t` view
+  // (`resident_front`).
   template <detail::topk::select SelectDirection>
   struct det_final_filter
   {
@@ -1377,7 +1261,7 @@ private:
     offset_t segment_size_off;
     offset_t head_items;
     offset_t front_seg_base;
-    ::cuda::std::uint32_t resident_smem32;
+    smem_keys_t resident_front;
     int front_count;
     int head_edge_len_items;
     int tail_edge_len_items;
@@ -1416,19 +1300,11 @@ private:
       return is_front_done && is_back_done;
     }
 
-    // Fold a flat scan position `pos` into its in-region index: forward, or (`Reversed`) counting down from the
-    // region's last element. The `FromSmem` local read and the segment-local value index share this one folded index.
-    template <bool Reversed>
-    [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE int fold_pos(int pos, int count)
-    {
-      return Reversed ? (count - 1 - pos) : pos;
-    }
-
     // Emit one back/tie candidate: if its `global_rank` (arrival- or scan-ordered by the caller) is a winner it lands
     // in the top-k output at slot `k-1-global_rank`, with its value pulled from segment-local index `seg_idx`; ranks at
     // or past `num_back` are losers and dropped (a no-op). Forced-inline with explicit args (no capture) so it folds
     // into the hot back-placement loops with no extra live ranges; the caller keeps any counter side effects (e.g.
-    // `back_local_inc`) in the `global_rank` argument so they still run for every candidate.
+    // the `back_local_cnt` atomic) in the `global_rank` argument so they still run for every candidate.
     _CCCL_DEVICE _CCCL_FORCEINLINE void emit_back_one(offset_t global_rank, const key_t& key, offset_t seg_idx)
     {
       if (global_rank < static_cast<offset_t>(num_back))
@@ -1446,8 +1322,7 @@ private:
     // per-tile logic). `region_is_terminal` marks this region as the CTA's last, so its last tile -- if ties are
     // unresolved -- holds the boundary and scans directly. `running` carries across tiles/regions. No per-tile early-
     // exit or barrier here except the lazy-scan `else` branch; early exit is decided at critical points via
-    // `should_stop`. The SMEM base is passed in (rebuilt via `__cvta_shared_to_generic` at the call site) rather than
-    // stored, so the reads stay `LDS`.
+    // `should_stop`.
     template <int Items, bool FromSmem, bool Reversed>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     process_tiles([[maybe_unused]] const key_t* smem_src, offset_t seg_base, int count, bool region_is_terminal)
@@ -1468,7 +1343,9 @@ private:
           flags[i]      = offset_t{0};
           if (is_valid[i])
           {
-            const int folded_pos = fold_pos<Reversed>(pos, count);
+            // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
+            // local read and the segment-local value index.
+            const int folded_pos = Reversed ? (count - 1 - pos) : pos;
             if constexpr (FromSmem)
             {
               keys[i] = smem_src[folded_pos];
@@ -1492,9 +1369,9 @@ private:
           if (is_front_key)
           {
             const int pos          = tile_base + static_cast<int>(threadIdx.x) * items + i;
-            const offset_t local   = agent.front_local_inc();
+            const offset_t local   = atomicAdd(&agent.temp_storage.front_local_cnt, offset_t{1});
             const out_offset_t out = static_cast<out_offset_t>(sel_prefix + local);
-            const offset_t seg_idx = seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count));
+            const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
             block_keys_out[out]    = keys[i];
             write_value(out, seg_idx);
           }
@@ -1518,9 +1395,9 @@ private:
               if (is_valid[i] && flags[i] != offset_t{0})
               {
                 const int pos = tile_base + static_cast<int>(threadIdx.x) * items + i;
-                emit_back_one(cand_prefix + agent.back_local_inc(),
+                emit_back_one(cand_prefix + atomicAdd(&agent.temp_storage.back_local_cnt, offset_t{1}),
                               keys[i],
-                              seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
+                              seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos));
               }
             }
           };
@@ -1536,7 +1413,8 @@ private:
               if (is_valid[i] && flags[i] != offset_t{0})
               {
                 const int pos = tile_base + static_cast<int>(threadIdx.x) * items + i;
-                emit_back_one(base + excl[i], keys[i], seg_base + static_cast<offset_t>(fold_pos<Reversed>(pos, count)));
+                emit_back_one(
+                  base + excl[i], keys[i], seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos));
               }
             }
             return tile_total;
@@ -1571,7 +1449,8 @@ private:
               is_tie_active = false;
             }
             // Trailing barrier for the lazy-scan path only: separate this tile's `placed` read (B1 above) from the
-            // next tile's `back_local_inc`. The other sub-paths write disjoint slots and need no per-tile barrier.
+            // next tile's `back_local_cnt` atomic. The other sub-paths write disjoint slots and need no per-tile
+            // barrier.
             __syncthreads();
           }
         }
@@ -1586,10 +1465,9 @@ private:
     {
       if constexpr (use_block_load_to_shared)
       {
-        // Whole contiguous resident span staged in SMEM; rebuild the base from its 32-bit address at use.
-        key_t* const rfront = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+        // Whole contiguous resident span staged in SMEM.
         process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/is_residency_reversed>(
-          rfront, front_seg_base, front_count, is_resident_terminal);
+          resident_front.data(), front_seg_base, front_count, is_resident_terminal);
       }
       else
       {
@@ -1602,7 +1480,7 @@ private:
           // Generic multi-chunk resident loop reads the chunk's SMEM slot; never the terminal-tile fast path (the lazy
           // per-tile boundary detection handles any boundary), so pass `false`.
           process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/is_residency_reversed>(
-            agent.slot_keys_unpadded(local_slot), chunk.offset, chunk.count, false);
+            ::cuda::ptr_rebind<key_t>(agent.key_slots + local_slot * ChunkBytes), chunk.offset, chunk.count, false);
         }
       }
     }
@@ -1628,20 +1506,22 @@ private:
 
       streamer.run_pass(
         // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
-        // `stage_span` rebuilds the slot pointer from its 32-bit shared address (spill-proof `LDS`) and returns only
-        // the aligned bulk (a peeled tail suffix is handled by `process_tail_edge`).
+        // `stage_span` returns the slot's aligned-bulk view (a peeled tail suffix is handled by `process_tail_edge`).
         [&](int stage, offset_t overflow_idx) {
-          const auto span = streamer.stage_span(stage, overflow_idx);
+          const auto keys = streamer.stage_span(stage, overflow_idx);
           const offset_t base_off =
-            agent.get_chunk(streamer.chunk_index_of(overflow_idx), segment_size_off, head_items).offset;
+            agent
+              .get_chunk(streamer.part.global_index(streamer.overflow_base + overflow_idx), segment_size_off, head_items)
+              .offset;
           // The multi-chunk overflow stream stays on the lazy per-tile boundary detection (`region_is_terminal ==
           // false`): a stray terminal direct scan here would need the streamer to flag its last chunk, and the saving
           // is one barrier on one tile.
           process_tiles<tie_break_items_streamed, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed>(
-            span.data(), base_off, static_cast<int>(span.size()), false);
+            keys.data(), base_off, static_cast<int>(keys.size()), false);
         },
         // Generic fallback: read the overflow chunk straight from gmem (full count; the fallback never peels a tail).
         [&](const auto& chunk) {
+          // FromSmem=false: `smem_src` is unread, so pass nullptr.
           process_tiles<tie_break_items_streamed, /*FromSmem=*/false, /*Reversed=*/is_tie_reversed>(
             nullptr, chunk.offset, chunk.count, false);
         },
@@ -1655,13 +1535,15 @@ private:
     }
 
     // Fold one persistent boundary edge (head prefix or peeled tail suffix), both staged in `edge_keys`. A no-op on the
-    // generic fallback (which reads boundary items straight from gmem) and for a zero-length edge.
+    // generic fallback (which reads boundary items straight from gmem) and for a zero-length edge. An edge spans fewer
+    // than `load_align_items` items (it fits in its `edge_keys` slot), so it runs `process_tiles` at unroll factor 1
+    // (non-unrolled) instead of the wider tie-break unroll the potentially large resident/overflow regions use.
     _CCCL_DEVICE _CCCL_FORCEINLINE void process_edge(const key_t* keys, offset_t seg_base, int count, bool is_terminal)
     {
       if constexpr (use_block_load_to_shared)
       {
-        process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed>(
-          keys, seg_base, count, is_terminal);
+        _CCCL_ASSERT(count <= head_edge_cap_items, "a boundary edge must fit in its edge_keys slot");
+        process_tiles<1, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed>(keys, seg_base, count, is_terminal);
       }
     }
 
@@ -1770,8 +1652,7 @@ private:
     offset_t my_resident_chunks,
     offset_t segment_size_off,
     offset_t head_items,
-    ::cuda::std::uint32_t resident_smem32,
-    ::cuda::std::span<key_t> resident_keys,
+    smem_keys_t resident_keys,
     int head_edge_len_items,
     int tail_edge_len_items,
     overflow_streamer& streamer)
@@ -1809,8 +1690,9 @@ private:
       const auto res = identify_op(key);
       if (res == detail::topk::candidate_class::selected)
       {
-        const out_offset_t pos = static_cast<out_offset_t>(sel_prefix + front_local_inc());
-        block_keys_out[pos]    = key;
+        const out_offset_t pos =
+          static_cast<out_offset_t>(sel_prefix + atomicAdd(&temp_storage.front_local_cnt, offset_t{1}));
+        block_keys_out[pos] = key;
         if constexpr (!is_keys_only)
         {
           write_value(pos, seg_idx);
@@ -1818,7 +1700,8 @@ private:
       }
       else if (res == detail::topk::candidate_class::candidate)
       {
-        const out_offset_t back_pos = static_cast<out_offset_t>(cand_prefix + back_local_inc());
+        const out_offset_t back_pos =
+          static_cast<out_offset_t>(cand_prefix + atomicAdd(&temp_storage.back_local_cnt, offset_t{1}));
         if (back_pos < num_kth)
         {
           const out_offset_t pos = k - 1 - back_pos;
@@ -1842,9 +1725,8 @@ private:
       const auto fold_resident = [&] {
         if constexpr (use_block_load_to_shared)
         {
-          key_t* const resident_ptr = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
           for_each_chunk_key<tie_break_items_per_thread_floor_clamped>(
-            {resident_ptr, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, write_selected);
+            resident_keys.data(), static_cast<int>(resident_keys.size()), write_selected);
         }
         else
         {
@@ -1852,9 +1734,10 @@ private:
           {
             const offset_t chunk_idx = part.global_index(local_chunk);
             const auto chunk         = get_chunk(chunk_idx, segment_size_off, head_items);
-            key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(local_chunk));
             for_each_chunk_key<tie_break_items_per_thread_floor_clamped>(
-              {chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
+              ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes),
+              static_cast<int>(chunk.count),
+              write_selected);
           }
         }
         // Scan the persistent boundary edges alongside the resident keys (order-independent atomic writes).
@@ -1887,21 +1770,32 @@ private:
         }
       };
 
+      // Boundary edges span fewer than `load_align_items` items, so fold them with a plain block-stride loop rather
+      // than the tiled/unrolled `write_run` used for the (potentially large) resident bulks.
+      const auto write_edge = [&](const key_t* smem, offset_t base_off, int count) {
+        for (int local = static_cast<int>(threadIdx.x); local < count; local += threads_per_block)
+        {
+          const key_t key = smem[local];
+          sink(key, base_off + static_cast<offset_t>(local));
+        }
+      };
+
       // Fold the resident keys (and their values) as the streamer's `mid` work, exactly as in the keys-only path.
       const auto fold_resident = [&] {
         if constexpr (use_block_load_to_shared)
         {
           // Resident keys are densely packed in slot order (aligned bulks only), so a running cursor recovers
           // per-chunk spans. Only the global-last chunk can be partial (its unaligned suffix is peeled into
-          // `edge_keys` and folded below), so iterate `split.bulk`, not `chunk.count`.
-          key_t* const resident_ptr = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
+          // `edge_keys` and folded below), so iterate the aligned bulk (`round_down(count, load_align_items)`), not
+          // `chunk.count`.
+          key_t* const resident_ptr = resident_keys.data();
           int cursor_items          = 0;
           for (offset_t local_chunk = 0; local_chunk < my_resident_chunks; ++local_chunk)
           {
             const auto chunk = get_chunk(part.global_index(resident_base + local_chunk), segment_size_off, head_items);
-            const auto split = split_chunk(block_keys_base, chunk);
-            const offset_t base_off    = chunk.offset + split.prefix;
-            const int bulk_count_items = split.bulk;
+            const offset_t base_off    = chunk.offset;
+            const int bulk_count_items = static_cast<int>(
+              ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items)));
             write_run(resident_ptr + cursor_items, base_off, bulk_count_items);
             cursor_items += bulk_count_items;
           }
@@ -1912,7 +1806,8 @@ private:
           {
             const auto chunk        = get_chunk(part.global_index(local_chunk), segment_size_off, head_items);
             const offset_t base_off = chunk.offset;
-            write_run(slot_keys_unpadded(static_cast<int>(local_chunk)), base_off, chunk.count);
+            write_run(
+              ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes), base_off, chunk.count);
           }
         }
         // Scan the persistent boundary edges with their segment-local indices: the head prefix starts at index 0, the
@@ -1921,13 +1816,13 @@ private:
         {
           if (head_edge_len_items > 0)
           {
-            write_run(temp_storage.edge_keys, offset_t{0}, head_edge_len_items);
+            write_edge(temp_storage.edge_keys, offset_t{0}, head_edge_len_items);
           }
           if (tail_edge_len_items > 0)
           {
-            write_run(temp_storage.edge_keys + head_edge_cap_items,
-                      segment_size_off - static_cast<offset_t>(tail_edge_len_items),
-                      tail_edge_len_items);
+            write_edge(temp_storage.edge_keys + head_edge_cap_items,
+                       segment_size_off - static_cast<offset_t>(tail_edge_len_items),
+                       tail_edge_len_items);
           }
         }
       };
@@ -1963,8 +1858,7 @@ private:
     offset_t segment_size_off,
     offset_t head_items,
     state_t* leader_state,
-    ::cuda::std::uint32_t resident_smem32,
-    ::cuda::std::span<key_t> resident_keys,
+    smem_keys_t resident_keys,
     int head_edge_len_items,
     int tail_edge_len_items,
     overflow_streamer& streamer)
@@ -2016,7 +1910,7 @@ private:
     // Resident-front extent (bulk path): the whole contiguous resident span. The unaligned tail suffix (the
     // globally-last chunk's) is always peeled into `edge_keys` and folded by `process_tail_edge`, so it is never
     // part of this span.
-    const int front_count = span_size(resident_keys);
+    const int front_count = static_cast<int>(resident_keys.size());
 
     // Terminal-region flags for the last-tile direct-scan gate (block-load regions only; the generic resident loop
     // and overflow stream pass `false` and stay on lazy per-tile detection). A region is terminal when no later
@@ -2065,7 +1959,7 @@ private:
       segment_size_off,
       head_items,
       front_seg_base,
-      resident_smem32,
+      resident_keys,
       front_count,
       head_edge_len_items,
       tail_edge_len_items,
@@ -2080,15 +1974,12 @@ private:
 
   // Fused first pass: load this rank's resident chunks into the block_tile, stage the persistent boundary edges into
   // `edge_keys`, and fold every key (resident + edges + overflow) into pass 0's histogram in the same sweep (pass 0
-  // needs no candidate filtering). Publishes the resident span as `resident_keys` and its 32-bit shared base address
-  // as `resident_smem32` for the later passes and the final filter; ends on a `__syncthreads()` that makes `edge_keys`
-  // and the block-local histogram visible within the block. Cross-CTA visibility of the zeroed histogram comes later,
-  // from the deferred initial cluster wait in `run_radix_passes` (this whole load runs in that arrive->wait window).
+  // needs no candidate filtering). Publishes the resident span as `resident_keys` for the later passes and the final
+  // filter; ends on a `__syncthreads()` that makes `edge_keys` and the block-local histogram visible within the block.
+  // Cross-CTA visibility of the zeroed histogram comes later, from the deferred initial cluster wait in
+  // `run_radix_passes` (this whole load runs in that arrive->wait window).
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(
-    unsigned int cluster_rank,
-    unsigned int leader_rank,
-    bool is_single_cta,
     const chunk_partition& part,
     offset_t my_resident_chunks,
     offset_t resident_base,
@@ -2100,20 +1991,16 @@ private:
     int head_edge_len_items,
     int tail_edge_len_items,
     overflow_streamer& streamer,
-    ::cuda::std::span<key_t>& resident_keys,
-    ::cuda::std::uint32_t& resident_smem32)
+    smem_keys_t& resident_keys)
   {
     using extract_bin_op_t   = detail::topk::extract_bin_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
     constexpr int total_bits = int{sizeof(key_t)} * 8;
 
     extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
     const ::cuda::std::uint32_t hist_smem32 = hist_base32();
-    // Cluster-scope leader atomics are only needed to stay mutually atomic with the non-leaders' DSMEM folds; a lone
-    // CTA has none, so it uses the cheaper CTA scope.
-    const bool is_leader_cluster_scope = (cluster_rank == leader_rank) && !is_single_cta;
-    auto add_first_pass                = [&](const key_t& key) {
+    auto add_first_pass                     = [&](const key_t& key) {
       const int bucket = extract_op(key);
-      hist_inc(hist_smem32, bucket, is_leader_cluster_scope);
+      hist_inc(hist_smem32, bucket);
     };
 
     if constexpr (use_block_load_to_shared)
@@ -2124,10 +2011,9 @@ private:
         // Chunks are written densely in slot order from offset 0 and read back in the same order, so the read cursor
         // (`read_off_bytes`) mirrors the write cursor (`next_off_bytes`) as a running prefix sum, avoiding a
         // dynamically-indexed `pending_spans` array that would anchor surrounding state to local memory. Every chunk
-        // begins on a `load_align` boundary (zero prefix), so its whole `count` is the aligned bulk - except the
-        // global-last chunk, whose unaligned suffix is always peeled into `edge_keys`, leaving only its aligned bulk
-        // here. The read span is rebuilt from a rooted 32-bit shared address (see `bulk_span`) so a spilled cursor
-        // cannot demote the reads to `LD`.
+        // begins on a `load_align` boundary (zero prefix), so its aligned bulk is `round_down(count,
+        // load_align_items)`: the whole `count` for interior chunks, and for the global-last chunk its `count` minus
+        // the unaligned suffix that is always peeled into `edge_keys`.
         const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_resident_chunks));
 
         // Resident slot -> rank-local chunk index (`resident_base + slot`; identity unless `is_residency_reversed`
@@ -2140,12 +2026,13 @@ private:
         const auto bulk_src = [&](offset_t slot) -> ::cuda::std::span<const key_t> {
           const offset_t chunk_idx = part.global_index(resident_local(slot));
           const auto chunk         = get_chunk(chunk_idx, segment_size_off, head_items);
-          const auto split         = split_chunk(block_keys_base, chunk);
-          if (split.bulk == 0)
+          const offset_t bulk =
+            ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items));
+          if (bulk == 0)
           {
             return {};
           }
-          return {block_keys_base + chunk.offset + split.prefix, static_cast<::cuda::std::size_t>(split.bulk)};
+          return {block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(bulk)};
         };
 
         // Bulks are densely packed from the start of the block_tile. The head prefix is no longer kept here (it lives
@@ -2170,9 +2057,7 @@ private:
           wait_stage(stage);
           const int read_len_items = static_cast<int>(::cuda::std::size(bulk_src(local_chunk)));
           for_each_chunk_key<histogram_items_per_thread_clamped>(
-            bulk_span({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots + read_off_bytes)),
-                       read_len_items}),
-            add_first_pass);
+            ::cuda::ptr_rebind<key_t>(key_slots + read_off_bytes), read_len_items, add_first_pass);
           read_off_bytes += read_len_items * int{sizeof(key_t)};
 
           const offset_t next_local_chunk = local_chunk + static_cast<offset_t>(prologue);
@@ -2187,11 +2072,9 @@ private:
           }
         }
 
-        // The resident region is one contiguous span of aligned bulks for the later passes; both boundary edges are
+        // The resident region is one contiguous run of aligned bulks for the later passes; both boundary edges are
         // folded separately from `edge_keys`.
-        resident_keys   = {reinterpret_cast<key_t*>(key_slots),
-                           static_cast<::cuda::std::size_t>(next_off_bytes / int{sizeof(key_t)})};
-        resident_smem32 = static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(key_slots));
+        resident_keys = smem_keys_t(::cuda::ptr_rebind<key_t>(key_slots), next_off_bytes / int{sizeof(key_t)});
       }
     }
     else
@@ -2200,7 +2083,7 @@ private:
       {
         const offset_t chunk_idx = part.global_index(resident_base + local_chunk);
         const auto chunk         = get_chunk(chunk_idx, segment_size_off, head_items);
-        key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(local_chunk));
+        key_t* const chunk_keys  = ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes);
         const int iterations     = ::cuda::ceil_div(chunk.count, threads_per_block);
         _CCCL_PRAGMA_UNROLL(histogram_items_per_thread_clamped)
         for (int j = 0; j < iterations; ++j)
@@ -2244,7 +2127,7 @@ private:
     // `run` entry); `wait_stage` provides the producer/consumer sync.
     streamer.process_pass<histogram_items_per_thread_clamped>(add_first_pass);
 
-    const int resident_count = span_size(resident_keys);
+    const int resident_count = static_cast<int>(resident_keys.size());
     _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= block_tile_capacity,
                  "Dynamic shared memory block_tile is too small");
     __syncthreads();
@@ -2289,9 +2172,10 @@ private:
     layout.block_keys_in    = d_key_segments_it[segment_id];
     layout.segment_size_off = static_cast<offset_t>(segment_size);
     // `cluster_blocks` is what `process_impl` runs at: the launched cluster size, or `1` when it collapsed a
-    // small segment onto rank 0. A lone CTA routes barriers to `__syncthreads()`, keeps `state`/atomics block-local,
-    // and uses CTA-scope histogram atomics (no cross-rank DSMEM folds to be mutually atomic with). For wider clusters,
-    // `eff_cluster_blocks` (below) further excludes ranks that receive no chunks; they stay resident but idle.
+    // small segment onto rank 0. A lone CTA routes barriers to `__syncthreads()` and keeps `state`/atomics block-local
+    // (no cross-rank DSMEM folds); its histogram increments use the same unconditional cluster-scope `hist_inc`, which
+    // is identical SASS at cluster size 1. For wider clusters, `eff_cluster_blocks` (below) further excludes ranks that
+    // receive no chunks; they stay resident but idle.
     layout.is_single_cta = (cluster_blocks == 1u);
 
     layout.block_keys_base = nullptr;
@@ -2299,12 +2183,21 @@ private:
     if constexpr (use_block_load_to_shared)
     {
       layout.block_keys_base = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(layout.block_keys_in);
-      layout.head_items      = aligned_head_items(layout.block_keys_base, layout.segment_size_off);
+      // Items from `block_keys_base` to the next `load_align_bytes` boundary (0 when already aligned), clamped to the
+      // segment. `load_align_bytes` is a multiple of `sizeof(key_t)`, so the aligned pointer lands on a key boundary
+      // and the pointer difference is already an exact item count; narrow it to 32-bit `offset_t` right away.
+      const offset_t head_to_boundary =
+        static_cast<offset_t>(::cuda::align_up(layout.block_keys_base, load_align_bytes) - layout.block_keys_base);
+      layout.head_items = (::cuda::std::min) (head_to_boundary, layout.segment_size_off);
     }
-    // The generic fallback does not use BlockLoadToShared's alignment hint or peeling path, so it can keep a simple
-    // uniform chunking (`head_items == 0`). The two chunkings may assign keys to CTAs differently, but top-k only
-    // depends on the multiset of keys covered by the cluster.
-    layout.chunks = num_chunks(layout.segment_size_off, layout.head_items);
+    // Number of aligned chunks covering the segment: the unaligned head prefix (`head_items`) is a separate edge, not a
+    // chunk, so the aligned region `[head_items, segment_size)` chunks uniformly at `chunk_items` (a segment lying
+    // entirely before the first boundary yields `head_items == segment_size` and zero chunks). The generic fallback
+    // skips the alignment/peeling path and keeps `head_items == 0`; the two chunkings may assign keys to CTAs
+    // differently, but top-k only depends on the multiset of keys the cluster covers.
+    _CCCL_ASSERT(layout.head_items <= layout.segment_size_off, "head prefix cannot exceed the segment");
+    layout.chunks =
+      static_cast<offset_t>(::cuda::ceil_div(layout.segment_size_off - layout.head_items, offset_t{chunk_items}));
 
     // Effective cluster blocks: the CTAs that actually receive chunks (at least `min_chunks_per_block` each), <= the
     // launched `cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, fold nothing, and never lead --
@@ -2366,8 +2259,10 @@ private:
           && layout.part.global_index(layout.my_chunks - offset_t{1}) == layout.chunks - offset_t{1})
       {
         const auto tail_chunk = get_chunk(layout.chunks - offset_t{1}, layout.segment_size_off, layout.head_items);
-        tail_suffix_items     = split_chunk(layout.block_keys_base, tail_chunk).suffix;
-        owns_suffix_tail      = tail_suffix_items != offset_t{0};
+        tail_suffix_items =
+          static_cast<offset_t>(tail_chunk.count)
+          - ::cuda::round_down(static_cast<offset_t>(tail_chunk.count), static_cast<offset_t>(load_align_items));
+        owns_suffix_tail = tail_suffix_items != offset_t{0};
       }
     }
 
@@ -2425,8 +2320,7 @@ private:
     state_t* leader_state,
     int head_edge_len_items,
     int tail_edge_len_items,
-    ::cuda::std::span<key_t> resident_keys,
-    ::cuda::std::uint32_t resident_smem32,
+    smem_keys_t resident_keys,
     overflow_streamer& streamer,
     key_prefix_t& kth_key_bits_local)
   {
@@ -2450,15 +2344,13 @@ private:
         identify_candidates_op_t identify_op(&kth_key_bits_local, pass, total_bits, decomposer_t{});
         extract_bin_op_t extract_op(pass, total_bits, decomposer_t{});
 
-        // Step 1: block-private histogram via shared-space `red` (see `hist_inc`): leader uses cluster scope to be
-        // mutually atomic with the non-leaders' Step 2 DSMEM folds, non-leaders use the cheaper cta scope.
+        // Step 1: block-private histogram via shared-space `red` at cluster scope (see `hist_inc`).
         const ::cuda::std::uint32_t hist_smem32 = hist_base32();
-        const bool is_leader_cluster_scope      = (cluster_rank == leader_rank) && !is_single_cta;
         auto add_hist                           = [&](const key_t& key) {
           if (identify_op(key) == detail::topk::candidate_class::candidate)
           {
             const int bucket = extract_op(key);
-            hist_inc(hist_smem32, bucket, is_leader_cluster_scope);
+            hist_inc(hist_smem32, bucket);
           }
         };
 
@@ -2468,11 +2360,8 @@ private:
         const auto fold_resident_hist = [&] {
           if constexpr (use_block_load_to_shared)
           {
-            // Rebuild the resident pointer from its 32-bit shared address so the reads stay `LDS` even if the value
-            // spilled across the pass loop (see `resident_smem32`).
-            key_t* const resident_ptr = reinterpret_cast<key_t*>(__cvta_shared_to_generic(resident_smem32));
             for_each_chunk_key<histogram_items_per_thread_clamped>(
-              {resident_ptr, static_cast<::cuda::std::size_t>(span_size(resident_keys))}, add_hist);
+              resident_keys.data(), static_cast<int>(resident_keys.size()), add_hist);
           }
           else
           {
@@ -2480,9 +2369,10 @@ private:
             {
               const offset_t chunk_idx = part.global_index(resident_base + local_chunk);
               const auto chunk         = get_chunk(chunk_idx, segment_size_off, head_items);
-              key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(local_chunk));
               for_each_chunk_key<histogram_items_per_thread_clamped>(
-                {chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, add_hist);
+                ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes),
+                static_cast<int>(chunk.count),
+                add_hist);
             }
           }
         };
@@ -2599,7 +2489,7 @@ private:
           if (static_cast<int>(threadIdx.x) == owner)
           {
             const int slot = bucket - owner * buckets_per_thread;
-            add_local_selected(local_prefixes[slot]);
+            atomicAdd(&temp_storage.num_strictly_selected, local_prefixes[slot]);
             temp_storage.my_candidates = local_hist_vals[slot];
           }
         }
@@ -2664,14 +2554,9 @@ private:
       streamer.is_forward = (!is_tie_reversed) ^ ((num_passes & 1) != 0);
     }
 
-    ::cuda::std::span<key_t> resident_keys;
-    // 32-bit shared-window address of `resident_keys.data()`. The resident span is read once per radix pass and in
-    // the final filter; a 64-bit generic pointer kept live across that loop spills and reloads as a *generic*
-    // pointer (`LDL.64`), which demotes every key read from `LDS` to a generic `LD`. Carrying the base as a 32-bit
-    // shared address and rebuilding the pointer with `__cvta_shared_to_generic` at each use keeps the reads `LDS`
-    // even when the value spills (the cvta intrinsic re-confers shared provenance; a spilled 64-bit generic pointer
-    // cannot be re-anchored after the fact).
-    ::cuda::std::uint32_t resident_smem32 = 0;
+    // Contiguous resident-key window staged in SMEM (block-load path); read once per radix pass and in the final
+    // filter. Rebound to the real resident window by `load_and_histogram_first_pass`.
+    smem_keys_t resident_keys;
 
     // Front-load all stage mbarrier inits before any bulk copy issues; the barrier below orders them ahead of the first
     // issue (see `init_load_barriers`). The generic fallback has no mbarriers but keeps the same pass-start barrier.
@@ -2682,9 +2567,6 @@ private:
     __syncthreads();
 
     load_and_histogram_first_pass<SelectDirection>(
-      cluster_rank,
-      layout.leader_rank,
-      layout.is_single_cta,
       layout.part,
       layout.my_resident_chunks,
       layout.resident_base,
@@ -2696,8 +2578,7 @@ private:
       layout.head_edge_len_items,
       layout.tail_edge_len_items,
       streamer,
-      resident_keys,
-      resident_smem32);
+      resident_keys);
 
     const int last_pass = run_radix_passes<SelectDirection>(
       cluster_rank,
@@ -2713,7 +2594,6 @@ private:
       layout.head_edge_len_items,
       layout.tail_edge_len_items,
       resident_keys,
-      resident_smem32,
       streamer,
       kth_key_bits_local);
 
@@ -2752,7 +2632,6 @@ private:
         layout.segment_size_off,
         layout.head_items,
         layout.leader_state,
-        resident_smem32,
         resident_keys,
         layout.head_edge_len_items,
         layout.tail_edge_len_items,
@@ -2777,7 +2656,6 @@ private:
         layout.my_resident_chunks,
         layout.segment_size_off,
         layout.head_items,
-        resident_smem32,
         resident_keys,
         layout.head_edge_len_items,
         layout.tail_edge_len_items,
