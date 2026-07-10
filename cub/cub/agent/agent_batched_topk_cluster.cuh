@@ -151,17 +151,6 @@ struct smem_block_tile_layout
   }
 };
 
-// True for `cuda::args` segment-size arguments whose exact per-segment value the host cannot know at dispatch time, so
-// the launch is sized for a static upper bound: the `deferred` forms. Combined with `!is_single_value` (any
-// per-segment sequence) this gates the runtime effective-single-CTA path; host-exact `immediate`/`constant` singles,
-// which the dispatch already sizes exactly, are excluded.
-template <class>
-inline constexpr bool __is_deferred_arg_v = false;
-template <class _Arg, class _Bounds>
-inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred<_Arg, _Bounds>> = true;
-template <class _Arg, class _Bounds>
-inline constexpr bool __is_deferred_arg_v<::cuda::args::deferred_sequence<_Arg, _Bounds>> = true;
-
 // -----------------------------------------------------------------------------
 // Occupancy-free cluster-blocks arithmetic (shared by host dispatch and device agent)
 // -----------------------------------------------------------------------------
@@ -277,7 +266,8 @@ struct agent_batched_topk_cluster
   // `immediate`/`constant` singles the dispatch already picks the matching cluster blocks, so the logic is compiled
   // out.
   static constexpr bool enable_runtime_single_cta =
-    !::cuda::args::__traits<SegmentSizeParameterT>::is_single_value || __is_deferred_arg_v<SegmentSizeParameterT>;
+    !::cuda::args::__traits<SegmentSizeParameterT>::is_single_value
+    || ::cuda::args::__traits<SegmentSizeParameterT>::is_deferred;
 
   static constexpr int threads_per_block          = ThreadsPerBlock;
   static constexpr int histogram_items_per_thread = HistogramItemsPerThread;
