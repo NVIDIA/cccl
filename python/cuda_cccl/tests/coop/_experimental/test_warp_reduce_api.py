@@ -4,6 +4,7 @@
 
 import numba
 import numpy as np
+from _utils.device_array import DeviceArray
 from numba import cuda
 
 import cuda.coop._experimental as coop
@@ -30,8 +31,8 @@ def test_warp_reduction():
     # example-end reduce
 
     h_input = np.random.randint(0, 42, 32, dtype=np.int32)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=np.int32)
     kernel[1, 32](d_input, d_output)
     h_output = d_output.copy_to_host()
     h_expected = np.max(h_input)
@@ -53,8 +54,8 @@ def test_warp_sum():
     # example-end sum
 
     h_input = np.ones(32, dtype=np.int32)
-    d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(1, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=np.int32)
     kernel[1, 32](d_input, d_output)
     h_output = d_output.copy_to_host()
 

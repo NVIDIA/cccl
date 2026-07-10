@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import (
@@ -59,7 +58,7 @@ def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, strea
     [True, False],
 )
 def test_scan_array_input(force_inclusive, input_array, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip sass verification if input is complex
     # as LDL/STL instructions are emitted for complex types.
     # Also skip for:
@@ -95,15 +94,16 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     is_short_dtype = dtype.itemsize < 16
     # for small range data types make input small to assure that
     # accumulation does not overflow
-    d_input = input_array[:31] if is_short_dtype else input_array
+    h_input = input_array[:31] if is_short_dtype else input_array
+    d_input = DeviceArray.from_numpy(h_input)
 
     h_init = np.array([42], dtype=dtype)
-    d_output = cp.empty_like(d_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
 
-    scan_device(d_input, d_output, len(d_input), reduce_op, h_init, force_inclusive)
+    scan_device(d_input, d_output, h_input.size, reduce_op, h_init, force_inclusive)
 
-    got = d_output.get()
-    expected = scan_host(d_input.get(), op, h_init, force_inclusive)
+    got = d_output.copy_to_host()
+    expected = scan_host(h_input, op, h_init, force_inclusive)
 
     if np.isdtype(dtype, ("real floating", "complex floating")):
         real_dt = np.finfo(dtype).dtype
@@ -126,11 +126,11 @@ def test_scan_iterator_input(force_inclusive):
     num_items = 1024
     dtype = np.dtype("int32")
     h_init = np.array([42], dtype=dtype)
-    d_output = cp.empty(num_items, dtype=dtype)
+    d_output = DeviceArray.empty(num_items, dtype)
 
     scan_device(d_input, d_output, num_items, op, h_init, force_inclusive)
 
-    got = d_output.get()
+    got = d_output.copy_to_host()
     expected = scan_host(
         np.arange(1, num_items + 1, dtype=dtype), op, h_init, force_inclusive
     )
@@ -150,11 +150,11 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
     d_input = ReverseIterator(CountingIterator(np.int32(num_items)))
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
-    d_output = cp.empty(num_items, dtype=dtype)
+    d_output = DeviceArray.empty(num_items, dtype)
 
     scan_device(d_input, d_output, num_items, op, h_init, force_inclusive)
 
-    got = d_output.get()
+    got = d_output.copy_to_host()
     expected = scan_host(
         np.arange(num_items, 0, -1, dtype=dtype), op, h_init, force_inclusive
     )
@@ -176,19 +176,20 @@ def test_scan_struct_type(force_inclusive):
     def op(a, b):
         return XY(a.x + b.x, a.y + b.y)
 
-    d_input = cp.random.randint(0, 256, (10, 2), dtype=np.int32).view(XY.dtype)
-    d_output = cp.empty_like(d_input)
+    h_input = np.random.randint(0, 256, (10, 2), dtype=np.int32).view(XY.dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
 
     h_init = XY(0, 0)
 
-    scan_device(d_input, d_output, len(d_input), op, h_init, force_inclusive)
+    scan_device(d_input, d_output, len(h_input), op, h_init, force_inclusive)
 
-    got = d_output.get()
+    got = d_output.copy_to_host()
     expected_x = scan_host(
-        d_input.get()["x"], lambda a, b: a + b, np.asarray([h_init.x]), force_inclusive
+        h_input["x"], lambda a, b: a + b, np.asarray([h_init.x]), force_inclusive
     )
     expected_y = scan_host(
-        d_input.get()["y"], lambda a, b: a + b, np.asarray([h_init.y]), force_inclusive
+        h_input["y"], lambda a, b: a + b, np.asarray([h_init.y]), force_inclusive
     )
 
     np.testing.assert_allclose(expected_x, got["x"], rtol=1e-5)
@@ -203,20 +204,18 @@ def test_scan_with_stream(force_inclusive, cuda_stream):
     def op(a, b):
         return a + b
 
-    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
-
-    with cp_stream:
-        d_input = cp.random.randint(0, 256, 1024, dtype=np.int32)
-        d_output = cp.empty_like(d_input)
+    h_input = np.random.randint(0, 256, 1024, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input, stream=cuda_stream)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype, stream=cuda_stream)
 
     h_init = np.array([42], dtype=np.int32)
 
     scan_device(
-        d_input, d_output, len(d_input), op, h_init, force_inclusive, stream=cuda_stream
+        d_input, d_output, h_input.size, op, h_init, force_inclusive, stream=cuda_stream
     )
 
-    got = d_output.get()
-    expected = scan_host(d_input.get(), op, h_init, force_inclusive)
+    got = d_output.copy_to_host(stream=cuda_stream)
+    expected = scan_host(h_input, op, h_init, force_inclusive)
 
     np.testing.assert_allclose(expected, got, rtol=1e-5)
 
@@ -224,23 +223,24 @@ def test_scan_with_stream(force_inclusive, cuda_stream):
 def test_exclusive_scan_well_known_plus():
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
-    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
-    d_output = cp.empty_like(d_input, dtype=dtype)
+    h_input = np.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, dtype)
 
     cuda.compute.exclusive_scan(
         d_in=d_input,
         d_out=d_output,
         op=OpKind.PLUS,
         init_value=h_init,
-        num_items=d_input.size,
+        num_items=h_input.size,
     )
 
     expected = np.array([0, 1, 3, 6, 10])
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 def test_inclusive_scan_well_known_plus(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -254,19 +254,20 @@ def test_inclusive_scan_well_known_plus(monkeypatch):
 
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
-    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
-    d_output = cp.empty_like(d_input, dtype=dtype)
+    h_input = np.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, dtype)
 
     cuda.compute.inclusive_scan(
         d_in=d_input,
         d_out=d_output,
         op=OpKind.PLUS,
         init_value=h_init,
-        num_items=d_input.size,
+        num_items=h_input.size,
     )
 
     expected = np.array([1, 3, 6, 10, 15])
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 @pytest.mark.xfail(
@@ -275,19 +276,20 @@ def test_inclusive_scan_well_known_plus(monkeypatch):
 def test_exclusive_scan_well_known_maximum():
     dtype = np.int32
     h_init = np.array([1], dtype=dtype)
-    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=dtype)
-    d_output = cp.empty_like(d_input, dtype=dtype)
+    h_input = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, dtype)
 
     cuda.compute.exclusive_scan(
         d_in=d_input,
         d_out=d_output,
         op=OpKind.MAXIMUM,
         init_value=h_init,
-        num_items=d_input.size,
+        num_items=h_input.size,
     )
 
     expected = np.array([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 def test_scan_transform_output_iterator(floating_array):
@@ -296,8 +298,9 @@ def test_scan_transform_output_iterator(floating_array):
     h_init = np.array([0], dtype=dtype)
 
     # Use the floating_array fixture which provides random floating-point data of size 1000
-    d_input = floating_array
-    d_output = cp.empty_like(d_input, dtype=dtype)
+    h_input = floating_array
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, dtype)
 
     def square(x: dtype) -> dtype:
         return x * x
@@ -309,15 +312,17 @@ def test_scan_transform_output_iterator(floating_array):
         d_out=d_out_it,
         op=OpKind.PLUS,
         init_value=h_init,
-        num_items=d_input.size,
+        num_items=h_input.size,
     )
 
-    expected = cp.cumsum(d_input) ** 2
+    expected = np.cumsum(h_input) ** 2
     # Use more lenient tolerance for float32 due to precision differences
     if dtype == np.float32:
-        np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
+        np.testing.assert_allclose(
+            d_output.copy_to_host(), expected, atol=1e-4, rtol=1e-4
+        )
     else:
-        np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
+        np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-6)
 
 
 def test_exclusive_scan_max():
@@ -325,19 +330,20 @@ def test_exclusive_scan_max():
         return max(a, b)
 
     h_init = np.array([1], dtype="int32")
-    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
-    d_output = cp.empty_like(d_input, dtype="int32")
+    h_input = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
 
     cuda.compute.exclusive_scan(
         d_in=d_input,
         d_out=d_output,
         op=max_op,
         init_value=h_init,
-        num_items=d_input.size,
+        num_items=h_input.size,
     )
 
     expected = np.asarray([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 def test_inclusive_scan_add():
@@ -345,23 +351,24 @@ def test_inclusive_scan_add():
         return a + b
 
     h_init = np.array([0], dtype="int32")
-    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
-    d_output = cp.empty_like(d_input, dtype="int32")
+    h_input = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
 
     cuda.compute.inclusive_scan(
         d_in=d_input,
         d_out=d_output,
         op=add_op,
         init_value=h_init,
-        num_items=d_input.size,
+        num_items=h_input.size,
     )
 
     expected = np.asarray([-5, -5, -3, -6, -4, 0, 0, -1, 1, 9])
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 def test_reverse_input_iterator(monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
@@ -377,8 +384,9 @@ def test_reverse_input_iterator(monkeypatch):
         return a + b
 
     h_init = np.array([0], dtype="int32")
-    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
-    d_output = cp.empty_like(d_input, dtype="int32")
+    h_input = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
     reverse_it = ReverseIterator(d_input)
 
     cuda.compute.inclusive_scan(
@@ -386,12 +394,12 @@ def test_reverse_input_iterator(monkeypatch):
         d_out=d_output,
         op=add_op,
         init_value=h_init,
-        num_items=len(d_input),
+        num_items=h_input.size,
     )
 
     # Check the result is correct
     expected = np.asarray([8, 10, 9, 9, 13, 15, 12, 14, 14, 9])
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 @pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
@@ -400,8 +408,9 @@ def test_reverse_output_iterator():
         return a + b
 
     h_init = np.array([0], dtype="int32")
-    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
-    d_output = cp.empty_like(d_input, dtype="int32")
+    h_input = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
     reverse_it = ReverseIterator(d_output)
 
     cuda.compute.inclusive_scan(
@@ -409,11 +418,11 @@ def test_reverse_output_iterator():
         d_out=reverse_it,
         op=add_op,
         init_value=h_init,
-        num_items=len(d_input),
+        num_items=h_input.size,
     )
 
     expected = np.asarray([9, 1, -1, 0, 0, -4, -6, -3, -5, -5])
-    np.testing.assert_equal(d_output.get(), expected)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
 @pytest.mark.parametrize(
@@ -424,16 +433,16 @@ def test_future_init_value(force_inclusive):
     num_items = 1024
     dtype = np.dtype("int32")
 
-    d_input = cp.random.randint(0, 256, num_items, dtype=dtype)
-    d_output = cp.empty_like(d_input)
-    init_value = cp.array([42], dtype=dtype)
+    h_input = np.random.randint(0, 256, num_items, dtype=dtype)
+    h_init = np.array([42], dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
+    init_value = DeviceArray.from_numpy(h_init)
 
     scan_device(d_input, d_output, num_items, OpKind.PLUS, init_value, force_inclusive)
 
-    got = d_output.get()
-    expected = scan_host(
-        d_input.get(), lambda a, b: a + b, init_value.get(), force_inclusive
-    )
+    got = d_output.copy_to_host()
+    expected = scan_host(h_input, lambda a, b: a + b, h_init, force_inclusive)
     np.testing.assert_array_equal(expected, got)
 
 
@@ -443,7 +452,7 @@ def test_no_init_value(monkeypatch):
     dtype = np.dtype("int32")
 
     # Skip SASS check for CC 9.0 due to LDL/STL CI failure.
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    cc_major, _ = get_compute_capability()
     if cc_major >= 9:
         import cuda.compute._cccl_interop
 
@@ -453,13 +462,14 @@ def test_no_init_value(monkeypatch):
             False,
         )
 
-    d_input = cp.random.randint(0, 256, num_items, dtype=dtype)
-    d_output = cp.empty_like(d_input)
+    h_input = np.random.randint(0, 256, num_items, dtype=dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
 
     scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
 
-    got = d_output.get()
-    expected = scan_host(d_input.get(), lambda a, b: a + b, [0], force_inclusive)
+    got = d_output.copy_to_host()
+    expected = scan_host(h_input, lambda a, b: a + b, [0], force_inclusive)
     np.testing.assert_array_equal(expected, got)
 
 
@@ -469,11 +479,11 @@ def test_no_init_value_iterator():
     dtype = np.dtype("float64")
 
     d_input = CountingIterator(np.float64(0))
-    d_output = cp.empty(num_items, dtype=dtype)
+    d_output = DeviceArray.empty(num_items, dtype)
 
     scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
 
-    got = d_output.get()
+    got = d_output.copy_to_host()
     expected = scan_host(
         np.arange(0, num_items, dtype=dtype), lambda a, b: a + b, [0], force_inclusive
     )
@@ -484,8 +494,9 @@ def test_no_init_value_iterator():
 def test_inclusive_scan_with_lambda():
     """Test inclusive_scan with a lambda function as the scan operator."""
     h_init = np.array([0], dtype=np.int32)
-    d_input = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
-    d_output = cp.empty_like(d_input)
+    h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
 
     # Use a lambda function directly as the scan operator
     cuda.compute.inclusive_scan(
@@ -493,21 +504,22 @@ def test_inclusive_scan_with_lambda():
         d_out=d_output,
         op=lambda a, b: a + b,
         init_value=h_init,
-        num_items=len(d_input),
+        num_items=h_input.size,
     )
 
     expected = np.array([1, 3, 6, 10, 15], dtype=np.int32)
-    np.testing.assert_array_equal(d_output.get(), expected)
+    np.testing.assert_array_equal(d_output.copy_to_host(), expected)
 
 
 @pytest.mark.parametrize("force_inclusive", [True, False])
 def test_scan_bool_maximum(force_inclusive):
     h_init = np.array([False], dtype=np.bool_)
-    d_input = cp.array([False, True, False, True], dtype=np.bool_)
-    d_output = cp.empty_like(d_input)
+    h_input = np.array([False, True, False, True], dtype=np.bool_)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(h_input.shape, h_input.dtype)
 
     scan_device(
-        d_input, d_output, len(d_input), OpKind.MAXIMUM, h_init, force_inclusive
+        d_input, d_output, h_input.size, OpKind.MAXIMUM, h_init, force_inclusive
     )
 
     if force_inclusive:
@@ -515,7 +527,7 @@ def test_scan_bool_maximum(force_inclusive):
     else:
         expected = np.array([False, False, True, True], dtype=np.bool_)
 
-    np.testing.assert_array_equal(d_output.get(), expected)
+    np.testing.assert_array_equal(d_output.copy_to_host(), expected)
 
 
 def _run(scanner, *, d_in, d_out, op, init_value, num_items):
@@ -540,8 +552,9 @@ def _run(scanner, *, d_in, d_out, op, init_value, num_items):
 
 @pytest.mark.serialization
 def test_serialize_deserialize_exclusive_scan_round_trip():
-    d_in = cp.arange(1, 33, dtype=cp.int32)
-    d_out = cp.empty_like(d_in)
+    h_in = np.arange(1, 33, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
     init_value = np.array([0], dtype=np.int32)
 
     builder = make_exclusive_scan(
@@ -557,18 +570,19 @@ def test_serialize_deserialize_exclusive_scan_round_trip():
         d_out=d_out,
         op=OpKind.PLUS,
         init_value=init_value,
-        num_items=d_in.size,
+        num_items=h_in.size,
     )
 
-    expected = np.zeros_like(d_in.get())
-    np.cumsum(d_in.get()[:-1], out=expected[1:])
-    np.testing.assert_array_equal(d_out.get(), expected)
+    expected = np.zeros_like(h_in)
+    np.cumsum(h_in[:-1], out=expected[1:])
+    np.testing.assert_array_equal(d_out.copy_to_host(), expected)
 
 
 @pytest.mark.serialization
 def test_serialize_deserialize_inclusive_scan_round_trip():
-    d_in = cp.arange(1, 33, dtype=cp.int32)
-    d_out = cp.empty_like(d_in)
+    h_in = np.arange(1, 33, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
     init_value = np.array([0], dtype=np.int32)
 
     builder = make_inclusive_scan(
@@ -583,18 +597,19 @@ def test_serialize_deserialize_inclusive_scan_round_trip():
         d_out=d_out,
         op=OpKind.PLUS,
         init_value=init_value,
-        num_items=d_in.size,
+        num_items=h_in.size,
     )
 
-    np.testing.assert_array_equal(d_out.get(), np.cumsum(d_in.get()))
+    np.testing.assert_array_equal(d_out.copy_to_host(), np.cumsum(h_in))
 
 
 @pytest.mark.serialization
 def test_deserialize_after_jit_matches_jit_result():
     """Serialize a JITed scan, deserialize, and confirm output matches a fresh JIT."""
-    d_in = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=cp.int32)
-    d_out_jit = cp.empty_like(d_in)
-    d_out_serialization = cp.empty_like(d_in)
+    h_in = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out_jit = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_out_serialization = DeviceArray.empty(h_in.shape, h_in.dtype)
     init_value = np.array([1], dtype=np.int32)
 
     def max_op(a, b):
@@ -617,7 +632,7 @@ def test_deserialize_after_jit_matches_jit_result():
         d_out=d_out_serialization,
         op=max_op,
         init_value=init_value,
-        num_items=d_in.size,
+        num_items=h_in.size,
     )
 
     # Compute the JIT reference only after the serialization path has already run.
@@ -626,7 +641,9 @@ def test_deserialize_after_jit_matches_jit_result():
         d_out=d_out_jit,
         op=max_op,
         init_value=init_value,
-        num_items=d_in.size,
+        num_items=h_in.size,
     )
 
-    np.testing.assert_array_equal(d_out_serialization.get(), d_out_jit.get())
+    np.testing.assert_array_equal(
+        d_out_serialization.copy_to_host(), d_out_jit.copy_to_host()
+    )
