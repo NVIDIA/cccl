@@ -19,8 +19,9 @@
 //!      via cluster-scope DSMEM atomics. The leader's `hist` therefore plays
 //!      a dual role: its own block-private histogram in step 1, then the
 //!      cluster-merged histogram after the second cluster sync.
-//!   3. The leader's thread 0 prefix-scans `hist`, identifies the bucket of
-//!      the k-th key, and updates the cluster-shared `state`. Every block
+//!   3. The leader block prefix-scans `hist` (a block-wide scan) and identifies
+//!      the bucket of the k-th key; its owning lane updates the cluster-shared
+//!      `state`. Every block
 //!      reads the leader's packed `state.result_pair` (splitter bucket plus
 //!      early-stop flag) from the leader via DSMEM at the end of each pass and
 //!      folds the bucket into its own local splitter key.
@@ -582,9 +583,9 @@ struct agent_batched_topk_cluster
   _CCCL_DEVICE _CCCL_FORCEINLINE void issue_bulk_copy(int stage, char* dst, ::cuda::std::span<const key_t> src)
   {
     _CCCL_ASSERT(stage >= 0 && stage < PipelineStages, "pipeline stage index out of range");
-    // Only the block leader (see `is_load_leader`) drives the mbarrier, for a uniform branch and better mbarrier
+    // Only the block leader (see `is_block_leader`) drives the mbarrier, for a uniform branch and better mbarrier
     // codegen.
-    if (!is_load_leader)
+    if (!is_block_leader)
     {
       return;
     }
@@ -683,9 +684,11 @@ struct agent_batched_topk_cluster
   // Per-thread mbarrier phase parity, one bit per pipeline stage (see `wait_stage`); the resident load and the
   // overflow stream keep their per-stage issue/wait calls balanced so each bit tracks its mbarrier's phase.
   ::cuda::std::uint32_t load_phase{};
-  // The single block leader (warp 0's elected lane) that drives the bulk copies. Elected once at construction (the
-  // block constructs convergently) and cached so the pipeline reuses it instead of re-electing per copy.
-  const bool is_load_leader = ::cuda::device::__block_elect_one();
+  // The single block leader (warp 0's elected lane) for all block-wide single-thread work: the bulk copies and the
+  // arbitrary `threadIdx.x == 0` picks (state init, counter seeding). Elected once at construction (convergent there)
+  // and cached, so callers reuse it instead of re-electing; the `elect.sync` predicate also keeps each guarded branch
+  // on a uniform data path.
+  const bool is_block_leader = ::cuda::device::__block_elect_one();
   // This thread's block-local index, signed for the agent's block-stride loops and cached to avoid re-casting
   // `threadIdx.x` at each site.
   const int tid = static_cast<int>(threadIdx.x);
@@ -1220,7 +1223,7 @@ private:
     if (is_single_cta)
     {
       // No peers: the front base is 0 (untouched since init) and the back base is just `num_selected`.
-      if (tid == 0)
+      if (is_block_leader)
       {
         temp_storage.back_local_cnt = num_selected;
       }
@@ -1228,7 +1231,7 @@ private:
       return ::cuda::std::uint64_t{0};
     }
     // Fold this CTA's back base in parallel with the peers pushing their candidate counts into the same counter.
-    if (tid == 0)
+    if (is_block_leader)
     {
       seed_local_back(num_selected);
     }
@@ -2872,12 +2875,12 @@ private:
       return;
     }
 
-    // Every block's thread 0 initializes its local `state`. Only the
-    // leader's copy is semantically read (non-leaders reach the cluster
-    // state through `leader_state`), but mirroring the writes everywhere
+    // Every block's elected leader initializes its local `state`. Only the
+    // leader block's copy is semantically read (non-leaders reach the cluster
+    // state through `leader_state`), but mirroring the write in every block
     // keeps every block's unconditional `state.k` load safe under
     // compute-sanitizer.
-    if (tid == 0)
+    if (is_block_leader)
     {
       temp_storage.state.len         = static_cast<offset_t>(segment_size);
       temp_storage.state.k           = k;
