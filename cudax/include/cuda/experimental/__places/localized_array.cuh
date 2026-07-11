@@ -87,6 +87,27 @@ struct localized_stats
 };
 
 /**
+ * @brief Placement granularity used when the caller does not specify one:
+ * the device allocation granularity when a device is present, or the
+ * customary 2 MiB VMM granularity for GPU-free (offline) evaluation. The
+ * granularity query is the only driver interaction.
+ */
+inline size_t default_placement_block_size()
+{
+  int ndevs = 0;
+  if (cudaGetDeviceCount(&ndevs) == cudaSuccess && ndevs > 0)
+  {
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+    prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
+    prop.location.id         = 0;
+    return cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
+  }
+  cudaGetLastError();
+  return 2 * 1024 * 1024;
+}
+
+/**
  * @brief Decide the owner of each placement block by sampled majority vote.
  *
  * For each block, `probes` elements are sampled (reproducibly: one seeded
@@ -98,15 +119,29 @@ struct localized_stats
  * @param owner_of Callable mapping a linear element index to the pos4 of its
  *        owner in the grid
  * @param nblocks Number of placement blocks
- * @param block_elems Number of elements per block
+ * @param block_size_bytes Size of a placement block in bytes (must be at
+ *        least ``elemsize``)
+ * @param elemsize Size of one element in bytes (must be at least 1)
  * @param total_elems Total number of elements (probes are clipped to it)
  * @param probes Number of samples per block
  * @param stats Accumulates total/matching sample counts
  */
 template <typename OwnerFn>
 ::std::vector<pos4> compute_block_owners(
-  OwnerFn&& owner_of, size_t nblocks, size_t block_elems, size_t total_elems, size_t probes, localized_stats& stats)
+  OwnerFn&& owner_of,
+  size_t nblocks,
+  size_t block_size_bytes,
+  size_t elemsize,
+  size_t total_elems,
+  size_t probes,
+  localized_stats& stats)
 {
+  if (elemsize == 0 || block_size_bytes < elemsize)
+  {
+    throw ::std::invalid_argument("placement blocks must hold at least one element (elemsize in [1, block size])");
+  }
+  const size_t block_elems = block_size_bytes / elemsize;
+
   // Fixed seed: placement must be reproducible from one run to the next
   ::std::mt19937 gen(0x5EED);
   ::std::uniform_int_distribution<size_t> dis(0, block_elems - 1);
@@ -119,7 +154,9 @@ template <typename OwnerFn>
   ::std::vector<pos4> sampled_pos(probes);
   for (size_t i = 0; i < nblocks; i++)
   {
-    const size_t block_start = i * block_elems;
+    // First element of the block (exact, so non-dividing element sizes do
+    // not accumulate drift across blocks)
+    const size_t block_start = i * block_size_bytes / elemsize;
     for (size_t sample = 0; sample < probes; sample++)
     {
       // Clip: the last block may extend past the payload
@@ -286,7 +323,8 @@ public:
     // tuple arguments :
     // 0 : grid, 1 : mapper, 2 : delinearize function, 3 : total size, 4 elem_size, 5 : data_dims
     bool result = grid == ::std::get<0>(t) && mapper == ::std::get<1>(t)
-               && this->total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t) && elemsize == ::std::get<4>(t);
+               && this->total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t) && elemsize == ::std::get<4>(t)
+               && data_dims == ::std::get<5>(t);
     if (result)
     {
       assert(this->total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t));
@@ -298,6 +336,11 @@ public:
 private:
   void init(const ::std::function<pos4(size_t)>& owner_of, size_t total_size, size_t probes)
   {
+    if (elemsize == 0)
+    {
+      throw ::std::invalid_argument("localized_array requires an element size of at least 1 byte");
+    }
+
     cuda_try(cudaFree(nullptr));
 
     const int ndevs = cuda_try<cudaGetDeviceCount>();
@@ -336,7 +379,7 @@ private:
     stats.nblocks     = nblocks;
 
     const ::std::vector<pos4> owners =
-      compute_block_owners(owner_of, nblocks, block_size_bytes / elemsize, total_size, probes, stats);
+      compute_block_owners(owner_of, nblocks, block_size_bytes, elemsize, total_size, probes, stats);
 
     meta.reserve(nblocks);
 
@@ -509,7 +552,7 @@ private:
  *        allocation granularity when a device is present, or a 2 MiB default
  *        otherwise (this granularity query is the only driver interaction)
  */
-inline localized_stats evaluate_localized_placement(
+[[nodiscard]] inline localized_stats evaluate_localized_placement(
   const exec_place& grid,
   partition_fn_t mapper,
   dim4 data_dims,
@@ -519,21 +562,7 @@ inline localized_stats evaluate_localized_placement(
 {
   if (block_size == 0)
   {
-    int ndevs = 0;
-    if (cudaGetDeviceCount(&ndevs) == cudaSuccess && ndevs > 0)
-    {
-      CUmemAllocationProp prop = {};
-      prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
-      prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
-      prop.location.id         = 0;
-      block_size               = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
-    }
-    else
-    {
-      // GPU-free (offline) evaluation: use the customary VMM granularity
-      cudaGetLastError();
-      block_size = 2 * 1024 * 1024;
-    }
+    block_size = default_placement_block_size();
   }
 
   localized_stats stats;
@@ -553,7 +582,8 @@ inline localized_stats evaluate_localized_placement(
       return eplace_coords;
     },
     stats.nblocks,
-    block_size / elemsize,
+    block_size,
+    elemsize,
     total_elems,
     probes,
     stats);

@@ -105,7 +105,16 @@ public:
     // allocation path so the two conventions cannot drift.
     static_assert(dimensions <= 4);
     auto delinearize = [data_dims](size_t ind) {
-      return data_dims.index_to_pos(ind);
+      // Rank-0 (scalar) slices have no coordinates (get_data_dims() reports
+      // an extent of 0 there, so index_to_pos must not be used)
+      if constexpr (dimensions == 0)
+      {
+        return pos4(0, 0, 0, 0);
+      }
+      else
+      {
+        return data_dims.index_to_pos(ind);
+      }
     };
 
     auto [array, cached_prereqs] = bctx.get_composite_cache().get(
