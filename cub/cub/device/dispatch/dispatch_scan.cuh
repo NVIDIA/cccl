@@ -491,16 +491,20 @@ struct DispatchScan
     const int grid_dim =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
 
+    size_t allocation_sizes[1] = {static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size()};
+    void* allocations[1]       = {};
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
+
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size();
       return cudaSuccess;
     }
 
-    if (num_items == 0)
-    {
-      return cudaSuccess;
-    }
+    void* const d_tile_state = allocations[0];
 
     int sm_count = 0;
     if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
@@ -514,9 +518,6 @@ struct DispatchScan
     {
       return error;
     }
-
-    // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
-    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
     auto scan_kernel                 = kernel_source.ScanKernel();
     [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
@@ -591,7 +592,7 @@ struct DispatchScan
                              stream,
                              /* dependent_launch */ ptx_version >= 900)
               .doit(kernel_source.InitKernel(),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_tile_state),
                     grid_dim)))
       {
         return error;
@@ -623,7 +624,7 @@ struct DispatchScan
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_tile_state),
                     /* start_tile, unused */ 0,
                     ::cuda::std::move(scan_op),
                     init_value,
