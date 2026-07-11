@@ -13,7 +13,7 @@
  *
  * @brief Test placement evaluation and geometry-aware (shaped) composite
  *        allocation: evaluate_localized_placement(), the
- *        allocate(data_dims, elemsize) data_place interface, and
+ *        allocate_nd(data_dims, elemsize) data_place interface, and
  *        cute_partition-backed composite places.
  *
  * Runs on a single GPU (all places on device 0); with two or more GPUs it
@@ -201,7 +201,7 @@ void test_shaped_alloc_callback_composite(int ndevs)
   }
   EXPECT(thrown, "byte-count allocate on a composite place must throw");
 
-  void* ptr = dp.allocate(data_dims, sizeof(int));
+  void* ptr = dp.allocate_nd(data_dims, sizeof(int));
   EXPECT(ptr != nullptr);
 
   write_and_check(static_cast<int*>(ptr), n, 17);
@@ -227,7 +227,7 @@ void test_shaped_alloc_cute_composite(int ndevs)
   bool thrown = false;
   try
   {
-    dp.allocate(dim4(n / 2), sizeof(int));
+    dp.allocate_nd(dim4(n / 2), sizeof(int));
   }
   catch (const ::std::invalid_argument&)
   {
@@ -235,7 +235,7 @@ void test_shaped_alloc_cute_composite(int ndevs)
   }
   EXPECT(thrown, "extent mismatch with the partition must throw");
 
-  void* ptr = dp.allocate(data_dims, sizeof(int));
+  void* ptr = dp.allocate_nd(data_dims, sizeof(int));
   EXPECT(ptr != nullptr);
 
   write_and_check(static_cast<int*>(ptr), n, 41);
@@ -277,7 +277,7 @@ void test_multi_gpu_residency(int ndevs)
   auto grid = make_grid(mv(places));
 
   data_place dp = data_place::composite(blocked_partition_custom<0>{}, grid);
-  void* ptr     = dp.allocate(data_dims, sizeof(int));
+  void* ptr     = dp.allocate_nd(data_dims, sizeof(int));
   EXPECT(ptr != nullptr);
 
   // Each half of the range must be physically backed by its owner
