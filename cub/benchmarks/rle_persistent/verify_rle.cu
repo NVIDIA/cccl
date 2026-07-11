@@ -3,6 +3,7 @@
 
 #include <cuda/std/complex>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <random>
@@ -25,17 +26,24 @@
     }                                                                                      \
   } while (0)
 
+// max_seg > 0: run lengths uniform in [1, max_seg]; max_seg == 0: one constant key for the whole
+// input; max_seg < 0: every run exactly -max_seg long (deterministic head positions)
 template <class T>
 static std::vector<T> gen_keys(long long n, int max_seg, unsigned seed)
 {
   std::vector<T> k((size_t) n);
+  if (max_seg == 0)
+  {
+    std::fill(k.begin(), k.end(), T(7));
+    return k;
+  }
   std::mt19937 rng(seed);
-  std::uniform_int_distribution<int> seg(1, max_seg), kd(0, 1000000);
+  std::uniform_int_distribution<int> seg(1, std::max(1, max_seg)), kd(0, 1000000);
   long long i = 0;
   T prev      = T(-1);
   while (i < n)
   {
-    int run = seg(rng);
+    int run = (max_seg < 0) ? -max_seg : seg(rng);
     T v     = T(kd(rng));
     for (int tries = 0; v == prev && tries < 8; ++tries)
     {
@@ -213,6 +221,11 @@ static int run_combo(const char* t_name, const char* off_name, const char* len_n
     {1 << 28, 1048576}, // full bench size, longest regime
     {1030 * kTileSize + 7, 1, 1}, // misaligned d_keys, dense + partial tail (above the stock-dispatch cutoff)
     {2048 * kTileSize, 32, 1}, // misaligned d_keys, mid, full last tile
+    {1024ll * kTileSize, 1}, // exactly at the dispatch boundary, dense, full last tile
+    {1024ll * kTileSize + 1, 1000000}, // one-element last tile, open run crossing into it
+    {1024ll * kTileSize, 0}, // one constant run over the whole input: poll folds 1023 headless tiles
+    {1024ll * kTileSize, -kTileSize}, // run == tile: a head at element 0 of every tile
+    {1200ll * kTileSize + 3, -(kTileSize + 1)}, // run == tile+1: head position drifts through every tile offset
   };
   int fails = 0;
   for (const Case& c : cases)
