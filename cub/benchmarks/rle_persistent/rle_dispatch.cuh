@@ -69,7 +69,8 @@ inline cudaError_t persistent_rle_encode(
   {
     return error;
   }
-  if (tiles < kStockDispatchTiles || tiles > 0x7fffffff || cc_major < 10 || (size_t) smem_optin < Config::kDynSmem)
+  if (tiles < kStockDispatchTiles || tiles > 0x7fffffff || ((size_t) d_keys & 15u) != 0 || cc_major < 10
+      || (size_t) smem_optin < Config::kDynSmem)
   {
     return cub::DeviceRunLengthEncode::Encode(
       d_temp_storage, temp_storage_bytes, d_keys, d_unique, d_counts, d_num_runs, num_items, stream);
