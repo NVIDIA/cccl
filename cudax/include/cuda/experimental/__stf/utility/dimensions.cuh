@@ -184,6 +184,20 @@ public:
     return dim4(::std::min(a.x, b.x), ::std::min(a.y, b.y), ::std::min(a.z, b.z), ::std::min(a.t, b.t));
   }
 
+  /// Get the coordinate corresponding to a 1D index within a dim4 class
+  /// (inverse of get_index: dimension 0 varies fastest)
+  _CCCL_HOST_DEVICE constexpr pos4 index_to_pos(size_t index) const
+  {
+    _CCCL_ASSERT(index < size(), "invalid index");
+    const size_t px = index % x;
+    index /= x;
+    const size_t py = index % y;
+    index /= y;
+    const size_t pz = index % z;
+    index /= z;
+    return pos4(px, py, pz, index);
+  }
+
   /// Get the 1D index of a coordinate defined by a pos4 class within a dim4 class
   _CCCL_HOST_DEVICE constexpr size_t get_index(const pos4& p) const
   {

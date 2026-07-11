@@ -71,6 +71,10 @@ public:
     return 0;
   }
 
+  // Un-hide the geometry-aware allocate() overload (this class only
+  // overrides the byte-count form; the base default applies otherwise)
+  using data_place_interface::allocate;
+
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
     throw ::std::logic_error("Cannot allocate from invalid data_place");
@@ -121,6 +125,10 @@ public:
     }
     return 0;
   }
+
+  // Un-hide the geometry-aware allocate() overload (this class only
+  // overrides the byte-count form; the base default applies otherwise)
+  using data_place_interface::allocate;
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
   {
@@ -190,6 +198,10 @@ public:
     return 0;
   }
 
+  // Un-hide the geometry-aware allocate() overload (this class only
+  // overrides the byte-count form; the base default applies otherwise)
+  using data_place_interface::allocate;
+
   void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
   {
     void* result = nullptr;
@@ -249,6 +261,10 @@ public:
     return (device_id_ > static_cast<const data_place_device&>(other).device_id_)
          - (device_id_ < static_cast<const data_place_device&>(other).device_id_);
   }
+
+  // Un-hide the geometry-aware allocate() overload (this class only
+  // overrides the byte-count form; the base default applies otherwise)
+  using data_place_interface::allocate;
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
@@ -345,6 +361,10 @@ public:
     return 0;
   }
 
+  // Un-hide the geometry-aware allocate() overload (this class only
+  // overrides the byte-count form; the base default applies otherwise)
+  using data_place_interface::allocate;
+
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
     throw ::std::logic_error("Cannot allocate from affine data_place directly");
@@ -395,6 +415,10 @@ public:
     }
     return 0;
   }
+
+  // Un-hide the geometry-aware allocate() overload (this class only
+  // overrides the byte-count form; the base default applies otherwise)
+  using data_place_interface::allocate;
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {

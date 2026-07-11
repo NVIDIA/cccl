@@ -1,0 +1,834 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDASTF in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+/**
+ * @file
+ * @brief Structured tensor partitions described as CuTe-style strided layouts
+ *
+ * A cute_partition describes how a (padded) tensor is distributed over a grid
+ * of places as a two-mode layout: a "place" mode enumerating the places and a
+ * "local" mode enumerating the elements owned by one place. Both modes are
+ * flattened lists of (extent, stride) leaves; strides are in linear element
+ * units over the PADDED extents, with dimension 0 varying fastest (the
+ * convention of dim4::get_index; row-major front-ends should reverse their
+ * dimensions when constructing).
+ *
+ * Padding is the key soundness ingredient (the CuTe "predication" idiom:
+ * partition the rounded-up shape, predicate against the true extents). Each
+ * split dimension is padded so the layout is exact and bijective over the
+ * padded space, which makes validation O(leaves) and ownership queries a
+ * closed-form divmod chain; coordinates beyond the true extents simply own no
+ * bytes. No dependency on CUTLASS/CuTe: only the trivial mixed-radix subset
+ * of the layout algebra is needed, precisely because exactness is required.
+ *
+ * This type is a structured *generator* for the owner function consumed by
+ * the localized allocation machinery (localized_array,
+ * evaluate_localized_placement): it deliberately does not compute placement
+ * plans itself - the block-majority engine decides where blocks live.
+ */
+
+#pragma once
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__places/localized_array.cuh>
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh>
+#include <cuda/experimental/__places/places.cuh>
+
+#include <algorithm>
+#include <array>
+#include <stdexcept>
+#include <vector>
+
+namespace cuda::experimental::places
+{
+/**
+ * @brief One (extent, stride) leaf of a flattened layout mode
+ *
+ * Strides are in linear element units over the padded extents, dimension 0
+ * varying fastest.
+ */
+struct layout_leaf
+{
+  size_t extent;
+  ::std::ptrdiff_t stride;
+};
+
+/**
+ * @brief Per-dimension entry of a JAX-like partition specification
+ *
+ * Describes how one tensor dimension maps onto the grid: not at all (whole),
+ * or distributed over one grid axis with a named policy.
+ */
+enum class dim_policy
+{
+  whole, //!< dimension is not distributed
+  blocked, //!< contiguous chunks of ceil(extent / places)
+  cyclic, //!< round-robin elements
+  block_cyclic //!< round-robin blocks of a given size
+};
+
+struct dim_spec
+{
+  dim_policy policy = dim_policy::whole;
+  int mesh_axis     = -1; //!< grid axis this dimension distributes over
+  size_t block      = 0; //!< block size (block_cyclic only)
+};
+
+/**
+ * @brief A structured description of a tensor partition over a grid of places
+ *
+ * See the file-level documentation for the representation. Construct either
+ * directly from leaves (expert form) or through make_partition() (JAX-like
+ * per-dimension specification).
+ */
+class cute_partition
+{
+public:
+  /**
+   * @brief Construct a partition from flattened leaves (expert form)
+   *
+   * @param place_leaves Leaves of the place mode, leaf 0 fastest; one leaf
+   *        per used grid axis
+   * @param place_axes Grid axis associated with each place leaf
+   * @param local_leaves Leaves of the local mode, leaf 0 fastest
+   * @param padded_dims Padded tensor extents the strides refer to
+   * @param true_dims True tensor extents (the predicate)
+   * @param grid_dims Extents of the grid of places
+   *
+   * Throws std::invalid_argument unless the two modes together tile the
+   * padded space exactly (bijectivity - validated in O(leaves)).
+   */
+  cute_partition(::std::vector<layout_leaf> place_leaves,
+                 ::std::vector<int> place_axes,
+                 ::std::vector<layout_leaf> local_leaves,
+                 dim4 padded_dims,
+                 dim4 true_dims,
+                 dim4 grid_dims)
+      : place_leaves_(mv(place_leaves))
+      , place_axes_(mv(place_axes))
+      , local_leaves_(mv(local_leaves))
+      , padded_dims_(padded_dims)
+      , true_dims_(true_dims)
+      , grid_dims_(grid_dims)
+  {
+    validate();
+
+    // Precompute the decode order: all leaves sorted by decreasing stride.
+    // For an exact layout, peeling (linear / stride) % extent in this order
+    // recovers every leaf coordinate.
+    for (size_t k = 0; k < place_leaves_.size(); k++)
+    {
+      decode_.push_back({place_leaves_[k], /* place leaf index */ static_cast<::std::ptrdiff_t>(k)});
+    }
+    for (const auto& l : local_leaves_)
+    {
+      decode_.push_back({l, /* local */ -1});
+    }
+    ::std::sort(decode_.begin(), decode_.end(), [](const decode_leaf& a, const decode_leaf& b) {
+      return a.leaf.stride > b.leaf.stride;
+    });
+  }
+
+  //! True tensor extents (the predicate for the padded space)
+  const dim4& true_dims() const
+  {
+    return true_dims_;
+  }
+
+  //! Padded tensor extents the leaf strides refer to
+  const dim4& padded_dims() const
+  {
+    return padded_dims_;
+  }
+
+  //! Extents of the grid of places
+  const dim4& grid_dims() const
+  {
+    return grid_dims_;
+  }
+
+  //! Leaves of the place mode (leaf 0 fastest)
+  const ::std::vector<layout_leaf>& place_leaves() const
+  {
+    return place_leaves_;
+  }
+
+  //! Grid axis associated with each place leaf
+  const ::std::vector<int>& place_axes() const
+  {
+    return place_axes_;
+  }
+
+  //! Leaves of the local mode (leaf 0 fastest)
+  const ::std::vector<layout_leaf>& local_leaves() const
+  {
+    return local_leaves_;
+  }
+
+  //! Number of places the partition distributes over (product of place
+  //! extents; grid axes not bound to any dimension replicate and do not count)
+  size_t num_places() const
+  {
+    size_t p = 1;
+    for (const auto& l : place_leaves_)
+    {
+      p *= l.extent;
+    }
+    return p;
+  }
+
+  //! Number of padded elements owned by each place (product of local extents)
+  size_t tiles_per_place() const
+  {
+    size_t n = 1;
+    for (const auto& l : local_leaves_)
+    {
+      n *= l.extent;
+    }
+    return n;
+  }
+
+  /**
+   * @brief Grid position owning the element at the given coordinates
+   *
+   * Total on all true coordinates (true extents never exceed the padded
+   * ones); grid axes not bound to any dimension get coordinate 0.
+   */
+  pos4 owner(pos4 data_coords) const
+  {
+    const size_t linear = padded_dims_.get_index(data_coords);
+
+    ::std::array<ssize_t, 4> place_coord = {0, 0, 0, 0};
+    for (const auto& d : decode_)
+    {
+      if (d.leaf.extent <= 1)
+      {
+        continue;
+      }
+      const size_t c = (linear / static_cast<size_t>(d.leaf.stride)) % d.leaf.extent;
+      if (d.place_leaf >= 0)
+      {
+        place_coord[static_cast<size_t>(place_axes_[static_cast<size_t>(d.place_leaf)])] = static_cast<ssize_t>(c);
+      }
+    }
+
+    return pos4(place_coord[0], place_coord[1], place_coord[2], place_coord[3]);
+  }
+
+  /**
+   * @brief Linear element offset (in the padded space) of a place's first
+   * element, given the place's linear index in place-mode order (leaf 0
+   * fastest)
+   */
+  size_t place_offset(size_t place_index) const
+  {
+    size_t offset = 0;
+    for (const auto& l : place_leaves_)
+    {
+      offset += (place_index % l.extent) * static_cast<size_t>(l.stride);
+      place_index /= l.extent;
+    }
+    return offset;
+  }
+
+  //! Structural comparison (used for data place ordering)
+  int cmp(const cute_partition& o) const
+  {
+    auto cmp_sizes = [](size_t a, size_t b) {
+      return (a < b) ? -1 : (a > b) ? 1 : 0;
+    };
+    if (int c = cmp_sizes(padded_dims_.size(), o.padded_dims_.size()))
+    {
+      return c;
+    }
+    if (int c = cmp_sizes(true_dims_.size(), o.true_dims_.size()))
+    {
+      return c;
+    }
+    if (int c = cmp_sizes(place_leaves_.size(), o.place_leaves_.size()))
+    {
+      return c;
+    }
+    if (int c = cmp_sizes(local_leaves_.size(), o.local_leaves_.size()))
+    {
+      return c;
+    }
+    for (size_t k = 0; k < place_leaves_.size(); k++)
+    {
+      if (int c = cmp_sizes(place_leaves_[k].extent, o.place_leaves_[k].extent))
+      {
+        return c;
+      }
+      if (int c =
+            cmp_sizes(static_cast<size_t>(place_leaves_[k].stride), static_cast<size_t>(o.place_leaves_[k].stride)))
+      {
+        return c;
+      }
+      if (int c = cmp_sizes(static_cast<size_t>(place_axes_[k]), static_cast<size_t>(o.place_axes_[k])))
+      {
+        return c;
+      }
+    }
+    for (size_t k = 0; k < local_leaves_.size(); k++)
+    {
+      if (int c = cmp_sizes(local_leaves_[k].extent, o.local_leaves_[k].extent))
+      {
+        return c;
+      }
+      if (int c =
+            cmp_sizes(static_cast<size_t>(local_leaves_[k].stride), static_cast<size_t>(o.local_leaves_[k].stride)))
+      {
+        return c;
+      }
+    }
+    return 0;
+  }
+
+  bool operator==(const cute_partition& o) const
+  {
+    return cmp(o) == 0;
+  }
+
+private:
+  void validate() const
+  {
+    if (place_leaves_.size() != place_axes_.size())
+    {
+      throw ::std::invalid_argument("cute_partition: one grid axis is required per place leaf");
+    }
+
+    for (size_t k = 0; k < place_axes_.size(); k++)
+    {
+      const int a = place_axes_[k];
+      if (a < 0 || a > 3)
+      {
+        throw ::std::invalid_argument("cute_partition: place axis out of range");
+      }
+      if (place_leaves_[k].extent != grid_dims_.get(static_cast<size_t>(a)))
+      {
+        throw ::std::invalid_argument("cute_partition: place leaf extent does not match its grid axis extent");
+      }
+      for (size_t j = 0; j < k; j++)
+      {
+        if (place_axes_[j] == a)
+        {
+          throw ::std::invalid_argument("cute_partition: grid axis bound to more than one place leaf");
+        }
+      }
+    }
+
+    for (size_t d = 0; d < 4; d++)
+    {
+      if (true_dims_.get(d) < 1 || true_dims_.get(d) > padded_dims_.get(d))
+      {
+        throw ::std::invalid_argument("cute_partition: true extents must be within [1, padded extents]");
+      }
+    }
+
+    // Exactness/bijectivity over the padded space: sorted by increasing
+    // stride, the leaves must form a mixed radix (each stride equal to the
+    // product of the preceding extents) whose total size is the padded size.
+    ::std::vector<layout_leaf> all;
+    all.reserve(place_leaves_.size() + local_leaves_.size());
+    for (const auto& l : place_leaves_)
+    {
+      if (l.stride < 0)
+      {
+        throw ::std::invalid_argument("cute_partition: negative strides are not supported");
+      }
+      if (l.extent > 1)
+      {
+        all.push_back(l);
+      }
+    }
+    for (const auto& l : local_leaves_)
+    {
+      if (l.stride < 0)
+      {
+        throw ::std::invalid_argument("cute_partition: negative strides are not supported");
+      }
+      if (l.extent == 0)
+      {
+        throw ::std::invalid_argument("cute_partition: leaf extents must be at least 1");
+      }
+      if (l.extent > 1)
+      {
+        all.push_back(l);
+      }
+    }
+
+    ::std::sort(all.begin(), all.end(), [](const layout_leaf& a, const layout_leaf& b) {
+      return a.stride < b.stride;
+    });
+
+    size_t expected_stride = 1;
+    for (const auto& l : all)
+    {
+      if (static_cast<size_t>(l.stride) != expected_stride)
+      {
+        throw ::std::invalid_argument("cute_partition: leaves do not tile the padded space exactly (layout must be "
+                                      "exact and bijective)");
+      }
+      expected_stride *= l.extent;
+    }
+    if (expected_stride != padded_dims_.size())
+    {
+      throw ::std::invalid_argument("cute_partition: layout size does not match the padded extents");
+    }
+  }
+
+  struct decode_leaf
+  {
+    layout_leaf leaf;
+    ::std::ptrdiff_t place_leaf; // index into place_leaves_, or -1 for local leaves
+  };
+
+  ::std::vector<layout_leaf> place_leaves_;
+  ::std::vector<int> place_axes_;
+  ::std::vector<layout_leaf> local_leaves_;
+  ::std::vector<decode_leaf> decode_;
+  dim4 padded_dims_;
+  dim4 true_dims_;
+  dim4 grid_dims_;
+};
+
+/**
+ * @brief Build a partition from a JAX-like per-dimension specification
+ *
+ * Each entry of `spec` describes how the corresponding tensor dimension maps
+ * onto the grid ("blocked over axis 0", ...). Split dimensions are padded up
+ * to divisibility, which is what makes the resulting layout exact (see the
+ * file-level documentation). Grid axes not referenced by any entry replicate.
+ *
+ * @param true_dims True tensor extents (dimension 0 fastest)
+ * @param spec One entry per tensor dimension (at most 4)
+ * @param grid_dims Extents of the grid of places
+ */
+inline cute_partition make_partition(dim4 true_dims, const ::std::vector<dim_spec>& spec, dim4 grid_dims)
+{
+  if (spec.size() > 4)
+  {
+    throw ::std::invalid_argument("make_partition: at most 4 dimensions are supported");
+  }
+  const size_t rank = spec.size();
+
+  // Pass 1: padded extent per dimension
+  ::std::array<size_t, 4> padded = {1, 1, 1, 1};
+  for (size_t d = 0; d < 4; d++)
+  {
+    const size_t extent = true_dims.get(d);
+    if (d >= rank || spec[d].policy == dim_policy::whole)
+    {
+      padded[d] = extent;
+      continue;
+    }
+
+    const auto& e = spec[d];
+    if (e.mesh_axis < 0 || e.mesh_axis > 3)
+    {
+      throw ::std::invalid_argument("make_partition: mesh_axis out of range");
+    }
+    const size_t nplaces = grid_dims.get(static_cast<size_t>(e.mesh_axis));
+
+    switch (e.policy)
+    {
+      case dim_policy::blocked:
+      case dim_policy::cyclic: {
+        const size_t chunk = (extent + nplaces - 1) / nplaces;
+        padded[d]          = chunk * nplaces;
+        break;
+      }
+      case dim_policy::block_cyclic: {
+        if (e.block == 0)
+        {
+          throw ::std::invalid_argument("make_partition: block_cyclic requires a block size");
+        }
+        const size_t super  = e.block * nplaces;
+        const size_t nsuper = (extent + super - 1) / super;
+        padded[d]           = nsuper * super;
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  // Pass 2: dimension strides over the padded extents (dimension 0 fastest)
+  ::std::array<size_t, 4> stride = {1, 1, 1, 1};
+  for (size_t d = 1; d < 4; d++)
+  {
+    stride[d] = stride[d - 1] * padded[d - 1];
+  }
+
+  // Pass 3: leaves, fastest dimension first
+  ::std::vector<layout_leaf> place_leaves;
+  ::std::vector<int> place_axes;
+  ::std::vector<layout_leaf> local_leaves;
+
+  for (size_t d = 0; d < 4; d++)
+  {
+    const size_t R = stride[d];
+    if (d >= rank || spec[d].policy == dim_policy::whole)
+    {
+      if (padded[d] > 1)
+      {
+        local_leaves.push_back({padded[d], static_cast<::std::ptrdiff_t>(R)});
+      }
+      continue;
+    }
+
+    const auto& e        = spec[d];
+    const size_t nplaces = grid_dims.get(static_cast<size_t>(e.mesh_axis));
+
+    switch (e.policy)
+    {
+      case dim_policy::blocked: {
+        const size_t b = padded[d] / nplaces;
+        local_leaves.push_back({b, static_cast<::std::ptrdiff_t>(R)});
+        place_leaves.push_back({nplaces, static_cast<::std::ptrdiff_t>(b * R)});
+        place_axes.push_back(e.mesh_axis);
+        break;
+      }
+      case dim_policy::cyclic: {
+        local_leaves.push_back({padded[d] / nplaces, static_cast<::std::ptrdiff_t>(nplaces * R)});
+        place_leaves.push_back({nplaces, static_cast<::std::ptrdiff_t>(R)});
+        place_axes.push_back(e.mesh_axis);
+        break;
+      }
+      case dim_policy::block_cyclic: {
+        const size_t nsuper = padded[d] / (e.block * nplaces);
+        local_leaves.push_back({e.block, static_cast<::std::ptrdiff_t>(R)});
+        local_leaves.push_back({nsuper, static_cast<::std::ptrdiff_t>(e.block * nplaces * R)});
+        place_leaves.push_back({nplaces, static_cast<::std::ptrdiff_t>(e.block * R)});
+        place_axes.push_back(e.mesh_axis);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  return cute_partition(
+    mv(place_leaves),
+    mv(place_axes),
+    mv(local_leaves),
+    dim4(padded[0], padded[1], padded[2], padded[3]),
+    true_dims,
+    grid_dims);
+}
+
+/**
+ * @brief Evaluate - without allocating - how a localized allocation of a
+ * tensor distributed by `partition` over `grid` would be placed
+ *
+ * See evaluate_localized_placement(); the tensor extents are the partition's
+ * true extents.
+ */
+inline localized_stats evaluate_localized_placement(
+  const exec_place& grid,
+  const cute_partition& partition,
+  size_t elemsize,
+  size_t probes     = localized_placement_default_probes,
+  size_t block_size = 0)
+{
+  const dim4 data_dims = partition.true_dims();
+
+  if (block_size == 0)
+  {
+    int ndevs = 0;
+    if (cudaGetDeviceCount(&ndevs) == cudaSuccess && ndevs > 0)
+    {
+      CUmemAllocationProp prop = {};
+      prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+      prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
+      prop.location.id         = 0;
+      block_size               = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
+    }
+    else
+    {
+      cudaGetLastError();
+      block_size = 2 * 1024 * 1024;
+    }
+  }
+
+  localized_stats stats;
+
+  const size_t total_elems = data_dims.size();
+  stats.total_bytes        = total_elems * elemsize;
+  stats.vm_bytes           = ((stats.total_bytes + block_size - 1) / block_size) * block_size;
+  stats.block_size         = block_size;
+  stats.nblocks            = stats.vm_bytes / block_size;
+
+  const ::std::vector<pos4> owners = compute_block_owners(
+    [&](size_t index) {
+      return partition.owner(data_dims.index_to_pos(index));
+    },
+    stats.nblocks,
+    block_size / elemsize,
+    total_elems,
+    probes,
+    stats);
+
+  for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
+    const data_place place = grid.get_place(p).affine_data_place();
+    stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
+    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
+    stats.nallocs++;
+  });
+
+  return stats;
+}
+
+/**
+ * @brief Composite data place whose partitioner is a cute_partition object
+ *
+ * Like data_place_composite but the owner function is stateful (a bare
+ * partition_fn_t cannot carry the partition's leaves), so the partition
+ * object is stored on the place. Because a padded partition is intrinsically
+ * specific to one tensor, such a place is per-tensor by nature; the reusable
+ * shape-free policy object remains the partition_fn_t composite. This place
+ * currently serves the raw allocation path only (allocate(data_dims,
+ * elemsize)); routing it through the STF runtime's logical data path is a
+ * recorded follow-up.
+ */
+class data_place_cute_composite final : public data_place_interface
+{
+public:
+  data_place_cute_composite(exec_place grid, cute_partition partition)
+      : grid_(mv(grid))
+      , partition_(mv(partition))
+  {}
+
+  bool is_resolved() const override
+  {
+    return true;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return data_place_interface::composite;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "composite_cute";
+  }
+
+  size_t hash() const override
+  {
+    throw ::std::logic_error("hash() not supported for composite data_place");
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    const auto& o = static_cast<const data_place_cute_composite&>(other);
+    if (int c = partition_.cmp(o.partition_))
+    {
+      return c;
+    }
+    if (grid_ == o.grid_)
+    {
+      return 0;
+    }
+    return (grid_ < o.grid_) ? -1 : 1;
+  }
+
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  {
+    throw ::std::runtime_error(
+      "composite data_place cannot allocate from a byte count alone: use allocate(data_dims, elemsize) or allocate "
+      "through a logical data");
+  }
+
+  void* allocate(dim4 data_dims, size_t elemsize, cudaStream_t) const override
+  {
+    // A padded partition is specific to one tensor: the requested extents
+    // must be the ones the partition was built for.
+    if (!(data_dims == partition_.true_dims()))
+    {
+      throw ::std::invalid_argument("cute composite data_place: requested extents do not match the partition's true "
+                                    "extents");
+    }
+
+    auto arr = ::std::make_unique<localized_array>(
+      grid_,
+      ::std::function<pos4(size_t)>([this, data_dims](size_t index) {
+        return partition_.owner(data_dims.index_to_pos(index));
+      }),
+      data_dims.size(),
+      elemsize,
+      data_dims);
+    void* ptr                           = arr->get_base_ptr();
+    get_composite_alloc_registry()[ptr] = ::std::move(arr);
+    return ptr;
+  }
+
+  void deallocate(void* ptr, size_t, cudaStream_t) const override
+  {
+    deallocate_composite_data_place(ptr);
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return false;
+  }
+
+  ::std::shared_ptr<void> get_affine_exec_impl() const override
+  {
+    return grid_.get_impl();
+  }
+
+  const cute_partition& get_partition() const
+  {
+    return partition_;
+  }
+
+  const exec_place& get_grid() const
+  {
+    return grid_;
+  }
+
+private:
+  exec_place grid_;
+  cute_partition partition_;
+};
+
+/**
+ * @brief Create a composite data place backed by a cute_partition
+ */
+inline data_place make_composite_data_place(const exec_place& grid, cute_partition partition)
+{
+  return data_place(::std::make_shared<data_place_cute_composite>(grid, mv(partition)));
+}
+
+#ifdef UNITTESTED_FILE
+UNITTEST("make_partition blocked leaves and owners")
+{
+  // 2-D tensor (6, 4), dimension 1 blocked over 2 places (axis 0)
+  const dim4 true_dims(6, 4);
+  const dim4 grid_dims(2);
+  auto part = make_partition(true_dims, {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+
+  EXPECT(part.padded_dims() == dim4(6, 4));
+  EXPECT(part.num_places() == 2);
+  EXPECT(part.place_offset(0) == 0);
+  EXPECT(part.place_offset(1) == 12); // 2 rows of 6
+
+  for (size_t y = 0; y < 4; y++)
+  {
+    for (size_t x = 0; x < 6; x++)
+    {
+      EXPECT(part.owner(pos4(x, y)) == pos4(y / 2));
+    }
+  }
+};
+
+UNITTEST("make_partition pads uneven blocked dimensions")
+{
+  // (4, 5) tensor blocked over 2 places along dimension 1: chunk = 3, so the
+  // padded extent is 6. This is the aliasing regression: without padding, an
+  // unclamped layout would leak coordinates of one place into another.
+  const dim4 true_dims(4, 5);
+  const dim4 grid_dims(2);
+  auto part = make_partition(true_dims, {dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+
+  EXPECT(part.padded_dims() == dim4(4, 6));
+
+  size_t counts[2] = {0, 0};
+  for (size_t y = 0; y < 5; y++)
+  {
+    for (size_t x = 0; x < 4; x++)
+    {
+      const pos4 o = part.owner(pos4(x, y));
+      EXPECT(o == pos4(y / 3));
+      counts[static_cast<size_t>(o.x)]++;
+    }
+  }
+  // Place 0 owns columns 0-2, place 1 owns columns 3-4 of the true extents
+  EXPECT(counts[0] == 4 * 3);
+  EXPECT(counts[1] == 4 * 2);
+};
+
+UNITTEST("make_partition cyclic and block_cyclic owners")
+{
+  const dim4 grid_dims(2);
+
+  auto cyc = make_partition(dim4(7), {dim_spec{dim_policy::cyclic, 0, 0}}, grid_dims);
+  for (size_t x = 0; x < 7; x++)
+  {
+    EXPECT(cyc.owner(pos4(x)) == pos4(x % 2));
+  }
+
+  auto bc = make_partition(dim4(8), {dim_spec{dim_policy::block_cyclic, 0, 2}}, grid_dims);
+  for (size_t x = 0; x < 8; x++)
+  {
+    EXPECT(bc.owner(pos4(x)) == pos4((x / 2) % 2));
+  }
+};
+
+UNITTEST("cute_partition owner matches blocked_partition get_executor")
+{
+  // Same policy expressed via make_partition and via the classic partitioner
+  const dim4 true_dims(10);
+  const dim4 grid_dims(3);
+  auto part = make_partition(true_dims, {dim_spec{dim_policy::blocked, 0, 0}}, grid_dims);
+
+  for (size_t x = 0; x < 10; x++)
+  {
+    pos4 expected;
+    blocked_partition_custom<0>::get_executor(&expected, pos4(x), true_dims, grid_dims);
+    EXPECT(part.owner(pos4(x)) == expected);
+  }
+};
+
+UNITTEST("cute_partition validation rejects inexact layouts")
+{
+  const dim4 dims(8);
+  const dim4 grid(2);
+
+  // Overlapping: both leaves have stride 1
+  bool thrown = false;
+  try
+  {
+    cute_partition({{2, 1}}, {0}, {{4, 1}}, dims, dims, grid);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+
+  // Under-covering: strides tile only half of the padded space
+  thrown = false;
+  try
+  {
+    cute_partition({{2, 4}}, {0}, {{2, 1}}, dims, dims, grid);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    thrown = true;
+  }
+  EXPECT(thrown);
+};
+#endif // UNITTESTED_FILE
+} // namespace cuda::experimental::places
