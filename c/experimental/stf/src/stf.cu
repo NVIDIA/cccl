@@ -204,6 +204,43 @@ template <class Opaque>
 }
 } // namespace
 
+namespace
+{
+// Shared tail of the two stf_placement_evaluate* entry points
+int stf_fill_placement_outputs(
+  const localized_stats& stats, const exec_place& grid, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+{
+  out_stats->total_bytes      = stats.total_bytes;
+  out_stats->vm_bytes         = stats.vm_bytes;
+  out_stats->block_size       = stats.block_size;
+  out_stats->nblocks          = stats.nblocks;
+  out_stats->nallocs          = stats.nallocs;
+  out_stats->total_samples    = stats.total_samples;
+  out_stats->matching_samples = stats.matching_samples;
+
+  if (bytes_per_grid_index != nullptr)
+  {
+    const size_t grid_size = grid.get_dims().size();
+    for (size_t i = 0; i < grid_size; i++)
+    {
+      bytes_per_grid_index[i] = 0;
+    }
+    for (const auto& entry : stats.bytes_per_grid_index)
+    {
+      if (entry.first >= grid_size)
+      {
+        // A mapper returned coordinates outside the grid: refuse to write
+        // past the caller's buffer and report the failure.
+        fprintf(stderr, "placement evaluation: mapper returned a position outside the grid\n");
+        return 1;
+      }
+      bytes_per_grid_index[entry.first] = entry.second;
+    }
+  }
+  return 0;
+}
+} // namespace
+
 extern "C" {
 
 stf_exec_place_handle stf_exec_place_host(void)
@@ -557,36 +594,6 @@ void* stf_data_place_allocate_nd(
   }
 }
 
-namespace
-{
-// Shared tail of the two stf_placement_evaluate* entry points
-int stf_fill_placement_outputs(
-  const localized_stats& stats, const exec_place& grid, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
-{
-  out_stats->total_bytes      = stats.total_bytes;
-  out_stats->vm_bytes         = stats.vm_bytes;
-  out_stats->block_size       = stats.block_size;
-  out_stats->nblocks          = stats.nblocks;
-  out_stats->nallocs          = stats.nallocs;
-  out_stats->total_samples    = stats.total_samples;
-  out_stats->matching_samples = stats.matching_samples;
-
-  if (bytes_per_grid_index != nullptr)
-  {
-    const size_t grid_size = grid.get_dims().size();
-    for (size_t i = 0; i < grid_size; i++)
-    {
-      bytes_per_grid_index[i] = 0;
-    }
-    for (const auto& entry : stats.bytes_per_grid_index)
-    {
-      bytes_per_grid_index[entry.first] = entry.second;
-    }
-  }
-  return 0;
-}
-} // namespace
-
 int stf_placement_evaluate(
   stf_exec_place_handle grid,
   stf_get_executor_fn mapper,
@@ -697,6 +704,10 @@ stf_cute_partition_handle stf_cute_partition_from_leaves(
   const stf_dim4* grid_dims)
 {
   _CCCL_ASSERT(padded_dims != nullptr && true_dims != nullptr && grid_dims != nullptr, "dims must not be null");
+  _CCCL_ASSERT(num_place_leaves == 0 || (place_extents != nullptr && place_strides != nullptr && place_axes != nullptr),
+               "place leaf arrays must not be null");
+  _CCCL_ASSERT(num_local_leaves == 0 || (local_extents != nullptr && local_strides != nullptr),
+               "local leaf arrays must not be null");
   dim4 pd, td, gd;
   ::std::memcpy(&pd, padded_dims, sizeof(pd));
   ::std::memcpy(&td, true_dims, sizeof(td));
@@ -796,7 +807,15 @@ void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* 
 uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index)
 {
   _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
-  return from_opaque_const(h)->place_offset(place_index);
+  try
+  {
+    return from_opaque_const(h)->place_offset(place_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_cute_partition_place_offset failed: %s\n", e.what());
+    return UINT64_MAX;
+  }
 }
 
 stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition)

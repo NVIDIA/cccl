@@ -503,6 +503,8 @@ void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* 
 
 //! \brief Linear element offset (in the padded space) of a place's first
 //! element, given the place's linear index in place-mode order.
+//! Returns UINT64_MAX (with a diagnostic on stderr) if the index is out of
+//! range.
 uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index);
 
 //! \brief Create a composite data place backed by a structured partition.
@@ -516,8 +518,9 @@ uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t p
 stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition);
 
 //! \brief Native blocked partition function for a given dimension
-//! (-1 = the highest-rank dimension), usable wherever an
-//! stf_get_executor_fn is expected without any FFI callback cost.
+//! (values outside [0, 3] select the highest-rank dimension, like -1),
+//! usable wherever an stf_get_executor_fn is expected without any FFI
+//! callback cost.
 stf_get_executor_fn stf_partition_fn_blocked(int dim);
 
 //! \brief Native cyclic (round-robin) partition function.

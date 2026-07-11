@@ -97,12 +97,15 @@ def test_placement_evaluate_majority_tie_breaking():
     stf.machine_init()
     grid = stf.exec_place_grid.from_devices([0, 0])
 
-    n = 4_000_000  # each place owns 2,000,000 bytes, just under the 2 MiB block
+    # 2.5 MiB blocked over 2 places: block 0 straddles 62.5%/37.5%, so the
+    # checks hold structurally for any uniform sampler (all-64-probes-majority
+    # has probability ~1e-13)
+    n = 5 * MiB // 2
     s1 = stf.placement_evaluate(
         grid, stf.partition_fn_blocked(0), (n,), 1, probes=64, block_size=2 * MiB
     )
     assert s1.nallocs == 2
-    assert 0.9 < s1.accuracy < 1.0
+    assert 0.7 < s1.accuracy < 1.0
 
     s2 = stf.placement_evaluate(
         grid, stf.partition_fn_blocked(0), (n,), 1, probes=64, block_size=2 * MiB
@@ -136,10 +139,6 @@ def test_shaped_allocation_on_composite_places():
     dpc.deallocate(ptr2, n * 4)
 
 
-@pytest.mark.skipif(
-    condition=False,  # runs everywhere; the multi-GPU branch self-gates below
-    reason="",
-)
 def test_multi_gpu_residency():
     """With 2+ devices, each half of a blocked allocation must be physically
     resident on its owner (the real check runs in multi-GPU CI)."""
@@ -154,14 +153,24 @@ def test_multi_gpu_residency():
     stf.machine_init()
     grid = stf.exec_place_grid.from_devices([0, 1])
 
-    n = MiB  # ints; 4 MiB total = 2 blocks of 2 MiB
+    # One placement block per device, at whatever granularity this device uses
+    prop = cu.CUmemAllocationProp()
+    prop.type = cu.CUmemAllocationType.CU_MEM_ALLOCATION_TYPE_PINNED
+    prop.location.type = cu.CUmemLocationType.CU_MEM_LOCATION_TYPE_DEVICE
+    prop.location.id = 0
+    err, granularity = cu.cuMemGetAllocationGranularity(
+        prop, cu.CUmemAllocationGranularity_flags.CU_MEM_ALLOC_GRANULARITY_MINIMUM
+    )
+    assert err == cu.CUresult.CUDA_SUCCESS
+
+    n = 2 * granularity // 4  # ints
     dp = stf.data_place.composite(grid, stf.partition_fn_blocked(0))
     ptr = dp.allocate((n,), elemsize=4)
     try:
         for half in range(2):
             err, ordinal = cu.cuPointerGetAttribute(
                 cu.CUpointer_attribute.CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
-                ptr + half * 2 * MiB,
+                ptr + half * granularity,
             )
             assert err == cu.CUresult.CUDA_SUCCESS
             assert int(ordinal) == half, (
@@ -169,3 +178,45 @@ def test_multi_gpu_residency():
             )
     finally:
         dp.deallocate(ptr, n * 4)
+
+
+def test_invalid_inputs_raise_cleanly():
+    """Misuse must raise Python exceptions, never crash the interpreter."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    # Direct instantiation (NULL handle)
+    with pytest.raises(TypeError):
+        stf.cute_partition()
+
+    # bool is not a function pointer
+    with pytest.raises(TypeError):
+        stf.placement_evaluate(grid, True, (1024,), 1)
+    with pytest.raises(TypeError):
+        stf.data_place.composite(grid, True)
+
+    # elemsize 0 (would be a division by zero)
+    with pytest.raises(RuntimeError):
+        stf.placement_evaluate(grid, stf.partition_fn_blocked(0), (1024,), 0)
+
+    # A raising mapper must surface, not silently yield wrong statistics
+    def bad_mapper(coords, dims, gdims):
+        raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="mapper raised"):
+        stf.placement_evaluate(grid, bad_mapper, (4 * MiB,), 1, block_size=2 * MiB)
+
+    # Zero-extent grid axis
+    with pytest.raises(ValueError):
+        stf.cute_partition.from_spec((8,), (("blocked", 0),), (0,))
+
+    # Partition grid must match the execution grid
+    part = stf.cute_partition.from_spec((4 * MiB,), (("blocked", 0),), (3,))
+    with pytest.raises(RuntimeError):
+        stf.placement_evaluate(grid, part, None, 1)
+
+    # elemsize is extents-form-only
+    dp = stf.data_place.device(0)
+    with pytest.raises(ValueError):
+        dp.allocate(100, elemsize=4)

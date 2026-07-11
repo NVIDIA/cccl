@@ -399,23 +399,37 @@ _mapper_cfunc_type = ctypes.CFUNCTYPE(
 def _make_mapper_callback(mapper):
     """Wrap a Python partitioner as a C function pointer for stf_data_place_composite.
 
-    Returns (callback_object, c_function_pointer_as_int).
+    Returns (callback_object, c_function_pointer_as_int, errors_list).
     The caller must prevent GC of callback_object for the lifetime of the
-    composite data place.
+    composite data place. Exceptions raised by the mapper cannot propagate
+    through the C caller: they are recorded in errors_list (and printed), and
+    the mapper resolves to place (0, 0, 0, 0) for that element.
     """
+    errors = []
+
     def _trampoline(result_ptr, c_coords, c_data_dims, c_grid_dims):
-        coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)
-        data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
-        grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)
-        rx, ry, rz, rt = mapper(coords, data_dims, grid_dims)
-        result_ptr[0].x = int(rx)
-        result_ptr[0].y = int(ry)
-        result_ptr[0].z = int(rz)
-        result_ptr[0].t = int(rt)
+        result_ptr[0].x = 0
+        result_ptr[0].y = 0
+        result_ptr[0].z = 0
+        result_ptr[0].t = 0
+        try:
+            coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)
+            data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
+            grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)
+            rx, ry, rz, rt = mapper(coords, data_dims, grid_dims)
+            result_ptr[0].x = int(rx)
+            result_ptr[0].y = int(ry)
+            result_ptr[0].z = int(rz)
+            result_ptr[0].t = int(rt)
+        except BaseException as exc:  # noqa: BLE001 - must not cross the C boundary
+            if not errors:
+                import traceback
+                traceback.print_exc()
+            errors.append(exc)
 
     callback = _mapper_cfunc_type(_trampoline)
     c_ptr = ctypes.cast(callback, ctypes.c_void_p).value
-    return (callback, c_ptr)
+    return (callback, c_ptr, errors)
 
 class AccessMode(IntFlag):
     NONE  = STF_NONE
@@ -1380,21 +1394,25 @@ cdef class exec_place_grid(exec_place):
         return g
 
 
-cdef int _fill_dim4(object dims, stf_dim4* out) except -1:
-    """Convert an int or a sequence of up to 4 extents into an stf_dim4
+def _pad_dims_tuple(dims):
+    """Normalize an int or a sequence of up to 4 extents into a 4-tuple
     (missing dimensions padded with 1)."""
     if isinstance(dims, int):
         dims = (dims,)
+    dims = tuple(dims)
     if len(dims) > 4:
         raise ValueError(f"at most 4 dimensions are supported, got {len(dims)}")
-    cdef uint64_t[4] e
-    e[0] = e[1] = e[2] = e[3] = 1
-    for i, d in enumerate(dims):
-        e[i] = <uint64_t>d
-    out.x = e[0]
-    out.y = e[1]
-    out.z = e[2]
-    out.t = e[3]
+    return dims + (1,) * (4 - len(dims))
+
+
+cdef int _fill_dim4(object dims, stf_dim4* out) except -1:
+    """Convert an int or a sequence of up to 4 extents into an stf_dim4
+    (missing dimensions padded with 1)."""
+    padded = _pad_dims_tuple(dims)
+    out.x = <uint64_t>padded[0]
+    out.y = <uint64_t>padded[1]
+    out.z = <uint64_t>padded[2]
+    out.t = <uint64_t>padded[3]
     return 0
 
 
@@ -1426,6 +1444,9 @@ cdef class cute_partition:
     """
 
     cdef stf_cute_partition_handle _h
+
+    def __init__(self):
+        raise TypeError("use cute_partition.from_spec() or cute_partition.from_leaves()")
 
     def __dealloc__(self):
         if self._h != NULL:
@@ -1468,7 +1489,7 @@ cdef class cute_partition:
         cdef cute_partition p = cute_partition.__new__(cute_partition)
         p._h = stf_cute_partition_create(&td, &gd, c_spec, rank)
         if p._h == NULL:
-            raise ValueError("invalid partition specification")
+            raise ValueError("invalid partition specification (see stderr for the underlying error)")
         return p
 
     @staticmethod
@@ -1493,10 +1514,14 @@ cdef class cute_partition:
         cdef int64_t[16] l_str
         cdef int[16] p_axes
         for i, (e, st, a) in enumerate(place_leaves):
+            if i >= <Py_ssize_t>np_:
+                raise ValueError("place_leaves yielded more items than its length")
             p_ext[i] = <uint64_t>e
             p_str[i] = <int64_t>st
             p_axes[i] = <int>a
         for i, (e, st) in enumerate(local_leaves):
+            if i >= <Py_ssize_t>nl:
+                raise ValueError("local_leaves yielded more items than its length")
             l_ext[i] = <uint64_t>e
             l_str[i] = <int64_t>st
         cdef cute_partition p = cute_partition.__new__(cute_partition)
@@ -1620,16 +1645,25 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
     try:
         if isinstance(mapper, cute_partition):
             part = <cute_partition>mapper
+            if data_dims is not None and tuple(part.true_dims) != tuple(_pad_dims_tuple(data_dims)):
+                raise ValueError(
+                    f"data_dims {data_dims} do not match the partition's true extents {part.true_dims} "
+                    "(pass None to use the partition's extents)")
             rc = stf_placement_evaluate_partition(
                 grid._h, part._h, <uint64_t>elemsize, <uint64_t>probes, <uint64_t>block_size,
                 &c_stats, per_pos)
         else:
             _fill_dim4(data_dims, &dims)
-            if isinstance(mapper, int):
+            mapper_errors = None
+            if isinstance(mapper, bool):
+                raise TypeError("mapper must not be a bool")
+            elif isinstance(mapper, int):
+                if mapper == 0:
+                    raise ValueError("mapper function pointer must not be NULL")
                 ptr_val = <uintptr_t>mapper
                 keep_alive = None
             elif callable(mapper):
-                keep_alive, c_ptr = _make_mapper_callback(mapper)
+                keep_alive, c_ptr, mapper_errors = _make_mapper_callback(mapper)
                 ptr_val = c_ptr
             else:
                 raise TypeError(
@@ -1637,8 +1671,10 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
             rc = stf_placement_evaluate(
                 grid._h, <stf_get_executor_fn>ptr_val, &dims, <uint64_t>elemsize,
                 <uint64_t>probes, <uint64_t>block_size, &c_stats, per_pos)
+            if mapper_errors:
+                raise RuntimeError("the mapper raised during placement evaluation") from mapper_errors[0]
         if rc != 0:
-            raise RuntimeError("placement evaluation failed")
+            raise RuntimeError("placement evaluation failed (see stderr for the underlying error)")
 
         return placement_stats(
             c_stats.total_bytes,
@@ -1766,10 +1802,14 @@ cdef class data_place:
         """
         cdef data_place p = data_place.__new__(data_place)
         cdef uintptr_t ptr_val
+        if isinstance(mapper, bool):
+            raise TypeError("mapper must be a partition function pointer or a callable, not a bool")
         if isinstance(mapper, int):
+            if mapper == 0:
+                raise ValueError("mapper function pointer must not be NULL")
             ptr_val = <uintptr_t>mapper
         elif callable(mapper):
-            callback_obj, c_ptr = _make_mapper_callback(mapper)
+            callback_obj, c_ptr, _errors = _make_mapper_callback(mapper)
             p._mapper_callback = callback_obj
             ptr_val = c_ptr
         else:
@@ -1843,6 +1883,8 @@ cdef class data_place:
                 raise MemoryError(
                     f"data_place.allocate failed for extents {tuple(size_or_dims)} x {elemsize} bytes")
         else:
+            if elemsize != 1:
+                raise ValueError("elemsize is only meaningful with the extents form; pass a tuple of extents")
             ptr = stf_data_place_allocate(self._h, <ptrdiff_t>size_or_dims, s)
             if ptr == NULL:
                 raise MemoryError(f"data_place.allocate failed for {size_or_dims} bytes")
