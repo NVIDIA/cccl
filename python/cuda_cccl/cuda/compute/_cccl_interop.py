@@ -45,7 +45,7 @@ from ._bindings import (
     Value,
     make_pointer_object,
 )
-from ._caching import _BuildResultCollection
+from ._caching import _PerCCBuildResults
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._base import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
@@ -338,10 +338,8 @@ def build_for_ccs(build_impl_cls: Callable, *args, compute_capability=None, **kw
         # load() in resolve_build_result() is a no-op (a second C load would leak /
         # re-register the library).
         build_result._loaded = True
-        return _BuildResultCollection(
-            {cc_key: build_result}, loaded_device_id=device_id
-        )
-    return _BuildResultCollection(
+        return _PerCCBuildResults({cc_key: build_result}, loaded_device_id=device_id)
+    return _PerCCBuildResults(
         {
             cc_to_key(cc): call_compile(build_impl_cls, *args, cc=cc, **kwargs)
             for cc in ccs
@@ -432,11 +430,11 @@ def current_device_id() -> int:
 
 def resolve_build_result(build_results: dict):
     """Load the build result for the current device."""
-    # Wrappers always hold a _BuildResultCollection (build_for_ccs and
+    # Wrappers always hold a _PerCCBuildResults (build_for_ccs and
     # deserialization both produce one); the per-device ownership/clone
     # protocol in resolve() relies on it, so fail loudly on anything else
     # rather than fall back to an unprotected load.
-    assert isinstance(build_results, _BuildResultCollection)
+    assert isinstance(build_results, _PerCCBuildResults)
 
     # The default build path already compiled and loaded this singular result
     # for the wrapper's device. Preserve its existing invocation fast path: it
@@ -445,7 +443,7 @@ def resolve_build_result(build_results: dict):
         return build_results._device_bound_result
 
     if len(build_results) == 1:
-        # A singular collection is used as-is whatever the current device's
+        # A singular _PerCCBuildResults is used as-is whatever the current device's
         # compute capability is (single-target blobs were already cc-checked at
         # deserialization), so only the device ordinal is needed to key the
         # per-device loaded state. This path runs on every call of AOT and

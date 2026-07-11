@@ -32,7 +32,7 @@ from cuda.compute import (
     serialize,
 )
 from cuda.compute._caching import (
-    _BuildResultCollection,
+    _PerCCBuildResults,
     cache_build_results,
     cache_with_registered_key_functions,
 )
@@ -163,7 +163,7 @@ class _TrackingLock:
 
 def test_aot_build_results_load_once_per_device_without_recompiling():
     source = _FakeBuildResult(b"sm80-cubin")
-    build_results = _BuildResultCollection({80: source})
+    build_results = _PerCCBuildResults({80: source})
 
     device_0_result = build_results.resolve(80, 0)
     device_1_result = build_results.resolve(80, 1)
@@ -181,7 +181,7 @@ def test_aot_build_result_concurrent_load_is_coalesced_per_device():
     load_started = threading.Event()
     allow_load = threading.Event()
     source = _FakeBuildResult(b"sm80-cubin", (load_started, allow_load))
-    build_results = _BuildResultCollection({80: source})
+    build_results = _PerCCBuildResults({80: source})
     barrier = threading.Barrier(4)
 
     def resolve():
@@ -201,7 +201,7 @@ def test_aot_build_result_concurrent_load_is_coalesced_per_device():
 def test_aot_build_result_load_failure_is_shared_and_retryable():
     thread_count = 4
     source = _FakeBuildResult(b"sm80-cubin", load_failures=1)
-    build_results = _BuildResultCollection({80: source})
+    build_results = _PerCCBuildResults({80: source})
     build_results._loaded_results = _CoordinatedGetCache(thread_count)
     barrier = threading.Barrier(thread_count)
 
@@ -235,7 +235,7 @@ def test_aot_serialization_waits_for_canonical_first_load():
     load_started = threading.Event()
     allow_load = threading.Event()
     source = _FakeBuildResult(b"sm80-cubin", (load_started, allow_load))
-    build_results = _BuildResultCollection({80: source})
+    build_results = _PerCCBuildResults({80: source})
     source_lock = _TrackingLock()
     build_results._source_locks[80] = source_lock
 
@@ -260,7 +260,7 @@ def test_current_device_build_result_preserves_device_query_free_fast_path(
 ):
     source = _FakeBuildResult(b"sm80-cubin")
     source._loaded = True
-    build_results = _BuildResultCollection({80: source}, loaded_device_id=0)
+    build_results = _PerCCBuildResults({80: source}, loaded_device_id=0)
 
     def fail_device_query():
         raise AssertionError("current-device builds must not query on invocation")
@@ -280,7 +280,7 @@ def test_explicit_aot_compilation_cache_normalizes_compute_capability():
     def build():
         nonlocal build_count
         build_count += 1
-        return _BuildResultCollection({80: _FakeBuildResult(b"sm80-cubin")})
+        return _PerCCBuildResults({80: _FakeBuildResult(b"sm80-cubin")})
 
     try:
         first = cache_build_results(
@@ -325,7 +325,7 @@ def test_default_build_second_same_cc_device_clones_from_donor(monkeypatch):
         source = _FakeBuildResult(b"sm80-cubin")
         source._loaded = True
         built_sources.append(source)
-        return _BuildResultCollection({80: source}, loaded_device_id=device["id"])
+        return _PerCCBuildResults({80: source}, loaded_device_id=device["id"])
 
     first = cache_build_results(
         _FakeBuildResult, "spec", compute_capability=None, builder=build
@@ -745,7 +745,7 @@ def test_fused_fast_path_unchanged_when_no_cc_given():
 def _same_cc_device_pair():
     """Two device ordinals sharing a compute capability, or None.
 
-    The clone branch of _BuildResultCollection.resolve() is reachable only
+    The clone branch of _PerCCBuildResults.resolve() is reachable only
     when a second device resolves the same cc entry that another device
     already owns, which requires two devices of equal compute capability.
     """
@@ -833,7 +833,7 @@ def test_serialize_while_other_threads_execute():
     """serialize() must be safe while other threads run the same build.
 
     Worker threads each obtain their own wrapper from the factory (sharing one
-    _BuildResultCollection through the process-wide build cache) and execute
+    _PerCCBuildResults through the process-wide build cache) and execute
     repeatedly — including the first device load — while the main thread
     serializes its wrapper concurrently. serialize_build_result and the first
     load take the same per-cc source lock; compute never mutates the fields

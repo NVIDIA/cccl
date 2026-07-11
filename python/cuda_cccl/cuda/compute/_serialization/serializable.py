@@ -151,14 +151,14 @@ class _BuildResults(_Kind):
         self.cls = cls
 
     def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
-        from .._caching import _BuildResultCollection
+        from .._caching import _PerCCBuildResults
 
-        # Wrappers always hold a _BuildResultCollection (build_for_ccs and
+        # Wrappers always hold a _PerCCBuildResults (build_for_ccs and
         # read() below both produce one). serialize_build_result takes the
         # per-cc source lock, so serialization cannot observe a source whose
         # first device load is still in progress; a plain dict here would
         # silently bypass that lock.
-        assert isinstance(value, _BuildResultCollection)
+        assert isinstance(value, _PerCCBuildResults)
         ccs = sorted(value)
         w.u32(len(ccs))
         for cc in ccs:
@@ -181,9 +181,9 @@ class _BuildResults(_Kind):
                 )
             result[cc] = self.cls.deserialize(blob, load=False, check_cc=check_cc)
 
-        from .._caching import _BuildResultCollection
+        from .._caching import _PerCCBuildResults
 
-        return _BuildResultCollection(result)
+        return _PerCCBuildResults(result)
 
 
 def BUILD_RESULTS(cls: type) -> _BuildResults:

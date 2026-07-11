@@ -9,7 +9,7 @@ import functools
 import threading
 import types
 import weakref
-from typing import Any, Callable, Hashable
+from typing import Any, Callable, Hashable, NamedTuple, TypeVar
 
 import numpy as np
 
@@ -70,7 +70,13 @@ def _key_for(value: Any) -> Hashable:
     return value
 
 
-def _make_cache_key_from_args(*args, **kwargs) -> tuple:
+# The specialization part of every cache key: what _make_cache_key_from_args
+# extracts from the user-facing arguments (dtypes, op identity, iterator
+# kinds, ...).
+_SpecializationKey = tuple[Hashable, ...]
+
+
+def _make_cache_key_from_args(*args, **kwargs) -> _SpecializationKey:
     """
     Create a cache key from function arguments.
 
@@ -111,12 +117,11 @@ class _ThreadLocalCaches:
     __slots__ = ("wrapper_caches", "__weakref__")
 
     def __init__(self) -> None:
-        # Outer key: decorated algorithm factory name. Inner key: target
-        # identity and specialization key derived from factory arguments. The
-        # target is a device ordinal plus compute capability for default
-        # builds, or the explicit AOT target otherwise. Thread isolation comes
-        # from the threading.local container itself, not from the key.
-        self.wrapper_caches: dict[str, dict[Hashable, Any]] = {}
+        # Outer key: decorated algorithm factory name, e.g.,
+        # make_reduce_into.__qualname__. Inner key: _WrapperCacheKey. No
+        # thread id is needed in either key because each thread holds a
+        # separate thread local object of this class.
+        self.wrapper_caches: dict[str, dict[_WrapperCacheKey, Any]] = {}
 
 
 class _InFlightBuild:
@@ -134,6 +139,55 @@ class _InFlightBuild:
         self.exception: BaseException | None = None
 
 
+# A compute capability packed into one int as major * 10 + minor, e.g.
+# (9, 0) -> 90 and (12, 0) -> 120; cc_to_key / key_to_cc in _cccl_interop
+# convert to and from the (major, minor) pair form. Purely documentary:
+# mypy treats it as int.
+_PackedCCKey = int
+
+
+class _DeviceBuildTarget(NamedTuple):
+    """
+    Target identity of a default build: the device it is built and loaded on.
+
+    NamedTuples compare as plain tuples, so the two target kinds must keep
+    structurally disjoint layouts (arity or element types) to never compare
+    equal to each other.
+    """
+
+    device_id: int
+    cc: tuple[int, int]
+
+
+class _AOTBuildTarget(NamedTuple):
+    """
+    Target identity of an explicit AOT build, with no device attached.
+
+    Holds the normalized, sorted, packed compute-capability keys. See
+    _DeviceBuildTarget for the cross-kind equality constraint.
+    """
+
+    cc_keys: tuple[_PackedCCKey, ...]
+
+
+# Inner key of a thread's per-factory wrapper cache; see _ThreadLocalCaches.
+# The target is None for explicit AOT builds: the decorator performs no device
+# query or cc normalization there, and the raw compute_capability kwarg is
+# already part of the specialization. Differently spelled ccs (80 vs (8, 0))
+# therefore yield distinct wrappers, which still share one compiled build
+# because cache_build_results normalizes its own key.
+_WrapperCacheKey = tuple[_DeviceBuildTarget | None, _SpecializationKey]
+# Composite key of the process-wide build-results cache:
+# (build-result type, build target (device or AOT), specialization). The
+# build-result type is the algorithm's Cython class from _bindings (e.g.
+# DeviceReduceBuildResult), namespacing entries per algorithm.
+_BuildResultsCacheKey = tuple[
+    type, _DeviceBuildTarget | _AOTBuildTarget, _SpecializationKey
+]
+# The build-results cache key with the device ordinal dropped from its target.
+_DonorCacheKey = tuple[type, tuple[int, int], _SpecializationKey]
+
+
 _thread_local = threading.local()
 # Process wide registry of per-thread caches. It enables a thread to call
 # clear_all_caches() to clear all caches across all threads.
@@ -142,21 +196,34 @@ _process_wide_thread_cache_registry: weakref.WeakSet[_ThreadLocalCaches] = (
 )
 _process_wide_thread_cache_registry_lock = threading.Lock()
 
-# Values are either completed build-result collections or temporary
-# _InFlightBuild entries.
-_process_wide_build_results_cache: dict[Hashable, Any] = {}
-# First successful default-build collection per (build-result type, compute
-# capability, specialization). The compiled payload only depends on the
+# _InFlightBuild entries are temporary: replaced by the completed build
+# results or removed on builder failure.
+_process_wide_build_results_cache: dict[
+    _BuildResultsCacheKey, _PerCCBuildResults | _InFlightBuild
+] = {}
+# First successful default build's _PerCCBuildResults per (build-result type,
+# compute capability, specialization). The compiled payload only depends on the
 # compute capability, so a default build on another same-cc device ordinal
 # clones the donor's payload instead of running a full native compilation.
-_process_wide_default_build_donors: dict[Hashable, Any] = {}
+_process_wide_default_build_donors: dict[_DonorCacheKey, _PerCCBuildResults] = {}
 _CACHE_MISS = object()
+
+_KeyT = TypeVar("_KeyT", bound=Hashable)
 
 
 def _cache_single_flight(
-    cache: dict[Hashable, Any], cache_key: Hashable, builder: Callable[[], Any]
+    cache: dict[_KeyT, Any], cache_key: _KeyT, builder: Callable[[], Any]
 ) -> Any:
-    """Return a cached value, coalescing concurrent builds for the same key."""
+    """Return a cached value, coalescing concurrent builds for the same key.
+
+    ``cache`` may be any single-flight dict — currently the process-wide
+    build-results cache and the per-device loaded results inside each
+    _PerCCBuildResults. Its entries are one of two things: a completed value,
+    which is terminal, or a temporary _InFlightBuild while the one elected
+    caller runs ``builder``; other callers wait on its event and receive the
+    same result or exception. A failed builder's entry is removed so a later
+    call retries.
+    """
     cache_entry = cache.get(cache_key, _CACHE_MISS)
     if cache_entry is _CACHE_MISS:
         in_flight = _InFlightBuild()
@@ -184,26 +251,39 @@ def _cache_single_flight(
     return cache_entry
 
 
-class _BuildResultCollection(dict[int, Any]):
-    """Compiled build results with process-shared, per-device loaded state.
+class _PerCCBuildResults(dict[_PackedCCKey, Any]):
+    """One algorithm specialization's compiled build results, keyed by target cc.
 
-    The mapping contains one canonical native build result per compute
-    capability. Explicit AOT results begin unloaded and can be shared across
-    threads without a current device. On first use, one device claims the
-    canonical result; additional devices clone it through serialization before
-    loading, so compiled payloads are reused without sharing device-owned native
-    handles.
+    Instances may be shared process-wide across threads: the factory build
+    cache hands all same-specialization wrappers one instance. The compiled
+    payload depends only on the cc, but a loaded build result holds
+    device-specific native state, so devices never share one. The first
+    device to execute claims and loads the canonical build result in place;
+    each additional device lazily loads its own clone of the compiled payload
+    (serialize -> deserialize -> load). This class tracks the loaded result —
+    canonical or clone — assigned to each device.
     """
 
     def __init__(
         self,
-        build_results: dict[int, Any],
+        build_results: dict[_PackedCCKey, Any],
         *,
         loaded_device_id: int | None = None,
     ) -> None:
         super().__init__(build_results)
-        self._owner_devices: dict[int, int] = {}
-        self._loaded_results: dict[Hashable, Any] = {}
+        # The single device that claimed each cc's canonical result and loads
+        # it in place; every other device clones instead. The atomic claim
+        # (resolve()'s setdefault) is what prevents double-loading the
+        # canonical object.
+        self._owner_devices: dict[_PackedCCKey, int] = {}
+        # The loaded result each (cc key, device ordinal) pair executes: the
+        # canonical result for its owner device, an independent clone for
+        # every other device. Also holds temporary _InFlightBuild entries
+        # while a first load is in flight.
+        self._loaded_results: dict[tuple[_PackedCCKey, int], Any] = {}
+        # Invocation fast path for device-bound instances: resolve_build_result
+        # returns this directly, with no device query and no dict lookup.
+        # None for unbound (explicit AOT / deserialized) instances.
         self._device_bound_result: Any | None = None
         # Loading the canonical result mutates its native handle fields, while
         # cloning serializes its payload. Serialize those source operations, but
@@ -211,16 +291,17 @@ class _BuildResultCollection(dict[int, Any]):
         self._source_locks = {cc: threading.Lock() for cc in self}
 
         if loaded_device_id is not None:
+            # The caller already built and loaded the single entry on
+            # loaded_device_id: pre-record the post-conditions resolve()'s
+            # owner-load path would otherwise produce on first use.
             if len(self) != 1:
-                raise ValueError(
-                    "A device-bound build-result collection must be singular"
-                )
+                raise ValueError("A device-bound _PerCCBuildResults must be singular")
             for cc, build_result in self.items():
                 self._owner_devices[cc] = loaded_device_id
                 self._loaded_results[(cc, loaded_device_id)] = build_result
                 self._device_bound_result = build_result
 
-    def resolve(self, cc: int, device_id: int) -> Any:
+    def resolve(self, cc: _PackedCCKey, device_id: int) -> Any:
         """Return the build result loaded for ``device_id`` without recompiling."""
         # Completed loads are terminal — never removed or replaced — so the
         # warm path is one lock-free lookup with no dict mutation and no
@@ -250,7 +331,7 @@ class _BuildResultCollection(dict[int, Any]):
             self._loaded_results, (cc, device_id), load_for_device
         )
 
-    def serialize_build_result(self, cc: int) -> bytes:
+    def serialize_build_result(self, cc: _PackedCCKey) -> bytes:
         """Serialize a canonical result without racing its first device load."""
         with self._source_locks[cc]:
             return self[cc].serialize()
@@ -290,7 +371,7 @@ def cache_build_results(
     builder: Callable[[], Any],
 ) -> Any:
     """
-    Cache a shared collection of Cython build-result objects.
+    Cache the shared Cython build results for one specialization.
 
     Current-device builds are keyed by CUDA device ordinal and compute
     capability; the compiled payload, however, is shared across same-cc
@@ -302,18 +383,18 @@ def cache_build_results(
     excludes the current Python thread so wrappers can share compiled results.
 
     Args:
-        build_result_type: Cython build-result type. This separates collections
+        build_result_type: Cython build-result type. This separates entries
             that may otherwise have identical specialization keys.
         *key_args: Positional values used to form the specialization part of
             the cache key.
         compute_capability: Explicit AOT target or ``None`` for the current
             device.
-        builder: Callable that creates the build-result collection on a cache miss.
+        builder: Callable that creates the _PerCCBuildResults on a cache miss.
             Exactly one thread runs this callable for a given key while other
             threads wait for the result.
 
     Returns:
-        The cached or newly built build-result collection.
+        The cached or newly built _PerCCBuildResults.
     """
     if compute_capability is None:
         # The factory decorator already queried the device on the wrapper-cache
@@ -323,20 +404,22 @@ def cache_build_results(
         if device_info is None:
             device_info = _get_current_device_info()
         device_id, cc_key = device_info
-        target_key: Hashable = ("device", device_id, cc_key)
+        target_key = _DeviceBuildTarget(device_id, cc_key)
         user_cache_key = _make_cache_key_from_args(*key_args)
         cache_key = (build_result_type, target_key, user_cache_key)
-        donor_key = (build_result_type, cc_key, user_cache_key)
+        # The donor key is the cache key with the device ordinal dropped: it
+        # answers "has any same-cc device already compiled this?".
+        donor_key = (build_result_type, target_key.cc, user_cache_key)
 
         def build_or_clone():
             donor = _process_wide_default_build_donors.get(donor_key)
             if donor is not None:
-                cloned = _clone_collection_for_device(donor, device_id)
+                cloned = _clone_build_results_for_device(donor, device_id)
                 if cloned is not None:
                     return cloned
-            collection = builder()
-            _process_wide_default_build_donors.setdefault(donor_key, collection)
-            return collection
+            results = builder()
+            _process_wide_default_build_donors.setdefault(donor_key, results)
+            return results
 
         return _cache_single_flight(
             _process_wide_build_results_cache, cache_key, build_or_clone
@@ -346,13 +429,15 @@ def cache_build_results(
 
     target_ccs = normalize_compute_capabilities(compute_capability)
     assert target_ccs is not None
-    target_key = ("aot", tuple(cc_to_key(cc) for cc in target_ccs))
+    aot_target_key = _AOTBuildTarget(tuple(cc_to_key(cc) for cc in target_ccs))
     user_cache_key = _make_cache_key_from_args(*key_args)
-    cache_key = (build_result_type, target_key, user_cache_key)
-    return _cache_single_flight(_process_wide_build_results_cache, cache_key, builder)
+    aot_cache_key = (build_result_type, aot_target_key, user_cache_key)
+    return _cache_single_flight(
+        _process_wide_build_results_cache, aot_cache_key, builder
+    )
 
 
-def _clone_collection_for_device(donor, device_id: int):
+def _clone_build_results_for_device(donor, device_id: int):
     """Clone a same-cc donor's compiled payload for ``device_id``.
 
     Default builds are keyed per device ordinal, but their compiled payload
@@ -363,15 +448,21 @@ def _clone_collection_for_device(donor, device_id: int):
     (the v2 HostJIT backend today) — so the caller falls back to a full
     build. ``check_cc`` re-validates the payload against the current device.
     """
+    # Donors are always singular default-build results; a malformed donor is
+    # a bug and should raise here, not silently fall back below.
+    (packed_cc,) = donor
+    source = donor[packed_cc]
     try:
-        (packed_cc,) = donor
         blob = donor.serialize_build_result(packed_cc)
-        source = donor[packed_cc]
         clone = type(source).deserialize(blob, load=False, check_cc=True)
         clone.load()
     except Exception:
+        # Cloning is only an optimization, and its expected failure — a
+        # backend without build-result serialization — has no stable
+        # exception type to catch narrowly. Fall back to a full build, which
+        # surfaces genuine errors instead of swallowing them.
         return None
-    return _BuildResultCollection({packed_cc: clone}, loaded_device_id=device_id)
+    return _PerCCBuildResults({packed_cc: clone}, loaded_device_id=device_id)
 
 
 class _CacheWithRegisteredKeyFunctions:
@@ -422,14 +513,14 @@ class _CacheWithRegisteredKeyFunctions:
                         "compute_capability=<cc or list of ccs> to compile without "
                         "a GPU (e.g. with ProxyArray / ProxyValue)."
                     ) from e
+                target = _DeviceBuildTarget(device_id, cc)
                 target_cc_arg = cc
             else:
-                device_id = None
-                cc = None
+                target = None
                 target_cc_arg = kwargs.get("compute_capability")
             # No thread id in the key: the containing cache is threading.local,
             # so each thread only ever sees its own entries.
-            cache_key = (device_id, cc, user_cache_key)
+            cache_key = (target, user_cache_key)
             thread_caches = _get_thread_caches()
             cache = thread_caches.wrapper_caches.setdefault(cache_name, {})
             if cache_key not in cache:
@@ -446,9 +537,7 @@ class _CacheWithRegisteredKeyFunctions:
                 previous_device_info = getattr(
                     _thread_local, "factory_device_info", None
                 )
-                _thread_local.factory_device_info = (
-                    (device_id, cc) if device_id is not None else None
-                )
+                _thread_local.factory_device_info = target
                 try:
                     with target_cc(target_cc_arg):
                         result = func(*args, **kwargs)

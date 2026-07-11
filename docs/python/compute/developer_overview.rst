@@ -469,11 +469,12 @@ Internally, ``cuda.compute`` separates two kinds of cached state:
   ``cuda/compute/_caching.py``. Keeping wrapper caches thread-local avoids
   sharing mutable wrapper state across concurrent calls from free-threaded
   Python.
-* **Build-result collections** contain one canonical Cython build result per
-  target compute capability. They are cached by ``cache_build_results`` and may
-  be shared by wrapper objects in different Python threads. For explicit AOT
-  builds, the canonical results contain device-independent compiled payloads;
-  loaded CUDA libraries and kernels are cached separately per device ordinal.
+* **Per-cc build results** (``_PerCCBuildResults``) contain one canonical
+  Cython build result per target compute capability. They are cached by
+  ``cache_build_results`` and may be shared by wrapper objects in different
+  Python threads. For explicit AOT builds, the canonical results contain
+  device-independent compiled payloads; loaded CUDA libraries and kernels are
+  cached separately per device ordinal.
 
 The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
 thread-local and does not consult the process-wide build-result cache. When a
@@ -481,8 +482,9 @@ wrapper is constructed, a completed build-result hit requires one process-wide
 dictionary lookup and does not take an explicit cache lock. A default
 current-device build stores a direct reference to its already-loaded result, so
 executing that wrapper does not query the current device or consult a shared
-cache. Explicit or deserialized AOT results resolve through a per-collection,
-per-device dictionary; a completed lookup also takes no explicit lock.
+cache. Explicit or deserialized AOT results resolve through a per-device
+dictionary inside their shared per-cc build results; a completed lookup also
+takes no explicit lock.
 
 Design requirements
 +++++++++++++++++++
@@ -587,7 +589,7 @@ Concurrent build coordination
 +++++++++++++++++++++++++++++
 
 ``cache_build_results`` coordinates concurrent compilation misses, while the
-build-result collection uses the same single-flight helper for per-device load
+per-cc build results use the same single-flight helper for per-device load
 misses. A cache dictionary stores either a completed value or a temporary
 ``_InFlightBuild`` entry. On a miss, each caller creates a candidate in-flight
 entry, and ``dict.setdefault`` elects one caller to run the builder. Other
