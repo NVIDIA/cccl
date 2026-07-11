@@ -1007,8 +1007,8 @@ def render_one(
         for column in range(len(hitrate_algos), 2):
             fig.add_subplot(gs[hr_row, column]).axis("off")
         # Third column of the hit-rate row: ONE shared series legend beside both
-        # graphs, followed by the short explainer. Keeping the legend out of the
-        # data axes prevents it from covering high-rate curves.
+        # graphs. Keeping the legend in its own panel prevents it from covering
+        # high-rate curves (or competing with explanatory text for space).
         ax = fig.add_subplot(gs[hr_row, 2])
         ax.axis("off")
         handles, labels = hr_axes[0].get_legend_handles_labels()
@@ -1022,19 +1022,6 @@ def render_one(
                 title_fontsize=8,
                 frameon=True,
             )
-        ax.text(
-            0.5,
-            0.24,
-            "hit = contribution absorbed in the\nSMEM cache (block-scope add)\n"
-            "DAC miss = device-scope output atomic\n"
-            "GPS miss = block-private GMEM add,\nthen atomic-free gather\n\n"
-            "(measured with the figure's SampleT\n"
-            "and counter-width-specific\ninstrumented build)",
-            ha="center",
-            va="center",
-            fontsize=9,
-            color="#333",
-        )
 
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     fig.savefig(outpath, dpi=110, bbox_inches="tight")
