@@ -53,10 +53,7 @@ enum class __pool_attr_settable : bool
 {
 };
 
-template <::cudaMemPoolAttr _Attr,
-          typename _Type,
-          __pool_attr_settable _Settable,
-          typename _StorageType>
+template <::cudaMemPoolAttr _Attr, typename _Type, __pool_attr_settable _Settable, typename _StorageType>
 struct __pool_attr_impl
 {
   using type = _Type;
@@ -68,16 +65,16 @@ struct __pool_attr_impl
 
   [[nodiscard]] _CCCL_HOST_API type operator()(::cudaMemPool_t __pool) const
   {
-    const auto __value = ::cuda::__driver::__mempoolGetAttribute<_StorageType>(
-      __pool, static_cast<::CUmemPool_attribute>(_Attr));
+    const auto __value =
+      ::cuda::__driver::__mempoolGetAttribute<_StorageType>(__pool, static_cast<::CUmemPool_attribute>(_Attr));
     return static_cast<type>(__value);
   }
 
   static void set(::cudaMemPool_t __pool, type __value)
   {
-    _StorageType __value_copy = static_cast<_StorageType>(__value);
     if constexpr (_Settable == __pool_attr_settable{true})
     {
+      _StorageType __value_copy = static_cast<_StorageType>(__value);
       ::cuda::__driver::__mempoolSetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr), &__value_copy);
     }
     else
@@ -119,20 +116,18 @@ struct __pool_attr<::cudaMemPoolAttrUsedMemCurrent>
 #  if _CCCL_CTK_AT_LEAST(13, 3)
 template <>
 struct __pool_attr<::cudaMemPoolAttrAllocationType>
-    : __pool_attr_impl<
-        ::cudaMemPoolAttrAllocationType,
-        ::cudaMemAllocationType,
-        __pool_attr_settable{false},
-        ::CUmemAllocationType>
+    : __pool_attr_impl<::cudaMemPoolAttrAllocationType,
+                       ::cudaMemAllocationType,
+                       __pool_attr_settable{false},
+                       ::CUmemAllocationType>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrExportHandleTypes>
-    : __pool_attr_impl<
-        ::cudaMemPoolAttrExportHandleTypes,
-        ::cudaMemAllocationHandleType,
-        __pool_attr_settable{false},
-        ::CUmemAllocationHandleType>
+    : __pool_attr_impl<::cudaMemPoolAttrExportHandleTypes,
+                       ::cudaMemAllocationHandleType,
+                       __pool_attr_settable{false},
+                       ::CUmemAllocationHandleType>
 {};
 
 template <>
@@ -142,11 +137,10 @@ struct __pool_attr<::cudaMemPoolAttrLocationId>
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrLocationType>
-    : __pool_attr_impl<
-        ::cudaMemPoolAttrLocationType,
-        ::cudaMemLocationType,
-        __pool_attr_settable{false},
-        ::CUmemLocationType>
+    : __pool_attr_impl<::cudaMemPoolAttrLocationType,
+                       ::cudaMemLocationType,
+                       __pool_attr_settable{false},
+                       ::CUmemLocationType>
 {};
 
 template <>
