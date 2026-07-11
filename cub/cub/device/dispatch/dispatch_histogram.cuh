@@ -1639,19 +1639,27 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       }
       const int persistent_capacity    = persistent_sm_occupancy * sm_count;
       const int direct_atomic_capacity = direct_atomic_sm_occupancy * sm_count;
-      const bool persistent_fits       = (persistent_sm_occupancy > 0) && (num_thread_blocks <= persistent_capacity);
-      // Both cache-spill kernels distribute input through a pure grid-stride loop, so
-      // ANY positive co-resident block count is correct. This includes private spill:
-      // its Phase-1 zero and Phase-4 gather use the ACTUAL `gridDim` as the number of
-      // slabs. `num_thread_blocks` only sizes the temporary allocation, making it an
-      // upper bound on a private-spill grid rather than a required exact grid size.
-      // This distinction matters when the facade selects a wide-OffsetT kernel for a
-      // large input: the extra registers can lower the cache kernel from two resident
-      // blocks/SM to one even though the gather kernel used to size the allocation
-      // still admits two. Requiring the allocation-sized grid then rejected a valid
-      // launch with cudaErrorNotSupported.
+      // Both cache-spill kernels AND the pure-gather kernel can use any positive
+      // co-resident block count. The gather kernel's work-stealing queue covers every
+      // input tile regardless of grid size, and its Phase-4 column sum uses the ACTUAL
+      // `gridDim` as the number of populated slabs. Likewise, private spill's Phase-1
+      // zero and Phase-4 gather use the actual grid. `num_thread_blocks` only sizes the
+      // temporary allocation, making it an upper bound rather than a required exact
+      // cooperative grid size.
+      // This distinction matters whenever the selected cooperative kernel has lower
+      // occupancy than the sweep kernel that sized the allocation (wide OffsetT or a
+      // multi-channel pure gather can both do this). Requiring the allocation-sized
+      // grid then rejects an otherwise valid launch with cudaErrorNotSupported.
+      const bool persistent_fits    = (persistent_sm_occupancy > 0);
       const bool direct_atomic_fits = (direct_atomic_sm_occupancy > 0);
       const bool selected_fits      = use_direct_atomic_to_output ? direct_atomic_fits : persistent_fits;
+
+      dim3 gather_grid_dims = persistent_grid_dims;
+      if (!use_direct_atomic_to_output && persistent_capacity > 0
+          && static_cast<int>(gather_grid_dims.x) > persistent_capacity)
+      {
+        gather_grid_dims.x = static_cast<unsigned int>(persistent_capacity);
+      }
 
       // Grid size for the direct-atomic kernels. Unlike the gather-merge
       // kernel, the direct-atomic cuckoo / single-probe kernels distribute work
@@ -1781,7 +1789,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           int gather_zero_split     = 0;
           int gather_zero_secondary = 0;
           coop_status               = launcher_factory.doit_cooperative(
-            persistent_grid_dims,
+            gather_grid_dims,
             dim3{static_cast<unsigned int>(threads_per_block)},
             /*sharedMem=*/0u,
             stream,
