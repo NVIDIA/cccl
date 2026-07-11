@@ -65,20 +65,25 @@ static double dbg(T v)
 }
 
 template <class T, class OffsetT, class RunLengthT>
-static bool run_case(long long n, int max_seg, unsigned seed, bool sampled = false)
+static bool run_case(long long n, int max_seg, unsigned seed, bool sampled = false, int elem_offset = 0)
 {
   using RleConfigT = rle_impl::winner_config<T, K_IPT>;
   using NumRunsT   = cub::detail::choose_signed_offset_t<OffsetT>;
 
-  const size_t pad = (size_t) n; // EXACT allocation: the bounded-TMA tail must never over-read
+  const size_t pad = (size_t) n + elem_offset; // EXACT allocation: the bounded-TMA tail must never over-read
   auto h           = gen_keys<T>(n, max_seg, seed);
 
-  T *dk{}, *du{};
+  T *dk_alloc{}, *du{};
   RunLengthT* dc{};
   NumRunsT* dn{};
   void* dtemp{};
-  CHECK_CUDA(cudaMalloc(&dk, sizeof(T) * pad));
-  CHECK_CUDA(cudaMemset(dk, 0, sizeof(T) * pad));
+  CHECK_CUDA(cudaMalloc(&dk_alloc, sizeof(T) * pad));
+  CHECK_CUDA(cudaMemset(dk_alloc, 0, sizeof(T) * pad));
+  T* const dk = dk_alloc + elem_offset;
+  for (int e = 0; e < elem_offset; ++e)
+  {
+    CHECK_CUDA(cudaMemcpy(dk_alloc + e, h.data(), sizeof(T), cudaMemcpyHostToDevice));
+  }
   CHECK_CUDA(cudaMemcpy(dk, h.data(), sizeof(T) * (size_t) n, cudaMemcpyHostToDevice));
   CHECK_CUDA(cudaMalloc(&du, sizeof(T) * (size_t) n));
   CHECK_CUDA(cudaMalloc(&dc, sizeof(RunLengthT) * (size_t) n));
@@ -168,10 +173,10 @@ static bool run_case(long long n, int max_seg, unsigned seed, bool sampled = fal
       }
     }
   }
-  std::printf("%-8s n=%-12lld max_seg=%-8d runs=%-11lld\n", ok ? "PASS" : "FAIL", n, max_seg, refR);
+  std::printf("%-8s n=%-12lld max_seg=%-8d off=%d runs=%-11lld\n", ok ? "PASS" : "FAIL", n, max_seg, elem_offset, refR);
 
   cudaFree(tmp);
-  cudaFree(dk);
+  cudaFree(dk_alloc);
   cudaFree(du);
   cudaFree(dc);
   cudaFree(dn);
@@ -189,6 +194,7 @@ static int run_combo(const char* t_name, const char* off_name, const char* len_n
   {
     long long n;
     int max_seg;
+    int elem_offset;
   };
   const Case cases[] = {
     {200000, 2}, // mid-dispatch band at local tile geometry (caught the mid-tile-count bug)
@@ -205,13 +211,15 @@ static int run_combo(const char* t_name, const char* off_name, const char* len_n
     {(1 << 24) + 8191, 1000000}, // very long runs + partial tail
     {1 << 28, 1}, // full bench size, dense
     {1 << 28, 1048576}, // full bench size, longest regime
+    {1030 * kTileSize + 7, 1, 1}, // misaligned d_keys, dense + partial tail (above the stock-dispatch cutoff)
+    {2048 * kTileSize, 32, 1}, // misaligned d_keys, mid, full last tile
   };
   int fails = 0;
   for (const Case& c : cases)
   {
     for (unsigned seed : {1u, 42u})
     {
-      fails += run_case<T, OffsetT, RunLengthT>(c.n, c.max_seg, seed) ? 0 : 1;
+      fails += run_case<T, OffsetT, RunLengthT>(c.n, c.max_seg, seed, false, c.elem_offset) ? 0 : 1;
     }
   }
   if (huge)
