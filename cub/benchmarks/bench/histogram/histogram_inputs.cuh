@@ -32,6 +32,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/std/array>
 #include <cuda/std/type_traits>
 
 #include <cmath>
@@ -55,8 +56,10 @@ enum class InputShape
   powerlaw, // decaying warm set (many hot bins). KNOB = target normalized
             // entropy in [0,1]; the rank exponent is solved to hit it.
             // Independent of the concentrated knob.
-  hash_synonym, // hot bins all collide on one cache slot. KNOB = hot share
-                // in [0,1] (default 0.9).
+  hash_synonym, // hot bins all collide on one primary cache slot, with their
+                // secondary slots primed by blockers so both single-probe and
+                // two-probe caches reject the collisions. KNOB = hot share in
+                // [0,1] (default 0.9).
   stale_resident, // a cold working set of W distinct bins that recurs in every
                   // block, sized against the per-block no-eviction SMEM cache of S
                   // slots to yield a controllable hit rate. KNOB = target cache hit
@@ -431,6 +434,63 @@ struct poison_functor
       return mapper(bin);
     }
     return mapper(poison_bin);
+  }
+};
+
+// hash_synonym: prime the common primary slot plus every distinct secondary
+// slot used by the remaining hot synonyms, then draw the steady stream from
+// those synonyms over a uniform floor. The claim phase makes the shape
+// adversarial to both the direct-mapped and full two-probe cuckoo caches;
+// without it, cuckoo simply places primary synonyms in their mostly-distinct
+// secondary slots and reports an uninformative ~100% hit rate.
+template <class SampleT, class Mapper>
+struct hash_synonym_functor
+{
+  ::cuda::std::array<int, kHashSynonymCount> synonym_bins;
+  ::cuda::std::array<int, kHashSynonymCount> claim_bins;
+  int synonym_count;
+  int claim_count;
+  int num_bins;
+  uint64_t window_mask;
+  uint64_t claim_prefix;
+  uint64_t sample_stride;
+  uint64_t seed;
+  double hot_share;
+  bool enabled;
+  Mapper mapper;
+
+  template <class I>
+  __host__ __device__ SampleT operator()(I i) const
+  {
+    const uint64_t index   = static_cast<uint64_t>(i);
+    const uint64_t sample  = index / sample_stride;
+    const uint64_t channel = index % sample_stride;
+    if (enabled && (index & window_mask) < claim_prefix)
+    {
+      return mapper(claim_bins[sample % static_cast<uint64_t>(claim_count)]);
+    }
+
+    const uint64_t stream_seed     = seed + channel * kChannelSeedStride;
+    constexpr uint64_t select_salt = 0x6861736853796E31ull; // "hashSyn1"
+    constexpr uint64_t value_salt  = 0x6861736853796E32ull; // "hashSyn2"
+    const double select            = u01_from_hash(element_key(sample, stream_seed ^ select_salt));
+    const double value             = u01_from_hash(element_key(sample, stream_seed ^ value_salt));
+    if (enabled && select < hot_share)
+    {
+      uint64_t hot = static_cast<uint64_t>(value * static_cast<double>(synonym_count));
+      if (hot >= static_cast<uint64_t>(synonym_count))
+      {
+        hot = static_cast<uint64_t>(synonym_count - 1);
+      }
+      return mapper(synonym_bins[hot]);
+    }
+
+    uint64_t bin = static_cast<uint64_t>(value * static_cast<double>(num_bins));
+    if (bin >= static_cast<uint64_t>(num_bins))
+    {
+      bin = static_cast<uint64_t>(num_bins - 1);
+    }
+    return mapper(static_cast<int>(bin));
   }
 };
 
@@ -840,6 +900,88 @@ inline std::vector<int> find_hash_synonyms(int num_bins, int slots, uint64_t see
   return synonyms;
 }
 
+struct hash_synonym_bin_set
+{
+  ::cuda::std::array<int, kHashSynonymCount> synonyms{};
+  ::cuda::std::array<int, kHashSynonymCount> claims{};
+  int synonym_count = 0;
+  int claim_count   = 0;
+  bool valid        = false;
+};
+
+// Construct the hot synonyms plus a short cache-priming set. The first claim is
+// synonym[0], which occupies the common primary slot. Every other distinct
+// secondary slot used by a hot synonym gets a non-synonym primary-hash owner as
+// its blocker. Consequently only synonym[0] can reside in either cache policy;
+// the remaining hot keys find both candidates occupied and spill.
+inline hash_synonym_bin_set make_hash_synonym_bin_set(int num_bins, int slots, uint64_t seed)
+{
+  hash_synonym_bin_set result{};
+  const std::vector<int> synonyms = find_hash_synonyms(num_bins, slots, seed);
+  if (synonyms.empty())
+  {
+    return result;
+  }
+
+  result.synonym_count = static_cast<int>(synonyms.size());
+  for (int i = 0; i < result.synonym_count; ++i)
+  {
+    result.synonyms[i] = synonyms[static_cast<std::size_t>(i)];
+  }
+  result.claims[result.claim_count++] = result.synonyms[0];
+
+  std::vector<bool> is_synonym(static_cast<std::size_t>(num_bins), false);
+  for (int i = 0; i < result.synonym_count; ++i)
+  {
+    is_synonym[static_cast<std::size_t>(result.synonyms[i])] = true;
+  }
+  std::vector<int> primary_blocker(static_cast<std::size_t>(slots), -1);
+  for (int bin = 0; bin < num_bins; ++bin)
+  {
+    if (!is_synonym[static_cast<std::size_t>(bin)])
+    {
+      const int slot = benchmark_cache_slot(bin, slots, cub::detail::histogram::cache_primary_hash_multiplier);
+      if (primary_blocker[static_cast<std::size_t>(slot)] < 0)
+      {
+        primary_blocker[static_cast<std::size_t>(slot)] = bin;
+      }
+    }
+  }
+
+  const int primary_slot =
+    benchmark_cache_slot(result.synonyms[0], slots, cub::detail::histogram::cache_primary_hash_multiplier);
+  ::cuda::std::array<int, kHashSynonymCount> secondary_slots{};
+  int blocked_count = 0;
+  for (int i = 1; i < result.synonym_count; ++i)
+  {
+    const int secondary_slot =
+      benchmark_cache_slot(result.synonyms[i], slots, cub::detail::histogram::cache_secondary_hash_multiplier);
+    if (secondary_slot == primary_slot)
+    {
+      continue;
+    }
+    bool already_blocked = false;
+    for (int j = 0; j < blocked_count; ++j)
+    {
+      already_blocked |= secondary_slots[j] == secondary_slot;
+    }
+    if (already_blocked)
+    {
+      continue;
+    }
+
+    const int blocker = primary_blocker[static_cast<std::size_t>(secondary_slot)];
+    if (blocker < 0 || result.claim_count >= kHashSynonymCount)
+    {
+      return hash_synonym_bin_set{};
+    }
+    result.claims[result.claim_count++] = blocker;
+    secondary_slots[blocked_count++]    = secondary_slot;
+  }
+  result.valid = true;
+  return result;
+}
+
 // Build the per-bin pmf for an i.i.d. distribution shape, honoring the spec's
 // knob. Hot ranks are scattered across bins via scatter_bin() so the mode is
 // not forced to bin 0.
@@ -1100,8 +1242,9 @@ inline uint64_t stale_working_set(double target_hit_rate, int64_t cache_slots, i
 
 inline bool is_ordering_shape(InputShape shape)
 {
-  return shape == InputShape::stale_resident || shape == InputShape::temporal_phases
-      || shape == InputShape::strided_sweep || shape == InputShape::sawtooth || shape == InputShape::poison;
+  return shape == InputShape::hash_synonym || shape == InputShape::stale_resident
+      || shape == InputShape::temporal_phases || shape == InputShape::strided_sweep || shape == InputShape::sawtooth
+      || shape == InputShape::poison;
 }
 
 // ---------------------------------------------------------------------------
@@ -1161,6 +1304,29 @@ thrust::device_vector<SampleT> generate_shape_impl(
 
   switch (spec.shape)
   {
+    case InputShape::hash_synonym: {
+      const int64_t slots             = (resolved_cache_slots > 0) ? resolved_cache_slots : kAdversarialCacheSlots;
+      const bool multi_layout         = stream_stride > 1;
+      const uint64_t window           = multi_layout ? kPoisonMultiWindow : kPoisonSingleWindow;
+      const uint64_t claim_prefix     = multi_layout ? kPoisonMultiClaimPrefix : kPoisonSingleClaimPrefix;
+      const double hot_share          = std::max(0.0, std::min(knob_or(spec, kDefaultHashSynonymHotShare), 1.0));
+      const hash_synonym_bin_set bins = make_hash_synonym_bin_set(num_bins, static_cast<int>(slots), seed);
+      hash_synonym_functor<SampleT, Mapper> fn{
+        bins.synonyms,
+        bins.claims,
+        bins.synonym_count,
+        bins.claim_count,
+        num_bins,
+        window - 1,
+        claim_prefix,
+        stream_stride,
+        seed,
+        hot_share,
+        bins.valid,
+        mapper};
+      thrust::tabulate(out.begin(), out.end(), fn);
+      break;
+    }
     case InputShape::strided_sweep: {
       // KNOB = stride.
       const uint64_t stride = spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : kDefaultStridedStride;
