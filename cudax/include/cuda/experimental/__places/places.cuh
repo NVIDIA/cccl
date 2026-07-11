@@ -75,7 +75,7 @@ class exec_place;
 class data_place_composite;
 
 // Forward declarations of composite allocator functions — defined in localized_array.cuh
-void* allocate_composite_data_place(const data_place_composite& p, ::std::ptrdiff_t size);
+void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize);
 void deallocate_composite_data_place(void* ptr);
 
 /**
@@ -362,6 +362,20 @@ public:
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
   {
     return pimpl_->allocate(size, stream);
+  }
+
+  /**
+   * @brief Allocate memory at this data place for a tensor with the given
+   * extents (geometry-aware allocation)
+   *
+   * For most places this is equivalent to allocate(prod(data_dims) * elemsize);
+   * composite places use the geometry to back each block of the allocation on
+   * the place that owns it according to the partitioner. Extents follow the
+   * dimension-0-fastest convention of dim4::get_index().
+   */
+  void* allocate(dim4 data_dims, size_t elemsize, cudaStream_t stream = nullptr) const
+  {
+    return pimpl_->allocate(data_dims, elemsize, stream);
   }
 
   /**
@@ -1729,9 +1743,19 @@ public:
     return (grid_ < o.grid_) ? -1 : 1;
   }
 
-  void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    return allocate_composite_data_place(*this, size);
+    // A byte count alone does not carry the tensor geometry the partitioner
+    // needs (it maps element coordinates to places), so there is no meaningful
+    // way to service this request.
+    throw ::std::runtime_error(
+      "composite data_place cannot allocate from a byte count alone: use allocate(data_dims, elemsize) or allocate "
+      "through a logical data");
+  }
+
+  void* allocate(dim4 data_dims, size_t elemsize, cudaStream_t) const override
+  {
+    return allocate_composite_data_place(*this, data_dims, elemsize);
   }
 
   void deallocate(void* ptr, size_t, cudaStream_t) const override
