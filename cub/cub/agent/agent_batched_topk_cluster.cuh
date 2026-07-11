@@ -26,9 +26,10 @@
 //!      folds the bucket into its own local splitter key.
 //!
 //! The final filter places each block's output through per-CTA shared-memory
-//! atomics, seeded by a single combined 64-bit cross-CTA prefix scan (each
-//! block's selected-front and candidate-back base offsets); no cluster-wide
-//! output cursor is kept in `state`.
+//! atomics, seeded by a cross-CTA prefix scan of two independent 32-bit DSMEM
+//! reductions (each block's selected-front and candidate-back base offsets)
+//! fused directly into the placement counters; no cluster-wide output cursor is
+//! kept in `state`.
 
 #pragma once
 
@@ -225,8 +226,8 @@ struct agent_batched_topk_cluster
 
   // 32-bit covers every supported segment: the public entry caps the statically-known maximum segment size at 2^21, so
   // a runtime value exceeding its declared bound is a caller precondition violation (undefined behavior). Unsigned
-  // because all offsets, ranks, and block counts are non-negative (segment sizes are clamped to >= 0 upstream). The
-  // cross-CTA scan also packs two lanes into one `uint64_t`, which needs 32-bit lanes.
+  // because all offsets, ranks, and block counts are non-negative (segment sizes are clamped to >= 0 upstream).
+  // `prime_placement_counters` also returns its two prefix lanes packed into one `uint64_t`, which needs 32-bit lanes.
   using offset_t     = ::cuda::std::uint32_t;
   using out_offset_t = ::cuda::std::uint32_t;
   using state_t      = cluster_topk_state<key_t, offset_t, out_offset_t>;
@@ -238,7 +239,7 @@ struct agent_batched_topk_cluster
   static constexpr bool is_tie_reversed =
     TieBreak == ::cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
 
-  // Push direction of the combined cross-CTA prefix scan (`combined_prefix_scan`). The leader must be *last* in scan
+  // Push direction of the cross-CTA prefix scan (`prime_placement_counters`). The leader must be *last* in scan
   // order so it derives its own (merged-away) counts from the predecessor sum: deterministic-prefer-smaller puts the
   // leader at the last effective rank and scans ascending; every other config (deterministic-prefer-larger and the
   // whole non-deterministic path) keeps the leader at rank 0 and scans descending, which makes rank 0 last. Matches the
@@ -383,16 +384,16 @@ struct agent_batched_topk_cluster
   // sync the non-leader blocks fold their bucket counts into the leader's
   // `hist` through DSMEM atomics. `state` is meaningful only in the leader
   // block; the other blocks reach it exclusively through the DSMEM mapping.
-  // `prefix_pair` packs this block's exclusive cross-CTA scan result (high = `sel_prefix`, low = `cand_prefix`); peers
-  // add into it through DSMEM (`add_remote_prefix`), so it must sit at an identical offset in every block's storage.
-  // The remaining scalars are block-local: `front_local_cnt`/`back_local_cnt` hand out output slots via SMEM atomics,
-  // `num_strictly_selected` accumulates this block's strictly-selected count across passes, and `my_candidates` holds
-  // the last pass's splitter-bucket count.
+  // `front_local_cnt`/`back_local_cnt` are the final-filter output-slot counters, but they first serve as the cross-CTA
+  // scan accumulators: peers add their selected/candidate counts into them through DSMEM (`add_remote_prefix`) while
+  // this block seeds its own back base locally, leaving each counter primed with this block's absolute region base
+  // (front = `sel_prefix`, back = `num_selected + cand_prefix`). Because peers reach them over DSMEM they must sit at
+  // an identical offset in every block's storage. `num_strictly_selected` accumulates this block's strictly-selected
+  // count across passes, and `my_candidates` holds the last pass's splitter-bucket count.
   struct _TempStorage
   {
     offset_t hist[num_buckets];
     state_t state;
-    ::cuda::std::uint64_t prefix_pair;
     offset_t front_local_cnt;
     offset_t back_local_cnt;
     offset_t num_strictly_selected;
@@ -407,9 +408,6 @@ struct agent_batched_topk_cluster
     // the final filter. Block-local (never reached through DSMEM).
     key_t edge_keys[2 * load_align_items];
   };
-  // The `red.add.u64` on `prefix_pair`'s `.shared::cluster` address needs 8-byte alignment; the `uint64_t` member is
-  // already at an 8-aligned struct offset, so guarding the struct's alignment covers the absolute (and peer) address.
-  static_assert(alignof(_TempStorage) >= 8, "prefix_pair must be 8-byte aligned for the u64 DSMEM atomic");
   // Split point of `edge_keys`: head edge in `[0, head_edge_cap_items)`, tail edge in `[head_edge_cap_items, 2 *
   // head_edge_cap_items)`.
   static constexpr int head_edge_cap_items = load_align_items;
@@ -773,15 +771,24 @@ private:
     return static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(temp_storage.hist));
   }
 
-  // Increment this block's own histogram bucket by one, at cluster scope so it stays mutually atomic with the DSMEM
-  // folds peers push into the leader's `hist` (Step 2, `hist_fold_remote`). Cluster and cta scope lower to identical
-  // shared-atomic SASS here, so applying it unconditionally (non-leaders, lone CTA) costs nothing and drops the leader
-  // branch.
+  // Cluster-scope `red.add` of `v` into this CTA's own shared `u32` at 32-bit `.shared::cta` address `addr` (e.g. from
+  // `__cvta_generic_to_shared`). Cluster scope -- not the address space -- is what keeps it mutually atomic with peers'
+  // DSMEM `red.add`s into the same location (`hist_fold_remote`, `add_remote_prefix`), so this CTA's own address needs
+  // no `mapa`; it lowers to the same shared-atomic SASS as cta scope. `hist_inc` passes a compile-time `1`, which
+  // current ptxas still folds into the warp-aggregated `ATOMS.POPC.INC.32` (verified in SASS) despite the register
+  // operand.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void add_local_shared_cluster(::cuda::std::uint32_t addr, offset_t v)
+  {
+    asm volatile("red.relaxed.cluster.shared::cta.add.u32 [%0], %1;" : : "r"(addr), "r"(v) : "memory");
+  }
+
+  // Increment this block's own histogram bucket by one. Applied unconditionally (non-leaders and the lone CTA
+  // included): the cluster-scope add costs nothing there and it drops the leader branch.
   _CCCL_DEVICE _CCCL_FORCEINLINE void hist_inc(::cuda::std::uint32_t base32, int bucket)
   {
     _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
     const ::cuda::std::uint32_t addr = base32 + static_cast<::cuda::std::uint32_t>(bucket) * sizeof(offset_t);
-    asm volatile("red.relaxed.cluster.shared::cta.add.u32 [%0], 1;" : : "r"(addr) : "memory");
+    add_local_shared_cluster(addr, offset_t{1});
   }
 
   // Step 2: a non-leader folds one bucket into the leader's histogram through DSMEM. `own_bucket_addr32` is the
@@ -806,16 +813,37 @@ private:
     return reinterpret_cast<state_t*>(remote);
   }
 
-  // Adds the packed 64-bit `v` to the `prefix_pair` of the CTA at cluster rank `target_rank` through DSMEM (mirrors
-  // `hist_fold_remote`: `mapa` to `target_rank`, then a cluster-scope `red.add`). Exact because the two 32-bit lanes
-  // never carry into each other. Drives the combined cross-CTA selected/candidate prefix scan.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void add_remote_prefix(unsigned int target_rank, ::cuda::std::uint64_t v)
+  // Adds `push_front`/`push_cand` into the front/back placement counters of the CTA at cluster rank `target_rank`
+  // through DSMEM (mirrors `hist_fold_remote`: `mapa` to `target_rank`, then a cluster-scope `red.add` per counter).
+  // Two independent 32-bit reductions rather than one 64-bit one: `red.add.u64` on shared memory is emulated with a
+  // CAS spin loop, whereas `red.add.u32` is a native shared-memory atomic. Drives the cross-CTA selected/candidate
+  // prefix scan (see `prime_placement_counters`).
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  add_remote_prefix(unsigned int target_rank, offset_t push_front, offset_t push_cand)
   {
-    const ::cuda::std::uint32_t own =
-      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.prefix_pair));
-    ::cuda::std::uint32_t remote;
-    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote) : "r"(own), "r"(target_rank));
-    asm volatile("red.relaxed.cluster.shared::cluster.add.u64 [%0], %1;" : : "r"(remote), "l"(v) : "memory");
+    const ::cuda::std::uint32_t own_front =
+      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.front_local_cnt));
+    const ::cuda::std::uint32_t own_back =
+      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.back_local_cnt));
+    ::cuda::std::uint32_t remote_front, remote_back;
+    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote_front) : "r"(own_front), "r"(target_rank));
+    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote_back) : "r"(own_back), "r"(target_rank));
+    asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;"
+                 :
+                 : "r"(remote_front), "r"(push_front)
+                 : "memory");
+    asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;"
+                 :
+                 : "r"(remote_back), "r"(push_cand)
+                 : "memory");
+  }
+
+  // Folds the back region base (`num_selected`) into this CTA's own `back_local_cnt`, in parallel with the peers'
+  // cluster-scope candidate-prefix pushes into the same counter (`add_remote_prefix`).
+  _CCCL_DEVICE _CCCL_FORCEINLINE void seed_local_back(offset_t v)
+  {
+    add_local_shared_cluster(static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.back_local_cnt)),
+                             v);
   }
 
   // Parallel prefix sum (cub::BlockScan) over the leader's merged histogram
@@ -1173,24 +1201,37 @@ private:
     }
   }
 
-  // Combined 64-bit exclusive cross-CTA prefix scan over each working CTA's packed `(front_count << 32) | cand_count`.
-  // Each CTA pushes its counts into every successor's `prefix_pair` in `is_scan_descending` order; the leader is last
-  // and pushes to nobody, so it ends up holding the full predecessor sum. `prefix_pair` is pre-zeroed in `process_impl`
-  // and untouched until here, so a single post-push barrier suffices. Idle ranks and the leader pass `packed == 0`.
-  // Returns this CTA's exclusive prefix packed the same way; `is_single_cta` returns 0.
+  // Exclusive cross-CTA prefix scan fused with priming the final-filter placement counters. Each working CTA pushes its
+  // `push_front`/`push_cand` counts into every successor's front/back counter in `is_scan_descending` order (the leader
+  // is last and pushes to nobody, so it holds the full predecessor sum) and folds its own back-region base
+  // `num_selected` into its own back counter. All are commutative `red.add`s into the counters zeroed in `process_impl`
+  // (so a single post-push barrier suffices), leaving `front_local_cnt = sel_prefix` and
+  // `back_local_cnt = num_selected + cand_prefix` -- the absolute output-slot bases `place_one` expects.
   //
-  // The successor pushes are lane-parallel: the `red.add` reductions are commutative and target distinct remote ranks,
-  // so each thread owns a strided slice of the successor range (one push per thread for the usual small cluster). All
-  // threads see the same CTA-uniform `packed`, so the guard and the post-push barrier stay uniform.
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint64_t combined_prefix_scan(::cuda::std::uint64_t packed)
+  // Returns this CTA's exclusive prefix packed as `(sel_prefix << 32) | cand_prefix` for the driver's region math;
+  // `is_single_cta` yields 0 (front stays 0, back is just `num_selected`). The successor pushes are lane-parallel (each
+  // thread owns a strided slice); all threads see CTA-uniform counts, so the guard and the barrier stay uniform.
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint64_t
+  prime_placement_counters(offset_t push_front, offset_t push_cand, offset_t num_selected)
   {
     if (is_single_cta)
     {
+      // No peers: the front base is 0 (untouched since init) and the back base is just `num_selected`.
+      if (tid == 0)
+      {
+        temp_storage.back_local_cnt = num_selected;
+      }
+      __syncthreads();
       return ::cuda::std::uint64_t{0};
     }
-    if (packed != ::cuda::std::uint64_t{0})
+    // Fold this CTA's back base in parallel with the peers pushing their candidate counts into the same counter.
+    if (tid == 0)
     {
-      // Only working (non-leader) ranks reach here with a nonzero count (see above); idle ranks / the leader push 0.
+      seed_local_back(num_selected);
+    }
+    if (push_front != offset_t{0} || push_cand != offset_t{0})
+    {
+      // Only working (non-leader) ranks reach here with a nonzero count; idle ranks / the leader push 0.
       _CCCL_ASSERT(cluster_rank < layout.eff_cluster_blocks, "a nonzero prefix count must come from a working rank");
       if constexpr (is_scan_descending)
       {
@@ -1198,7 +1239,7 @@ private:
         for (unsigned int rank = threadIdx.x; rank < cluster_rank; rank += threads_per_block) // lower ranks follow;
                                                                                               // leader last
         {
-          add_remote_prefix(rank, packed);
+          add_remote_prefix(rank, push_front, push_cand);
         }
       }
       else
@@ -1209,14 +1250,22 @@ private:
         for (unsigned int rank = cluster_rank + 1u + threadIdx.x; rank < layout.eff_cluster_blocks;
              rank += threads_per_block)
         {
-          add_remote_prefix(rank, packed);
+          add_remote_prefix(rank, push_front, push_cand);
         }
       }
     }
     // TODO(cccl): idle ranks arrive here only to keep this barrier reachable; a sub-cluster mbarrier over the working
     // ranks would let them exit (see the pass loop).
     cluster_or_block_sync(is_single_cta);
-    return temp_storage.prefix_pair;
+    // The local seed guarantees the back counter carries at least `num_selected` (postcondition of the fused prime).
+    _CCCL_ASSERT(temp_storage.back_local_cnt >= num_selected,
+                 "back counter must include the seeded region base after the scan");
+    const offset_t sel_prefix  = temp_storage.front_local_cnt;
+    const offset_t cand_prefix = temp_storage.back_local_cnt - num_selected;
+    // Every thread must finish snapshotting the primed bases before any lane's `place_one` mutates the same counters:
+    // the leading boundary edge in each driver has no barrier of its own before its first placement atomic.
+    __syncthreads();
+    return (static_cast<::cuda::std::uint64_t>(sel_prefix) << 32) | static_cast<::cuda::std::uint64_t>(cand_prefix);
   }
 
   // Deterministic final-filter state: the `run()`-local tie-break values (counts, prefixes, region extents) plus the
@@ -1280,10 +1329,10 @@ private:
   static constexpr offset_t flag_selected  = 2; // strictly selected: routed to the front
 
   // Shared per-key arrival placement core (called by `place_tile` for both final filters): route one key by class to
-  // the front (selected) or back (candidate) counter, each primed with its region base by the final-filter drivers so
-  // the SMEM atomic returns the absolute output slot with no per-key offset. The uniform `out < k` guard drops losing
-  // candidates but always accepts selected keys; pairs builds also copy the key's value from `seg_idx`. (Deterministic
-  // index-ordered tie resolution goes through `emit_indexed` instead.)
+  // the front (selected) or back (candidate) counter, each primed with its region base by `prime_placement_counters`
+  // so the SMEM atomic returns the absolute output slot with no per-key offset. The uniform `out < k` guard drops
+  // losing candidates but always accepts selected keys; pairs builds also copy the key's value from `seg_idx`.
+  // (Deterministic index-ordered tie resolution goes through `emit_indexed` instead.)
   template <class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   place_one(KeyOutIt block_keys_out, bool is_cand, const key_t& key, offset_t seg_idx)
@@ -1778,7 +1827,7 @@ private:
     }
   }
 
-  // Non-deterministic final filter driver. The combined cross-CTA scan gives this block disjoint front/back bases
+  // Non-deterministic final filter driver. `prime_placement_counters` gives this block disjoint front/back bases
   // (`sel_prefix`/`cand_prefix`); overflow keys then stream through `run_pass` (resident keys folded as its `mid`) and
   // place into block-local SMEM atomics. `should_continue` is always true: every key must be classified.
   template <class IdentifyOp, class KeyOutIt>
@@ -1788,9 +1837,10 @@ private:
     const bool participates = !layout.is_idle_rank && (cluster_rank != layout.leader_rank);
     const offset_t my_sel   = participates ? temp_storage.num_strictly_selected : offset_t{0};
     const offset_t my_cand  = participates ? temp_storage.my_candidates : offset_t{0};
-    const ::cuda::std::uint64_t packed =
-      (static_cast<::cuda::std::uint64_t>(my_sel) << 32) | static_cast<::cuda::std::uint64_t>(my_cand);
-    const ::cuda::std::uint64_t packed_prefix = combined_prefix_scan(packed);
+    // The scan doubles as counter priming: it leaves this CTA's placement counters holding its absolute region bases
+    // (front = `sel_prefix`, back = `num_selected + cand_prefix`), so no explicit priming follows.
+    const offset_t num_selected               = static_cast<offset_t>(k) - static_cast<offset_t>(num_kth);
+    const ::cuda::std::uint64_t packed_prefix = prime_placement_counters(my_sel, my_cand, num_selected);
     const offset_t sel_prefix                 = static_cast<offset_t>(packed_prefix >> 32);
     const offset_t cand_prefix                = static_cast<offset_t>(packed_prefix & 0xffffffffu);
     // The selected region has size `k - num_kth`, so the selected prefix leaves room for the `num_kth` tie-back slots.
@@ -1800,15 +1850,6 @@ private:
 
     nondet_filter_state<IdentifyOp, KeyOutIt> state{
       identify_op, block_keys_out, num_kth, sel_prefix, cand_prefix, resident_keys};
-
-    // Prime the placement counters with this CTA's absolute region bases so `place_one` returns final output slots with
-    // no per-key offset; the barrier publishes both writes before the first placement.
-    if (tid == 0)
-    {
-      temp_storage.front_local_cnt = sel_prefix;
-      temp_storage.back_local_cnt  = static_cast<offset_t>(k - num_kth) + cand_prefix;
-    }
-    __syncthreads();
 
     run_pass(
       // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
@@ -1839,10 +1880,9 @@ private:
   // Deterministic final filter: both regions fill forward -- strictly-selected keys into the front `[0, num_selected)`
   // via a SMEM atomic (primed with this CTA's `sel_prefix`), candidates into the back `[num_selected, k)`. Candidate
   // placement uses arrival-order atomics, with an index-ordered BlockScan only on the single boundary-crossing
-  // (straddling) CTA. A
-  // combined cross-CTA scan gives this block its disjoint front/back bases and lets it detect whether all/none/some of
-  // its candidates win. This member computes the `det_filter_state` inputs and hands them to `run_filter`, which drives
-  // the per-region sweeps.
+  // (straddling) CTA. `prime_placement_counters` gives this block its disjoint front/back bases and lets it detect
+  // whether all/none/some of its candidates win. This member computes the `det_filter_state` inputs and hands them to
+  // `run_filter`, which drives the per-region sweeps.
   template <detail::topk::select SelectDirection, class IdentifyOp, class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void write_deterministic_topk(
     out_offset_t num_kth, IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
@@ -1865,11 +1905,12 @@ private:
     // nothing folds into the front here. The leader and idle ranks push 0 -- the leader because its merged histogram
     // cannot self-count (it derives its own front from the total below), idle ranks because they own nothing.
     const offset_t push_front = my_sel;
-    const ::cuda::std::uint64_t packed =
-      (static_cast<::cuda::std::uint64_t>(push_front) << 32) | static_cast<::cuda::std::uint64_t>(my_cand);
-    const ::cuda::std::uint64_t packed_prefix = combined_prefix_scan(packed);
-    const offset_t sel_prefix                 = static_cast<offset_t>(packed_prefix >> 32);
-    const offset_t cand_prefix                = static_cast<offset_t>(packed_prefix & 0xffffffffu);
+    // The scan doubles as counter priming: it leaves this CTA's placement counters holding its absolute region bases
+    // (front = `sel_prefix`, back = `num_selected + cand_prefix`), so no explicit priming follows.
+    const ::cuda::std::uint64_t packed_prefix =
+      prime_placement_counters(push_front, my_cand, static_cast<offset_t>(num_selected));
+    const offset_t sel_prefix  = static_cast<offset_t>(packed_prefix >> 32);
+    const offset_t cand_prefix = static_cast<offset_t>(packed_prefix & 0xffffffffu);
     // Guards the leader's remainder subtractions below (`total_candidates - cand_prefix`, `num_selected - sel_prefix`).
     _CCCL_ASSERT(cand_prefix <= total_candidates && sel_prefix <= static_cast<offset_t>(num_selected),
                  "cross-CTA prefixes must stay within their candidate and selected totals");
@@ -1947,15 +1988,6 @@ private:
       is_tail_edge_terminal,
       cand_prefix,
       !is_select_no_cand_cta};
-
-    // Prime the placement counters with this CTA's absolute region bases so `place_one` returns final output slots with
-    // no per-key offset; the barrier publishes both writes before `run_filter`'s first placement.
-    if (tid == 0)
-    {
-      temp_storage.front_local_cnt = sel_prefix;
-      temp_storage.back_local_cnt  = static_cast<offset_t>(num_selected) + cand_prefix;
-    }
-    __syncthreads();
     run_filter(state);
   }
 
@@ -2537,9 +2569,10 @@ private:
     }
 
     // No cluster barrier after the final filter pass: both filter paths place output via block-local SMEM atomics into
-    // gmem, so the last cross-CTA DSMEM access is the combined scan's `prefix_pair` push, already fenced by its
-    // post-push cluster barrier (and `early_stop` is cached pre-scan). With no shared-memory access to another block
-    // after the scan, a block can return without risking a "cluster target block not present" fault from a straggler.
+    // gmem, so the last cross-CTA DSMEM access is the scan's counter push in `prime_placement_counters`, already fenced
+    // by its post-push cluster barrier (and `early_stop` is cached pre-scan). With no shared-memory access to another
+    // block after the scan, a block can return without risking a "cluster target block not present" fault from a
+    // straggler.
   }
 
   // Copies an entire segment `input[i] -> output[i]` for the select-all fast path (`k >= segment_size`). Runs before
@@ -2732,11 +2765,12 @@ private:
       temp_storage.state.len         = static_cast<offset_t>(segment_size);
       temp_storage.state.k           = k;
       temp_storage.state.result_pair = 0;
-      // Front-load the cross-pass accumulators so the initial cluster barrier below (arrive here, wait in the first
-      // pass) publishes the zeros to all ranks: the combined scan's DSMEM pushes add into an already-zeroed
-      // `prefix_pair` (needing only a post-push barrier), and idle/leader ranks that never write `my_candidates` read
-      // 0. (The placement counters are primed with region bases in the final-filter drivers, not here.)
-      temp_storage.prefix_pair           = 0;
+      // Front-load the scan accumulators so the initial cluster barrier below (arrive here, wait in the first pass)
+      // publishes the zeros to all ranks: the final filter's `prime_placement_counters` then adds into already-zeroed
+      // `front_local_cnt`/`back_local_cnt` (its own local seed + peers' DSMEM pushes, needing only a post-push
+      // barrier). `my_candidates` is zeroed too so idle/leader ranks that never write it read 0.
+      temp_storage.front_local_cnt       = 0;
+      temp_storage.back_local_cnt        = 0;
       temp_storage.num_strictly_selected = 0;
       temp_storage.my_candidates         = 0;
     }
@@ -2744,7 +2778,7 @@ private:
     // Only arrive here; the matching wait is deferred to just before the first cross-CTA fold in `run_radix_passes`'
     // first pass, so the cluster-arrival latency overlaps the fused first-pass load + histogram. Safe because nothing
     // between here and that wait touches another rank's DSMEM (the first-pass histogram writes only block-local
-    // `hist`; `leader_state`/`prefix_pair` are untouched until later).
+    // `hist`; `leader_state` and the scan counters are untouched until later).
     cluster_or_block_arrive(is_single_cta);
 
     [[maybe_unused]] const bool is_ok =
