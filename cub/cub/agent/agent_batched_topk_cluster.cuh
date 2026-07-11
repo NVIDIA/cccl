@@ -971,15 +971,16 @@ private:
 
   // Shared driver for one overflow pass. `block_apply(stage, overflow_idx)` folds the chunk `overflow_idx` resident
   // in streaming slot `stage` (block-load path); `generic_apply(chunk)` folds an overflow chunk read straight from
-  // gmem (fallback). `mid()` runs once on a full pass -- after the first reload wave (`stream_stages` visits) is issued
-  // but before it is waited on, overlapping the caller's resident-chunk work with those in-flight copies (skipped if
-  // phase 1 stops early); it must be block-uniform with no unmatched barrier. `should_continue()` is polled once
-  // after each consumed chunk (before its refill copy is issued); returning false breaks the stream so the final
+  // gmem (fallback). `mid()` runs at most once per pass, positioned to overlap the caller's resident-chunk work with
+  // in-flight copies: after the first reload wave (`stream_stages` visits) is issued but before it is waited on
+  // (block-load path), or before the gmem loop (fallback). A phase-1 early stop on the block-load path skips it, since
+  // nothing is then left to place; it must be block-uniform with no unmatched barrier. `should_continue()` is polled
+  // once after each consumed chunk (before its refill copy is issued); returning false breaks the stream so the final
   // filter bails once the top-k is placed. Its result must be block-uniform (all lanes break together, else the
-  // post-break barrier deadlocks) and it is evaluated by every lane, so it may contain a barrier (the deterministic
-  // filter's does, to read its placement counters block-wide); the histogram and non-deterministic filter pass an
-  // always-true predicate. An early break can leave prefetches in flight, so the pass drains the
-  // remaining stages before returning (a full pass ends with an empty `stream_inflight_mask`, so the drain is a no-op).
+  // post-break barrier deadlocks) and it is evaluated by every lane, so it may contain a barrier (both final filters'
+  // do, to read their placement counters block-wide); the histogram passes an always-true predicate. An early break
+  // can leave prefetches in flight, so the pass drains the remaining stages before returning (a full pass ends with an
+  // empty `stream_inflight_mask`, so the drain is a no-op).
   template <typename BlockApply, typename GenericApply, typename Mid, typename Continue>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   run_pass(BlockApply&& block_apply, GenericApply&& generic_apply, Mid&& mid, Continue&& should_continue)
@@ -1057,6 +1058,8 @@ private:
       if (!is_stopped)
       {
         // The reload wave is now in flight; run the caller's resident-chunk work to hide its latency before waiting.
+        // Skipped on an early stop: the stream only breaks once this CTA's whole contribution is placed, so no resident
+        // key can still be required (the non-deterministic filter folds its resident keys as `mid`).
         mid();
 
         // Phase 2: consume the remaining visits (their loads were issued in phase 1 and overlapped `mid`).
@@ -1328,6 +1331,25 @@ private:
   static constexpr offset_t flag_candidate = 1; // tie candidate: routed to the back, counted by the boundary scan
   static constexpr offset_t flag_selected  = 2; // strictly selected: routed to the front
 
+  // Map thread `tid`'s item slot `i` to its position within the current tile. `Blocked` is mandatory for the
+  // deterministic filter: `emit_indexed`'s `BlockScan` ranks candidates in blocked order, which is what makes the tie
+  // ranks segment-index-ordered. The order-independent non-deterministic filter picks striped so consecutive threads
+  // hit consecutive addresses (no SMEM bank conflicts on the staged reads, coalesced loads in the gmem fallback).
+  // `process_tiles` and `place_tile` must use the same `Blocked` so `keys[i]`/`flags[i]` denote the same element;
+  // `emit_indexed` (deterministic-only) is intrinsically blocked.
+  template <bool Blocked, int ItemsPerThread>
+  _CCCL_DEVICE _CCCL_FORCEINLINE int tile_item_pos(int tile_base, int i) const
+  {
+    if constexpr (Blocked)
+    {
+      return tile_base + tid * ItemsPerThread + i;
+    }
+    else
+    {
+      return tile_base + i * threads_per_block + tid;
+    }
+  }
+
   // Shared per-key arrival placement core (called by `place_tile` for both final filters): route one key by class to
   // the front (selected) or back (candidate) counter, each primed with its region base by `prime_placement_counters`
   // so the SMEM atomic returns the absolute output slot with no per-key offset. The uniform `out < k` guard drops
@@ -1374,7 +1396,7 @@ private:
   // the lazy crossing tile is overwritten in index order later. `do_arrival == false` (terminal tile only) skips
   // candidates here and leaves them to `emit_indexed`; the lazy path passes `true` and its crossing tile is later
   // overwritten by `emit_indexed`.
-  template <bool Reversed, int ItemsPerThread, class State>
+  template <bool Reversed, bool Blocked, int ItemsPerThread, class State>
   _CCCL_DEVICE _CCCL_FORCEINLINE void place_tile(
     State& state,
     const key_t (&keys)[ItemsPerThread],
@@ -1392,7 +1414,7 @@ private:
       {
         continue;
       }
-      const int pos          = tile_base + tid * ItemsPerThread + i;
+      const int pos          = tile_item_pos<Blocked, ItemsPerThread>(tile_base, i);
       const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
       place_one(state.block_keys_out, is_cand, keys[i], seg_idx);
     }
@@ -1431,7 +1453,8 @@ private:
         const offset_t global_rank = base + excl[i];
         if (global_rank < static_cast<offset_t>(state.num_back))
         {
-          const int pos             = tile_base + tid * ItemsPerThread + i;
+          // `emit_indexed` is deterministic-only, and its `BlockScan` ranks assume a blocked arrangement.
+          const int pos             = tile_item_pos<true, ItemsPerThread>(tile_base, i);
           const out_offset_t out    = static_cast<out_offset_t>(num_selected + global_rank);
           const offset_t seg_idx    = seg_base + static_cast<offset_t>(Reversed ? (count - 1 - pos) : pos);
           state.block_keys_out[out] = keys[i];
@@ -1442,17 +1465,17 @@ private:
     return tile_total;
   }
 
-  // Classify and place each of `count` keys in scan order, tiled by `threads_per_block * ItemsPerThread`. `FromSmem`
+  // Classify and place each of `count` keys, tiled by `threads_per_block * ItemsPerThread`. `FromSmem`
   // picks the key source: `smem_src` (indexed by the folded in-region position) or gmem `block_keys_in` (indexed by the
-  // segment-local index `seg_base + folded`); `Reversed` walks the span high-to-low. Both final filters share this via
-  // `Deterministic`:
-  //   * `true` (a `det_filter_state`): resolves the boundary ties in segment-index order via `emit_indexed`, so callers
-  //     walk the regions in global-index order and carry `state.running`/`state.is_tie_active` across tiles; the
-  //     lazy-scan `else` branch holds the only explicit per-tile `__syncthreads()`; `region_is_terminal` marks the
+  // segment-local index `seg_base + folded`); `Reversed` walks the span high-to-low. `Blocked` selects the intra-tile
+  // thread arrangement (see `tile_item_pos`). Both final filters share this via `Deterministic`:
+  //   * `true` (a `det_filter_state`, blocked): resolves the boundary ties in segment-index order via `emit_indexed`,
+  //     so callers walk the regions in global-index order and carry `state.running`/`state.is_tie_active` across tiles;
+  //     the lazy-scan `else` branch holds the only explicit per-tile `__syncthreads()`; `region_is_terminal` marks the
   //     CTA's last.
-  //   * `false` (a `nondet_filter_state`): all arrival-order placement (`place_tile` with `do_arrival == true`); no
-  //     scan/tie-state/barrier, `Reversed`/`region_is_terminal` unused.
-  template <int ItemsPerThread, bool FromSmem, bool Reversed, bool Deterministic, class State>
+  //   * `false` (a `nondet_filter_state`, striped): all arrival-order placement (`place_tile` with `do_arrival ==
+  //     true`); no scan/tie-state/barrier, `Reversed`/`region_is_terminal` unused.
+  template <int ItemsPerThread, bool FromSmem, bool Reversed, bool Deterministic, bool Blocked, class State>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_tiles(
     State& state,
     [[maybe_unused]] const key_t* smem_src,
@@ -1460,6 +1483,9 @@ private:
     int count,
     [[maybe_unused]] bool region_is_terminal)
   {
+    // The deterministic filter's index-ordered `emit_indexed` scan only produces segment-index-ordered ranks in a
+    // blocked arrangement; only the order-independent non-deterministic filter may pick striped.
+    static_assert(!Deterministic || Blocked, "the deterministic filter requires a blocked arrangement");
     // The SMEM-source clause is exempt when reading from gmem (`FromSmem == false`, the generic overflow fallback
     // passes `nullptr`) or for an empty tile.
     _CCCL_ASSERT(count >= 0 && seg_base <= layout.segment_size_off
@@ -1474,7 +1500,7 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; ++i)
       {
-        const int pos = tile_base + tid * ItemsPerThread + i;
+        const int pos = tile_item_pos<Blocked, ItemsPerThread>(tile_base, i);
         // Classify each in-range key once into `flags[i]` (see `flag_*`); `place_tile`/`emit_indexed` read it back
         // without re-running `identify_op`. Out-of-range lanes stay `flag_none` and are skipped everywhere.
         flags[i] = flag_none;
@@ -1503,7 +1529,7 @@ private:
       {
         // Non-deterministic: place every tile in arrival order (selected to the front, the first `num_back` candidates
         // to the back via `place_one`'s `out < k` guard). No index-ordered scan, tie-state, or per-tile barrier.
-        place_tile<Reversed>(state, keys, flags, seg_base, count, tile_base, /*do_arrival=*/true);
+        place_tile<Reversed, Blocked>(state, keys, flags, seg_base, count, tile_base, /*do_arrival=*/true);
       }
       else
       {
@@ -1517,7 +1543,7 @@ private:
         // A select-all CTA never scans (every candidate wins), so it places entirely via `place_tile`'s arrival route.
         const bool is_terminal_tile = state.is_tie_active && region_is_terminal && (tile_base + tile_size >= count);
         const bool do_arrival       = state.is_tie_active && (state.is_select_all_cand_cta || !is_terminal_tile);
-        place_tile<Reversed>(state, keys, flags, seg_base, count, tile_base, do_arrival);
+        place_tile<Reversed, Blocked>(state, keys, flags, seg_base, count, tile_base, do_arrival);
 
         if (state.is_tie_active && !state.is_select_all_cand_cta)
         {
@@ -1571,7 +1597,8 @@ private:
       process_tiles<tie_break_items_per_thread_clamped,
                     /*FromSmem=*/true,
                     /*Reversed=*/is_residency_reversed,
-                    /*Deterministic=*/true>(
+                    /*Deterministic=*/true,
+                    /*Blocked=*/true>(
         state, state.resident_front.data(), state.front_seg_base, state.front_count, state.is_resident_terminal);
     }
     else
@@ -1587,7 +1614,8 @@ private:
         process_tiles<tie_break_items_per_thread_clamped,
                       /*FromSmem=*/true,
                       /*Reversed=*/is_residency_reversed,
-                      /*Deterministic=*/true>(
+                      /*Deterministic=*/true,
+                      /*Blocked=*/true>(
           state, ::cuda::ptr_rebind<key_t>(key_slots + local_slot * ChunkBytes), chunk.offset, chunk.count, false);
       }
     }
@@ -1625,8 +1653,11 @@ private:
         // The multi-chunk overflow stream stays on the lazy per-tile boundary detection (`region_is_terminal ==
         // false`): a stray terminal direct scan here would need the stream to flag its last chunk, and the saving
         // is one barrier on one tile.
-        process_tiles<tie_break_items_streamed, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed, /*Deterministic=*/true>(
-          state, keys.data(), base_off, static_cast<int>(keys.size()), false);
+        process_tiles<tie_break_items_streamed,
+                      /*FromSmem=*/true,
+                      /*Reversed=*/is_tie_reversed,
+                      /*Deterministic=*/true,
+                      /*Blocked=*/true>(state, keys.data(), base_off, static_cast<int>(keys.size()), false);
       },
       // Generic fallback: read the overflow chunk straight from gmem (full count; the fallback never peels a tail).
       [&](const auto& chunk) {
@@ -1634,7 +1665,8 @@ private:
         process_tiles<tie_break_items_streamed,
                       /*FromSmem=*/false,
                       /*Reversed=*/is_tie_reversed,
-                      /*Deterministic=*/true>(state, nullptr, chunk.offset, chunk.count, false);
+                      /*Deterministic=*/true,
+                      /*Blocked=*/true>(state, nullptr, chunk.offset, chunk.count, false);
       },
       // No interleaved resident work: the deterministic filter folds its resident span separately.
       [] {},
@@ -1657,7 +1689,7 @@ private:
     if constexpr (use_block_load_to_shared)
     {
       _CCCL_ASSERT(count >= 0 && count <= head_edge_cap_items, "a boundary edge must fit in its edge_keys slot");
-      process_tiles<1, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed, /*Deterministic=*/true>(
+      process_tiles<1, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed, /*Deterministic=*/true, /*Blocked=*/true>(
         state, keys, seg_base, count, is_terminal);
     }
   }
@@ -1756,7 +1788,7 @@ private:
   // Order-independent counterpart of the deterministic filter: every region is swept by
   // `process_tiles<..., Deterministic=false>` (arrival-order placement, no scan/tie-state/barrier). Since order is
   // irrelevant, `write_nondeterministic_topk` folds the resident keys as the overflow stream's `mid` work (overlapping
-  // the first reloads) and never bails early.
+  // the first reloads) and bails out of the overflow stream once its contribution is fully placed.
   template <class IdentifyOp, class KeyOutIt>
   struct nondet_filter_state
   {
@@ -1765,6 +1797,7 @@ private:
     out_offset_t num_back;
     offset_t sel_prefix;
     offset_t cand_prefix;
+    offset_t my_front; // this CTA's front region size (see `write_deterministic_topk`'s `my_front`)
     smem_keys_t resident_keys;
   };
 
@@ -1788,8 +1821,11 @@ private:
           layout.part.global_index(layout.resident_base + local_chunk), layout.segment_size_off, layout.head_items);
         const int bulk_count_items = static_cast<int>(
           ::cuda::round_down(static_cast<offset_t>(chunk.count), static_cast<offset_t>(load_align_items)));
-        process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false>(
-          state, resident_ptr + cursor_items, chunk.offset, bulk_count_items, false);
+        process_tiles<tie_break_items_per_thread_clamped,
+                      /*FromSmem=*/true,
+                      /*Reversed=*/false,
+                      /*Deterministic=*/false,
+                      /*Blocked=*/false>(state, resident_ptr + cursor_items, chunk.offset, bulk_count_items, false);
         cursor_items += bulk_count_items;
       }
       // Persistent boundary edges (unroll factor 1: an edge spans fewer than `load_align_items` items): head prefix at
@@ -1797,12 +1833,12 @@ private:
       // `segment_size - tail_edge_len_items`).
       if (layout.head_edge_len_items > 0)
       {
-        process_tiles<1, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false>(
+        process_tiles<1, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false, /*Blocked=*/false>(
           state, temp_storage.edge_keys, offset_t{0}, layout.head_edge_len_items, false);
       }
       if (layout.tail_edge_len_items > 0)
       {
-        process_tiles<1, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false>(
+        process_tiles<1, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false, /*Blocked=*/false>(
           state,
           temp_storage.edge_keys + head_edge_cap_items,
           layout.segment_size_off - static_cast<offset_t>(layout.tail_edge_len_items),
@@ -1817,7 +1853,11 @@ private:
       for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
       {
         const auto chunk = get_chunk(layout.part.global_index(local_chunk), layout.segment_size_off, layout.head_items);
-        process_tiles<tie_break_items_per_thread_clamped, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false>(
+        process_tiles<tie_break_items_per_thread_clamped,
+                      /*FromSmem=*/true,
+                      /*Reversed=*/false,
+                      /*Deterministic=*/false,
+                      /*Blocked=*/false>(
           state,
           ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_chunk) * ChunkBytes),
           chunk.offset,
@@ -1829,7 +1869,8 @@ private:
 
   // Non-deterministic final filter driver. `prime_placement_counters` gives this block disjoint front/back bases
   // (`sel_prefix`/`cand_prefix`); overflow keys then stream through `run_pass` (resident keys folded as its `mid`) and
-  // place into block-local SMEM atomics. `should_continue` is always true: every key must be classified.
+  // place into block-local SMEM atomics. `run_pass` breaks the stream once this CTA's contribution is fully placed
+  // (all its selected keys in the front, and its back counter reached the region end `k`).
   template <class IdentifyOp, class KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void write_nondeterministic_topk(
     out_offset_t num_kth, IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
@@ -1847,9 +1888,13 @@ private:
     _CCCL_ASSERT(static_cast<::cuda::std::uint64_t>(sel_prefix) + static_cast<::cuda::std::uint64_t>(num_kth)
                    <= static_cast<::cuda::std::uint64_t>(k),
                  "selected prefix must fit before the tie-back output region");
+    // This CTA's front region size (mirrors `write_deterministic_topk`): the leader is last in scan order and derives
+    // it from the total (`num_selected - sel_prefix`) since its merged histogram can't self-count; others place
+    // `my_sel`.
+    const offset_t my_front = (cluster_rank == layout.leader_rank) ? (num_selected - sel_prefix) : my_sel;
 
     nondet_filter_state<IdentifyOp, KeyOutIt> state{
-      identify_op, block_keys_out, num_kth, sel_prefix, cand_prefix, resident_keys};
+      identify_op, block_keys_out, num_kth, sel_prefix, cand_prefix, my_front, resident_keys};
 
     run_pass(
       // Block-load: fold the chunk `overflow_idx`, resident in streaming slot `stage`, straight from SMEM.
@@ -1859,21 +1904,35 @@ private:
           get_chunk(
             layout.part.global_index(layout.overflow_base + overflow_idx), layout.segment_size_off, layout.head_items)
             .offset;
-        process_tiles<tie_break_items_streamed, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false>(
-          state, keys.data(), base_off, static_cast<int>(keys.size()), false);
+        process_tiles<tie_break_items_streamed,
+                      /*FromSmem=*/true,
+                      /*Reversed=*/false,
+                      /*Deterministic=*/false,
+                      /*Blocked=*/false>(state, keys.data(), base_off, static_cast<int>(keys.size()), false);
       },
       // Generic fallback: read the overflow chunk straight from gmem.
       [&](const auto& chunk) {
-        process_tiles<tie_break_items_streamed, /*FromSmem=*/false, /*Reversed=*/false, /*Deterministic=*/false>(
-          state, nullptr, chunk.offset, chunk.count, false);
+        process_tiles<tie_break_items_streamed,
+                      /*FromSmem=*/false,
+                      /*Reversed=*/false,
+                      /*Deterministic=*/false,
+                      /*Blocked=*/false>(state, nullptr, chunk.offset, chunk.count, false);
       },
       // Fold the resident keys + boundary edges, overlapping the first overflow reloads.
       [&] {
         nondet_fold_resident(state);
       },
-      // Never break early: every key must be classified (selected/candidate keys placed, the rest dropped in-tile).
-      [] {
-        return true;
+      // Break the stream once this CTA's whole contribution is placed: its front is full (`front_local_cnt` reached
+      // `sel_prefix + my_front`) and its back is full (`back_local_cnt >= k`, so further candidates fail `place_one`'s
+      // `out < k` guard). The barrier makes the counter reads block-wide, resyncing lanes that raced through the
+      // barrier-free tiles. The stop needs both conditions, so a CTA whose candidates never fill its back to `k`
+      // simply never stops early.
+      [&] {
+        __syncthreads();
+        const offset_t front_end = state.sel_prefix + state.my_front;
+        _CCCL_ASSERT(temp_storage.front_local_cnt <= front_end,
+                     "front counter must stay within this CTA's front region");
+        return !(temp_storage.front_local_cnt >= front_end && temp_storage.back_local_cnt >= static_cast<offset_t>(k));
       });
   }
 

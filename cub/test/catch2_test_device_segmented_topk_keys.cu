@@ -119,9 +119,9 @@ using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 32, 4 * 1024>;
 using key_types =
   c2h::type_list<cuda::std::uint8_t
 // clang-format off
-  #if TEST_HALF_T()
-  , half_t
-  #endif // TEST_HALF_T()
+#if TEST_HALF_T()
+                , half_t
+#endif // TEST_HALF_T()
   >;
 // clang-format on
 #elif TEST_TYPES == 1
@@ -130,10 +130,10 @@ using key_types = c2h::type_list<float>;
 using key_types =
   c2h::type_list<cuda::std::uint64_t
 // clang-format off
-  #if TEST_BF_T()
-  , bfloat16_t
-  #endif // TEST_BF_T()
-  >;
+#if TEST_BF_T()
+                , bfloat16_t
+#endif // TEST_BF_T()
+>;
 // clang-format on
 #endif
 
