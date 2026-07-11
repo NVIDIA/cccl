@@ -648,7 +648,6 @@ def draw_hitrate(ax, hr_algo_cells, sample, shape, elements_list, title):
     ax.tick_params(axis="x", labelsize=7, rotation=45)
     if any_pts:
         ax.set_ylim(-2, 102)
-        ax.legend(fontsize=7, title="# elements", title_fontsize=7)
     else:
         ax.text(
             0.5,
@@ -993,9 +992,12 @@ def render_one(
 
     if has_hr:
         hr_row = 1 + perf_rows
+        hr_axes = []
         for column, algo in enumerate(hitrate_algos):
+            hr_ax = fig.add_subplot(gs[hr_row, column])
+            hr_axes.append(hr_ax)
             draw_hitrate(
-                fig.add_subplot(gs[hr_row, column]),
+                hr_ax,
                 hr_for_binary.get(algo, {}),
                 sample,
                 shape,
@@ -1004,12 +1006,25 @@ def render_one(
             )
         for column in range(len(hitrate_algos), 2):
             fig.add_subplot(gs[hr_row, column]).axis("off")
-        # third column of the hit-rate row: short explainer
+        # Third column of the hit-rate row: ONE shared series legend beside both
+        # graphs, followed by the short explainer. Keeping the legend out of the
+        # data axes prevents it from covering high-rate curves.
         ax = fig.add_subplot(gs[hr_row, 2])
         ax.axis("off")
+        handles, labels = hr_axes[0].get_legend_handles_labels()
+        if handles:
+            ax.legend(
+                handles,
+                labels,
+                loc="upper center",
+                fontsize=8,
+                title="# elements",
+                title_fontsize=8,
+                frameon=True,
+            )
         ax.text(
             0.5,
-            0.5,
+            0.24,
             "hit = contribution absorbed in the\nSMEM cache (block-scope add)\n"
             "DAC miss = device-scope output atomic\n"
             "GPS miss = block-private GMEM add,\nthen atomic-free gather\n\n"

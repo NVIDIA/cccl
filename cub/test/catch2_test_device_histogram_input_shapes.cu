@@ -461,33 +461,39 @@ C2H_TEST("histogram input: scattered sawtooth has a stable upper-window support"
   REQUIRE(nonzero_bins(bin_counts(decimal_bins, 60000)) == period);
 }
 
-C2H_TEST("histogram input: hash_synonym uses one real primary cache slot", "[histogram][input_shapes]")
+C2H_TEST("histogram input: hash_synonym blocks both cache probes", "[histogram][input_shapes]")
 {
   constexpr int num_bins          = 32768;
   constexpr int cache_slots       = 1024;
-  constexpr int64_t samples       = 400000;
-  const std::vector<int> synonyms = find_hash_synonyms(num_bins, cache_slots, /*seed=*/42);
-  REQUIRE(synonyms.size() == kHashSynonymCount);
+  constexpr int64_t samples       = 4000000;
+  const hash_synonym_bin_set bins = make_hash_synonym_bin_set(num_bins, cache_slots, /*seed=*/42);
+  REQUIRE(bins.valid);
+  REQUIRE(bins.synonym_count == kHashSynonymCount);
+  REQUIRE(bins.claim_count > 1);
   const int target_slot =
-    benchmark_cache_slot(synonyms.front(), cache_slots, cub::detail::histogram::cache_primary_hash_multiplier);
-  for (const int bin : synonyms)
+    benchmark_cache_slot(bins.synonyms[0], cache_slots, cub::detail::histogram::cache_primary_hash_multiplier);
+  std::vector<int> claimed_slots;
+  for (int i = 0; i < bins.claim_count; ++i)
   {
-    REQUIRE(
-      benchmark_cache_slot(bin, cache_slots, cub::detail::histogram::cache_primary_hash_multiplier) == target_slot);
+    claimed_slots.push_back(
+      benchmark_cache_slot(bins.claims[i], cache_slots, cub::detail::histogram::cache_primary_hash_multiplier));
   }
-
-  const std::vector<double> pmf = build_pmf(parse_input_shape("hash_synonym"), num_bins, 42, cache_slots);
-  double hot_mass               = 0.0;
-  for (const int bin : synonyms)
+  for (int i = 0; i < bins.synonym_count; ++i)
   {
-    hot_mass += pmf[static_cast<std::size_t>(bin)];
+    REQUIRE(benchmark_cache_slot(bins.synonyms[i], cache_slots, cub::detail::histogram::cache_primary_hash_multiplier)
+            == target_slot);
+    if (i > 0)
+    {
+      const int secondary_slot =
+        benchmark_cache_slot(bins.synonyms[i], cache_slots, cub::detail::histogram::cache_secondary_hash_multiplier);
+      REQUIRE(std::find(claimed_slots.begin(), claimed_slots.end(), secondary_slot) != claimed_slots.end());
+    }
   }
-  REQUIRE(std::abs(hot_mass - (0.9 + 0.1 * kHashSynonymCount / num_bins)) < 1e-12);
 
   const auto counts = bin_counts_even<int32_t>(
     parse_input_shape("hash_synonym"), samples, num_bins, /*lower=*/0, /*upper=*/num_bins, 42, cache_slots);
   std::vector<int> observed = top_bin_indices(counts, kHashSynonymCount);
-  std::vector<int> expected = synonyms;
+  std::vector<int> expected(bins.synonyms.begin(), bins.synonyms.begin() + bins.synonym_count);
   std::sort(observed.begin(), observed.end());
   std::sort(expected.begin(), expected.end());
   REQUIRE(observed == expected);

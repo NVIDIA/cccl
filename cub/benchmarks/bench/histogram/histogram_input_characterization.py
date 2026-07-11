@@ -89,8 +89,8 @@ SHAPE_BLURB = {
     "(targeting ~50% hits)",
     "stale_resident:0.25": "W=4S cold bins in an upper-bin window vs an S-slot no-eviction cache "
     "(targeting ~25% hits)",
-    "hash_synonym": "up to 32 hot bins selected from one real primary-hash bucket of the representative "
-    "8192-slot cache, over a uniform floor",
+    "hash_synonym": "up to 32 hot bins from one real primary-hash bucket; a short prefix primes their "
+    "secondary slots so both one- and two-probe caches reject the collisions",
     "sawtooth": "bin(i)=i%period: a monotonic ramp that resets periodically (sequential locality, bounded working set)",
     "poison": "two blocker bins claim the cache slots probed by one poison bin, then the poison bin dominates and misses",
     "sawtooth:8192:2654435761:1": "8192 upper-window bins visited in a coprime strided cycle "
