@@ -502,6 +502,7 @@ struct agent_batched_topk_cluster
   _CCCL_DEVICE _CCCL_FORCEINLINE void stage_and_fold_edge(key_t* dst, const key_t* src, int count, Apply&& apply) const
   {
     _CCCL_ASSERT(count >= 0 && count <= head_edge_cap_items, "a boundary edge must fit in its edge_keys slot");
+    _CCCL_PRAGMA_NOUNROLL()
     for (int local = tid; local < count; local += threads_per_block)
     {
       const key_t key = src[local];
@@ -629,6 +630,7 @@ struct agent_batched_topk_cluster
   {
     _CCCL_ASSERT(stage >= 0 && stage < PipelineStages, "pipeline stage index out of range");
     const ::cuda::std::uint32_t parity = (load_phase >> stage) & 1u;
+    _CCCL_PRAGMA_NOUNROLL()
     while (!::cuda::ptx::mbarrier_try_wait_parity(&temp_storage.load_mbar[stage], parity))
     {
     }
@@ -752,9 +754,21 @@ struct agent_batched_topk_cluster
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void reset_hist()
   {
-    for (int i = tid; i < num_buckets; i += threads_per_block)
+    // The `num_buckets / threads_per_block` full strided rounds are in range for every thread, so they unroll with no
+    // bounds check; the `< threads_per_block` leftover is at most one more guarded write per thread, compiled out when
+    // `num_buckets` is a multiple of `threads_per_block`.
+    constexpr int full_rounds = num_buckets / threads_per_block;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int r = 0; r < full_rounds; ++r)
     {
-      temp_storage.hist[i] = 0;
+      temp_storage.hist[r * threads_per_block + tid] = 0;
+    }
+    if constexpr (num_buckets % threads_per_block != 0)
+    {
+      if (const int i = full_rounds * threads_per_block + tid; i < num_buckets)
+      {
+        temp_storage.hist[i] = 0;
+      }
     }
   }
 
@@ -1003,6 +1017,7 @@ private:
         // Wait for all threads to leave the resident load's final wait before re-arming its shared mbarriers; else
         // the phase advances twice and a lagging thread misses the flip and spins forever.
         __syncthreads();
+        _CCCL_PRAGMA_NOUNROLL()
         for (int i = 0; i < stream_stages; ++i)
         {
           const offset_t overflow_idx =
@@ -1047,6 +1062,7 @@ private:
       // in the streaming slots), which issues the prefetch loads for this pass's reload wave into the freed slots.
       bool is_stopped      = false;
       const offset_t split = (::cuda::std::min) (static_cast<offset_t>(stream_stages), layout.overflow_chunks);
+      _CCCL_PRAGMA_NOUNROLL()
       for (offset_t i = 0; i < split; ++i)
       {
         if (!consume(i))
@@ -1064,6 +1080,7 @@ private:
         mid();
 
         // Phase 2: consume the remaining visits (their loads were issued in phase 1 and overlapped `mid`).
+        _CCCL_PRAGMA_NOUNROLL()
         for (offset_t i = split; i < layout.overflow_chunks; ++i)
         {
           if (!consume(i))
@@ -1077,6 +1094,7 @@ private:
       // mbarriers were never waited, and they must complete before the block can exit (their slots are never read).
       // `stream_inflight_mask` is block-uniform (set/cleared under uniform control flow), so the trip count and each
       // collective `wait_stage` are uniform across the block.
+      _CCCL_PRAGMA_NOUNROLL()
       while (stream_inflight_mask != ::cuda::std::uint32_t{0})
       {
         const int drain_stage = __ffs(static_cast<int>(stream_inflight_mask)) - 1;
@@ -1091,6 +1109,7 @@ private:
       // chunks first (preserving the prior ordering), then read the overflow keys straight from gmem each pass (no
       // SMEM reuse), with the walk still snaking for L2 locality.
       mid();
+      _CCCL_PRAGMA_NOUNROLL()
       for (offset_t i = 0; i < layout.overflow_chunks; ++i)
       {
         const offset_t overflow_idx = stream_is_forward ? i : (layout.overflow_chunks - 1 - i);
@@ -1559,6 +1578,7 @@ private:
       // Phase A: while ties remain, load blocked (`emit_indexed`'s scan needs it) and resolve them. A region entered
       // past the crossing (its ties already placed) has `is_tie_active == false`, so phase A is skipped and everything
       // falls through to phase B.
+      _CCCL_PRAGMA_NOUNROLL()
       for (; state.is_tie_active && tile_base < count; tile_base += tile_size)
       {
         key_t keys[ItemsPerThread];
@@ -1611,6 +1631,7 @@ private:
       // Phase B: ties are placed, so any remaining candidate-class keys are losers (dropped via `do_arrival == false`);
       // only strictly-selected keys are placed, to the front in arrival order. Load striped (coalesced/conflict-free);
       // no scan or barrier -- `front_local_cnt` is order-independent, so the A->B switch needs none either.
+      _CCCL_PRAGMA_NOUNROLL()
       for (; tile_base < count; tile_base += tile_size)
       {
         key_t keys[ItemsPerThread];
@@ -1623,6 +1644,7 @@ private:
     else
     {
       // Single striped pass: the non-deterministic filter (always) or a deterministic CTA that never scans.
+      _CCCL_PRAGMA_NOUNROLL()
       for (; tile_base < count; tile_base += tile_size)
       {
         key_t keys[ItemsPerThread];
@@ -1671,6 +1693,7 @@ private:
     else
     {
       const int resident_chunk_count = static_cast<int>(layout.my_resident_chunks);
+      _CCCL_PRAGMA_NOUNROLL()
       for (int slot = 0; slot < resident_chunk_count; ++slot)
       {
         const int local_slot     = is_residency_reversed ? (resident_chunk_count - 1 - slot) : slot;
@@ -1887,6 +1910,7 @@ private:
       // below), so iterate the aligned bulk (`round_down(count, load_align_items)`), not `chunk.count`.
       key_t* const resident_ptr = state.resident_keys.data();
       int cursor_items          = 0;
+      _CCCL_PRAGMA_NOUNROLL()
       for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
       {
         const auto chunk = get_chunk(
@@ -1922,6 +1946,7 @@ private:
     {
       // Generic fallback: each resident chunk is staged in its own `key_slots` slot (indexed by `local_chunk`); no
       // edges are peeled (boundary items are read as ordinary chunks).
+      _CCCL_PRAGMA_NOUNROLL()
       for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
       {
         const auto chunk = get_chunk(layout.part.global_index(local_chunk), layout.segment_size_off, layout.head_items);
@@ -2201,6 +2226,7 @@ private:
         int next_off_bytes = 0;
 
         // Load every resident chunk's aligned bulk, densely packed in slot order.
+        _CCCL_PRAGMA_NOUNROLL()
         for (int stage = 0; stage < prologue; ++stage)
         {
           const auto src = bulk_src(static_cast<offset_t>(stage));
@@ -2212,6 +2238,7 @@ private:
         // and consumed in the same order), and `bulk_src(local_chunk)` recomputes its length, so the read span needs
         // no stored per-stage state.
         int read_off_bytes = 0;
+        _CCCL_PRAGMA_NOUNROLL()
         for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
         {
           const int stage = static_cast<int>(local_chunk % static_cast<offset_t>(prologue));
@@ -2243,6 +2270,7 @@ private:
     }
     else
     {
+      _CCCL_PRAGMA_NOUNROLL()
       for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
       {
         const offset_t chunk_idx = layout.part.global_index(layout.resident_base + local_chunk);
@@ -2454,6 +2482,7 @@ private:
     constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
 
     int last_pass = num_passes;
+    _CCCL_PRAGMA_NOUNROLL()
     for (int pass = 0; pass < num_passes; ++pass)
     {
       const bool is_first_pass = (pass == 0);
@@ -2487,6 +2516,7 @@ private:
           }
           else
           {
+            _CCCL_PRAGMA_NOUNROLL()
             for (offset_t local_chunk = 0; local_chunk < layout.my_resident_chunks; ++local_chunk)
             {
               const offset_t chunk_idx = layout.part.global_index(layout.resident_base + local_chunk);
@@ -2533,13 +2563,27 @@ private:
       if (cluster_rank != layout.leader_rank && !layout.is_idle_rank)
       {
         const ::cuda::std::uint32_t hist_smem32 = hist_base32();
-        for (int i = tid; i < num_buckets; i += threads_per_block)
-        {
+        // Same split as `reset_hist`: unroll the full strided rounds, then (only when there's a remainder) at most one
+        // more guarded fold.
+        const auto fold_bucket = [&](int i) {
           const offset_t bucket_count = temp_storage.hist[i];
           if (bucket_count != 0)
           {
             hist_fold_remote(
               hist_smem32 + static_cast<::cuda::std::uint32_t>(i) * sizeof(offset_t), bucket_count, layout.leader_rank);
+          }
+        };
+        constexpr int full_rounds = num_buckets / threads_per_block;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int r = 0; r < full_rounds; ++r)
+        {
+          fold_bucket(r * threads_per_block + tid);
+        }
+        if constexpr (num_buckets % threads_per_block != 0)
+        {
+          if (const int i = full_rounds * threads_per_block + tid; i < num_buckets)
+          {
+            fold_bucket(i);
           }
         }
       }
@@ -2759,6 +2803,7 @@ private:
       }
     }();
 
+    _CCCL_PRAGMA_NOUNROLL()
     for (offset_t base = 0; base < full_tiles; base += step)
     {
       offset_t idx[copy_items];
