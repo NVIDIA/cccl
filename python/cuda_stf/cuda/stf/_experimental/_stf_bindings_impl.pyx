@@ -19,6 +19,7 @@ from cpython.pycapsule cimport (
 )
 from libc.stddef cimport ptrdiff_t
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
+from libc.stdlib cimport malloc, free
 from libc.string cimport memset, memcpy
 
 import numpy as np
@@ -175,6 +176,44 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream)
     void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
     int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
+    void* stf_data_place_allocate_shaped(stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
+
+    #
+    # Placement (structured partitions + evaluation)
+    #
+    ctypedef struct stf_cute_partition_opaque_t
+    ctypedef stf_cute_partition_opaque_t* stf_cute_partition_handle
+
+    ctypedef struct stf_placement_stats:
+        uint64_t total_bytes
+        uint64_t vm_bytes
+        uint64_t block_size
+        uint64_t nblocks
+        uint64_t nallocs
+        uint64_t total_samples
+        uint64_t matching_samples
+
+    ctypedef struct stf_partition_dim_spec:
+        int policy
+        int mesh_axis
+        uint64_t block
+
+    int stf_placement_evaluate(stf_exec_place_handle grid, stf_get_executor_fn mapper, const stf_dim4* data_dims, uint64_t elemsize, uint64_t probes, uint64_t block_size, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+    int stf_placement_evaluate_partition(stf_exec_place_handle grid, stf_cute_partition_handle partition, uint64_t elemsize, uint64_t probes, uint64_t block_size, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+    stf_cute_partition_handle stf_cute_partition_create(const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank)
+    stf_cute_partition_handle stf_cute_partition_from_leaves(const uint64_t* place_extents, const int64_t* place_strides, const int* place_axes, size_t num_place_leaves, const uint64_t* local_extents, const int64_t* local_strides, size_t num_local_leaves, const stf_dim4* padded_dims, const stf_dim4* true_dims, const stf_dim4* grid_dims)
+    void stf_cute_partition_destroy(stf_cute_partition_handle h)
+    void stf_cute_partition_true_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+    void stf_cute_partition_padded_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+    void stf_cute_partition_grid_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+    size_t stf_cute_partition_num_place_leaves(stf_cute_partition_handle h)
+    size_t stf_cute_partition_num_local_leaves(stf_cute_partition_handle h)
+    void stf_cute_partition_get_place_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides, int* axes)
+    void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides)
+    uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index)
+    stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition)
+    stf_get_executor_fn stf_partition_fn_blocked(int dim)
+    stf_get_executor_fn stf_partition_fn_cyclic()
 
     #
     # Logical data
@@ -1341,6 +1380,279 @@ cdef class exec_place_grid(exec_place):
         return g
 
 
+cdef int _fill_dim4(object dims, stf_dim4* out) except -1:
+    """Convert an int or a sequence of up to 4 extents into an stf_dim4
+    (missing dimensions padded with 1)."""
+    if isinstance(dims, int):
+        dims = (dims,)
+    if len(dims) > 4:
+        raise ValueError(f"at most 4 dimensions are supported, got {len(dims)}")
+    cdef uint64_t[4] e
+    e[0] = e[1] = e[2] = e[3] = 1
+    for i, d in enumerate(dims):
+        e[i] = <uint64_t>d
+    out.x = e[0]
+    out.y = e[1]
+    out.z = e[2]
+    out.t = e[3]
+    return 0
+
+
+def partition_fn_blocked(int dim=-1):
+    """Native blocked partition function for a given dimension (-1 = the
+    highest-rank dimension), as an int usable wherever a mapper is expected
+    (no FFI callback cost)."""
+    return <uintptr_t>stf_partition_fn_blocked(dim)
+
+
+def partition_fn_cyclic():
+    """Native cyclic (round-robin) partition function, as an int usable
+    wherever a mapper is expected."""
+    return <uintptr_t>stf_partition_fn_cyclic()
+
+
+#: Per-dimension policies accepted by cute_partition.from_spec
+_DIM_POLICIES = {"whole": 0, "blocked": 1, "cyclic": 2, "block_cyclic": 3}
+
+
+cdef class cute_partition:
+    """A structured description of how a tensor is distributed over a grid of
+    places, as a CuTe-style two-mode strided layout over the padded extents.
+
+    Build one from a JAX-like per-dimension specification with
+    :meth:`from_spec`, or directly from flattened leaves with
+    :meth:`from_leaves`. Strides are in linear element units, dimension 0
+    fastest; row-major callers should reverse their dimensions.
+    """
+
+    cdef stf_cute_partition_handle _h
+
+    def __dealloc__(self):
+        if self._h != NULL:
+            stf_cute_partition_destroy(self._h)
+            self._h = NULL
+
+    @staticmethod
+    def from_spec(true_dims, spec, grid_dims):
+        """Build a partition from one entry per tensor dimension.
+
+        Each entry is ``None`` (dimension not distributed) or a tuple:
+        ``("blocked", axis)``, ``("cyclic", axis)``, or
+        ``("block_cyclic", axis, block)``, where *axis* is the grid axis the
+        dimension distributes over. Split dimensions are padded up to
+        divisibility (coordinates beyond the true extents own no bytes).
+
+        Example - 3-D tensor, dimension 1 blocked over grid axis 0::
+
+            part = cute_partition.from_spec((nx, ny, nz), (None, ("blocked", 0), None), (nplaces,))
+        """
+        cdef stf_dim4 td, gd
+        _fill_dim4(true_dims, &td)
+        _fill_dim4(grid_dims, &gd)
+        if len(spec) > 4:
+            raise ValueError(f"at most 4 dimensions are supported, got {len(spec)}")
+        cdef stf_partition_dim_spec[4] c_spec
+        cdef size_t rank = len(spec)
+        for i, entry in enumerate(spec):
+            if entry is None:
+                c_spec[i].policy = 0
+                c_spec[i].mesh_axis = -1
+                c_spec[i].block = 0
+                continue
+            policy = _DIM_POLICIES.get(entry[0])
+            if policy is None:
+                raise ValueError(f"unknown policy {entry[0]!r}; expected one of {sorted(_DIM_POLICIES)}")
+            c_spec[i].policy = policy
+            c_spec[i].mesh_axis = entry[1]
+            c_spec[i].block = entry[2] if policy == 3 else 0
+        cdef cute_partition p = cute_partition.__new__(cute_partition)
+        p._h = stf_cute_partition_create(&td, &gd, c_spec, rank)
+        if p._h == NULL:
+            raise ValueError("invalid partition specification")
+        return p
+
+    @staticmethod
+    def from_leaves(place_leaves, local_leaves, padded_dims, true_dims, grid_dims):
+        """Build a partition from flattened leaves (expert form).
+
+        ``place_leaves`` is a sequence of ``(extent, stride, grid_axis)``
+        tuples and ``local_leaves`` of ``(extent, stride)`` tuples, leaf 0
+        fastest. The leaves must tile the padded extents exactly.
+        """
+        cdef stf_dim4 pd, td, gd
+        _fill_dim4(padded_dims, &pd)
+        _fill_dim4(true_dims, &td)
+        _fill_dim4(grid_dims, &gd)
+        cdef size_t np_ = len(place_leaves)
+        cdef size_t nl = len(local_leaves)
+        if np_ > 16 or nl > 16:
+            raise ValueError("at most 16 leaves are supported per mode")
+        cdef uint64_t[16] p_ext
+        cdef uint64_t[16] l_ext
+        cdef int64_t[16] p_str
+        cdef int64_t[16] l_str
+        cdef int[16] p_axes
+        for i, (e, st, a) in enumerate(place_leaves):
+            p_ext[i] = <uint64_t>e
+            p_str[i] = <int64_t>st
+            p_axes[i] = <int>a
+        for i, (e, st) in enumerate(local_leaves):
+            l_ext[i] = <uint64_t>e
+            l_str[i] = <int64_t>st
+        cdef cute_partition p = cute_partition.__new__(cute_partition)
+        p._h = stf_cute_partition_from_leaves(
+            p_ext, p_str, p_axes, np_, l_ext, l_str, nl, &pd, &td, &gd)
+        if p._h == NULL:
+            raise ValueError("leaves do not describe an exact partition of the padded extents")
+        return p
+
+    @property
+    def true_dims(self):
+        """True tensor extents (4-tuple, trailing 1s for unused dimensions)."""
+        cdef stf_dim4 d
+        stf_cute_partition_true_dims(self._h, &d)
+        return (d.x, d.y, d.z, d.t)
+
+    @property
+    def padded_dims(self):
+        """Padded tensor extents the leaf strides refer to (4-tuple)."""
+        cdef stf_dim4 d
+        stf_cute_partition_padded_dims(self._h, &d)
+        return (d.x, d.y, d.z, d.t)
+
+    @property
+    def grid_dims(self):
+        """Extents of the grid of places (4-tuple)."""
+        cdef stf_dim4 d
+        stf_cute_partition_grid_dims(self._h, &d)
+        return (d.x, d.y, d.z, d.t)
+
+    @property
+    def place_leaves(self):
+        """Leaves of the place mode as ``(extent, stride, grid_axis)`` tuples."""
+        cdef size_t n = stf_cute_partition_num_place_leaves(self._h)
+        cdef uint64_t[16] ext
+        cdef int64_t[16] str_
+        cdef int[16] axes
+        if n > 16:
+            raise ValueError("at most 16 leaves are supported per mode")
+        if n > 0:
+            stf_cute_partition_get_place_leaves(self._h, ext, str_, axes)
+        return [(ext[i], str_[i], axes[i]) for i in range(n)]
+
+    @property
+    def local_leaves(self):
+        """Leaves of the local mode as ``(extent, stride)`` tuples."""
+        cdef size_t n = stf_cute_partition_num_local_leaves(self._h)
+        cdef uint64_t[16] ext
+        cdef int64_t[16] str_
+        if n > 16:
+            raise ValueError("at most 16 leaves are supported per mode")
+        if n > 0:
+            stf_cute_partition_get_local_leaves(self._h, ext, str_)
+        return [(ext[i], str_[i]) for i in range(n)]
+
+    def place_offset(self, place_index):
+        """Linear element offset (in the padded space) of a place's first
+        element, given the place's linear index in place-mode order."""
+        return stf_cute_partition_place_offset(self._h, <uint64_t>place_index)
+
+
+class placement_stats:
+    """Statistics describing how a localized allocation (or a dry-run
+    evaluation of one) distributes a tensor over data places."""
+
+    def __init__(self, total_bytes, vm_bytes, block_size, nblocks, nallocs,
+                 total_samples, matching_samples, bytes_per_grid_index):
+        self.total_bytes = total_bytes
+        self.vm_bytes = vm_bytes
+        self.block_size = block_size
+        self.nblocks = nblocks
+        self.nallocs = nallocs
+        self.total_samples = total_samples
+        self.matching_samples = matching_samples
+        #: bytes owned by each grid position (list indexed by linear grid index)
+        self.bytes_per_grid_index = bytes_per_grid_index
+
+    @property
+    def accuracy(self):
+        """Estimated fraction of bytes local to their owner once ownership is
+        quantized to blocks."""
+        if self.total_samples == 0:
+            return 1.0
+        return self.matching_samples / self.total_samples
+
+    def __repr__(self):
+        return (f"placement_stats(total_bytes={self.total_bytes}, nblocks={self.nblocks}, "
+                f"nallocs={self.nallocs}, accuracy={self.accuracy:.3f}, "
+                f"bytes_per_grid_index={self.bytes_per_grid_index})")
+
+
+def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, block_size=0):
+    """Evaluate - without allocating - how a localized allocation would
+    distribute a tensor over the places of a grid.
+
+    Runs the exact same block-owner decision procedure as the allocation path
+    and returns a :class:`placement_stats`, so a candidate mapping can be
+    scored (and its parameters tuned) before committing memory.
+
+    ``mapper`` is a :class:`cute_partition`, a native partition function
+    pointer (int, see :func:`partition_fn_blocked`), or a Python callable
+    ``(data_coords, data_dims, grid_dims) -> (x, y, z, t)``. Note the callable
+    form crosses the GIL for every probe: the structured/native forms are the
+    fast path.
+
+    ``probes`` and ``block_size`` of 0 select the defaults (10 samples per
+    block; the device allocation granularity, or 2 MiB without a GPU).
+    """
+    cdef stf_dim4 dims
+    cdef stf_dim4 gd
+    cdef stf_placement_stats c_stats
+    stf_exec_place_get_dims(grid._h, &gd)
+    cdef size_t grid_size = gd.x * gd.y * gd.z * gd.t
+    cdef uint64_t* per_pos = <uint64_t*>malloc(grid_size * sizeof(uint64_t))
+    if per_pos == NULL:
+        raise MemoryError()
+
+    cdef uintptr_t ptr_val
+    cdef int rc
+    cdef cute_partition part
+    try:
+        if isinstance(mapper, cute_partition):
+            part = <cute_partition>mapper
+            rc = stf_placement_evaluate_partition(
+                grid._h, part._h, <uint64_t>elemsize, <uint64_t>probes, <uint64_t>block_size,
+                &c_stats, per_pos)
+        else:
+            _fill_dim4(data_dims, &dims)
+            if isinstance(mapper, int):
+                ptr_val = <uintptr_t>mapper
+                keep_alive = None
+            elif callable(mapper):
+                keep_alive, c_ptr = _make_mapper_callback(mapper)
+                ptr_val = c_ptr
+            else:
+                raise TypeError(
+                    "mapper must be a cute_partition, a native partition function pointer, or a callable")
+            rc = stf_placement_evaluate(
+                grid._h, <stf_get_executor_fn>ptr_val, &dims, <uint64_t>elemsize,
+                <uint64_t>probes, <uint64_t>block_size, &c_stats, per_pos)
+        if rc != 0:
+            raise RuntimeError("placement evaluation failed")
+
+        return placement_stats(
+            c_stats.total_bytes,
+            c_stats.vm_bytes,
+            c_stats.block_size,
+            c_stats.nblocks,
+            c_stats.nallocs,
+            c_stats.total_samples,
+            c_stats.matching_samples,
+            [per_pos[i] for i in range(grid_size)])
+    finally:
+        free(per_pos)
+
+
 cdef class data_place:
     cdef stf_data_place_handle _h
     cdef object _mapper_callback  # prevent GC of ctypes callback for composite places
@@ -1447,17 +1759,39 @@ cdef class data_place:
 
             grid = exec_place_grid.from_devices([0, 1])
             dplace = data_place.composite(grid, blocked_1d)
+
+        Instead of a Python callable, a native partition function pointer (as
+        returned by :func:`partition_fn_blocked` / :func:`partition_fn_cyclic`)
+        can be passed as an int, avoiding any FFI callback cost.
         """
-        if not callable(mapper):
-            raise TypeError(
-                "mapper must be callable: (data_coords, data_dims, grid_dims) -> (x, y, z, t)")
-        callback_obj, c_ptr = _make_mapper_callback(mapper)
         cdef data_place p = data_place.__new__(data_place)
-        p._mapper_callback = callback_obj
-        cdef uintptr_t ptr_val = c_ptr
+        cdef uintptr_t ptr_val
+        if isinstance(mapper, int):
+            ptr_val = <uintptr_t>mapper
+        elif callable(mapper):
+            callback_obj, c_ptr = _make_mapper_callback(mapper)
+            p._mapper_callback = callback_obj
+            ptr_val = c_ptr
+        else:
+            raise TypeError(
+                "mapper must be callable (data_coords, data_dims, grid_dims) -> (x, y, z, t) "
+                "or a native partition function pointer (int)")
         p._h = stf_data_place_composite(grid._h, <stf_get_executor_fn>ptr_val)
         if p._h == NULL:
             raise RuntimeError("failed to create composite data_place")
+        return p
+
+    @staticmethod
+    def composite_cute(exec_place grid, cute_partition partition):
+        """Create a composite data place backed by a structured partition.
+
+        Such a place is specific to one tensor (the partition's true extents):
+        allocate with ``allocate(dims, elemsize=...)`` using those extents.
+        """
+        cdef data_place p = data_place.__new__(data_place)
+        p._h = stf_data_place_composite_cute(grid._h, partition._h)
+        if p._h == NULL:
+            raise RuntimeError("failed to create cute composite data_place")
         return p
 
     @property
@@ -1469,17 +1803,22 @@ cdef class data_place:
     def device_id(self) -> int:
         return stf_data_place_get_device_ordinal(self._h)
 
-    def allocate(self, Py_ssize_t nbytes, stream=None):
-        """Allocate *nbytes* on this data place.
+    def allocate(self, size_or_dims, stream=None, *, elemsize=1):
+        """Allocate memory on this data place.
 
         Parameters
         ----------
-        nbytes : int
-            Number of bytes to allocate.
+        size_or_dims : int or sequence of int
+            Either a byte count, or the tensor extents (dimension 0 fastest,
+            at most 4). Composite places require the extents form: their
+            partitioner maps element coordinates to places, which a byte
+            count alone cannot express.
         stream : optional
             CUDA stream for stream-ordered allocation (int, CudaStream, or
             any object implementing ``__cuda_stream__``).  ``None`` uses the
             default (null) stream.
+        elemsize : int, keyword-only
+            Size of one element in bytes (extents form only).
 
         Returns
         -------
@@ -1489,14 +1828,24 @@ cdef class data_place:
         Raises
         ------
         MemoryError
-            If the underlying place cannot allocate (out of memory, or
-            the place type does not support allocation).
+            If the underlying place cannot allocate (out of memory, missing
+            geometry on a composite place, or the place type does not
+            support allocation).
         """
         cdef uintptr_t s_val = _get_stream_pointer(stream)
         cdef cudaStream_t s = <cudaStream_t>s_val
-        cdef void* ptr = stf_data_place_allocate(self._h, <ptrdiff_t>nbytes, s)
-        if ptr == NULL:
-            raise MemoryError(f"data_place.allocate failed for {nbytes} bytes")
+        cdef stf_dim4 dims
+        cdef void* ptr
+        if isinstance(size_or_dims, (tuple, list)):
+            _fill_dim4(size_or_dims, &dims)
+            ptr = stf_data_place_allocate_shaped(self._h, &dims, <uint64_t>elemsize, s)
+            if ptr == NULL:
+                raise MemoryError(
+                    f"data_place.allocate failed for extents {tuple(size_or_dims)} x {elemsize} bytes")
+        else:
+            ptr = stf_data_place_allocate(self._h, <ptrdiff_t>size_or_dims, s)
+            if ptr == NULL:
+                raise MemoryError(f"data_place.allocate failed for {size_or_dims} bytes")
         return <uintptr_t>ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, stream=None):
@@ -1550,7 +1899,7 @@ cdef class task:
         self._t = NULL
 
     def start(self):
-        # This is ignored if this is not a graph task
+        # This is ignored if this is not a graph task
         stf_task_enable_capture(self._t)
 
         stf_task_start(self._t)
@@ -1910,7 +2259,7 @@ cdef class async_resources:
 
 cdef class context:
     cdef stf_ctx_handle _ctx
-    # Is this a context that we have borrowed ?
+    # Is this a context that we have borrowed ?
     cdef bint _borrowed
     # Python-only primary-context retain. This is intentionally kept out of the
     # C++ core and exists only to shield Python interop with frameworks that
