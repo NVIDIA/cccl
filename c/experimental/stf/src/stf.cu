@@ -533,7 +533,7 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
-void* stf_data_place_allocate_shaped(
+void* stf_data_place_allocate_nd(
   stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
 {
   _CCCL_ASSERT(h != nullptr, "data place handle must not be null");
@@ -543,16 +543,16 @@ void* stf_data_place_allocate_shaped(
   ::std::memcpy(&dims, data_dims, sizeof(dims));
   try
   {
-    return dp->allocate(dims, elemsize, stream);
+    return dp->allocate_nd(dims, elemsize, stream);
   }
   catch (const ::std::exception& e)
   {
-    fprintf(stderr, "stf_data_place_allocate_shaped failed: %s\n", e.what());
+    fprintf(stderr, "stf_data_place_allocate_nd failed: %s\n", e.what());
     return nullptr;
   }
   catch (...)
   {
-    fprintf(stderr, "stf_data_place_allocate_shaped failed: unknown exception\n");
+    fprintf(stderr, "stf_data_place_allocate_nd failed: unknown exception\n");
     return nullptr;
   }
 }

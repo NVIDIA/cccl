@@ -176,7 +176,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream)
     void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
     int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
-    void* stf_data_place_allocate_shaped(stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
+    void* stf_data_place_allocate_nd(stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
 
     #
     # Placement (structured partitions + evaluation)
@@ -1838,7 +1838,7 @@ cdef class data_place:
         cdef void* ptr
         if isinstance(size_or_dims, (tuple, list)):
             _fill_dim4(size_or_dims, &dims)
-            ptr = stf_data_place_allocate_shaped(self._h, &dims, <uint64_t>elemsize, s)
+            ptr = stf_data_place_allocate_nd(self._h, &dims, <uint64_t>elemsize, s)
             if ptr == NULL:
                 raise MemoryError(
                     f"data_place.allocate failed for extents {tuple(size_or_dims)} x {elemsize} bytes")

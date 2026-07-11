@@ -159,7 +159,7 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
   void* bad = stf_data_place_allocate(dp, static_cast<ptrdiff_t>(n * sizeof(int)), nullptr);
   REQUIRE(bad == nullptr);
 
-  void* ptr = stf_data_place_allocate_shaped(dp, &dims, sizeof(int), nullptr);
+  void* ptr = stf_data_place_allocate_nd(dp, &dims, sizeof(int), nullptr);
   REQUIRE(ptr != nullptr);
 
   // Memory must be usable from the device
@@ -183,9 +183,9 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
 
   // Extents other than the partition's true extents are rejected
   const stf_dim4 other_dims{n / 2, 1, 1, 1};
-  REQUIRE(stf_data_place_allocate_shaped(dpc, &other_dims, sizeof(int), nullptr) == nullptr);
+  REQUIRE(stf_data_place_allocate_nd(dpc, &other_dims, sizeof(int), nullptr) == nullptr);
 
-  void* ptr2 = stf_data_place_allocate_shaped(dpc, &dims, sizeof(int), nullptr);
+  void* ptr2 = stf_data_place_allocate_nd(dpc, &dims, sizeof(int), nullptr);
   REQUIRE(ptr2 != nullptr);
   REQUIRE(cudaMemcpy(ptr2, host.data(), n * sizeof(int), cudaMemcpyHostToDevice) == cudaSuccess);
   stf_data_place_deallocate(dpc, ptr2, n * sizeof(int), nullptr);

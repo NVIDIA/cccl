@@ -356,7 +356,7 @@ int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h);
 //! \param stream    CUDA stream for stream-ordered allocation (may be NULL)
 //! \return Pointer to allocated memory (release with
 //!         stf_data_place_deallocate()), or NULL on failure
-void* stf_data_place_allocate_shaped(
+void* stf_data_place_allocate_nd(
   stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream);
 
 //! \}
@@ -508,7 +508,7 @@ uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t p
 //! \brief Create a composite data place backed by a structured partition.
 //!
 //! Such a place is specific to one tensor (the partition's true extents):
-//! allocate with stf_data_place_allocate_shaped() using those extents.
+//! allocate with stf_data_place_allocate_nd() using those extents.
 //!
 //! \param grid      Grid of execution places (must not be NULL)
 //! \param partition Structured partition (must not be NULL; copied)
