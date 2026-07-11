@@ -128,12 +128,14 @@ void test_evaluate_straddling_block()
 {
   printf("Testing evaluate_localized_placement (majority tie-breaking)...\n");
 
-  // 4,000,000 one-byte elements blocked over 2 places: each place owns
-  // 2,000,000 bytes, just short of the 2 MiB block. Block 0 straddles the two
-  // owners (~95%/5%): the majority vote must keep it on place 0, and the
-  // accuracy must reflect the straddling.
+  // 2.5 MiB of one-byte elements blocked over 2 places: each place owns
+  // 1.25 MiB, so block 0 straddles the two owners 62.5%/37.5%. The majority
+  // vote must keep it on place 0, and the accuracy must reflect the
+  // straddling (structurally: the minority share is large enough that all-64
+  // probes landing in the majority has probability ~1e-13 for any uniform
+  // sampler, so the checks do not depend on the stdlib's distribution).
   const size_t block_size = 2 * 1024 * 1024;
-  const size_t n          = 4'000'000;
+  const size_t n          = 5 * 1024 * 1024 / 2;
   const dim4 data_dims(n);
 
   auto grid = make_device_grid(1, 2);
@@ -144,7 +146,7 @@ void test_evaluate_straddling_block()
   EXPECT(stats.nblocks == 2);
   EXPECT(stats.nallocs == 2); // majority breaks the tie: block 0 and block 1 differ
   EXPECT(stats.accuracy() < 1.0);
-  EXPECT(stats.accuracy() > 0.9);
+  EXPECT(stats.accuracy() > 0.7); // expected ~0.8 (block 0 ~62.5% local, block 1 fully local)
 
   // The decision procedure is seeded: evaluating twice gives the same stats
   auto stats2 =
@@ -245,7 +247,6 @@ void test_shaped_alloc_cute_composite(int ndevs)
   printf("  shaped allocation (cute composite) test PASSED\n");
 }
 
-#if !defined(DOXYGEN_SHOULD_SKIP_THIS)
 void test_multi_gpu_residency(int ndevs)
 {
   if (ndevs < 2)
@@ -308,7 +309,6 @@ void test_multi_gpu_residency(int ndevs)
 
   printf("  multi-GPU residency test PASSED\n");
 }
-#endif // !DOXYGEN_SHOULD_SKIP_THIS
 } // namespace
 
 int main()

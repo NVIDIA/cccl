@@ -71,13 +71,34 @@ int main()
     return 0;
   }
 
+  // The single task below touches the whole range from each device, which
+  // requires peer access between all participating devices; fall back to one
+  // device when it is unavailable.
+  int usable_devs = ::std::min(ndevs, 4);
+  for (int a = 0; a < usable_devs; a++)
+  {
+    for (int b = 0; b < usable_devs; b++)
+    {
+      int can_access = 1;
+      if (a != b)
+      {
+        cuda_safe_call(cudaDeviceCanAccessPeer(&can_access, a, b));
+      }
+      if (!can_access)
+      {
+        fprintf(stderr, "Peer access unavailable between devices %d and %d: using a single device.\n", a, b);
+        usable_devs = 1;
+      }
+    }
+  }
+
   // A grid of up to 4 places (at least 2 so the partitioning is visible even
   // on a single-GPU machine, where places then share device 0)
-  const size_t nplaces = ::std::max(2, ::std::min(ndevs, 4));
+  const size_t nplaces = ::std::max(2, usable_devs);
   ::std::vector<exec_place> places;
   for (size_t i = 0; i < nplaces; i++)
   {
-    places.push_back(exec_place::device(static_cast<int>(i % ndevs)));
+    places.push_back(exec_place::device(static_cast<int>(i % usable_devs)));
   }
   auto all_devs = make_grid(mv(places));
 
